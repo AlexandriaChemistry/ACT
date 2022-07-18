@@ -53,11 +53,12 @@
 namespace alexandria
 {
 
-double MolHandler::computeHessian(      MyMol               *mol,
-                                  const ForceComputer       *forceComp,
-                                  const std::vector<int>    &atomIndex,
-                                        MatrixWrapper       *hessian,
-                                        std::vector<double> *forceZero) const
+double MolHandler::computeHessian(      MyMol                  *mol,
+                                  const ForceComputer          *forceComp,
+                                  const std::vector<int>       &atomIndex,
+                                        MatrixWrapper          *hessian,
+                                        std::vector<double>    *forceZero,
+                                        std::vector<gmx::RVec> *dpdq) const
 {
     std::vector<double> fneg;
     fneg.resize(DIM*atomIndex.size(), 0.0);
@@ -74,9 +75,15 @@ double MolHandler::computeHessian(      MyMol               *mol,
             forceZero->push_back(mol->f_[atom][m]);
         }
     }
-    double    stepSize     = 1e-6; // 1 pm
+    const auto &atoms    = mol->atomsConst();
+    double      stepSize = 1e-6; // 0.001 pm
+    if (dpdq)
+    {
+        dpdq->clear();
+    }
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
+        gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
@@ -85,6 +92,14 @@ double MolHandler::computeHessian(      MyMol               *mol,
             {
                 mol->state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
                 (void) mol->calculateEnergy(forceComp);
+                if (dpdq)
+                {
+                    // To compute dipole we need to take shells into account as well!
+                    for(size_t ii = 0; ii < atoms.size(); ii++)
+                    {
+                        mu[delta][atomXYZ] += atoms[ii].charge()*mol->state_->x[atomI][atomXYZ];
+                    }
+                }
                 if (delta == 0)
                 {
                     for(size_t aj = 0; aj < atomIndex.size(); aj++)
@@ -116,6 +131,15 @@ double MolHandler::computeHessian(      MyMol               *mol,
                 }
             }
         }
+        if (dpdq)
+        {
+            gmx::RVec dpdq1;
+            for(int d = 0; d < DIM; d++)
+            {
+                dpdq1[d] = (mu[1][d]-mu[0][d])/(2*stepSize);
+            }
+            dpdq->push_back(dpdq1);
+        }
     }
     (void) mol->calculateEnergy(forceComp);
 
@@ -140,14 +164,14 @@ void MolHandler::nma(MyMol               *mol,
     }
 
     // Compute and average hessian
-    const int matrixSide = DIM*atomIndex.size();
-    MatrixWrapper       hessian(matrixSide, matrixSide);
-    std::vector<double> f0;
-    computeHessian(mol, forceComp, atomIndex, &hessian, &f0);
+    const int              matrixSide = DIM*atomIndex.size();
+    MatrixWrapper          hessian(matrixSide, matrixSide);
+    std::vector<double>    f0;
+    std::vector<gmx::RVec> dpdq;
+    computeHessian(mol, forceComp, atomIndex, &hessian, &f0, &dpdq);
     hessian.averageTriangle();
 
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
-    double massFac;
     for (size_t i = 0; (i < atomIndex.size()); i++)
     {
         size_t ai = atomIndex[i];
@@ -155,8 +179,8 @@ void MolHandler::nma(MyMol               *mol,
         {
             for (size_t k = 0; (k < atomIndex.size()); k++)
             {
-                size_t ak = atomIndex[k];
-                massFac   = gmx::invsqrt(atoms[ai].mass() * atoms[ak].mass());
+                size_t ak      = atomIndex[k];
+                double massFac = gmx::invsqrt(atoms[ai].mass() * atoms[ak].mass());
                 for (size_t l = 0; (l < DIM); l++)
                 {
                     hessian.mult(i*DIM+j, k*DIM+l, massFac);
@@ -183,8 +207,8 @@ void MolHandler::nma(MyMol               *mol,
     {
         for (size_t j = 0; j < atomIndex.size(); j++)
         {
-            size_t aj = atomIndex[j];
-            massFac   = gmx::invsqrt(atoms[aj].mass());
+            size_t aj      = atomIndex[j];
+            double massFac = gmx::invsqrt(atoms[aj].mass());
             for (size_t k = 0; (k < DIM); k++)
             {
                 eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
@@ -193,8 +217,7 @@ void MolHandler::nma(MyMol               *mol,
     }
 
     frequencies->clear();
-    intensities->clear();
-    auto mpo = MolPropObservable::FREQUENCY;
+    auto        mpo  = MolPropObservable::FREQUENCY;
     const char *unit = mpo_unit2(mpo);
     for (size_t i = rot_trans; i < eigenvalues.size(); i++)
     {
@@ -215,10 +238,24 @@ void MolHandler::nma(MyMol               *mol,
             frequencies->push_back(convertToGromacs(f, unit));
         }
     }
-
-    // Get the eigenvectors into a MatrixWrapper
-    MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
-
+    intensities->clear();
+    auto        mpoi  = MolPropObservable::INTENSITY;
+    const char *uniti = mpo_unit2(mpoi);
+    for (size_t i = rot_trans; i < eigenvalues.size(); i++)
+    {
+        double In = 0;
+        for (size_t j = 0; j < atomIndex.size(); j++)
+        {
+            size_t aj      = atomIndex[j];
+            double massFac = gmx::invsqrt(atoms[aj].mass());
+            for(int d = 0; d < DIM; d++)
+                
+            {
+                In += gmx::square(dpdq[j][d]*massFac/eigenvectors[i * matrixSide + j * DIM + d]);
+            } 
+        }
+        intensities->push_back(In);
+    }
     if (fp)
     {
         std::vector<GenericProperty *> harm;
@@ -248,6 +285,11 @@ void MolHandler::nma(MyMol               *mol,
         {
             fprintf(fp, "  %8.3f", convertFromGromacs(freq, unit));
         }
+        fprintf(fp, "Alexandria IR intensities: (%s):\n", uniti);
+        for (const auto &inten : *intensities)
+        {
+            fprintf(fp, "  %8.3f", convertFromGromacs(inten, unit));
+        }
         if (delta > 0)
         {
             fprintf(fp, "\nFrequency RMSD %g\n",
@@ -269,6 +311,9 @@ void MolHandler::nma(MyMol               *mol,
         {
             fprintf(debug, "%-*g ", FLOAT_SIZE, val);
         }
+        // Get the eigenvectors into a MatrixWrapper
+        MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
+
         fprintf(debug, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
     }
 

@@ -66,6 +66,8 @@ enum class eRMS {
     HEXADEC,
     //! Vibrational frequencies
     FREQUENCY,
+    //! Infrared intensities
+    INTENSITY,
     //! Deviation from CM5 charge
     CM5,
     //! Deviation from Electrostatic potential

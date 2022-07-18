@@ -415,35 +415,60 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
                                          gmx_unused const std::vector<double> &param,
                                          gmx_unused const CommunicationRecord *commrec)
 {
-    if (MolPropObservable::FREQUENCY != mpo_)
-    {
-        GMX_THROW(gmx::InternalError("Only frequency fitting implemented in HarmonicsDevComputer"));
-    }
     // Only compute frequencies for structures that have an optimize reference
     if (JobType::OPT != mymol->jobType())
     {
         return;
     }
-    const real goldenRatio = 0.5*(1+std::sqrt(5.0));
+    const real goldenRatio = 1; //0.5*(1+std::sqrt(5.0));
     handler_.minimizeCoordinates(mymol, forceComputer, nullptr, 0, goldenRatio, 1e-6);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, forceComputer, &frequencies, &intensities);
 
-    auto ref_freqs = mymol->referenceFrequencies();
-    if (ref_freqs.size() != frequencies.size())
+    switch (mpo_)
     {
-        fprintf(stderr, "Reference frequencies size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
-                ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str());
-    }
-    else
-    {
-        double delta = 0;
-        for(size_t k = 0; k < frequencies.size(); k++)
+    case MolPropObservable::FREQUENCY:
         {
-            delta += gmx::square(frequencies[k]-ref_freqs[k]);
+            auto ref_freqs = mymol->referenceFrequencies();
+            if (ref_freqs.size() != frequencies.size())
+            {
+                fprintf(stderr, "Reference frequencies size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
+                        ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str());
+            }
+            else
+            {
+                double delta = 0;
+                for(size_t k = 0; k < frequencies.size(); k++)
+                {
+                    delta += gmx::square(frequencies[k]-ref_freqs[k]);
+                }
+                (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
+            }
         }
-        (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
+        break;
+    case MolPropObservable::INTENSITY:
+        {
+            auto ref_intens = mymol->referenceIntensities();
+            if (ref_intens.size() != intensities.size())
+            {
+                fprintf(stderr, "Reference intensities size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
+                        ref_intens.size(), intensities.size(), mymol->getMolname().c_str());
+            }
+            else
+            {
+                double delta = 0;
+                for(size_t k = 0; k < intensities.size(); k++)
+                {
+                    delta += gmx::square(intensities[k]-ref_intens[k]);
+                }
+                (*targets).find(eRMS::INTENSITY)->second.increase(1, delta);
+            }
+        }
+        break;
+    default:
+        fprintf(stderr, "Don't know how to handle %s in this devcomputer\n",
+                mpo_name(mpo_));
     }
     // Restore coordinates
     mymol->restoreCoordinates(coordSet::Original);

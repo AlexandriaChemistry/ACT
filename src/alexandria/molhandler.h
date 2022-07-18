@@ -71,13 +71,18 @@ public:
      * \param[out] forceZero The forces on the atoms in the input structure,
      *                       that is, not on the shells or vsites. Will be cleared
      *                       and overwritten
+     * \param[out] dpdq      Derivative of dipole moment with respect to atomic coordinates.
+     *                       If nullptr it will not be used. This can be used to compute
+     *                       infrared intensities from a NMA. See Henschel et al.
+     *                       J. Chem. Theory Comput. 16 (2020) 3307-3315.
      * \return the potential energy of the input structure
      */
-    double computeHessian(      MyMol               *mol,
-                          const ForceComputer       *forceComp,
-                          const std::vector<int>    &atomIndex,
-                                MatrixWrapper       *hessian,
-                                std::vector<double> *forceZero) const;
+    double computeHessian(      MyMol                  *mol,
+                          const ForceComputer          *forceComp,
+                          const std::vector<int>       &atomIndex,
+                                MatrixWrapper          *hessian,
+                                std::vector<double>    *forceZero,
+                                std::vector<gmx::RVec> *dpdq = nullptr) const;
 
     /*! \brief Perform normal-mode analysis on a molecule.
      * Computes vibrational frequencies and intensities and 

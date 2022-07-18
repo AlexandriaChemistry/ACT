@@ -244,6 +244,10 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose)
     {
         devComputers_.push_back(new HarmonicsDevComputer(logfile_, verbose, MolPropObservable::FREQUENCY));
     }
+    if (sii_->target(iMolSelect::Train, eRMS::INTENSITY)->weight() > 0)
+    {
+        devComputers_.push_back(new HarmonicsDevComputer(logfile_, verbose, MolPropObservable::INTENSITY));
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * *

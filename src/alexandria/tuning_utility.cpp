@@ -660,28 +660,35 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
 {
     std::vector<double> alex_freq, intensities;
     molhandler.nma(mol, forceComp, &alex_freq, &intensities, nullptr);
-    auto unit     = mpo_unit2(MolPropObservable::FREQUENCY);
-    auto ref_freq = mol->referenceFrequencies();
-    output->push_back(gmx::formatString("Frequencies (%s)", unit));
-    output->push_back(gmx::formatString("%10s  %10s", "Reference", "Alexandria"));
+    auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
+    auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
+    auto ref_freq  = mol->referenceFrequencies();
+    auto ref_inten = mol->referenceIntensities();
+    output->push_back(gmx::formatString("Frequencies (%s)     Intensities (%s)", unit, uniti));
+    output->push_back("Reference   Alexandria  Reference   Alexandria");
     gmx_stats lsq_freq;
     for(size_t k = 0; k < alex_freq.size(); k++)
     {
         double fcalc = convertFromGromacs(alex_freq[k], unit);
-        if (ref_freq.empty())
-        {
-            output->push_back(gmx::formatString("%10s  %10g", "N/A", fcalc));
-        }
-        else
+        double icalc = convertFromGromacs(intensities[k], uniti);
+        std::string rfs("N/A");
+        std::string ris("N/A");
+        if (!ref_freq.empty())
         {
             double fref  = convertFromGromacs(ref_freq[k], unit);
+            rfs = gmx::formatString("%10g", fref);
             if (nullptr != lsq_freq_all)
             {
                 lsq_freq_all->add_point(fref, fcalc, 0, 0);
             }
             lsq_freq.add_point(fref, fcalc, 0, 0);
-            output->push_back(gmx::formatString("%10g  %10g", fref, fcalc));
         }
+        if (!ref_inten.empty())
+        {
+            ris = gmx::formatString("%10g", convertFromGromacs(ref_inten[k], uniti));
+        }
+        output->push_back(gmx::formatString("%10s  %10g  %10s  %10g",
+                                            rfs.c_str(), fcalc, ris.c_str(), icalc));
     }
     if (lsq_freq.get_npoints() > 0)
     {
