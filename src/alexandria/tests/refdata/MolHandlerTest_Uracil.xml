@@ -11,14 +11,14 @@
   <Real Name="Polarization before">0</Real>
   <Real Name="Virtual site 2 before">0</Real>
   <Real Name="Coordinate RMSD before minimizing">0</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.0072351543876316253</Real>
-  <Real Name="Bond after">0.22726378241719833</Real>
-  <Real Name="Angle after">7.3279292160687435</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0072351519290802281</Real>
+  <Real Name="Bond after">0.22726401264125995</Real>
+  <Real Name="Angle after">7.3279286252695526</Real>
   <Real Name="Lin. Angle after">0</Real>
   <Real Name="Proper Dih. after">240</Real>
-  <Real Name="Improper Dih. after">7.993687363472881e-33</Real>
-  <Real Name="LJ (SR) after">-1.9411273708443386</Real>
-  <Real Name="Coulomb (SR) after">-8.6423904114905916</Real>
+  <Real Name="Improper Dih. after">8.4329494242206518e-32</Real>
+  <Real Name="LJ (SR) after">-1.941127276879391</Real>
+  <Real Name="Coulomb (SR) after">-8.6423901448725182</Real>
   <Real Name="Polarization after">0</Real>
   <Real Name="Virtual site 2 after">0</Real>
   <Sequence Name="Frequencies">
@@ -28,47 +28,77 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0.00036706332747135319</Real>
-    <Real>0.0019227003776767092</Real>
-    <Real>0.0035922053151398094</Real>
-    <Real>0.0048364218408505294</Real>
-    <Real>277.60991596093203</Real>
-    <Real>374.23826142635511</Real>
-    <Real>402.34116510064428</Real>
-    <Real>410.98133831343375</Real>
-    <Real>576.72716827780664</Real>
-    <Real>763.95075390187537</Real>
-    <Real>787.49320884034239</Real>
-    <Real>927.73300398832976</Real>
-    <Real>1073.744232309828</Real>
-    <Real>1179.7763972339528</Real>
-    <Real>1252.4275232765353</Real>
-    <Real>1289.2395457309985</Real>
-    <Real>1318.1727604387536</Real>
-    <Real>1448.0719229609947</Real>
-    <Real>1520.4672360980155</Real>
-    <Real>1552.8378251482727</Real>
-    <Real>1591.3099841930248</Real>
-    <Real>3005.1232893127076</Real>
-    <Real>3005.9316119592863</Real>
-    <Real>3023.1336024159064</Real>
-    <Real>3025.2226015347705</Real>
+    <Real>0.00017832141679151846</Real>
+    <Real>0.049849436872119172</Real>
+    <Real>0.058448910360874323</Real>
+    <Real>0.07185691400775053</Real>
+    <Real>277.60991604876176</Real>
+    <Real>374.23827025604169</Real>
+    <Real>402.34116667127847</Real>
+    <Real>410.98134748891891</Real>
+    <Real>576.7271696743511</Real>
+    <Real>763.9507530384908</Real>
+    <Real>787.49321347629814</Real>
+    <Real>927.73300796011222</Real>
+    <Real>1073.7442411811601</Real>
+    <Real>1179.7764090083735</Real>
+    <Real>1252.4275331053498</Real>
+    <Real>1289.2395488936484</Real>
+    <Real>1318.1727577663232</Real>
+    <Real>1448.0719296745526</Real>
+    <Real>1520.4672400506195</Real>
+    <Real>1552.8378346022496</Real>
+    <Real>1591.309991137887</Real>
+    <Real>3005.1232893047841</Real>
+    <Real>3005.9316118823144</Real>
+    <Real>3023.1336026096774</Real>
+    <Real>3025.2226010829772</Real>
   </Sequence>
   <Sequence Name="Intensities">
-    <Int Name="Length">0</Int>
+    <Int Name="Length">30</Int>
+    <Real>6.8307595993895649e+19</Real>
+    <Real>75493756582819904</Real>
+    <Real>679352935708460.25</Real>
+    <Real>0</Real>
+    <Real>9.037171068169992e-07</Real>
+    <Real>1.1713980077552565e-07</Real>
+    <Real>4220.0035082882396</Real>
+    <Real>5.9348703361516635e-06</Real>
+    <Real>1060.2519110509229</Real>
+    <Real>3295295019.493608</Real>
+    <Real>184198245.77568614</Real>
+    <Real>120756999102.1259</Real>
+    <Real>199108128.17324468</Real>
+    <Real>2424435160082.6924</Real>
+    <Real>734542339680.98486</Real>
+    <Real>101782242.56596051</Real>
+    <Real>7510871010.0878286</Real>
+    <Real>238199088501.2233</Real>
+    <Real>175041684752.64688</Real>
+    <Real>9453924975.5148144</Real>
+    <Real>20099998957.179073</Real>
+    <Real>30612391345.092838</Real>
+    <Real>99417586933.187622</Real>
+    <Real>713717686040.99414</Real>
+    <Real>16915311432.94105</Real>
+    <Real>61184349785.513969</Real>
+    <Real>142248150365589.44</Real>
+    <Real>1906875692094316</Real>
+    <Real>933275475693456.5</Real>
+    <Real>4993163514180295</Real>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">172.30139681356977</Real>
-  <Real Name="Delta H form (kJ/mol)">5671.1916015275847</Real>
+  <Real Name="Zero point energy (kJ/mol)">172.30241185504747</Real>
+  <Real Name="Delta H form (kJ/mol)">5671.1926170736633</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">167.71262763014133</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">115.67298357650803</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">443.83515606091419</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">727.22076726756359</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">115.67298388508004</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">377.14304054374173</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">660.52865205896319</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693218203427</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">76.536616583125905</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">101.48000301953276</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">76.536616049360362</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">101.48000248576722</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">187.16065883185033</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">194.59752949786503</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">187.16065933644299</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">194.59753000245769</Real>
 </ReferenceData>

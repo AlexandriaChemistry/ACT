@@ -172,7 +172,7 @@ protected:
 
         if (nma)
         {
-            std::vector<double> freq, freq_extern, inten;
+            std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
             const char *unit = mpo_unit2(mpo);
@@ -180,8 +180,14 @@ protected:
             {
                 freq_extern.push_back(convertFromGromacs(*f, unit));
             }
+            auto mpoi = MolPropObservable::INTENSITY;
+            const char *uniti = mpo_unit2(mpoi);
+            for(auto f = inten.begin(); f < inten.end(); ++f)
+            {
+                inten_extern.push_back(convertFromGromacs(*f, uniti));
+            }
             checker_.checkSequence(freq_extern.begin(), freq_extern.end(), "Frequencies");
-            checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
+            checker_.checkSequence(inten_extern.begin(), inten_extern.end(), "Intensities");
             
             double scale_factor = 1;
             AtomizationEnergy atomenergy;

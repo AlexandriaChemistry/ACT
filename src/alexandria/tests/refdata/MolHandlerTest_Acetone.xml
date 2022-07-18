@@ -49,7 +49,31 @@
     <Real>2678.9540593326651</Real>
   </Sequence>
   <Sequence Name="Intensities">
-    <Int Name="Length">0</Int>
+    <Int Name="Length">24</Int>
+    <Real>0.00020734704255449403</Real>
+    <Real>4.453923584783811e-07</Real>
+    <Real>7.8049662148746302e-07</Real>
+    <Real>2.3701186136621574e-05</Real>
+    <Real>6.6403401023471099e-08</Real>
+    <Real>2.3057849062789664e-08</Real>
+    <Real>1.3600003556044804e-06</Real>
+    <Real>8.6300079102222823e-06</Real>
+    <Real>2.4092691937845556e-07</Real>
+    <Real>2.3120839687415232e-07</Real>
+    <Real>4.0433646390140509e-06</Real>
+    <Real>1.3941817152023829e-07</Real>
+    <Real>3.2943137180804307e-07</Real>
+    <Real>9.0421067755874861e-07</Real>
+    <Real>2.583675027857396e-06</Real>
+    <Real>8.2841691581384162e-05</Real>
+    <Real>1.7645821681124133e-05</Real>
+    <Real>1.8742897382235325e-06</Real>
+    <Real>0.0020603248806572621</Real>
+    <Real>9.5843067811524256e-05</Real>
+    <Real>1.002809201999793e-06</Real>
+    <Real>0.00013511049575951631</Real>
+    <Real>4.5858978775117237e-05</Real>
+    <Real>8.981553247197152e-06</Real>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">190.23685191109368</Real>
   <Real Name="Delta H form (kJ/mol)">4062.2493577794562</Real>

@@ -251,7 +251,17 @@ void MolHandler::nma(MyMol               *mol,
             for(int d = 0; d < DIM; d++)
                 
             {
-                In += gmx::square(dpdq[j][d]*massFac/eigenvectors[i * matrixSide + j * DIM + d]);
+                auto evindex = i * matrixSide + j * DIM + d;
+                auto myev = eigenvectors[evindex];
+                if (myev > 0)
+                {
+                    In += gmx::square(dpdq[j][d]*massFac/myev);
+                }
+                else if (debug)
+                {
+                    fprintf(debug, "Eigenvector[%zu][%zu][%d] = %g\n",
+                            i, j, d, eigenvectors[evindex]);
+                }
             } 
         }
         intensities->push_back(In);
