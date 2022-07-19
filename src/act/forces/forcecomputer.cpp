@@ -56,9 +56,9 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
 double ForceComputer::compute(const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
-                              std::map<InteractionType, double> *energies) const
+                              std::map<InteractionType, double> *energies,
+                              const gmx::RVec                   &field) const
 {
-    gmx::RVec field = { 0, 0, 0 };
     // Do first calculation every time.
     computeOnce(top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
@@ -131,7 +131,8 @@ void ForceComputer::computeOnce(const Topology                    *top,
     auto atoms = top->atoms();
     for(size_t ff = 0; ff < forces->size(); ++ff)
     {
-        svmul(atoms[ff].charge(), field, (*forces)[ff]);
+        real fac = FIELDFAC*atoms[ff].charge();
+        svmul(fac, field, (*forces)[ff]);
     }
     double epot = 0;
     for(const auto &entry : top->entries())
@@ -165,9 +166,9 @@ void ForceComputer::calcPolarizability(const Topology         *top,
 {
     std::vector<gmx::RVec>            forces(coordinates->size());
     std::map<InteractionType, double> energies;
-    gmx::RVec  field = { 0, 0, 0 };
-    
-    computeOnce(top, coordinates, &forces, &energies, field);
+    gmx::RVec                         field = { 0, 0, 0 };
+
+    compute(top, coordinates, &forces, &energies, field);
     std::vector<double> q;
     for (auto &at : top->atoms())
     {
@@ -184,17 +185,18 @@ void ForceComputer::calcPolarizability(const Topology         *top,
     auto mu_ref = qtp->getMultipole(mpo);
     // Convert from e nm2/V to cubic nm
     double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
+
     tensor alpha  = { { 0 } };
-    double efield = 0.1;
-    for (auto m = 0; m < DIM; m++)
+    double efield = 0.1; // Units are not relevant since they drop out!
+    for (int m = 0; m < DIM; m++)
     {
         field[m] = efield;
-        computeOnce(top, coordinates, &forces, &energies, field);
+        compute(top, coordinates, &forces, &energies, field);
         qtp->setX(*coordinates);
         field[m] = 0;
         qtp->calcMoments();
         auto qmu = qtp->getMultipole(mpo);
-        for (auto n = 0; n < DIM; n++)
+        for (int n = 0; n < DIM; n++)
         {
             alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
         }
@@ -202,7 +204,7 @@ void ForceComputer::calcPolarizability(const Topology         *top,
     // Store the tensor
     qtp->setPolarizabilityTensor(alpha);
     // Reset energies etc.
-    computeOnce(top, coordinates, &forces, &energies, field);
+    compute(top, coordinates, &forces, &energies, field);
 }
 
 int ForceComputer::ftype(InteractionType itype) const

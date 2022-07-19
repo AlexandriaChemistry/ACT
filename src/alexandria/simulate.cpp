@@ -53,6 +53,44 @@
 namespace alexandria
 {
 
+static void forceFieldSummary(FILE          *fp,
+                              const Poldata *pd)
+{
+    fprintf(fp, "\nForce field summary.\n--------------------\n");
+    fprintf(fp, "Input file:        %s\n", pd->filename().c_str());
+    fprintf(fp, "Created:           %s\n", pd->timeStamp().c_str());
+    fprintf(fp, "Checksum:          %s\n", pd->checkSum().c_str());
+    fprintf(fp, "Polarizable:       %s\n", yesno_names[pd->polarizable()]);
+    fprintf(fp, "Charge generation: %s\n", 
+            chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
+    fprintf(fp, "Using %d exclusions\n", pd->getNexcl());
+    fprintf(fp, "Relative dielectric constant epsilon_r %g\n", pd->getEpsilonR());
+    fprintf(fp, "There are %zu particle types\n", pd->getNatypes());
+    for(const auto &fs : pd->forcesConst())
+    {
+        auto itype = fs.first;
+        auto &ffpl = fs.second;
+        if (!ffpl.parametersConst().empty())
+        {
+            
+            if (!ffpl.function().empty())
+            {
+                fprintf(fp, "InteractionType %s force function %s has %zu entries.\n",
+                        interactionTypeToString(itype).c_str(),
+                        ffpl.function().c_str(),
+                        ffpl.parametersConst().size());
+            }
+            else
+            {
+                fprintf(fp, "There are %5zu entries for %s.\n",
+                        ffpl.parametersConst().size(),
+                        interactionTypeToString(itype).c_str());
+            }
+        }
+    }
+    fprintf(fp, "\n");
+}
+
 int simulate(int argc, char *argv[])
 {
     std::vector<const char *> desc = {
@@ -79,6 +117,7 @@ int simulate(int argc, char *argv[])
     double                    forceToler = 0;
     double                    overRelax  = 1.0;
     int                       maxIter    = 0;
+    bool                      verbose    = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -91,7 +130,9 @@ int simulate(int argc, char *argv[])
         { "-maxiter",FALSE, etINT,  {&maxIter},
           "Maximum number of iterations for the energy minimizer, 0 is until convergence." },
         { "-overrelax", FALSE, etREAL, {&overRelax},
-          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
+        { "-v", FALSE, etBOOL, {&verbose},
+          "Print more information to the log file." },
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -114,7 +155,11 @@ int simulate(int argc, char *argv[])
     auto  forceComp = new ForceComputer(&pd);
     FILE *logFile   = gmx_ffopen(opt2fn("-g", fnm.size(),fnm.data()), "w");
     print_header(logFile, pa);
-    
+    if (verbose)
+    {
+        forceFieldSummary(logFile, &pd);
+    }
+
     MyMol                mymol;
     {
         MolProp     mp;
@@ -145,7 +190,6 @@ int simulate(int argc, char *argv[])
     }
     auto imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error,
                                       false);
-
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     if (immStatus::OK == imm)
@@ -154,6 +198,22 @@ int simulate(int argc, char *argv[])
         auto alg = pd.chargeGenerationAlgorithm();
         imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq);
     }
+    if (verbose && pd.polarizable())
+    {
+        std::vector<gmx::RVec> xx(mymol.atomsConst().size());
+        for(size_t i = 0; i < xx.size(); i++)
+        {
+            copy_rvec(mymol.x()[i], xx[i]);
+        }
+        auto qCalc = mymol.qTypeProps(qType::Calc);
+        forceComp->calcPolarizability(mymol.topology(), &xx, qCalc);
+        auto alpha = qCalc->polarizabilityTensor();
+        double fac = convertFromGromacs(1, "A^3");
+        fprintf(logFile, "Alpha trace: %10g %10g %10g. Isotropic: %10g\n",
+                fac*alpha[XX][XX], fac*alpha[YY][YY], fac*alpha[ZZ][ZZ], 
+                fac*qCalc->isotropicPolarizability());
+    }
+
     if (debug)
     {
         mymol.topology()->dump(debug);
@@ -162,6 +222,10 @@ int simulate(int argc, char *argv[])
     if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
         MolHandler molhandler;
+        if (verbose && pd.polarizable())
+        {
+            
+        }
         if (sch.nma() || sch.minimize())
         {
             int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, maxIter, overRelax, forceToler);

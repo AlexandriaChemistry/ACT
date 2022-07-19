@@ -32,7 +32,8 @@
 
 #include "act/poldata/poldata.h"
 #include "alexandria/topology.h"
-    
+#include "gromacs/math/vectypes.h"
+
 namespace alexandria
 {
 
@@ -49,6 +50,8 @@ private:
     double         rmsForce_;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_;
+    //! Electric field to be optionally applied
+    gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  pd          The force field structure
@@ -57,14 +60,14 @@ private:
      *                         shell particles may be changed.
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
-     * \param[out] field       Electric field
+     * \param[in]  field       Optional electric field to be applied
      */
     void computeOnce(const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
                      const gmx::RVec                   &field) const;
-                     
+
  public:
     /*! \brief Constructor
      * \param[in] pd       Pointer to force field structure
@@ -83,12 +86,14 @@ private:
      *                         shell particles may be changed.
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
+     * \param[in]  field       Optional electric field to be applied
      * \return The root mean square force on the shells, or zero if not present.
      */
     double compute(const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
-                   std::map<InteractionType, double> *energies) const;
+                   std::map<InteractionType, double> *energies,
+                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 }) const;
                  
     /*! \brief Return the gromacs type used
      * In practice this converts the InteractionType to the ftype

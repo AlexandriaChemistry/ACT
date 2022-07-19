@@ -65,7 +65,8 @@ class ForceComputerTest : public ::testing::Test
 protected:
     gmx::test::TestReferenceData    refData_;
     gmx::test::TestReferenceChecker checker_;
-    
+    gmx::MDLogger                   mdlog_ {};
+ 
     ForceComputerTest( ) :
         checker_(refData_.rootChecker())
     {
@@ -73,19 +74,21 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
     
-    void test(const char *molname, const char *forcefield, double stretch = 1)
+    void initMyMol(const char    *molname, 
+                   const Poldata *pd,
+                   ForceComputer *fcomp,
+                   t_inputrec    *inputrec,
+                   MyMol         *mp)
     {
-        int                             maxpot   = 100;
-        int                             nsymm    = 0;
-        const char                     *conf     = (char *)"minimum";
-        std::string                     method, basis;
-        const char                     *jobtype  = (char *)"Opt";
+        int           maxpot   = 100;
+        int           nsymm    = 0;
+        const char   *conf     = (char *)"minimum";
+        std::string   method, basis;
+        const char   *jobtype  = (char *)"Opt";
         
-        std::string                     dataName;
-        auto molprop = new alexandria::MolProp;
-        
-        dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-        double qtot = 0;
+        std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
+        auto          molprop  = new alexandria::MolProp;
+        double        qtot     = 0;
         bool readOK = readBabel(dataName.c_str(), molprop, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
@@ -99,39 +102,39 @@ protected:
                 EXPECT_TRUE(renameAtomTypes(molprop, g2a));
             }
         }
-        MyMol mp_;
-        mp_.Merge(molprop);
+        mp->Merge(molprop);
         // Generate charges and topology
-        t_inputrec      inputrecInstance;
-        t_inputrec     *inputrec   = &inputrecInstance;
         fill_inputrec(inputrec);
-        mp_.setInputrec(inputrec);
+        mp->setInputrec(inputrec);
         
-        // Get poldata
-        auto pd  = getPoldata(forcefield);
-        auto imm = mp_.GenerateTopology(stdout, pd,
+        auto imm = mp->GenerateTopology(stdout, pd,
                                         missingParameters::Error, true);
         EXPECT_TRUE(immStatus::OK == imm);
-        if (immStatus::OK != imm)
-        {
-            fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                    immsg(imm), basis.c_str(), method.c_str());
-            return;
-        }
+        
         // Needed for GenerateCharges
         CommunicationRecord cr;
-        gmx::MDLogger  mdlog {};
-        double rmsToler = 0.00001;
-        auto fcomp = new ForceComputer(pd, rmsToler, 25);
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
         bool qSymm = false;
-        mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, fcomp, mdlog, &cr, alg, qcustom);
-        // For debugging: print all the interactions in the topology
-        // gmx_init_debug(1, gmx::formatString("%s-%s.debug", molname, forcefield).c_str());
-        // mp_.topology()->dump(stdout);
+        mp->symmetrizeCharges(pd, qSymm, nullptr);
+        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom);
+    }
+    
+    void test(const char *molname, const char *forcefield, 
+              bool testPolarizability, double stretch = 1)
+    {
+        // Get poldata
+        auto pd  = getPoldata(forcefield);
         
+        double rmsToler = 0.00001;
+        auto fcomp = new ForceComputer(pd, rmsToler, 25);
+        
+        t_inputrec      inputrecInstance;
+        
+        // The molecule
+        MyMol mp_;
+        initMyMol(molname, pd, fcomp, &inputrecInstance, &mp_);
+   
         
         auto atoms = mp_.atomsConst();
         std::vector<gmx::RVec>            forces, coordinates;
@@ -146,213 +149,247 @@ protected:
             coordinates.push_back(xxx);
             forces.push_back({ 0, 0, 0 });
         }
-        if (stretch != 1)
+        if (testPolarizability)
         {
-            mp_.setX(coordinates);
-        }
-        // This turn comparison of gromacs and ACT on. For debugging
-        // you may want to set this to false.
-        bool       strict    = true;
-        double     shellRmsf;
-        t_commrec *crtmp     = init_commrec();
-        crtmp->nnodes = 1;
-        mp_.calculateEnergyOld(crtmp, &shellRmsf);
-        auto ed = mp_.enerdata();
-        for(int i = 0; i < F_NRE; i++)
-        {
-            if (ed->term[i] != 0)
-            {
-                std::string label = gmx::formatString("%s", interaction_function[i].name);
-                if (stretch != 1)
-                {
-                    label += gmx::formatString("%g", stretch);
-                }
-                label += "_gmx";
-                checker_.checkReal(ed->term[i], label.c_str());
-            }
-        }
-        fcomp->compute(mp_.topology(), &coordinates, &forces, &energies);
-        
-        for(auto &ener: energies)
-        {
-            if (ener.second != 0)
-            {
-                // TODO remove this hack and make a real interactiontypetoftype.
-                int ftype = F_EPOT;
-                if (pd->interactionPresent(ener.first))
-                {
-                    ftype = pd->findForcesConst(ener.first).fType();
-                }
-                std::string label(interaction_function[ftype].name);
-                if (stretch != 1)
-                {
-                    label += gmx::formatString("%g", stretch);
-                }
-                label += "_act";
-                checker_.checkReal(ener.second, label.c_str());
-                if (strict)
-                {
-                    EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
-                }
-            }
-        }
-        const char *xyz[DIM] = { "X", "Y", "Z" };
-        auto mpf = mp_.f();
-        for(size_t i = 0; i < forces.size(); i++)
-        {
-            bool shell = atoms[i].pType() == eptShell;
+            auto qCalc = mp_.qTypeProps(qType::Calc);
+            fcomp->calcPolarizability(mp_.topology(), &coordinates, qCalc);
+            auto alpha = qCalc->polarizabilityTensor();
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+            
             for(int m = 0; m < DIM; m++)
             {
-                if (!shell)
+                for(int n = 0; n < DIM; n++)
                 {
-                    std::string stretchName;
-                    if (stretch != 1)
-                    {
-                        stretchName += gmx::formatString("%g", stretch);
-                    }
-                    checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
-                                                                    atoms[i].ffType().c_str(),
-                                                                    i+1, stretchName.c_str(),
-                                                                    xyz[m]).c_str());
-                    checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
-                                                                       atoms[i].ffType().c_str(),
-                                                                       i+1, stretchName.c_str(),
-                                                                       xyz[m]).c_str());
-                }
-                if (strict)
-                {
-                    EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                    std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
+                    checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
+                                                          label.c_str());
                 }
             }
         }
-        // gmx_stop_debug();
+        else
+        {
+            if (stretch != 1)
+            {
+                mp_.setX(coordinates);
+            }
+            // This turn comparison of gromacs and ACT on. For debugging
+            // you may want to set this to false.
+            bool       strict    = true;
+            double     shellRmsf;
+            t_commrec *crtmp     = init_commrec();
+            crtmp->nnodes = 1;
+            mp_.calculateEnergyOld(crtmp, &shellRmsf);
+            auto ed = mp_.enerdata();
+            for(int i = 0; i < F_NRE; i++)
+            {
+                if (ed->term[i] != 0)
+                {
+                    std::string label = gmx::formatString("%s", interaction_function[i].name);
+                    if (stretch != 1)
+                    {
+                        label += gmx::formatString("%g", stretch);
+                    }
+                    label += "_gmx";
+                    checker_.checkReal(ed->term[i], label.c_str());
+                }
+            }
+            fcomp->compute(mp_.topology(), &coordinates, &forces, &energies);
+            
+            for(auto &ener: energies)
+            {
+                if (ener.second != 0)
+                {
+                    // TODO remove this hack and make a real interactiontypetoftype.
+                    int ftype = F_EPOT;
+                    if (pd->interactionPresent(ener.first))
+                    {
+                        ftype = pd->findForcesConst(ener.first).fType();
+                    }
+                    std::string label(interaction_function[ftype].name);
+                    if (stretch != 1)
+                    {
+                        label += gmx::formatString("%g", stretch);
+                    }
+                    label += "_act";
+                    checker_.checkReal(ener.second, label.c_str());
+                    if (strict)
+                    {
+                        EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
+                    }
+                }
+            }
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+            auto mpf = mp_.f();
+            for(size_t i = 0; i < forces.size(); i++)
+            {
+                bool shell = atoms[i].pType() == eptShell;
+                for(int m = 0; m < DIM; m++)
+                {
+                    if (!shell)
+                    {
+                        std::string stretchName;
+                        if (stretch != 1)
+                        {
+                            stretchName += gmx::formatString("%g", stretch);
+                        }
+                        checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
+                                                                        atoms[i].ffType().c_str(),
+                                                                        i+1, stretchName.c_str(),
+                                                                        xyz[m]).c_str());
+                        checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
+                                                                           atoms[i].ffType().c_str(),
+                                                                           i+1, stretchName.c_str(),
+                                                                           xyz[m]).c_str());
+                    }
+                    if (strict)
+                    {
+                        EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                    }
+                }
+            }
+        }
     }
 };
 
 TEST_F (ForceComputerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g");
+    test("carbon-dioxide.sdf", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, HydrogenChloride)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-g");
+    test("hydrogen-chloride.sdf", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, HydrogenChlorideStretch)
 {
-    test("hydrogen-chloride.sdf", "ACS-g", 0.98);
-    test("hydrogen-chloride.sdf", "ACS-g", 1);
-    test("hydrogen-chloride.sdf", "ACS-g", 1.02);
+    test("hydrogen-chloride.sdf", "ACS-g", false, 0.98);
+    test("hydrogen-chloride.sdf", "ACS-g", false, 1);
+    test("hydrogen-chloride.sdf", "ACS-g", false, 1.02);
 }
 
 TEST_F (ForceComputerTest, Water)
 {
-    test("water-3-oep.log.pdb", "ACS-g");
+    test("water-3-oep.log.pdb", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, WaterStretch)
 {
-    test("water-3-oep.log.pdb", "ACS-g", 0.98);
-    test("water-3-oep.log.pdb", "ACS-g", 1.02);
+    test("water-3-oep.log.pdb", "ACS-g", false, 0.98);
+    test("water-3-oep.log.pdb", "ACS-g", false, 1.02);
 }
 
 TEST_F (ForceComputerTest, Acetone)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g");
+    test("acetone-3-oep.log.pdb", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, AcetoneStretch)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g", 0.98);
-    test("acetone-3-oep.log.pdb", "ACS-g", 1.07);
+    test("acetone-3-oep.log.pdb", "ACS-g", false, 0.98);
+    test("acetone-3-oep.log.pdb", "ACS-g", false, 1.07);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanar)
 {
-    test("acetone-nonplanar.pdb", "ACS-g");
+    test("acetone-nonplanar.pdb", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g");
+    test("uracil.sdf", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, UracilStretch)
 {
-    test("uracil.sdf", "ACS-g", 0.9);
-    test("uracil.sdf", "ACS-g", 1.1);
+    test("uracil.sdf", "ACS-g", false, 0.9);
+    test("uracil.sdf", "ACS-g", false, 1.1);
 }
 
 TEST_F (ForceComputerTest, AcetoneDih)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g-dih");
+    test("acetone-3-oep.log.pdb", "ACS-g-dih", false);
 }
 
 TEST_F (ForceComputerTest, UracilDih)
 {
-    test("uracil.sdf", "ACS-g-dih");
+    test("uracil.sdf", "ACS-g-dih", false);
 }
 
 TEST_F (ForceComputerTest, WaterUB)
 {
 
-    test("water-3-oep.log.pdb", "ACS-g-dih");
-}
-
-TEST_F (ForceComputerTest, CarbonDioxidePol)
-{
-  test("carbon-dioxide.sdf", "ACS-pg");
-}
-
-TEST_F (ForceComputerTest, HydrogenChloridePol)
-{
-    test("hydrogen-chloride.sdf", "ACS-pg");
+    test("water-3-oep.log.pdb", "ACS-g-dih", false);
 }
 
 TEST_F (ForceComputerTest, HydrogenChloridePolStretch)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", 0.98);
-    test("hydrogen-chloride.sdf", "ACS-pg", 1.05);
+    test("hydrogen-chloride.sdf", "ACS-pg", false, 0.98);
+    test("hydrogen-chloride.sdf", "ACS-pg", false, 1.05);
 }
 
 TEST_F (ForceComputerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg");
+    test("water-3-oep.log.pdb", "ACS-pg", false);
 }
 
 TEST_F (ForceComputerTest, WaterPolStretch)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", 0.98);
-    test("water-3-oep.log.pdb", "ACS-pg", 1.04);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 0.98);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 1.04);
 }
 
 TEST_F (ForceComputerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg");
+    test("acetone-3-oep.log.pdb", "ACS-pg", false);
 }
 
 TEST_F (ForceComputerTest, AcetonePolStretch)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", 0.97);
-    test("acetone-3-oep.log.pdb", "ACS-pg", 1.01);
+    test("acetone-3-oep.log.pdb", "ACS-pg", false, 0.97);
+    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1.01);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
 {
-    test("acetone-nonplanar.pdb", "ACS-pg");
+    test("acetone-nonplanar.pdb", "ACS-pg", false);
 }
 
 TEST_F (ForceComputerTest, UracilPol)
 {
-    test("uracil.sdf", "ACS-pg");
+    test("uracil.sdf", "ACS-pg", false);
 }
 
 TEST_F (ForceComputerTest, UracilPolStretch)
 {
-    test("uracil.sdf", "ACS-pg", 0.99);
-    test("uracil.sdf", "ACS-pg", 1.06);
+    test("uracil.sdf", "ACS-pg", false, 0.99);
+    test("uracil.sdf", "ACS-pg", false, 1.06);
+}
+
+TEST_F (ForceComputerTest, CarbonDioxidePolarizability)
+{
+  test("carbon-dioxide.sdf", "ACS-pg", true);
+}
+
+TEST_F (ForceComputerTest, HydrogenChloridePolarizability)
+{
+    test("hydrogen-chloride.sdf", "ACS-pg", true);
+}
+
+TEST_F (ForceComputerTest, WaterPolarizability)
+{
+    test("water-3-oep.log.pdb", "ACS-pg", true);
+}
+
+TEST_F (ForceComputerTest, AcetonePolarizability)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg", true);
+}
+
+TEST_F (ForceComputerTest, UracilPolarizability)
+{
+    test("uracil.sdf", "ACS-pg", true);
 }
 
 }  // namespace
