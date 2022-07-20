@@ -226,13 +226,14 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer(pd);
+            std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom);
+            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
                                 
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();

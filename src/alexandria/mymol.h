@@ -234,8 +234,7 @@ enum class coordSet {
         gmx_enerdata_t                *enerd_          = nullptr;
         t_fcdata                      *fcd_            = nullptr;
         int                            nRealAtoms_     = 0;
-        PaddedVector<gmx::RVec>        f_;
-        PaddedVector<gmx::RVec>        optf_;
+        // PaddedVector<gmx::RVec>        f_;
         // Reference data for devcomputer
         std::vector<double>            ref_frequencies_;
         std::vector<double>            ref_intensities_;
@@ -381,11 +380,6 @@ enum class coordSet {
          */
         void setX(const std::vector<gmx::RVec> &coordinates);
 
-        /*! \brief
-         * Return the force vector of the molecule
-         */
-        const PaddedVector<gmx::RVec> &f() const { return f_; }
-
         //! \return the potential energy of this molecule
         real potentialEnergy() const;
 
@@ -457,20 +451,22 @@ enum class coordSet {
         /*! \brief
          * Generate atomic partial charges
          *
-         * \param[in] pd        Data structure containing atomic properties
-         * \param[in] forceComp Force computer utility
-         * \param[in] fplog     Logger
-         * \param[in] cr        Communication parameters
-         * \param[in] algorithm The algorithm for determining charges,
-         *                      if NONE it is read from the Poldata structure.
-         * \param[in] qcustom   Custom (user-provided) charges
+         * \param[in]  pd        Data structure containing atomic properties
+         * \param[in]  forceComp Force computer utility
+         * \param[in]  fplog     Logger
+         * \param[in]  cr        Communication parameters
+         * \param[in]  algorithm The algorithm for determining charges,
+         *                       if NONE it is read from the Poldata structure.
+         * \param[in]  qcustom   Custom (user-provided) charges
+         * \param[out] forces    This routine will compute energies and forces.
          */
         immStatus GenerateCharges(const Poldata             *pd,
                                   const ForceComputer       *forceComp,
                                   const gmx::MDLogger       &fplog,
                                   const CommunicationRecord *cr,
                                   ChargeGenerationAlgorithm  algorithm,
-                                  const std::vector<double> &qcustom);
+                                  const std::vector<double> &qcustom,
+                                  std::vector<gmx::RVec>    *forces);
         /*! \brief
          * Generate atomic partial charges using EEM or SQE.
          * If shells are present they will be minimized.
@@ -550,18 +546,22 @@ enum class coordSet {
          * This code is maintained only for comparing ACT native energies and forces
          * to the gromacs code. Do not use inproduction code.
          * \param[in]  crtmp         Temporary communication record with one core only.
+         * \param[out] forces        Force array
          * \param[out] shellForceRMS Root mean square force on the shells
          * \return immStatus::OK if everything worked fine, error code otherwise.
          */
-        immStatus calculateEnergyOld(const t_commrec *crtmp,
-                                     real            *shellForceRMS);
+        immStatus calculateEnergyOld(const t_commrec         *crtmp,
+                                     PaddedVector<gmx::RVec> *forces,
+                                     real                    *shellForceRMS);
 
         /*! \brief Calculate the forces and energies
          * For a polarizable model the shell positions are minimized.
-         * \param[in] forceComputer The code to run the calculations.
+         * \param[in]  forceComputer The code to run the calculations.
+         * \param[out] forces        Force array
          * \return The root mean square force on the shells or zero if none
          */
-        double calculateEnergy(const ForceComputer *forceComputer);
+        double calculateEnergy(const ForceComputer    *forceComputer,
+                               std::vector<gmx::RVec> *forces);
 
         /*! \brief Calculate the interaction energies.
          * For a system with multiple fragments this will compute
@@ -572,13 +572,6 @@ enum class coordSet {
          * \return The interaction energy.
          */
         double calculateInteractionEnergy(const ForceComputer *forceComputer);
-
-        /*! \brief
-         * Return the optimized geometry of the molecule from the data file.
-         * The structure returned here corresponds to the one from the input
-         * file.
-         */
-        bool getOptimizedGeometry(rvec *x);
 
         /*! \brief
          * Update internal structures for bondtype due to changes in pd

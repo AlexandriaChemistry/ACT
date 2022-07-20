@@ -266,7 +266,6 @@ static void generateVdwParameterPairs(Poldata *pd)
 static void generateCoulombParameterPairs(Poldata *pd)
 {
     auto forcesCoul = pd->findForces(InteractionType::COULOMB);
-    auto ftypeCoul  = forcesCoul->fType();
     
     // We temporarily store the new parameters here
     ForceFieldParameterList newParams;

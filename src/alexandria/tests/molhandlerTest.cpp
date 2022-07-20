@@ -146,14 +146,15 @@ protected:
         double shellTolerance = 1e-4;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(pd, shellTolerance, shellMaxIter);
-        std::vector<double> qcustom;
-        bool qSymm = false;
+        std::vector<double>    qcustom;
+        bool                   qSymm = false;
+        std::vector<gmx::RVec> forces(mp_.atomsConst().size());
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom);
+        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
         
         // real shellForceRMS;
         // (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
-        mp_.calculateEnergy(forceComp);
+        mp_.calculateEnergy(forceComp, &forces);
         add_energies(pd, &checker_, mp_.energyTerms(), "before");
         
         MolHandler mh;

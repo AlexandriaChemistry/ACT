@@ -547,8 +547,9 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
     }
 }
 
-void TuneForceFieldPrinter::printAtoms(FILE              *fp,
-                                       alexandria::MyMol *mol)
+void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
+                                       alexandria::MyMol      *mol,
+                                       std::vector<gmx::RVec> &forces)
 {
     std::map<qType, std::vector<double> > qQM;
     std::vector<qType>                    typeQM = { 
@@ -577,7 +578,6 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
     int  i       = 0;
     double qtot  = 0;
     auto myatoms = mol->atomsConst();
-    auto force   = mol->f();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
         if (myatoms[j].pType() == eptAtom ||
@@ -601,7 +601,7 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
                     convertFromGromacs(x[j][XX], "pm"),
                     convertFromGromacs(x[j][YY], "pm"),
                     convertFromGromacs(x[j][ZZ], "pm"),
-                    force[j][XX], force[j][YY], force[j][ZZ],
+                    forces[j][XX], forces[j][YY], forces[j][ZZ],
                     qtot);
             i++;
         }
@@ -625,7 +625,7 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
                     convertFromGromacs(x[j][XX], "pm"),
                     convertFromGromacs(x[j][YY], "pm"),
                     convertFromGromacs(x[j][ZZ], "pm"),
-                    force[j][XX], force[j][YY], force[j][ZZ],
+                    forces[j][XX], forces[j][YY], forces[j][ZZ],
                     qtot);
         }
     }
@@ -997,9 +997,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     iMolSelectName(ims));
 
             // Recalculate the atomic charges using the optimized parameters.
-            std::vector<double> dummy;
+            std::vector<double>    dummy;
+            std::vector<gmx::RVec> forces(mol->atomsConst().size());
             mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy);
+                                 ChargeGenerationAlgorithm::NONE, dummy, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd);
@@ -1045,7 +1046,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
 
             // Atomic charges
-            printAtoms(fp, &(*mol));
+            printAtoms(fp, &(*mol), forces);
             // Energies
             std::vector<std::string> tcout;
             printEnergyForces(&tcout, forceComp, atomenergy,

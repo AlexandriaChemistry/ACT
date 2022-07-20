@@ -333,6 +333,7 @@ int gentop(int argc, char *argv[])
                                  false);
 
     auto forceComp = new ForceComputer(&pd);
+    std::vector<gmx::RVec> forces(mymol.atomsConst().size());
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
     {
@@ -356,7 +357,7 @@ int gentop(int argc, char *argv[])
         {
             alg = nameToChargeGenerationAlgorithm(qqm);
         }
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq);
+        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &forces);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)

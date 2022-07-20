@@ -226,13 +226,14 @@ protected:
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
         auto forceComp = new ForceComputer(pd);
+        std::vector<gmx::RVec> forces(mp_.atomsConst().size());
         auto alg = ChargeGenerationAlgorithm::NONE;
         if (!qcustom.empty())
         {
             alg = ChargeGenerationAlgorithm::Custom;
         }
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom);
+        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
         
         std::vector<double> qtotValues;
         auto myatoms = mp_.atomsConst();
@@ -270,7 +271,7 @@ protected:
         double rmsToler = 0.00001;
         auto fcomp = new ForceComputer(pd, rmsToler, 25);
 
-        mp_.calculateEnergy(fcomp);
+        mp_.calculateEnergy(fcomp, &forces);
         if (mp_.fragmentHandler()->topologies().size() > 1)
         {
             auto einter = mp_.calculateInteractionEnergy(fcomp);

@@ -158,8 +158,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, 0.0, 100);
             std::vector<double> qcustom;
+            std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
-                                ChargeGenerationAlgorithm::ESP, qcustom);
+                                ChargeGenerationAlgorithm::ESP, qcustom, &forces);
 
             std::vector<double> qtotValues;
             auto atoms = mp_.atomsConst();

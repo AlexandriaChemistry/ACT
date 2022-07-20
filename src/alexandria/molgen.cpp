@@ -625,12 +625,13 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<double> dummy;
+                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
                 imm = mymol.GenerateCharges(pd,
                                             forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy);
+                                            dummy, &forces);
 
                 if (immStatus::OK != imm)
                 {
@@ -837,12 +838,13 @@ size_t MolGen::Read(FILE            *fp,
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, 0.0, 100);
+                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
                 imm = mymol.GenerateCharges(pd,
                                             forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy);
+                                            dummy, &forces);
             }
             if (immStatus::OK == imm)
             {

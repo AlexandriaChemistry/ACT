@@ -463,14 +463,21 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
                 j += 1;
             }
         }
+        std::vector<gmx::RVec> forces(myatoms.size());
         if (forceComp)
         {
-            (void) calculateEnergy(forceComp);
+            (void) calculateEnergy(forceComp, &forces);
         }
         else
         {
             real shellForceRMS;
-            calculateEnergyOld(crtmp, &shellForceRMS);
+            PaddedVector<gmx::RVec> gmxforces;
+            gmxforces.resizeWithPadding(myatoms.size());
+            calculateEnergyOld(crtmp, &gmxforces, &shellForceRMS);
+            for(size_t i = 0; i < myatoms.size(); i++)
+            {
+                copy_rvec(gmxforces[i], forces[i]);
+            }
         }
         if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
         {
@@ -526,7 +533,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
                     }
                     for(int m = 0; m < DIM; m++)
                     {
-                        thisForce.push_back({ fff[ifff][m], f_[i][m] });
+                        thisForce.push_back({ fff[ifff][m], forces[i][m] });
                     }
                     ifff += 1;
                 }
@@ -1472,17 +1479,17 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateEnergy(const ForceComputer *forceComputer)
+double MyMol::calculateEnergy(const ForceComputer    *forceComputer,
+                              std::vector<gmx::RVec> *forces)
 {
     int natom = atoms()->size();
-    std::vector<gmx::RVec> forces(natom);
     std::vector<gmx::RVec> myx(natom);
     for (int i = 0; i < natom; i++)
     {
         copy_rvec(state_->x[i], myx[i]);
-        clear_rvec(forces[i]);
+        clear_rvec((*forces)[i]);
     }
-    auto rmsf = forceComputer->compute(topology_, &myx, &forces, &energies_);
+    auto rmsf = forceComputer->compute(topology_, &myx, forces, &energies_);
     if (rmsf > forceComputer->rmsForce() && debug)
     {
         fprintf(debug, "Shell optimization did not converge for %s. RMS force is %g (tolerance %g)\n",
@@ -1491,7 +1498,6 @@ double MyMol::calculateEnergy(const ForceComputer *forceComputer)
     for (int i = 0; i < natom; i++)
     {
         copy_rvec(myx[i], state_->x[i]);
-        copy_rvec(forces[i], f_[i]);
     }
     for (const auto &ee : energies_)
     {
@@ -1537,8 +1543,9 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
     return Einter;
 }
 
-immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
-                                    real            *shellForceRMS)
+immStatus MyMol::calculateEnergyOld(const t_commrec         *crtmp,
+                                    PaddedVector<gmx::RVec> *forces,
+                                    real                    *shellForceRMS)
 {
     auto          imm         = immStatus::OK;
     unsigned long force_flags = ~0;
@@ -1557,7 +1564,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
     constructVsitesGlobal(*mtop_, state_->x);
     
     // Set force and energy to zero
-    reset_f_e(mtop_->natoms, &f_, enerd_);
+    reset_f_e(mtop_->natoms, forces, enerd_);
     
     if (nullptr != shellfc_)
     {
@@ -1573,7 +1580,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
                                                  0, inputrec_,
                                                  true, force_flags, ltop_,
                                                  enerd_, fcd_, state_,
-                                                 f_.arrayRefWithPadding(), force_vir, mdatoms,
+                                                 forces->arrayRefWithPadding(), force_vir, mdatoms,
                                                  &nrnb_, wcycle_, nullptr,
                                                  &(mtop_->groups), shellfc_,
                                                  fr_, t, mu_tot, vsite_->get());
@@ -1598,7 +1605,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
             fprintf(debug, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
                     inputrec_->niter, getMolname().c_str(),
                     *shellForceRMS);
-            pr_rvecs(debug, 0, "f", f_.rvec_array(), mtop_->natoms);
+            pr_rvecs(debug, 0, "f", forces->rvec_array(), mtop_->natoms);
             imm = immStatus::ShellMinimization;
         }
     }
@@ -1608,7 +1615,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
-                 f_.arrayRefWithPadding(), force_vir, mdatoms,
+                 forces->arrayRefWithPadding(), force_vir, mdatoms,
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
@@ -1654,13 +1661,14 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
     bool      converged = false;
     double    EemRms    = 0;
     auto      natom     = atomsConst().size();
+    std::vector<gmx::RVec> forces(natom);
     do
     {
         if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
                                                        state_->x, pd, 
                                                        atoms()))
         {
-            (void) calculateEnergy(forceComp);
+            (void) calculateEnergy(forceComp, &forces);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1701,7 +1709,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  ChargeGenerationAlgorithm  algorithm,
-                                 const std::vector<double> &qcustom)
+                                 const std::vector<double> &qcustom,
+                                 std::vector<gmx::RVec>    *forces)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1712,16 +1721,13 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     {
         GenerateGromacs(mdlog, cr, nullptr, iChargeType);
     }
-    if (f_.empty())
-    {
-        f_.resizeWithPadding(state_->natoms);
-    }
     if (backupCoordinates_[coordSet::Original].empty())
     {
         backupCoordinates(coordSet::Original);
     }
     // TODO check whether this needed
     restoreCoordinates(coordSet::Original);
+    auto myatoms = atoms();
     if (algorithm == ChargeGenerationAlgorithm::Custom)
     {
         GMX_RELEASE_ASSERT(atomsConst().size() == qcustom.size(),
@@ -1732,7 +1738,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         algorithm = pd->chargeGenerationAlgorithm();
         // Check whether there are free charges
         bool allFixed = true;
-        auto myatoms = atoms();
         for (size_t i = 0; i < myatoms->size(); i++)
         {
             auto atype = (*myatoms)[i].ffType();
@@ -1757,7 +1762,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 fprintf(debug, "WARNING! Using fixed charges for %s!\n",
                         getMolname().c_str());
             }
-            auto myatoms = atoms();
             for (size_t i = 0; i < myatoms->size(); i++)
             {
                 auto atype = (*myatoms)[i].ffType();
@@ -1765,12 +1769,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 auto qval  = ptype->parameterConst("charge").value();
                 (*myatoms)[i].setCharge(qval);
             }
-            // Copy charges to topology
-            // TODO check whether needed
-            // topology_->setAtoms(myatoms);
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            (void) calculateEnergy(forceComp);
+            (void) calculateEnergy(forceComp, forces);
             if (haveShells())
             {
                 auto qcalc = qTypeProps(qType::Calc);
@@ -1789,7 +1790,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 { ChargeGenerationAlgorithm::Hirshfeld, qType::Hirshfeld },
                 { ChargeGenerationAlgorithm::Mulliken, qType::Mulliken }
             };
-            auto myatoms = atoms();
             for (auto exper : experimentConst())
             {
                 int i = 0;
@@ -1813,13 +1813,11 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         }
     case ChargeGenerationAlgorithm::Custom:
         {
-            auto myatoms = atoms();
             for (size_t i = 0; i < myatoms->size(); i++)
             {
                 (*myatoms)[i].setCharge(qcustom[i]);
             }
-            // Copy charges to topology
-            // topology_->setAtoms(myatoms);
+
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::ESP:
@@ -1840,7 +1838,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
             }
-            auto myatoms = atoms();
             do
             {
                 auto qq = qcalc->charge();
@@ -1853,7 +1850,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     (*myatoms)[i].setCharge(qq[i]);
                 }
                 // Copy charges to topology
-                chi2[cur] = calculateEnergy(forceComp);
+                chi2[cur] = calculateEnergy(forceComp, forces);
                 qcalc->setX(state_->x);
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
                 qcalc->qgenResp()->calcPot(pd->getEpsilonR());
@@ -1884,26 +1881,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         break;
     }
     return imm;
-}
-
-bool MyMol::getOptimizedGeometry(rvec *x)
-{
-    bool    bopt = false;
-
-    for (auto &ei : experimentConst())
-    {
-        if (JobType::OPT == ei.getJobtype())
-        {
-            const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
-            for (size_t i = 0; i < xxx.size(); i++)
-            {
-                copy_rvec(xxx[i], x[i]);
-            }
-            bopt = true;
-            break;
-        }
-    }
-    return bopt;
 }
 
 void MyMol::backupCoordinates(coordSet cs)
@@ -2536,7 +2513,8 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
         auto qgr   = qTypeProps(qType::Calc)->qgenResp();
         qgr->updateAtomCharges(atomsConst());
         qgr->updateAtomCoords(state_->x);
-        (void) calculateEnergy(forceComp);
+        std::vector<gmx::RVec> forces(atomsConst().size());
+        (void) calculateEnergy(forceComp, &forces);
         qgr->calcPot(1.0);
         qgr->plotLsq(oenv, espcorr);
     }

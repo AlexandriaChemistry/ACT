@@ -63,24 +63,26 @@ double MolHandler::computeHessian(      MyMol                  *mol,
     std::vector<double> fneg;
     fneg.resize(DIM*atomIndex.size(), 0.0);
     
-    (void) mol->calculateEnergy(forceComp);
-    double epot0  = mol->enerd_->term[F_EPOT];
-
-    // Store central force vector
+    const auto &atoms    = mol->atomsConst();
+    std::vector<gmx::RVec> fzero(atoms.size());
+    (void) mol->calculateEnergy(forceComp, &fzero);
     forceZero->clear();
     for(auto &atom : atomIndex)
     {
         for(int m = 0; m < DIM; m++)
         {
-            forceZero->push_back(mol->f_[atom][m]);
+            forceZero->push_back(fzero[atom][m]);
         }
     }
-    const auto &atoms    = mol->atomsConst();
+    
+    double epot0  = mol->enerd_->term[F_EPOT];
+
     double      stepSize = 1e-6; // 0.001 pm
     if (dpdq)
     {
         dpdq->clear();
     }
+    std::vector<gmx::RVec> forces(atoms.size());
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -91,7 +93,7 @@ double MolHandler::computeHessian(      MyMol                  *mol,
             for(int delta = 0; delta <= 1; delta++)
             {
                 mol->state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
-                (void) mol->calculateEnergy(forceComp);
+                (void) mol->calculateEnergy(forceComp, &forces);
                 if (dpdq)
                 {
                     // To compute dipole we need to take shells into account as well!
@@ -108,7 +110,7 @@ double MolHandler::computeHessian(      MyMol                  *mol,
                         for (int d = 0; d < DIM; d++)
                         {
                             int row   = aj*DIM+d;
-                            fneg[row] = mol->f_[atomJ][d];
+                            fneg[row] = forces[atomJ][d];
                         }
                     }
                 }
@@ -122,7 +124,7 @@ double MolHandler::computeHessian(      MyMol                  *mol,
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(mol->f_[atomJ][d]-fneg[row])/(2*stepSize);
+                    double value = -(forces[atomJ][d]-fneg[row])/(2*stepSize);
                     if (false && debug)
                     {
                         fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
@@ -141,7 +143,7 @@ double MolHandler::computeHessian(      MyMol                  *mol,
             dpdq->push_back(dpdq1);
         }
     }
-    (void) mol->calculateEnergy(forceComp);
+    (void) mol->calculateEnergy(forceComp, &fzero);
 
     return epot0;
 }
@@ -364,10 +366,11 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
         }
     }
     // Create Hessian, just containings atoms, not shells
-    MatrixWrapper       Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
-    std::vector<double> f0, f00;
-    double              epot0     = 0;
-    bool                firstStep = true;
+    MatrixWrapper          Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
+    std::vector<gmx::RVec> forces(myatoms.size());
+    std::vector<double>    f0, f00;
+    double                 epot0     = 0;
+    bool                   firstStep = true;
     // Now start the minimization loop.
     if (logFile)
     {
@@ -418,12 +421,12 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
         }
                 
         // One more energy and force calculation with the new coordinates
-        (void) mol->calculateEnergy(forceComp);
+        (void) mol->calculateEnergy(forceComp, &forces);
         double msAtomForce  = 0;
         for(size_t kk = 0; kk < theAtoms.size(); kk++)
         {
             int atomI = theAtoms[kk];
-            msAtomForce  += iprod(mol->f_[atomI], mol->f_[atomI]);
+            msAtomForce  += iprod(forces[atomI], forces[atomI]);
         }
         msAtomForce /= theAtoms.size();
         converged = msAtomForce <= msForceToler;
@@ -438,7 +441,7 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
             for(size_t kk = 0; kk < mol->topology()->nAtoms(); kk++)
             {
                 fprintf(debug, "f[%2zu] =  %10g  %10g  %10g x[%2zu] = %10g  %10g  %10g\n", kk,
-                        mol->f_[kk][XX], mol->f_[kk][YY], mol->f_[kk][ZZ], kk,
+                        forces[kk][XX], forces[kk][YY], forces[kk][ZZ], kk,
                         mol->x()[kk][XX], mol->x()[kk][YY], mol->x()[kk][ZZ]);
             }
             for(int i = 0; i < F_NRE; i++)
@@ -453,7 +456,7 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
     }
     while (!converged && (myIter < maxIter || 0 == maxIter));
     // Re-compute the energy one last time.
-    (void) mol->calculateEnergy(forceComp);
+    (void) mol->calculateEnergy(forceComp, &forces);
     mol->backupCoordinates(coordSet::Minimized);
     return myIter;
 }

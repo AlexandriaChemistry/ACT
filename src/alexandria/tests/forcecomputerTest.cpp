@@ -117,7 +117,8 @@ protected:
         std::vector<double> qcustom;
         bool qSymm = false;
         mp->symmetrizeCharges(pd, qSymm, nullptr);
-        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom);
+        std::vector<gmx::RVec> forces(mp->atomsConst().size());
+        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &forces);
     }
     
     void test(const char *molname, const char *forcefield, 
@@ -178,7 +179,9 @@ protected:
             double     shellRmsf;
             t_commrec *crtmp     = init_commrec();
             crtmp->nnodes = 1;
-            mp_.calculateEnergyOld(crtmp, &shellRmsf);
+            PaddedVector<gmx::RVec> gmxforces;
+            gmxforces.resizeWithPadding(mp_.atomsConst().size());
+            mp_.calculateEnergyOld(crtmp, &gmxforces, &shellRmsf);
             auto ed = mp_.enerdata();
             for(int i = 0; i < F_NRE; i++)
             {
@@ -219,7 +222,6 @@ protected:
                 }
             }
             const char *xyz[DIM] = { "X", "Y", "Z" };
-            auto mpf = mp_.f();
             for(size_t i = 0; i < forces.size(); i++)
             {
                 bool shell = atoms[i].pType() == eptShell;
@@ -232,10 +234,10 @@ protected:
                         {
                             stretchName += gmx::formatString("%g", stretch);
                         }
-                        checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
-                                                                        atoms[i].ffType().c_str(),
-                                                                        i+1, stretchName.c_str(),
-                                                                        xyz[m]).c_str());
+                        checker_.checkReal(gmxforces[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
+                                                                              atoms[i].ffType().c_str(),
+                                                                              i+1, stretchName.c_str(),
+                                                                              xyz[m]).c_str());
                         checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
                                                                            atoms[i].ffType().c_str(),
                                                                            i+1, stretchName.c_str(),
@@ -243,7 +245,7 @@ protected:
                     }
                     if (strict)
                     {
-                        EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                        EXPECT_TRUE(std::abs(forces[i][m]-gmxforces[i][m]) < 1e-3);
                     }
                 }
             }

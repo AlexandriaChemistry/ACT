@@ -99,8 +99,9 @@ using qtStats = std::map<qType, gmx_stats>;
                                    qtStats             *lsq_alpha);
 
         //! \brief And the atoms.
-        void printAtoms(FILE              *fp,
-                        alexandria::MyMol *mol);
+        void printAtoms(FILE                   *fp,
+                        alexandria::MyMol      *mol,
+                        std::vector<gmx::RVec> &forces);
 
         //! \brief do part of the printing, add to statistics
         void printEnergyForces(std::vector<std::string> *tcout,
