@@ -91,594 +91,598 @@ enum class coordSet {
     Minimized
 };
 
-    /*! \brief
-     * Contains molecular properties from a range of sources.
-     * Overloads the regular molprop and adds a lot of functionality.
-     * For one thing, it can generate molprop contents from a coordinate
-     * file if needed.
-     *
-     * \inpublicapi
-     * \ingroup module_alexandria
+
+/*! \brief
+ * Contains molecular properties from a range of sources.
+ * Overloads the regular molprop and adds a lot of functionality.
+ * For one thing, it can generate molprop contents from a coordinate
+ * file if needed.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MyMol : public MolProp
+{
+private:
+    // GromacsStuff
+    t_excls                         *excls_          = nullptr;
+    std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
+    std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
+    std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
+    bool                             gromacsGenerated_ = false;
+    gpp_atomtype_t                   gromppAtomtype_;
+    //! GROMACS state variable
+    t_state                         *state_      = nullptr;
+    //! GROMACS force record
+    t_forcerec                      *fr_         = nullptr;
+   //! GROMACS style atoms structure
+    t_atoms                         *atoms_;
+    //! GROMACS symbol table
+    t_symtab                        *symtab_         = nullptr;
+    //! GROMACS Topology etc.
+    gmx_mtop_t                      *mtop_           = nullptr;
+    gmx_localtop_t                  *ltop_           = nullptr;
+    t_inputrec                      *inputrec_       = nullptr;
+    gmx_enerdata_t                  *enerd_          = nullptr;
+    t_fcdata                        *fcd_            = nullptr;
+
+    // The energy storage
+    std::map<InteractionType, double> energies_;
+    // Optimized coordinates from the input.
+    std::vector<gmx::RVec>           optimizedCoordinates_;
+    // Older stuff
+    bool                             bHaveShells_    = false;
+    bool                             bHaveVSites_    = false;
+    //! Tolerance for converged SQE or EEM calculations
+    double                           qTolerance_     = 1e-6;
+    //! Max iterations for SQE or EEM calculations
+    int                              maxQiter_       = 5;
+    //! How to renumber input atom numbers to numbers with shells
+    std::vector<int>                 shellRenumber_;
+    //! This points to the atom indices before shells were added
+    std::map<int, int>               originalAtomIndex_;
+    //! The job type corresponding to the coordinates
+    JobType                          myJobType_        = JobType::UNKNOWN;
+    //! Map of charge type dependent properties
+    std::map<qType, QtypeProps>      qProps_;
+    //! Center of nuclear charge
+    gmx::RVec                        CenterOfCharge_ = { 0, 0, 0 };
+    //! Function that returns true if a molecule is symmetric
+    bool IsSymmetric(real toler) const;
+    //! Map of vectors to back up coordinates
+    std::map<coordSet, std::vector<gmx::RVec> > backupCoordinates_;
+    /*! Make a back up of coordinates
+     * \param[in] cs Which data set to back up to
      */
-    class MyMol : public MolProp
-    {
-    private:
-        // Now class MolHandler can access private members of MyMol
-        friend class MolHandler;
-        // The energy storage
-        std::map<InteractionType, double> energies_;
-        // Older stuff
-        int                             *cgnr_           = nullptr;
-        bool                             bHaveShells_    = false;
-        bool                             bHaveVSites_    = false;
-        bool                             bNeedVsites_    = false;
-        //! Tolerance for converged SQE or EEM calculations
-        double                           qTolerance_     = 1e-6;
-        //! Max iterations for SQE or EEM calculations
-        int                              maxQiter_       = 5;
-        t_excls                         *excls_          = nullptr;
-        std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
-        std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
-        std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
-        //! How to renumber input atom numbers to numbers with shells
-        std::vector<int>                 shellRenumber_;
-        //! This points to the atom indices before shells were added
-        std::map<int, int>               originalAtomIndex_;
-        bool                             gromacsGenerated_ = false;
-        gpp_atomtype_t                   gromppAtomtype_;
-        //! The job type corresponding to the coordinates
-        JobType                          myJobType_        = JobType::UNKNOWN;
-        //! Map of charge type dependent properties
-        std::map<qType, QtypeProps>           qProps_;
-        //! Center of nuclear charge
-        rvec                      CenterOfCharge_ = { 0 };
-        //! GROMACS state variable
-        t_state                  *state_      = nullptr;
-        //! GROMACS force record
-        t_forcerec               *fr_         = nullptr;
-        //! Function that returns true if a molecule is symmetric
-        bool             IsSymmetric(real toler);
-        //! Map of vectors to back up coordinates
-        std::map<coordSet, std::vector<gmx::RVec> > backupCoordinates_;
-        /*! Make a back up of coordinates
-         * \param[in] cs Which data set to back up to
-         */
-        void backupCoordinates(coordSet cs);
-        /*! \brief
-         * Generate Atoms based on quantum calculation with specified level of theory.
-         * If the requested level of theory is not present, another
-         * level can be tried if the strict flag is false.
-         * \param[in]  pd     Force field data
-         * \param[out] atoms  The structure to update
-         * \return The status
-         */
-        immStatus GenerateAtoms(const Poldata     *pd,
-                                t_atoms           *atoms);
-
-        /*! \brief
-         * Add vsites on bonds to hos bond shell particles
-         *
-         * \param[in]  fp    File to write (debug) information to
-         * \param[in]  pd    Data structure containing atomic properties
-         * \param[out] atoms Structure to modify with new particles.
-         */
-        void addBondVsites(FILE          *fp,
-                           const Poldata *pd,
-                           t_atoms       *atoms);
-
-        /*! \brief
-         * Add shell particles
-         *
-         * \param[in]  fp    File to write (debug) information to
-         * \param[in]  pd    Data structure containing atomic properties
-         * \param[out] atoms Structure to modify with new particles.
-         */
-        void addShells(FILE          *fp,
+    /*! Check whether a coordinate set is present
+     * \param[in] cs The coordinate set wanted
+     * \return Whether or not it is there
+     */
+    bool hasCoordinateSet(coordSet cs) const { return backupCoordinates_.find(cs) != backupCoordinates_.end(); }
+    
+    /*! Restored backed up coordinates
+     * \param[in] cs Which data set to restore from
+     */
+    void restoreCoordinates(coordSet cs);
+    
+    void backupCoordinates(coordSet cs);
+    /*! \brief
+     * Generate Atoms based on quantum calculation with specified level of theory.
+     * If the requested level of theory is not present, another
+     * level can be tried if the strict flag is false.
+     * \param[in]  pd     Force field data
+     * \param[out] atoms  The structure to update
+     * \return The status
+     */
+    immStatus GenerateAtoms(const Poldata     *pd,
+                            t_atoms           *atoms);
+    
+    /*! \brief
+     * Add vsites on bonds to hos bond shell particles
+     *
+     * \param[in]  fp    File to write (debug) information to
+     * \param[in]  pd    Data structure containing atomic properties
+     * \param[out] atoms Structure to modify with new particles.
+     */
+    void addBondVsites(FILE          *fp,
                        const Poldata *pd,
                        t_atoms       *atoms);
+    
+    /*! \brief
+     * Add shell particles
+     *
+     * \param[in]  fp    File to write (debug) information to
+     * \param[in]  pd    Data structure containing atomic properties
+     * \param[out] atoms Structure to modify with new particles.
+     */
+    void addShells(FILE          *fp,
+                   const Poldata *pd,
+                   t_atoms       *atoms);
+    
+    /*! \brief
+     * Check whether atom types exist in the force field
+     * also check whether the multiplicity is correct.
+     *
+     * \param[in] pd    The force field structure
+     * \param[in] atoms The structure to check
+     * \return status code.
+     */
+    immStatus checkAtoms(const Poldata *pd,
+                         const t_atoms *atoms);
+    
+    /*! \brief
+     * Return true if atom type needs to have virtual site.
+     *
+     * \param[in] atype  Atom type
+     * \param[in] pd     Data structure containing atomic properties
+     * \return true if vsite is needed
+     */
+    bool IsVsiteNeeded(std::string        atype,
+                       const Poldata     *pd) const;
+    
+    /*! \brief
+     * Find the atoms inside the molcule needed to construct the inplane virtual sites.
+     *
+     * \param[in]  ca     The index of the central atom
+     * \param[out] atoms  Data structure containing atomic properties
+     */
+    void findInPlaneAtoms(int ca, std::vector<int> *atoms) const;
+    
+    /*! \brief
+     * Find the atoms inside the molcule needed to construct the out of plane virtual sites.
+     *
+     * \param[in]  ca     The index of the central atom
+     * \param[out] atoms  Data structure containing atomic properties
+     */
+    void findOutPlaneAtoms(int ca, std::vector<int> *atoms) const;
+    
+    /*! \brief extract frequencies and intensities if present.
+     * This will use the optimized structure only.
+     */
+    void getHarmonics();
+    
+    //! Energy terms for this compounds
+    std::map<MolPropObservable, double> energy_;
+    //! Molecular Topology
+    Topology                      *topology_;
+    int                            nRealAtoms_     = 0;
+ 
+    // Reference data for devcomputer
+    std::vector<double>            ref_frequencies_;
+    std::vector<double>            ref_intensities_;
+    t_nrnb                         nrnb_;
+    gmx_wallcycle_t                wcycle_;
+    gmx_shellfc_t                 *shellfc_        = nullptr;
+    std::vector<int>               symmetric_charges_;
+    std::vector<std::string>       error_messages_;
+    eSupport                       eSupp_         = eSupport::Local;
+    //! Structure to manage charge generation
+    FragmentHandler               *fraghandler_   = nullptr;
+    
+public:
 
-        /*! \brief
-         * Check whether atom types exist in the force field
-         * also check whether the multiplicity is correct.
-         *
-         * \param[in] pd    The force field structure
-         * \param[in] atoms The structure to check
-         * \return status code.
-         */
-        immStatus checkAtoms(const Poldata *pd,
-                             const t_atoms *atoms);
-
-        /*! \brief
-         * Return true if atom type needs to have virtual site.
-         *
-         * \param[in] atype  Atom type
-         * \param[in] pd     Data structure containing atomic properties
-         * \return true if vsite is needed
-         */
-        bool IsVsiteNeeded(std::string        atype,
-                           const Poldata     *pd);
-
-        /*! \brief
-         * Find the atoms inside the molcule needed to construct the inplane virtual sites.
-         *
-         * \param[in]  ca     The index of the central atom
-         * \param[out] atoms  Data structure containing atomic properties
-         */
-        void findInPlaneAtoms(int ca, std::vector<int> &atoms);
-
-        /*! \brief
-         * Find the atoms inside the molcule needed to construct the out of plane virtual sites.
-         *
-         * \param[in]  ca     The index of the central atom
-         * \param[out] atoms  Data structure containing atomic properties
-         */
-        void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
-
-        /*! \brief extract frequencies and intensities if present.
-         * This will use the optimized structure only.
-         */
-        void getHarmonics();
-        
-        //! Energy terms for this compounds
-        std::map<MolPropObservable, double> energy_;
-        //! Molecular Topology
-        Topology                      *topology_;
-        //! GROMACS style atoms structure
-        t_atoms                       *atoms_;
-        //! GROMACS symbol table
-        t_symtab                      *symtab_         = nullptr;
-        //! GROMACS Topology etc.
-        gmx_mtop_t                    *mtop_           = nullptr;
-        gmx_localtop_t                *ltop_           = nullptr;
-        t_inputrec                    *inputrec_       = nullptr;
-        gmx_enerdata_t                *enerd_          = nullptr;
-        t_fcdata                      *fcd_            = nullptr;
-        int                            nRealAtoms_     = 0;
-        // PaddedVector<gmx::RVec>        f_;
-        // Reference data for devcomputer
-        std::vector<double>            ref_frequencies_;
-        std::vector<double>            ref_intensities_;
-        t_nrnb                         nrnb_;
-        gmx_wallcycle_t                wcycle_;
-        gmx_shellfc_t                 *shellfc_        = nullptr;
-        std::vector<int>               symmetric_charges_;
-        std::vector<std::string>       error_messages_;
-        eSupport                       eSupp_         = eSupport::Local;
-        //! Structure to manage charge generation
-        FragmentHandler               *fraghandler_   = nullptr;
-   public:
-
-        /*! \brief
-         * Constructor
-         */
-        MyMol();
-
-        iMolSelect                     dataset_type_   = iMolSelect::Ignore;
-
-        iMolSelect datasetType() const { return dataset_type_; }
-
-        void set_datasetType(iMolSelect dataset_type) 
+    //! \return a GROMACS style array with energy terms
+    const real *energyTerms() const;
+    /*! \brief
+     * Return the coordinate vector of the molecule in GROMACS format
+     */
+    const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+    
+    /*! \brief
+     * Constructor
+     */
+    MyMol();
+    
+    iMolSelect                     dataset_type_   = iMolSelect::Ignore;
+    
+    iMolSelect datasetType() const { return dataset_type_; }
+    
+    void set_datasetType(iMolSelect dataset_type) 
+    {
+        dataset_type_ = dataset_type;
+    }
+    
+    //! \return the job type corresponding to coordinates
+    const JobType &jobType() const { return myJobType_; }
+    
+    //! \return true if shells are present
+    bool haveShells() const { return bHaveShells_; }
+    
+    //! \return whether this is a linear molecule
+    bool linearMolecule() const;
+    
+    //! \return how this compound is supported on this processor
+    eSupport support() const { return eSupp_; }
+    
+    /*! \brief Set the support type
+     * \param[in] esup The support type
+     */
+    void setSupport(eSupport esup) { eSupp_ = esup; }
+    
+    //! \return the number of real atoms, i.e. not shells or vsites
+    int nRealAtoms() const { return nRealAtoms_; }
+    
+    //! \return the GROMACS energy data
+    const gmx_enerdata_t *enerdata() const { return enerd_; }
+    
+    /*! Return an energy component
+     * \param[in]  mpo  The particular term that is requested
+     * \param[out] ener The value found
+     * \return whether or not the energy is found
+     */
+    bool energy(MolPropObservable mpo, double *ener) const 
+    {
+        if (energy_.find(mpo) == energy_.end())
         {
-            dataset_type_ = dataset_type;
+            return false;
         }
+        *ener = energy_.find(mpo)->second;
+        return true;
+    }
+    
+    /*! \brief Compute energies and forces for all structures
+     * The optimized structure as well as all the excited
+     * structures will be used to compute the energy and
+     * forces. Store the results in vectors containing two
+     * doubles, first the reference, then the calculated one.
+     * Forces are stored as a vector of structures and then a
+     * vector of atoms. Energies are stored as a 1D vector pair.
+     * All energy components are stored as a vector of
+     * reference energies paired with a map of ACT energy components. The integer
+     * index points into the gromacs energy types.
+     * \param[in]  forceComp  The force computer utility
+     * \param[out] forceMap   The forces
+     * \param[out] enerMap    The potential energies
+     * \param[out] enerAllMap The energy components for each calculation
+     */
+    void forceEnergyMaps(const ForceComputer                                     *forceComp,
+                         std::vector<std::vector<std::pair<double, double> > >   *forceMap,
+                         std::vector<std::pair<double, double> >                 *enerMap,
+                         std::vector<std::pair<double, std::map<int, double> > > *enerAllMap);
+    
+    //! Return the reference frequencies collected earlier
+    const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
+    
+    //! Return the reference intensities collected earlier
+    const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
+    
+    //! \return the center of charge
+    const rvec &centerOfCharge() const { return CenterOfCharge_; }
+    
+    /*! \brief Return QtypeProps for a charge type
+     * \param[in] qt The charge type, e.g. qType::CM5
+     * \return the corresponding structure or nullptr 
+     */
+    QtypeProps *qTypeProps(qType qt);
+    
+    /*! \brief Return QtypeProps for a charge type
+     * \param[in] qt The charge type, e.g. qType::CM5
+     * \return the corresponding structure or nullptr 
+     */
+    const QtypeProps *qTypeProps(qType qt) const;
+    
+    const std::vector<std::string> &errors() const {return error_messages_;}
+    
+    /*! \brief
+     * Add the screening factors of the distributed charge to atom structure
+     *
+     * \param[in] pd     Data structure containing atomic properties
+     * \param[out] atoms Structure to fill with force field data
+     */
+    immStatus zetaToAtoms(const Poldata *pd,
+                          t_atoms       *atoms);
+    
+    /*! \brief
+     * Return the coordinate vector of the molecule
+     */
+    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
 
-        //! \return the job type corresponding to coordinates
-        const JobType &jobType() const { return myJobType_; }
-
-        //! \return true if shells are present
-        bool haveShells() const { return bHaveShells_; }
-
-        //! \return whether this is a linear molecule
-        bool linearMolecule() const;
-        
-        //! \return how this compound is supported on this processor
-        eSupport support() const { return eSupp_; }
-
-        /*! \brief Set the support type
-         * \param[in] esup The support type
-         */
-        void setSupport(eSupport esup) { eSupp_ = esup; }
-        
-        //! \return the number of real atoms, i.e. not shells or vsites
-        int nRealAtoms() const { return nRealAtoms_; }
-
-        /*! Check whether a coordinate set is present
-         * \param[in] cs The coordinate set wanted
-         * \return Whether or not it is there
-         */
-        bool hasCoordinateSet(coordSet cs) const { return backupCoordinates_.find(cs) != backupCoordinates_.end(); }
-        
-        /*! Return a coordinate set. Will throw when the coordinate set is not present.
-         * \param[in] cs The coordinate set wanted
-         */
-        const std::vector<gmx::RVec> &coordinateSet(coordSet cs) const { return backupCoordinates_.find(cs)->second; }
-
-        /*! Restored backed up coordinates
-         * \param[in] cs Which data set to restore from
-         */
-        void restoreCoordinates(coordSet cs);
-
-        //! \return the GROMACS energy data
-        const gmx_enerdata_t *enerdata() const { return enerd_; }
-        
-        /*! Return an energy component
-         * \param[in]  mpo  The particular term that is requested
-         * \param[out] ener The value found
-         * \return whether or not the energy is found
-         */
-        bool energy(MolPropObservable mpo, double *ener) const 
-        {
-            if (energy_.find(mpo) == energy_.end())
-            {
-                return false;
-            }
-            *ener = energy_.find(mpo)->second;
-            return true;
-        }
-
-        /*! \brief Compute energies and forces for all structures
-         * The optimized structure as well as all the excited
-         * structures will be used to compute the energy and
-         * forces. Store the results in vectors containing two
-         * doubles, first the reference, then the calculated one.
-         * Forces are stored as a vector of structures and then a
-         * vector of atoms. Energies are stored as a 1D vector pair.
-         * All energy components are stored as a vector of
-         * reference energies paired with a map of ACT energy components. The integer
-         * index points into the gromacs energy types.
-         * \param[in]  forceComp  The force computer utility
-         * \param[out] forceMap   The forces
-         * \param[out] enerMap    The potential energies
-         * \param[out] enerAllMap The energy components for each calculation
-         */
-        void forceEnergyMaps(const ForceComputer                                     *forceComp,
-                             std::vector<std::vector<std::pair<double, double> > >   *forceMap,
-                             std::vector<std::pair<double, double> >                 *enerMap,
-                             std::vector<std::pair<double, std::map<int, double> > > *enerAllMap);
-        
-        //! Return the reference frequencies collected earlier
-        const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
-                
-        //! Return the reference intensities collected earlier
-        const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
-                
-        //! \return the center of charge
-        const rvec &centerOfCharge() const { return CenterOfCharge_; }
-
-        /*! \brief Return QtypeProps for a charge type
-         * \param[in] qt The charge type, e.g. qType::CM5
-         * \return the corresponding structure or nullptr 
-         */
-        QtypeProps *qTypeProps(qType qt);
-        
-        /*! \brief Return QtypeProps for a charge type
-         * \param[in] qt The charge type, e.g. qType::CM5
-         * \return the corresponding structure or nullptr 
-         */
-        const QtypeProps *qTypeProps(qType qt) const;
-        
-        const std::vector<std::string> &errors() const {return error_messages_;}
-
-        /*! \brief
-         * Add the screening factors of the distributed charge to atom structure
-         *
-         * \param[in] pd     Data structure containing atomic properties
-         * \param[out] atoms Structure to fill with force field data
-         */
-        immStatus zetaToAtoms(const Poldata *pd,
-                              t_atoms       *atoms);
-
-        /*! \brief
-         * Return the coordinate vector of the molecule
-         */
-        const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
-        
-        /*! \brief Update the internal coordinates
-         * Mainly for testing to see what happens to energies and forces
-         * if coordinates are changed.
-         * \param[in] coordinates The new coordinates.
-         */
-        void setX(const std::vector<gmx::RVec> &coordinates);
-
-        //! \return the potential energy of this molecule
-        real potentialEnergy() const;
-
-        //! \return a GROMACS style array with energy terms
-        const real *energyTerms() const;
-        
-        /*! \brief
-         * \return mdatoms structure
-         */
-        t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
-
-        /*! \brief
-         * \return GROMACS atoms structure
-         */
-        t_atoms *gmxAtoms() const { return atoms_; }
-        
-        /*! \brief
-         * \return atoms data for editing
-         */
-        std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
-        
-        /*! \brief Return the fragment handler
-         */
-        const FragmentHandler *fragmentHandler() const { return fraghandler_; }
-        
-        /*! \brief
-         * \return atoms const structure
-         */
-        const t_atoms *gmxAtomsConst() const { return atoms_; }
-        
-        /*! \brief
-         * \return atoms data
-         */
-        const std::vector<ActAtom> &atomsConst() const { return topology_->atoms(); }
-        
-        /*! \brief Return the bond order
-         * \param[in] ai Atom I
-         * \param[in] aj Atom J
-         * \return bond order or 0 if not present
-         */
-        double bondOrder(int ai, int aj) const;
-
-        /*! \brief
-         * It generates the atoms structure which will be used to print the topology file.
-         *
-         * \param[in]  fp      File to write (debug) information to
-         * \param[in]  pd      Data structure containing atomic properties
-         * \param[in]  missing How to treat missing parameters
-         * \param[in]  gromacsSupport Whether or not to include legacy gromacs
-         * \return status
-         */
-        immStatus GenerateTopology(FILE              *fp,
-                                   const Poldata     *pd,
-                                   missingParameters  missing,
-                                   bool               gromacsSupport);
-
-        //! Return the ACT topology structure
-        const Topology *topology() const { return topology_; }
-
-        /*! \brief
-         *  Computes polarizability tensor in the presence of external
-         *  electric field. The result is stored in 
-         *  mymol->qTypeProps(qType::Calc).
-         *
-         * \param[in] forceComp The force computer
-         */
-        void CalcPolarizability(const ForceComputer *forceComp);
-
-        /*! \brief
-         * Generate atomic partial charges
-         *
-         * \param[in]  pd        Data structure containing atomic properties
-         * \param[in]  forceComp Force computer utility
-         * \param[in]  fplog     Logger
-         * \param[in]  cr        Communication parameters
-         * \param[in]  algorithm The algorithm for determining charges,
-         *                       if NONE it is read from the Poldata structure.
-         * \param[in]  qcustom   Custom (user-provided) charges
-         * \param[out] forces    This routine will compute energies and forces.
-         */
-        immStatus GenerateCharges(const Poldata             *pd,
-                                  const ForceComputer       *forceComp,
-                                  const gmx::MDLogger       &fplog,
-                                  const CommunicationRecord *cr,
-                                  ChargeGenerationAlgorithm  algorithm,
-                                  const std::vector<double> &qcustom,
-                                  std::vector<gmx::RVec>    *forces);
-        /*! \brief
-         * Generate atomic partial charges using EEM or SQE.
-         * If shells are present they will be minimized.
-         *
-         * \param[in] pd      Data structure containing atomic properties
-         */
-        immStatus GenerateAcmCharges(const Poldata       *pd,
-                                     const ForceComputer *forceComp);
-                                     
-        /*! \brief Implement charge symmetrization
-         *
-         * Initiates internal structure for atom charge symmetry
-         * (e.g. CH3 with identical charges on H).
-         * Must be called before initQgenResp.
-         * \param[in] pd                 Data structure containing atomic properties
-         * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
-         * \param[in] symm_string        The type of molecular symmetry
-         */
-        void symmetrizeCharges(const Poldata  *pd,
-                               bool            bSymmetricCharges,
-                               const char     *symm_string);
-
-        /*! \brief Calculate the RMSD from ESP for QM charges
-         * \param[in]  pd     Poldata structure
-         */
-        void calcEspRms(const Poldata *pd);
-
-        /*! \brief Make a ESP correlation plot
-         *
-         * Will compute the electrostatic potential around the compound
-         * and make a correlation plot between the QM potential and the
-         * Alexandria potential.
-         * \param[in] espcorr   File name to plot to
-         * \param[in] oenv      Gromacs output structure
-         * \param[in] forceComp Utility to compute forces
-         */
-        void plotEspCorrelation(const char             *espcorr,
-                                const gmx_output_env_t *oenv,
-                                const ForceComputer    *forceComp);
-
-        /*! \brief
-         * Collect the properties from QM (Optimized structure) or
-         * from experiment.
-         *
-         * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
-         * \param[in] T        The temperature to use. -1 allows any T.
-         */
-        immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                              double             T);
-
-        /*! \brief
-         * Print the topology that was generated previously in GROMACS format.
-         *
-         * \param[in] fn        File name
-         * \param[in] bVerbose  Verbose
-         * \param[in] pd        Data structure containing atomic properties
-         * \param[in] forceComp The force computer utility
-         * \param[in] cr        Gromacs communication record
-         * \param[in] method    QC method
-         * \param[in] basis     QC basis set
-         * \param[in] bITP      Whether or not to write an itp file iso top file
-         */
-        void PrintTopology(const char                *fn,
-                           bool                       bVerbose,
-                           const Poldata             *pd,
-                           const ForceComputer       *forceComp,
-                           const CommunicationRecord *cr,
-                           const std::string         &method,
-                           const std::string         &basis,
-                           bool                       bITP = false);
-
-        //! \brief Update GROMACS data structures
-        void updateMDAtoms();
-        
-        /*! \brief Calculate the forces and energies
-         * For a polarizable model the shell positions are minimized.
-         * This code is maintained only for comparing ACT native energies and forces
-         * to the gromacs code. Do not use inproduction code.
-         * \param[in]  crtmp         Temporary communication record with one core only.
-         * \param[out] forces        Force array
-         * \param[out] shellForceRMS Root mean square force on the shells
-         * \return immStatus::OK if everything worked fine, error code otherwise.
-         */
-        immStatus calculateEnergyOld(const t_commrec         *crtmp,
-                                     PaddedVector<gmx::RVec> *forces,
-                                     real                    *shellForceRMS);
-
-        /*! \brief Calculate the forces and energies
-         * For a polarizable model the shell positions are minimized.
-         * \param[in]  forceComputer The code to run the calculations.
-         * \param[out] forces        Force array
-         * \return The root mean square force on the shells or zero if none
-         */
-        double calculateEnergy(const ForceComputer    *forceComputer,
-                               std::vector<gmx::RVec> *forces);
-
-        /*! \brief Calculate the interaction energies.
-         * For a system with multiple fragments this will compute
-         * Epot(system) - Sum_f Epot(f) 
-         * where f are the fragments.
-         * For a polarizable model the shell positions are minimized.
-         * \param[in] forceComputer The code to run the calculations.
-         * \return The interaction energy.
-         */
-        double calculateInteractionEnergy(const ForceComputer *forceComputer);
-
-        /*! \brief
-         * Update internal structures for bondtype due to changes in pd
-         *
-         * \param[in] pd     Data structure containing atomic properties
-         * \param[in] iTypes Interaction types
-         * \param[in] updateZeta Whether to update the atomic zeta as well
-         */
-        void UpdateIdef(const Poldata                      *pd,
-                        const std::vector<InteractionType> &iTypes,
-                        bool                                updateZeta);
-
-        /*! \brief
-         * Generate GROMACS structures.
-         */
-        immStatus GenerateGromacs(const gmx::MDLogger       &mdlog,
-                                  const CommunicationRecord *cr,
-                                  const char                *tabfn,
-                                  ChargeType                 iType);
-
-        /*! \brief
-         * Generate cube
-         *
-         * \param[in] pd          Data structure containing atomic properties
-         * \param[in] spacing     The grid space
-         * \param[in] border      The amount of space around the molecule
-         * \param[in] reffn
-         * \param[in] pcfn
-         * \param[in] pdbdifffn
-         * \param[in] potfn
-         * \param[in] rhofn
-         * \param[in] hisfn
-         * \param[in] difffn
-         * \param[in] diffhistfn
-         * \param[in] oenv
-         */
-        void GenerateCube(const Poldata          *pd,
-                          real                    spacing,
-                          real                    border,
-                          const char             *reffn,
-                          const char             *pcfn,
-                          const char             *pdbdifffn,
-                          const char             *potfn,
-                          const char             *rhofn,
-                          const char             *hisfn,
-                          const char             *difffn,
-                          const char             *diffhistfn,
-                          const gmx_output_env_t *oenv);
-
-        /*! \brief
-         * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
-         *
-         * \param[in] fn The filename.
-         */
-        void PrintConformation(const char *fn);
-
-        /*! \brief
-         * set the inputrec of the MyMol object
-         *
-         * \param[in] ir   GROMACS t_inputrec structure
-         */
-        void setInputrec(t_inputrec  *ir)
-        {
-            inputrec_ = ir;
-        }
-        
-        /*! \brief
-         * Equal operator for MyMol object
-         *
-         */
-        bool operator==(const MyMol &mol) const
-        {
-            return (this->getMolname() == mol.getMolname());
-        }
-        
-        /*! \brief Init the class for the RESP algorithm.
-         * This must be called before generateCharges even if no RESP
-         * is used for charge generation, since ESP points can be used
-         * in analysis.
-         * \param[in]  pd      Data structure containing atomic properties
-         * \param[in]  watoms  Weight for the potential on the atoms in 
-         *                     doing the RESP fit. Should be 0 in most cases.
-         * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
-         */
-        void initQgenResp(const Poldata     *pd,
-                          real               watoms,
-                          int                maxESP);
-
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] cr   GROMACS data structure for MPI communication
-         * \param[in] dest Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] cr  GROMACS data structure for MPI communication
-         * \param[in] src Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
-
-    };
+    /*! \brief Update the internal coordinates
+     * Mainly for testing to see what happens to energies and forces
+     * if coordinates are changed.
+     * \param[in] coordinates The new coordinates.
+     */
+    void setX(const std::vector<gmx::RVec> &coordinates);
+    
+    /*! \brief
+     * \return mdatoms structure
+     */
+    t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
+    
+    /*! \brief
+     * \return GROMACS atoms structure
+     */
+    t_atoms *gmxAtoms() const { return atoms_; }
+    
+    /*! \brief
+     * \return atoms data for editing
+     */
+    std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
+    
+    /*! \brief Return the fragment handler
+     */
+    const FragmentHandler *fragmentHandler() const { return fraghandler_; }
+    
+    /*! \brief
+     * \return atoms const structure
+     */
+    const t_atoms *gmxAtomsConst() const { return atoms_; }
+    
+    /*! \brief
+     * \return atoms data
+     */
+    const std::vector<ActAtom> &atomsConst() const { return topology_->atoms(); }
+    
+    /*! \brief Return the bond order
+     * \param[in] ai Atom I
+     * \param[in] aj Atom J
+     * \return bond order or 0 if not present
+     */
+    double bondOrder(int ai, int aj) const;
+    
+    /*! \brief
+     * It generates the atoms structure which will be used to print the topology file.
+     *
+     * \param[in]  fp      File to write (debug) information to
+     * \param[in]  pd      Data structure containing atomic properties
+     * \param[in]  missing How to treat missing parameters
+     * \param[in]  gromacsSupport Whether or not to include legacy gromacs
+     * \return status
+     */
+    immStatus GenerateTopology(FILE              *fp,
+                               const Poldata     *pd,
+                               missingParameters  missing,
+                               bool               gromacsSupport);
+    
+    //! Return the ACT topology structure
+    const Topology *topology() const { return topology_; }
+    
+    /*! \brief
+     *  Computes polarizability tensor in the presence of external
+     *  electric field. The result is stored in 
+     *  mymol->qTypeProps(qType::Calc).
+     *
+     * \param[in] forceComp The force computer
+     */
+    void CalcPolarizability(const ForceComputer *forceComp);
+    
+    /*! \brief
+     * Generate atomic partial charges
+     *
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp Force computer utility
+     * \param[in]  fplog     Logger
+     * \param[in]  cr        Communication parameters
+     * \param[in]  algorithm The algorithm for determining charges,
+     *                       if NONE it is read from the Poldata structure.
+     * \param[in]  qcustom   Custom (user-provided) charges
+     * \param[out] forces    This routine will compute energies and forces.
+     */
+    immStatus GenerateCharges(const Poldata             *pd,
+                              const ForceComputer       *forceComp,
+                              const gmx::MDLogger       &fplog,
+                              const CommunicationRecord *cr,
+                              ChargeGenerationAlgorithm  algorithm,
+                              const std::vector<double> &qcustom,
+                              std::vector<gmx::RVec>    *forces);
+    /*! \brief
+     * Generate atomic partial charges using EEM or SQE.
+     * If shells are present they will be minimized.
+     *
+     * \param[in] pd      Data structure containing atomic properties
+     */
+    immStatus GenerateAcmCharges(const Poldata       *pd,
+                                 const ForceComputer *forceComp);
+    
+    /*! \brief Implement charge symmetrization
+     *
+     * Initiates internal structure for atom charge symmetry
+     * (e.g. CH3 with identical charges on H).
+     * Must be called before initQgenResp.
+     * \param[in] pd                 Data structure containing atomic properties
+     * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
+     * \param[in] symm_string        The type of molecular symmetry
+     */
+    void symmetrizeCharges(const Poldata  *pd,
+                           bool            bSymmetricCharges,
+                           const char     *symm_string);
+    
+    /*! \brief Calculate the RMSD from ESP for QM charges
+     * \param[in]  pd     Poldata structure
+     */
+    void calcEspRms(const Poldata *pd);
+    
+    /*! \brief Make a ESP correlation plot
+     *
+     * Will compute the electrostatic potential around the compound
+     * and make a correlation plot between the QM potential and the
+     * Alexandria potential.
+     * \param[in] espcorr   File name to plot to
+     * \param[in] oenv      Gromacs output structure
+     * \param[in] forceComp Utility to compute forces
+     */
+    void plotEspCorrelation(const char             *espcorr,
+                            const gmx_output_env_t *oenv,
+                            const ForceComputer    *forceComp);
+    
+    /*! \brief
+     * Collect the properties from QM (Optimized structure) or
+     * from experiment.
+     *
+     * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
+     * \param[in] T        The temperature to use. -1 allows any T.
+     */
+    immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
+                          double             T);
+    
+    /*! \brief
+     * Print the topology that was generated previously in GROMACS format.
+     *
+     * \param[in] fn        File name
+     * \param[in] bVerbose  Verbose
+     * \param[in] pd        Data structure containing atomic properties
+     * \param[in] forceComp The force computer utility
+     * \param[in] cr        Gromacs communication record
+     * \param[in] method    QC method
+     * \param[in] basis     QC basis set
+     * \param[in] bITP      Whether or not to write an itp file iso top file
+     */
+    void PrintTopology(const char                *fn,
+                       bool                       bVerbose,
+                       const Poldata             *pd,
+                       const ForceComputer       *forceComp,
+                       const CommunicationRecord *cr,
+                       const std::string         &method,
+                       const std::string         &basis,
+                       bool                       bITP = false);
+    
+    //! \brief Update GROMACS data structures
+    void updateMDAtoms();
+    
+    /*! \brief Calculate the forces and energies
+     * For a polarizable model the shell positions are minimized.
+     * This code is maintained only for comparing ACT native energies and forces
+     * to the gromacs code. Do not use inproduction code.
+     * \param[in]  crtmp         Temporary communication record with one core only.
+     * \param[out] forces        Force array
+     * \param[out] energies      The energy components
+     * \param[out] shellForceRMS Root mean square force on the shells
+     * \return immStatus::OK if everything worked fine, error code otherwise.
+     */
+    immStatus calculateEnergyOld(const t_commrec                   *crtmp,
+                                 PaddedVector<gmx::RVec>           *forces,
+                                 std::map<InteractionType, double> *energies,
+                                 real                              *shellForceRMS);
+    
+    /*! \brief Calculate the forces and energies
+     * For a polarizable model the shell positions are minimized.
+     * \param[in]    forceComputer The code to run the calculations.
+     * \param[inout] coordinates   The atomic positions, shell positions may be changed
+     * \param[out]   forces        Force array
+     * \param[out]   energies      The energy components
+     * \return The root mean square force on the shells or zero if none
+     */
+    double calculateEnergy(const ForceComputer               *forceComputer,
+                           std::vector<gmx::RVec>            *coordinates,
+                           std::vector<gmx::RVec>            *forces,
+                           std::map<InteractionType, double> *energies) const;
+    
+    /*! \brief Calculate the interaction energies.
+     * For a system with multiple fragments this will compute
+     * Epot(system) - Sum_f Epot(f) 
+     * where f are the fragments.
+     * For a polarizable model the shell positions are minimized.
+     * \param[in] forceComputer The code to run the calculations.
+     * \return The interaction energy.
+     */
+    double calculateInteractionEnergy(const ForceComputer *forceComputer);
+    
+    /*! \brief
+     * Update internal structures for bondtype due to changes in pd
+     *
+     * \param[in] pd     Data structure containing atomic properties
+     * \param[in] iTypes Interaction types
+     * \param[in] updateZeta Whether to update the atomic zeta as well
+     */
+    void UpdateIdef(const Poldata                      *pd,
+                    const std::vector<InteractionType> &iTypes,
+                    bool                                updateZeta);
+    
+    /*! \brief
+     * Generate GROMACS structures.
+     */
+    immStatus GenerateGromacs(const gmx::MDLogger       &mdlog,
+                              const CommunicationRecord *cr,
+                              const char                *tabfn,
+                              ChargeType                 iType);
+    
+    /*! \brief
+     * Generate cube
+     *
+     * \param[in] pd          Data structure containing atomic properties
+     * \param[in] spacing     The grid space
+     * \param[in] border      The amount of space around the molecule
+     * \param[in] reffn
+     * \param[in] pcfn
+     * \param[in] pdbdifffn
+     * \param[in] potfn
+     * \param[in] rhofn
+     * \param[in] hisfn
+     * \param[in] difffn
+     * \param[in] diffhistfn
+     * \param[in] oenv
+     */
+    void GenerateCube(const Poldata          *pd,
+                      real                    spacing,
+                      real                    border,
+                      const char             *reffn,
+                      const char             *pcfn,
+                      const char             *pdbdifffn,
+                      const char             *potfn,
+                      const char             *rhofn,
+                      const char             *hisfn,
+                      const char             *difffn,
+                      const char             *diffhistfn,
+                      const gmx_output_env_t *oenv);
+    
+    /*! \brief
+     * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
+     *
+     * \param[in] fn The filename.
+     */
+    void PrintConformation(const char *fn);
+    
+    /*! \brief
+     * set the inputrec of the MyMol object
+     *
+     * \param[in] ir   GROMACS t_inputrec structure
+     */
+    void setInputrec(t_inputrec  *ir)
+    {
+        inputrec_ = ir;
+    }
+    
+    /*! \brief
+     * Equal operator for MyMol object
+     *
+     */
+    bool operator==(const MyMol &mol) const
+    {
+        return (this->getMolname() == mol.getMolname());
+    }
+    
+    /*! \brief Init the class for the RESP algorithm.
+     * This must be called before generateCharges even if no RESP
+     * is used for charge generation, since ESP points can be used
+     * in analysis.
+     * \param[in]  pd      Data structure containing atomic properties
+     * \param[in]  watoms  Weight for the potential on the atoms in 
+     *                     doing the RESP fit. Should be 0 in most cases.
+     * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
+     */
+    void initQgenResp(const Poldata     *pd,
+                      real               watoms,
+                      int                maxESP);
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] dest Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] src Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
+    
+};
 
 }
 

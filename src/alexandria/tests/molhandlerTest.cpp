@@ -69,21 +69,25 @@ namespace alexandria
 namespace
 {
 
-static void add_energies(const Poldata                   *pd,
-                         gmx::test::TestReferenceChecker *checker,
-                         const real                       ener[F_NRE],
-                         const char                      *label)
+static void add_energies(const Poldata                           *pd,
+                         gmx::test::TestReferenceChecker         *checker,
+                         const std::map<InteractionType, double> &energies,
+                         const char                              *label)
 {
-    for(auto &fs : pd->forcesConst())
+    auto fsc = pd->forcesConst();
+    for(auto &imf : energies)
     {
-        int i   = fs.second.fType();
-        if (i >= 0 && i < F_NRE)
+        int ftype = F_EPOT;
+        if (imf.first != InteractionType::EPOT)
         {
-            real ee = ener[i];
-            std::string mylabel = gmx::formatString("%s %s",
-                                                    interaction_function[i].longname, label);
-            checker->checkReal(ee, mylabel.c_str());
+            auto i = fsc.find(imf.first);
+            EXPECT_TRUE(fsc.end() != i);
+            ftype = i->second.fType();
         }
+        std::string mylabel = gmx::formatString("%s %s",
+                                                interaction_function[ftype].longname, label);
+            
+        checker->checkReal(imf.second, mylabel.c_str());
     }
 }
 
@@ -152,29 +156,44 @@ protected:
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
         
-        // real shellForceRMS;
-        // (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
-        mp_.calculateEnergy(forceComp, &forces);
-        add_energies(pd, &checker_, mp_.energyTerms(), "before");
+        std::vector<gmx::RVec> coords = mp_.xOriginal();
+        std::map<InteractionType, double> eBefore;
+        mp_.calculateEnergy(forceComp, &coords, &forces, &eBefore);
+        add_energies(pd, &checker_, eBefore, "before");
         
         MolHandler mh;
         
-        std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
-        double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
+        std::vector<gmx::RVec> xmin = coords;
+        double rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         double overRelax  = 1;
         // Infinite number of shell iterations, i.e. until convergence.
-        int    maxIter    = 0;
-        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax);
-
-        rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
+        int    maxIter    = 200;
+        std::map<InteractionType, double> eAfter;
+        auto eMinAlg = eMinimizeAlgorithm::Newton;
+        auto eMin = mh.minimizeCoordinates(&mp_, forceComp, &xmin, &eAfter,
+                                           nullptr, eMinAlg, maxIter, overRelax);
+        if (eMinimizeStatus::OK != eMin)
+        {
+            // New try using steepest descents
+            eMinAlg = eMinimizeAlgorithm::Steep;
+            maxIter = 5000;
+            xmin    = coords;
+            eMin    = mh.minimizeCoordinates(&mp_, forceComp, &xmin, &eAfter,
+                                             nullptr, eMinAlg, maxIter, overRelax);
+        }
+        EXPECT_TRUE(eMinimizeStatus::OK == eMin);
+        rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-        add_energies(pd, &checker_, mp_.energyTerms(), "after");
+        add_energies(pd, &checker_, eAfter, "after");
 
-        if (nma)
+        // Verify that the energy has gone down, not up.
+        EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);
+
+        if (nma && eMinimizeStatus::OK == eMin)
         {
             std::vector<double> freq, freq_extern, inten, inten_extern;
-            mh.nma(&mp_, forceComp, &freq, &inten, nullptr);
+            mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
             const char *unit = mpo_unit2(mpo);
             for(auto f = freq.begin(); f < freq.end(); ++f)
@@ -214,6 +233,11 @@ protected:
     }
 };
 
+TEST_F (MolHandlerTest, MethaneThiolNoFreq)
+{
+    test("methanethiol.sdf", "ACS-g", false);
+}
+
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
     test("carbon-dioxide.sdf", "ACS-g", false);
@@ -221,13 +245,11 @@ TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
 {
-
     test("hydrogen-chloride.sdf", "ACS-g", false);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreq)
 {
-
     test("water-3-oep.log.pdb", "ACS-g", false);
 }
 

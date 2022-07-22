@@ -270,8 +270,6 @@ protected:
         // Now the energies
         double rmsToler = 0.00001;
         auto fcomp = new ForceComputer(pd, rmsToler, 25);
-
-        mp_.calculateEnergy(fcomp, &forces);
         if (mp_.fragmentHandler()->topologies().size() > 1)
         {
             auto einter = mp_.calculateInteractionEnergy(fcomp);

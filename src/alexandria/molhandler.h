@@ -42,10 +42,15 @@
 #include "act/utility/regression.h"
 #include "mymol.h"
 #include "confighandler.h"
-//#include "gromacs/mdtypes/commrec.h"
 
 namespace alexandria
 {
+
+enum class eMinimizeStatus {
+    OK, TooManySteps, Solver
+};
+
+const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
@@ -53,36 +58,39 @@ namespace alexandria
  */
 class MolHandler
 {
-
 public:
 
     /*! \brief Compute the second derivative matrix of the potential energy
      *
-     * \param[in]  mol       Molecule to get the hessian for
-     * \param[in]  forceComp Force Computer utility
-     * \param[in]  crtmp     Temporary communication record for one core.
-     *                       FIXME: another method without this
-     * \param[in]  atomIndex Vector containing the indices of the real 
-     *                       atoms, not shells or vsites.
-     *                       FIXME: Create another method without this argument, then
-     *                       get it and call this one
-     * \param[out] hessian   MatrixWrapper object that must be pre-
-     *                       allocated to NxN where N = 3*atomIndex.size()
-     * \param[out] forceZero The forces on the atoms in the input structure,
-     *                       that is, not on the shells or vsites. Will be cleared
-     *                       and overwritten
-     * \param[out] dpdq      Derivative of dipole moment with respect to atomic coordinates.
-     *                       If nullptr it will not be used. This can be used to compute
-     *                       infrared intensities from a NMA. See Henschel et al.
-     *                       J. Chem. Theory Comput. 16 (2020) 3307-3315.
+     * \param[in]  mol        Molecule to get the hessian for
+     * \param[in]  forceComp  Force Computer utility
+     * \param[inout] coords   Atomic coordinates to operate on
+     * \param[in]  crtmp      Temporary communication record for one core.
+     *                        FIXME: another method without this
+     * \param[in]  atomIndex  Vector containing the indices of the real 
+     *                        atoms, not shells or vsites.
+     *                        FIXME: Create another method without this argument, then
+     *                        get it and call this one
+     * \param[out] hessian    MatrixWrapper object that must be pre-
+     *                        allocated to NxN where N = 3*atomIndex.size()
+     * \param[out] forceZero  The forces on the atoms in the input structure,
+     *                        that is, not on the shells or vsites. Will be cleared
+     *                        and overwritten
+     * \param[out] energyZero The energies corresponding to the input structure.
+     * \param[out] dpdq       Derivative of dipole moment with respect to atomic coordinates.
+     *                        If nullptr it will not be used. This can be used to compute
+     *                        infrared intensities from a NMA. See Henschel et al.
+     *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
      * \return the potential energy of the input structure
      */
-    double computeHessian(      MyMol                  *mol,
-                          const ForceComputer          *forceComp,
-                          const std::vector<int>       &atomIndex,
-                                MatrixWrapper          *hessian,
-                                std::vector<double>    *forceZero,
-                                std::vector<gmx::RVec> *dpdq = nullptr) const;
+    void computeHessian(const MyMol                       *mol,
+                        const ForceComputer               *forceComp,
+                        std::vector<gmx::RVec>            *coords,
+                        const std::vector<int>            &atomIndex,
+                        MatrixWrapper                     *hessian,
+                        std::vector<double>               *forceZero,
+                        std::map<InteractionType, double> *energyZero,
+                        std::vector<gmx::RVec>            *dpdq = nullptr) const;
 
     /*! \brief Perform normal-mode analysis on a molecule.
      * Computes vibrational frequencies and intensities and 
@@ -93,15 +101,17 @@ public:
      * 
      * \param[in]  mol          The molecule to analyze
      * \param[in]  forceComp    Force Computer utility
+     * \param[in]  coords       Coordinates for a minimized structure
      * \param[out] frequencies  The normal mode frequencies (in cm^-1)
      * \param[out] intensities  The normal mode intensities
      * \param[in]  fp           File to write frequencies to, may be nullptr (default)
      */
-    void nma(MyMol               *mol,
-             const ForceComputer *forceComp,
-             std::vector<double> *frequencies,
-             std::vector<double> *intensities,
-             FILE                *fp = nullptr) const;
+    void nma(const MyMol            *mol,
+             const ForceComputer    *forceComp,
+             std::vector<gmx::RVec> *coords,
+             std::vector<double>    *frequencies,
+             std::vector<double>    *intensities,
+             FILE                   *fp = nullptr) const;
 
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
@@ -112,18 +122,22 @@ public:
      *
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
+     * \param[inout] coords    The coordinates to be minimized
      * \param[in] logFile      File to write some info to, may be a nullptr
      * \param[in] maxIter      Maximum number of iterations, 0 means until convergence
      * \param[in] overRelax    Factor to use for overrelaxation of the step size
      * \param[in] msForceToler Tolerance in the mean square force for convergence
-     * \return Number of iterations used
+     * \return Status flag
      */
-    int minimizeCoordinates(MyMol               *mol,
-                            const ForceComputer *forceComp,
-                            FILE                *logFile,
-                            int                  maxIter,
-                            double               overRelax,
-                            double               msForceToler=0) const;
+    eMinimizeStatus minimizeCoordinates(const MyMol                       *mol,
+                                        const ForceComputer               *forceComp,
+                                        std::vector<gmx::RVec>            *coords,
+                                        std::map<InteractionType, double> *energies,
+                                        FILE                              *logFile,
+                                        eMinimizeAlgorithm                 algorithm,
+                                        int                                maxIter,
+                                        double                             overRelax,
+                                        double                             msForceToler=0) const;
 
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple
@@ -146,18 +160,19 @@ public:
                   const gmx_output_env_t        *oenv) const;
 
     /*! \brief
-     * The routine will compute the RMSD between the minimized coordinates
-     * and the original ones for a given mymol object.
-     * This routine should be called only after minimizing the coordinates,
-     * since otherwise there is no minimized structure.
+     * The routine will compute the RMSD between two sets of coordinates
+     * for a given mymol object.
      *
-     * \param[in]  mol  the molecule object (will be modified)
-     * \param[out] x    The two coordinate sets after alignment. Map will be cleared first.
+     * \param[in]    mol  The molecule object
+     * \param[in]    xref The reference coordinate set.
+     * \param[inout] xfit The (minimized) coordinate set before alignment (input) 
+     *                    respectively after (outptu)
      * \return Root mean square atomic deviation of atomic
-     *         coordinates after minimization.
+     *         coordinates after superposition.
      */
-    double coordinateRmsd(MyMol                                       *mol,
-                          std::map<coordSet, std::vector<gmx::RVec> > *x) const;
+    double coordinateRmsd(const MyMol                  *mol,
+                          const std::vector<gmx::RVec> &xref,
+                          std::vector<gmx::RVec>       *xfit) const;
 
 };
 

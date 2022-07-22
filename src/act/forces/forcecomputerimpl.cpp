@@ -49,7 +49,7 @@ static double computeLJ(const std::vector<TopologyEntry *>    &pairs,
 
     auto   x     = *coordinates;
     auto  &f     = *forces;
-    for (const auto b : pairs)
+    for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
@@ -97,7 +97,7 @@ static double computeWBH(const std::vector<TopologyEntry *>    &pairs,
     double ebond = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
-    for (const auto b : pairs)
+    for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
@@ -135,7 +135,7 @@ static double computeCoulomb(const std::vector<TopologyEntry *> &pairs,
     double ebond = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
-    for (const auto b : pairs)
+    for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto ai     = b->atomIndices()[0];
@@ -181,7 +181,7 @@ static double computePartridge(const std::vector<TopologyEntry *>    &angles,
     auto    x     = *coordinates;
     auto   &f     = *forces;
     const  real half = 0.5;
-    for (const auto a : angles)
+    for (const auto &a : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = a->params();
@@ -200,8 +200,8 @@ static double computePartridge(const std::vector<TopologyEntry *>    &angles,
         auto drkj   = rjk0-norm(r_kj);
         
         auto costh2 = gmx::square(costh);
-        auto st    = theta0*gmx::invsqrt(1 - costh2);   
-        auto sth   = st*costh;                      
+        auto st     = theta0*gmx::invsqrt(1 - costh2);   
+        auto sth    = st*costh; 
         
         auto nrij2 = iprod(r_ij, r_ij);                 
         auto nrkj2 = iprod(r_kj, r_kj);                 
@@ -251,7 +251,7 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
     auto   x     = *coordinates;
     auto  &f     = *forces;
     
-    for (const auto b : bonds)
+    for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
@@ -288,7 +288,7 @@ static double computeMorse(const std::vector<TopologyEntry *>    &bonds,
     double  ebond = 0;
     auto    x     = *coordinates;
     auto   &f     = *forces;
-    for (const auto b : bonds)
+    for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
@@ -327,7 +327,7 @@ static double computeLinearAngles(const std::vector<TopologyEntry *>    &angles,
     double  ebond = 0;
     auto    x     = *coordinates;
     auto   &f     = *forces;
-    for (const auto aaa : angles)
+    for (const auto &aaa : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params= aaa->params();
@@ -370,7 +370,7 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
     auto    x     = *coordinates;
     auto   &f     = *forces;
 
-    for (const auto a : angles)
+    for (const auto &a : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = a->params();
@@ -434,7 +434,7 @@ static double computeUreyBradley(const std::vector<TopologyEntry *>    &angles,
     auto    x     = *coordinates;
     auto   &f     = *forces;
     const  real half = 0.5;
-    for (const auto a : angles)
+    for (const auto &a : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = a->params();
@@ -514,7 +514,7 @@ static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
     auto   x     = *coordinates;
     auto  &f     = *forces;
     const  real half = 0.5;
-    for (const auto b : bonds)
+    for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params   = b->params();
@@ -603,7 +603,7 @@ static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
 {
     double energy = 0;
     auto   x      = *coordinates;
-    for (const auto a : propers)
+    for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params  = a->params();
@@ -619,17 +619,7 @@ static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
         rvec r_ij, r_kj, r_kl, m, n;
         auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
                              r_ij, r_kj, r_kl, m, n);
-        /* Change to polymer convention */
-#ifdef WRONG
-        if (phi < 0)
-        {
-            phi += M_PI;
-        }
-        else
-        {
-            phi -= M_PI;    /*   1		*/
-        }
-#endif
+
         real cos_phi = std::cos(phi);
         
         /* Calculate cosine powers */
@@ -668,7 +658,7 @@ static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
     double  energy = 0;
     auto    x     = *coordinates;
     const  real half = 0.5;
-    for (const auto a : impropers)
+    for (const auto &a : impropers)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params  = a->params();
@@ -702,7 +692,7 @@ static double computePropers(const std::vector<TopologyEntry *>    &propers,
 {
     double energy = 0;
     auto   x      = *coordinates;
-    for (const auto a : propers)
+    for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params  = a->params();

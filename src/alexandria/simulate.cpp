@@ -143,7 +143,8 @@ int simulate(int argc, char *argv[])
     {
         return 0;
     }
-
+    sch.check_pargs();
+    
     Poldata        pd;
     try
     {
@@ -223,38 +224,44 @@ int simulate(int argc, char *argv[])
     if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
         MolHandler molhandler;
-        if (verbose && pd.polarizable())
-        {
-            
-        }
+        std::vector<gmx::RVec> coords = mymol.xOriginal();
+        auto eMin = eMinimizeStatus::OK;
         if (sch.nma() || sch.minimize())
         {
-            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, maxIter, overRelax, forceToler);
-            fprintf(logFile, "Number of iterations %d, final energy %g\n",
-                    myIter, mymol.potentialEnergy());
+            auto eMinAlg = sch.minAlg();
+            std::map<InteractionType, double> energies;
+            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, &coords,
+                                                  &energies, logFile, eMinAlg, maxIter,
+                                                  overRelax, forceToler);
+            fprintf(logFile, "Final energy: %g. Minimization status: %s.\n",
+                    energies[InteractionType::EPOT],
+                    eMinimizeStatusToString(eMin).c_str());
             matrix box;
             clear_mat(box);
-            std::vector<gmx::RVec> xx;
-            for(const auto &x1 : mymol.coordinateSet(coordSet::Minimized))
-            {
-                xx.push_back(x1);
-            }
             write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
                            mymol.getMolname().c_str(),
                            mymol.gmxAtomsConst(),
-                           as_rvec_array(xx.data()), nullptr,
+                           as_rvec_array(coords.data()), nullptr,
                            epbcNONE, box);
         }
         if (immStatus::OK == imm)
         {
             if (sch.nma())
             {
-                AtomizationEnergy        atomenergy;
-                std::vector<std::string> output;
-                doFrequencyAnalysis(&mymol, molhandler, forceComp, atomenergy, nullptr, &output);
-                for(const auto &op : output)
+                if (eMinimizeStatus::OK == eMin)
                 {
-                    fprintf(logFile, "%s\n", op.c_str());
+                    AtomizationEnergy        atomenergy;
+                    std::vector<std::string> output;
+                    doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
+                                        atomenergy, nullptr, &output);
+                    for(const auto &op : output)
+                    {
+                        fprintf(logFile, "%s\n", op.c_str());
+                    }
+                }
+                else
+                {
+                    fprintf(logFile, "Cannot do NMA because energy minimization failed to converge.\n");
                 }
             }
             else

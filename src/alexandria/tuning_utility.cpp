@@ -42,6 +42,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/coolstuff.h"
 
+#include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
@@ -638,14 +639,15 @@ void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
 static void writeCoordinates(const t_atoms           *atoms,
                              const std::string       &pdb,
                              const std::string       &title,
-                             const std::map<coordSet, std::vector<gmx::RVec> > &xrmsd)
+                             const std::vector<gmx::RVec> &xorig,
+                             const std::vector<gmx::RVec> &xmin)
 {
     FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
-    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xrmsd.find(coordSet::Original)->second.data()),
+    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xorig.data()),
                   epbcNONE, box, 'A', 1, nullptr, false);
 
-    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xrmsd.find(coordSet::Minimized)->second.data()),
+    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xmin.data()),
                   epbcNONE, box, 'B', 1, nullptr, false);
 
     gmx_fio_fclose(out);
@@ -654,12 +656,13 @@ static void writeCoordinates(const t_atoms           *atoms,
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
+                         std::vector<gmx::RVec>   *coords,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output)
 {
     std::vector<double> alex_freq, intensities;
-    molhandler.nma(mol, forceComp, &alex_freq, &intensities, nullptr);
+    molhandler.nma(mol, forceComp, coords, &alex_freq, &intensities, nullptr);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
@@ -758,14 +761,13 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
     output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
 }
 
-void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                              const ForceComputer      *forceComp,
-                                              const AtomizationEnergy  &atomenergy,
-                                              alexandria::MyMol        *mol,
-                                              const std::vector<int>   &ePlot,
-                                              gmx_stats                *lsq_rmsf,
-                                              qtStats                  *lsq_epot,
-                                              gmx_stats                *lsq_freq)
+double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                                const ForceComputer      *forceComp,
+                                                const AtomizationEnergy  &atomenergy,
+                                                alexandria::MyMol        *mol,
+                                                gmx_stats                *lsq_rmsf,
+                                                qtStats                  *lsq_epot,
+                                                gmx_stats                *lsq_freq)
 {
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
@@ -824,59 +826,64 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     }
     // Energy
     tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
-    std::vector<double> eBefore;
-    auto terms = mol->energyTerms();
-    for(int ii = 0; ii < F_NRE; ii++)
-    {
-        eBefore.push_back(terms[ii]);
-    }
+    std::map<InteractionType, double> eBefore;
+    std::vector<gmx::RVec> coords = mol->xOriginal();
+    std::vector<gmx::RVec> forces(coords.size());
+    mol->calculateEnergy(forceComp, &coords, &forces, &eBefore);
+
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
         //deltaE0 += mol->atomizationEnergy();
         tcout->push_back(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
-                                           "Reference EPOT", deltaE0, eBefore[F_EPOT]-deltaE0));
+                                           "Reference EPOT", deltaE0, 
+                                           eBefore[InteractionType::EPOT]-deltaE0));
     }
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
         // Now get the minimized structure RMSD and Energy
         const real goldenRatio = 1.0; //0.5*(1+std::sqrt(5.0));
         int    maxiter = 200;
-        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, maxiter, goldenRatio);
-        std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
-        double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
+        std::vector<gmx::RVec> xmin   = coords;
+        std::map<InteractionType, double> eAfter;
+        molHandler_.minimizeCoordinates(mol, forceComp, &xmin, &eAfter,
+                                        nullptr, eMinimizeAlgorithm::Newton,
+                                        maxiter, goldenRatio);
+        double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
         
         if (rmsd > 0.1) // nm
         {
             auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
             auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
-            writeCoordinates(mol->gmxAtomsConst(), pdb, title, xrmsd);
+            writeCoordinates(mol->gmxAtomsConst(), pdb, title, coords, xmin);
         }
-        auto eAfter = mol->energyTerms();
         tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
                                            "Term", "Before", "After", "Difference"));
-        for(auto &ep : ePlot)
+        for(auto &ep : eBefore)
         {
+            auto eb = ep.second;
+            auto ea = eAfter[ep.first];
             tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
-                                               interaction_function[ep].name,
-                                               eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]));
+                                               interactionTypeToString(ep.first).c_str(),
+                                               eb, ea, ea-eb));
         }
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis etc.
-        doFrequencyAnalysis(mol, molHandler_, forceComp, atomenergy, lsq_freq, tcout);
+        doFrequencyAnalysis(mol, molHandler_, forceComp, &coords,
+                            atomenergy, lsq_freq, tcout);
         
-        // Restore original coordinates
-        mol->restoreCoordinates(coordSet::Original);
     }
     else
     {
-        for(auto &ep : ePlot)
+        for(auto &ep : eBefore)
         {
             tcout->push_back(gmx::formatString("   %-20s  %10.3f",
-                                               interaction_function[ep].name, eBefore[ep]));
+                                               interactionTypeToString(ep.first).c_str(),
+                                               ep.second));
         }
     }
+    return eBefore[InteractionType::EPOT];
 }
 
 void TuneForceFieldPrinter::print(FILE                           *fp,
@@ -964,25 +971,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         { MolPropObservable::OCTUPOLE,     oct_toler_  },
         { MolPropObservable::HEXADECAPOLE, hex_toler_  },
     };
-    // Extract terms to print for the enery terms
-    std::vector<int> ePlot = { F_EPOT, F_COUL_SR };
-    {
-        std::vector<InteractionType> includeTerms = { InteractionType::BONDS, InteractionType::ANGLES,
-            InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS,
-            InteractionType::IMPROPER_DIHEDRALS, InteractionType::VDW,
-            InteractionType::POLARIZATION };
-        for (const auto &ii : includeTerms)
-        {
-            if (pd->interactionPresent(ii))
-            {
-                ePlot.push_back(pd->findForcesConst(ii).fType());
-            }
-        }
-    }
     
     auto forceComp = new ForceComputer(pd);
     AtomizationEnergy atomenergy;
-    
+    std::map<std::string, double> molEpot;
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -1049,10 +1041,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol), forces);
             // Energies
             std::vector<std::string> tcout;
-            printEnergyForces(&tcout, forceComp, atomenergy,
-                              &(*mol), ePlot,
-                              &lsq_rmsf[ims], &lsq_epot[ims],
-                              &lsq_freq[ims]);
+            auto epot = printEnergyForces(&tcout, forceComp, atomenergy, &(*mol),
+                                          &lsq_rmsf[ims], &lsq_epot[ims],
+                                          &lsq_freq[ims]);
+            molEpot.insert({mol->getMolname(), epot});
             for(const auto &tout : tcout)
             {
                 fprintf(fp, "%s\n", tout.c_str());
@@ -1210,13 +1202,22 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                                                mol->getMolname().c_str()).c_str()));
             }
             // deltaE0 += mol->atomizationEnergy();
-            auto diff = std::abs(mol->potentialEnergy()-deltaE0);
-            if ((mol->support() != eSupport::No) && (diff > epotMax))
+            auto meiter = molEpot.find(mol->getMolname());
+            if (molEpot.end() != meiter)
             {
-                fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
-                        mol->getMolname().c_str(), mol->potentialEnergy(), deltaE0,
-                        iMolSelectName(mol->datasetType()));
-                nout++;
+                auto epot = meiter->second;
+                auto diff = std::abs(epot-deltaE0);
+                if ((mol->support() != eSupport::No) && (diff > epotMax))
+                {
+                    fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
+                            mol->getMolname().c_str(), epot, deltaE0,
+                            iMolSelectName(mol->datasetType()));
+                    nout++;
+                }
+            }
+            else
+            {
+                fprintf(fp, "WARNING: Cannot find %s in molEpot map\n", mol->getMolname().c_str());
             }
         }
         if (nout)

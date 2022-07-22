@@ -360,27 +360,37 @@ public:
     
 };
 
+enum class eMinimizeAlgorithm {
+    Steep, Newton
+};
+
+const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e);
+
+eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str);
+
 class SimulationConfigHandler : ConfigHandler
 {
 private:
     //! Number of integration steps
-    int      nsteps_             = 0;
+    int         nsteps_             = 0;
     //! The integration time step
-    double   deltat_             = 0.0002;
+    double      deltat_             = 0.0002;
     //! Initial simulation temperature
-    double   temperature_        = 0;
+    double      temperature_        = 0;
     //! Random number seed for generating velocities
-    int      seed_               = 0;
+    int         seed_               = 0;
     //! How often to write coordinates
-    int      nstxout_            = 1;
+    int         nstxout_            = 1;
     //! How often to write velocities
-    int      nstvout_            = 0;
+    int         nstvout_            = 0;
     //! How often to write energies
-    int      nstener_            = 1;
+    int         nstener_            = 1;
     //! Minmize (before MD)
-    bool     minimize_           = false;
+    bool        minimize_           = false;
+    //! Minimization algorithm
+    eMinimizeAlgorithm minAlg_ = eMinimizeAlgorithm::Newton;
     //! Run normal mode analysis instead of MD
-    bool     nma_                = false;
+    bool        nma_                = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -417,6 +427,9 @@ public:
     
     //! \return whether or not to do a normal mode analysis
     bool nma() const { return nma_; }
+    
+    //! \return the minimization algorithm string
+    eMinimizeAlgorithm minAlg() const { return minAlg_; }
 };
 
 } //namespace alexandria

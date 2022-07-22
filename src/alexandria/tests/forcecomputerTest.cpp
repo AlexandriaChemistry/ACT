@@ -136,16 +136,14 @@ protected:
         MyMol mp_;
         initMyMol(molname, pd, fcomp, &inputrecInstance, &mp_);
    
-        
-        auto atoms = mp_.atomsConst();
-        std::vector<gmx::RVec>            forces, coordinates;
-        std::map<InteractionType, double> energies;
-        for(size_t i = 0; i < atoms.size(); i++)
+        std::vector<gmx::RVec> coordinates, forces;
+        auto xo = mp_.xOriginal();
+        for(size_t i = 0; i < xo.size(); i++)
         {
             rvec xxx;
             for(int m = 0; m < DIM; m++)
             {
-                xxx[m] = mp_.x()[i][m]*stretch;
+                xxx[m] = xo[i][m]*stretch;
             }
             coordinates.push_back(xxx);
             forces.push_back({ 0, 0, 0 });
@@ -169,6 +167,7 @@ protected:
         }
         else
         {
+            std::map<InteractionType, double> gmxEnergies, actEnergies;
             if (stretch != 1)
             {
                 mp_.setX(coordinates);
@@ -181,46 +180,35 @@ protected:
             crtmp->nnodes = 1;
             PaddedVector<gmx::RVec> gmxforces;
             gmxforces.resizeWithPadding(mp_.atomsConst().size());
-            mp_.calculateEnergyOld(crtmp, &gmxforces, &shellRmsf);
-            auto ed = mp_.enerdata();
-            for(int i = 0; i < F_NRE; i++)
-            {
-                if (ed->term[i] != 0)
-                {
-                    std::string label = gmx::formatString("%s", interaction_function[i].name);
-                    if (stretch != 1)
-                    {
-                        label += gmx::formatString("%g", stretch);
-                    }
-                    label += "_gmx";
-                    checker_.checkReal(ed->term[i], label.c_str());
-                }
-            }
-            fcomp->compute(mp_.topology(), &coordinates, &forces, &energies);
             
-            for(auto &ener: energies)
+            auto fsc = pd->forcesConst();
+            mp_.calculateEnergyOld(crtmp, &gmxforces, &gmxEnergies, &shellRmsf);
+            fcomp->compute(mp_.topology(), &coordinates, &forces, &actEnergies);
+            for(auto &ifm : gmxEnergies)
             {
-                if (ener.second != 0)
+                int ftype = F_EPOT;
+                if (ifm.first != InteractionType::EPOT)
                 {
-                    // TODO remove this hack and make a real interactiontypetoftype.
-                    int ftype = F_EPOT;
-                    if (pd->interactionPresent(ener.first))
-                    {
-                        ftype = pd->findForcesConst(ener.first).fType();
-                    }
-                    std::string label(interaction_function[ftype].name);
-                    if (stretch != 1)
-                    {
-                        label += gmx::formatString("%g", stretch);
-                    }
-                    label += "_act";
-                    checker_.checkReal(ener.second, label.c_str());
-                    if (strict)
-                    {
-                        EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
-                    }
+                    auto fs = fsc.find(ifm.first);
+                    EXPECT_TRUE(fsc.end() != fs);
+                    ftype = fs->second.fType();
+                }
+                std::string label = gmx::formatString("%s", interaction_function[ftype].name);
+                if (stretch != 1)
+                {
+                    label += gmx::formatString("%g", stretch);
+                }
+                auto gmxlabel = label+"_gmx";
+                checker_.checkReal(ifm.second, gmxlabel.c_str());
+                auto actlabel = label+"_act";
+                auto actEner  = actEnergies[ifm.first];
+                checker_.checkReal(actEner, actlabel.c_str());
+                if (strict)
+                {
+                    EXPECT_TRUE(std::abs(ifm.second-actEner) < 1e-3);
                 }
             }
+            auto atoms = mp_.atomsConst();
             const char *xyz[DIM] = { "X", "Y", "Z" };
             for(size_t i = 0; i < forces.size(); i++)
             {
@@ -252,6 +240,11 @@ protected:
         }
     }
 };
+
+TEST_F (ForceComputerTest, MethaneThiol)
+{
+    test("methanethiol.sdf", "ACS-g", false);
+}
 
 TEST_F (ForceComputerTest, CarbonDioxide)
 {

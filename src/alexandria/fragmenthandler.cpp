@@ -37,13 +37,13 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const Poldata                    *pd,
-                                 const gmx::HostVector<gmx::RVec> &coordinates,
-                                 const std::vector<ActAtom>       &atoms,
-                                 const std::vector<Bond>          &bonds,
-                                 const std::vector<Fragment>      *fragments,
-                                 const std::vector<int>           &shellRenumber,
-                                 missingParameters                 missing)
+FragmentHandler::FragmentHandler(const Poldata                *pd,
+                                 const std::vector<gmx::RVec> &coordinates,
+                                 const std::vector<ActAtom>   &atoms,
+                                 const std::vector<Bond>      &bonds,
+                                 const std::vector<Fragment>  *fragments,
+                                 const std::vector<int>       &shellRenumber,
+                                 missingParameters            missing)
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");

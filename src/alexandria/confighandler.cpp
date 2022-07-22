@@ -348,6 +348,31 @@ void GAConfigHandler::check_pargs()
 * BEGIN: SimulationConfigHandler           *
 * * * * * * * * * * * * * * * * * * * * * */
 
+static const char *eminAlgs[4] = {nullptr, "Newton", "Steep", nullptr};
+
+std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
+    { eMinimizeAlgorithm::Steep,  "Steep"  },
+    { eMinimizeAlgorithm::Newton, "Newton" }
+};
+
+const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e)
+{
+    return eMinAlg2String[e];
+}
+
+eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
+{
+    auto eMinA = eMinimizeAlgorithm::Newton;
+    for(const auto &m : eMinAlg2String)
+    {
+        if (str == m.second)
+        {
+            eMinA = m.first;
+        }
+    }
+    return eMinA;
+}
+
 void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     std::vector<t_pargs> extra = {
@@ -367,6 +392,8 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Number of steps between writing energies." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
           "Minimize the energy with respect to input coordinates." },
+        { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
+          "Algorithm to use for minimization." },
         { "-nma",      FALSE, etBOOL, {&nma_},
           "Do a normal mode analysis rather than a MD simulation. Coordinates will be minimized before the NMA." }
           
@@ -379,9 +406,10 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
 void SimulationConfigHandler::check_pargs()
 {
-    GMX_RELEASE_ASSERT(nsteps_ > 0, "Number of steps must be larger than zero");
-    GMX_RELEASE_ASSERT(temperature_ > 0, "Temperature must be larger than zero");
+    GMX_RELEASE_ASSERT(nsteps_ >= 0, "Number of steps must be larger than zero");
+    GMX_RELEASE_ASSERT(temperature_ >= 0, "Temperature must be larger than zero");
     GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
+    minAlg_ = stringToEMinimizeAlgorithm(eminAlgs[0]);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

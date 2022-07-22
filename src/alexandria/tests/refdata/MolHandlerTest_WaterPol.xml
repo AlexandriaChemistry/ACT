@@ -3,48 +3,48 @@
 <ReferenceData>
   <Real Name="Morse before">-799.99014184846351</Real>
   <Real Name="Angle before">0.00062492073723482847</Real>
-  <Real Name="Lin. Angle before">0</Real>
-  <Real Name="Fourier Dih. before">0</Real>
-  <Real Name="Improper Dih. before">0</Real>
   <Real Name="Buck.ham (SR) before">4360.7219758548481</Real>
   <Real Name="Coulomb (SR) before">-78.7228561620812</Real>
   <Real Name="Polarization before">0.23100643708808649</Real>
-  <Real Name="Virtual site 2 before">0</Real>
-  <Real Name="Coordinate RMSD before minimizing">0</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.048958780046681881</Real>
-  <Real Name="Morse after">-395.24284093018986</Real>
-  <Real Name="Angle after">0.018145425639336566</Real>
-  <Real Name="Lin. Angle after">0</Real>
-  <Real Name="Fourier Dih. after">0</Real>
-  <Real Name="Improper Dih. after">0</Real>
-  <Real Name="Buck.ham (SR) after">108.81434160387228</Real>
-  <Real Name="Coulomb (SR) after">-74.921244806093</Real>
-  <Real Name="Polarization after">0.49806513857873885</Real>
-  <Real Name="Virtual site 2 after">0</Real>
+  <Real Name="Potential before">3482.2406092021288</Real>
+  <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.04895878042133979</Real>
+  <Real Name="Morse after">-395.242840971889</Real>
+  <Real Name="Angle after">0.018145462309050651</Real>
+  <Real Name="Buck.ham (SR) after">108.814341649073</Real>
+  <Real Name="Coulomb (SR) after">-74.921244981668906</Real>
+  <Real Name="Polarization after">0.49806527398346845</Real>
+  <Real Name="Potential after">-360.83353356819237</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
-    <Real>851.13813112152468</Real>
-    <Real>2151.1647181087274</Real>
-    <Real>2183.858805809934</Real>
+    <Real>851.13813162282349</Real>
+    <Real>2151.1647179813526</Real>
+    <Real>2183.8588068549452</Real>
   </Sequence>
   <Sequence Name="Intensities">
-    <Int Name="Length">3</Int>
-    <Real>6.8563674016666445e-08</Real>
-    <Real>0.019951603636437793</Real>
-    <Real>0.012810974103061803</Real>
+    <Int Name="Length">9</Int>
+    <Real>7.0347842913224335e-08</Real>
+    <Real>5.7099140149262601e-14</Real>
+    <Real>4.2814893558047491e-09</Real>
+    <Real>6.1764738596308111e-06</Real>
+    <Real>5.2859249231563739e-09</Real>
+    <Real>5.873517758614241e-09</Real>
+    <Real>7.7329378185409939e-08</Real>
+    <Real>6.6508129288619068e-11</Real>
+    <Real>2.6923584023130182e-09</Real>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">31.020135396728989</Real>
-  <Real Name="Delta H form (kJ/mol)">368.55591023684235</Real>
+  <Real Name="Zero point energy (kJ/mol)">31.020135405216109</Real>
+  <Real Name="Delta H form (kJ/mol)">729.38944382168711</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">144.91371233061693</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">62.013091984897002</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.71463150222192451</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">207.64143581773587</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">62.0130919606422</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.71463150080688398</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">207.64143579206603</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693218203427</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">2.437727944798195</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">27.381114381205048</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">2.4377279415582231</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">27.381114377965076</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">31.191937742290378</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">38.628808408305083</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">31.191937750456194</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">38.628808416470896</Real>
 </ReferenceData>

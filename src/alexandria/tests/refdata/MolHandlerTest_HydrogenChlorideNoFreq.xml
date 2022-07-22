@@ -2,23 +2,9 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">0.0014452799999988793</Real>
-  <Real Name="Angle before">0</Real>
-  <Real Name="Lin. Angle before">0</Real>
-  <Real Name="Proper Dih. before">0</Real>
-  <Real Name="Improper Dih. before">0</Real>
-  <Real Name="LJ (SR) before">0</Real>
-  <Real Name="Coulomb (SR) before">0</Real>
-  <Real Name="Polarization before">0</Real>
-  <Real Name="Virtual site 2 before">0</Real>
-  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Potential before">0.0014452799999988793</Real>
+  <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
   <Real Name="Bond after">1.0020628908086343e-27</Real>
-  <Real Name="Angle after">0</Real>
-  <Real Name="Lin. Angle after">0</Real>
-  <Real Name="Proper Dih. after">0</Real>
-  <Real Name="Improper Dih. after">0</Real>
-  <Real Name="LJ (SR) after">0</Real>
-  <Real Name="Coulomb (SR) after">0</Real>
-  <Real Name="Polarization after">0</Real>
-  <Real Name="Virtual site 2 after">0</Real>
+  <Real Name="Potential after">1.0020628908086343e-27</Real>
 </ReferenceData>

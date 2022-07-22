@@ -143,7 +143,9 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
             print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
         # Some hacking for MacOS only
         if "darwin" in HOST or "mac" in HOST:
-            oblib = ( "%s/lib64/openbabel" % destination )
+            oblib = ( "%s/lib/openbabel" % destination )
+            if not os.path.exists(oblib):
+                oblib = ( "%s/lib64/openbabel" % destination )
             if os.path.exists(oblib):
                 os.chdir(oblib)
                 for obversion in glob.glob("*"):
