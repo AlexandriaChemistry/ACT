@@ -210,6 +210,11 @@ protected:
             auto flat = hessian.flatten();
             checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
             checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
+            std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
+            int result = hessian.solve(forceZero, &deltaX);
+            EXPECT_TRUE(0 == result);
+            checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
+            
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;

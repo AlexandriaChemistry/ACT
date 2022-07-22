@@ -61,6 +61,15 @@
     <Real>0</Real>
     <Real>-0.00094114547329127163</Real>
   </Sequence>
+  <Sequence Name="DeltaX">
+    <Int Name="Length">6</Int>
+    <Real>1.4556264161983906e-07</Real>
+    <Real>-4.8537740211555284e-08</Real>
+    <Real>-1.5124956340799455e-06</Real>
+    <Real>-8.8856188913060216e-08</Real>
+    <Real>2.9625067746465831e-08</Real>
+    <Real>-1.5161883930168859e-06</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
     <Real>2721.2161283414357</Real>
