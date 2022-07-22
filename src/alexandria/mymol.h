@@ -351,13 +351,6 @@ public:
      */
     const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
 
-    /*! \brief Update the internal coordinates
-     * Mainly for testing to see what happens to energies and forces
-     * if coordinates are changed.
-     * \param[in] coordinates The new coordinates.
-     */
-    void setX(const std::vector<gmx::RVec> &coordinates);
-    
     /*! \brief
      * \return mdatoms structure
      */
@@ -518,12 +511,14 @@ public:
      * This code is maintained only for comparing ACT native energies and forces
      * to the gromacs code. Do not use inproduction code.
      * \param[in]  crtmp         Temporary communication record with one core only.
+     * \param[in]  coordinates   The atomic coordinates
      * \param[out] forces        Force array
      * \param[out] energies      The energy components
      * \param[out] shellForceRMS Root mean square force on the shells
      * \return immStatus::OK if everything worked fine, error code otherwise.
      */
     immStatus calculateEnergyOld(const t_commrec                   *crtmp,
+                                 std::vector<gmx::RVec>            *coordinates,
                                  PaddedVector<gmx::RVec>           *forces,
                                  std::map<InteractionType, double> *energies,
                                  real                              *shellForceRMS);

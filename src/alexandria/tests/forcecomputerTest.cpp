@@ -168,10 +168,6 @@ protected:
         else
         {
             std::map<InteractionType, double> gmxEnergies, actEnergies;
-            if (stretch != 1)
-            {
-                mp_.setX(coordinates);
-            }
             // This turn comparison of gromacs and ACT on. For debugging
             // you may want to set this to false.
             bool       strict    = true;
@@ -182,7 +178,7 @@ protected:
             gmxforces.resizeWithPadding(mp_.atomsConst().size());
             
             auto fsc = pd->forcesConst();
-            mp_.calculateEnergyOld(crtmp, &gmxforces, &gmxEnergies, &shellRmsf);
+            mp_.calculateEnergyOld(crtmp, &coordinates, &gmxforces, &gmxEnergies, &shellRmsf);
             fcomp->compute(mp_.topology(), &coordinates, &forces, &actEnergies);
             for(auto &ifm : gmxEnergies)
             {

@@ -465,7 +465,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             real shellForceRMS;
             PaddedVector<gmx::RVec> gmxforces;
             gmxforces.resizeWithPadding(myatoms.size());
-            calculateEnergyOld(crtmp, &gmxforces, &energies, &shellForceRMS);
+            calculateEnergyOld(crtmp, &coords, &gmxforces, &energies, &shellForceRMS);
             for(size_t i = 0; i < myatoms.size(); i++)
             {
                 copy_rvec(gmxforces[i], forces[i]);
@@ -1529,6 +1529,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
 }
 
 immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
+                                    std::vector<gmx::RVec>            *coordinates,
                                     PaddedVector<gmx::RVec>           *forces,
                                     std::map<InteractionType, double> *energies,
                                     real                              *shellForceRMS)
@@ -1541,6 +1542,10 @@ immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
     auto          mdatoms     = MDatoms_->get()->mdatoms();
     updateMDAtoms();
 
+    for(size_t i = 0; i < coordinates->size(); i++)
+    {
+        copy_rvec((*coordinates)[i], state_->x[i]);
+    }
     // (Re)create v-sites if needed
     if (!vsite_)
     {
@@ -1630,6 +1635,11 @@ immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
         {
             energies->insert({ifm.second, enerd_->term[ifm.first]});
         }
+    }
+    auto xOri = xOriginal();
+    for(size_t i = 0; i < coordinates->size(); i++)
+    {
+        copy_rvec(xOri[i], state_->x[i]);
     }
 
     return imm;
@@ -2454,14 +2464,6 @@ void MyMol::initQgenResp(const Poldata     *pd,
                     getMolname().c_str(), qgr->nEsp(),
                     ci->electrostaticPotentialConst().size());
         }
-    }
-}
-
-void MyMol::setX(const std::vector<gmx::RVec> &coordinates)
-{
-    for(size_t i = 0; i < coordinates.size(); i++)
-    {
-        copy_rvec(coordinates[i], state_->x[i]);
     }
 }
 
