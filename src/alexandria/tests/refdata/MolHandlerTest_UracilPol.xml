@@ -1316,6 +1316,45 @@
     <Real>0.0013810880720212611</Real>
     <Real>908.51334363256478</Real>
   </Sequence>
+  <Sequence Name="Equilibrium force">
+    <Int Name="Length">36</Int>
+    <Real>-2.5303342870208745e-05</Real>
+    <Real>0.00043093492865864391</Real>
+    <Real>0</Real>
+    <Real>-0.00028987189187290596</Real>
+    <Real>0.00016755753296138209</Real>
+    <Real>0</Real>
+    <Real>-9.1727941196495522e-05</Real>
+    <Real>-0.00010638790774919471</Real>
+    <Real>0</Real>
+    <Real>0.00073717309302878675</Real>
+    <Real>-0.00099781321280545399</Real>
+    <Real>0</Real>
+    <Real>-4.5854775578391127e-05</Real>
+    <Real>-0.00025404801192507875</Real>
+    <Real>0</Real>
+    <Real>-7.1537590798698147e-05</Real>
+    <Real>7.3346765134374436e-05</Real>
+    <Real>0</Real>
+    <Real>-0.00029133089464039585</Real>
+    <Real>-0.00033455645791491406</Real>
+    <Real>0</Real>
+    <Real>0.00015931963483239997</Real>
+    <Real>0.00025821367188427757</Real>
+    <Real>0</Real>
+    <Real>0.00013223440674892117</Real>
+    <Real>0.00025362253074945329</Real>
+    <Real>0</Real>
+    <Real>-3.8755455449290821e-05</Real>
+    <Real>0.00037735573306463266</Real>
+    <Real>0</Real>
+    <Real>0.00016095973586516266</Real>
+    <Real>0.00061803017365491542</Real>
+    <Real>0</Real>
+    <Real>-0.00033406142466674282</Real>
+    <Real>-0.00048163034784920455</Real>
+    <Real>0</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">30</Int>
     <Real>1.0465857128849376</Real>

@@ -93,6 +93,18 @@
     <Real>-0</Real>
     <Real>825216.50000082538</Real>
   </Sequence>
+  <Sequence Name="Equilibrium force">
+    <Int Name="Length">9</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>2.2904358965014637e-11</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-2.4431373590871885e-11</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>1.5270146258572481e-12</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">4</Int>
     <Real>842.74874632527076</Real>
