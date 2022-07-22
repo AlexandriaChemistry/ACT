@@ -434,7 +434,6 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
     auto       myatoms = topology_->atoms();
     t_commrec *crtmp   = init_commrec();
     crtmp->nnodes      = 1;
-    backupCoordinates(coordSet::Original);
     forceMap->clear();
     enerMap->clear();
     enerAllMap->clear();
@@ -534,7 +533,6 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             forceMap->push_back(std::move(thisForce));
         }
     }
-    restoreCoordinates(coordSet::Original);
     done_commrec(crtmp);
 }
 
@@ -1735,10 +1733,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     {
         GenerateGromacs(mdlog, cr, nullptr, iChargeType);
     }
-    if (backupCoordinates_[coordSet::Original].empty())
-    {
-        backupCoordinates(coordSet::Original);
-    }
     // TODO check whether this needed
     std::vector<gmx::RVec>            coords = xOriginal();
     std::map<InteractionType, double> energies;
@@ -1896,34 +1890,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         break;
     }
     return imm;
-}
-
-void MyMol::backupCoordinates(coordSet cs)
-{
-    auto natoms = topology_->nAtoms();
-    backupCoordinates_[cs].resize(natoms);
-    for(size_t i = 0; i < natoms; i++)
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            backupCoordinates_[cs][i][m] = state_->x[i][m];
-        }
-    }
-}
-
-void MyMol::restoreCoordinates(coordSet cs)
-{
-    auto natoms = topology_->nAtoms();
-    if (backupCoordinates_[cs].size() == natoms)
-    {
-        for(size_t i = 0; i < natoms; i++)
-        {
-            for(int m = 0; m < DIM; m++)
-            {
-                state_->x[i][m] = backupCoordinates_[cs][i][m];
-            }
-        }
-    }
 }
 
 void MyMol::CalcPolarizability(const ForceComputer *forceComp)

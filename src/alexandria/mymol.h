@@ -83,15 +83,6 @@ enum class eSupport {
     Remote
 };
 
-//! Distinguish different sets of coordinates
-enum class coordSet {
-    //! The original coordinates
-    Original,
-    //! The minimized coordinates
-    Minimized
-};
-
-
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -149,23 +140,6 @@ private:
     gmx::RVec                        CenterOfCharge_ = { 0, 0, 0 };
     //! Function that returns true if a molecule is symmetric
     bool IsSymmetric(real toler) const;
-    //! Map of vectors to back up coordinates
-    std::map<coordSet, std::vector<gmx::RVec> > backupCoordinates_;
-    /*! Make a back up of coordinates
-     * \param[in] cs Which data set to back up to
-     */
-    /*! Check whether a coordinate set is present
-     * \param[in] cs The coordinate set wanted
-     * \return Whether or not it is there
-     */
-    bool hasCoordinateSet(coordSet cs) const { return backupCoordinates_.find(cs) != backupCoordinates_.end(); }
-    
-    /*! Restored backed up coordinates
-     * \param[in] cs Which data set to restore from
-     */
-    void restoreCoordinates(coordSet cs);
-    
-    void backupCoordinates(coordSet cs);
     /*! \brief
      * Generate Atoms based on quantum calculation with specified level of theory.
      * If the requested level of theory is not present, another
