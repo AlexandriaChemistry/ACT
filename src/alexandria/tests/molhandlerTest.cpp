@@ -192,6 +192,23 @@ protected:
 
         if (nma && eMinimizeStatus::OK == eMin)
         {
+            std::vector<double> forceZero;
+            std::map<InteractionType, double> energyZero;
+            std::vector<int> atomIndex;
+            auto atoms = mp_.atomsConst();
+            for(size_t atom = 0; atom < atoms.size(); atom++)
+            {
+                if (atoms[atom].pType() == eptAtom)
+                {
+                    atomIndex.push_back(atom);
+                }
+            }
+            const int     matrixSide = DIM*atomIndex.size();
+            MatrixWrapper hessian(matrixSide, matrixSide);
+            mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
+                              &hessian, &forceZero, &energyZero);
+            auto flat = hessian.flatten();
+            checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;

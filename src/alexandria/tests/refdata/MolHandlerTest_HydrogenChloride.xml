@@ -7,6 +7,45 @@
   <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
   <Real Name="Bond after">1.0020628908086343e-27</Real>
   <Real Name="Potential after">1.0020628908086343e-27</Real>
+  <Sequence Name="Hessian">
+    <Int Name="Length">36</Int>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289055.99999627762</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-289056.00000028912</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-289055.99999627762</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289056.00000028912</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
     <Real>2883.1610174034954</Real>

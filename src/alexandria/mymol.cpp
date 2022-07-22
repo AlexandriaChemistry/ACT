@@ -1512,7 +1512,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
         int j = 0;
         for (size_t i = astart[ff]; i < astart[ff+1]; i++)
         {
-            copy_rvec(state_->x[i], myx[j]);
+            copy_rvec(coords[i], myx[j]);
             clear_rvec(forces[j]);
             j++;
         }

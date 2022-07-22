@@ -13,6 +13,45 @@
   <Real Name="Coulomb (SR) after">-58.377647460027219</Real>
   <Real Name="Polarization after">1.0209137840818392</Real>
   <Real Name="Potential after">-310.54285674517678</Real>
+  <Sequence Name="Hessian">
+    <Int Name="Length">36</Int>
+    <Real>-21.736395292491945</Real>
+    <Real>-7.251510164263415</Real>
+    <Real>-9.8692314726106363e-07</Real>
+    <Real>-35.605593135779614</Real>
+    <Real>-11.878401415956507</Real>
+    <Real>-1.1359218500666021e-06</Real>
+    <Real>-0</Real>
+    <Real>-21.736395287442818</Real>
+    <Real>-7.251556113345754</Real>
+    <Real>-9.8738664315400774e-07</Real>
+    <Real>-35.605663788729245</Real>
+    <Real>-11.878327567656317</Real>
+    <Real>-0.00016703438632248435</Real>
+    <Real>3.3850255931611173e-05</Real>
+    <Real>257493.88855615509</Real>
+    <Real>-1.0179971638990537</Real>
+    <Real>-5.4626525525236502e-05</Real>
+    <Real>-257501.67993584229</Real>
+    <Real>-35.605663793133601</Real>
+    <Real>-11.878401417985772</Real>
+    <Real>-1.1372914922406683e-06</Real>
+    <Real>-14.049162847287874</Real>
+    <Real>-4.6921247253059768</Real>
+    <Real>-1.1586960442843615e-06</Real>
+    <Real>-0</Real>
+    <Real>-35.605663788118299</Real>
+    <Real>-11.878478380080548</Real>
+    <Real>-1.1362520002042859e-06</Real>
+    <Real>-14.049220167572569</Real>
+    <Real>-4.6920906864640637</Real>
+    <Real>1.9198864720237907e-05</Real>
+    <Real>5.5806026466598269e-05</Real>
+    <Real>-257501.67985407304</Real>
+    <Real>-1.5794691847759168</Real>
+    <Real>-2.3206325749924872e-05</Real>
+    <Real>257495.54045277991</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
     <Real>2721.2161283414357</Real>
@@ -21,10 +60,10 @@
     <Int Name="Length">6</Int>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>8.1935785981640923e-15</Real>
-    <Real>2.2938332178025552e-16</Real>
-    <Real>2.883040877344696e-17</Real>
-    <Real>1.0298054349752603e-06</Real>
+    <Real>8.1935785978542624e-15</Real>
+    <Real>2.4956469039352381e-17</Real>
+    <Real>2.883040875013384e-17</Real>
+    <Real>1.0298054349752605e-06</Real>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">16.276486997445879</Real>
   <Real Name="Delta H form (kJ/mol)">361.93743071615336</Real>
