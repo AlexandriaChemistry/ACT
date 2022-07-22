@@ -225,16 +225,18 @@ int simulate(int argc, char *argv[])
     {
         MolHandler molhandler;
         std::vector<gmx::RVec> coords = mymol.xOriginal();
+        std::vector<gmx::RVec> xmin   = coords;
         auto eMin = eMinimizeStatus::OK;
         if (sch.nma() || sch.minimize())
         {
             auto eMinAlg = sch.minAlg();
             std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, &coords,
+            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, &xmin,
                                                   &energies, logFile, eMinAlg, maxIter,
                                                   overRelax, forceToler);
-            fprintf(logFile, "Final energy: %g. Minimization status: %s.\n",
-                    energies[InteractionType::EPOT],
+            auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
+            fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm. Minimization status: %s.\n",
+                    energies[InteractionType::EPOT], rmsd,
                     eMinimizeStatusToString(eMin).c_str());
             matrix box;
             clear_mat(box);
