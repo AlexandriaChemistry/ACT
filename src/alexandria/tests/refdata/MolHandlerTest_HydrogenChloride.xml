@@ -26,32 +26,32 @@
     <Real>0</Real>
     <Real>1.2417231955442257e-05</Real>
     <Real>0</Real>
-    <Real>-6.2086159777211291e-06</Real>
-    <Real>0.35355339059327379</Real>
-    <Real>-0.35355339059327379</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>-6.2086159777211291e-06</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-1.2417231955442258e-05</Real>
     <Real>-1.2417231955442258e-05</Real>
     <Real>0</Real>
-    <Real>0.5</Real>
+    <Real>1</Real>
     <Real>0</Real>
     <Real>-1</Real>
-    <Real>0.35355339059327379</Real>
+    <Real>0.70710678118654757</Real>
     <Real>0</Real>
     <Real>-289055.9999982834</Real>
-    <Real>-250329.48556143744</Real>
-    <Real>0.094734345493206251</Real>
+    <Real>0.70710678118164094</Real>
+    <Real>0.70710678119145409</Real>
     <Real>0</Real>
-    <Real>-0.35355339059327379</Real>
-    <Real>0.5</Real>
-    <Real>-250329.48556143744</Real>
+    <Real>-0.70710678118654757</Real>
     <Real>0</Real>
-    <Real>0</Real>
+    <Real>-500659.67822965607</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0.094734345493206251</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.51763809020504159</Real>
     <Real>0</Real>
     <Real>0</Real>
   </Sequence>
@@ -64,53 +64,92 @@
     <Real>0</Real>
     <Real>3.2091662660604925e-11</Real>
   </Sequence>
+  <Sequence Name="Symmetrized Hessian">
+    <Int Name="Length">36</Int>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289055.99999627762</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-289055.99999828334</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>0</Real>
+    <Real>-289055.99999828334</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289056.00000028912</Real>
+  </Sequence>
   <Sequence Name="Eigenvalues">
     <Int Name="Length">6</Int>
-    <Real>-433583.69381175528</Real>
-    <Real>-1.530883730302875e-05</Real>
-    <Real>-1.2348382999225075e-05</Real>
-    <Real>-1.4640240828094583e-07</Real>
-    <Real>2.4073233131531452e-07</Real>
-    <Real>144527.69381620144</Real>
+    <Real>6.7762635780344027e-21</Real>
+    <Real>1.2845606851575328e-11</Real>
+    <Real>3.4924596548080444e-10</Real>
+    <Real>1.7560617838519029e-05</Real>
+    <Real>1.7560630684144664e-05</Real>
+    <Real>578111.99999656668</Real>
   </Sequence>
   <Sequence Name="Eigenvectors">
     <Int Name="Length">36</Int>
-    <Real>-8.2733630453991509e-07</Real>
-    <Real>2.9846526072851987e-07</Real>
-    <Real>5.7658964386364531e-07</Real>
-    <Real>-0.8660255566755215</Real>
-    <Real>-0.49999973518364138</Real>
-    <Real>1.8921921064601733e-07</Real>
-    <Real>0.20347337285967837</Real>
-    <Real>0.30836746574498292</Real>
-    <Real>0.92920978600436865</Real>
-    <Real>1.420450048528199e-06</Real>
-    <Real>-1.5446818104614124e-06</Real>
-    <Real>-0.0087901192502964128</Real>
-    <Real>0.97687143893108075</Real>
-    <Real>-0.12765984344571329</Real>
-    <Real>-0.17153310313878012</Real>
-    <Real>-1.6231400390420703e-07</Real>
-    <Real>-1.6088083341359027e-06</Real>
-    <Real>0.0012452698911211266</Real>
-    <Real>0.041046700877659742</Real>
-    <Real>0.58446864620278982</Real>
-    <Real>-0.19551034718667265</Real>
-    <Real>-1.215981587088244e-06</Real>
-    <Real>2.4592723713579012e-06</Real>
-    <Real>0.78643961884454838</Real>
-    <Real>0.051341471367190535</Real>
-    <Real>0.7396004813654854</Real>
-    <Real>-0.26252861225956714</Real>
-    <Real>-1.5689424804898877e-06</Real>
-    <Real>2.5375592904719468e-06</Real>
-    <Real>-0.61760335897561269</Real>
-    <Real>1.4329895261430116e-06</Real>
-    <Real>-3.34166318466389e-06</Real>
-    <Real>2.9960540218754161e-06</Real>
-    <Real>-0.49999973517879909</Real>
-    <Real>0.86602555666609904</Real>
-    <Real>-3.2773751803704646e-07</Real>
+    <Real>-0.70710678118654757</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118654757</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710626393677023</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710729843594688</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118900094</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118409409</Real>
+    <Real>0.70710678118654746</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118654768</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710729843594655</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710626393677001</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710678118409398</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118900094</Real>
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>

@@ -199,28 +199,36 @@ protected:
                 }
             }
             const int     matrixSide = DIM*atomIndex.size();
-            MatrixWrapper hessian(matrixSide, matrixSide);
-            mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
-                              &hessian, &forceZero, &energyZero);
-                       // Now test the solver used in minimization
-            std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
-            int result = hessian.solve(forceZero, &deltaX);
-            EXPECT_TRUE(0 == result);
-            checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
-            
-            hessian.averageTriangle();
-            auto flat = hessian.flatten();
-            checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
-            checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
-            
-            // Now test the solver used for computing frequencies etc.
-            std::vector<double> eigenvalues(matrixSide);
-            std::vector<double> eigenvectors(matrixSide*matrixSide);
-            eigensolver(flat.data(), matrixSide, 0, matrixSide- 1,
-                        eigenvalues.data(), eigenvectors.data());
-            checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
-            checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
-    
+            {
+                MatrixWrapper hessian(matrixSide, matrixSide);
+                mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
+                                  &hessian, &forceZero, &energyZero);
+                // Now test the solver used in minimization
+                std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
+                int result = hessian.solve(forceZero, &deltaX);
+                EXPECT_TRUE(0 == result);
+                checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
+                
+                auto flat = hessian.flatten();
+                checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
+                checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
+            }
+            {
+                // Now test the solver used for computing frequencies etc.
+                // We need  new matrix since the previous one is destroyed
+                MatrixWrapper hessian(matrixSide, matrixSide);
+                mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
+                                  &hessian, &forceZero, &energyZero);
+                hessian.averageTriangle();
+                auto flat = hessian.flatten();
+                checker_.checkSequence(flat.begin(), flat.end(), "Symmetrized Hessian");
+                std::vector<double> eigenvalues(matrixSide);
+                std::vector<double> eigenvectors(matrixSide*matrixSide);
+                eigensolver(flat.data(), matrixSide, 0, matrixSide- 1,
+                            eigenvalues.data(), eigenvectors.data());
+                checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
+                checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
+            }
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
