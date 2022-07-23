@@ -64,6 +64,54 @@
     <Real>0</Real>
     <Real>5.5511151231587534e-17</Real>
   </Sequence>
+  <Sequence Name="Eigenvalues">
+    <Int Name="Length">6</Int>
+    <Real>-2.0053703337907791e-06</Real>
+    <Real>6.7762635780344027e-21</Real>
+    <Real>1.2845606851575328e-11</Real>
+    <Real>1.7560617838519029e-05</Real>
+    <Real>1.7560630684144664e-05</Real>
+    <Real>578111.99999857252</Real>
+  </Sequence>
+  <Sequence Name="Eigenvectors">
+    <Int Name="Length">36</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710678118900094</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710678118409409</Real>
+    <Real>-0.70710678118654757</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118654757</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710626393677023</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710729843594688</Real>
+    <Real>0</Real>
+    <Real>0.70710678118654746</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118654768</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710729843594655</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710626393677001</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.70710678118409398</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.70710678118900094</Real>
+  </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
     <Real>2883.1610174034954</Real>

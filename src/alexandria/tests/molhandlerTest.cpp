@@ -50,13 +50,8 @@
 #include "alexandria/molhandler.h"
 #include "alexandria/mymol.h"
 #include "alexandria/thermochemistry.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/hardware/detecthardware.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -144,7 +139,6 @@ protected:
         }
         // Needed for GenerateCharges
         CommunicationRecord cr;
-        auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
         double shellTolerance = 1e-4;
@@ -192,6 +186,7 @@ protected:
 
         if (nma && eMinimizeStatus::OK == eMin)
         {
+            // First, test calculation of the Hessian
             std::vector<double> forceZero;
             std::map<InteractionType, double> energyZero;
             std::vector<int> atomIndex;
@@ -210,11 +205,20 @@ protected:
             auto flat = hessian.flatten();
             checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
             checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
+            // Now test the solver used in minimization
             std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
             int result = hessian.solve(forceZero, &deltaX);
             EXPECT_TRUE(0 == result);
             checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
             
+            // Now test the solver used for computing frequencies etc.
+            std::vector<double> eigenvalues(matrixSide);
+            std::vector<double> eigenvectors(matrixSide*matrixSide);
+            eigensolver(flat.data(), matrixSide, 0, matrixSide,// - 1,
+                        eigenvalues.data(), eigenvectors.data());
+            checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
+            checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
+    
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
