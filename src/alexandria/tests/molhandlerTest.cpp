@@ -214,7 +214,7 @@ protected:
             // Now test the solver used for computing frequencies etc.
             std::vector<double> eigenvalues(matrixSide);
             std::vector<double> eigenvectors(matrixSide*matrixSide);
-            eigensolver(flat.data(), matrixSide, 0, matrixSide,// - 1,
+            eigensolver(flat.data(), matrixSide, 0, matrixSide- 1,
                         eigenvalues.data(), eigenvectors.data());
             checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
             checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
