@@ -7,53 +7,44 @@
   <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
   <Real Name="Bond after">1.0020628908086343e-27</Real>
   <Real Name="Potential after">1.0020628908086343e-27</Real>
-  <Sequence Name="DeltaX">
-    <Int Name="Length">6</Int>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>-5.5511151231587522e-17</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>5.5511151231587534e-17</Real>
-  </Sequence>
   <Sequence Name="Hessian">
     <Int Name="Length">36</Int>
-    <Real>-1.2417231955442258e-05</Real>
+    <Real>8.7803089192595143e-06</Real>
     <Real>-0</Real>
     <Real>-0</Real>
-    <Real>-0.41421356237309509</Real>
+    <Real>-8.7803089192595143e-06</Real>
     <Real>-0</Real>
     <Real>0</Real>
-    <Real>1.2417231955442257e-05</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
     <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>-1.2417231955442258e-05</Real>
-    <Real>-1.2417231955442258e-05</Real>
-    <Real>0</Real>
-    <Real>1</Real>
-    <Real>0</Real>
-    <Real>-1</Real>
-    <Real>0.70710678118654757</Real>
-    <Real>0</Real>
-    <Real>-289055.9999982834</Real>
-    <Real>0.70710678118164094</Real>
-    <Real>0.70710678119145409</Real>
-    <Real>0</Real>
-    <Real>-0.70710678118654757</Real>
-    <Real>0</Real>
-    <Real>-500659.67822965607</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>-0.51763809020504159</Real>
-    <Real>0</Real>
-    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289055.99999627762</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-289056.00000028912</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>8.7803089192595143e-06</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-289055.99999627762</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>289056.00000028912</Real>
   </Sequence>
   <Sequence Name="Equilibrium force">
     <Int Name="Length">6</Int>
@@ -63,6 +54,15 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>3.2091662660604925e-11</Real>
+  </Sequence>
+  <Sequence Name="DeltaX">
+    <Int Name="Length">6</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-5.5511151231587522e-17</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>5.5511151231587534e-17</Real>
   </Sequence>
   <Sequence Name="Symmetrized Hessian">
     <Int Name="Length">36</Int>
