@@ -118,6 +118,7 @@ int simulate(int argc, char *argv[])
     double                    overRelax  = 1.0;
     int                       maxIter    = 0;
     bool                      verbose    = false;
+    bool                      lapack     = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -133,6 +134,8 @@ int simulate(int argc, char *argv[])
           "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
+        { "-lapack", FALSE, etBOOL, {&lapack},
+          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -255,7 +258,7 @@ int simulate(int argc, char *argv[])
                     AtomizationEnergy        atomenergy;
                     std::vector<std::string> output;
                     doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
-                                        atomenergy, nullptr, &output);
+                                        atomenergy, nullptr, &output, lapack);
                     for(const auto &op : output)
                     {
                         fprintf(logFile, "%s\n", op.c_str());

@@ -51,6 +51,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
 
+#include "Eigen/Eigenvalues"
+
 namespace alexandria
 {
 
@@ -159,12 +161,13 @@ void MolHandler::computeHessian(const MyMol                       *mol,
     (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
 }
 
-void MolHandler::nma(const MyMol            *mol,
-                     const ForceComputer    *forceComp,
-                     std::vector<gmx::RVec> *coords,
-                     std::vector<double>    *frequencies,
-                     std::vector<double>    *intensities,
-                     FILE                   *fp) const
+void MolHandler::nma(const MyMol              *mol,
+                     const ForceComputer      *forceComp,
+                     std::vector<gmx::RVec>   *coords,
+                     std::vector<double>      *frequencies,
+                     std::vector<double>      *intensities,
+                     std::vector<std::string> *output,
+                     bool                      useLapack) const
 {
     // Get the indices of the real atoms of the molecule (not shells and such)
     auto atoms = mol->topology()->atoms();
@@ -211,12 +214,67 @@ void MolHandler::nma(const MyMol            *mol,
         rot_trans = 5;
     }
     // Call diagonalization routine
-    // fprintf(stderr, "\nDiagonalizing to find vectors...\n");
-    auto hessianFlat = hessian.flatten();
+    if (output)
+    {
+        output->push_back("Diagonalizing Hessian to find eigenvectors.");
+    }
     std::vector<double> eigenvalues(matrixSide);
     std::vector<double> eigenvectors(matrixSide*matrixSide);
-    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
-                eigenvalues.data(), eigenvectors.data());
+    if (useLapack)
+    {
+        if (output)
+        {
+            output->push_back("Using LAPACK to solve eigenvalue problem.");
+        }
+        auto hessianFlat = hessian.flatten();
+        eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
+                    eigenvalues.data(), eigenvectors.data());
+    }
+    else
+    {
+        if (output)
+        {
+            output->push_back("Using Eigen to solve eigenvalue problem.");
+        }
+        Eigen::MatrixXd mat(matrixSide, matrixSide);
+        for(int col = 0; col < matrixSide; col++)
+        {
+            for(int row = 0; row < matrixSide; row++)
+            {
+                mat(col, row) = hessian.get(col, row);
+            }
+        }
+        bool computeEigenVectors = true;
+        Eigen::EigenSolver<Eigen::MatrixXd> solver(mat, computeEigenVectors);
+        typedef struct
+        {
+            size_t index;
+            double value;
+        } iv_t;
+        std::vector<iv_t> iv;
+        size_t i = 0;
+        for(auto &ev : solver.eigenvalues())
+        {
+            iv.push_back({i++, ev.real()});
+        }
+        std::sort(iv.begin(), iv.end(),
+                  [](const iv_t &a, const iv_t &b)
+                  { 
+                      return a.value < b.value; 
+                  });
+        for(int col = 0; col < matrixSide; col++)
+        {
+            eigenvalues[col] = iv[col].value;
+            auto icol = iv[col].index;
+            auto evec = solver.eigenvectors().col(icol);
+            for(int row = 0; row < matrixSide; row++)
+            {
+                size_t index = col*matrixSide + row;
+                auto irow = iv[row].index;
+                eigenvectors[index] = evec[irow].real();
+            }
+        }
+    }
     // Scale the output eigenvectors
     for (int i = 0; i < matrixSide; i++)
     {
@@ -239,9 +297,9 @@ void MolHandler::nma(const MyMol            *mol,
         auto val = eigenvalues[i];
         if (val < 0)
         {
-            if (fp)
+            if (output)
             {
-                fprintf(fp, "Warning: negative eigenvalue %zu = %g\n", i, val);
+                output->push_back(gmx::formatString("Warning: negative eigenvalue %zu = %g\n", i, val));
             }
             // We need to store something to be able to compare
             frequencies->push_back(0);
@@ -282,7 +340,7 @@ void MolHandler::nma(const MyMol            *mol,
         }
         intensities->push_back(In);
     }
-    if (fp)
+    if (output)
     {
         std::vector<GenericProperty *> harm;
         for (auto &ee : mol->experimentConst())
@@ -296,35 +354,36 @@ void MolHandler::nma(const MyMol            *mol,
         double delta = 0;
         if (!harm.empty())
         {
-            fprintf(fp, "Electronic vibrational frequencies: (%s):\n", unit);
+            output->push_back(gmx::formatString("Electronic vibrational frequencies: (%s):", unit));
             size_t k = 0;
+            std::string freq;
             for(auto &ff : harm[0]->getVector())
             {
-                fprintf(fp, "  %8.3f", convertFromGromacs(ff, unit));
+                freq += gmx::formatString("  %8.3f", convertFromGromacs(ff, unit));
                 delta += gmx::square(ff - (*frequencies)[k]);
                 k++;
             }
-            fprintf(fp, "\n");
+            output->push_back(freq);
         }
-        fprintf(fp, "Alexandria vibrational frequencies: (%s):\n", unit);
+        output->push_back(gmx::formatString("Alexandria vibrational frequencies: (%s):", unit));
+        std::string actfreq;
         for (const auto &freq : *frequencies)
         {
-            fprintf(fp, "  %8.3f", convertFromGromacs(freq, unit));
+            actfreq += gmx::formatString("  %8.3f", convertFromGromacs(freq, unit));
         }
-        fprintf(fp, "Alexandria IR intensities: (%s):\n", uniti);
+        output->push_back(actfreq);
+        output->push_back(gmx::formatString("Alexandria IR intensities: (%s):", uniti));
+        std::string actinten;
         for (const auto &inten : *intensities)
         {
-            fprintf(fp, "  %8.3f", convertFromGromacs(inten, unit));
+            actinten += gmx::formatString("  %8.3f", convertFromGromacs(inten, uniti));
         }
+        output->push_back(actinten);
         if (delta > 0)
         {
-            fprintf(fp, "\nFrequency RMSD %g\n",
-                    convertFromGromacs(std::sqrt(delta/frequencies->size()),
-                                       unit));
-        }
-        else
-        {
-            fprintf(fp, "\n\n");
+            output->push_back(gmx::formatString("Frequency RMSD %g",
+                                               convertFromGromacs(std::sqrt(delta/frequencies->size()),
+                                                                  unit)));
         }
     }
     // Print eigenvalues and eigenvectors to debug files

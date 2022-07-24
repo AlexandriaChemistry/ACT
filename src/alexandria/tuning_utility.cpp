@@ -659,10 +659,12 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          std::vector<gmx::RVec>   *coords,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
-                         std::vector<std::string> *output)
+                         std::vector<std::string> *output,
+                         bool                      useLapack)
 {
     std::vector<double> alex_freq, intensities;
-    molhandler.nma(mol, forceComp, coords, &alex_freq, &intensities, nullptr);
+    molhandler.nma(mol, forceComp, coords, &alex_freq, &intensities,
+                   output, useLapack);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
@@ -871,7 +873,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         
         // Do normal-mode analysis etc.
         doFrequencyAnalysis(mol, molHandler_, forceComp, &coords,
-                            atomenergy, lsq_freq, tcout);
+                            atomenergy, lsq_freq, tcout, false);
         
     }
     else

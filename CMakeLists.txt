@@ -458,6 +458,18 @@ if(GMX_LIBXML2)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 endif(GMX_LIBXML2)
 
+find_package(Eigen3)
+if(EIGEN3_FOUND)
+  add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
+  include_directories(${EIGEN3_INCLUDE_DIR})
+else()
+  find_package(Eigen2) # find and setup Eigen2
+  if(EIGEN2_FOUND)
+    add_definitions (-DHAVE_EIGEN)
+    include_directories(${EIGEN2_INCLUDE_DIR})
+  endif()
+endif()
+
 # When compiling alexandria three extra libraries become obligatory
 # CLN, sqlite3 and openbabel
 option(GMX_ALEXANDRIA "Build alexandria tools" ON)

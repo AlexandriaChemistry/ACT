@@ -152,6 +152,7 @@ void print_header(FILE                       *fp,
  * \param[in]    atomenergy   The atomization energy data
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
  * \param[inout] output       Output strings
+ * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  */
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
@@ -159,7 +160,8 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          std::vector<gmx::RVec>   *coords,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
-                         std::vector<std::string> *output);
+                         std::vector<std::string> *output,
+                         bool                      useLapack);
                             
 } // namespace alexandria
 
