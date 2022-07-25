@@ -438,8 +438,11 @@ public:
     //! \return whether or not to do a normal mode analysis
     bool nma() const { return nma_; }
     
-    //! \return the minimization algorithm string
+    //! \return the minimization algorithm
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
+    
+    //! \brief Set the minimization algorithm
+    void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
     
     //! \return whether or not to use Lapack iso Eigen.
     bool lapack() const { return lapack_; }

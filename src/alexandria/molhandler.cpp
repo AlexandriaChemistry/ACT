@@ -306,13 +306,16 @@ static void solveEigen(const MatrixWrapper          &hessian,
     }
     bool computeEigenVectors = true;
     Eigen::EigenSolver<Eigen::MatrixXd> solver(mat, computeEigenVectors);
+    auto evecs = solver.eigenvectors();
     if (output)
     {
-        for(long i =  0; i < matrixSide; i++)
+        for(Eigen::Index i =  0; i < matrixSide; i++)
         {
             double sumReal = 0, sumComplex = 0;
-            for(const auto &evec : solver.eigenvectors().col(i))
+            auto evv = evecs.col(i);
+            for(Eigen::Index j = 0; j < matrixSide; j++)
             {
+                auto evec   = evv[j];
                 sumReal    += gmx::square(evec.real());
                 sumComplex += gmx::square(std::abs(evec));
             }
@@ -326,27 +329,27 @@ static void solveEigen(const MatrixWrapper          &hessian,
     // so we have to this ourselves.
     typedef struct
     {
-        size_t index;
-        double value;
+        Eigen::Index index;
+        double       value;
     } iv_t;
     std::vector<iv_t> iv;
-    size_t i = 0;
-    for(auto &ev : solver.eigenvalues())
+    auto evals = solver.eigenvalues();
+    for(Eigen::Index i = 0; i < matrixSide; i++)
     {
         // Both eigenvalues and eigenvectors can be complex numbers
         // If we take the real part only, we reproduce the LAPACK
         // result, but is this correct?
-        iv.push_back({ i++, std::abs(ev) });
-        // iv.push_back({ i++, ev.real() });
+        iv.push_back({ i, std::abs(evals[i]) });
+        // iv.push_back({ i++, evals[i].real() });
     }
     std::sort(iv.begin(), iv.end(), [](const iv_t &a, const iv_t &b)
               { return a.value < b.value; });
 
     intensities->resize(matrixSide, 0.0);
-    for(int col = 0; col < matrixSide; col++)
+    for(Eigen::Index col = 0; col < matrixSide; col++)
     {
         auto   icol = iv[col].index;
-        auto   evec = solver.eigenvectors().col(icol);
+        auto   evec = evecs.col(icol);
         for (int row = 0; row < matrixSide; row++)
         {
             auto irow = iv[row].index;
@@ -358,10 +361,10 @@ static void solveEigen(const MatrixWrapper          &hessian,
             auto myev = evec[irow].real();
             if (myev != 0)
             {
-                auto atomI            = irow / DIM;
-                auto k                = irow % DIM;
-                size_t ai             = atomIndex[atomI];
-                myev                 *= gmx::invsqrt(atoms[ai].mass());
+                auto atomI = irow / DIM;
+                int k      = irow % DIM;
+                size_t ai  = atomIndex[atomI];
+                myev      *= gmx::invsqrt(atoms[ai].mass());
                 // The eigenvectors themselves are dimensionless,
                 // since they are normalized. The physical unit is
                 // in the eigenvalue instead. dpdq has unit of nm
@@ -372,7 +375,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
                 // get the units (almost) correct. nm^2 g / cm mol. This means
                 // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
                 // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
-                (*intensities)[icol] += gmx::square(dpdq[ai][k]/myev);
+                (*intensities)[icol] += gmx::square(dpdq[atomI][k]/myev);
             }
             else if (debug)
             {

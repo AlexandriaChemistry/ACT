@@ -162,14 +162,13 @@ protected:
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         // Infinite number of shell iterations, i.e. until convergence.
         std::map<InteractionType, double> eAfter;
-        auto eMinAlg = eMinimizeAlgorithm::Newton;
         SimulationConfigHandler simConfig;
         auto eMin = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
                                            &xmin, &eAfter, nullptr);
         if (eMinimizeStatus::OK != eMin)
         {
             // New try using steepest descents
-            eMinAlg = eMinimizeAlgorithm::Steep;
+            simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
             xmin    = coords;
             simConfig.setMaxIter(5000);
             eMin    = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
