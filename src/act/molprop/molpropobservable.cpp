@@ -78,7 +78,7 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
 {
     { MolPropObservable::POTENTIAL,         "e/nm" }, 
     { MolPropObservable::FREQUENCY,         "cm^-1" },
-    { MolPropObservable::INTENSITY,         "km/mol" },
+    { MolPropObservable::INTENSITY,         "nm/mol" },
     { MolPropObservable::DIPOLE,            "D" }, 
     { MolPropObservable::QUADRUPOLE,        "B" },
     { MolPropObservable::OCTUPOLE,          "D.Angstrom2" },

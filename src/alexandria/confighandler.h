@@ -372,25 +372,35 @@ class SimulationConfigHandler : ConfigHandler
 {
 private:
     //! Number of integration steps
-    int         nsteps_             = 0;
+    int                nsteps_      = 0;
     //! The integration time step
-    double      deltat_             = 0.0002;
+    double             deltat_      = 0.0002;
     //! Initial simulation temperature
-    double      temperature_        = 0;
+    double             temperature_ = 0;
     //! Random number seed for generating velocities
-    int         seed_               = 0;
+    int                seed_        = 0;
     //! How often to write coordinates
-    int         nstxout_            = 1;
+    int                nstxout_     = 1;
     //! How often to write velocities
-    int         nstvout_            = 0;
+    int                nstvout_     = 0;
     //! How often to write energies
-    int         nstener_            = 1;
+    int                nstener_     = 1;
     //! Minmize (before MD)
-    bool        minimize_           = false;
+    bool               minimize_    = false;
     //! Minimization algorithm
-    eMinimizeAlgorithm minAlg_ = eMinimizeAlgorithm::Newton;
+    eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
     //! Run normal mode analysis instead of MD
-    bool        nma_                = false;
+    bool               nma_         = false;
+    //! Tolerance on mean square force for minimizer. If zero it will be determined automatically.
+    double             forceToler_  = 0;
+    //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
+    double             overRelax_   = 1.0;
+    //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
+    int                maxIter_     = 100;
+    //! Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis.
+    bool               lapack_      = false;
+    //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
+    double             linewidth_   = 24;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -430,6 +440,26 @@ public:
     
     //! \return the minimization algorithm string
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
+    
+    //! \return whether or not to use Lapack iso Eigen.
+    bool lapack() const { return lapack_; }
+
+    //! \return the convergence tolerance (RMS force) for the minimizer
+    double forceTolerance() const { return forceToler_; }
+        
+    //! \return Lorentzian line width for infrared intensities.
+    double lineWidth() const { return linewidth_; }
+    
+    //! \return overrelaxation factor for  minimization.
+    double overRelax() const { return overRelax_; }
+    
+    //! \return the max number of iterations for the minimizer. 0 is until convergence.
+    int maxIter() const { return maxIter_; }
+    
+    /*! Set the value of maxIter
+     * \param[in] maxIter The new max number of em iterations
+     */
+    void setMaxIter(int maxIter) { maxIter_ = maxIter; }
 };
 
 } //namespace alexandria

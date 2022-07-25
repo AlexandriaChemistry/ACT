@@ -41,6 +41,7 @@
 #include "act/basics/identifier.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
+#include "gromacs/math/vecdump.h"
 
 namespace alexandria
 {
@@ -420,11 +421,9 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     {
         return;
     }
-    const real goldenRatio = 1; //0.5*(1+std::sqrt(5.0));
     std::vector<gmx::RVec> coords = mymol->xOriginal();
-    auto eMin = handler_.minimizeCoordinates(mymol, forceComputer, &coords,
-                                             nullptr, nullptr, eMinimizeAlgorithm::Newton,
-                                             0, goldenRatio, 1e-6);
+    auto eMin = handler_.minimizeCoordinates(mymol, forceComputer, simConfig_, &coords,
+                                             nullptr, nullptr);
     if (eMinimizeStatus::OK != eMin)
     {
         // Something fishy happened, but it means we cannot use this structure

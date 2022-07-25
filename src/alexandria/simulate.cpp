@@ -114,11 +114,7 @@ int simulate(int argc, char *argv[])
     static char              *filename   = (char *)"";
     static char              *molnm      = (char *)"";
     double                    qtot       = 0;
-    double                    forceToler = 0;
-    double                    overRelax  = 1.0;
-    int                       maxIter    = 0;
     bool                      verbose    = false;
-    bool                      lapack     = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -126,16 +122,8 @@ int simulate(int argc, char *argv[])
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
-        { "-toler",  FALSE, etREAL, {&forceToler},
-          "Convergence tolerance on the mean square force for the energy minimizer. If zero it will be determined automatically." },
-        { "-maxiter",FALSE, etINT,  {&maxIter},
-          "Maximum number of iterations for the energy minimizer, 0 is until convergence." },
-        { "-overrelax", FALSE, etREAL, {&overRelax},
-          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
         { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
-        { "-lapack", FALSE, etBOOL, {&lapack},
-          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
+          "Print more information to the log file." }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -232,11 +220,9 @@ int simulate(int argc, char *argv[])
         auto eMin = eMinimizeStatus::OK;
         if (sch.nma() || sch.minimize())
         {
-            auto eMinAlg = sch.minAlg();
             std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, &xmin,
-                                                  &energies, logFile, eMinAlg, maxIter,
-                                                  overRelax, forceToler);
+            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, sch,
+                                                  &xmin, &energies, logFile);
             auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
             fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm. Minimization status: %s.\n",
                     energies[InteractionType::EPOT], rmsd,
@@ -258,7 +244,8 @@ int simulate(int argc, char *argv[])
                     AtomizationEnergy        atomenergy;
                     std::vector<std::string> output;
                     doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
-                                        atomenergy, nullptr, &output, lapack);
+                                        atomenergy, nullptr, &output,
+                                        sch.lapack());
                     for(const auto &op : output)
                     {
                         fprintf(logFile, "%s\n", op.c_str());

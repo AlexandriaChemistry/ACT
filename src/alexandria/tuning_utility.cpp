@@ -844,13 +844,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
         // Now get the minimized structure RMSD and Energy
-        const real goldenRatio = 1.0; //0.5*(1+std::sqrt(5.0));
-        int    maxiter = 200;
-        std::vector<gmx::RVec> xmin   = coords;
+        SimulationConfigHandler simConfig;
+        std::vector<gmx::RVec>  xmin   = coords;
         std::map<InteractionType, double> eAfter;
-        molHandler_.minimizeCoordinates(mol, forceComp, &xmin, &eAfter,
-                                        nullptr, eMinimizeAlgorithm::Newton,
-                                        maxiter, goldenRatio);
+        molHandler_.minimizeCoordinates(mol, forceComp, simConfig, 
+                                        &xmin, &eAfter, nullptr);
         double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
         
         if (rmsd > 0.1) // nm

@@ -160,21 +160,20 @@ protected:
         std::vector<gmx::RVec> xmin = coords;
         double rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
-        double overRelax  = 1;
         // Infinite number of shell iterations, i.e. until convergence.
-        int    maxIter    = 200;
         std::map<InteractionType, double> eAfter;
         auto eMinAlg = eMinimizeAlgorithm::Newton;
-        auto eMin = mh.minimizeCoordinates(&mp_, forceComp, &xmin, &eAfter,
-                                           nullptr, eMinAlg, maxIter, overRelax);
+        SimulationConfigHandler simConfig;
+        auto eMin = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
+                                           &xmin, &eAfter, nullptr);
         if (eMinimizeStatus::OK != eMin)
         {
             // New try using steepest descents
             eMinAlg = eMinimizeAlgorithm::Steep;
-            maxIter = 5000;
             xmin    = coords;
-            eMin    = mh.minimizeCoordinates(&mp_, forceComp, &xmin, &eAfter,
-                                             nullptr, eMinAlg, maxIter, overRelax);
+            simConfig.setMaxIter(5000);
+            eMin    = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
+                                             &xmin, &eAfter, nullptr);
         }
         EXPECT_TRUE(eMinimizeStatus::OK == eMin);
         rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
@@ -213,6 +212,7 @@ protected:
                 checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
                 
             }
+#ifdef OLD
             {
                 // Now test the solver used for computing frequencies etc.
                 // We need  new matrix since the previous one is destroyed
@@ -229,6 +229,7 @@ protected:
                 checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
                 checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
             }
+#endif
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
@@ -329,7 +330,7 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
 
 // We cannot run these tests in debug mode because the LAPACK library
 // performs a 1/0 calculation to test the exception handling.
-#if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
+// #if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
     test("carbon-dioxide.sdf", "ACS-g", true);
@@ -383,7 +384,7 @@ TEST_F (MolHandlerTest, UracilPol)
 {
     test("uracil.sdf", "ACS-pg", true);
 }
-#endif
+// #endif
 
 } // namespace
 

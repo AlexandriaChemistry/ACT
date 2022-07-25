@@ -161,6 +161,287 @@ void MolHandler::computeHessian(const MyMol                       *mol,
     (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
 }
 
+static void computeFrequencies(const std::vector<double> &eigenvalues,
+                               size_t                     rot_trans,
+                               std::vector<double>       *frequencies,
+                               std::vector<std::string>  *output)
+{
+    frequencies->clear();
+    auto        mpo  = MolPropObservable::FREQUENCY;
+    const char *unit = mpo_unit2(mpo);
+    for (size_t i = rot_trans; i < eigenvalues.size(); i++)
+    {
+        auto val = eigenvalues[i];
+        if (val < 0)
+        {
+            if (output)
+            {
+                output->push_back(gmx::formatString("Warning: negative eigenvalue %zu = %g\n", i, val));
+            }
+            // We need to store something to be able to compare
+            frequencies->push_back(0);
+        }
+        else
+        {
+            #define SOL_CM_PER_S 29979245800
+            double f = 1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val);
+            frequencies->push_back(convertToGromacs(f, unit));
+        }
+    }
+}
+
+static void computeIntensities(const std::vector<double>    &eigenvalues,
+                               const std::vector<double>    &eigenvectors,
+                               const std::vector<int>       &atomIndex,
+                               const std::vector<ActAtom>   &atoms,
+                               const std::vector<gmx::RVec> &dpdq,
+                               std::vector<double>          *intensities)
+{
+    intensities->clear();
+    auto matrixSide = eigenvalues.size();
+    for (size_t i = 0; i < eigenvalues.size(); i++)
+    {
+        double In = 0;
+        for (size_t j = 0; j < atomIndex.size(); j++)
+        {
+            size_t aj      = atomIndex[j];
+            double massFac = gmx::invsqrt(atoms[aj].mass());
+            for(int d = 0; d < DIM; d++)
+                
+            {
+                auto evindex = i * matrixSide + j * DIM + d;
+                GMX_RELEASE_ASSERT(evindex < eigenvectors.size(), "Range check");
+                auto myev = eigenvectors[evindex]*massFac;
+                if (myev != 0)
+                {
+                    In += gmx::square(dpdq[j][d]/myev);
+                }
+                else if (debug)
+                {
+                    fprintf(debug, "Eigenvector[%zu][%zu][%d] = %g\n",
+                            i, j, d, eigenvectors[evindex]);
+                }
+            } 
+        }
+        intensities->push_back(In);
+    }
+}
+
+static void outputFreqInten(const MyMol               *mol,
+                            const std::vector<double> &frequencies,
+                            const std::vector<double> &intensities,
+                            std::vector<std::string>  *output)
+{
+    std::vector<GenericProperty *> harm;
+    auto mpo = MolPropObservable::FREQUENCY;
+    const char *unit = mpo_unit2(mpo);
+    for (auto &ee : mol->experimentConst())
+    {
+        if (ee.hasMolPropObservable(mpo))
+        {
+            harm = ee.propertyConst(mpo);
+            break;
+        }
+    }
+    double delta = 0;
+    if (!harm.empty())
+    {
+        output->push_back(gmx::formatString("Electronic vibrational frequencies: (%s):", unit));
+        size_t k = 0;
+        std::string freq;
+        for(auto &ff : harm[0]->getVector())
+        {
+            freq += gmx::formatString("  %8.3f", convertFromGromacs(ff, unit));
+            delta += gmx::square(ff - frequencies[k]);
+            k++;
+        }
+        output->push_back(freq);
+    }
+    output->push_back(gmx::formatString("Alexandria vibrational frequencies: (%s):", unit));
+    std::string actfreq;
+    for (const auto &freq : frequencies)
+    {
+        actfreq += gmx::formatString("  %8.3f", convertFromGromacs(freq, unit));
+    }
+    output->push_back(actfreq);
+    // Now print intensities
+    auto mpoi = MolPropObservable::INTENSITY;
+    const char *uniti = mpo_unit2(mpoi);
+    output->push_back(gmx::formatString("Alexandria IR intensities: (%s):", uniti));
+    std::string actinten;
+    for (const auto &inten : intensities)
+    {
+        actinten += gmx::formatString("  %8.3f", convertFromGromacs(inten, uniti));
+    }
+    output->push_back(actinten);
+    if (delta > 0)
+    {
+        output->push_back(gmx::formatString("Frequency RMSD %g",
+                                            convertFromGromacs(std::sqrt(delta/frequencies.size()),
+                                                               unit)));
+    }
+}
+
+static void solveEigen(const MatrixWrapper          &hessian,
+                       const std::vector<int>       &atomIndex,
+                       const std::vector<ActAtom>   &atoms,
+                       const std::vector<gmx::RVec> &dpdq,
+                       int                           rot_trans,
+                       std::vector<double>          *frequencies,
+                       std::vector<double>          *intensities,
+                       std::vector<std::string>     *output)
+{
+    if (output)
+    {
+        output->push_back("Using Eigen to solve eigenvalue problem.");
+    }
+    int matrixSide = hessian.nColumn();
+    Eigen::MatrixXd mat(matrixSide, matrixSide);
+    for(int col = 0; col < matrixSide; col++)
+    {
+        for(int row = 0; row < matrixSide; row++)
+        {
+            mat(col, row) = hessian.get(col, row);
+        }
+    }
+    bool computeEigenVectors = true;
+    Eigen::EigenSolver<Eigen::MatrixXd> solver(mat, computeEigenVectors);
+    if (output)
+    {
+        for(long i =  0; i < matrixSide; i++)
+        {
+            double sumReal = 0, sumComplex = 0;
+            for(const auto &evec : solver.eigenvectors().col(i))
+            {
+                sumReal    += gmx::square(evec.real());
+                sumComplex += gmx::square(std::abs(evec));
+            }
+            output->push_back(gmx::formatString("|v[%2zu]|^2 = %8g (real) %8g (complex) Eigenval = %g + i%g",
+                                                i, sumReal, sumComplex,
+                                                solver.eigenvalues()[i].real(), solver.eigenvalues()[i].imag())); 
+        }
+    }
+
+    // Eigen does not sort the output according to increasing eigenvalue
+    // so we have to this ourselves.
+    typedef struct
+    {
+        size_t index;
+        double value;
+    } iv_t;
+    std::vector<iv_t> iv;
+    size_t i = 0;
+    for(auto &ev : solver.eigenvalues())
+    {
+        // Both eigenvalues and eigenvectors can be complex numbers
+        // If we take the real part only, we reproduce the LAPACK
+        // result, but is this correct?
+        iv.push_back({ i++, std::abs(ev) });
+        // iv.push_back({ i++, ev.real() });
+    }
+    std::sort(iv.begin(), iv.end(), [](const iv_t &a, const iv_t &b)
+              { return a.value < b.value; });
+
+    intensities->resize(matrixSide, 0.0);
+    for(int col = 0; col < matrixSide; col++)
+    {
+        auto   icol = iv[col].index;
+        auto   evec = solver.eigenvectors().col(icol);
+        for (int row = 0; row < matrixSide; row++)
+        {
+            auto irow = iv[row].index;
+            // Eigenvectors are complex numbers too. The eigenvectors
+            // should be normalized (length 1). This is indeed the case
+            // if we take the imaginary part into account, but whether
+            // this gives the correct physical result is unclear.
+            // auto myev = std::abs(evec[irow]);
+            auto myev = evec[irow].real();
+            if (myev != 0)
+            {
+                auto atomI            = irow / DIM;
+                auto k                = irow % DIM;
+                size_t ai             = atomIndex[atomI];
+                myev                 *= gmx::invsqrt(atoms[ai].mass());
+                // The eigenvectors themselves are dimensionless,
+                // since they are normalized. The physical unit is
+                // in the eigenvalue instead. dpdq has unit of nm
+                // so the output unit of the intensities here is nm^2 Da =
+                // nm^2 g/mol. To convert this to km/mol we have to assume
+                // a line width for the spectrum, a typical width is
+                // 24 cm^-1. By integrating over the width of the peak, we
+                // get the units (almost) correct. nm^2 g / cm mol. This means
+                // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
+                // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
+                (*intensities)[icol] += gmx::square(dpdq[ai][k]/myev);
+            }
+            else if (debug)
+            {
+                fprintf(debug, "Eigenvector[%zu][%zu] = %g\n",
+                        icol, irow, myev);
+            }
+        }
+    }
+    std::vector<double> eigenvalues(matrixSide, 0.0);
+    for(int col = 0; col < matrixSide; col++)
+    {
+        eigenvalues[col]    = iv[col].value;
+    }
+    computeFrequencies(eigenvalues, rot_trans, frequencies, output);
+}
+
+static void solveLapack(const MyMol                  *mol,
+                        const MatrixWrapper          &hessian,
+                        const std::vector<int>       &atomIndex,
+                        const std::vector<ActAtom>   &atoms,
+                        const std::vector<gmx::RVec> &dpdq,
+                        int                           rot_trans,
+                        std::vector<double>          *frequencies,
+                        std::vector<double>          *intensities,
+                        std::vector<std::string>     *output)
+{
+    if (output)
+    {
+        output->push_back("Using LAPACK to solve eigenvalue problem.");
+    }
+    int matrixSide = hessian.nColumn();
+    std::vector<double> eigenvalues(matrixSide);
+    std::vector<double> eigenvectors(matrixSide*matrixSide);
+    auto                hessianFlat = hessian.flatten();
+    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
+                eigenvalues.data(), eigenvectors.data());
+    // Scale the output eigenvectors
+    for (int i = 0; i < matrixSide; i++)
+    {
+        for (size_t j = 0; j < atomIndex.size(); j++)
+        {
+            size_t aj      = atomIndex[j];
+            double massFac = gmx::invsqrt(atoms[aj].mass());
+            for (size_t k = 0; (k < DIM); k++)
+            {
+                eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
+            }
+        }
+    }
+    computeIntensities(eigenvalues, eigenvectors, atomIndex,
+                       atoms, dpdq, intensities);
+    computeFrequencies(eigenvalues, rot_trans, frequencies, output);
+    // Print eigenvalues and eigenvectors to debug files
+    if (debug)
+    {
+        // Print vibrational frequencies to file
+        const int FLOAT_SIZE  = 13;
+        fprintf(debug, "\nMolecule: %s\nHessian eigenvalues:\n[ ", mol->getMolname().c_str());
+        for (const auto &val : eigenvalues)
+        {
+            fprintf(debug, "%-*g ", FLOAT_SIZE, val);
+        }
+        // Get the eigenvectors into a MatrixWrapper
+        MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
+        
+        fprintf(debug, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
+    }
+}
+
 void MolHandler::nma(const MyMol              *mol,
                      const ForceComputer      *forceComp,
                      std::vector<gmx::RVec>   *coords,
@@ -218,188 +499,20 @@ void MolHandler::nma(const MyMol              *mol,
     {
         output->push_back("Diagonalizing Hessian to find eigenvectors.");
     }
-    std::vector<double> eigenvalues(matrixSide);
-    std::vector<double> eigenvectors(matrixSide*matrixSide);
     if (useLapack)
     {
-        if (output)
-        {
-            output->push_back("Using LAPACK to solve eigenvalue problem.");
-        }
-        auto hessianFlat = hessian.flatten();
-        eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
-                    eigenvalues.data(), eigenvectors.data());
+        solveLapack(mol, hessian, atomIndex, atoms, dpdq, rot_trans,
+                    frequencies, intensities, output);
     }
     else
     {
-        if (output)
-        {
-            output->push_back("Using Eigen to solve eigenvalue problem.");
-        }
-        Eigen::MatrixXd mat(matrixSide, matrixSide);
-        for(int col = 0; col < matrixSide; col++)
-        {
-            for(int row = 0; row < matrixSide; row++)
-            {
-                mat(col, row) = hessian.get(col, row);
-            }
-        }
-        bool computeEigenVectors = true;
-        Eigen::EigenSolver<Eigen::MatrixXd> solver(mat, computeEigenVectors);
-        typedef struct
-        {
-            size_t index;
-            double value;
-        } iv_t;
-        std::vector<iv_t> iv;
-        size_t i = 0;
-        for(auto &ev : solver.eigenvalues())
-        {
-            iv.push_back({i++, ev.real()});
-        }
-        std::sort(iv.begin(), iv.end(),
-                  [](const iv_t &a, const iv_t &b)
-                  { 
-                      return a.value < b.value; 
-                  });
-        for(int col = 0; col < matrixSide; col++)
-        {
-            eigenvalues[col] = iv[col].value;
-            auto icol = iv[col].index;
-            auto evec = solver.eigenvectors().col(icol);
-            for(int row = 0; row < matrixSide; row++)
-            {
-                size_t index = col*matrixSide + row;
-                auto irow = iv[row].index;
-                eigenvectors[index] = evec[irow].real();
-            }
-        }
-    }
-    // Scale the output eigenvectors
-    for (int i = 0; i < matrixSide; i++)
-    {
-        for (size_t j = 0; j < atomIndex.size(); j++)
-        {
-            size_t aj      = atomIndex[j];
-            double massFac = gmx::invsqrt(atoms[aj].mass());
-            for (size_t k = 0; (k < DIM); k++)
-            {
-                eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
-            }
-        }
+        solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
+                   frequencies, intensities, output);
     }
 
-    frequencies->clear();
-    auto        mpo  = MolPropObservable::FREQUENCY;
-    const char *unit = mpo_unit2(mpo);
-    for (size_t i = rot_trans; i < eigenvalues.size(); i++)
-    {
-        auto val = eigenvalues[i];
-        if (val < 0)
-        {
-            if (output)
-            {
-                output->push_back(gmx::formatString("Warning: negative eigenvalue %zu = %g\n", i, val));
-            }
-            // We need to store something to be able to compare
-            frequencies->push_back(0);
-        }
-        else
-        {
-            #define SOL_CM_PER_S 29979245800
-            double f = 1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val);
-            frequencies->push_back(convertToGromacs(f, unit));
-        }
-    }
-    intensities->clear();
-    auto        mpoi  = MolPropObservable::INTENSITY;
-    const char *uniti = mpo_unit2(mpoi);
-    for (size_t i = 0; i < eigenvalues.size(); i++)
-    {
-        double In = 0;
-        for (size_t j = 0; j < atomIndex.size(); j++)
-        {
-            size_t aj      = atomIndex[j];
-            double massFac = gmx::invsqrt(atoms[aj].mass());
-            for(int d = 0; d < DIM; d++)
-                
-            {
-                auto evindex = i * matrixSide + j * DIM + d;
-                GMX_RELEASE_ASSERT(evindex < eigenvectors.size(), "Range check");
-                auto myev = eigenvectors[evindex];
-                if (myev > 0)
-                {
-                    In += gmx::square(dpdq[j][d]*massFac/myev);
-                }
-                else if (debug)
-                {
-                    fprintf(debug, "Eigenvector[%zu][%zu][%d] = %g\n",
-                            i, j, d, eigenvectors[evindex]);
-                }
-            } 
-        }
-        intensities->push_back(In);
-    }
     if (output)
     {
-        std::vector<GenericProperty *> harm;
-        for (auto &ee : mol->experimentConst())
-        {
-            if (ee.hasMolPropObservable(mpo))
-            {
-                harm = ee.propertyConst(mpo);
-                break;
-            }
-        }
-        double delta = 0;
-        if (!harm.empty())
-        {
-            output->push_back(gmx::formatString("Electronic vibrational frequencies: (%s):", unit));
-            size_t k = 0;
-            std::string freq;
-            for(auto &ff : harm[0]->getVector())
-            {
-                freq += gmx::formatString("  %8.3f", convertFromGromacs(ff, unit));
-                delta += gmx::square(ff - (*frequencies)[k]);
-                k++;
-            }
-            output->push_back(freq);
-        }
-        output->push_back(gmx::formatString("Alexandria vibrational frequencies: (%s):", unit));
-        std::string actfreq;
-        for (const auto &freq : *frequencies)
-        {
-            actfreq += gmx::formatString("  %8.3f", convertFromGromacs(freq, unit));
-        }
-        output->push_back(actfreq);
-        output->push_back(gmx::formatString("Alexandria IR intensities: (%s):", uniti));
-        std::string actinten;
-        for (const auto &inten : *intensities)
-        {
-            actinten += gmx::formatString("  %8.3f", convertFromGromacs(inten, uniti));
-        }
-        output->push_back(actinten);
-        if (delta > 0)
-        {
-            output->push_back(gmx::formatString("Frequency RMSD %g",
-                                               convertFromGromacs(std::sqrt(delta/frequencies->size()),
-                                                                  unit)));
-        }
-    }
-    // Print eigenvalues and eigenvectors to debug files
-    if (debug)
-    {
-        // Print vibrational frequencies to file
-        const int FLOAT_SIZE  = 13;
-        fprintf(debug, "\nMolecule: %s\nHessian eigenvalues:\n[ ", mol->getMolname().c_str());
-        for (const auto &val : eigenvalues)
-        {
-            fprintf(debug, "%-*g ", FLOAT_SIZE, val);
-        }
-        // Get the eigenvectors into a MatrixWrapper
-        MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
-
-        fprintf(debug, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
+        outputFreqInten(mol, *frequencies, *intensities, output);
     }
 
 }
@@ -433,24 +546,22 @@ static double msForce(const std::vector<int>       &theAtoms,
 
 eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                       *mol,
                                                 const ForceComputer               *forceComp,
+                                                const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
                                                 std::map<InteractionType, double> *energies,
-                                                FILE                              *logFile,
-                                                eMinimizeAlgorithm                 algorithm,
-                                                int                                maxIter,
-                                                double                             overRelax,
-                                                double                             msForceToler) const
+                                                FILE                              *logFile) const
 {
     bool      converged    = false;
     int       myIter       = 0;
     // Check for meaningful convergence tolerance
     double    shellToler2  = gmx::square(forceComp->convergenceTolerance());
+    double    msForceToler = simConfig.forceTolerance();
     if (msForceToler < shellToler2)
     {
         if (logFile && msForceToler != 0)
         {
             fprintf(logFile, "Atom mean square force tolerance (%g) more strict than shell force tolerance (%g).\n",
-                msForceToler, shellToler2);
+                    msForceToler, shellToler2);
             fprintf(logFile, "Increasing atom mean square force tolerance to hundred times that for shells.\n");
         }
         msForceToler = 100*shellToler2;
@@ -474,7 +585,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     {
         fprintf(logFile, "Starting minimization of '%s' using %s algorithm.\n",
                 mol->getMolname().c_str(),
-                eMinimizeAlgorithmToString(algorithm).c_str());
+                eMinimizeAlgorithmToString(simConfig.minAlg()).c_str());
     }
     std::vector<double> deltaX(DIM*theAtoms.size(), 0.0);
     // Set a maximum displacement to prevent exploding molecules
@@ -490,7 +601,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     do
     {
         auto eMin = eMinimizeStatus::OK;
-        switch (algorithm)
+        switch (simConfig.minAlg())
         {
         case eMinimizeAlgorithm::Newton:
             {
@@ -548,7 +659,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         {
             // Update coordinates and check energy
             double maxDeltaX       = *std::max_element(deltaX.begin(), deltaX.end());
-            double scaleDeltaX     = overRelax;
+            double scaleDeltaX     = simConfig.overRelax();
             if (maxDeltaX > deltaXTolerance)
             {
                 scaleDeltaX = deltaXTolerance/maxDeltaX;
@@ -576,7 +687,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                 current = next;
             }
             myIter += 1;
-        } while (!acceptStep && (myIter < maxIter || 0 == maxIter));
+        } while (!acceptStep && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
         
         // Now check force convergencs
         double msAtomForce  = msForce(theAtoms, forces);
@@ -599,7 +710,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             }
         }
     }
-    while (!converged && (myIter < maxIter || 0 == maxIter));
+    while (!converged && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
     *coords   = newCoords[current];
     *energies = newEnergies[current];
     // Re-compute the energy one last time.

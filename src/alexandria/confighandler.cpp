@@ -394,8 +394,18 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Minimize the energy with respect to input coordinates." },
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
           "Algorithm to use for minimization." },
+        { "-maxiter",FALSE, etINT,  {&maxIter_},
+          "Maximum number of iterations for the energy minimizer, 0 is until convergence (see next option)." },
+        { "-toler",  FALSE, etREAL, {&forceToler_},
+          "Convergence tolerance on the mean square force for the energy minimizer. If zero it will be determined automatically." },
+        { "-overrelax", FALSE, etREAL, {&overRelax_},
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
         { "-nma",      FALSE, etBOOL, {&nma_},
-          "Do a normal mode analysis rather than a MD simulation. Coordinates will be minimized before the NMA." }
+          "Do a normal mode analysis rather than a MD simulation. Coordinates will be minimized before the NMA." },
+        { "-lapack", FALSE, etBOOL, {&lapack_},
+          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." },
+        { "-linewidth", FALSE, etREAL, {&linewidth_},
+          "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" }
           
     };
     for(auto &i : extra)

@@ -3,6 +3,8 @@
 import os, shutil, argparse, subprocess, sys, glob
 from subprocess import Popen, PIPE
 
+debug = False
+
 def get_host():
     '''Utility to get a string describing the build system'''
     if "HOST" in os.environ:
@@ -56,11 +58,15 @@ def get_prefix(myprefix):
     if len(prefix) == 0:
         return ""
     else:
-        pp = prefix[0]
+        pp = ""
+        if len(prefix[0]) > 0:
+            pp = prefix[0]
         if myprefix and len(myprefix) > 0:
             pp += ";" + myprefix
         for p in range(1, len(prefix)):
-            pp += ";" + prefix[p]
+            if len(pp) > 0:
+                pp += ";"
+            pp += prefix[p]
         return pp
     
 def find_lib(prefix, libname, verbose):
@@ -152,7 +158,10 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
                     os.chdir(obversion)
                     for lib in glob.glob("*.so"):
                         for rpath in [ "libz.1.dylib", "libcairo.2.dylib" ]:
-                            os.system("install_name_tool -change @rpath/%s %s/lib/%s %s" % ( rpath, SW, rpath, lib) )
+                            cmd = ("install_name_tool -change @rpath/%s %s/lib/%s %s" % ( rpath, SW, rpath, lib) )
+                            if debug:
+                                print("Will run commans '%s'" % cmd)
+                            os.system(cmd)
                     os.chdir("..")
     # Go back to where we came from
     os.chdir(pwd)
@@ -261,7 +270,7 @@ def install_act(args, CXX, CC, HOST, prefix):
     if not os.path.exists(alex):
         sys.exit("Could not build '%s', check cmake.* and make.* in %s" % ( alex, os.getcwd() ) )
     else:
-        print("Succesfully installed ACT in %s/bin. Please add this dir to your PATH variable" % args.destination)
+        print("Succesfully installed ACT in %s/bin. Please source %s/bin/ACTRC to start using ACT." % ( args.destination, args.destination) )
     
     # Go back to where we came from
     os.chdir(pwd)
@@ -283,6 +292,7 @@ def parseArguments():
     parser.add_argument("-single", "--single", help="Single precision build (will not work well)", action="store_true")
     parser.add_argument("-cln", "--cln", help="Use the Class Library for Numbers (optional)", action="store_true")
     parser.add_argument("-ob", "--openbabel", help="Install the correct openbabel version", action="store_true")
+    parser.add_argument("-debug", "--debug", help="Print debugging information for the script", action="store_true")
     home = "HOME"
     if home in os.environ:
         dest = os.environ["HOME"]
@@ -302,6 +312,10 @@ if __name__ == '__main__':
     HOST    = get_host()
     CC, CXX = get_compilers(HOST)
     SW      = get_prefix(args.prefix)
+    debug = args.debug
+    if debug:
+        print("args.prefix = %s SW = '%s'" % ( args.prefix, SW ))
+
     if args.openbabel or args.clone_OB:
         install_openbabel(args.anonymous, args.clone_OB, args.destination, SW,
                           args.build, CXX, CC, args.ncores, HOST, args.verbose)

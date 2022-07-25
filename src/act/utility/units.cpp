@@ -96,6 +96,7 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
         { "e",           { "e", 1 } },
         { "cm^-1",       { "THz", SPEED_OF_LIGHT/1e7 } },
         { "km/mol",      { "nm/mol", 1e-12 } },
+        { "nm/mol",      { "nm/mol", 1 } },
         { "",            { "", 1 } }
     };
 

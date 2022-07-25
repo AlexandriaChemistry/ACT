@@ -41,11 +41,8 @@
 #include <map>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/topology/topology.h"
-
 #include "act/utility/communicationrecord.h"
+#include "confighandler.h"
 #include "mymol.h"
 #include "molgen.h"
 #include "molhandler.h"
@@ -140,9 +137,11 @@ class HarmonicsDevComputer : public DevComputer
 {
 private:
     //! The MolPropObservable, e.g. quadrupole
-    MolPropObservable mpo_;
+    MolPropObservable       mpo_;
     //! Molecule handler for running frequency calculations
-    MolHandler        handler_;
+    MolHandler              handler_;
+    //! Config handler for options
+    SimulationConfigHandler simConfig_;
 public:
 
     /*! \brief Create a new FrequencyDevComputer

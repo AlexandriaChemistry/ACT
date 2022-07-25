@@ -124,23 +124,17 @@ public:
      *
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
+     * \param[in] sch          Configuration options
      * \param[inout] coords    The coordinates to be minimized
      * \param[in] logFile      File to write some info to, may be a nullptr
-     * \param[in] maxIter      Maximum number of iterations, 0 means until convergence
-     * \param[in] overRelax    Factor to use for overrelaxation of the step size
-     * \param[in] msForceToler Tolerance in the mean square force for convergence
      * \return Status flag
      */
     eMinimizeStatus minimizeCoordinates(const MyMol                       *mol,
                                         const ForceComputer               *forceComp,
+                                        const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
                                         std::map<InteractionType, double> *energies,
-                                        FILE                              *logFile,
-                                        eMinimizeAlgorithm                 algorithm,
-                                        int                                maxIter,
-                                        double                             overRelax,
-                                        double                             msForceToler=0) const;
-
+                                        FILE                              *logFile) const;
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple
      * molecules, while relaxing shells if present.
