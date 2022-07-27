@@ -153,7 +153,9 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
             mymol.UpdateIdef(sii_->poldata(), itUpdate, 
                              molgen_->fit("zeta"));
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_);
+            gmx::RVec vzero = { 0, 0, 0 };
+            std::vector<gmx::RVec> forces(mymol.atomsConst().size(), vzero);
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &forces);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)

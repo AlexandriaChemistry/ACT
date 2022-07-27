@@ -144,7 +144,8 @@ int simulate(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    auto  forceComp = new ForceComputer(&pd);
+    double shellToler = std::sqrt(sch.forceTolerance())/4;
+    auto  forceComp = new ForceComputer(&pd, shellToler, 100);
     FILE *logFile   = gmx_ffopen(opt2fn("-g", fnm.size(),fnm.data()), "w");
     print_header(logFile, pa);
     if (verbose)
@@ -245,7 +246,7 @@ int simulate(int argc, char *argv[])
                     std::vector<std::string> output;
                     doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
                                         atomenergy, nullptr, &output,
-                                        sch.lapack());
+                                        sch.lapack(), verbose);
                     for(const auto &op : output)
                     {
                         fprintf(logFile, "%s\n", op.c_str());

@@ -106,6 +106,11 @@ private:
     //! \return the force tolerance
     double rmsForce() const { return rmsForce_; }
 
+    /*! \brief Set the shell minimization RMS tolerance
+     * \param[in] toler The new tolerance
+     */
+    void setRmsForceToler(double toler) { rmsForce_ = toler; }
+    
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.

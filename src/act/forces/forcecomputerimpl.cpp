@@ -263,11 +263,13 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
+        auto r_1        = gmx::invsqrt(dr2);
+        auto r1         = dr2*r_1;
 
         real vB, fbond;
-        harmonic(kb, bondlength, std::sqrt(dr2), &vB, &fbond);
+        harmonic(kb, bondlength, r1, &vB, &fbond);
         
-        fbond *= gmx::invsqrt(dr2);
+        fbond *= r_1;
         ebond += vB;
         
         for (int m = 0; (m < DIM); m++)
@@ -395,7 +397,6 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
             real cik, cii, ckk;
             real nrkj2, nrij2;
             real nrkj_1, nrij_1;
-            rvec f_i, f_j, f_k;
 
             st    = fangle*gmx::invsqrt(1 - costh2);   
             sth   = st*costh;                      
@@ -412,12 +413,12 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
 
             for (auto m = 0; m < DIM; m++)
             {
-                f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
-                f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
-                f_j[m]    = -f_i[m] - f_k[m];
-                f[indices[0]][m] += f_i[m];
-                f[indices[1]][m] += f_j[m];
-                f[indices[2]][m] += f_k[m];
+                auto f_im    = -(cik*r_kj[m] - cii*r_ij[m]);
+                auto f_km    = -(cik*r_ij[m] - ckk*r_kj[m]);
+                auto f_jm    = -f_im - f_km;
+                f[indices[0]][m] += f_im;
+                f[indices[1]][m] += f_jm;
+                f[indices[2]][m] += f_km;
             }
         }                                          
     }

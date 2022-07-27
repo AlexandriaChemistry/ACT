@@ -153,6 +153,7 @@ void print_header(FILE                       *fp,
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
  * \param[inout] output       Output strings
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
+ * \param[in]    debugNMA     Will provide excessive printing statements
  */
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
@@ -161,7 +162,8 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output,
-                         bool                      useLapack);
+                         bool                      useLapack,
+                         bool                      debugNMA);
                             
 } // namespace alexandria
 

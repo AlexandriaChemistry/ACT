@@ -1665,8 +1665,9 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
-                                    const ForceComputer *forceComp)
+immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
+                                    const ForceComputer    *forceComp,
+                                    std::vector<gmx::RVec> *forces)
 {
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
@@ -1682,7 +1683,6 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
     auto      natom     = atomsConst().size();
     // Make copy of the coordinates
     std::vector<gmx::RVec> coords = optimizedCoordinates_;
-    std::vector<gmx::RVec> forces(natom);
     std::map<InteractionType, double> energies;
     do
     {
@@ -1690,7 +1690,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
                                                        state_->x, pd, 
                                                        atoms()))
         {
-            (void) calculateEnergy(forceComp, &coords, &forces, &energies);
+            (void) calculateEnergy(forceComp, &coords, forces, &energies);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1895,7 +1895,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            imm = GenerateAcmCharges(pd, forceComp);
+            imm = GenerateAcmCharges(pd, forceComp, forces);
         }
         break;
     }

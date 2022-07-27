@@ -91,10 +91,14 @@ void MolHandler::computeHessian(const MyMol                       *mol,
         }
     }
     
-    double      stepSize = 1e-6; // 0.001 pm
+    double      stepSize = 1e-8; // 0.001 pm
+#define GMX_DOUBLE_EPS 2.2204460492503131e-16
+    stepSize = 10.0 * std::sqrt(GMX_DOUBLE_EPS);
+
     if (dpdq)
     {
-        dpdq->clear();
+        gmx::RVec zero = { 0, 0, 0 };
+        dpdq->resize(atomIndex.size(), zero);
     }
     std::vector<gmx::RVec> forces(atoms.size());
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
@@ -112,9 +116,13 @@ void MolHandler::computeHessian(const MyMol                       *mol,
                 if (dpdq)
                 {
                     // To compute dipole we need to take shells into account as well!
+                    // The same goes for virtual sites.
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
-                        mu[delta][atomXYZ] += atoms[ii].charge()*(*coords)[atomI][atomXYZ];
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            mu[delta][m] += atoms[ii].charge()*(*coords)[ii][m];
+                        }
                     }
                 }
                 if (delta == 0)
@@ -147,15 +155,13 @@ void MolHandler::computeHessian(const MyMol                       *mol,
                     hessian->set(row, col, value);
                 }
             }
-        }
-        if (dpdq)
-        {
-            gmx::RVec dpdq1;
-            for(int d = 0; d < DIM; d++)
+            if (dpdq)
             {
-                dpdq1[d] = (mu[1][d]-mu[0][d])/(2*stepSize);
+                for(int d = 0; d < DIM; d++)
+                {
+                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(2*stepSize);
+                }
             }
-            dpdq->push_back(dpdq1);
         }
     }
     (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
@@ -211,10 +217,10 @@ static void computeIntensities(const std::vector<double>    &eigenvalues,
             {
                 auto evindex = i * matrixSide + j * DIM + d;
                 GMX_RELEASE_ASSERT(evindex < eigenvectors.size(), "Range check");
-                auto myev = eigenvectors[evindex]*massFac;
+                auto myev = eigenvectors[evindex];
                 if (myev != 0)
                 {
-                    In += gmx::square(dpdq[j][d]/myev);
+                    In += gmx::square(dpdq[j][d]*massFac/myev);
                 }
                 else if (debug)
                 {
@@ -251,7 +257,7 @@ static void outputFreqInten(const MyMol               *mol,
         std::string freq;
         for(auto &ff : harm[0]->getVector())
         {
-            freq += gmx::formatString("  %8.3f", convertFromGromacs(ff, unit));
+            freq += gmx::formatString("  %10g", convertFromGromacs(ff, unit));
             delta += gmx::square(ff - frequencies[k]);
             k++;
         }
@@ -261,7 +267,7 @@ static void outputFreqInten(const MyMol               *mol,
     std::string actfreq;
     for (const auto &freq : frequencies)
     {
-        actfreq += gmx::formatString("  %8.3f", convertFromGromacs(freq, unit));
+        actfreq += gmx::formatString("  %10g", convertFromGromacs(freq, unit));
     }
     output->push_back(actfreq);
     // Now print intensities
@@ -271,7 +277,7 @@ static void outputFreqInten(const MyMol               *mol,
     std::string actinten;
     for (const auto &inten : intensities)
     {
-        actinten += gmx::formatString("  %8.3f", convertFromGromacs(inten, uniti));
+        actinten += gmx::formatString("  %10g", convertFromGromacs(inten, uniti));
     }
     output->push_back(actinten);
     if (delta > 0)
@@ -289,7 +295,8 @@ static void solveEigen(const MatrixWrapper          &hessian,
                        int                           rot_trans,
                        std::vector<double>          *frequencies,
                        std::vector<double>          *intensities,
-                       std::vector<std::string>     *output)
+                       std::vector<std::string>     *output,
+                       bool                          debugNMA)
 {
     if (output)
     {
@@ -313,39 +320,66 @@ static void solveEigen(const MatrixWrapper          &hessian,
         {
             double sumReal = 0, sumComplex = 0;
             auto evv = evecs.col(i);
+            std::string evi;
             for(Eigen::Index j = 0; j < matrixSide; j++)
             {
                 auto evec   = evv[j];
                 sumReal    += gmx::square(evec.real());
                 sumComplex += gmx::square(std::abs(evec));
+                evi += gmx::formatString("  %10g", evec.real());
             }
-            output->push_back(gmx::formatString("|v[%2zu]|^2 = %8g (real) %8g (complex) Eigenval = %g + i%g",
+            output->push_back(gmx::formatString("|v[%2zu]|^2 = %8g (real) %8g (complex) Eigenval = %g + i%g.",
                                                 i, sumReal, sumComplex,
-                                                solver.eigenvalues()[i].real(), solver.eigenvalues()[i].imag())); 
+                                                solver.eigenvalues()[i].real(),
+                                                solver.eigenvalues()[i].imag()));
+        }
+        if (debugNMA)
+        {
+            for(Eigen::Index i =  0; i < matrixSide; i++)
+            {
+                auto evv = evecs.col(i);
+                std::string evi;
+                for(Eigen::Index j = 0; j < matrixSide; j++)
+                {
+                    evi += gmx::formatString("  %10g", evv[j].real());
+                }
+                output->push_back(gmx::formatString("EV%ld %s", i, evi.c_str()));
+            }
         }
     }
 
     // Eigen does not sort the output according to increasing eigenvalue
-    // so we have to this ourselves.
+    // so we have to do the sorting ourselves.
     typedef struct
     {
         Eigen::Index index;
         double       value;
     } iv_t;
     std::vector<iv_t> iv;
-    auto evals = solver.eigenvalues();
+    auto &evals    = solver.eigenvalues();
+    int nnegative = 0;
     for(Eigen::Index i = 0; i < matrixSide; i++)
     {
         // Both eigenvalues and eigenvectors can be complex numbers
         // If we take the real part only, we reproduce the LAPACK
         // result, but is this correct?
-        iv.push_back({ i, std::abs(evals[i]) });
-        // iv.push_back({ i++, evals[i].real() });
+        auto eval = evals[i].real();
+        //auto eval = std::abs(evals[i]);
+        iv.push_back({ i, eval });
+        if (eval < 0)
+        {
+            nnegative += 1;
+        }
+    }
+    if (output && nnegative > rot_trans)
+    {
+        output->push_back(gmx::formatString("There are %d negative eigenvalues.",
+                                            nnegative-rot_trans));
     }
     std::sort(iv.begin(), iv.end(), [](const iv_t &a, const iv_t &b)
               { return a.value < b.value; });
 
-    intensities->resize(matrixSide, 0.0);
+    std::vector<double> In(matrixSide, 0);
     for(Eigen::Index col = 0; col < matrixSide; col++)
     {
         auto   icol = iv[col].index;
@@ -364,18 +398,18 @@ static void solveEigen(const MatrixWrapper          &hessian,
                 auto atomI = irow / DIM;
                 int k      = irow % DIM;
                 size_t ai  = atomIndex[atomI];
-                myev      *= gmx::invsqrt(atoms[ai].mass());
                 // The eigenvectors themselves are dimensionless,
                 // since they are normalized. The physical unit is
-                // in the eigenvalue instead. dpdq has unit of nm
-                // so the output unit of the intensities here is nm^2 Da =
+                // in the eigenvalue instead. dpdq has unit of e
+                // so the output unit of the intensities here is e^2 Da =
                 // nm^2 g/mol. To convert this to km/mol we have to assume
                 // a line width for the spectrum, a typical width is
                 // 24 cm^-1. By integrating over the width of the peak, we
                 // get the units (almost) correct. nm^2 g / cm mol. This means
                 // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
                 // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
-                (*intensities)[icol] += gmx::square(dpdq[atomI][k]/myev);
+                //      In[icol] += gmx::square(atoms[ai].charge()/myev);
+                In[icol] += gmx::square(dpdq[atomI][k]*gmx::invsqrt(atoms[ai].mass())/myev);
             }
             else if (debug)
             {
@@ -383,6 +417,11 @@ static void solveEigen(const MatrixWrapper          &hessian,
                         icol, irow, myev);
             }
         }
+    }
+    intensities->clear();
+    for(int i = rot_trans; i < matrixSide; i++)
+    {
+        intensities->push_back(In[i]);
     }
     std::vector<double> eigenvalues(matrixSide, 0.0);
     for(int col = 0; col < matrixSide; col++)
@@ -451,7 +490,8 @@ void MolHandler::nma(const MyMol              *mol,
                      std::vector<double>      *frequencies,
                      std::vector<double>      *intensities,
                      std::vector<std::string> *output,
-                     bool                      useLapack) const
+                     bool                      useLapack,
+                     bool                      debugNMA) const
 {
     // Get the indices of the real atoms of the molecule (not shells and such)
     auto atoms = mol->topology()->atoms();
@@ -473,6 +513,14 @@ void MolHandler::nma(const MyMol              *mol,
     computeHessian(mol, forceComp, coords, atomIndex, &hessian, &f0, &energies, &dpdq);
     hessian.averageTriangle();
 
+    if (output && debugNMA)
+    {
+        for(size_t i = 0; i < atomIndex.size(); i++)
+        {
+            output->push_back(gmx::formatString("dpdq[%2zu] =  %10g  %10g  %10g",
+                                                i, dpdq[i][XX], dpdq[i][YY], dpdq[i][ZZ]));
+        }
+    }
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     for (size_t i = 0; (i < atomIndex.size()); i++)
     {
@@ -510,7 +558,7 @@ void MolHandler::nma(const MyMol              *mol,
     else
     {
         solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
-                   frequencies, intensities, output);
+                   frequencies, intensities, output, debugNMA);
     }
 
     if (output)
@@ -581,7 +629,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     }
     std::vector<gmx::RVec> forces(myatoms.size());
     std::vector<double>    f0, f00;
-    double                 epot0     = 0;
     bool                   firstStep = true;
     // Now start the minimization loop.
     if (logFile)
@@ -624,7 +671,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             break;
         case eMinimizeAlgorithm::Steep:
             {
-                (void) mol->calculateEnergy(forceComp, &newCoords[current], &forces, &newEnergies[current]);
+                (void) mol->calculateEnergy(forceComp, &newCoords[current],
+                                            &forces, &newEnergies[current]);
                 int    i      = 0;
                 double factor = 0.001;
                 for(auto atomI : theAtoms)
@@ -640,8 +688,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         if (firstStep)
         {
             // Store energy
-            epot0     = newEnergies[current][InteractionType::EPOT];
-            epotMin   = epot0;
+            if (energies)
+            {
+                *energies = newEnergies[current];
+            }
+            epotMin   = newEnergies[current][InteractionType::EPOT];
             // Store forces
             f00       = f0;
             // Write stuff
@@ -705,7 +756,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                         forces[kk][XX], forces[kk][YY], forces[kk][ZZ], kk,
                         (*coords)[kk][XX], (*coords)[kk][YY], (*coords)[kk][ZZ]);
             }
-            for(const auto &ee : *energies)
+            for(const auto &ee : newEnergies[current])
             {
                 fprintf(debug, "%-20s  %10g\n",
                         interactionTypeToString(ee.first).c_str(), 
@@ -714,14 +765,16 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         }
     }
     while (!converged && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
-    *coords   = newCoords[current];
-    *energies = newEnergies[current];
-    // Re-compute the energy one last time.
-    // TODO: is this really needed?
-    // (void) mol->calculateEnergy(forceComp, coords, &forces, energies);
-    
     if (converged)
     {
+        *coords   = newCoords[current];
+        if (energies && !newEnergies[current].empty())
+        {
+            *energies = newEnergies[current];
+        }
+        // Re-compute the energy one last time.
+        // TODO: is this really needed?
+        // (void) mol->calculateEnergy(forceComp, coords, &forces, energies);
         return eMinimizeStatus::OK;
     }
     else

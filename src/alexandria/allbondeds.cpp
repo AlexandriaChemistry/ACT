@@ -471,12 +471,17 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     case F_PDIHS:
                         {
                             round_numbers(&av, &sig, 10);
+                            // Since the potential is (1+cos(mult*phi-phi0)) it will be at
+                            // a maximum if we use the actual angle found here.
                             fs->addParameter(bondId, pdih_name[pdihANGLE],
-                                             ForceFieldParameter("degree", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                                             ForceFieldParameter("degree", av, sig, N, 0, 360, Mutability::Bounded, false, true));
+                            auto kpmin = std::min(kp_*factor_, kp_/factor_);
+                            auto kpmax = std::max(kp_*factor_, kp_/factor_);
                             fs->addParameter(bondId, pdih_name[pdihKP],
-                                             ForceFieldParameter("kJ/mol", kp_, 0, 1, kp_*factor_, kp_/factor_, Mutability::Bounded, false, true));
+                                             ForceFieldParameter("kJ/mol", kp_, 0, 1, kpmin, kpmax, Mutability::Bounded, false, true));
+                            int mult = 3;
                             fs->addParameter(bondId, pdih_name[pdihMULT],
-                                             ForceFieldParameter("", 3, 0, 1, 3, 3, Mutability::Fixed, true, true));
+                                             ForceFieldParameter("", mult, 0, 1, mult, mult, Mutability::Fixed, true, true));
                         }
                         break;
                     default:

@@ -41,9 +41,9 @@ const char *bond_name[bondNR] = { "kb", "bondlength" };
 
 const char *angle_name[angleNR] = { "kt", "angle" };
 
-const char *ub_name[ubNR] = { "kt", "angle", "r13", "kub" };
+const char *ub_name[ubNR] = { "kt", "ub_angle", "r13", "kub" };
 
-const char *ps_names[psNR] = { "angle", "rij0", "rjk0" };
+const char *ps_names[psNR] = { "ps_angle", "rij0", "rjk0" };
 
 const char *pol_name[polNR] = { "alpha", "kshell" };
 
@@ -55,6 +55,6 @@ const char *idih_name[idihNR] = { "kimp" };
 
 const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3" };
 
-const char *pdih_name[pdihNR] = { "angle", "kp", "mult" };
+const char *pdih_name[pdihNR] = { "phi0", "kp", "mult" };
 
 } // namespace alexandria

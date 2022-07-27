@@ -436,10 +436,13 @@ public:
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
      *
-     * \param[in] pd      Data structure containing atomic properties
+     * \param[in] pd        Data structure containing atomic properties
+     * \param[in] forceComp The force computer
+     * \param[in] forces    The forces
      */
-    immStatus GenerateAcmCharges(const Poldata       *pd,
-                                 const ForceComputer *forceComp);
+    immStatus GenerateAcmCharges(const Poldata          *pd,
+                                 const ForceComputer    *forceComp,
+                                 std::vector<gmx::RVec> *forces);
     
     /*! \brief Implement charge symmetrization
      *

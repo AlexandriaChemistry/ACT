@@ -660,11 +660,12 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output,
-                         bool                      useLapack)
+                         bool                      useLapack,
+                         bool                      debugNMA)
 {
     std::vector<double> alex_freq, intensities;
     molhandler.nma(mol, forceComp, coords, &alex_freq, &intensities,
-                   output, useLapack);
+                   output, useLapack, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
@@ -871,7 +872,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         
         // Do normal-mode analysis etc.
         doFrequencyAnalysis(mol, molHandler_, forceComp, &coords,
-                            atomenergy, lsq_freq, tcout, false);
+                            atomenergy, lsq_freq, tcout, false, false);
         
     }
     else
@@ -990,7 +991,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
 
             // Recalculate the atomic charges using the optimized parameters.
             std::vector<double>    dummy;
-            std::vector<gmx::RVec> forces(mol->atomsConst().size());
+            gmx::RVec vzero = { 0, 0, 0 };
+            std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             mol->GenerateCharges(pd, forceComp, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
