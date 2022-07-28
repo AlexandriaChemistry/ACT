@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.0026570465668220209</Real>
+  <Real Name="Bond before">0.0026570465668230014</Real>
   <Real Name="Angle before">0.55728331281907129</Real>
-  <Real Name="Potential before">0.55994035938589326</Real>
+  <Real Name="Potential before">0.55994035938589426</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.0022963222240600053</Real>
-  <Real Name="Bond after">1.1475677072180123e-19</Real>
-  <Real Name="Angle after">2.6795590487942879e-17</Real>
-  <Real Name="Potential after">2.6910347258664681e-17</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0022959326978314234</Real>
+  <Real Name="Bond after">3.6730650056440866e-24</Real>
+  <Real Name="Angle after">6.6105681040905704e-26</Real>
+  <Real Name="Potential after">3.7391706866849923e-24</Real>
 </ReferenceData>

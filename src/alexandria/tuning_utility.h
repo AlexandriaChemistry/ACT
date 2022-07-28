@@ -152,6 +152,9 @@ void print_header(FILE                       *fp,
  * \param[in]    atomenergy   The atomization energy data
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
  * \param[inout] output       Output strings
+ * \paran[in]    spcetrumFileName If not nullptr, a simulated IR spectrum will be written to this file
+ * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
+ * \param[in]    oenv         Structure to print xvg files
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
@@ -162,6 +165,9 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output,
+                         const char               *spectrumFileName,
+                         double                    lineWidth,
+                         gmx_output_env_t         *oenv,
                          bool                      useLapack,
                          bool                      debugNMA);
                             

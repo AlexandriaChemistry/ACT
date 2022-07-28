@@ -108,7 +108,8 @@ int simulate(int argc, char *argv[])
         { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
         { efXVG, "-e",  "energy",     ffWRITE },
-        { efLOG, "-g",  "simulation", ffWRITE }
+        { efLOG, "-g",  "simulation", ffWRITE },
+        { efXVG, "-ir", "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
@@ -246,6 +247,8 @@ int simulate(int argc, char *argv[])
                     std::vector<std::string> output;
                     doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
                                         atomenergy, nullptr, &output,
+                                        opt2fn_null("-ir", fnm.size(), fnm.data()),
+                                        sch.lineWidth(), oenv,
                                         sch.lapack(), verbose);
                     for(const auto &op : output)
                     {

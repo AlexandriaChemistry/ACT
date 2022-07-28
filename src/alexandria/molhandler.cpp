@@ -398,10 +398,13 @@ static void solveEigen(const MatrixWrapper          &hessian,
                 auto atomI = irow / DIM;
                 int k      = irow % DIM;
                 size_t ai  = atomIndex[atomI];
-                // The eigenvectors themselves are dimensionless,
-                // since they are normalized. The physical unit is
-                // in the eigenvalue instead. dpdq has unit of e
-                // so the output unit of the intensities here is e^2 Da =
+                // The components of the root-mass weighted Hessian
+                // have unit kJ/(Da mol nm^2). Even though the eigenvectors
+                // are normalized, they have the same unit. Since kJ =
+                // 1000 kg m^2/s^2 the unit reduces to
+                // 1000 * 1000 * 1e18/s^2 = 1e24/s^2
+                // dpdq has unit of e
+                // so the output unit of the intensities here is e^2 =
                 // nm^2 g/mol. To convert this to km/mol we have to assume
                 // a line width for the spectrum, a typical width is
                 // 24 cm^-1. By integrating over the width of the peak, we
@@ -409,7 +412,8 @@ static void solveEigen(const MatrixWrapper          &hessian,
                 // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
                 // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
                 //      In[icol] += gmx::square(atoms[ai].charge()/myev);
-                In[icol] += gmx::square(dpdq[atomI][k]*gmx::invsqrt(atoms[ai].mass())/myev);
+                In[icol] += gmx::square(dpdq[atomI][k]*
+                                        (gmx::invsqrt(atoms[ai].mass())*myev));
             }
             else if (debug)
             {
@@ -515,13 +519,15 @@ void MolHandler::nma(const MyMol              *mol,
 
     if (output && debugNMA)
     {
+        output->push_back("Symmetrized Hessian:");
+        output->push_back(hessian.toString());
         for(size_t i = 0; i < atomIndex.size(); i++)
         {
             output->push_back(gmx::formatString("dpdq[%2zu] =  %10g  %10g  %10g",
                                                 i, dpdq[i][XX], dpdq[i][YY], dpdq[i][ZZ]));
         }
     }
-    // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
+    // Divide the elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     for (size_t i = 0; (i < atomIndex.size()); i++)
     {
         size_t ai = atomIndex[i];

@@ -478,85 +478,85 @@
   </interaction>
   <interaction type="ANGLES" function="UREY_BRADLEY" canswap="true">
     <parameterlist identifier="c2_b:c2_b:c2_b">
-      <parameter type="angle" unit="degree" value="119.8" uncertainty="0" minimum="59.9" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="119.8" uncertainty="0" minimum="59.9" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="242.069" uncertainty="0" minimum="121.035" maximum="484.139" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b:n2_b">
-      <parameter type="angle" unit="degree" value="117.8" uncertainty="6.2" minimum="58.9" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="117.8" uncertainty="6.2" minimum="58.9" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="238.471" uncertainty="0" minimum="119.236" maximum="476.943" ntrain="2" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b=o2_b">
-      <parameter type="angle" unit="degree" value="126.1" uncertainty="0" minimum="63.05" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="126.1" uncertainty="0" minimum="63.05" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="232.899" uncertainty="0" minimum="116.45" maximum="465.799" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b~h_b">
-      <parameter type="angle" unit="degree" value="120.9" uncertainty="2.8" minimum="60.45" maximum="180" ntrain="3" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="120.9" uncertainty="2.8" minimum="60.45" maximum="180" ntrain="3" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="216.061" uncertainty="0" minimum="108.031" maximum="432.123" ntrain="3" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:n2_b:c2_b">
-      <parameter type="angle" unit="degree" value="125.7" uncertainty="3.3" minimum="62.85" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="125.7" uncertainty="3.3" minimum="62.85" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="246.657" uncertainty="0" minimum="123.328" maximum="493.313" ntrain="2" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:n2_b~h_b">
-      <parameter type="angle" unit="degree" value="117.1" uncertainty="3.6" minimum="58.55" maximum="180" ntrain="4" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="117.1" uncertainty="3.6" minimum="58.55" maximum="180" ntrain="4" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="205.181" uncertainty="0" minimum="102.591" maximum="410.362" ntrain="4" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b~c3_b~h_b">
-      <parameter type="angle" unit="degree" value="110.1" uncertainty="0" minimum="55.05" maximum="180" ntrain="6" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="110.1" uncertainty="0" minimum="55.05" maximum="180" ntrain="6" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="214.727" uncertainty="0" minimum="107.364" maximum="429.454" ntrain="6" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_b~c2_b=o2_b">
-      <parameter type="angle" unit="degree" value="121.7" uncertainty="0" minimum="60.85" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="121.7" uncertainty="0" minimum="60.85" maximum="180" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="238.438" uncertainty="0" minimum="119.219" maximum="476.877" ntrain="2" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_b~c2_b~c3_b">
-      <parameter type="angle" unit="degree" value="116.5" uncertainty="0" minimum="58.25" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="116.5" uncertainty="0" minimum="58.25" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="257.317" uncertainty="0" minimum="128.658" maximum="514.633" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c2_b:n2_b">
-      <parameter type="angle" unit="degree" value="115.3" uncertainty="0" minimum="57.65" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="115.3" uncertainty="0" minimum="57.65" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="208.809" uncertainty="0" minimum="104.404" maximum="417.618" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c3_b~h_b">
-      <parameter type="angle" unit="degree" value="108.7" uncertainty="2" minimum="54.35" maximum="180" ntrain="6" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="108.7" uncertainty="2" minimum="54.35" maximum="180" ntrain="6" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="177.145" uncertainty="0" minimum="88.5726" maximum="354.29" ntrain="6" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~o3_b~h_b">
-      <parameter type="angle" unit="degree" value="105" uncertainty="0" minimum="52.5" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="105" uncertainty="0" minimum="52.5" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="152.483" uncertainty="0" minimum="76.2413" maximum="304.965" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2_b:c2_b:n2_b">
-      <parameter type="angle" unit="degree" value="113" uncertainty="0" minimum="56.5" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="113" uncertainty="0" minimum="56.5" maximum="180" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="231.153" uncertainty="0" minimum="115.577" maximum="462.306" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2_b:c2_b=o2_b">
-      <parameter type="angle" unit="degree" value="122.3" uncertainty="2.4" minimum="61.15" maximum="180" ntrain="3" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="ub_angle" unit="degree" value="122.3" uncertainty="2.4" minimum="61.15" maximum="180" ntrain="3" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="150" maximum="600" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="kub" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="15000" maximum="60000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13" unit="pm" value="227.71" uncertainty="0" minimum="113.855" maximum="455.42" ntrain="3" mutability="Bounded" nonnegative="yes"/>

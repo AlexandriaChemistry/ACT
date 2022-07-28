@@ -397,7 +397,7 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-maxiter",FALSE, etINT,  {&maxIter_},
           "Maximum number of iterations for the energy minimizer, 0 is until convergence (see next option)." },
         { "-toler",  FALSE, etREAL, {&forceToler_},
-          "Convergence tolerance on the mean square force for the energy minimizer. If zero it will be determined automatically." },
+          "Convergence tolerance on the mean square force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
           "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
         { "-nma",      FALSE, etBOOL, {&nma_},

@@ -4,7 +4,7 @@
   <Real Name="Bond before">0.0014452799999988793</Real>
   <Real Name="Potential before">0.0014452799999988793</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
-  <Real Name="Bond after">1.0020628908086343e-27</Real>
-  <Real Name="Potential after">1.0020628908086343e-27</Real>
+  <Real Name="Coordinate RMSD after minimizing">6.8783744593911548e-05</Real>
+  <Real Name="Bond after">0</Real>
+  <Real Name="Potential after">0</Real>
 </ReferenceData>

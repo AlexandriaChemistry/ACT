@@ -653,6 +653,99 @@ static void writeCoordinates(const t_atoms           *atoms,
     gmx_fio_fclose(out);
 }
 
+static void normalize_vector(std::vector<double> *v)
+{
+    double total = 0;
+    for(size_t i = 0; i < v->size(); i++)
+    {
+        total += (*v)[i];
+    }
+    if (total == 0)
+    {
+        return;
+    }
+    double tinv = 1.0/total;
+    for(size_t i = 0; i < v->size(); i++)
+    {
+        (*v)[i] *= tinv;
+    }
+}
+
+static void plot_spectrum(const char                *filenm,
+                          double                     lineWidth,
+                          const std::vector<double> &act_freq,
+                          const std::vector<double> &act_intens,
+                          const std::vector<double> &qm_freq,
+                          const std::vector<double> &qm_intens,
+                          gmx_output_env_t          *oenv,
+                          bool                       normalize)
+{
+    if (nullptr == filenm)
+    {
+        return;
+    }
+    auto minfreq = *std::min_element(act_freq.begin(), act_freq.end());
+    auto maxfreq = *std::max_element(act_freq.begin(), act_freq.end());
+    if (!qm_freq.empty())
+    {
+        minfreq = std::min(minfreq, *std::min_element(qm_freq.begin(), qm_freq.end()));
+        maxfreq = std::max(maxfreq, *std::max_element(qm_freq.begin(), qm_freq.end()));
+    }
+    int minf = convertFromGromacs(minfreq, "cm^-1")-5*lineWidth;
+    int maxf = convertFromGromacs(maxfreq, "cm^-1")+5*lineWidth;
+    std::vector<double> act_spec(maxf-minf+1, 0.0);
+    std::vector<double> qm_spec;
+    if (!qm_freq.empty())
+    {
+        qm_spec.resize(maxf-minf+1, 0.0);
+    }
+    for(size_t peak = 0; peak < act_freq.size(); peak++)
+    {
+        double act_ff, qm_ff = 0;
+        act_ff = convertFromGromacs(act_freq[peak], "cm^-1");
+        if (!qm_freq.empty())
+        {
+            qm_ff = convertFromGromacs(qm_freq[peak], "cm^-1");
+        }
+        for(int f = minf; f <= maxf; f++)
+        {
+            double act_ds = lineWidth/(2*M_PI*(gmx::square(f-act_ff)+gmx::square(lineWidth/2)));
+            act_spec[f-minf] += act_ds*act_intens[peak];
+            if (!qm_freq.empty())
+            {
+                double qm_ds = lineWidth/(2*M_PI*(gmx::square(f-qm_ff)+gmx::square(lineWidth/2)));
+                qm_spec[f-minf] += qm_ds*qm_intens[peak];
+            }
+        }
+    }
+    if (normalize)
+    {
+        normalize_vector(&act_spec);
+        normalize_vector(&qm_spec);
+    }
+    FILE *xvg = xvgropen(filenm, "ACT IR Spectrum", "Frequency (1/cm)",
+                         "Intensity (a.u.)", oenv);
+    if (!qm_freq.empty())
+    {
+        std::vector<const char *> legend = { "QM", "ACT" };
+        xvgr_legend(xvg, legend.size(), legend.data(), oenv);
+    }
+    for(int f = minf; f <= maxf; f++)
+    {
+        if (qm_freq.empty())
+        {
+            fprintf(xvg, "%6d  %10g\n", f, act_spec[f-minf]);
+        }
+        else
+        {
+            fprintf(xvg, "%6d  %10g  %10g\n", f, qm_spec[f-minf], act_spec[f-minf]);
+        }
+    }
+    fprintf(xvg, "&\n");
+    xvgrclose(xvg);
+}
+
+
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
@@ -660,6 +753,9 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output,
+                         const char               *spectrumFileName,
+                         double                    lineWidth,
+                         gmx_output_env_t         *oenv,
                          bool                      useLapack,
                          bool                      debugNMA)
 {
@@ -670,6 +766,7 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
     auto ref_inten = mol->referenceIntensities();
+    plot_spectrum(spectrumFileName, lineWidth, alex_freq, intensities, ref_freq, ref_inten, oenv, true);
     output->push_back(gmx::formatString("Frequencies (%s)     Intensities (%s)", unit, uniti));
     output->push_back("Reference   Alexandria  Reference   Alexandria");
     gmx_stats lsq_freq;
@@ -872,7 +969,8 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         
         // Do normal-mode analysis etc.
         doFrequencyAnalysis(mol, molHandler_, forceComp, &coords,
-                            atomenergy, lsq_freq, tcout, false, false);
+                            atomenergy, lsq_freq, tcout,
+                            nullptr, 24, nullptr, false, false);
         
     }
     else

@@ -391,8 +391,8 @@ private:
     eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
     //! Run normal mode analysis instead of MD
     bool               nma_         = false;
-    //! Tolerance on mean square force for minimizer. If zero it will be determined automatically.
-    double             forceToler_  = 0;
+    //! Tolerance on mean square force for minimizer.
+    double             forceToler_  = 1e-6;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
     double             overRelax_   = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
