@@ -429,7 +429,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
 void MyMol::forceEnergyMaps(const ForceComputer                                     *forceComp,
                             std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                             std::vector<std::pair<double, double> >                 *enerMap,
-                            std::vector<std::pair<double, std::map<int, double> > > *enerAllMap)
+                            std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap)
 {
     auto       myatoms = topology_->atoms();
     t_commrec *crtmp   = init_commrec();
@@ -497,17 +497,8 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             }
             else if (eprops.size() == 1)
             {
-                auto terms = energyTerms();
-                enerMap->push_back({ eprops[0]->getValue(), terms[F_EPOT] });
-                std::map<int, double> evals;
-                for(int i = 0; i < F_NRE; i++)
-                {
-                    if (terms[i] != 0)
-                    {
-                        evals.insert({i, terms[i]});
-                    }
-                }
-                enerAllMap->push_back({ eprops[0]->getValue(), std::move(evals) });
+                enerMap->push_back({ eprops[0]->getValue(), energies[InteractionType::EPOT] });
+                enerAllMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }
         }
         const std::vector<gmx::RVec> &fff = ei.getForces();

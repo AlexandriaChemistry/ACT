@@ -182,7 +182,7 @@ static void computeFrequencies(const std::vector<double> &eigenvalues,
         {
             if (output)
             {
-                output->push_back(gmx::formatString("Warning: negative eigenvalue %zu = %g\n", i, val));
+                output->push_back(gmx::formatString("Warning: negative eigenvalue %zu = %g\n", i+1, val));
             }
             // We need to store something to be able to compare
             frequencies->push_back(0);
@@ -213,14 +213,13 @@ static void computeIntensities(const std::vector<double>    &eigenvalues,
             size_t aj      = atomIndex[j];
             double massFac = gmx::invsqrt(atoms[aj].mass());
             for(int d = 0; d < DIM; d++)
-                
             {
                 auto evindex = i * matrixSide + j * DIM + d;
                 GMX_RELEASE_ASSERT(evindex < eigenvectors.size(), "Range check");
                 auto myev = eigenvectors[evindex];
                 if (myev != 0)
                 {
-                    In += gmx::square(dpdq[j][d]*massFac/myev);
+                    In += gmx::square(dpdq[j][d]*massFac*myev);
                 }
                 else if (debug)
                 {
@@ -392,34 +391,25 @@ static void solveEigen(const MatrixWrapper          &hessian,
             // if we take the imaginary part into account, but whether
             // this gives the correct physical result is unclear.
             // auto myev = std::abs(evec[irow]);
-            auto myev = evec[irow].real();
-            if (myev != 0)
-            {
-                auto atomI = irow / DIM;
-                int k      = irow % DIM;
-                size_t ai  = atomIndex[atomI];
-                // The components of the root-mass weighted Hessian
-                // have unit kJ/(Da mol nm^2). Even though the eigenvectors
-                // are normalized, they have the same unit. Since kJ =
-                // 1000 kg m^2/s^2 the unit reduces to
-                // 1000 * 1000 * 1e18/s^2 = 1e24/s^2
-                // dpdq has unit of e
-                // so the output unit of the intensities here is e^2 =
-                // nm^2 g/mol. To convert this to km/mol we have to assume
-                // a line width for the spectrum, a typical width is
-                // 24 cm^-1. By integrating over the width of the peak, we
-                // get the units (almost) correct. nm^2 g / cm mol. This means
-                // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
-                // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
-                //      In[icol] += gmx::square(atoms[ai].charge()/myev);
-                In[icol] += gmx::square(dpdq[atomI][k]*
-                                        (gmx::invsqrt(atoms[ai].mass())*myev));
-            }
-            else if (debug)
-            {
-                fprintf(debug, "Eigenvector[%zu][%zu] = %g\n",
-                        icol, irow, myev);
-            }
+            auto myev  = evec[irow].real();
+            auto atomI = irow / DIM;
+            int k      = irow % DIM;
+            size_t ai  = atomIndex[atomI];
+            // The components of the root-mass weighted Hessian
+            // have unit kJ/(Da mol nm^2). Even though the eigenvectors
+            // are normalized, they have the same unit. Since kJ =
+            // 1000 kg m^2/s^2 the unit reduces to
+            // 1000 * 1000 * 1e18/s^2 = 1e24/s^2
+            // dpdq has unit of e
+            // so the output unit of the intensities here is e^2 =
+            // nm^2 g/mol. To convert this to km/mol we have to assume
+            // a line width for the spectrum, a typical width is
+            // 24 cm^-1. By integrating over the width of the peak, we
+            // get the units (almost) correct. nm^2 g / cm mol. This means
+            // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
+            // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
+            In[icol] += gmx::square(dpdq[atomI][k]*myev*
+                                    gmx::invsqrt(atoms[ai].mass()));
         }
     }
     intensities->clear();

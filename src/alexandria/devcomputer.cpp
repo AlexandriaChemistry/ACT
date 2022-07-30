@@ -498,7 +498,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
 {
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
-    std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
     mymol->forceEnergyMaps(forceComputer, &fMap, &eMap, &enerAllMap);
 
     auto tf = targets->find(eRMS::Force2);

@@ -672,6 +672,7 @@ static void normalize_vector(std::vector<double> *v)
 }
 
 static void plot_spectrum(const char                *filenm,
+                          const std::string         &molname,
                           double                     lineWidth,
                           const std::vector<double> &act_freq,
                           const std::vector<double> &act_intens,
@@ -723,7 +724,8 @@ static void plot_spectrum(const char                *filenm,
         normalize_vector(&act_spec);
         normalize_vector(&qm_spec);
     }
-    FILE *xvg = xvgropen(filenm, "ACT IR Spectrum", "Frequency (1/cm)",
+    std::string title = gmx::formatString("Infrared spectrum for %s", molname.c_str());
+    FILE *xvg = xvgropen(filenm, title.c_str(), "Frequency (1/cm)",
                          "Intensity (a.u.)", oenv);
     if (!qm_freq.empty())
     {
@@ -766,7 +768,8 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
     auto ref_inten = mol->referenceIntensities();
-    plot_spectrum(spectrumFileName, lineWidth, alex_freq, intensities, ref_freq, ref_inten, oenv, true);
+    plot_spectrum(spectrumFileName, mol->getMolname(), lineWidth, alex_freq,
+                  intensities, ref_freq, ref_inten, oenv, true);
     output->push_back(gmx::formatString("Frequencies (%s)     Intensities (%s)", unit, uniti));
     output->push_back("Reference   Alexandria  Reference   Alexandria");
     gmx_stats lsq_freq;
@@ -871,7 +874,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
 {
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
-    std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
     mol->forceEnergyMaps(forceComp, &fMap, &eMap, &enerAllMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
@@ -882,7 +885,6 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
     }
     double de2 = 0;
-    size_t ccc = 0;
     for(const auto &ff : eMap)
     {
         auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
@@ -891,6 +893,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     }
     if (printSP_)
     {
+        size_t ccc = 0;
         for(const auto &eam : enerAllMap)
         {
             auto enerexp = /* mol->atomizationEnergy() + */ eam.first;
@@ -898,9 +901,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                 enerexp);
             for(const auto &terms : eam.second)
             {
-                ttt += gmx::formatString(" %s: %g", interaction_function[terms.first].name, terms.second);
+                ttt += gmx::formatString(" %s: %g", interactionTypeToString(terms.first).c_str(), 
+                                         terms.second);
             }
             tcout->push_back(ttt);
+            ccc++;
         }
     }
     // RMS energy

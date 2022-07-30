@@ -312,7 +312,7 @@ public:
     void forceEnergyMaps(const ForceComputer                                     *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                          std::vector<std::pair<double, double> >                 *enerMap,
-                         std::vector<std::pair<double, std::map<int, double> > > *enerAllMap);
+                         std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap);
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
