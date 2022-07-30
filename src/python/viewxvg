@@ -49,9 +49,9 @@ class xvgDataSet:
         self.x.append(x)
         self.y.append(y)
         self.xmin = min(self.xmin, x)
-        self.ymin = min(self.xmin, y)
-        self.xmax = min(self.xmin, x)
-        self.ymax = min(self.xmin, y)
+        self.ymin = min(self.ymin, y)
+        self.xmax = max(self.xmax, x)
+        self.ymax = max(self.ymax, y)
 
 def read_xvg(filename):
     legends  = {}
@@ -173,7 +173,7 @@ def plot_once():
                 yymax = max(yymax, dataset[ii].ymax)
             mmin = min(xxmin, yymin)
             mmax = max(xxmax, yymax)
-            delta = (mmax-mmin)/20
+            delta = 5+(mmax-mmin)/20
             mmin -= delta
             mmax += delta
             plt.xlim(mmin, mmax)

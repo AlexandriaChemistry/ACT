@@ -914,20 +914,28 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         tcout->push_back(gmx::formatString("RMS energy  %g (kJ/mol) #structures = %zu",
                                            std::sqrt(de2/eMap.size()), eMap.size()));
     }
-    double df2 = 0;    
+    double df2    = 0;
+    size_t nforce = 0;
+    auto atoms    = mol->atomsConst();
     for(const auto &fstruct : fMap)
     {
-        for(const auto &ff : fstruct)
+        // Only count the real atoms for force RMSD
+        for(size_t i = 0; i < atoms.size(); i++)
         {
-            lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
-            df2 += gmx::square(ff.first - ff.second);
+            if (atoms[i].pType() == eptAtom)
+            {
+                auto ff = fstruct[i];
+                lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+                df2    += gmx::square(ff.first - ff.second);
+            }
         }
+        nforce += mol->nRealAtoms();
     }
     // RMS force
     if (fMap.size() > 0)
     {
         tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
-                                           std::sqrt(df2/(mol->nRealAtoms())), fMap.size()));
+                                           std::sqrt(df2/nforce), fMap.size()));
     }
     // Energy
     tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
