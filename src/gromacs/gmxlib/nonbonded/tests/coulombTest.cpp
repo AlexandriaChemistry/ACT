@@ -30,9 +30,9 @@
  */
 #include <gtest/gtest.h>
 
-#include "../nb_generic.h"
-
 #include <vector>
+
+#include "act/coulombintegrals/coulombintegrals.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

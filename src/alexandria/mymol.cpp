@@ -2159,8 +2159,8 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
 void MyMol::calcEspRms(const Poldata *pd)
 {
-    int natoms = 0;
-    auto myatoms = atomsConst();
+    int   natoms  = 0;
+    auto &myatoms = atomsConst();
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         if (myatoms[i].pType() == eptAtom)
@@ -2254,7 +2254,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     std::string         mylot;
     immStatus           imm        = immStatus::OK;
     
-    auto myatoms = atomsConst();
+    auto &myatoms = atomsConst();
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
     // Make a copy of the coordinates without shells

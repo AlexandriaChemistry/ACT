@@ -29,6 +29,7 @@
 
 #include "forcecomputerimpl.h"
 
+#include "act/coulombintegrals/coulombintegrals.h"
 #include "act/poldata/forcefieldparametername.h"
 #include "act/forces/forcecomputerutils.h"
 

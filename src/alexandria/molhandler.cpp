@@ -614,8 +614,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         msForceToler = 100*shellToler2;
     }
     // List of atoms (not shells) and weighting factors
-    auto      myatoms      = mol->atomsConst();
-    std::vector<int> theAtoms;
+    auto             &myatoms   = mol->atomsConst();
+    std::vector<int>  theAtoms;
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         if (myatoms[atom].pType() == eptAtom)
@@ -784,8 +784,8 @@ double MolHandler::coordinateRmsd(const MyMol                  *mol,
                                   std::vector<gmx::RVec>       *xfit) const
 {
     // Compute RMSD
-    auto   myatoms = mol->atomsConst();
-    double tmass   = mol->totalMass();
+    auto   &myatoms = mol->atomsConst();
+    double  tmass   = mol->totalMass();
     std::vector<real> myMass;
     rvec ref_com = { 0, 0, 0 };
     rvec fit_com = { 0, 0, 0 };

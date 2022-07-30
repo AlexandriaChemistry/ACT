@@ -575,10 +575,10 @@ void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
         }
     }
     fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
-    auto x       = mol->x();
-    int  i       = 0;
-    double qtot  = 0;
-    auto myatoms = mol->atomsConst();
+    auto     x       = mol->x();
+    int      i       = 0;
+    double   qtot    = 0;
+    auto    &myatoms = mol->atomsConst();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
         if (myatoms[j].pType() == eptAtom ||

@@ -76,7 +76,6 @@ target_sources(actLib
           #Slater_5S_5S.cpp
           #Slater_5S_6S.cpp
           #Slater_6S_6S.cpp
-          gaussian_integrals.cpp
           slater_integrals.cpp)
 
 if (BUILD_TESTING)
