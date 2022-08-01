@@ -464,7 +464,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
                             for(int i = 0; i < fdihNR; i++)
                             {
                                 fs->addParameter(bondId, fdih_name[i],
-                                                 ForceFieldParameter("kJ/mol", val, 0, 1, -5, 5, Mutability::Bounded, false, false));
+                                                 ForceFieldParameter("kJ/mol", val, 0, 1, -20, 20, Mutability::Bounded, false, false));
                             }
                         }
                         break;
