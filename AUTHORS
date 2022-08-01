@@ -1,8 +1,13 @@
-Current lead developers:
+The Alexandria Chemistry Toolkit is developed by
 
-Mark Abraham <mark.j.abraham@gmail.com>
-David van der Spoel <spoel@gromacs.org>
-Berk Hess <hess@gromacs.org>
-Erik Lindahl <lindahl@gromacs.org>
+David van der Spoel
+Mohammad Mehdi Ghahremanpour
+Julian Marrades
+Paul J. van Maaren
+Marie-Madeleine Walz
 
-A full list of GROMACS contributors is available at http://www.gromacs.org/About_Gromacs/People
+More information at https://github.com/dspoel/ACT
+
+Part of this software is based on GROMACS. A full list of GROMACS
+contributors is available at:
+http://www.gromacs.org/About_Gromacs/People
