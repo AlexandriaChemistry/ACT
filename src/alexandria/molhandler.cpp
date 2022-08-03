@@ -33,6 +33,10 @@
  * \author Julian Marrades <julian.marrades@hotmail.es>
  */
 
+// This include has to come first, to prevent the GROMACS definition of
+// "real" from messing up the library.
+#include "Eigen/Eigenvalues"
+
 #include "molhandler.h"
 
 #include "act/molprop/molpropobservable.h"
@@ -51,7 +55,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
 
-#include "Eigen/Eigenvalues"
 
 namespace alexandria
 {
