@@ -27,6 +27,8 @@
  */
 #include "forcecomputer.h"
 
+#include <set>
+
 #include <cstdlib>
 
 #include "alexandria/topology.h"
@@ -135,9 +137,19 @@ void ForceComputer::computeOnce(const Topology                    *top,
         svmul(fac, field, (*forces)[ff]);
     }
     double epot = 0;
+    std::set<InteractionType> exclude = {
+        //InteractionType::BONDS,
+        //InteractionType::ANGLES,
+        //InteractionType::LINEAR_ANGLES,
+        //InteractionType::COULOMB,
+        //InteractionType::VDW,
+        //InteractionType::POLARIZATION,
+        //InteractionType::PROPER_DIHEDRALS,
+        //InteractionType::IMPROPER_DIHEDRALS
+    };
     for(const auto &entry : top->entries())
     {
-        if (entry.second.empty())
+        if (entry.second.empty() || exclude.find(entry.first) != exclude.end() )
         {
             continue;
         }

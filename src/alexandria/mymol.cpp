@@ -1048,13 +1048,14 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(), 
-                                       bondsConst(), 
-                                       fragmentPtr(), shellRenumber_, missing);
-
-    // Finally, extract frequencies etc.
-    getHarmonics();
-    
+    if (immStatus::OK == imm)
+    {
+        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(), 
+                                           bondsConst(), 
+                                           fragmentPtr(), shellRenumber_, missing);
+        // Finally, extract frequencies etc.
+        getHarmonics();
+    }
     return imm;
 }
 

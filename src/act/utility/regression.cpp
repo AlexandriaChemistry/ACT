@@ -351,6 +351,27 @@ std::vector<double> MatrixWrapper::flatten(const char order) const
     return vec;
 }
 
+bool MatrixWrapper::isSymmetric(double tolerance)
+{
+    GMX_RELEASE_ASSERT(
+        nrow_ == ncol_,
+        gmx::formatString("Matrix with dimensions (%d,%d) is not square!", nrow_, ncol_).c_str()
+    );
+    for (int j = 1; j < ncol_; j++)
+    {
+        for (int i = j+1; i < nrow_; i++)
+        {
+            double sum = a_[j][i] + a_[i][j];
+            if (std::abs(sum) > tolerance &&
+                std::abs(a_[j][i] - a_[i][j])/sum > tolerance)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void MatrixWrapper::averageTriangle()
 {
     GMX_RELEASE_ASSERT(

@@ -34,8 +34,6 @@
 
 #include <map>
 
-#include "mpi.h"
-
 #include <gtest/gtest.h>
 
 #include "../GeneticAlgorithm.h"

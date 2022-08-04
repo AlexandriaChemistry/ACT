@@ -9,38 +9,38 @@
   <Real Name="Potential after">0</Real>
   <Sequence Name="Hessian">
     <Int Name="Length">36</Int>
-    <Real>1.9497623572817346e-07</Real>
+    <Real>7.8165585202172749e-09</Real>
     <Real>-0</Real>
     <Real>-0</Real>
-    <Real>-1.9497623572817346e-07</Real>
-    <Real>-0</Real>
-    <Real>0</Real>
-    <Real>-0</Real>
-    <Real>1.9497623572817346e-07</Real>
+    <Real>-7.8165585202172749e-09</Real>
     <Real>-0</Real>
     <Real>-0</Real>
-    <Real>-1.9497623572817346e-07</Real>
-    <Real>0</Real>
+    <Real>-0</Real>
+    <Real>7.8165585202172749e-09</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>-7.8165585202172749e-09</Real>
+    <Real>-0</Real>
     <Real>-0</Real>
     <Real>-0</Real>
     <Real>289056</Real>
     <Real>-0</Real>
     <Real>-0</Real>
     <Real>-289056</Real>
-    <Real>-1.9497623572817346e-07</Real>
+    <Real>-7.8165585202172749e-09</Real>
     <Real>-0</Real>
     <Real>-0</Real>
-    <Real>1.9497623572817346e-07</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-1.9497623572817346e-07</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>1.9497623572817346e-07</Real>
+    <Real>7.8165585202172749e-09</Real>
     <Real>-0</Real>
     <Real>-0</Real>
     <Real>-0</Real>
+    <Real>-7.8165585202172749e-09</Real>
+    <Real>-0</Real>
+    <Real>-0</Real>
+    <Real>7.8165585202172749e-09</Real>
+    <Real>-0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
     <Real>-289056</Real>
     <Real>-0</Real>
     <Real>-0</Real>
@@ -70,7 +70,7 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">1</Int>
-    <Real>0.0031973985044138377</Real>
+    <Real>0.0031973985044138381</Real>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">17.245132542962914</Real>
   <Real Name="Delta H form (kJ/mol)">363.87468858737572</Real>

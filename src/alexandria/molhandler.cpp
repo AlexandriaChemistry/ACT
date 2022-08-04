@@ -79,9 +79,6 @@ void MolHandler::computeHessian(const MyMol                       *mol,
                                 std::map<InteractionType, double> *energyZero,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
-    std::vector<double> fneg;
-    fneg.resize(DIM*atomIndex.size(), 0.0);
-    
     const auto &atoms    = mol->atomsConst();
     std::vector<gmx::RVec> fzero(atoms.size());
     (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
@@ -96,26 +93,30 @@ void MolHandler::computeHessian(const MyMol                       *mol,
     
     double      stepSize = 1e-8; // 0.001 pm
 #define GMX_DOUBLE_EPS 2.2204460492503131e-16
-    stepSize = 10.0 * std::sqrt(GMX_DOUBLE_EPS);
+    stepSize = 2.0 * std::sqrt(GMX_DOUBLE_EPS);
 
     if (dpdq)
     {
         gmx::RVec zero = { 0, 0, 0 };
         dpdq->resize(atomIndex.size(), zero);
     }
-    std::vector<gmx::RVec> forces(atoms.size());
+    std::vector<gmx::RVec> forces[2];
+    forces[0].resize(atoms.size());
+    forces[1].resize(atoms.size());
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
+            int    column = ai*DIM+atomXYZ;
             double xyzRef = (*coords)[atomI][atomXYZ];
             for(int delta = 0; delta <= 1; delta++)
             {
                 (*coords)[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
                 std::map<InteractionType, double> energies;
-                (void) mol->calculateEnergy(forceComp, coords, &forces, &energies);
+                auto rmsf = forceComp->compute(mol->topology(), coords, &forces[delta], &energies);
+
                 if (dpdq)
                 {
                     // To compute dipole we need to take shells into account as well!
@@ -128,34 +129,22 @@ void MolHandler::computeHessian(const MyMol                       *mol,
                         }
                     }
                 }
-                if (delta == 0)
-                {
-                    for(size_t aj = 0; aj < atomIndex.size(); aj++)
-                    {
-                        int atomJ = atomIndex[aj];
-                        for (int d = 0; d < DIM; d++)
-                        {
-                            int row   = aj*DIM+d;
-                            fneg[row] = forces[atomJ][d];
-                        }
-                    }
-                }
             }
-            (*coords)[atomI][atomXYZ] = xyzRef;  // Restore positions
+            // Restore position
+            (*coords)[atomI][atomXYZ] = xyzRef;
             
-            int col = ai*DIM+atomXYZ;
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(forces[atomJ][d]-fneg[row])/(2*stepSize);
+                    double value = -(forces[1][atomJ][d]-forces[0][atomJ][d])/(2*stepSize);
                     if (false && debug)
                     {
-                        fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
+                        fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, column, value); 
                     }
-                    hessian->set(row, col, value);
+                    hessian->set(column, row, value);
                 }
             }
             if (dpdq)
@@ -639,6 +628,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     std::vector<double> deltaX(DIM*theAtoms.size(), 0.0);
     // Set a maximum displacement to prevent exploding molecules
     double              deltaXTolerance = 0.002; // nm
+    double              maxDeltaXToler  = 0.01; // nm
     double              epotMin = 0;
     // Two sets of coordinates
     std::vector<gmx::RVec> newCoords[2];
@@ -735,7 +725,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             }
             else
             {
-                deltaXTolerance *= 1.25;
+                deltaXTolerance = std::min(1.25*deltaXTolerance, maxDeltaXToler);
                 epotMin = newEnergies[next][InteractionType::EPOT];
                 current = next;
             }

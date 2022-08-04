@@ -146,7 +146,7 @@ static double DNuclear_GG(double r, double zeta)
     {
         double rz = r * zeta;
         
-        return  (-1)*((2.0*invsqrt_pi)*exp(-sqr(rz))*(zeta/r) - erf(rz)/sqr(r));
+        return  (2.0*invsqrt_pi)*exp(-sqr(rz))*(zeta/r) - erf(rz)/sqr(r);
     }
 }
 
@@ -188,8 +188,8 @@ static double DCoulomb_GG(double r, double zi, double zj)
 static void coulomb_gaussian(real qq, real izeta, real jzeta,
                              real r, real *velec, real *felec)
 {
-    *velec       = qq*Coulomb_GG(r, izeta, jzeta);
-    *felec       = qq*DCoulomb_GG(r, izeta, jzeta);
+    *velec =  qq*Coulomb_GG(r, izeta, jzeta);
+    *felec = -qq*DCoulomb_GG(r, izeta, jzeta);
 }
 
 /*! \brief 

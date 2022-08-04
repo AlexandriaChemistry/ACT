@@ -530,7 +530,7 @@ static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
         auto fbond      = -ksh;
         ebond          += half*ksh*dr2;
         
-        for (int m = 0; (m < DIM); m++)
+        for (int m = 0; m < DIM; m++)
         {
             auto fij          = fbond*dx[m];
             f[indices[0]][m] += fij;
@@ -550,7 +550,6 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
     rvec uvec, vvec, svec;
     real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
     real a, b, p, q, toler;
-    auto   &f     = *forces;
 
     iprm  = iprod(m, m);       /*  5    */
     iprn  = iprod(n, n);       /*  5	*/
@@ -574,10 +573,10 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
         rvec_sub(uvec, vvec, svec);   /*  3	*/
         rvec_sub(f_i, svec, f_j);     /*  3	*/
         rvec_add(f_l, svec, f_k);     /*  3	*/
-        rvec_inc(f[i], f_i);          /*  3	*/
-        rvec_dec(f[j], f_j);          /*  3	*/
-        rvec_dec(f[k], f_k);          /*  3	*/
-        rvec_inc(f[l], f_l);          /*  3	*/
+        rvec_inc((*forces)[i], f_i);          /*  3	*/
+        rvec_dec((*forces)[j], f_j);          /*  3	*/
+        rvec_dec((*forces)[k], f_k);          /*  3	*/
+        rvec_inc((*forces)[l], f_l);          /*  3	*/
     }
 }
 
