@@ -39,6 +39,8 @@
 
 #include "molhandler.h"
 
+#include <numeric>
+
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
 #include "alexandria/velocityhandler.h"
@@ -133,7 +135,7 @@ void MolHandler::computeHessian(const MyMol                       *mol,
             {
                 (*coords)[atomI][atomXYZ] = xxx[delta];
                 std::map<InteractionType, double> energies;
-                auto rmsf = forceComp->compute(mol->topology(), coords, &forces[delta], &energies);
+                (void) forceComp->compute(mol->topology(), coords, &forces[delta], &energies);
 
                 if (dpdq)
                 {
@@ -668,11 +670,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                 MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
                 computeHessian(mol, forceComp, &newCoords[current],
                                theAtoms, &Hessian, &f0, &newEnergies[current]);
+                Hessian.averageTriangle();
                 // Solve H delta X = -grad (E) = force(E)
                 int result = Hessian.solve(f0, &deltaX);
                 if (0 != result)
                 {
                     eMin = eMinimizeStatus::Solver;
+                }
+                if (logFile)
+                {
+                    fprintf(logFile, "Sum of forces: %g sum of displacement: %g\n",
+                            std::accumulate(f0.begin(), f0.end(), 0.0),
+                            std::accumulate(deltaX.begin(), deltaX.end(), 0.0));
                 }
             }
             break;
