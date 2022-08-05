@@ -378,7 +378,7 @@ void MatrixWrapper::averageTriangle()
         nrow_ == ncol_,
         gmx::formatString("Matrix with dimensions (%d,%d) is not square!", nrow_, ncol_).c_str()
     );
-    for (int j = 1; j < ncol_; j++)
+    for (int j = 0; j < ncol_; j++)
     {
         for (int i = j+1; i < nrow_; i++)
         {
