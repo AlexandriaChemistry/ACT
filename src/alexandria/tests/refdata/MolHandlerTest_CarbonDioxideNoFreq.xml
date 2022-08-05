@@ -5,8 +5,8 @@
   <Real Name="Lin. Angle before">0</Real>
   <Real Name="Potential before">0.001925499999998507</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">4.0824829046404465e-05</Real>
-  <Real Name="Bond after">1.4833512431670491e-28</Real>
-  <Real Name="Lin. Angle after">4.8603777158294479e-36</Real>
-  <Real Name="Potential after">1.4833512917708262e-28</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.0824828940480725e-05</Real>
+  <Real Name="Bond after">1.2965053687087537e-20</Real>
+  <Real Name="Lin. Angle after">2.3779285991054085e-35</Real>
+  <Real Name="Potential after">1.2965053687087561e-20</Real>
 </ReferenceData>

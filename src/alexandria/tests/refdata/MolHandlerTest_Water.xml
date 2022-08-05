@@ -5,142 +5,58 @@
   <Real Name="Angle before">0.55728331281907129</Real>
   <Real Name="Potential before">0.55994035938589426</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.0022963647917889091</Real>
-  <Real Name="Bond after">3.6548365074324671e-24</Real>
-  <Real Name="Angle after">6.7475710566145008e-26</Real>
-  <Real Name="Potential after">3.7223122179986121e-24</Real>
-  <Sequence Name="Hessian">
-    <Int Name="Length">81</Int>
-    <Real>8.1883797742706161e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-4.0941898871353074e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-4.0941898871353087e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>3.6730338110728532e-23</Real>
-    <Real>620313.05170798721</Real>
-    <Real>8.1662346773803823e-05</Real>
-    <Real>1.0006307445362377e-13</Real>
-    <Real>-310156.52581598633</Real>
-    <Real>222459.91144967568</Real>
-    <Real>-1.0006307449035409e-13</Real>
-    <Real>-310156.52589200088</Real>
-    <Real>-222459.91153133806</Real>
-    <Real>1.8005125334274885e-13</Real>
-    <Real>8.8866267105913721e-05</Real>
-    <Real>400289.37841194472</Real>
-    <Real>-9.002562665703898e-14</Real>
-    <Real>193350.14711949043</Real>
-    <Real>-200144.6891741007</Real>
-    <Real>-9.0025626685709883e-14</Real>
-    <Real>-193350.14720835665</Real>
-    <Real>-200144.68923784397</Real>
-    <Real>-3.591852390420191e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>3.6091424842938223e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-1.7290093873631472e-10</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>8.6969423187082356e-14</Real>
-    <Real>-310156.52580956073</Real>
-    <Real>193350.14726131107</Real>
-    <Real>-9.3516248822368128e-14</Real>
-    <Real>320596.02172056201</Real>
-    <Real>-207905.02935997321</Real>
-    <Real>6.5468256352857687e-15</Real>
-    <Real>-10439.495911001261</Real>
-    <Real>14554.882098662132</Real>
-    <Real>-9.0025626648971495e-14</Real>
-    <Real>222459.91131981456</Real>
-    <Real>-200144.68915618083</Real>
-    <Real>8.089795649878263e-14</Real>
-    <Real>-207905.02922607673</Real>
-    <Real>179852.08167395188</Real>
-    <Real>9.1276701501888717e-15</Real>
-    <Real>-14554.882093737828</Real>
-    <Real>20292.607482228952</Real>
-    <Real>-3.5918523904201923e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-1.7290093873631477e-10</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>3.6091424842938236e-08</Real>
-    <Real>-0</Real>
-    <Real>-0</Real>
-    <Real>-8.6969423215753272e-14</Real>
-    <Real>-310156.52589842712</Real>
-    <Real>-193350.14732505576</Real>
-    <Real>-6.5468256352857687e-15</Real>
-    <Real>-10439.495911001091</Real>
-    <Real>-14554.882098662254</Real>
-    <Real>9.3516248851039056e-14</Real>
-    <Real>320596.02180942823</Real>
-    <Real>207905.02942371802</Real>
-    <Real>-9.0025626677642411e-14</Real>
-    <Real>-222459.91140868081</Real>
-    <Real>-200144.68921992445</Real>
-    <Real>9.1276701501888717e-15</Real>
-    <Real>14554.882093737589</Real>
-    <Real>20292.607482229123</Real>
-    <Real>8.0897956527453533e-14</Real>
-    <Real>207905.02931494324</Real>
-    <Real>179852.08173769532</Real>
-  </Sequence>
+  <Real Name="Coordinate RMSD after minimizing">0.0022963679737979512</Real>
+  <Real Name="Bond after">7.9285967488054527e-21</Real>
+  <Real Name="Angle after">4.1213888602737836e-23</Real>
+  <Real Name="Potential after">7.9698106374081906e-21</Real>
   <Sequence Name="Equilibrium force">
     <Int Name="Length">9</Int>
-    <Real>-6.4551518652397495e-28</Real>
-    <Real>5.2969805879489921e-12</Real>
-    <Real>-1.4351073262305207e-09</Real>
-    <Real>3.2361205241223164e-28</Real>
-    <Real>-1.1124383712256789e-09</Real>
-    <Real>7.1945329400245774e-10</Real>
-    <Real>3.2190313411174332e-28</Real>
-    <Real>1.1071413906377299e-09</Real>
-    <Real>7.1565403222806285e-10</Real>
+    <Real>-4.0997914014910408e-29</Real>
+    <Real>-6.605334793160885e-09</Real>
+    <Real>6.8379772302703914e-08</Real>
+    <Real>2.1919223319194207e-29</Real>
+    <Real>5.3701451384842194e-08</Real>
+    <Real>-3.6558725867696222e-08</Real>
+    <Real>1.9078690695716204e-29</Real>
+    <Real>-4.7096116591681304e-08</Real>
+    <Real>-3.1821046435007692e-08</Real>
   </Sequence>
   <Sequence Name="DeltaX">
     <Int Name="Length">9</Int>
-    <Real>-3.5931663007168125e-21</Real>
-    <Real>5.402096430671887e-18</Real>
-    <Real>-5.3012433981872709e-16</Real>
-    <Real>-1.8619193065360351e-20</Real>
-    <Real>-2.8906573511953404e-15</Real>
-    <Real>2.6577331872076607e-16</Real>
-    <Real>1.0496235080475501e-20</Real>
-    <Real>2.8853981464830027e-15</Real>
-    <Real>2.6435817237611586e-16</Real>
+    <Real>5.6010763942941838e-19</Real>
+    <Real>-4.1049401756624633e-15</Real>
+    <Real>3.633313926914796e-14</Real>
+    <Real>-5.1826697946911889e-19</Real>
+    <Real>1.2246632606566839e-13</Real>
+    <Real>-2.4428054277606956e-14</Real>
+    <Real>-4.8777210786172157e-19</Real>
+    <Real>-1.1836171428241831e-13</Real>
+    <Real>-1.1905517153743796e-14</Real>
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
-    <Real>1361.9517081005679</Real>
-    <Real>3701.827837414301</Real>
-    <Real>3771.9107026382371</Real>
+    <Real>1361.9516682351602</Real>
+    <Real>3701.8239113260643</Real>
+    <Real>3771.9067964609139</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">3</Int>
-    <Real>0.0267447001389261</Real>
-    <Real>0.0043130075696597436</Real>
-    <Real>0.084303514350317063</Real>
+    <Real>0.028299308817511949</Real>
+    <Real>0.012075108415669021</Real>
+    <Real>0.0032789660109104053</Real>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">52.84916399682561</Real>
-  <Real Name="Delta H form (kJ/mol)">772.89851727321832</Real>
+  <Real Name="Zero point energy (kJ/mol)">52.849116911025995</Real>
+  <Real Name="Delta H form (kJ/mol)">772.89842310537074</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">144.91371233061693</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">49.456036678754415</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.088170281037274437</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">194.4579192904086</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">49.580173488226066</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.088170295865082654</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">194.58205611470808</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693218203427</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.50376348092053358</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">25.447149917327387</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.50376354995716077</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">25.447149986364014</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">52.87198261037787</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">60.308853276392576</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">52.871935528329885</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">60.308806194344591</Real>
 </ReferenceData>

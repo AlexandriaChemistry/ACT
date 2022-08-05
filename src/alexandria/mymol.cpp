@@ -458,7 +458,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
         std::vector<gmx::RVec> forces(myatoms.size());
         if (forceComp)
         {
-            (void) calculateEnergy(forceComp, &coords, &forces, &energies);
+            (void) forceComp->compute(topology_, &coords, &forces, &energies);
         }
         else
         {
@@ -1454,33 +1454,6 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateEnergy(const ForceComputer               *forceComputer,
-                              std::vector<gmx::RVec>            *coordinates,
-                              std::vector<gmx::RVec>            *forces,
-                              std::map<InteractionType, double> *energies) const
-{
-    int natom = atomsConst().size();
-    // Short-cut for editable coordinate vector (thanks to the &)
-    auto &myx = *coordinates;
-    auto rmsf = forceComputer->compute(topology_, &myx, forces, energies);
-    if (rmsf > forceComputer->rmsForce() && debug)
-    {
-        fprintf(debug, "Shell optimization did not converge for %s. RMS force is %g (tolerance %g)\n",
-                getMolname().c_str(), rmsf, forceComputer->rmsForce());
-    }
-    for (int i = 0; i < natom; i++)
-    {
-        copy_rvec(myx[i], state_->x[i]);
-    }
-    for (const auto &ee : energies_)
-    {
-        int ftype = forceComputer->ftype(ee.first);
-        enerd_->term[ftype] = ee.second;
-    }
-
-    return rmsf;
-}
-
 double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
 {
     auto &tops = fraghandler_->topologies();
@@ -1492,7 +1465,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
     std::vector<gmx::RVec> coords = xOriginal();
     std::vector<gmx::RVec> ftotal(coords.size());
     std::map<InteractionType, double> etot;
-    calculateEnergy(forceComputer, &coords, &ftotal, &etot);
+    (void) forceComputer->compute(topology_, &coords, &ftotal, &etot);
     // Now compute interaction energies if there are fragments
     double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
@@ -1682,7 +1655,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
                                                        state_->x, pd, 
                                                        atoms()))
         {
-            (void) calculateEnergy(forceComp, &coords, forces, &energies);
+            (void) forceComp->compute(topology_, &coords, forces, &energies);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1782,7 +1755,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             }
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            (void) calculateEnergy(forceComp, &coords, forces, &energies);
+            (void) forceComp->compute(topology_, &coords, forces, &energies);
             if (haveShells())
             {
                 auto qcalc = qTypeProps(qType::Calc);
@@ -1861,7 +1834,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     (*myatoms)[i].setCharge(qq[i]);
                 }
                 // Copy charges to topology
-                chi2[cur] = calculateEnergy(forceComp, &coords, forces, &energies);
+                chi2[cur] = forceComp->compute(topology_, &coords, forces, &energies);
                 qcalc->setX(state_->x);
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
                 qcalc->qgenResp()->calcPot(pd->getEpsilonR());
@@ -2491,7 +2464,7 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
         std::vector<gmx::RVec> forces(atomsConst().size());
         std::vector<gmx::RVec> coords = optimizedCoordinates_;
         std::map<InteractionType, double> energies;
-        (void) calculateEnergy(forceComp, &coords, &forces, &energies);
+        (void) forceComp->compute(topology_, &coords, &forces, &energies);
         qgr->calcPot(1.0);
         qgr->plotLsq(oenv, espcorr);
     }

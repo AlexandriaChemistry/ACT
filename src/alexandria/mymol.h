@@ -526,19 +526,6 @@ public:
                                  std::map<InteractionType, double> *energies,
                                  real                              *shellForceRMS);
     
-    /*! \brief Calculate the forces and energies
-     * For a polarizable model the shell positions are minimized.
-     * \param[in]    forceComputer The code to run the calculations.
-     * \param[inout] coordinates   The atomic positions, shell positions may be changed
-     * \param[out]   forces        Force array
-     * \param[out]   energies      The energy components
-     * \return The root mean square force on the shells or zero if none
-     */
-    double calculateEnergy(const ForceComputer               *forceComputer,
-                           std::vector<gmx::RVec>            *coordinates,
-                           std::vector<gmx::RVec>            *forces,
-                           std::map<InteractionType, double> *energies) const;
-    
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute
      * Epot(system) - Sum_f Epot(f) 

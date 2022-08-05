@@ -81,7 +81,7 @@ void MolHandler::computeHessian(const MyMol                       *mol,
 {
     const auto &atoms    = mol->atomsConst();
     std::vector<gmx::RVec> fzero(atoms.size());
-    (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
+    (void) forceComp->compute(mol->topology(), coords, &fzero, energyZero);
     forceZero->clear();
     for(auto &atom : atomIndex)
     {
@@ -91,9 +91,9 @@ void MolHandler::computeHessian(const MyMol                       *mol,
         }
     }
     
-    double      stepSize = 1e-8; // 0.001 pm
+    double      stepSize = 1e-12; // nm
 #define GMX_DOUBLE_EPS 2.2204460492503131e-16
-    stepSize = 2.0 * std::sqrt(GMX_DOUBLE_EPS);
+    //    stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
 
     if (dpdq)
     {
@@ -111,9 +111,27 @@ void MolHandler::computeHessian(const MyMol                       *mol,
         {
             int    column = ai*DIM+atomXYZ;
             double xyzRef = (*coords)[atomI][atomXYZ];
+            double xxx[2];
+            bool   stepsDone = false;
+            double myStep    = stepSize;
+            do {
+                for(int delta = 0; delta <= 1; delta++)
+                {
+                    xxx[delta] = xyzRef + (2*delta-1)*myStep;
+                }
+                // Make sure that the coordinate is in fact chenged.
+                // If the delta is too small, numeric issues may kick
+                // in.
+                stepsDone = (xxx[0] < xyzRef && xxx[1] > xyzRef);
+                if (!stepsDone)
+                {
+                    myStep *= 2;
+                }
+            }
+            while (!stepsDone);
             for(int delta = 0; delta <= 1; delta++)
             {
-                (*coords)[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
+                (*coords)[atomI][atomXYZ] = xxx[delta];
                 std::map<InteractionType, double> energies;
                 auto rmsf = forceComp->compute(mol->topology(), coords, &forces[delta], &energies);
 
@@ -139,7 +157,7 @@ void MolHandler::computeHessian(const MyMol                       *mol,
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(forces[1][atomJ][d]-forces[0][atomJ][d])/(2*stepSize);
+                    double value = -(forces[1][atomJ][d]-forces[0][atomJ][d])/(xxx[1]-xxx[0]);
                     if (false && debug)
                     {
                         fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, column, value); 
@@ -151,12 +169,12 @@ void MolHandler::computeHessian(const MyMol                       *mol,
             {
                 for(int d = 0; d < DIM; d++)
                 {
-                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(2*stepSize);
+                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(xxx[1]-xxx[0]);
                 }
             }
         }
     }
-    (void) mol->calculateEnergy(forceComp, coords, &fzero, energyZero);
+    (void) forceComp->compute(mol->topology(), coords, &fzero, energyZero);
 }
 
 static void computeFrequencies(const std::vector<double> &eigenvalues,
@@ -660,8 +678,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             break;
         case eMinimizeAlgorithm::Steep:
             {
-                (void) mol->calculateEnergy(forceComp, &newCoords[current],
-                                            &forces, &newEnergies[current]);
+                (void) forceComp->compute(mol->topology(), &newCoords[current],
+                                          &forces, &newEnergies[current]);
                 int    i      = 0;
                 double factor = 0.001;
                 for(auto atomI : theAtoms)
@@ -717,7 +735,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             }
             
             // Do an energy and force calculation with the new coordinates
-            (void) mol->calculateEnergy(forceComp, &newCoords[next], &forces, &newEnergies[next]);
+            (void) forceComp->compute(mol->topology(), &newCoords[next], &forces, &newEnergies[next]);
             acceptStep = (newEnergies[next][InteractionType::EPOT] <= epotMin);
             if (!acceptStep)
             {
@@ -763,7 +781,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         }
         // Re-compute the energy one last time.
         // TODO: is this really needed?
-        // (void) mol->calculateEnergy(forceComp, coords, &forces, energies);
+        // (void) forceComp->compute(mol->topology(), coords, &forces, energies);
         return eMinimizeStatus::OK;
     }
     else
