@@ -174,4 +174,5 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
     def_nofc    ("DVR/DL",   "dVrestraint/dl"   ),
     def_nofc    ("DVT/DL",   "dVtemperature/dl" ),
+    def_nofc    ("DUMMY",    "dummy" ),
 };

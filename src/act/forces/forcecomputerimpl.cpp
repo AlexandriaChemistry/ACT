@@ -239,6 +239,14 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
+static double computeDummy(const std::vector<TopologyEntry *>    &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces)
+{
+    return 0.0;
+}
+
 static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -727,6 +735,7 @@ static double computePropers(const std::vector<TopologyEntry *>    &propers,
 }
 
 std::map<int, bondForceComputer> bondForceComputerMap = {
+    { F_DUMMY,         computeDummy        },
     { F_BONDS,         computeBonds        },
     { F_MORSE,         computeMorse        },
     { F_ANGLES,        computeAngles       },

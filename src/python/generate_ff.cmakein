@@ -368,7 +368,7 @@ if __name__ == '__main__':
         vdwhelp += " Default is read from share/ffnames.csv"
         parser.add_argument("-vdw",      "--vdw",   help=vdwhelp, type=str, default=None)
         defbond = "MORSE"
-        parser.add_argument("-bond",     "--bond",   help=("Which GROMACS function to use for bonds, BONDS (harmonic) or MORSE. Default %s" % defbond), type=str, default=defbond)
+        parser.add_argument("-bond",     "--bond",   help=("Which GROMACS function to use for bonds, BONDS (harmonic), MORSE or DUMMY. Default %s" % defbond), type=str, default=defbond)
         defang = "ANGLES"
         parser.add_argument("-ang",      "--angle",   help=("Which GROMACS function to use for angles, ANGLES or UREY_BRADLEY. Default %s" % defang), type=str, default=defang)
         defdih = "FOURDIHS"

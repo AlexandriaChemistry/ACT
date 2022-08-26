@@ -47,7 +47,7 @@ namespace alexandria
 {
 
 enum class eMinimizeStatus {
-    OK, TooManySteps, Solver
+    OK, TooManySteps, Solver, NoMinimum
 };
 
 const std::string &eMinimizeStatusToString(eMinimizeStatus e);
