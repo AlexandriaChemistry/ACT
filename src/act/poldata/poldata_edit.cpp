@@ -45,6 +45,7 @@
 #include "act/poldata/act_checksum.h"
 #include "alexandria/alex_modules.h"
 #include "act/poldata/forcefieldparameter.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/poldata/poldata.h"
@@ -628,6 +629,27 @@ static void compare_pd(Poldata *pd1,
     }
 }
 
+static void copyDeToD0(Poldata *pd)
+{
+    auto fs = pd->findForces(InteractionType::BONDS);
+    if (fs->fType() != F_MORSE)
+    {
+        printf("Not using Morse in force field file %s\n", pd->filename().c_str());
+        return;
+    }
+    auto ppp = fs->parameters();
+    for (auto &p : (*ppp))
+    {
+        auto &param = p.second;
+        if (param.find(morse_name[morseDE]) != param.end() && 
+            param.find(morse_name[morseD0]) != param.end())
+        {
+            double De = param.find(morse_name[morseDE])->second.value();
+            param.find(morse_name[morseD0])->second.setValue(-De);
+        }
+    }
+}
+
 int edit(int argc, char*argv[])
 {
     static const char               *desc[] =
@@ -665,6 +687,7 @@ int edit(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
+    gmx_bool     De2D0      = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -699,6 +722,8 @@ int edit(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+        { "-de2d0", FALSE, etBOOL, {&De2D0},
+          "This is a hack to copy -De to D0 in the Morse potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" }
     };
@@ -763,6 +788,10 @@ int edit(int argc, char*argv[])
             {
                 analyzePoldata(&pd, analyze);
             }
+        }
+        else if (De2D0)
+        {
+            copyDeToD0(&pd);
         }
         else
         {

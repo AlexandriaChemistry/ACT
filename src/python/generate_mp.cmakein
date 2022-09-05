@@ -38,6 +38,10 @@ def parseArguments():
   Optionally, experimental data can be added to the molprop file, for this you have to
   download that database from the ACT wiki. Since the script can take quite some time
   it runs in parallel using all the available CPU cores on your computer.
+  
+  You will need to set an environment variable called AlexandriaLib that points
+  to the directory containing the library, otherwise the script will exit with
+  an error message.
   '''
   parser  = argparse.ArgumentParser(description=desc)
   alexdef = act_library_filename("alexandria.csv")
