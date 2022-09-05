@@ -1760,7 +1760,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             {
                 auto qcalc = qTypeProps(qType::Calc);
                 qcalc->setQ(*myatoms);
-                qcalc->setX(state_->x);
+                qcalc->setX(coords);
             }
             
             return immStatus::OK;
@@ -1791,7 +1791,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     }
                 }
             }
-            // Copy charges to topology
+            // TODO check this. Copy charges to topology
             // topology_->setAtoms(myatoms);
             return immStatus::OK;
         }
