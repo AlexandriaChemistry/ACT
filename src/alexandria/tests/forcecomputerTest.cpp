@@ -276,6 +276,11 @@ TEST_F (ForceComputerTest, Acetone)
     test("acetone-3-oep.log.pdb", "ACS-g", false);
 }
 
+TEST_F (ForceComputerTest, AcetoneSdf)
+{
+    test("acetone.sdf", "ACS-g", false);
+}
+
 TEST_F (ForceComputerTest, AcetoneStretch)
 {
     test("acetone-3-oep.log.pdb", "ACS-g", false, 0.98);

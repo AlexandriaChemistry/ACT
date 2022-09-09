@@ -46,8 +46,8 @@ class ForceComputer
 private:
     //! Force field structure
     const Poldata *pd_;
-    //! Convergence criterium for minimizing shells: root mean square force
-    double         rmsForce_;
+    //! Convergence criterium for minimizing shells: mean square force
+    double         msForce_;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_;
     //! Electric field to be optionally applied
@@ -70,13 +70,13 @@ private:
 
  public:
     /*! \brief Constructor
-     * \param[in] pd       Pointer to force field structure
-     * \param[in] rmsForce The root mean square force on shells
-     * \param[in] maxiter  The maximum number of iterations for shell minimization
+     * \param[in] pd      Pointer to force field structure
+     * \param[in] msForce The tolerance for the mean square force on shells
+     * \param[in] maxiter The maximum number of iterations for shell minimization
      */
     ForceComputer(const Poldata *pd,
-                  double         rmsForce = 0.001,
-                  int            maxiter  = 25) : pd_(pd), rmsForce_(rmsForce), maxiter_(maxiter) {}
+                  double         msForce = 1e-6,
+                  int            maxiter = 25) : pd_(pd), msForce_(msForce), maxiter_(maxiter) {}
     
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
@@ -87,7 +87,7 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
-     * \return The root mean square force on the shells, or zero if not present.
+     * \return The mean square force on the shells, or zero if not present.
      */
     double compute(const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
@@ -104,12 +104,12 @@ private:
     int ftype(InteractionType itype) const;
     
     //! \return the force tolerance
-    double rmsForce() const { return rmsForce_; }
+    double forceTolerance() const { return msForce_; }
 
     /*! \brief Set the shell minimization RMS tolerance
      * \param[in] toler The new tolerance
      */
-    void setRmsForceToler(double toler) { rmsForce_ = toler; }
+    void setForceTolerance(double toler) { msForce_ = toler; }
     
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
@@ -127,8 +127,6 @@ private:
                             std::vector<gmx::RVec> *coordinates,
                             QtypeProps             *qtp) const;
 
-    //! \return the internal convergence criterion
-    double convergenceTolerance() const { return rmsForce_; }                 
 };
 
 } // namespace alexandria

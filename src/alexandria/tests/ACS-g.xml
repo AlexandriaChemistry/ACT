@@ -2996,87 +2996,87 @@
   </interaction>
   <interaction type="PROPER_DIHEDRALS" function="PDIHS" canswap="true">
     <parameterlist identifier="c2_b:c2_b:c2_b:n2_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c3_b~s3_b~h_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b:c2_b=o2_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b:c2_b~h_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b:n2_b:c2_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:c2_b:n2_b~h_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:n2_b:c2_b:n2_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:n2_b:c2_b=o2_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="3" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="3" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_b:n2_b:c2_b~h_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_b~c2_b~c3_b~h_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="148.4" minimum="90" maximum="360" ntrain="6" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="148.4" minimum="0" maximum="360" ntrain="6" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c2_b:c2_b:n2_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c2_b:c2_b=o2_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c2_b:c2_b~h_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c2_b:n2_b~h_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~c3_b~c2_b=o2_b">
-      <parameter type="phi0" unit="degree" value="120" uncertainty="146.2" minimum="60" maximum="240" ntrain="6" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="120" uncertainty="146.2" minimum="0" maximum="360" ntrain="6" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~n2_b:c2_b:n2_b">
-      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="90" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~n2_b:c2_b=o2_b">
-      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="3" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="180" uncertainty="0" minimum="0" maximum="360" ntrain="3" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>

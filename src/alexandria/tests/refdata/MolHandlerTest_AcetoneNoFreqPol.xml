@@ -4,17 +4,17 @@
   <Real Name="Morse before">-3599.7031713026513</Real>
   <Real Name="Angle before">1.5500121645022678</Real>
   <Real Name="Improper Dih. before">0</Real>
-  <Real Name="Buck.ham (SR) before">7456.1261245914702</Real>
+  <Real Name="Buck.ham (SR) before">36.217348487062949</Real>
   <Real Name="Coulomb (SR) before">-202.7840104469941</Real>
   <Real Name="Polarization before">7.1702128634589606</Real>
-  <Real Name="Potential before">3662.3591678697858</Real>
+  <Real Name="Potential before">-3757.5496082346217</Real>
   <Real Name="Coordinate RMSD before minimizing">4.6860416993492717e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.052057103312688965</Real>
-  <Real Name="Morse after">-2447.251182605401</Real>
-  <Real Name="Angle after">1.5674418234434471</Real>
-  <Real Name="Improper Dih. after">1.9801463540963152e-12</Real>
-  <Real Name="Buck.ham (SR) after">591.23948326583843</Real>
-  <Real Name="Coulomb (SR) after">-185.56903177051856</Real>
-  <Real Name="Polarization after">8.2157349696244584</Real>
-  <Real Name="Potential after">-2031.7975543170114</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0031188607011851093</Real>
+  <Real Name="Morse after">-3596.833400410681</Real>
+  <Real Name="Angle after">2.2678250796738659</Real>
+  <Real Name="Improper Dih. after">9.1512008635293514e-11</Real>
+  <Real Name="Buck.ham (SR) after">27.101683283124366</Real>
+  <Real Name="Coulomb (SR) after">-203.58469936849116</Real>
+  <Real Name="Polarization after">6.9089249016338474</Real>
+  <Real Name="Potential after">-3764.139666514649</Real>
 </ReferenceData>

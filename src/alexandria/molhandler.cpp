@@ -577,7 +577,10 @@ void MolHandler::nma(const MyMol              *mol,
 
 }
 
-static void printEnergies(FILE *logFile, int myIter, double msAtomForce,
+static void printEnergies(FILE *logFile, int myIter,
+                          double msAtomForce,
+                          double msShellForce,
+                          double fcurprev,
                           const std::map<InteractionType, double> &energies,
                           double gamma)
 {
@@ -585,8 +588,8 @@ static void printEnergies(FILE *logFile, int myIter, double msAtomForce,
     {
         return;
     }
-    fprintf(logFile, "Iter %5d rmsForce %10g gamma %10g",
-            myIter, std::sqrt(msAtomForce), gamma);
+    fprintf(logFile, "Iter %5d msAtomForce %10g msShellForce %10g fcur.fprev %10g gamma %10g\n    ",
+            myIter, msAtomForce, msShellForce, fcurprev, gamma);
     for(const auto &ee : energies)
     {
         fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
@@ -633,7 +636,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     bool      converged    = false;
     int       myIter       = 0;
     // Check for meaningful convergence tolerance
-    double    shellToler2  = gmx::square(forceComp->convergenceTolerance());
+    double    shellToler2  = gmx::square(forceComp->forceTolerance());
     double    msForceToler = simConfig.forceTolerance();
     if (msForceToler < shellToler2)
     {
@@ -659,7 +662,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     std::vector<gmx::RVec> forces[2];
     forces[0].resize(myatoms.size());
     forces[1].resize(myatoms.size());
-    std::vector<double>    f0, f00;
     bool                   firstStep = true;
     // Now start the minimization loop.
     if (logFile)
@@ -672,16 +674,17 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
     deltaX[0].resize(DIM*theAtoms.size(), 0.0);
     deltaX[1].resize(DIM*theAtoms.size(), 0.0);
     // Set a maximum displacement to prevent exploding molecules
-    double              maxDeltaXToler  = 0.01; // nm
-    double              deltaXTolerance = maxDeltaXToler;
+    // double              maxDeltaXToler  = 0.01; // nm
+    // double              deltaXTolerance = maxDeltaXToler;
     double              epotMin = 0;
     // Two sets of coordinates
     std::vector<gmx::RVec> newCoords[2];
     newCoords[0] = *coords;
     newCoords[1] = *coords;
     std::map<InteractionType, double> newEnergies[2];
-    double gamma     = 1e-5;
-    double gamma_max = 1e-5;
+    double gamma_max    = 1e-5;
+    double gamma        = gamma_max;
+    double msShellForce = 0;
     int current = 0;
 #define next (1-current)
     do
@@ -694,9 +697,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                 // Below is a Newton-Rhapson algorithm
                 // https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
                 // Create Hessian, just containings atoms, not shells
+                std::vector<double> f0;
                 MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
                 computeHessian(mol, forceComp, &newCoords[current],
                                theAtoms, &Hessian, &f0, &newEnergies[current]);
+                               
                 if (logFile && firstStep && false)
                 {
                     fprintf(logFile, "Hessian:\n%s\n", Hessian.toString().c_str());
@@ -712,29 +717,50 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                 {
                     eMin = eMinimizeStatus::Solver;
                 }
-                if (logFile && firstStep)
+                else
                 {
-                    fprintf(logFile, "Sum of forces: %g sum of displacement: %g\n",
-                            std::accumulate(f0.begin(), f0.end(), 0.0),
-                            std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0));
-                    fprintf(logFile, "H deltaX\n");
-                    for(size_t ii = 0; ii < DIM*theAtoms.size(); ii++)
+                    // Copy f0 to forces
+                    size_t jj = 0;
+                    for(size_t ii = 0; ii < theAtoms.size(); ii++)
                     {
-                        double f1 = 0;
-                        for(size_t jj = 0; jj < DIM*theAtoms.size(); jj++)
+                        for(int m = 0; m < DIM; m++)
                         {
-                            f1 += H2.get(ii, jj) * deltaX[current][jj];
+                            forces[current][ii][m] = f0[jj++];
                         }
-                        fprintf(logFile, "f0[%2zu] = %12g  deltaX = %12g, H.deltaX = %12g\n",
-                                ii, f0[ii], deltaX[current][ii], f1);
+                    }
+                    if (logFile && firstStep)
+                    {
+                        fprintf(logFile, "Sum of forces: %g sum of displacement: %g\n",
+                                std::accumulate(f0.begin(), f0.end(), 0.0),
+                                std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0));
+                        fprintf(logFile, "H deltaX\n");
+                        for(size_t ii = 0; ii < DIM*theAtoms.size(); ii++)
+                        {
+                            double f1 = 0;
+                            for(size_t jj = 0; jj < DIM*theAtoms.size(); jj++)
+                            {
+                                f1 += H2.get(ii, jj) * deltaX[current][jj];
+                            }
+                            fprintf(logFile, "f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
+                                    ii, f0[ii], deltaX[current][ii], f0[ii]-f1);
+                        }
                     }
                 }
+                gamma = 1;
+                for(size_t ii = 0; ii < theAtoms.size(); ii++)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        gamma += gmx::square(deltaX[current][DIM*ii+m]);
+                    }
+                }
+                gamma *= simConfig.overRelax();
             }
             break;
         case eMinimizeAlgorithm::Steep:
             {
-                (void) forceComp->compute(mol->topology(), &newCoords[current],
-                                          &forces[current], &newEnergies[current]);
+                msShellForce = forceComp->compute(mol->topology(), &newCoords[current],
+                                                  &forces[current], &newEnergies[current]);
                 if (!firstStep)
                 {
                     int    i      = 0;
@@ -744,7 +770,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                         for(int m = 0; m < DIM; m++)
                         {
                             double df  = (forces[current][atomI][m]-forces[next][atomI][m]);
-                            teller    += (deltaX[current][i]-deltaX[next][i])*df;
+                            // TODO check which one it should be
+                            teller    += (newCoords[current][atomI][m]-newCoords[next][atomI][m])*df;
+                            //teller    += (deltaX[current][i]-deltaX[next][i])*df;
                             noemer    += df*df;
                             i         += 1;
                         }
@@ -773,15 +801,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                 *energies = newEnergies[current];
             }
             epotMin   = newEnergies[current][InteractionType::EPOT];
-            // Store forces
-            f00       = f0;
             // Write stuff
             double msf = 0;
-            for (const auto &f : f0)
+            for (size_t jj = 0; jj < theAtoms.size(); jj++)
             {
-                msf += f*f;
+                msf += iprod(forces[current][jj], forces[current][jj]);
             }
-            printEnergies(logFile, myIter, (msf/theAtoms.size()), newEnergies[current], gamma);
+            printEnergies(logFile, myIter, (msf/theAtoms.size()), 0, 0, newEnergies[current], gamma);
             firstStep = false;
         }
         if (eMinimizeStatus::OK != eMin)
@@ -800,14 +826,14 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
             
             // Do an energy and force calculation with the new coordinates
-            (void) forceComp->compute(mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+            msShellForce   = forceComp->compute(mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
-            acceptStep = (epotNew <= epotMin);
+            acceptStep     = (epotNew <= epotMin);
             double gmin    = gamma;
             if (!acceptStep)
             {
                 updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
-                (void) forceComp->compute(mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+                msShellForce    = forceComp->compute(mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
                 double epotHalf = newEnergies[next][InteractionType::EPOT];
                 // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
                 // We solve M abc = yyy using abc = Minverse yyy
@@ -823,10 +849,15 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
                     double epotGmin = newEnergies[next][InteractionType::EPOT];
                     acceptStep = (epotGmin <= epotMin);
                 }
+                else if (logFile)
+                {
+                    fprintf(logFile, "Line minimization parameters a = %g b = %g c = %g\n",
+                            abc[0], abc[1], abc[2]);
+                }
             }
             if (acceptStep)
             {
-                deltaXTolerance = maxDeltaXToler;
+                // deltaXTolerance = maxDeltaXToler;
                 epotMin = newEnergies[next][InteractionType::EPOT];
                 gamma   = gmin;
                 current = next;
@@ -841,8 +872,16 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const MyMol                     
         // Now check force convergencs
         double msAtomForce  = msForce(theAtoms, forces[current]);
         converged = msAtomForce <= msForceToler;
-        
-        printEnergies(logFile, myIter, msAtomForce, newEnergies[current], gamma);
+        double fcurprev = 0;
+        for(size_t ii = 0; ii < theAtoms.size(); ii++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                fcurprev += forces[current][ii][m]*forces[next][ii][m];
+            }
+        }
+        printEnergies(logFile, myIter, msAtomForce, msShellForce,
+                      fcurprev, newEnergies[current], gamma);
         if (debug)
         {
             for(size_t kk = 0; kk < mol->topology()->nAtoms(); kk++)
@@ -1006,6 +1045,11 @@ void MolHandler::simulate(MyMol                         *mol,
                           const char                    *energyFile,
                           const gmx_output_env_t        *oenv) const
 {
+    if (simConfig.nsteps() <= 0)
+    {
+        // No simulation to be done!
+        return;
+    }
     FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
     FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
                                                        "Time (ps)", "Energy (kJ/mol)", oenv);

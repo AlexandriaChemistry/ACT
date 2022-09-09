@@ -3,16 +3,14 @@
 <ReferenceData>
   <Real Name="BONDS_gmx">24.06338900613936</Real>
   <Real Name="ANGLES_gmx">25.427796327841193</Real>
-  <Real Name="PDIHS_gmx">240</Real>
   <Real Name="LJ_SR_gmx">-1.7364915700007817</Real>
   <Real Name="COUL_SR_gmx">-8.3389354205761848</Real>
-  <Real Name="EPOT_gmx">279.41575834340352</Real>
+  <Real Name="EPOT_gmx">39.41575834340352</Real>
   <Real Name="BONDS_act">24.06338900613936</Real>
   <Real Name="ANGLES_act">25.427796327841193</Real>
-  <Real Name="PDIHS_act">240</Real>
   <Real Name="LJ_SR_act">-1.7364915700007821</Real>
   <Real Name="COUL_SR_act">-8.3389354205761741</Real>
-  <Real Name="EPOT_act">279.41575834340358</Real>
+  <Real Name="EPOT_act">39.41575834340358</Real>
   <Real Name="n2-1_gmx fX">651.08181765822917</Real>
   <Real Name="n2-1_act fX">651.08181765822928</Real>
   <Real Name="n2-1_gmx fY">355.28736442125819</Real>

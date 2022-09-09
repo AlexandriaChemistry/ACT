@@ -143,7 +143,8 @@ class MatrixWrapper
 
         /*! \brief Solve a matrix equation A solution = rhs
          *
-         * \param[in]  rhs      Vector of right hand side values.
+         * \param[in]  rhs      Vector of right hand side values. This needs to be a copy (hence no &)
+         *                      since the underlying routines will modify the (copy) of the vector.
          * \param[out] solution Pointer to vector of solution
          * \return 0 if ok, non-zero if not.
          */

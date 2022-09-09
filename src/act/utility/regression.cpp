@@ -48,11 +48,11 @@
 extern "C"
 {
 void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
-             double* b, int* ldb, double* s, double* rcond, int* rank,
+             const double* b, int* ldb, double* s, double* rcond, int* rank,
              double* work, int* lwork, int* iwork, int* info );
 
 void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
-            double* b, int* ldb, double* work, int* lwork, int* info );
+            const double* b, int* ldb, double* work, int* lwork, int* info );
 
 void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
              int* lda, double* s, double* u, int* ldu, double* vt, int* ldvt,
@@ -67,9 +67,9 @@ void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
  * \param[out] x    The solution of the problem
  * \return 0 if all is fine, the problematic row number otherwise
  */
-static int multi_regression2(std::vector<double> *rhs,
-                             double              **a, 
-                             std::vector<double> *x)
+static int multi_regression2(const std::vector<double>  *rhs,
+                             double                    **a, 
+                             std::vector<double>        *x)
 {
     /* Query and allocate the optimal workspace */
     int                 nrow  = rhs->size();

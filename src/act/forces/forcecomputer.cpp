@@ -92,7 +92,7 @@ double ForceComputer::compute(const Topology                    *top,
         }
         fcShell_1.push_back(fc_1);
     }
-    double msForceMax = (rmsForce_*rmsForce_)*nshell;
+    double msForceMax = msForce_*nshell;
     double msForce    = dotProdRvec(isShell, *forces);
     auto pols         = top->entry(itype);
     int    iter       = 1;
@@ -118,7 +118,7 @@ double ForceComputer::compute(const Topology                    *top,
         msForce  = dotProdRvec(isShell, *forces);
         iter    += 1;
     }
-    return std::sqrt(msForce/nshell);
+    return msForce/nshell;
 }
 
 void ForceComputer::computeOnce(const Topology                    *top,

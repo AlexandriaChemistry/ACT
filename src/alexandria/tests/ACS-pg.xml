@@ -17909,7 +17909,7 @@
     <parameterlist identifier="c2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -18343,8 +18343,8 @@
     </parameterlist>
     <parameterlist identifier="c3">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.1" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -20829,7 +20829,7 @@
     <parameterlist identifier="n2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -21909,7 +21909,7 @@
     <parameterlist identifier="o2">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -22094,7 +22094,7 @@
     <parameterlist identifier="o3">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.18" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
