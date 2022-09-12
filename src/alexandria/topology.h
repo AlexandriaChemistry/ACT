@@ -408,6 +408,8 @@ private:
     double      mass_;
     //! The charge
     double      charge_;
+    //! Residue number
+    int         residueNumber_ = 1;
 public:
     ActAtom(const std::string &name,
             const std::string &elem,
@@ -448,10 +450,13 @@ public:
     //! \return the charge
     double charge() const { return charge_; }
     
-    /*! Set the charge
+    /*! set the charge
      * \param[in] charge The new value
      */
     void setCharge(double newcharge) { charge_ = newcharge; }
+
+    //! return the residue number
+    int residueNumber() const { return residueNumber_; }
 };
 
 class Topology
@@ -463,14 +468,22 @@ private:
     std::vector<std::vector<int> >                            exclusions_;
     //! List of atoms
     std::vector<ActAtom>                                      atoms_;
+    //! The (residue) name
+    std::string                                               name_;
  public:
-    Topology() {}
+    Topology()
+    {
+        name_.assign("MOL");
+    }
 
     /*! Constructor
      * This code copies relevant structures from the outside world
      * \param[in] bonds The bonds connecting this molecule.
      */
     Topology(const std::vector<Bond> &bonds);
+
+    //! Return the name
+    const std::string &name() const { return name_; }
 
     /*! Find a bond between two atoms
      * \param[in] ai The first atom

@@ -94,9 +94,6 @@ int gentop(int argc, char *argv[])
         "database from the QM calculations.",
         "An alternative to the system-wide database [TT]molprops.xml[tt]",
         "can be passed along using the [TT]-mp[tt] flag.[PAR]",
-        //"If the flag [TT]-act/qgen/qgen[tt] is given, charges will be generated using the",
-        //"specified algorithm. Without the flag the charges from the QM calculation",
-        //"will be used.",
         "Using the [TT]-ff[tt] flag, a force field file can be specified.",
         "Depending on the selected force field file, the force field",
         "uses polarizable or non-polarizable Gaussian charges. [PAR]",
@@ -342,7 +339,7 @@ int gentop(int argc, char *argv[])
         
         mymol.initQgenResp(&pd, 0.0, maxpot);
 
-        ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
+        ChargeGenerationAlgorithm alg = pd.chargeGenerationAlgorithm();
         std::vector<double> myq;
         if (qcustom)
         {
@@ -357,6 +354,7 @@ int gentop(int argc, char *argv[])
         {
             alg = nameToChargeGenerationAlgorithm(qqm);
         }
+        printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
         imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &forces);
     }
     /* Generate output file for debugging if requested */

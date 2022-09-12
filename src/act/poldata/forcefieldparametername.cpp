@@ -37,7 +37,7 @@ const char *wbh_name[wbhNR] = { "sigma_ij", "epsilon_ij", "gamma_ij" };
     
 const char *coul_name[coulNR] = { "zeta_i", "zeta_j" };
 
-const char *bond_name[bondNR] = { "kb", "bondlength" };
+const char *bond_name[bondNR] = { "kb", "bondlength", "bondenergy" };
 
 const char *angle_name[angleNR] = { "kt", "angle" };
 

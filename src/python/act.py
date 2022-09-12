@@ -115,10 +115,11 @@ class ACT:
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
-        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "c1", "c2", "c3" ]
+        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "c1", "c2", "c3", "bondenergy" ]
         if OptimizeGeometry:
             ener_params.append("bondlength")
             ener_params.append("angle")
+            ener_params.append("phi0")
         fit_params = "'"
         for e in ener_params:
             fit_params += " " + e
@@ -144,7 +145,8 @@ class ACT:
 
 
         for opt in myopts:
-            if not opt in options:
+            # Check for negated booleans as well in user options
+            if not opt in options and not ( ("-no"+opt[1:]) in options ):
                 cmd += ( " %s %s " % ( opt, myopts[opt] ))
         for opt in self.algopts:
             if not opt in options:
