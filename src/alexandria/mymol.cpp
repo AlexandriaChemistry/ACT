@@ -1687,7 +1687,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
     }
     auto qcalc = qTypeProps(qType::Calc);
     qcalc->setQ(atomsConst());
-    qcalc->setX(state_->x);
+    qcalc->setX(x());
     return imm;
 }
 
@@ -1835,7 +1835,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 }
                 // Copy charges to topology
                 chi2[cur] = forceComp->compute(topology_, &coords, forces, &energies);
-                qcalc->setX(state_->x);
+                qcalc->setX(x());
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
                 qcalc->qgenResp()->calcPot(pd->getEpsilonR());
                 qcalc->copyRespQ();
@@ -1958,7 +1958,7 @@ void MyMol::PrintTopology(const char                *fn,
     auto qcalc = qTypeProps(qType::Calc);
     auto qelec = qTypeProps(qType::Elec);
     qcalc->setQ(atomsConst());
-    qcalc->setX(state_->x);
+    qcalc->setX(x());
     qcalc->calcMoments();
     
     T = -1;
@@ -2080,7 +2080,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
         auto qc = qProps_.find(qType::Calc);
         GMX_RELEASE_ASSERT(qc != qProps_.end(), "Cannot find alexandria charge information");
         qc->second.setQ(atomsConst());
-        qc->second.setX(state_->x);
+        qc->second.setX(x());
         qc->second.qgenResp()->calcPot(pd->getEpsilonR());
         qc->second.qgenResp()->potcomp(pcfn, atomsConst(),
                                        as_rvec_array(state_->x.data()),
@@ -2093,13 +2093,13 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
         if (reffn)
         {
-            grref.setAtomInfo(atomsConst(), pd, state_->x, totalCharge());
+            grref.setAtomInfo(atomsConst(), pd, x(), totalCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
         }
         else
         {
-            qCalc.makeGrid(spacing, border, state_->x);
+            qCalc.makeGrid(spacing, border, x());
         }
         if (rhofn)
         {
@@ -2154,7 +2154,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         if (myatoms[i].pType() == eptAtom)
         {
             realAtoms.push_back(myatoms[i]);
-            copy_rvec(x()[i], myx[ii]);
+            copy_rvec(optimizedCoordinates_[i], myx[ii]);
             ii++;
         }
     }
@@ -2174,7 +2174,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         {
             QgenResp *qgr = i.second.qgenResp();
             qgr->setChargeType(ChargeType::Point);
-            qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
+            qgr->setAtomInfo(realAtoms, pd, x(), totalCharge());
             qgr->updateAtomCharges(i.second.charge());
             for (size_t j = realAtoms.size(); j < qgrcalc->nEsp(); j++)
             {
@@ -2236,7 +2236,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
     // Make a copy of the coordinates without shells
-    gmx::HostVector<gmx::RVec> xatom(myatoms.size());
+    std::vector<gmx::RVec> xatom(myatoms.size());
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         if (myatoms[i].pType() == eptAtom ||
@@ -2246,7 +2246,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             natom++;
         }
     }
-    xatom.resizeWithPadding(natom);
+    xatom.resize(natom);
     bool foundNothing = true;
     for (const auto &miq : iqm)
     {
@@ -2396,9 +2396,9 @@ void MyMol::initQgenResp(const Poldata     *pd,
     auto qp          = qTypeProps(qType::Calc);
     QgenResp *qgr = qp->qgenResp();
     qgr->setChargeType(iChargeType);
-    qgr->setAtomInfo(atomsConst(), pd, state_->x, totalCharge());
+    qgr->setAtomInfo(atomsConst(), pd, x(), totalCharge());
     qp->setQ(atomsConst());
-    qp->setX(state_->x);
+    qp->setX(x());
     qgr->setAtomSymmetry(symmetric_charges_);
     qgr->summary(debug);
 
@@ -2464,7 +2464,7 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     {
         auto qgr   = qTypeProps(qType::Calc)->qgenResp();
         qgr->updateAtomCharges(atomsConst());
-        qgr->updateAtomCoords(state_->x);
+        qgr->updateAtomCoords(x());
         std::vector<gmx::RVec> forces(atomsConst().size());
         std::vector<gmx::RVec> coords = optimizedCoordinates_;
         std::map<InteractionType, double> energies;

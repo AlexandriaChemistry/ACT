@@ -240,8 +240,15 @@ public:
     /*! \brief
      * Return the coordinate vector of the molecule in GROMACS format
      */
-    const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+    //const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+    const std::vector<gmx::RVec> &x() const { return optimizedCoordinates_; }
     
+    /*! \brief
+     * Return the original coordinate vector of the molecule. If there are shell particles
+     * their position may have been optimized, but the atoms are as read from the input.
+     */
+    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
+
     /*! \brief
      * Constructor
      */
@@ -346,11 +353,6 @@ public:
     immStatus zetaToAtoms(const Poldata *pd,
                           t_atoms       *atoms);
     
-    /*! \brief
-     * Return the coordinate vector of the molecule
-     */
-    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
-
     /*! \brief
      * \return mdatoms structure
      */

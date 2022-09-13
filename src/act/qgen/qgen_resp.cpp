@@ -62,7 +62,7 @@
 namespace alexandria
 {
 
-void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
+void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
 {
     GMX_RELEASE_ASSERT(x.size()-nAtom_ == 0,
                        gmx::formatString("Trying to set %d coordinates for %d atoms", static_cast<int>(x.size()), nAtom_).c_str());
@@ -94,10 +94,10 @@ void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
     }
 }
 
-void QgenResp::setAtomInfo(const std::vector<ActAtom>       &atoms,
-                           const alexandria::Poldata        *pd,
-                           const gmx::HostVector<gmx::RVec> &x,
-                           const int                         qtotal)
+void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
+                           const alexandria::Poldata    *pd,
+                           const std::vector<gmx::RVec> &x,
+                           const int                     qtotal)
 {
     if (nAtom_ != 0)
     {
