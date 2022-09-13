@@ -299,7 +299,7 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
             }
             fprintf(fp, "\n");
         }
-        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.size());
+        pr_rvecs(fp, 0, label.c_str(), as_rvec_array(mol->x().data()), myatoms.size());
     }
 }
 

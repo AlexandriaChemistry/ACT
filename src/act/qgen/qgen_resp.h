@@ -139,14 +139,14 @@ class QgenResp
          * \param[in] qtotal Total charge of the compound, needed when
          *                   generating charges
          */
-        void setAtomInfo(const std::vector<ActAtom>       &atoms,
-                         const Poldata                    *pd,
-                         const gmx::HostVector<gmx::RVec> &x,
-                         const int                         qtotal);
+        void setAtomInfo(const std::vector<ActAtom>   &atoms,
+                         const Poldata                *pd,
+                         const std::vector<gmx::RVec> &x,
+                         const int                     qtotal);
 
         int natoms() const { return nAtom_; }
         
-        void updateAtomCoords(const gmx::HostVector<gmx::RVec> &x);
+        void updateAtomCoords(const std::vector<gmx::RVec> &x);
 
         /*! \brief Update the charges
          * \param[in] q Vector containing new charges
@@ -175,9 +175,9 @@ class QgenResp
          * \param[in] border  Distance between atoms and gird edge
          * \param[in] x       Atomic coordinates
          */
-        void makeGrid(real                              spacing, 
-                      real                              border,
-                      const gmx::HostVector<gmx::RVec> &x);
+        void makeGrid(real                          spacing, 
+                      real                          border,
+                      const std::vector<gmx::RVec> &x);
 
         void copyGrid(QgenResp &src);
 
@@ -285,16 +285,16 @@ class QgenResp
         int                       nFixed_      = 0;
 
         //! Total number of parameters
-        std::vector<double>        q_;
-        std::vector<double>        zeta_;
-        std::vector<int>           atomnumber_;
-        std::vector<int>           row_;
-        std::vector<bool>          mutable_;
-        gmx::HostVector<gmx::RVec> x_;
-        std::vector<std::string>   dzatoms_;
-        std::string                stoichiometry_;
-        std::vector<EspPoint>      ep_;
-        std::vector<int>           symmetricAtoms_;
+        std::vector<double>      q_;
+        std::vector<double>      zeta_;
+        std::vector<int>         atomnumber_;
+        std::vector<int>         row_;
+        std::vector<bool>        mutable_;
+        std::vector<gmx::RVec>   x_;
+        std::vector<std::string> dzatoms_;
+        std::string              stoichiometry_;
+        std::vector<EspPoint>    ep_;
+        std::vector<int>         symmetricAtoms_;
 };
 
 } // namespace

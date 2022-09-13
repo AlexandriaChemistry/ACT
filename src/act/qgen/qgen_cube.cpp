@@ -390,9 +390,9 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     }
 }
 
-void QgenResp::makeGrid(real                              spacing, 
-                        real                              border,
-                        const gmx::HostVector<gmx::RVec> &x)
+void QgenResp::makeGrid(real                          spacing, 
+                        real                          border,
+                        const std::vector<gmx::RVec> &x)
 {
     if (0 != nEsp())
     {
