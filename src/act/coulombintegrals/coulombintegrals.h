@@ -140,7 +140,7 @@ static double DNuclear_GG(double r, double zeta)
     }
     if (zeta == 0)
     {
-        return 1.0/sqr(r);
+        return -1.0/sqr(r);
     }
     else
     {
