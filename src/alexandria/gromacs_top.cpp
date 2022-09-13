@@ -66,113 +66,6 @@ static void print_bondeds(FILE                               *out,
     fprintf(out, "\n");
 }
 
-static double get_residue_charge(const t_atoms *atoms, int at)
-{
-    int    ri;
-    double q;
-
-    ri = atoms->atom[at].resind;
-    q  = 0;
-    while (at < atoms->nr && atoms->atom[at].resind == ri)
-    {
-        q += atoms->atom[at].q;
-        at++;
-    }
-
-    return q;
-}
-
-static void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
-                 bool bRTPresname)
-{
-    int         i, ri;
-    int         tpA, tpB;
-    const char *as;
-    char       *tpnmA, *tpnmB;
-    double      qres, qtot;
-
-    as = dir2str(d_atoms);
-    fprintf(out, "[ %s ]\n", as);
-    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
-            "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
-
-    qtot  = 0;
-
-    if (at->nres)
-    {
-        /* if the information is present... */
-        for (i = 0; (i < at->nr); i++)
-        {
-            ri = at->atom[i].resind;
-            if ((i == 0 || ri != at->atom[i-1].resind) &&
-                at->resinfo[ri].rtp != nullptr)
-            {
-                qres = get_residue_charge(at, i);
-                fprintf(out, "; residue %3d %-3s rtp %-4s q ",
-                        at->resinfo[ri].nr,
-                        *at->resinfo[ri].name,
-                        *at->resinfo[ri].rtp);
-                if (fabs(qres) < 0.001)
-                {
-                    fprintf(out, " %s", "0.0");
-                }
-                else
-                {
-                    fprintf(out, "%+3.1f", qres);
-                }
-                fprintf(out, "\n");
-            }
-            tpA = at->atom[i].type;
-            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
-            {
-                gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
-            }
-
-            /* This is true by construction, but static analysers don't know */
-            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
-            fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
-                    i+1, tpnmA,
-                    at->resinfo[ri].nr,
-                    at->resinfo[ri].ic,
-                    bRTPresname ?
-                    *(at->resinfo[at->atom[i].resind].rtp) :
-                    *(at->resinfo[at->atom[i].resind].name),
-                    *(at->atomname[i]), cgnr[i],
-                    at->atom[i].q, at->atom[i].m);
-            if (PERTURBED(at->atom[i]))
-            {
-                tpB = at->atom[i].typeB;
-                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
-                {
-                    gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
-                }
-                fprintf(out, " %6s %10g %10g",
-                        tpnmB, at->atom[i].qB, at->atom[i].mB);
-            }
-            // Accumulate the total charge to help troubleshoot issues.
-            qtot += static_cast<double>(at->atom[i].q);
-            // Round it to zero if it is close to zero, because
-            // printing -9.34e-5 confuses users.
-            if (fabs(qtot) < 0.0001)
-            {
-                qtot = 0;
-            }
-            // Write the total charge for the last atom of the system
-            // and/or residue, because generally that's where it is
-            // expected to be an integer.
-            if (i == at->nr-1 || ri != at->atom[i+1].resind)
-            {
-                fprintf(out, "   ; qtot %.4g\n", qtot);
-            }
-            else
-            {
-                fputs("\n", out);
-            }
-        }
-    }
-    fprintf(out, "\n");
-}
-
 static void print_excl(FILE *out, int natoms, t_excls excls[])
 {
     int         i;
@@ -273,42 +166,87 @@ void print_top_mols(FILE *out,
     }
 }
 
+static void print_atoms(FILE                       *out,
+                        const std::vector<ActAtom> &atoms,
+                        const std::string          &residueName)
+{
+    fprintf(out, "[ %s ]\n", dir2str(d_atoms));
+    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
+            "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
+
+    double qtot  = 0;
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        int atomnr = 1+i;
+        /* This is true by construction, but static analysers don't know */
+        fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
+                atomnr,
+                atoms[i].ffType().c_str(),
+                atoms[i].residueNumber(), ' ',
+                residueName.c_str(),
+                atoms[i].name().c_str(),
+                atomnr,
+                atoms[i].charge(), 
+                atoms[i].mass());
+        // Accumulate the total charge to help troubleshoot issues.
+        qtot += static_cast<double>(atoms[i].charge());
+        // Round it to zero if it is close to zero, because
+        // printing -9.34e-5 confuses users.
+        if (fabs(qtot) < 0.0001)
+        {
+            qtot = 0;
+        }
+        // Write the total charge for the last atom of the system
+        // and/or residue, because generally that's where it is
+        // expected to be an integer.
+        if (i == atoms.size()-1)
+        {
+            fprintf(out, "   ; qtot %.4g\n", qtot);
+        }
+        else
+        {
+            fprintf(out, "   ; %.4g\n", qtot);
+        }
+    }
+    fprintf(out, "\n");
+}
+
+
 void write_top(FILE            *out,
                char            *molname,
                t_atoms         *at,
-               gmx_bool         bRTPresname,
                const Topology  *topology,
                t_excls          excls[],
                struct gpp_atomtype *atype,
                const Poldata   *pd)
 {
-     std::map<int, directive> toPrint = {
-            { F_CONSTR,       d_constraints },
-            { F_CONSTRNC,     d_constraints },
-            { F_LJ14,         d_pairs },
-            { F_CMAP,         d_cmap },
-            { F_POLARIZATION, d_polarization },
-            { F_THOLE_POL,    d_thole_polarization },
-            { F_VSITE2,       d_vsites2 },
-            { F_VSITE3,       d_vsites3 },
-            { F_VSITE3FD,     d_vsites3 },
-            { F_VSITE3FAD,    d_vsites3 },
-            { F_VSITE3OUT,    d_vsites3 },
-            { F_VSITE4FD,     d_vsites4 },
-            { F_VSITE4FDN,    d_vsites4 }
-        };
-    if (at && atype)
+    std::map<int, directive> toPrint = {
+        { F_CONSTR,       d_constraints },
+        { F_CONSTRNC,     d_constraints },
+        { F_LJ14,         d_pairs },
+        { F_CMAP,         d_cmap },
+        { F_POLARIZATION, d_polarization },
+        { F_THOLE_POL,    d_thole_polarization },
+        { F_VSITE2,       d_vsites2 },
+        { F_VSITE3,       d_vsites3 },
+        { F_VSITE3FD,     d_vsites3 },
+        { F_VSITE3FAD,    d_vsites3 },
+        { F_VSITE3OUT,    d_vsites3 },
+        { F_VSITE4FD,     d_vsites4 },
+        { F_VSITE4FDN,    d_vsites4 }
+    };
+    auto myAtoms = topology->atoms();
+    if (!myAtoms.empty() && atype)
     {
         std::vector<int> cgnr;
-        cgnr.resize(at->nr, 0);
-        for(int i = 0; i < at->nr; i++)
+        for(size_t i = 0; i < myAtoms.size(); i++)
         {
-            cgnr[i] = i+1;
+            cgnr.push_back(i+1);
         }
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", pd->getNexcl());
-        print_atoms(out, atype, at, cgnr.data(), bRTPresname);
+        print_atoms(out, myAtoms, topology->name());
         for (auto &fs : pd->forcesConst())
         {
             auto iType = fs.first;
@@ -383,10 +321,13 @@ void print_top_header(FILE                    *fp,
         for (const auto &aType : pd->particleTypesConst())
         {
             gt_type    = aType.id().id();
-            auto btype = aType.interactionTypeToIdentifier(InteractionType::BONDS);
+            std::string bType;
+            if (aType.hasInteractionType(InteractionType::BONDS))
+            {
+                bType = aType.interactionTypeToIdentifier(InteractionType::BONDS).id();
+            }
             if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
             {
-                auto sgt_type= aType.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                 auto vdwtype = aType.interactionTypeToIdentifier(InteractionType::VDW);
                 double sigma = 0, epsilon = 0, gamma = 0;
                 if (!vdwtype.id().empty())
@@ -398,13 +339,14 @@ void print_top_header(FILE                    *fp,
                 }
                 fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f %s %g %g %g\n",
                         gt_type.c_str(), 
-                        !btype.id().empty() ? btype.id().c_str() : gt_type.c_str(), 
+                        !bType.empty() ? bType.c_str() : gt_type.c_str(), 
                         aType.atomnumber(), 
                         aType.mass(), 0.0,
                         ptype_str[aType.gmxParticleType()],
                         sigma, epsilon, gamma);
                 if (false && bPol)
                 {
+                    auto sgt_type= aType.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                     if (strcasecmp(ff.c_str(), "LJ") == 0)
                     {
                         fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
@@ -432,7 +374,6 @@ void print_top_header(FILE                    *fp,
             {
                 auto ztype     = atype.interactionTypeToIdentifier(InteractionType::COULOMB);
                 auto eep       = eem.findParametersConst(ztype);
-                auto shellName = atype.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                 if (ChargeType::Slater == iChargeType)
                 {
                     fprintf(fp, "%-7s  2  %d  %g\n", atype.id().id().c_str(),

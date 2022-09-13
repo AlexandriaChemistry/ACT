@@ -1882,12 +1882,16 @@ void MyMol::CalcPolarizability(const ForceComputer *forceComp)
 void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
+    std::vector<rvec> xx(optimizedCoordinates_.size());
 
-    put_in_box(mtop_->natoms, state_->box,
-               as_rvec_array(state_->x.data()), 0.3);
+    for(size_t i = 0; i < optimizedCoordinates_.size(); i++)
+    {
+        copy_rvec(optimizedCoordinates_[i], xx[i]);
+    }
+    put_in_box(optimizedCoordinates_.size(), state_->box, xx.data(), 0.3);
     sprintf(title, "%s processed by ACT - The Alexandria Chemistry Tookit",
             getMolname().c_str());
-    write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
+    write_sto_conf(fn, title, gmxAtoms(), xx.data(), nullptr, epbcNONE, state_->box);
 }
 
 static void add_tensor(std::vector<std::string> *commercials,
@@ -2024,7 +2028,7 @@ void MyMol::PrintTopology(const char                *fn,
 
     // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
-    write_top(fp, printmol.name, gmxAtoms(), false,
+    write_top(fp, printmol.name, gmxAtoms(),
               topology_, excls_, gromppAtomtype_, pd);
     if (!bITP)
     {

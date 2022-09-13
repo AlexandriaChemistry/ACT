@@ -266,6 +266,7 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         auto &params    = b->params();
         auto bondlength = params[bondLENGTH];
         auto kb         = params[bondKB];
+        auto D0         = params[bondENERGY];
         // Get the atom indices
         auto &indices   = b->atomIndices();
 
@@ -279,7 +280,7 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         harmonic(kb, bondlength, r1, &vB, &fbond);
         
         fbond *= r_1;
-        ebond += vB;
+        ebond += vB+D0;
         
         for (int m = 0; (m < DIM); m++)
         {
