@@ -146,7 +146,7 @@ static double DNuclear_GG(double r, double zeta)
     {
         double rz = r * zeta;
         
-        return -(2.0*invsqrt_pi)*exp(-sqr(rz))*(zeta/r) - erf(rz)/sqr(r);
+        return (2.0*invsqrt_pi)*exp(-sqr(rz))*(zeta/r) - erf(rz)/sqr(r);
     }
 }
 

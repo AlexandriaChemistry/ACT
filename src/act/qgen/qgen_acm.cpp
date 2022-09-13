@@ -527,13 +527,13 @@ void QgenAcm::copyChargesToAtoms(std::vector<ActAtom> *atoms)
     }
 }
 
-void QgenAcm::updatePositions(const gmx::HostVector<gmx::RVec> &x)
+void QgenAcm::updatePositions(const std::vector<gmx::RVec> &x)
 {
     if (x.size() - x_.size() != 0)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), x_.size()).c_str()));
     }
-    for (auto i = 0; i < x.size(); i++)
+    for (size_t i = 0; i < x.size(); i++)
     {
         copy_rvec(x[i], x_[i]);
     }
@@ -801,12 +801,12 @@ int QgenAcm::solveSQE(FILE                    *fp,
     return info;
 }
 
-eQgen QgenAcm::generateCharges(FILE                             *fp,
-                               const std::string                &molname,
-                               const Poldata                    *pd,
-                               std::vector<ActAtom>             *atoms,
-                               const gmx::HostVector<gmx::RVec> &x,
-                               const std::vector<Bond>          &bonds)
+eQgen QgenAcm::generateCharges(FILE                         *fp,
+                               const std::string            &molname,
+                               const Poldata                *pd,
+                               std::vector<ActAtom>         *atoms,
+                               const std::vector<gmx::RVec> &x,
+                               const std::vector<Bond>      &bonds)
 {
     if (nonFixed_.empty())
     {

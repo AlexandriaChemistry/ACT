@@ -15,11 +15,11 @@
   <Sequence Name="Force-Gaussian">
     <Int Name="Length">6</Int>
     <Real>-0</Real>
-    <Real>30.788937207074749</Real>
-    <Real>6.8602110745929208</Real>
-    <Real>2.791442646100192</Real>
-    <Real>1.5625803681718504</Real>
-    <Real>1.0000001227908057</Real>
+    <Real>7.3309013997077024</Real>
+    <Real>5.412579341011301</Real>
+    <Real>2.7619150849090293</Real>
+    <Real>1.5624124050720276</Real>
+    <Real>0.99999987015598768</Real>
   </Sequence>
   <Sequence Name="NuclearPotential-Gaussian">
     <Int Name="Length">6</Int>
@@ -33,10 +33,10 @@
   <Sequence Name="NuclearForce-Gaussian">
     <Int Name="Length">6</Int>
     <Real>-0</Real>
-    <Real>30.881034865405514</Real>
-    <Real>6.3071872491027889</Real>
-    <Real>2.7778147642377116</Real>
-    <Real>1.5625000015963386</Real>
-    <Real>1.0000000000000044</Real>
+    <Real>14.38880814498113</Real>
+    <Real>6.1824605095857095</Real>
+    <Real>2.7777378419677206</Real>
+    <Real>1.5624999983321843</Real>
+    <Real>0.99999999999999545</Real>
   </Sequence>
 </ReferenceData>

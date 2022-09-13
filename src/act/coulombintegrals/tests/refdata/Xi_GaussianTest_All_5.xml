@@ -15,7 +15,7 @@
   <Sequence Name="Force-Gaussian">
     <Int Name="Length">6</Int>
     <Real>-0</Real>
-    <Real>25.003891867658648</Real>
+    <Real>24.995716972989317</Real>
     <Real>6.2499999999999991</Real>
     <Real>2.7777777777777772</Real>
     <Real>1.5624999999999998</Real>
@@ -33,7 +33,7 @@
   <Sequence Name="NuclearForce-Gaussian">
     <Int Name="Length">6</Int>
     <Real>-0</Real>
-    <Real>25.000000281918894</Real>
+    <Real>24.999999703892321</Real>
     <Real>6.2499999999999991</Real>
     <Real>2.7777777777777772</Real>
     <Real>1.5624999999999998</Real>

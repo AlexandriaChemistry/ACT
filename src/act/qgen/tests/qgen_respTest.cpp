@@ -160,7 +160,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::vector<double> qcustom;
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
-                                ChargeGenerationAlgorithm::ESP, qcustom, &forces);
+                                ChargeGenerationAlgorithm::ESP,
+                                qcustom, &forces);
 
             std::vector<double> qtotValues;
             auto atoms = mp_.atomsConst();

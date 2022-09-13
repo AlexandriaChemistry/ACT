@@ -187,19 +187,19 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     }
 }
 
-eQgen FragmentHandler::generateCharges(FILE                             *fp,
-                                       const std::string                &molname,
-                                       const gmx::HostVector<gmx::RVec> &x,
-                                       const Poldata                    *pd,
-                                       std::vector<ActAtom>             *atoms)
+eQgen FragmentHandler::generateCharges(FILE                         *fp,
+                                       const std::string            &molname,
+                                       const std::vector<gmx::RVec> &x,
+                                       const Poldata                *pd,
+                                       std::vector<ActAtom>         *atoms)
 {
     auto   eqgen = eQgen::OK;
     size_t ff    = 0;
     for (auto &fa : FragAtoms_)
     {
         // TODO only copy the coordinates if there is more than one fragment.
-        gmx::HostVector<gmx::RVec> xx;
-        xx.resizeWithPadding(fa.size());
+        std::vector<gmx::RVec> xx;
+        xx.resize(fa.size());
         for(size_t a = 0; a < fa.size(); a++)
         {
             copy_rvec(x[atomStart_[ff]+a], xx[a]);
