@@ -2,8 +2,8 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="BONDS_gmx">0.0014452799999988793</Real>
-  <Real Name="EPOT_gmx">0.0014452799999988793</Real>
   <Real Name="BONDS_act">0.0014452799999988793</Real>
+  <Real Name="EPOT_gmx">0.0014452799999988793</Real>
   <Real Name="EPOT_act">0.0014452799999988793</Real>
   <Real Name="cl-1_gmx fX">0</Real>
   <Real Name="cl-1_act fX">0</Real>

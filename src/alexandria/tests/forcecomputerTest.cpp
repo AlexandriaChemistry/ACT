@@ -127,7 +127,7 @@ protected:
         // Get poldata
         auto pd  = getPoldata(forcefield);
         
-        double rmsToler = 0.00001;
+        double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(pd, rmsToler, 25);
         
         t_inputrec      inputrecInstance;

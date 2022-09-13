@@ -2,16 +2,16 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="MORSE_gmx">11.252828702595215</Real>
-  <Real Name="UREY_BRADLEY_gmx">5.5937791260227989</Real>
-  <Real Name="FOURDIHS_gmx">48</Real>
-  <Real Name="BHAM_gmx">12962.11352880913</Real>
-  <Real Name="COUL_SR_gmx">-47.337173034284923</Real>
-  <Real Name="EPOT_gmx">12979.622963603464</Real>
   <Real Name="MORSE_act">11.252828702595195</Real>
+  <Real Name="UREY_BRADLEY_gmx">5.5937791260227989</Real>
   <Real Name="UREY_BRADLEY_act">5.5937791260227856</Real>
+  <Real Name="FOURDIHS_gmx">48</Real>
   <Real Name="FOURDIHS_act">48</Real>
+  <Real Name="BHAM_gmx">12962.11352880913</Real>
   <Real Name="BHAM_act">12962.113528809132</Real>
-  <Real Name="COUL_SR_act">-47.337173034284916</Real>
+  <Real Name="COUL_SR_gmx">-47.337173034284952</Real>
+  <Real Name="COUL_SR_act">-47.337173034284952</Real>
+  <Real Name="EPOT_gmx">12979.622963603464</Real>
   <Real Name="EPOT_act">12979.622963603466</Real>
   <Real Name="n2-1_gmx fX">6157.9696378249264</Real>
   <Real Name="n2-1_act fX">6157.9696378249164</Real>
@@ -19,8 +19,8 @@
   <Real Name="n2-1_act fY">-53975.321288619976</Real>
   <Real Name="n2-1_gmx fZ">-6.5408254943130318e-16</Real>
   <Real Name="n2-1_act fZ">-2.180275164771004e-16</Real>
-  <Real Name="h-2_gmx fX">-1691.2385085738676</Real>
-  <Real Name="h-2_act fX">-1691.2385085738683</Real>
+  <Real Name="h-2_gmx fX">-1691.2385085738674</Real>
+  <Real Name="h-2_act fX">-1691.2385085738686</Real>
   <Real Name="h-2_gmx fY">84633.438601569855</Real>
   <Real Name="h-2_act fY">84633.438601569811</Real>
   <Real Name="h-2_gmx fZ">-4.4171103869592185e-17</Real>
@@ -55,7 +55,7 @@
   <Real Name="c2-7_act fY">14509.50590065393</Real>
   <Real Name="c2-7_gmx fZ">-2.0344987918459357e-15</Real>
   <Real Name="c2-7_act fZ">-6.7816626394864446e-16</Real>
-  <Real Name="h-8_gmx fX">-4177.0148017742922</Real>
+  <Real Name="h-8_gmx fX">-4177.0148017742931</Real>
   <Real Name="h-8_act fX">-4177.0148017742931</Real>
   <Real Name="h-8_gmx fY">-56303.098710836901</Real>
   <Real Name="h-8_act fY">-56303.098710836886</Real>
