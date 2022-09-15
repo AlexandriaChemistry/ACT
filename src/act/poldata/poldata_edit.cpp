@@ -131,26 +131,31 @@ static void setMinMaxMut(FILE *fp,
     }
     if (stretch)
     {
-        auto range = pp->maximum()-pp->minimum();
+        double range = pp->maximum()-pp->minimum();
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
-            if (!pp->setMinimum(pp->minimum()-0.2*range))
+            double newmin = pp->minimum()-0.2*range;
+            if (pp->setMinimum(newmin))
             {
-                pp->setMinimum(0.8*pp->minimum());
+                if (fp)
+                {
+                    fprintf(fp, "Minimum stretched to %g for %s\n",
+                            pp->minimum(), particleId.c_str());
+                }
             }
-            if (fp)
+            else if (fp)
             {
-                fprintf(fp, "Minimum stretched to %g for %s\n",
-                        pp->minimum(), particleId.c_str());
+                fprintf(fp, "Could not change minimum from %g to %g\n", pp->minimum(), newmin);
             }
         }
         if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
-            pp->setMaximum(pp->maximum()+0.2*range);
+            double newmax = pp->maximum()+0.2*range;
+            pp->setMaximum(newmax);
             if (fp)
             {
                 fprintf(fp, "Maximum stretched to %g for %s\n",
-                        pp->maximum(), particleId.c_str());
+                        newmax, particleId.c_str());
             }
         }
     }

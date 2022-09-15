@@ -158,12 +158,6 @@ void OptACM::check_pargs()
 void OptACM::optionsFinished(const std::string &outputFile)
 {
     mg_.optionsFinished();
-    // COMMENTED TO MAKE MCMC WORK WITH ANY POPULATION SIZE
-    // int nmiddlemen = 0;
-    // if (gach_.optimizer() != OptimizerAlg::MCMC)
-    // {
-    //     nmiddlemen = gach_.popSize();
-    // }
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
