@@ -458,7 +458,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
         std::vector<gmx::RVec> forces(myatoms.size());
         if (forceComp)
         {
-            (void) calculateEnergy(forceComp, &coords, &forces, &energies);
+            (void) forceComp->compute(topology_, &coords, &forces, &energies);
         }
         else
         {
@@ -1048,13 +1048,14 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(), 
-                                       bondsConst(), 
-                                       fragmentPtr(), shellRenumber_, missing);
-
-    // Finally, extract frequencies etc.
-    getHarmonics();
-    
+    if (immStatus::OK == imm)
+    {
+        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(), 
+                                           bondsConst(), 
+                                           fragmentPtr(), shellRenumber_, missing);
+        // Finally, extract frequencies etc.
+        getHarmonics();
+    }
     return imm;
 }
 
@@ -1453,33 +1454,6 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateEnergy(const ForceComputer               *forceComputer,
-                              std::vector<gmx::RVec>            *coordinates,
-                              std::vector<gmx::RVec>            *forces,
-                              std::map<InteractionType, double> *energies) const
-{
-    int natom = atomsConst().size();
-    // Short-cut for editable coordinate vector (thanks to the &)
-    auto &myx = *coordinates;
-    auto rmsf = forceComputer->compute(topology_, &myx, forces, energies);
-    if (rmsf > forceComputer->rmsForce() && debug)
-    {
-        fprintf(debug, "Shell optimization did not converge for %s. RMS force is %g (tolerance %g)\n",
-                getMolname().c_str(), rmsf, forceComputer->rmsForce());
-    }
-    for (int i = 0; i < natom; i++)
-    {
-        copy_rvec(myx[i], state_->x[i]);
-    }
-    for (const auto &ee : energies_)
-    {
-        int ftype = forceComputer->ftype(ee.first);
-        enerd_->term[ftype] = ee.second;
-    }
-
-    return rmsf;
-}
-
 double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
 {
     auto &tops = fraghandler_->topologies();
@@ -1491,7 +1465,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
     std::vector<gmx::RVec> coords = xOriginal();
     std::vector<gmx::RVec> ftotal(coords.size());
     std::map<InteractionType, double> etot;
-    calculateEnergy(forceComputer, &coords, &ftotal, &etot);
+    (void) forceComputer->compute(topology_, &coords, &ftotal, &etot);
     // Now compute interaction energies if there are fragments
     double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
@@ -1678,10 +1652,9 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
     do
     {
         if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
-                                                       state_->x, pd, 
-                                                       atoms()))
+                                                       coords, pd, atoms()))
         {
-            (void) calculateEnergy(forceComp, &coords, forces, &energies);
+            (void) forceComp->compute(topology_, &coords, forces, &energies);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1713,7 +1686,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
     }
     auto qcalc = qTypeProps(qType::Calc);
     qcalc->setQ(atomsConst());
-    qcalc->setX(state_->x);
+    qcalc->setX(x());
     return imm;
 }
 
@@ -1735,7 +1708,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         GenerateGromacs(mdlog, cr, nullptr, iChargeType);
     }
     // TODO check whether this needed
-    std::vector<gmx::RVec>            coords = xOriginal();
     std::map<InteractionType, double> energies;
     auto myatoms = atoms();
     if (algorithm == ChargeGenerationAlgorithm::Custom)
@@ -1781,12 +1753,13 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             }
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            (void) calculateEnergy(forceComp, &coords, forces, &energies);
+            (void) forceComp->compute(topology_, &optimizedCoordinates_,
+                                      forces, &energies);
             if (haveShells())
             {
                 auto qcalc = qTypeProps(qType::Calc);
                 qcalc->setQ(*myatoms);
-                qcalc->setX(state_->x);
+                qcalc->setX(optimizedCoordinates_);
             }
             
             return immStatus::OK;
@@ -1817,7 +1790,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     }
                 }
             }
-            // Copy charges to topology
+            // TODO check this. Copy charges to topology
             // topology_->setAtoms(myatoms);
             return immStatus::OK;
         }
@@ -1860,8 +1833,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     (*myatoms)[i].setCharge(qq[i]);
                 }
                 // Copy charges to topology
-                chi2[cur] = calculateEnergy(forceComp, &coords, forces, &energies);
-                qcalc->setX(state_->x);
+                chi2[cur] = forceComp->compute(topology_, &optimizedCoordinates_,
+                                               forces, &energies);
+                qcalc->setX(x());
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
                 qcalc->qgenResp()->calcPot(pd->getEpsilonR());
                 qcalc->copyRespQ();
@@ -1908,12 +1882,11 @@ void MyMol::CalcPolarizability(const ForceComputer *forceComp)
 void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
-
-    put_in_box(mtop_->natoms, state_->box,
-               as_rvec_array(state_->x.data()), 0.3);
+    
     sprintf(title, "%s processed by ACT - The Alexandria Chemistry Tookit",
             getMolname().c_str());
-    write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
+    write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(x().data()),
+                   nullptr, epbcNONE, state_->box);
 }
 
 static void add_tensor(std::vector<std::string> *commercials,
@@ -1980,7 +1953,7 @@ void MyMol::PrintTopology(const char                *fn,
     auto qcalc = qTypeProps(qType::Calc);
     auto qelec = qTypeProps(qType::Elec);
     qcalc->setQ(atomsConst());
-    qcalc->setX(state_->x);
+    qcalc->setX(x());
     qcalc->calcMoments();
     
     T = -1;
@@ -2050,7 +2023,7 @@ void MyMol::PrintTopology(const char                *fn,
 
     // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
-    write_top(fp, printmol.name, gmxAtoms(), false,
+    write_top(fp, printmol.name, gmxAtoms(),
               topology_, excls_, gromppAtomtype_, pd);
     if (!bITP)
     {
@@ -2102,7 +2075,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
         auto qc = qProps_.find(qType::Calc);
         GMX_RELEASE_ASSERT(qc != qProps_.end(), "Cannot find alexandria charge information");
         qc->second.setQ(atomsConst());
-        qc->second.setX(state_->x);
+        qc->second.setX(x());
         qc->second.qgenResp()->calcPot(pd->getEpsilonR());
         qc->second.qgenResp()->potcomp(pcfn, atomsConst(),
                                        as_rvec_array(state_->x.data()),
@@ -2115,13 +2088,13 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
         if (reffn)
         {
-            grref.setAtomInfo(atomsConst(), pd, state_->x, totalCharge());
+            grref.setAtomInfo(atomsConst(), pd, x(), totalCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
         }
         else
         {
-            qCalc.makeGrid(spacing, border, state_->x);
+            qCalc.makeGrid(spacing, border, x());
         }
         if (rhofn)
         {
@@ -2176,7 +2149,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         if (myatoms[i].pType() == eptAtom)
         {
             realAtoms.push_back(myatoms[i]);
-            copy_rvec(x()[i], myx[ii]);
+            copy_rvec(optimizedCoordinates_[i], myx[ii]);
             ii++;
         }
     }
@@ -2196,7 +2169,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         {
             QgenResp *qgr = i.second.qgenResp();
             qgr->setChargeType(ChargeType::Point);
-            qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
+            qgr->setAtomInfo(realAtoms, pd, x(), totalCharge());
             qgr->updateAtomCharges(i.second.charge());
             for (size_t j = realAtoms.size(); j < qgrcalc->nEsp(); j++)
             {
@@ -2258,17 +2231,17 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
     // Make a copy of the coordinates without shells
-    gmx::HostVector<gmx::RVec> xatom(myatoms.size());
+    std::vector<gmx::RVec> xatom(myatoms.size());
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         if (myatoms[i].pType() == eptAtom ||
             myatoms[i].pType() == eptNucleus)
         {
-            copy_rvec(state_->x[i], xatom[natom]);
+            copy_rvec(x()[i], xatom[natom]);
             natom++;
         }
     }
-    xatom.resizeWithPadding(natom);
+    xatom.resize(natom);
     bool foundNothing = true;
     for (const auto &miq : iqm)
     {
@@ -2418,9 +2391,9 @@ void MyMol::initQgenResp(const Poldata     *pd,
     auto qp          = qTypeProps(qType::Calc);
     QgenResp *qgr = qp->qgenResp();
     qgr->setChargeType(iChargeType);
-    qgr->setAtomInfo(atomsConst(), pd, state_->x, totalCharge());
+    qgr->setAtomInfo(atomsConst(), pd, x(), totalCharge());
     qp->setQ(atomsConst());
-    qp->setX(state_->x);
+    qp->setX(x());
     qgr->setAtomSymmetry(symmetric_charges_);
     qgr->summary(debug);
 
@@ -2486,11 +2459,11 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     {
         auto qgr   = qTypeProps(qType::Calc)->qgenResp();
         qgr->updateAtomCharges(atomsConst());
-        qgr->updateAtomCoords(state_->x);
+        qgr->updateAtomCoords(x());
         std::vector<gmx::RVec> forces(atomsConst().size());
-        std::vector<gmx::RVec> coords = optimizedCoordinates_;
         std::map<InteractionType, double> energies;
-        (void) calculateEnergy(forceComp, &coords, &forces, &energies);
+        (void) forceComp->compute(topology_, &optimizedCoordinates_,
+                                  &forces, &energies);
         qgr->calcPot(1.0);
         qgr->plotLsq(oenv, espcorr);
     }

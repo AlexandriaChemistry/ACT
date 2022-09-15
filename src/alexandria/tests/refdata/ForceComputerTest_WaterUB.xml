@@ -2,14 +2,14 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="MORSE_gmx">0.0049707080459597741</Real>
-  <Real Name="UREY_BRADLEY_gmx">0.0021322557372346757</Real>
-  <Real Name="BHAM_gmx">4504.9067947588137</Real>
-  <Real Name="COUL_SR_gmx">-34.842311445675584</Real>
-  <Real Name="EPOT_gmx">4470.0715862769212</Real>
   <Real Name="MORSE_act">0.0049707080459606597</Real>
+  <Real Name="UREY_BRADLEY_gmx">0.0021322557372346757</Real>
   <Real Name="UREY_BRADLEY_act">0.0021322557372346757</Real>
+  <Real Name="BHAM_gmx">4504.9067947588137</Real>
   <Real Name="BHAM_act">4504.9067947588128</Real>
+  <Real Name="COUL_SR_gmx">-34.842311445675584</Real>
   <Real Name="COUL_SR_act">-34.842311445675563</Real>
+  <Real Name="EPOT_gmx">4470.0715862769212</Real>
   <Real Name="EPOT_act">4470.0715862769202</Real>
   <Real Name="o3-1_gmx fX">0</Real>
   <Real Name="o3-1_act fX">0</Real>

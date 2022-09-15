@@ -378,6 +378,9 @@ void AllBondeds::updatePoldata(FILE    *fp,
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, bond_name[bondKB],
                                  ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
+                double D0 = -200;
+                fs->addParameter(bondId, bond_name[bondENERGY],
+                                 ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
             }
             break;
         default:

@@ -49,7 +49,7 @@ namespace alexandria
     
     extern const char *coul_name[coulNR];
     
-    enum { bondKB = 0, bondLENGTH = 1, bondNR = 2 };
+    enum { bondKB = 0, bondLENGTH = 1, bondENERGY = 2, bondNR = 3 };
     
     extern const char *bond_name[bondNR];
     

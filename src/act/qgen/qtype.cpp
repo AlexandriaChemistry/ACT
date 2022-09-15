@@ -100,24 +100,6 @@ void QtypeProps::resetMoments()
     }
 }
 
-void QtypeProps::setX(const gmx::HostVector<gmx::RVec> &x)
-{
-    // Check that arrays are equally long
-    GMX_RELEASE_ASSERT(q_.size() - x.size() == 0,
-                       gmx::formatString("Charge array (%d) should be the same size as coordinates (%d) for %s",
-                                         static_cast<int>(q_.size()), static_cast<int>(x.size()), 
-                                         qTypeName(qtype_).c_str()).c_str());
-    x_.resizeWithPadding(x.size());
-    for(int i = 0; i < x.size(); i++)
-    {
-        copy_rvec(x[i], x_[i]);
-    }
-    if (QgenResp_)
-    {
-        QgenResp_->updateAtomCoords(x);
-    }
-}
-
 void QtypeProps::setX(const std::vector<gmx::RVec> &x)
 {
     // Check that arrays are equally long
@@ -125,14 +107,10 @@ void QtypeProps::setX(const std::vector<gmx::RVec> &x)
                        gmx::formatString("Charge array (%d) should be the same size as coordinates (%d) for %s",
                                          static_cast<int>(q_.size()), static_cast<int>(x.size()), 
                                          qTypeName(qtype_).c_str()).c_str());
-    x_.resizeWithPadding(x.size());
-    for(size_t i = 0; i < x.size(); i++)
-    {
-        copy_rvec(x[i], x_[i]);
-    }
+    x_ = x;
     if (QgenResp_)
     {
-        QgenResp_->updateAtomCoords(x_);
+        QgenResp_->updateAtomCoords(x);
     }
 }
 
@@ -162,8 +140,8 @@ void QtypeProps::setQ(const std::vector<ActAtom> &atoms)
     }
 }
 
-void QtypeProps::setQandX(const std::vector<double>        &q,
-                          const gmx::HostVector<gmx::RVec> &x)
+void QtypeProps::setQandX(const std::vector<double>    &q,
+                          const std::vector<gmx::RVec> &x)
 {
     // Check that arrays are equally long
     GMX_RELEASE_ASSERT(q.size() - x.size() == 0, 

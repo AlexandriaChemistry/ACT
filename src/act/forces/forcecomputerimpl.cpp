@@ -239,6 +239,14 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
+static double computeDummy(const std::vector<TopologyEntry *>    &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces)
+{
+    return 0.0;
+}
+
 static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -258,6 +266,7 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         auto &params    = b->params();
         auto bondlength = params[bondLENGTH];
         auto kb         = params[bondKB];
+        auto D0         = params[bondENERGY];
         // Get the atom indices
         auto &indices   = b->atomIndices();
 
@@ -271,7 +280,7 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         harmonic(kb, bondlength, r1, &vB, &fbond);
         
         fbond *= r_1;
-        ebond += vB;
+        ebond += vB+D0;
         
         for (int m = 0; (m < DIM); m++)
         {
@@ -530,7 +539,7 @@ static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
         auto fbond      = -ksh;
         ebond          += half*ksh*dr2;
         
-        for (int m = 0; (m < DIM); m++)
+        for (int m = 0; m < DIM; m++)
         {
             auto fij          = fbond*dx[m];
             f[indices[0]][m] += fij;
@@ -550,7 +559,6 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
     rvec uvec, vvec, svec;
     real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
     real a, b, p, q, toler;
-    auto   &f     = *forces;
 
     iprm  = iprod(m, m);       /*  5    */
     iprn  = iprod(n, n);       /*  5	*/
@@ -574,10 +582,10 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
         rvec_sub(uvec, vvec, svec);   /*  3	*/
         rvec_sub(f_i, svec, f_j);     /*  3	*/
         rvec_add(f_l, svec, f_k);     /*  3	*/
-        rvec_inc(f[i], f_i);          /*  3	*/
-        rvec_dec(f[j], f_j);          /*  3	*/
-        rvec_dec(f[k], f_k);          /*  3	*/
-        rvec_inc(f[l], f_l);          /*  3	*/
+        rvec_inc((*forces)[i], f_i);          /*  3	*/
+        rvec_dec((*forces)[j], f_j);          /*  3	*/
+        rvec_dec((*forces)[k], f_k);          /*  3	*/
+        rvec_inc((*forces)[l], f_l);          /*  3	*/
     }
 }
 
@@ -728,6 +736,7 @@ static double computePropers(const std::vector<TopologyEntry *>    &propers,
 }
 
 std::map<int, bondForceComputer> bondForceComputerMap = {
+    { F_DUMMY,         computeDummy        },
     { F_BONDS,         computeBonds        },
     { F_MORSE,         computeMorse        },
     { F_ANGLES,        computeAngles       },

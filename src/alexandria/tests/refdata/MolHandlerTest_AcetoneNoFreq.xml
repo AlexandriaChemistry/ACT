@@ -3,18 +3,18 @@
 <ReferenceData>
   <Real Name="Bond before">0.18122894212805943</Real>
   <Real Name="Angle before">1.6749064998308814</Real>
-  <Real Name="Proper Dih. before">74.979201869337771</Real>
+  <Real Name="Proper Dih. before">15.062394391986754</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="LJ (SR) before">-1.7472008376964434e-05</Real>
   <Real Name="Coulomb (SR) before">-34.189297501647353</Real>
-  <Real Name="Potential before">42.646022337640979</Real>
+  <Real Name="Potential before">-17.270785139710036</Real>
   <Real Name="Coordinate RMSD before minimizing">4.6860416993492717e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.052826682305700999</Real>
-  <Real Name="Bond after">0.025573241799364543</Real>
-  <Real Name="Angle after">0.37506839603582676</Real>
-  <Real Name="Proper Dih. after">30.000879466908877</Real>
-  <Real Name="Improper Dih. after">1.4210628986237869e-16</Real>
-  <Real Name="LJ (SR) after">-1.8055831374515179e-05</Real>
-  <Real Name="Coulomb (SR) after">-34.445689414482061</Real>
-  <Real Name="Potential after">-4.0441863655693666</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.013771388297762518</Real>
+  <Real Name="Bond after">0.025715750800012861</Real>
+  <Real Name="Angle after">0.37494641140257151</Real>
+  <Real Name="Proper Dih. after">8.0390623475933332</Real>
+  <Real Name="Improper Dih. after">8.1433129354004144e-15</Real>
+  <Real Name="LJ (SR) after">-1.7787580224184262e-05</Real>
+  <Real Name="Coulomb (SR) after">-34.524726336170957</Real>
+  <Real Name="Potential after">-26.085019613955254</Real>
 </ReferenceData>

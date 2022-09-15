@@ -87,10 +87,10 @@ namespace alexandria
          * \param[out] atoms   Atoms to store the charges in
          * \return Error code or OK if all is fine.
          */
-        eQgen generateCharges(FILE                             *fp,
-                              const std::string                &molname,
-                              const gmx::HostVector<gmx::RVec> &x,
-                              const Poldata                    *pd,
-                              std::vector<ActAtom>             *atoms);
+        eQgen generateCharges(FILE                         *fp,
+                              const std::string            &molname,
+                              const std::vector<gmx::RVec> &x,
+                              const Poldata                *pd,
+                              std::vector<ActAtom>         *atoms);
     };
 } // namespace alexandria

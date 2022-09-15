@@ -97,12 +97,12 @@ public:
      * \param[in]  x       Atomic coordinates    
      * \param[in]  bonds   List of bonds in this compound
      */
-    eQgen generateCharges(FILE                             *fp,
-                          const std::string                &molname,
-                          const Poldata                    *pd,
-                          std::vector<ActAtom>             *atoms,
-                          const gmx::HostVector<gmx::RVec> &x,
-                          const std::vector<Bond>          &bonds);
+    eQgen generateCharges(FILE                         *fp,
+                          const std::string            &molname,
+                          const Poldata                *pd,
+                          std::vector<ActAtom>         *atoms,
+                          const std::vector<gmx::RVec> &x,
+                          const std::vector<Bond>      &bonds);
                           
     /*! \brief Return a status message
      * \return A string
@@ -281,7 +281,7 @@ private:
     /*! \brief update the positions
      * \param[in] x The new coordinates
      */        
-    void updatePositions(const gmx::HostVector<gmx::RVec> &x);
+    void updatePositions(const std::vector<gmx::RVec> &x);
     
     /*! \brief Compute shielding factor for some EEM algorithms
      * \param[in] i Atom index

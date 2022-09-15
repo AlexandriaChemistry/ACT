@@ -48,11 +48,11 @@
 extern "C"
 {
 void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
-             double* b, int* ldb, double* s, double* rcond, int* rank,
+             const double* b, int* ldb, double* s, double* rcond, int* rank,
              double* work, int* lwork, int* iwork, int* info );
 
 void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
-            double* b, int* ldb, double* work, int* lwork, int* info );
+            const double* b, int* ldb, double* work, int* lwork, int* info );
 
 void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
              int* lda, double* s, double* u, int* ldu, double* vt, int* ldvt,
@@ -67,9 +67,9 @@ void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
  * \param[out] x    The solution of the problem
  * \return 0 if all is fine, the problematic row number otherwise
  */
-static int multi_regression2(std::vector<double> *rhs,
-                             double              **a, 
-                             std::vector<double> *x)
+static int multi_regression2(const std::vector<double>  *rhs,
+                             double                    **a, 
+                             std::vector<double>        *x)
 {
     /* Query and allocate the optimal workspace */
     int                 nrow  = rhs->size();
@@ -351,13 +351,34 @@ std::vector<double> MatrixWrapper::flatten(const char order) const
     return vec;
 }
 
+bool MatrixWrapper::isSymmetric(double tolerance)
+{
+    GMX_RELEASE_ASSERT(
+        nrow_ == ncol_,
+        gmx::formatString("Matrix with dimensions (%d,%d) is not square!", nrow_, ncol_).c_str()
+    );
+    for (int j = 0; j < ncol_; j++)
+    {
+        for (int i = j+1; i < nrow_; i++)
+        {
+            double sum = a_[j][i] + a_[i][j];
+            if (std::abs(sum) > tolerance &&
+                std::abs(a_[j][i] - a_[i][j])/sum > tolerance)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void MatrixWrapper::averageTriangle()
 {
     GMX_RELEASE_ASSERT(
         nrow_ == ncol_,
         gmx::formatString("Matrix with dimensions (%d,%d) is not square!", nrow_, ncol_).c_str()
     );
-    for (int j = 1; j < ncol_; j++)
+    for (int j = 0; j < ncol_; j++)
     {
         for (int i = j+1; i < nrow_; i++)
         {

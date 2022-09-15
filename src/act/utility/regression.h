@@ -131,6 +131,11 @@ class MatrixWrapper
          */
         std::vector<double> flatten(const char order = 'C') const;
 
+        /*! \brief Check whether the matrix is symmetric
+         * \param[in] tolerance The allowed relative difference between symmetric elements
+         * \return true if symmetric, false otherwise
+         */
+        bool isSymmetric(double tolerance);
         /*! \brief Average the lower and upper triangular parts of the matrix
          * Beware! The matrix should be square! Otherwise, the assert condition will fail.
          */
@@ -138,7 +143,8 @@ class MatrixWrapper
 
         /*! \brief Solve a matrix equation A solution = rhs
          *
-         * \param[in]  rhs      Vector of right hand side values.
+         * \param[in]  rhs      Vector of right hand side values. This needs to be a copy (hence no &)
+         *                      since the underlying routines will modify the (copy) of the vector.
          * \param[out] solution Pointer to vector of solution
          * \return 0 if ok, non-zero if not.
          */

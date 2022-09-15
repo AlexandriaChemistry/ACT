@@ -39,7 +39,6 @@
 
 #include "act/molprop/molpropobservable.h"
 #include "alexandria/topology.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 
@@ -108,7 +107,7 @@ class QtypeProps
     //! Polarizability isotropic value
     double                 isotropy_   = 0;
     //! The coordinates
-    gmx::HostVector<gmx::RVec> x_;
+    std::vector<gmx::RVec> x_;
     //! Center of charge
     rvec                   coc_        = { 0 };
     //! Atomic charges
@@ -129,7 +128,7 @@ class QtypeProps
      * \param[in] x The coordinates
      */
     void setQandX(const std::vector<double>        &q,
-                  const gmx::HostVector<gmx::RVec> &x);
+                  const std::vector<gmx::RVec> &x);
     
     /*! \brief Set charges.
      *
@@ -147,16 +146,10 @@ class QtypeProps
      *
      * \param[in] x The coordinates
      */
-    void setX(const gmx::HostVector<gmx::RVec> &x);
-    
-    /*! \brief Set coordinates.
-     *
-     * \param[in] x The coordinates
-     */
     void setX(const std::vector<gmx::RVec> &x);
     
     //! Return the coordinates
-    const gmx::HostVector<gmx::RVec> &x() const { return x_; }
+    const std::vector<gmx::RVec> &x() const { return x_; }
     
     /*! \brief Store center of charge
      * \param[in] coc The center of charge

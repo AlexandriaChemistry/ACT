@@ -115,6 +115,7 @@ int simulate(int argc, char *argv[])
     static char              *filename   = (char *)"";
     static char              *molnm      = (char *)"";
     double                    qtot       = 0;
+    double                    shellToler = 1e-6;
     bool                      verbose    = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
@@ -124,7 +125,9 @@ int simulate(int argc, char *argv[])
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
         { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." }
+          "Print more information to the log file." },
+        { "-shelltoler", FALSE, etREAL, {&shellToler},
+          "Tolerance for shell force optimization (mean square force)" }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -145,9 +148,14 @@ int simulate(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    double shellToler = std::sqrt(sch.forceTolerance())/4;
+    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
+    FILE *logFile   = gmx_ffopen(logFileName, "w");
+    if (shellToler >= sch.forceTolerance())
+    {
+        shellToler = sch.forceTolerance()/10;
+        printf("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
+    }
     auto  forceComp = new ForceComputer(&pd, shellToler, 100);
-    FILE *logFile   = gmx_ffopen(opt2fn("-g", fnm.size(),fnm.data()), "w");
     print_header(logFile, pa);
     if (verbose)
     {
@@ -225,19 +233,27 @@ int simulate(int argc, char *argv[])
             std::map<InteractionType, double> energies;
             eMin = molhandler.minimizeCoordinates(&mymol, forceComp, sch,
                                                   &xmin, &energies, logFile);
-            auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
-            fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm. Minimization status: %s.\n",
-                    energies[InteractionType::EPOT], rmsd,
-                    eMinimizeStatusToString(eMin).c_str());
-            matrix box;
-            clear_mat(box);
-            write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
-                           mymol.getMolname().c_str(),
-                           mymol.gmxAtomsConst(),
-                           as_rvec_array(coords.data()), nullptr,
-                           epbcNONE, box);
+            if (eMinimizeStatus::OK == eMin)
+            {
+                auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
+                fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
+                        energies[InteractionType::EPOT], rmsd);
+                matrix box;
+                clear_mat(box);
+                write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
+                               mymol.getMolname().c_str(),
+                               mymol.gmxAtomsConst(),
+                               as_rvec_array(xmin.data()), nullptr,
+                               epbcNONE, box);
+            }
+            else
+            {
+                fprintf(stderr, "Minimization failed: %s, check log file %s\n",
+                        eMinimizeStatusToString(eMin).c_str(),
+                        logFileName);
+            }
         }
-        if (immStatus::OK == imm)
+        if (immStatus::OK == imm && eMinimizeStatus::OK == eMin)
         {
             if (sch.nma())
             {
@@ -271,7 +287,7 @@ int simulate(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "\nFatal Error. Please check the log file for error messages.\n");
+        fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
         fprintf(logFile, "%s\n", immsg(imm));
         for(const auto &err: mymol.errors())
         {

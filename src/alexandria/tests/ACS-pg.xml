@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="1d2f48ca63c51f236a05a3ce212e9591" timestamp="2022-06-14 15:10:02"/>
+  <version checksum="6f9b84f0a1c2398f70939c9f726fcad9" timestamp="2022-09-13 19:16:46"/>
   <particletypes nexclusions="0" epsilonr="1">
     <particletype identifier="h" type="Atom" description="hydrogen">
       <option key="acmtype" value="h_z"/>
@@ -8014,7 +8014,7 @@
     <parameterlist identifier="Ar~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ar~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8023,8 +8023,8 @@
     </parameterlist>
     <parameterlist identifier="Ar~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.165831" uncertainty="0" minimum="0.165831" maximum="0.165831" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ar~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8094,7 +8094,7 @@
     <parameterlist identifier="Ar~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ar~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8139,7 +8139,7 @@
     <parameterlist identifier="Ar~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ar~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8149,7 +8149,7 @@
     <parameterlist identifier="Ar~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.222486" uncertainty="0" minimum="0.222486" maximum="0.222486" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ar~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8769,7 +8769,7 @@
     <parameterlist identifier="Be2+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Be2+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8778,8 +8778,8 @@
     </parameterlist>
     <parameterlist identifier="Be2+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.118322" uncertainty="0" minimum="0.118322" maximum="0.118322" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Be2+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8849,7 +8849,7 @@
     <parameterlist identifier="Be2+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Be2+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8894,7 +8894,7 @@
     <parameterlist identifier="Be2+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Be2+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -8904,7 +8904,7 @@
     <parameterlist identifier="Be2+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.158745" uncertainty="0" minimum="0.158745" maximum="0.158745" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Be2+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -9504,7 +9504,7 @@
     <parameterlist identifier="Br-~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.498617" uncertainty="0" minimum="0.498617" maximum="0.498617" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0505" uncertainty="0" minimum="15.0505" maximum="15.0505" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.370344" uncertainty="0" minimum="0.370344" maximum="0.370344" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.23823" uncertainty="0" minimum="0.23823" maximum="0.23823" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Br-~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -9513,8 +9513,8 @@
     </parameterlist>
     <parameterlist identifier="Br-~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.498617" uncertainty="0" minimum="0.498617" maximum="0.498617" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.0505" uncertainty="0" minimum="15.0505" maximum="15.0505" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.370344" uncertainty="0" minimum="0.370344" maximum="0.370344" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2887" uncertainty="0" minimum="12.2887" maximum="12.2887" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.217473" uncertainty="0" minimum="0.217473" maximum="0.217473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Br-~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -9584,7 +9584,7 @@
     <parameterlist identifier="Br-~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.498617" uncertainty="0" minimum="0.498617" maximum="0.498617" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0505" uncertainty="0" minimum="15.0505" maximum="15.0505" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.370344" uncertainty="0" minimum="0.370344" maximum="0.370344" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.23823" uncertainty="0" minimum="0.23823" maximum="0.23823" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Br-~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -9629,7 +9629,7 @@
     <parameterlist identifier="Br-~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.58226" uncertainty="0" minimum="0.58226" maximum="0.58226" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0505" uncertainty="0" minimum="15.0505" maximum="15.0505" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.370344" uncertainty="0" minimum="0.370344" maximum="0.370344" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.23823" uncertainty="0" minimum="0.23823" maximum="0.23823" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Br-~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -9639,7 +9639,7 @@
     <parameterlist identifier="Br-~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.58226" uncertainty="0" minimum="0.58226" maximum="0.58226" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0505" uncertainty="0" minimum="15.0505" maximum="15.0505" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.370344" uncertainty="0" minimum="0.370344" maximum="0.370344" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.291771" uncertainty="0" minimum="0.291771" maximum="0.291771" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Br-~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10219,7 +10219,7 @@
     <parameterlist identifier="Ca2+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10228,8 +10228,8 @@
     </parameterlist>
     <parameterlist identifier="Ca2+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.118322" uncertainty="0" minimum="0.118322" maximum="0.118322" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10299,7 +10299,7 @@
     <parameterlist identifier="Ca2+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10344,7 +10344,7 @@
     <parameterlist identifier="Ca2+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10354,7 +10354,7 @@
     <parameterlist identifier="Ca2+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.158745" uncertainty="0" minimum="0.158745" maximum="0.158745" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10914,7 +10914,7 @@
     <parameterlist identifier="Cl-~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.398298" uncertainty="0" minimum="0.398298" maximum="0.398298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0364" uncertainty="0" minimum="15.0364" maximum="15.0364" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.362019" uncertainty="0" minimum="0.362019" maximum="0.362019" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.232875" uncertainty="0" minimum="0.232875" maximum="0.232875" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10923,8 +10923,8 @@
     </parameterlist>
     <parameterlist identifier="Cl-~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.398298" uncertainty="0" minimum="0.398298" maximum="0.398298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.0364" uncertainty="0" minimum="15.0364" maximum="15.0364" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.362019" uncertainty="0" minimum="0.362019" maximum="0.362019" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2772" uncertainty="0" minimum="12.2772" maximum="12.2772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.212585" uncertainty="0" minimum="0.212585" maximum="0.212585" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -10994,7 +10994,7 @@
     <parameterlist identifier="Cl-~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.398298" uncertainty="0" minimum="0.398298" maximum="0.398298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0364" uncertainty="0" minimum="15.0364" maximum="15.0364" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.362019" uncertainty="0" minimum="0.362019" maximum="0.362019" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.232875" uncertainty="0" minimum="0.232875" maximum="0.232875" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11039,7 +11039,7 @@
     <parameterlist identifier="Cl-~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.465112" uncertainty="0" minimum="0.465112" maximum="0.465112" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0364" uncertainty="0" minimum="15.0364" maximum="15.0364" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.362019" uncertainty="0" minimum="0.362019" maximum="0.362019" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.232875" uncertainty="0" minimum="0.232875" maximum="0.232875" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11049,7 +11049,7 @@
     <parameterlist identifier="Cl-~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.465112" uncertainty="0" minimum="0.465112" maximum="0.465112" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0364" uncertainty="0" minimum="15.0364" maximum="15.0364" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.362019" uncertainty="0" minimum="0.362019" maximum="0.362019" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.285212" uncertainty="0" minimum="0.285212" maximum="0.285212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11589,7 +11589,7 @@
     <parameterlist identifier="Cs+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.434175" uncertainty="0" minimum="0.434175" maximum="0.434175" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.7164" uncertainty="0" minimum="16.7164" maximum="16.7164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.371207" uncertainty="0" minimum="0.371207" maximum="0.371207" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.238786" uncertainty="0" minimum="0.238786" maximum="0.238786" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11598,8 +11598,8 @@
     </parameterlist>
     <parameterlist identifier="Cs+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.434175" uncertainty="0" minimum="0.434175" maximum="0.434175" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="16.7164" uncertainty="0" minimum="16.7164" maximum="16.7164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.371207" uncertainty="0" minimum="0.371207" maximum="0.371207" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="13.6489" uncertainty="0" minimum="13.6489" maximum="13.6489" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.217981" uncertainty="0" minimum="0.217981" maximum="0.217981" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11669,7 +11669,7 @@
     <parameterlist identifier="Cs+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.434175" uncertainty="0" minimum="0.434175" maximum="0.434175" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.7164" uncertainty="0" minimum="16.7164" maximum="16.7164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.371207" uncertainty="0" minimum="0.371207" maximum="0.371207" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.238786" uncertainty="0" minimum="0.238786" maximum="0.238786" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11714,7 +11714,7 @@
     <parameterlist identifier="Cs+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.507007" uncertainty="0" minimum="0.507007" maximum="0.507007" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.7164" uncertainty="0" minimum="16.7164" maximum="16.7164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.371207" uncertainty="0" minimum="0.371207" maximum="0.371207" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.238786" uncertainty="0" minimum="0.238786" maximum="0.238786" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -11724,7 +11724,7 @@
     <parameterlist identifier="Cs+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.507007" uncertainty="0" minimum="0.507007" maximum="0.507007" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.7164" uncertainty="0" minimum="16.7164" maximum="16.7164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.371207" uncertainty="0" minimum="0.371207" maximum="0.371207" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.292452" uncertainty="0" minimum="0.292452" maximum="0.292452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12244,7 +12244,7 @@
     <parameterlist identifier="F-~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.134962" uncertainty="0" minimum="0.134962" maximum="0.134962" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="14.9711" uncertainty="0" minimum="14.9711" maximum="14.9711" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.336452" uncertainty="0" minimum="0.336452" maximum="0.336452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.216429" uncertainty="0" minimum="0.216429" maximum="0.216429" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12253,8 +12253,8 @@
     </parameterlist>
     <parameterlist identifier="F-~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.134962" uncertainty="0" minimum="0.134962" maximum="0.134962" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="14.9711" uncertainty="0" minimum="14.9711" maximum="14.9711" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.336452" uncertainty="0" minimum="0.336452" maximum="0.336452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2239" uncertainty="0" minimum="12.2239" maximum="12.2239" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.197572" uncertainty="0" minimum="0.197572" maximum="0.197572" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12324,7 +12324,7 @@
     <parameterlist identifier="F-~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.134962" uncertainty="0" minimum="0.134962" maximum="0.134962" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="14.9711" uncertainty="0" minimum="14.9711" maximum="14.9711" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.336452" uncertainty="0" minimum="0.336452" maximum="0.336452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.216429" uncertainty="0" minimum="0.216429" maximum="0.216429" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12369,7 +12369,7 @@
     <parameterlist identifier="F-~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.157601" uncertainty="0" minimum="0.157601" maximum="0.157601" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="14.9711" uncertainty="0" minimum="14.9711" maximum="14.9711" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.336452" uncertainty="0" minimum="0.336452" maximum="0.336452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.216429" uncertainty="0" minimum="0.216429" maximum="0.216429" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12379,7 +12379,7 @@
     <parameterlist identifier="F-~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.157601" uncertainty="0" minimum="0.157601" maximum="0.157601" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="14.9711" uncertainty="0" minimum="14.9711" maximum="14.9711" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.336452" uncertainty="0" minimum="0.336452" maximum="0.336452" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.26507" uncertainty="0" minimum="0.26507" maximum="0.26507" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12564,7 +12564,7 @@
     <parameterlist identifier="He~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="He~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12573,8 +12573,8 @@
     </parameterlist>
     <parameterlist identifier="He~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.165831" uncertainty="0" minimum="0.165831" maximum="0.165831" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="He~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12644,7 +12644,7 @@
     <parameterlist identifier="He~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="He~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12689,7 +12689,7 @@
     <parameterlist identifier="He~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="He~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -12699,7 +12699,7 @@
     <parameterlist identifier="He~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.222486" uncertainty="0" minimum="0.222486" maximum="0.222486" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="He~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13189,7 +13189,7 @@
     <parameterlist identifier="I-~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.699947" uncertainty="0" minimum="0.699947" maximum="0.699947" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0521" uncertainty="0" minimum="15.0521" maximum="15.0521" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.379324" uncertainty="0" minimum="0.379324" maximum="0.379324" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.244007" uncertainty="0" minimum="0.244007" maximum="0.244007" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13198,8 +13198,8 @@
     </parameterlist>
     <parameterlist identifier="I-~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.699947" uncertainty="0" minimum="0.699947" maximum="0.699947" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.0521" uncertainty="0" minimum="15.0521" maximum="15.0521" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.379324" uncertainty="0" minimum="0.379324" maximum="0.379324" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.29" uncertainty="0" minimum="12.29" maximum="12.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.222747" uncertainty="0" minimum="0.222747" maximum="0.222747" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13269,7 +13269,7 @@
     <parameterlist identifier="I-~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.699947" uncertainty="0" minimum="0.699947" maximum="0.699947" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0521" uncertainty="0" minimum="15.0521" maximum="15.0521" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.379324" uncertainty="0" minimum="0.379324" maximum="0.379324" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.244007" uncertainty="0" minimum="0.244007" maximum="0.244007" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13314,7 +13314,7 @@
     <parameterlist identifier="I-~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.817361" uncertainty="0" minimum="0.817361" maximum="0.817361" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0521" uncertainty="0" minimum="15.0521" maximum="15.0521" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.379324" uncertainty="0" minimum="0.379324" maximum="0.379324" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.244007" uncertainty="0" minimum="0.244007" maximum="0.244007" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13324,7 +13324,7 @@
     <parameterlist identifier="I-~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.817361" uncertainty="0" minimum="0.817361" maximum="0.817361" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.0521" uncertainty="0" minimum="15.0521" maximum="15.0521" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.379324" uncertainty="0" minimum="0.379324" maximum="0.379324" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.298846" uncertainty="0" minimum="0.298846" maximum="0.298846" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13794,7 +13794,7 @@
     <parameterlist identifier="K+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.413259" uncertainty="0" minimum="0.413259" maximum="0.413259" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.9199" uncertainty="0" minimum="15.9199" maximum="15.9199" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.347757" uncertainty="0" minimum="0.347757" maximum="0.347757" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.223701" uncertainty="0" minimum="0.223701" maximum="0.223701" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13803,8 +13803,8 @@
     </parameterlist>
     <parameterlist identifier="K+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.413259" uncertainty="0" minimum="0.413259" maximum="0.413259" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.9199" uncertainty="0" minimum="15.9199" maximum="15.9199" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.347757" uncertainty="0" minimum="0.347757" maximum="0.347757" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.9986" uncertainty="0" minimum="12.9986" maximum="12.9986" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.20421" uncertainty="0" minimum="0.20421" maximum="0.20421" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13874,7 +13874,7 @@
     <parameterlist identifier="K+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.413259" uncertainty="0" minimum="0.413259" maximum="0.413259" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.9199" uncertainty="0" minimum="15.9199" maximum="15.9199" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.347757" uncertainty="0" minimum="0.347757" maximum="0.347757" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.223701" uncertainty="0" minimum="0.223701" maximum="0.223701" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13919,7 +13919,7 @@
     <parameterlist identifier="K+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.482582" uncertainty="0" minimum="0.482582" maximum="0.482582" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.9199" uncertainty="0" minimum="15.9199" maximum="15.9199" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.347757" uncertainty="0" minimum="0.347757" maximum="0.347757" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.223701" uncertainty="0" minimum="0.223701" maximum="0.223701" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -13929,7 +13929,7 @@
     <parameterlist identifier="K+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.482582" uncertainty="0" minimum="0.482582" maximum="0.482582" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.9199" uncertainty="0" minimum="15.9199" maximum="15.9199" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.347757" uncertainty="0" minimum="0.347757" maximum="0.347757" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.273976" uncertainty="0" minimum="0.273976" maximum="0.273976" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14089,7 +14089,7 @@
     <parameterlist identifier="Kr~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Kr~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14098,8 +14098,8 @@
     </parameterlist>
     <parameterlist identifier="Kr~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.165831" uncertainty="0" minimum="0.165831" maximum="0.165831" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Kr~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14169,7 +14169,7 @@
     <parameterlist identifier="Kr~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Kr~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14214,7 +14214,7 @@
     <parameterlist identifier="Kr~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Kr~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14224,7 +14224,7 @@
     <parameterlist identifier="Kr~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.222486" uncertainty="0" minimum="0.222486" maximum="0.222486" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Kr~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14664,7 +14664,7 @@
     <parameterlist identifier="Li+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.144289" uncertainty="0" minimum="0.144289" maximum="0.144289" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.8255" uncertainty="0" minimum="15.8255" maximum="15.8255" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.297045" uncertainty="0" minimum="0.297045" maximum="0.297045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.191079" uncertainty="0" minimum="0.191079" maximum="0.191079" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14673,8 +14673,8 @@
     </parameterlist>
     <parameterlist identifier="Li+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.144289" uncertainty="0" minimum="0.144289" maximum="0.144289" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.8255" uncertainty="0" minimum="15.8255" maximum="15.8255" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.297045" uncertainty="0" minimum="0.297045" maximum="0.297045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.9215" uncertainty="0" minimum="12.9215" maximum="12.9215" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.174431" uncertainty="0" minimum="0.174431" maximum="0.174431" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14744,7 +14744,7 @@
     <parameterlist identifier="Li+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.144289" uncertainty="0" minimum="0.144289" maximum="0.144289" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.8255" uncertainty="0" minimum="15.8255" maximum="15.8255" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.297045" uncertainty="0" minimum="0.297045" maximum="0.297045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.191079" uncertainty="0" minimum="0.191079" maximum="0.191079" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14789,7 +14789,7 @@
     <parameterlist identifier="Li+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.168494" uncertainty="0" minimum="0.168494" maximum="0.168494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.8255" uncertainty="0" minimum="15.8255" maximum="15.8255" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.297045" uncertainty="0" minimum="0.297045" maximum="0.297045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.191079" uncertainty="0" minimum="0.191079" maximum="0.191079" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -14799,7 +14799,7 @@
     <parameterlist identifier="Li+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.168494" uncertainty="0" minimum="0.168494" maximum="0.168494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.8255" uncertainty="0" minimum="15.8255" maximum="15.8255" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.297045" uncertainty="0" minimum="0.297045" maximum="0.297045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.234023" uncertainty="0" minimum="0.234023" maximum="0.234023" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15219,7 +15219,7 @@
     <parameterlist identifier="Mg2+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15228,8 +15228,8 @@
     </parameterlist>
     <parameterlist identifier="Mg2+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.118322" uncertainty="0" minimum="0.118322" maximum="0.118322" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15299,7 +15299,7 @@
     <parameterlist identifier="Mg2+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.331662" uncertainty="0" minimum="0.331662" maximum="0.331662" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15344,7 +15344,7 @@
     <parameterlist identifier="Mg2+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.129615" uncertainty="0" minimum="0.129615" maximum="0.129615" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15354,7 +15354,7 @@
     <parameterlist identifier="Mg2+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.387298" uncertainty="0" minimum="0.387298" maximum="0.387298" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.201494" uncertainty="0" minimum="0.201494" maximum="0.201494" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.158745" uncertainty="0" minimum="0.158745" maximum="0.158745" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15754,7 +15754,7 @@
     <parameterlist identifier="Na+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.234678" uncertainty="0" minimum="0.234678" maximum="0.234678" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.5896" uncertainty="0" minimum="16.5896" maximum="16.5896" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.315223" uncertainty="0" minimum="0.315223" maximum="0.315223" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.202772" uncertainty="0" minimum="0.202772" maximum="0.202772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15763,8 +15763,8 @@
     </parameterlist>
     <parameterlist identifier="Na+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.234678" uncertainty="0" minimum="0.234678" maximum="0.234678" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="16.5896" uncertainty="0" minimum="16.5896" maximum="16.5896" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.315223" uncertainty="0" minimum="0.315223" maximum="0.315223" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="13.5454" uncertainty="0" minimum="13.5454" maximum="13.5454" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.185105" uncertainty="0" minimum="0.185105" maximum="0.185105" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15834,7 +15834,7 @@
     <parameterlist identifier="Na+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.234678" uncertainty="0" minimum="0.234678" maximum="0.234678" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.5896" uncertainty="0" minimum="16.5896" maximum="16.5896" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.315223" uncertainty="0" minimum="0.315223" maximum="0.315223" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.202772" uncertainty="0" minimum="0.202772" maximum="0.202772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15879,7 +15879,7 @@
     <parameterlist identifier="Na+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.274045" uncertainty="0" minimum="0.274045" maximum="0.274045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.5896" uncertainty="0" minimum="16.5896" maximum="16.5896" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.315223" uncertainty="0" minimum="0.315223" maximum="0.315223" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.202772" uncertainty="0" minimum="0.202772" maximum="0.202772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -15889,7 +15889,7 @@
     <parameterlist identifier="Na+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.274045" uncertainty="0" minimum="0.274045" maximum="0.274045" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="16.5896" uncertainty="0" minimum="16.5896" maximum="16.5896" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.315223" uncertainty="0" minimum="0.315223" maximum="0.315223" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.248345" uncertainty="0" minimum="0.248345" maximum="0.248345" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16014,7 +16014,7 @@
     <parameterlist identifier="Ne~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ne~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16023,8 +16023,8 @@
     </parameterlist>
     <parameterlist identifier="Ne~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.165831" uncertainty="0" minimum="0.165831" maximum="0.165831" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ne~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16094,7 +16094,7 @@
     <parameterlist identifier="Ne~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.532212" uncertainty="0" minimum="0.532212" maximum="0.532212" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ne~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16139,7 +16139,7 @@
     <parameterlist identifier="Ne~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.181659" uncertainty="0" minimum="0.181659" maximum="0.181659" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ne~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16149,7 +16149,7 @@
     <parameterlist identifier="Ne~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.62149" uncertainty="0" minimum="0.62149" maximum="0.62149" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.2824" uncertainty="0" minimum="0.2824" maximum="0.2824" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.222486" uncertainty="0" minimum="0.222486" maximum="0.222486" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ne~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16519,7 +16519,7 @@
     <parameterlist identifier="Rb+~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.462115" uncertainty="0" minimum="0.462115" maximum="0.462115" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.89" uncertainty="0" minimum="15.89" maximum="15.89" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.360349" uncertainty="0" minimum="0.360349" maximum="0.360349" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.231801" uncertainty="0" minimum="0.231801" maximum="0.231801" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16528,8 +16528,8 @@
     </parameterlist>
     <parameterlist identifier="Rb+~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.462115" uncertainty="0" minimum="0.462115" maximum="0.462115" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15.89" uncertainty="0" minimum="15.89" maximum="15.89" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.360349" uncertainty="0" minimum="0.360349" maximum="0.360349" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.9742" uncertainty="0" minimum="12.9742" maximum="12.9742" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.211604" uncertainty="0" minimum="0.211604" maximum="0.211604" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16599,7 +16599,7 @@
     <parameterlist identifier="Rb+~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.462115" uncertainty="0" minimum="0.462115" maximum="0.462115" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.89" uncertainty="0" minimum="15.89" maximum="15.89" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.360349" uncertainty="0" minimum="0.360349" maximum="0.360349" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.231801" uncertainty="0" minimum="0.231801" maximum="0.231801" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16644,7 +16644,7 @@
     <parameterlist identifier="Rb+~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.539635" uncertainty="0" minimum="0.539635" maximum="0.539635" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.89" uncertainty="0" minimum="15.89" maximum="15.89" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.360349" uncertainty="0" minimum="0.360349" maximum="0.360349" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.231801" uncertainty="0" minimum="0.231801" maximum="0.231801" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -16654,7 +16654,7 @@
     <parameterlist identifier="Rb+~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.539635" uncertainty="0" minimum="0.539635" maximum="0.539635" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15.89" uncertainty="0" minimum="15.89" maximum="15.89" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.360349" uncertainty="0" minimum="0.360349" maximum="0.360349" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.283897" uncertainty="0" minimum="0.283897" maximum="0.283897" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17239,7 +17239,7 @@
     <parameterlist identifier="br~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17248,8 +17248,8 @@
     </parameterlist>
     <parameterlist identifier="br~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17319,7 +17319,7 @@
     <parameterlist identifier="br~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17364,7 +17364,7 @@
     <parameterlist identifier="br~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17374,7 +17374,7 @@
     <parameterlist identifier="br~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17694,7 +17694,7 @@
     <parameterlist identifier="c1~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1~c2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17703,8 +17703,8 @@
     </parameterlist>
     <parameterlist identifier="c1~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17774,7 +17774,7 @@
     <parameterlist identifier="c1~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17819,7 +17819,7 @@
     <parameterlist identifier="c1~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17829,7 +17829,7 @@
     <parameterlist identifier="c1~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -17909,7 +17909,7 @@
     <parameterlist identifier="c2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -18134,12 +18134,12 @@
     <parameterlist identifier="c2~c2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.109545" uncertainty="0" minimum="0.109545" maximum="0.109545" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~c3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18149,7 +18149,7 @@
     <parameterlist identifier="c2~cl">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~cl_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18159,7 +18159,7 @@
     <parameterlist identifier="c2~f">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.469042" uncertainty="0" minimum="0.469042" maximum="0.469042" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~f_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18169,7 +18169,7 @@
     <parameterlist identifier="c2~h">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.381772" uncertainty="0" minimum="0.381772" maximum="0.381772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.258263" uncertainty="0" minimum="0.258263" maximum="0.258263" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.166132" uncertainty="0" minimum="0.166132" maximum="0.166132" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~h_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18184,7 +18184,7 @@
     <parameterlist identifier="c2~i">
       <parameter type="epsilon_ij" unit="kJ/mol" value="1.07471" uncertainty="0" minimum="1.07471" maximum="1.07471" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~i_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18199,7 +18199,7 @@
     <parameterlist identifier="c2~n1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~n1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18209,7 +18209,7 @@
     <parameterlist identifier="c2~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18219,7 +18219,7 @@
     <parameterlist identifier="c2~n3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~n3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18229,7 +18229,7 @@
     <parameterlist identifier="c2~n4">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~n4_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18244,7 +18244,7 @@
     <parameterlist identifier="c2~o1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~o1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18254,7 +18254,7 @@
     <parameterlist identifier="c2~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18264,7 +18264,7 @@
     <parameterlist identifier="c2~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.146969" uncertainty="0" minimum="0.146969" maximum="0.146969" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18274,7 +18274,7 @@
     <parameterlist identifier="c2~p1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~p1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18284,7 +18284,7 @@
     <parameterlist identifier="c2~p2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~p2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18294,7 +18294,7 @@
     <parameterlist identifier="c2~p3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~p3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18304,7 +18304,7 @@
     <parameterlist identifier="c2~s1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~s1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18314,7 +18314,7 @@
     <parameterlist identifier="c2~s2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~s2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18324,7 +18324,7 @@
     <parameterlist identifier="c2~s3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2~s3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18343,8 +18343,8 @@
     </parameterlist>
     <parameterlist identifier="c3">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.1" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -18558,13 +18558,13 @@
     </parameterlist>
     <parameterlist identifier="c3~c3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="10" uncertainty="0" minimum="10" maximum="10" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.1" uncertainty="0" minimum="0.1" maximum="0.1" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~cl">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~cl_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18573,8 +18573,8 @@
     </parameterlist>
     <parameterlist identifier="c3~f">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.469042" uncertainty="0" minimum="0.469042" maximum="0.469042" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~f_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18583,8 +18583,8 @@
     </parameterlist>
     <parameterlist identifier="c3~h">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.381772" uncertainty="0" minimum="0.381772" maximum="0.381772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.258263" uncertainty="0" minimum="0.258263" maximum="0.258263" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.151658" uncertainty="0" minimum="0.151658" maximum="0.151658" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~h_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18598,8 +18598,8 @@
     </parameterlist>
     <parameterlist identifier="c3~i">
       <parameter type="epsilon_ij" unit="kJ/mol" value="1.07471" uncertainty="0" minimum="1.07471" maximum="1.07471" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~i_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18613,8 +18613,8 @@
     </parameterlist>
     <parameterlist identifier="c3~n1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~n1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18623,8 +18623,8 @@
     </parameterlist>
     <parameterlist identifier="c3~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.109545" uncertainty="0" minimum="0.109545" maximum="0.109545" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18633,8 +18633,8 @@
     </parameterlist>
     <parameterlist identifier="c3~n3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~n3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18643,8 +18643,8 @@
     </parameterlist>
     <parameterlist identifier="c3~n4">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~n4_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18658,8 +18658,8 @@
     </parameterlist>
     <parameterlist identifier="c3~o1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~o1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18668,8 +18668,8 @@
     </parameterlist>
     <parameterlist identifier="c3~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.109545" uncertainty="0" minimum="0.109545" maximum="0.109545" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18678,8 +18678,8 @@
     </parameterlist>
     <parameterlist identifier="c3~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.134164" uncertainty="0" minimum="0.134164" maximum="0.134164" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18688,8 +18688,8 @@
     </parameterlist>
     <parameterlist identifier="c3~p1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~p1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18698,8 +18698,8 @@
     </parameterlist>
     <parameterlist identifier="c3~p2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~p2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18708,8 +18708,8 @@
     </parameterlist>
     <parameterlist identifier="c3~p3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~p3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18718,8 +18718,8 @@
     </parameterlist>
     <parameterlist identifier="c3~s1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~s1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18728,8 +18728,8 @@
     </parameterlist>
     <parameterlist identifier="c3~s2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~s2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -18738,8 +18738,8 @@
     </parameterlist>
     <parameterlist identifier="c3~s3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="gamma_ij" unit="kJ/mol" value="12.2474" uncertainty="0" minimum="12.2474" maximum="12.2474" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.170294" uncertainty="0" minimum="0.170294" maximum="0.170294" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3~s3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19019,7 +19019,7 @@
     <parameterlist identifier="cl~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19064,7 +19064,7 @@
     <parameterlist identifier="cl~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19074,7 +19074,7 @@
     <parameterlist identifier="cl~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19394,7 +19394,7 @@
     <parameterlist identifier="f~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.469042" uncertainty="0" minimum="0.469042" maximum="0.469042" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="f~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19439,7 +19439,7 @@
     <parameterlist identifier="f~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.547723" uncertainty="0" minimum="0.547723" maximum="0.547723" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="f~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19449,7 +19449,7 @@
     <parameterlist identifier="f~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.547723" uncertainty="0" minimum="0.547723" maximum="0.547723" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="f~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19919,7 +19919,7 @@
     <parameterlist identifier="h~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.381772" uncertainty="0" minimum="0.381772" maximum="0.381772" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.258263" uncertainty="0" minimum="0.258263" maximum="0.258263" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.166132" uncertainty="0" minimum="0.166132" maximum="0.166132" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19964,7 +19964,7 @@
     <parameterlist identifier="h~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.445814" uncertainty="0" minimum="0.445814" maximum="0.445814" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.258263" uncertainty="0" minimum="0.258263" maximum="0.258263" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.166132" uncertainty="0" minimum="0.166132" maximum="0.166132" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -19974,7 +19974,7 @@
     <parameterlist identifier="h~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.445814" uncertainty="0" minimum="0.445814" maximum="0.445814" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.258263" uncertainty="0" minimum="0.258263" maximum="0.258263" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.20347" uncertainty="0" minimum="0.20347" maximum="0.20347" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20244,7 +20244,7 @@
     <parameterlist identifier="i~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="1.07471" uncertainty="0" minimum="1.07471" maximum="1.07471" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="i~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20289,7 +20289,7 @@
     <parameterlist identifier="i~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="1.25499" uncertainty="0" minimum="1.25499" maximum="1.25499" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="i~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20299,7 +20299,7 @@
     <parameterlist identifier="i~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="1.25499" uncertainty="0" minimum="1.25499" maximum="1.25499" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="i~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20694,7 +20694,7 @@
     <parameterlist identifier="n1~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n1~n2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20739,7 +20739,7 @@
     <parameterlist identifier="n1~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n1~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20749,7 +20749,7 @@
     <parameterlist identifier="n1~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n1~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20829,7 +20829,7 @@
     <parameterlist identifier="n2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -20974,12 +20974,12 @@
     <parameterlist identifier="n2~n2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~n3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~n3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -20989,7 +20989,7 @@
     <parameterlist identifier="n2~n4">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.55" maximum="0.55" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~n4_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21004,7 +21004,7 @@
     <parameterlist identifier="n2~o1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~o1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21014,7 +21014,7 @@
     <parameterlist identifier="n2~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21024,7 +21024,7 @@
     <parameterlist identifier="n2~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.146969" uncertainty="0" minimum="0.146969" maximum="0.146969" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21034,7 +21034,7 @@
     <parameterlist identifier="n2~p1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~p1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21044,7 +21044,7 @@
     <parameterlist identifier="n2~p2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~p2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21054,7 +21054,7 @@
     <parameterlist identifier="n2~p3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.68374" uncertainty="0" minimum="0.68374" maximum="0.68374" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~p3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21064,7 +21064,7 @@
     <parameterlist identifier="n2~s1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~s1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21074,7 +21074,7 @@
     <parameterlist identifier="n2~s2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~s2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21084,7 +21084,7 @@
     <parameterlist identifier="n2~s3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.759934" uncertainty="0" minimum="0.759934" maximum="0.759934" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2~s3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21269,7 +21269,7 @@
     <parameterlist identifier="n3~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n3~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21279,7 +21279,7 @@
     <parameterlist identifier="n3~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n3~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21504,7 +21504,7 @@
     <parameterlist identifier="n4~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n4~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21514,7 +21514,7 @@
     <parameterlist identifier="n4~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.642262" uncertainty="0" minimum="0.642262" maximum="0.642262" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n4~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21819,7 +21819,7 @@
     <parameterlist identifier="o1~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o1~o2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21829,7 +21829,7 @@
     <parameterlist identifier="o1~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o1~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -21909,7 +21909,7 @@
     <parameterlist identifier="o2">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.12" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -22009,12 +22009,12 @@
     <parameterlist identifier="o2~o2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.12" uncertainty="0" minimum="0.12" maximum="0.12" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.146969" uncertainty="0" minimum="0.146969" maximum="0.146969" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~o3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22024,7 +22024,7 @@
     <parameterlist identifier="o2~p1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~p1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22034,7 +22034,7 @@
     <parameterlist identifier="o2~p2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~p2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22044,7 +22044,7 @@
     <parameterlist identifier="o2~p3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~p3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22054,7 +22054,7 @@
     <parameterlist identifier="o2~s1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~s1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22064,7 +22064,7 @@
     <parameterlist identifier="o2~s2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~s2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22074,7 +22074,7 @@
     <parameterlist identifier="o2~s3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.186548" uncertainty="0" minimum="0.186548" maximum="0.186548" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2~s3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22094,7 +22094,7 @@
     <parameterlist identifier="o3">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.29" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.18" uncertainty="0" minimum="0.08" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_s">
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -22184,12 +22184,12 @@
     <parameterlist identifier="o3~o3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.75" maximum="0.75" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.18" uncertainty="0" minimum="0.18" maximum="0.18" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~p1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~p1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22199,7 +22199,7 @@
     <parameterlist identifier="o3~p2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~p2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22209,7 +22209,7 @@
     <parameterlist identifier="o3~p3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.798436" uncertainty="0" minimum="0.798436" maximum="0.798436" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~p3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22219,7 +22219,7 @@
     <parameterlist identifier="o3~s1">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~s1_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22229,7 +22229,7 @@
     <parameterlist identifier="o3~s2">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~s2_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -22239,7 +22239,7 @@
     <parameterlist identifier="o3~s3">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0.887412" uncertainty="0" minimum="0.887412" maximum="0.887412" ntrain="1" mutability="Dependent" nonnegative="yes"/>
       <parameter type="gamma_ij" unit="kJ/mol" value="15" uncertainty="0" minimum="15" maximum="15" ntrain="1" mutability="Dependent" nonnegative="yes"/>
-      <parameter type="sigma_ij" unit="kJ/mol" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="sigma_ij" unit="kJ/mol" value="0.228473" uncertainty="0" minimum="0.228473" maximum="0.228473" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3~s3_s">
       <parameter type="epsilon_ij" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Dependent" nonnegative="yes"/>

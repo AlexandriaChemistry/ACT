@@ -25,6 +25,7 @@ install(FILES jacobi.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES molprops.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES molutils.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES read_gaussian_log.py DESTINATION ${ACT_PYTHON_LIB_PATH})
+install(FILES xvgutils.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mol_csv_api.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 
 # Executable scripts

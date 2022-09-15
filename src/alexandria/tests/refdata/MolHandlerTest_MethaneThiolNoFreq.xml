@@ -8,11 +8,11 @@
   <Real Name="Coulomb (SR) before">11.928639640308162</Real>
   <Real Name="Potential before">13.404994642993309</Real>
   <Real Name="Coordinate RMSD before minimizing">2.5337258102033824e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.0030930921415935806</Real>
-  <Real Name="Bond after">0.0032249177001789377</Real>
-  <Real Name="Angle after">0.47879104326602195</Real>
-  <Real Name="Proper Dih. after">0.00017086514874753433</Real>
-  <Real Name="LJ (SR) after">-2.4702360404356264e-11</Real>
-  <Real Name="Coulomb (SR) after">11.913034668154317</Real>
-  <Real Name="Potential after">12.395221494244563</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0030931124655866641</Real>
+  <Real Name="Bond after">0.0032249631211928816</Real>
+  <Real Name="Angle after">0.47879089395093105</Real>
+  <Real Name="Proper Dih. after">0.00017086047762016054</Real>
+  <Real Name="LJ (SR) after">-2.4702362386546931e-11</Real>
+  <Real Name="Coulomb (SR) after">11.913034776720458</Real>
+  <Real Name="Potential after">12.395221494245501</Real>
 </ReferenceData>

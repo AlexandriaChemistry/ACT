@@ -127,7 +127,7 @@ protected:
         // Get poldata
         auto pd  = getPoldata(forcefield);
         
-        double rmsToler = 0.00001;
+        double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(pd, rmsToler, 25);
         
         t_inputrec      inputrecInstance;
@@ -274,6 +274,11 @@ TEST_F (ForceComputerTest, WaterStretch)
 TEST_F (ForceComputerTest, Acetone)
 {
     test("acetone-3-oep.log.pdb", "ACS-g", false);
+}
+
+TEST_F (ForceComputerTest, AcetoneSdf)
+{
+    test("acetone.sdf", "ACS-g", false);
 }
 
 TEST_F (ForceComputerTest, AcetoneStretch)

@@ -210,6 +210,7 @@ enum
     F_DVDL_BONDED,
     F_DVDL_RESTRAINT,
     F_DVDL_TEMPERATURE, /* not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE) */
+    F_DUMMY,
     F_NRE               /* This number is for the total number of energies      */
 };
 

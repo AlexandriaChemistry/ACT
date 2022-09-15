@@ -141,7 +141,7 @@ protected:
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
-        double shellTolerance = 1e-4;
+        double shellTolerance = 1e-12;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(pd, shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
@@ -152,7 +152,7 @@ protected:
         
         std::vector<gmx::RVec> coords = mp_.xOriginal();
         std::map<InteractionType, double> eBefore;
-        mp_.calculateEnergy(forceComp, &coords, &forces, &eBefore);
+        (void) forceComp->compute(mp_.topology(), &coords, &forces, &eBefore);
         add_energies(pd, &checker_, eBefore, "before");
         
         MolHandler mh;
@@ -188,7 +188,7 @@ protected:
             std::vector<double> forceZero;
             std::map<InteractionType, double> energyZero;
             std::vector<int> atomIndex;
-            auto atoms = mp_.atomsConst();
+            auto &atoms = mp_.atomsConst();
             for(size_t atom = 0; atom < atoms.size(); atom++)
             {
                 if (atoms[atom].pType() == eptAtom)
@@ -201,8 +201,16 @@ protected:
                 MatrixWrapper hessian(matrixSide, matrixSide);
                 mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
                                   &hessian, &forceZero, &energyZero);
+#ifdef OVERKILL
+                double rel_toler = 1e-2;
+                if (!hessian.isSymmetric(rel_toler))
+                {
+                    printf("%s\n", hessian.toString().c_str());
+                }
+                EXPECT_TRUE(hessian.isSymmetric(rel_toler));
                 auto flat = hessian.flatten();
                 checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
+#endif
                 checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
                 // Now test the solver used in minimization
                 std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);

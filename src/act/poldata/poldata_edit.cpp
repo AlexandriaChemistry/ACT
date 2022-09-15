@@ -45,6 +45,7 @@
 #include "act/poldata/act_checksum.h"
 #include "alexandria/alex_modules.h"
 #include "act/poldata/forcefieldparameter.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/poldata/poldata.h"
@@ -130,26 +131,31 @@ static void setMinMaxMut(FILE *fp,
     }
     if (stretch)
     {
-        auto range = pp->maximum()-pp->minimum();
+        double range = pp->maximum()-pp->minimum();
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
-            if (!pp->setMinimum(pp->minimum()-0.2*range))
+            double newmin = pp->minimum()-0.2*range;
+            if (pp->setMinimum(newmin))
             {
-                pp->setMinimum(0.8*pp->minimum());
+                if (fp)
+                {
+                    fprintf(fp, "Minimum stretched to %g for %s\n",
+                            pp->minimum(), particleId.c_str());
+                }
             }
-            if (fp)
+            else if (fp)
             {
-                fprintf(fp, "Minimum stretched to %g for %s\n",
-                        pp->minimum(), particleId.c_str());
+                fprintf(fp, "Could not change minimum from %g to %g\n", pp->minimum(), newmin);
             }
         }
         if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
-            pp->setMaximum(pp->maximum()+0.2*range);
+            double newmax = pp->maximum()+0.2*range;
+            pp->setMaximum(newmax);
             if (fp)
             {
                 fprintf(fp, "Maximum stretched to %g for %s\n",
-                        pp->maximum(), particleId.c_str());
+                        newmax, particleId.c_str());
             }
         }
     }
@@ -628,6 +634,52 @@ static void compare_pd(Poldata *pd1,
     }
 }
 
+static void copyDeToD0(Poldata *pd)
+{
+    auto fs = pd->findForces(InteractionType::BONDS);
+    if (fs->fType() != F_MORSE)
+    {
+        printf("Not using Morse in force field file %s\n", pd->filename().c_str());
+        return;
+    }
+    auto ppp = fs->parameters();
+    for (auto &p : (*ppp))
+    {
+        auto &param = p.second;
+        if (param.find(morse_name[morseDE]) != param.end() && 
+            param.find(morse_name[morseD0]) != param.end())
+        {
+            double De = param.find(morse_name[morseDE])->second.value();
+            param.find(morse_name[morseD0])->second.setValue(-De);
+        }
+    }
+}
+
+static void addBondEnergy(Poldata *pd)
+{
+    auto fs = pd->findForces(InteractionType::BONDS);
+    if (fs->fType() != F_BONDS)
+    {
+        printf("Not using Bonds in force field file %s\n",
+               pd->filename().c_str());
+        return;
+    }
+    auto ppp = fs->parameters();
+    for (auto &p : (*ppp))
+    {
+        auto &param = p.second;
+        if (param.find(bond_name[bondLENGTH]) != param.end() && 
+            param.find(bond_name[bondKB]) != param.end() &&
+            param.find(bond_name[bondENERGY]) == param.end())
+        {
+            ForceFieldParameter be("kJ/mol", -200, 0, 1, -1000, -20, 
+                                   Mutability::Bounded, false,
+                                   false, true);
+            param.insert({ bond_name[bondENERGY], be });
+        }
+    }
+}
+
 int edit(int argc, char*argv[])
 {
     static const char               *desc[] =
@@ -665,6 +717,9 @@ int edit(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
+    gmx_bool     De2D0      = false;
+    gmx_bool     bondenergy = false;
+    gmx_bool     forceWrite = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -688,7 +743,7 @@ int edit(int argc, char*argv[])
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" },
         { "-stretch", FALSE, etBOOL, {&stretch},
-          " Will automatically stretch boundaries for individual parameters" },
+          "Will automatically stretch boundaries for individual parameters" },
         { "-limits",  FALSE, etREAL, {&limits},
           "Reset the limits for a parameter (class) to the current value of the parameter times this number (between 0 and 1) and one over the value. If you set e.g. -limits 0.8 the parameter min and max will be set to 0.8 respectively 1.25 times the present value." },
         { "-ana", FALSE, etSTR, {&analyze},
@@ -699,8 +754,14 @@ int edit(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+        { "-de2d0", FALSE, etBOOL, {&De2D0},
+          "This is a hack to copy -De to D0 in the Morse potential" },
+        { "-bondenergy", FALSE, etBOOL, {&bondenergy},
+          "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
-          "Plot many interactions as a function of distance or angle" }
+          "Plot many interactions as a function of distance or angle" },
+        { "-write",   FALSE, etBOOL, {&forceWrite},
+          "Write out a force field file even if there were no changes" }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -764,6 +825,14 @@ int edit(int argc, char*argv[])
                 analyzePoldata(&pd, analyze);
             }
         }
+        else if (De2D0)
+        {
+            copyDeToD0(&pd);
+        }
+        else if (bondenergy)
+        {
+            addBondEnergy(&pd);
+        }
         else
         {
             bool bLimits = opt2parg_bSet("-limits", npargs, pa);
@@ -808,7 +877,7 @@ int edit(int argc, char*argv[])
         else
         {
             std::string checkSum = poldataCheckSum(&pd);
-            if (checkSum == pd.checkSum())
+            if (checkSum == pd.checkSum() && !forceWrite)
             {
                 printf("No changes to poldata structure, not writing a new file.");
             }

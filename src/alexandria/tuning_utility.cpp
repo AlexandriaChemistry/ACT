@@ -942,7 +942,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::map<InteractionType, double> eBefore;
     std::vector<gmx::RVec> coords = mol->xOriginal();
     std::vector<gmx::RVec> forces(coords.size());
-    mol->calculateEnergy(forceComp, &coords, &forces, &eBefore);
+    (void) forceComp->compute(mol->topology(), &coords, &forces, &eBefore);
 
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))

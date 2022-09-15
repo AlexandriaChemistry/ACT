@@ -240,8 +240,15 @@ public:
     /*! \brief
      * Return the coordinate vector of the molecule in GROMACS format
      */
-    const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+    //const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+    const std::vector<gmx::RVec> &x() const { return optimizedCoordinates_; }
     
+    /*! \brief
+     * Return the original coordinate vector of the molecule. If there are shell particles
+     * their position may have been optimized, but the atoms are as read from the input.
+     */
+    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
+
     /*! \brief
      * Constructor
      */
@@ -346,11 +353,6 @@ public:
     immStatus zetaToAtoms(const Poldata *pd,
                           t_atoms       *atoms);
     
-    /*! \brief
-     * Return the coordinate vector of the molecule
-     */
-    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
-
     /*! \brief
      * \return mdatoms structure
      */
@@ -525,19 +527,6 @@ public:
                                  PaddedVector<gmx::RVec>           *forces,
                                  std::map<InteractionType, double> *energies,
                                  real                              *shellForceRMS);
-    
-    /*! \brief Calculate the forces and energies
-     * For a polarizable model the shell positions are minimized.
-     * \param[in]    forceComputer The code to run the calculations.
-     * \param[inout] coordinates   The atomic positions, shell positions may be changed
-     * \param[out]   forces        Force array
-     * \param[out]   energies      The energy components
-     * \return The root mean square force on the shells or zero if none
-     */
-    double calculateEnergy(const ForceComputer               *forceComputer,
-                           std::vector<gmx::RVec>            *coordinates,
-                           std::vector<gmx::RVec>            *forces,
-                           std::map<InteractionType, double> *energies) const;
     
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute
