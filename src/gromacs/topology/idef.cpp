@@ -309,8 +309,10 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             }
             fprintf(fp, "\n");
             break;
-    case F_COUL_SR:
-        break;
+        case F_COUL_SR:
+        case F_DISPERSION:
+        case F_REPULSION:
+            break;
         default:
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",
                       ftype, interaction_function[ftype].name, __FILE__, __LINE__);

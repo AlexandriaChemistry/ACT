@@ -69,11 +69,20 @@ static void add_energies(const Poldata                           *pd,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
 {
+    std::map<InteractionType, int> i2f = {
+        { InteractionType::EPOT,       F_EPOT },
+        { InteractionType::REPULSION,  F_REPULSION },
+        { InteractionType::DISPERSION, F_DISPERSION }
+    };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)
     {
-        int ftype = F_EPOT;
-        if (imf.first != InteractionType::EPOT)
+        int ftype;
+        if (i2f.find(imf.first) != i2f.end())
+        {
+            ftype = i2f.find(imf.first)->second;
+        }
+        else
         {
             auto i = fsc.find(imf.first);
             EXPECT_TRUE(fsc.end() != i);
@@ -81,7 +90,7 @@ static void add_energies(const Poldata                           *pd,
         }
         std::string mylabel = gmx::formatString("%s %s",
                                                 interaction_function[ftype].longname, label);
-            
+        
         checker->checkReal(imf.second, mylabel.c_str());
     }
 }
@@ -163,6 +172,7 @@ protected:
         // Infinite number of shell iterations, i.e. until convergence.
         std::map<InteractionType, double> eAfter;
         SimulationConfigHandler simConfig;
+        simConfig.setForceTolerance(1e-4);
         auto eMin = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
                                            &xmin, &eAfter, nullptr);
         if (eMinimizeStatus::OK != eMin)
@@ -175,6 +185,8 @@ protected:
                                              &xmin, &eAfter, nullptr);
         }
         EXPECT_TRUE(eMinimizeStatus::OK == eMin);
+        // Let's see which algorithm we ended up using.
+        checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
         rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
         add_energies(pd, &checker_, eAfter, "after");
@@ -201,16 +213,6 @@ protected:
                 MatrixWrapper hessian(matrixSide, matrixSide);
                 mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
                                   &hessian, &forceZero, &energyZero);
-#ifdef OVERKILL
-                double rel_toler = 1e-2;
-                if (!hessian.isSymmetric(rel_toler))
-                {
-                    printf("%s\n", hessian.toString().c_str());
-                }
-                EXPECT_TRUE(hessian.isSymmetric(rel_toler));
-                auto flat = hessian.flatten();
-                checker_.checkSequence(flat.begin(), flat.end(), "Hessian");
-#endif
                 checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
                 // Now test the solver used in minimization
                 std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
@@ -219,24 +221,6 @@ protected:
                 checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
                 
             }
-#ifdef OLD
-            {
-                // Now test the solver used for computing frequencies etc.
-                // We need  new matrix since the previous one is destroyed
-                MatrixWrapper hessian(matrixSide, matrixSide);
-                mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
-                                  &hessian, &forceZero, &energyZero);
-                hessian.averageTriangle();
-                auto flat = hessian.flatten();
-                checker_.checkSequence(flat.begin(), flat.end(), "Symmetrized Hessian");
-                std::vector<double> eigenvalues(matrixSide);
-                std::vector<double> eigenvectors(matrixSide*matrixSide);
-                eigensolver(flat.data(), matrixSide, 0, matrixSide- 1,
-                            eigenvalues.data(), eigenvectors.data());
-                checker_.checkSequence(eigenvalues.begin(), eigenvalues.end(), "Eigenvalues");
-                checker_.checkSequence(eigenvectors.begin(), eigenvectors.end(), "Eigenvectors");
-            }
-#endif
             std::vector<double> freq, freq_extern, inten, inten_extern;
             mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;

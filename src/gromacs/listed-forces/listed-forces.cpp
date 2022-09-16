@@ -126,6 +126,8 @@ static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
     BondedInteractions {unimplemented, eNR_NB14 },                // F_LJC_PAIRS_NB
     BondedInteractions {unimplemented, -1 },                      // F_LJ
     BondedInteractions {unimplemented, -1 },                      // F_BHAM
+    BondedInteractions {unimplemented, -1 },                      // F_REPULSION
+    BondedInteractions {unimplemented, -1 },                      // F_DISPERSION
     BondedInteractions {unimplemented, -1 },                      // F_LJ_LR_NOLONGERUSED
     BondedInteractions {unimplemented, -1 },                      // F_BHAM_LR_NOLONGERUSED
     BondedInteractions {unimplemented, -1 },                      // F_DISPCORR

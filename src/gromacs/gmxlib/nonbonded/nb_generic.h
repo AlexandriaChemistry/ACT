@@ -55,7 +55,9 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
 static void wang_buckingham(real sigma, real epsilon, real gamma, 
                             real rsq, real rinv,
-                            real *vvdw, real *fvdw)
+                            real *vrepulsion,
+                            real *vdispersion,
+                            real *fvdw)
 {
     /* Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
     real r           = rsq*rinv;
@@ -69,9 +71,9 @@ static void wang_buckingham(real sigma, real epsilon, real gamma,
     real disp_pre    = 2 * epsilon * gamma3_inv;
     real erep_exp    = gamma_3*std::exp(gamma*(1-(r/sigma)));
     
-    real vvdw_disp   = - disp_pre * (sigma6 / sigma6_r6);
-    real vvdw_rep    = -vvdw_disp*erep_exp;
-    *vvdw            = vvdw_rep + vvdw_disp;
+    real vvdw_disp   = -disp_pre * (sigma6 / sigma6_r6);
+    *vdispersion     = vvdw_disp;
+    *vrepulsion      = -vvdw_disp*erep_exp;
     
     real fvdw_disp   = - disp_pre * sigma6 * 6 * r5 / (sigma6_r6 * sigma6_r6);
     real fvdw_rep    = - fvdw_disp*erep_exp - vvdw_disp*erep_exp*(gamma/sigma);

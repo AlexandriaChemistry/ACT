@@ -261,12 +261,15 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
+                        real vrep, vdisp;
                         wang_buckingham(/*sigma*/   vdwparam[tj+1],
                                         /*epsilon*/ vdwparam[tj+2],
                                         /*gamma*/   vdwparam[tj],
                                         rsq, rinv,
-                                        &vvdw,
+                                        &vrep,
+                                        &vdisp,
                                         &fvdw);
+                        vvdw = vrep+vdisp;
                         break;
                         
                     case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:

@@ -41,10 +41,11 @@
 namespace alexandria
 {
 
-static double computeLJ(const std::vector<TopologyEntry *>    &pairs,
-                        gmx_unused const std::vector<ActAtom> &atoms,
-                        const std::vector<gmx::RVec>          *coordinates,
-                        std::vector<gmx::RVec>                *forces)
+static void computeLJ(const std::vector<TopologyEntry *>    &pairs,
+                      gmx_unused const std::vector<ActAtom> &atoms,
+                      const std::vector<gmx::RVec>          *coordinates,
+                      std::vector<gmx::RVec>                *forces,
+                      std::map<InteractionType, double>     *energies)
 {
     double ebond = 0;
 
@@ -87,15 +88,17 @@ static double computeLJ(const std::vector<TopologyEntry *>    &pairs,
     {
         fprintf(debug, "ACT vvdwtot: %10g \n", ebond);
     }
-    return ebond;
+    energies->insert({InteractionType::VDW, ebond});
 }
 
-static double computeWBH(const std::vector<TopologyEntry *>    &pairs,
-                         gmx_unused const std::vector<ActAtom> &atoms,
-                         const std::vector<gmx::RVec>          *coordinates,
-                         std::vector<gmx::RVec>                *forces)
+static void computeWBH(const std::vector<TopologyEntry *>    &pairs,
+                       gmx_unused const std::vector<ActAtom> &atoms,
+                       const std::vector<gmx::RVec>          *coordinates,
+                       std::vector<gmx::RVec>                *forces,
+                       std::map<InteractionType, double>                 *energies)
 {
-    double ebond = 0;
+    double erep  = 0;
+    double edisp = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto &b : pairs)
@@ -113,9 +116,10 @@ static double computeWBH(const std::vector<TopologyEntry *>    &pairs,
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
             auto rinv       = gmx::invsqrt(dr2);
-            real ewbh = 0, fwbh = 0;
-            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &ewbh, &fwbh);
-            ebond      += ewbh;
+            real eerep = 0, eedisp = 0, fwbh = 0;
+            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
+            erep     += eerep;
+            edisp    += eedisp;
             real fbond  = fwbh*rinv;
             for (int m = 0; (m < DIM); m++)
             {
@@ -125,13 +129,58 @@ static double computeWBH(const std::vector<TopologyEntry *>    &pairs,
             }
         }
     }
-    return ebond;
+    energies->insert({InteractionType::VDW, erep+edisp});
+    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
 }
 
-static double computeCoulomb(const std::vector<TopologyEntry *> &pairs,
-                             const std::vector<ActAtom>         &atoms,
-                             const std::vector<gmx::RVec>       *coordinates,
-                             std::vector<gmx::RVec>             *forces)
+static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>                 *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto sigma      = params[wbhSIGMA_IJ];
+        auto epsilon    = params[wbhEPSILON_IJ];
+        auto gamma      = params[wbhGAMMA_IJ];
+        if (epsilon > 0 && gamma > 0 && sigma > 0)
+        {
+            // Get the atom indices
+            auto &indices   = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2        = iprod(dx, dx);
+            auto rinv       = gmx::invsqrt(dr2);
+            real eerep = 0, eedisp = 0, fwbh = 0;
+            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
+            erep     += eerep;
+            edisp    += eedisp;
+            real fbond  = fwbh*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+}
+
+static void computeCoulomb(const std::vector<TopologyEntry *> &pairs,
+                           const std::vector<ActAtom>         &atoms,
+                           const std::vector<gmx::RVec>       *coordinates,
+                           std::vector<gmx::RVec>             *forces,
+                           std::map<InteractionType, double>              *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -163,14 +212,15 @@ static double computeCoulomb(const std::vector<TopologyEntry *> &pairs,
             }
         }
     }
-    return ebond;
+    energies->insert({InteractionType::COULOMB, ebond});
 }
 
 #ifdef FUTURE
-static double computePartridge(const std::vector<TopologyEntry *>    &angles,
-                               gmx_unused const std::vector<ActAtom> &atoms,
-                               const std::vector<gmx::RVec>          *coordinates,
-                               std::vector<gmx::RVec>                *forces)
+static void computePartridge(const std::vector<TopologyEntry *>    &angles,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>                 *energies)
 {
     // Energy function according to 
     // The determination of an accurate isotope dependent potential energy 
@@ -224,7 +274,7 @@ static double computePartridge(const std::vector<TopologyEntry *>    &angles,
             f[indices[2]][m] += f_jm;
         }                                          
     }
-    return energy;
+    energies->insert({InteractionType::ANGLES, , energy});
 }
 #endif
 
@@ -239,18 +289,19 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
-static double computeDummy(const std::vector<TopologyEntry *>    &bonds,
-                           gmx_unused const std::vector<ActAtom> &atoms,
-                           const std::vector<gmx::RVec>          *coordinates,
-                           std::vector<gmx::RVec>                *forces)
+static void computeDummy(gmx_unused const std::vector<TopologyEntry *>    &bonds,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         gmx_unused const std::vector<gmx::RVec>          *coordinates,
+                         gmx_unused std::vector<gmx::RVec>                *forces,
+                         gmx_unused std::map<InteractionType, double>                 *energies)
 {
-    return 0.0;
 }
 
-static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
-                           gmx_unused const std::vector<ActAtom> &atoms,
-                           const std::vector<gmx::RVec>          *coordinates,
-                           std::vector<gmx::RVec>                *forces)
+static void computeBonds(const std::vector<TopologyEntry *>    &bonds,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces,
+                         std::map<InteractionType, double>                 *energies)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -289,13 +340,14 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
             f[indices[1]][m] -= fij;
         }
     }
-    return ebond;
+    energies->insert({InteractionType::BONDS, ebond});
 }
 
-static double computeMorse(const std::vector<TopologyEntry *>    &bonds,
-                           gmx_unused const std::vector<ActAtom> &atoms,
-                           const std::vector<gmx::RVec>          *coordinates,
-                           std::vector<gmx::RVec>                *forces)
+static void computeMorse(const std::vector<TopologyEntry *>    &bonds,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces,
+                         std::map<InteractionType, double>                 *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -328,13 +380,14 @@ static double computeMorse(const std::vector<TopologyEntry *>    &bonds,
             f[indices[1]][m] -= fij;
         }
     }
-    return ebond;
+    energies->insert({InteractionType::BONDS, ebond});
 }
 
-static double computeLinearAngles(const std::vector<TopologyEntry *>    &angles,
-                                  gmx_unused const std::vector<ActAtom> &atoms,
-                                  const std::vector<gmx::RVec>          *coordinates,
-                                  std::vector<gmx::RVec>                *forces)
+static void computeLinearAngles(const std::vector<TopologyEntry *>    &angles,
+                                gmx_unused const std::vector<ActAtom> &atoms,
+                                const std::vector<gmx::RVec>          *coordinates,
+                                std::vector<gmx::RVec>                *forces,
+                                std::map<InteractionType, double>                 *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -369,14 +422,15 @@ static double computeLinearAngles(const std::vector<TopologyEntry *>    &angles,
         }
         ebond += 0.5*klin*dr2;
     }
-    return ebond;
+    energies->insert({InteractionType::LINEAR_ANGLES, ebond});
 }
 
 // It is not finished yes, needs to be double checked. 
-static double computeAngles(const std::vector<TopologyEntry *>    &angles,
-                            gmx_unused const std::vector<ActAtom> &atoms,
-                            const std::vector<gmx::RVec>          *coordinates,
-                            std::vector<gmx::RVec>                *forces)
+static void computeAngles(const std::vector<TopologyEntry *>    &angles,
+                          gmx_unused const std::vector<ActAtom> &atoms,
+                          const std::vector<gmx::RVec>          *coordinates,
+                          std::vector<gmx::RVec>                *forces,
+                          std::map<InteractionType, double>                 *energies)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -432,14 +486,15 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
             }
         }                                          
     }
-    return energy;
+    energies->insert({InteractionType::ANGLES, energy});
 }
 
 // It is not finished yes, needs to be double checked. 
-static double computeUreyBradley(const std::vector<TopologyEntry *>    &angles,
-                                 gmx_unused const std::vector<ActAtom> &atoms,
-                                 const std::vector<gmx::RVec>          *coordinates,
-                                 std::vector<gmx::RVec>                *forces)
+static void computeUreyBradley(const std::vector<TopologyEntry *>    &angles,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>                 *energies)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -513,13 +568,14 @@ static double computeUreyBradley(const std::vector<TopologyEntry *>    &angles,
             }
         }                                          
     }
-    return energy;
+    energies->insert({InteractionType::ANGLES, energy});
 }
 
-static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
-                                  gmx_unused const std::vector<ActAtom> &atoms,
-                                  const std::vector<gmx::RVec>          *coordinates,
-                                  std::vector<gmx::RVec>                *forces)
+static void computePolarization(const std::vector<TopologyEntry *>    &bonds,
+                                gmx_unused const std::vector<ActAtom> &atoms,
+                                const std::vector<gmx::RVec>          *coordinates,
+                                std::vector<gmx::RVec>                *forces,
+                                std::map<InteractionType, double>                 *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -546,7 +602,7 @@ static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
             f[indices[1]][m] -= fij;
         }
     }
-    return ebond;
+    energies->insert({InteractionType::POLARIZATION, ebond});
 
 }
 
@@ -606,10 +662,11 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
     return phi;
 }
 
-static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
-                              gmx_unused const std::vector<ActAtom> &atoms,
-                              const std::vector<gmx::RVec>          *coordinates,
-                              std::vector<gmx::RVec>                *forces)
+static void computeFourDihs(const std::vector<TopologyEntry *>    &propers,
+                            gmx_unused const std::vector<ActAtom> &atoms,
+                            const std::vector<gmx::RVec>          *coordinates,
+                            std::vector<gmx::RVec>                *forces,
+                            std::map<InteractionType, double>                 *energies)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -657,13 +714,14 @@ static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
                             forces);
         energy += v;
     }
-    return energy;
+    energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
 }
 
-static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
-                               gmx_unused const std::vector<ActAtom> &atoms,
-                               const std::vector<gmx::RVec>          *coordinates,
-                               std::vector<gmx::RVec>                *forces)
+static void computeImpropers(const std::vector<TopologyEntry *>    &impropers,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>                 *energies)
 {
     double  energy = 0;
     auto    x     = *coordinates;
@@ -692,13 +750,14 @@ static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
         do_dih_fup_noshiftf(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                             forces);
     }
-    return energy;
+    energies->insert({InteractionType::IMPROPER_DIHEDRALS, energy});
 }
 
-static double computePropers(const std::vector<TopologyEntry *>    &propers,
-                             gmx_unused const std::vector<ActAtom> &atoms,
-                             const std::vector<gmx::RVec>          *coordinates,
-                             std::vector<gmx::RVec>                *forces)
+static void computePropers(const std::vector<TopologyEntry *>    &propers,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces,
+                           std::map<InteractionType, double>                 *energies)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -732,7 +791,7 @@ static double computePropers(const std::vector<TopologyEntry *>    &propers,
         do_dih_fup_noshiftf(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                             forces);
     }
-    return energy;
+    energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
 }
 
 std::map<int, bondForceComputer> bondForceComputerMap = {

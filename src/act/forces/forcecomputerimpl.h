@@ -27,16 +27,18 @@
  */
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {
 
-typedef double (*bondForceComputer)(const std::vector<TopologyEntry *> &bonds,
-                                    const std::vector<ActAtom>         &atoms,
-                                    const std::vector<gmx::RVec>       *coordinates,
-                                    std::vector<gmx::RVec>             *forces);
+typedef void (*bondForceComputer)(const std::vector<TopologyEntry *> &bonds,
+                                  const std::vector<ActAtom>         &atoms,
+                                  const std::vector<gmx::RVec>       *coordinates,
+                                  std::vector<gmx::RVec>             *forces,
+                                  std::map<InteractionType, double>  *energies);
 
 /*! \brief Return a bonded force computer according to typedef.
  * \param[in] gromacs_index Number corresponding to GROMACS list of energy terms

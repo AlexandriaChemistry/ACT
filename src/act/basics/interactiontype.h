@@ -53,6 +53,10 @@ enum class InteractionType
     IMPROPER_DIHEDRALS,
     //! Van der Waals interaction between atoms
     VDW,
+    //! Dispersion interaction 
+    DISPERSION,
+    //! Repulsive interaction due to Pauli principle
+    REPULSION,
     //! Charge interactions
     COULOMB,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.

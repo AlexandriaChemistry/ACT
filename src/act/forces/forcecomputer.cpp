@@ -164,10 +164,26 @@ void ForceComputer::computeOnce(const Topology                    *top,
         else
         {
             // Now do the calculations and store the energy
-            double eee = bfc(entry.second, top->atoms(), coordinates, forces);
-            energies->insert({ entry.first, eee });
-            epot += eee;
+            std::map<InteractionType, double> my_energy;
+            bfc(entry.second, top->atoms(), coordinates, forces, &my_energy);
+            for(const auto &me : my_energy)
+            {
+                if (energies->find(me.first) != energies->end())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
+                                                                   interactionTypeToString(me.first).c_str()).c_str()));
+                }
+                energies->insert({ me.first, me.second });
+                epot += me.second;
+            }
         }
+    }
+    // Avoid double counting. TODO remove the VDW term
+    if (energies->find(InteractionType::DISPERSION) != energies->end() &&
+        energies->find(InteractionType::REPULSION) != energies->end() &&
+        energies->find(InteractionType::VDW) != energies->end())
+    {
+        epot -= energies->find(InteractionType::VDW)->second;
     }
     energies->insert({ InteractionType::EPOT, epot });
 }
@@ -302,6 +318,7 @@ void ForceComputer::plot(InteractionType itype) const
                                                      interactionTypeToString(itype).c_str(),
                                                      f.first.id().c_str());
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
+            std::map<InteractionType, double> energies;
             switch (itype)
             {
             case InteractionType::BONDS:
@@ -319,8 +336,9 @@ void ForceComputer::plot(InteractionType itype) const
                     {
                         double x = r0+i*delta;
                         coordinates[1][0] = x;
-                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
-                        fprintf(fp, "%10g  %10g\n", x, eee);
+                        energies.clear();
+                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        fprintf(fp, "%10g  %10g\n", x, energies[itype]);
                     }
                 }
                 break;
@@ -337,8 +355,9 @@ void ForceComputer::plot(InteractionType itype) const
                         double theta = (th0+i*delta);
                         coordinates[2][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[2][1] = std::sin(theta*DEG2RAD);
-                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
-                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                        energies.clear();
+                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }
                 break;
@@ -355,8 +374,9 @@ void ForceComputer::plot(InteractionType itype) const
                     {
                         double xx = (r0+i*delta);
                         coordinates[1][1] = xx;
-                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
-                        fprintf(fp, "%10g  %10g\n", xx, eee);
+                        energies.clear();
+                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        fprintf(fp, "%10g  %10g\n", xx, energies[itype]);
                     }
                     
                 }
@@ -374,8 +394,9 @@ void ForceComputer::plot(InteractionType itype) const
                         double theta = (th0+i*delta);
                         coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
-                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
-                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                        energies.clear();
+                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }
                 break;
@@ -391,8 +412,9 @@ void ForceComputer::plot(InteractionType itype) const
                     {
                         double theta = (th0+i*delta);
                         coordinates[3][2] = theta;
-                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
-                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                        energies.clear();
+                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }
                 break;

@@ -449,7 +449,12 @@ public:
 
     //! \return the convergence tolerance (RMS force) for the minimizer
     double forceTolerance() const { return forceToler_; }
-        
+
+    /*! \brief Set the force tolerance
+     * \param[in] toler The new value
+     */
+    void setForceTolerance(double toler) { forceToler_ = toler; }
+
     //! \return Lorentzian line width for infrared intensities.
     double lineWidth() const { return linewidth_; }
     

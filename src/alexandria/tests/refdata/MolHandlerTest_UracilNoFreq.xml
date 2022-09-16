@@ -9,12 +9,13 @@
   <Real Name="Coulomb (SR) before">-8.3389354205761563</Real>
   <Real Name="Potential before">39.415758343403674</Real>
   <Real Name="Coordinate RMSD before minimizing">7.2317252678955018e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.0072351409150513742</Real>
-  <Real Name="Bond after">0.22726157868976826</Real>
-  <Real Name="Angle after">7.3279307098939599</Real>
-  <Real Name="Proper Dih. after">0</Real>
-  <Real Name="Improper Dih. after">8.0960077442582121e-36</Real>
-  <Real Name="LJ (SR) after">-1.9411273622566318</Real>
-  <Real Name="Coulomb (SR) after">-8.6423897100951201</Real>
-  <Real Name="Potential after">-3.0283247837680234</Real>
+  <String Name="algorithm">Newton</String>
+  <Real Name="Coordinate RMSD after minimizing">0.007235189967219449</Real>
+  <Real Name="Bond after">0.22726323717760435</Real>
+  <Real Name="Angle after">7.3279297889421002</Real>
+  <Real Name="Proper Dih. after">4.0079051188968151e-13</Real>
+  <Real Name="Improper Dih. after">1.030270138019941e-15</Real>
+  <Real Name="LJ (SR) after">-1.9411270537038876</Real>
+  <Real Name="Coulomb (SR) after">-8.6423907559755602</Real>
+  <Real Name="Potential after">-3.0283247835593414</Real>
 </ReferenceData>

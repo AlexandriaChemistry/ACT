@@ -79,9 +79,9 @@ protected:
         {
             real rsq  = r*r;
             real rinv = 1.0/r;
-            real vvdw, fvdw;
-            wang_buckingham(sigma, epsilon, gamma, rsq, rinv, &vvdw, &fvdw);
-            energy.push_back(vvdw);
+            real vrep, vdisp, fvdw;
+            wang_buckingham(sigma, epsilon, gamma, rsq, rinv, &vrep, &vdisp, &fvdw);
+            energy.push_back(vrep+vdisp);
             force.push_back(fvdw);
         }
         checker_.checkReal(sigma, "Sigma");

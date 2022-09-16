@@ -4,7 +4,8 @@
   <Real Name="Bond before">0.0014452799999988793</Real>
   <Real Name="Potential before">0.0014452799999988793</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
-  <Real Name="Coordinate RMSD after minimizing">6.8784043054399683e-05</Real>
-  <Real Name="Bond after">2.7211568246817831e-14</Real>
-  <Real Name="Potential after">2.7211568246817831e-14</Real>
+  <String Name="algorithm">Newton</String>
+  <Real Name="Coordinate RMSD after minimizing">6.8784043398320145e-05</Real>
+  <Real Name="Bond after">2.7274318782847175e-14</Real>
+  <Real Name="Potential after">2.7274318782847175e-14</Real>
 </ReferenceData>
