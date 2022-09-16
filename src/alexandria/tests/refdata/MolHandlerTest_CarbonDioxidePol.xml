@@ -3,7 +3,6 @@
 <ReferenceData>
   <Real Name="Morse before">-799.9021283352007</Real>
   <Real Name="Lin. Angle before">0</Real>
-  <Real Name="Buck.ham (SR) before">160.82040898584523</Real>
   <Real Name="Dispersion before">-3.4365090069733371</Real>
   <Real Name="Repulsion before">164.25691799281856</Real>
   <Real Name="Coulomb (SR) before">-0.36199491307490916</Real>
@@ -14,7 +13,6 @@
   <Real Name="Coordinate RMSD after minimizing">0.0096425775058771434</Real>
   <Real Name="Morse after">-767.47348837584252</Real>
   <Real Name="Lin. Angle after">1.9635335464773515e-23</Real>
-  <Real Name="Buck.ham (SR) after">57.637355408623662</Real>
   <Real Name="Dispersion after">-3.2808546767502818</Real>
   <Real Name="Repulsion after">60.918210085373943</Real>
   <Real Name="Coulomb (SR) after">-0.35994596624243513</Real>

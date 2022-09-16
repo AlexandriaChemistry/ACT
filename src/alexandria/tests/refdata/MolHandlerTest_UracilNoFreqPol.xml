@@ -4,7 +4,6 @@
   <Real Name="Morse before">-4778.7158908170932</Real>
   <Real Name="Angle before">29.434308363918039</Real>
   <Real Name="Improper Dih. before">0</Real>
-  <Real Name="Buck.ham (SR) before">150.96122639892377</Real>
   <Real Name="Dispersion before">-10.096019437976086</Real>
   <Real Name="Repulsion before">161.05724583689985</Real>
   <Real Name="Coulomb (SR) before">-229.16407039746451</Real>
@@ -16,7 +15,6 @@
   <Real Name="Morse after">-4772.8760497420253</Real>
   <Real Name="Angle after">14.519706022285586</Real>
   <Real Name="Improper Dih. after">2.7657134864571886e-30</Real>
-  <Real Name="Buck.ham (SR) after">70.908773470517147</Real>
   <Real Name="Dispersion after">-10.051087654583599</Real>
   <Real Name="Repulsion after">80.959861125100744</Real>
   <Real Name="Coulomb (SR) after">-226.39404835251889</Real>

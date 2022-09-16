@@ -129,7 +129,7 @@ static void computeWBH(const std::vector<TopologyEntry *>    &pairs,
             }
         }
     }
-    energies->insert({InteractionType::VDW, erep+edisp});
+    //    energies->insert({InteractionType::VDW, erep+edisp});
     energies->insert({InteractionType::REPULSION, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }

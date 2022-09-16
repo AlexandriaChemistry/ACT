@@ -197,7 +197,20 @@ protected:
                 auto gmxlabel = label+"_gmx";
                 checker_.checkReal(ifm.second, gmxlabel.c_str());
                 auto actlabel = label+"_act";
-                auto actEner  = actEnergies[ifm.first];
+                // Hack to compare GROMACS Buckingham or LJ to ACT
+                double actEner;
+                auto irep  = InteractionType::REPULSION;
+                auto idisp = InteractionType::DISPERSION;
+                if (ifm.first == InteractionType::VDW &&
+                    actEnergies.find(irep) != actEnergies.end() &&
+                    actEnergies.find(idisp) != actEnergies.end())
+                {
+                    actEner  = (actEnergies[irep]+actEnergies[idisp]);
+                }
+                else
+                {
+                    actEner  = actEnergies[ifm.first];
+                }
                 checker_.checkReal(actEner, actlabel.c_str());
                 if (strict)
                 {
