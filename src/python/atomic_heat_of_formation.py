@@ -9,12 +9,12 @@ from get_csv_rows import *
 
 debug = False
 
-def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
-                   leveloftheory:str, temperature:float) -> float:
+def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
+                   leveloftheory:list, temperature:float) -> float:
     eatom = 0
-    for a in atomtypes:
-        myelem = g2a.get_elem(a)
-        ae     = ahof.get_atomization(myelem, leveloftheory, temperature)
+    for aaa in range(len(atomtypes)):
+        myelem = g2a.get_elem(atomtypes[aaa])
+        ae     = ahof.get_atomization(myelem, leveloftheory[aaa], temperature)
         if None == ae:
             sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory, temperature))
         eatom += ae
