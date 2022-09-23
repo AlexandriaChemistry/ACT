@@ -17,7 +17,7 @@ def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
         myelem = g2a.get_elem(atomtypes[aaa])
         ae     = ahof.get_atomization(myelem, leveloftheory[aaa], temperature)
         if None == ae:
-            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory, temperature))
+            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory[aaa], temperature))
         eatom += ae
     return energyHF - eatom
         
@@ -40,7 +40,10 @@ class AtomicHOF:
         self.temperature = temperature
         self.verbose     = verbose
         if debug:
-            print("Level of theory for HOF %s" % method)
+            if None == method:
+                print("Level of theory for HOF all")
+            else:
+                print("Level of theory for HOF %s" % method)
         self.read()
         
     def read(self):
@@ -53,7 +56,7 @@ class AtomicHOF:
             for row in rows:
                 try:
                     mytemp = float(row[4])
-                    if ((row[2] == "exp" or row[2] == self.method) and 
+                    if ((row[2] == "exp" or None == self.method or row[2] == self.method) and 
                         (mytemp == 0 or abs(mytemp-self.temperature) <= 1e-2)):
                         akey = row[0]+"|"+row[1]
                         if not akey in self.ahof:
@@ -69,11 +72,11 @@ class AtomicHOF:
             if debug:
                 print("Read %d entries from %s" % ( len(self.ahof.keys()), datafile) )
 
-    def get_atomization(self, elem, method, temp, charge):
+    def get_atomization(self, elem:str, method:str, temp:float, charge:int):
         akey = elem + "|" + str(charge)
         if not akey in self.ahof:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
-            akey   = myelem + "|0"
+            akey   = myelem + "|" + str(charge)
         if not akey in self.ahof:
             print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
             return None
