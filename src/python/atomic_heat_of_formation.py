@@ -10,7 +10,8 @@ from get_csv_rows import *
 debug = False
 
 def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
-                   leveloftheory:list, temperature:float) -> float:
+                   leveloftheory:list, charges:list,
+                   temperature:float) -> float:
     eatom = 0
     for aaa in range(len(atomtypes)):
         myelem = g2a.get_elem(atomtypes[aaa])
@@ -68,8 +69,8 @@ class AtomicHOF:
             if debug:
                 print("Read %d entries from %s" % ( len(self.ahof.keys()), datafile) )
 
-    def get_atomization(self, elem, method, temp):
-        akey = elem + "|0"
+    def get_atomization(self, elem, method, temp, charge):
+        akey = elem + "|" + str(charge)
         if not akey in self.ahof:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|0"
