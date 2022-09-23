@@ -71,10 +71,12 @@ Cs+_s|X|-7.542|-7.542|Fixed|||Cs+_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|2.02|2.
 K+|K|5.464|5.464|Fixed||K+_s|K+_z||0.310514|0.310514|Fixed|16.8963|16.8963|Fixed|0.417016|0.417016|Fixed|0.152|4||||12.412|12.412|Fixed|||||||potassium ion|Walz2018a
 K+_s|X|-4.464|-4.464|Fixed|||K+_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.81|0.81|Fixed|12.412|12.412|Fixed|||||||potassium ion shell|
 He|He|0|0|ACM||he_s|he_z|he_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|he|
-he_s|X|-1.2|-0.4|Bounded|||he_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|2|Bounded|6|20|Bounded|||||||he shell|
+he_s|X|-1.2|-0.4|Bounded|||he_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.208|0.208|Fixed|6|20|Bounded|||||||he shell|https://cccbdb.nist.gov/pollistx.asp
 Ne|Ne|0|0|ACM||ne_s|ne_z|ne_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ne|
-ne_s|X|-1.2|-0.4|Bounded|||ne_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|5|Bounded|6|20|Bounded|||||||he shell|
+ne_s|X|-1.2|-0.4|Bounded|||ne_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.381|0.381|Fixed|6|20|Bounded|||||||ne shell|https://cccbdb.nist.gov/pollistx.asp
 Ar|Ar|0|0|ACM||ar_s|ar_z|ar_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ar|
-ar_s|X|-1.2|-0.4|Bounded|||ar_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|7|Bounded|6|20|Bounded|||||||he shell|
+ar_s|X|-1.2|-0.4|Bounded|||ar_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|1.664|1.664|Fixed|6|20|Bounded|||||||ar shell|https://cccbdb.nist.gov/pollistx.asp
 Kr|Kr|0|0|ACM||kr_s|kr_z|kr_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|
-kr_s|X|-1.2|-0.4|Bounded|||kr_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|10|Bounded|6|20|Bounded|||||||he shell|
+kr_s|X|-1.2|-0.4|Bounded|||kr_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|2.498|2.498|Fixed|6|20|Bounded|||||||kr shell|https://cccbdb.nist.gov/pollistx.asp
+Xe|Xe|0|0|ACM||xe_s|xe_z|xe_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|xe|
+Xe_s|X|-1.2|-0.4|Bounded|||xe_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|4.005|4.005|Fixed|6|20|Bounded|||||||xe shell|https://cccbdb.nist.gov/pollistx.asp
