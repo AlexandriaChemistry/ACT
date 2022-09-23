@@ -79,4 +79,4 @@ ar_s|X|-1.2|-0.4|Bounded|||ar_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|1.664|1.664
 Kr|Kr|0|0|ACM||kr_s|kr_z|kr_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|
 kr_s|X|-1.2|-0.4|Bounded|||kr_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|2.498|2.498|Fixed|6|20|Bounded|||||||kr shell|https://cccbdb.nist.gov/pollistx.asp
 Xe|Xe|0|0|ACM||xe_s|xe_z|xe_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|xe|
-Xe_s|X|-1.2|-0.4|Bounded|||xe_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|4.005|4.005|Fixed|6|20|Bounded|||||||xe shell|https://cccbdb.nist.gov/pollistx.asp
+xe_s|X|-1.2|-0.4|Bounded|||xe_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|4.005|4.005|Fixed|6|20|Bounded|||||||xe shell|https://cccbdb.nist.gov/pollistx.asp
