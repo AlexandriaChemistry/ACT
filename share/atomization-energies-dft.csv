@@ -17,8 +17,8 @@ H|0|B3LYP/aug-cc-pVTZ|E0|0|-0.502259675743|2|Hartree|Spoel2022a||
 He|0|B3LYP/aug-cc-pVTZ|E0|0|-2.91469381767|1|Hartree|Spoel2022a||
 I|0|B3LYP/aug-cc-pVTZ|E0|0|-1700.72189525|2|Hartree|Spoel2022a|Effective core potential|
 I|-1|B3LYP/aug-cc-pVTZ|E0|0|-1700.98104389|1|Hartree|Spoel2022a|Effective core potential|
-I|-1|B3LYP/aug-cc-pVTZ-pp|E0|0|-295.9040374|1|Hartree|Walz2023a|Effective core potential|
-K|1|B3LYP/aug-cc-pVTZ|E0|0|-599.7602669|1|Hartree|Walz2023a|Effective core potential|
+I|-1|B3LYP/aug-cc-pvtz-pp|E0|0|-295.9040374|1|Hartree|Walz2023a|Effective core potential|
+K|1|B3LYP/def2-tzvpp|E0|0|-599.7602669|1|Hartree|Walz2023a|Effective core potential|
 Kr|0|B3LYP/aug-cc-pVTZ|E0|0|-2753.83708998|1|Hartree|Spoel2022a||
 Li|1|B3LYP/aug-cc-pVTZ|E0|0|-7.28540137201|1|Hartree|Spoel2022a||
 Li|0|B3LYP/aug-cc-pVTZ|E0|0|-7.49205441154|2|Hartree|Spoel2022a||

@@ -608,10 +608,13 @@ class GaussianReader:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
                 lots = []
+                charges = []
                 for i in range(len(self.atomname)):
                     lots.append(leveloftheory)
-                eHF  = compute_dhform(self.tcmap["E0"], self.atomname, g2a, ahof,
-                                      lots, self.tcmap["Temp"])
+                    charges.append(0.0)
+                eHF  = compute_dhform(self.tcmap["E0"], self.atomname,
+                                      g2a, ahof, lots, charges,
+                                      self.tcmap["Temp"])
                 if debug:
                     print("Computed eHF = %g" % eHF)
                 self.exper.add_energy("DeltaE0", "Hartree", 0.0, "gas", eHF)
