@@ -15,8 +15,10 @@ def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
     eatom = 0
     for aaa in range(len(atomtypes)):
         myelem = g2a.get_elem(atomtypes[aaa])
-        ae     = ahof.get_atomization(myelem, leveloftheory[aaa], temperature)
+        ae     = ahof.get_atomization(myelem, leveloftheory[aaa], temperature, charges[aaa])
         if None == ae:
+            for i in range(len(atomtypes)):
+                print("atype %s charge %d lot %s" % ( atomtypes[i], charges[i], leveloftheory[i] ) )
             sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory[aaa], temperature))
         eatom += ae
     return energyHF - eatom
@@ -78,7 +80,7 @@ class AtomicHOF:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|" + str(charge)
         if not akey in self.ahof:
-            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
+            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, method ))
             return None
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
