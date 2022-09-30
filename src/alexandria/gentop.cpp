@@ -329,7 +329,7 @@ int gentop(int argc, char *argv[])
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  false);
 
-    auto forceComp = new ForceComputer(&pd);
+    auto forceComp = new ForceComputer();
     std::vector<gmx::RVec> forces(mymol.atomsConst().size());
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
@@ -360,7 +360,8 @@ int gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plot_esp", NFILE, fnm), oenv, forceComp);
+        mymol.plotEspCorrelation(&pd, opt2fn_null("-plot_esp", NFILE, fnm),
+                                 oenv, forceComp);
     }
 
     if (immStatus::OK == imm)

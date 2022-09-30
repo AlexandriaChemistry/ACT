@@ -146,7 +146,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto forceComp = new ForceComputer(pd);
+            auto forceComp = new ForceComputer();
             auto qt = pd->findForcesConst(InteractionType::COULOMB);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
             

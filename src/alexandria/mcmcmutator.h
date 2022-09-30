@@ -143,7 +143,6 @@ private:
      * \brief Take a step of MCMC by attempting to alter a parameter
      * \param[inout] genome         pointer to a genome
      * \param[out] bestGenome       pointer to the best genome, to be filled
-     * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
@@ -152,7 +151,6 @@ private:
      */
     void stepMCMC(ga::Genome                   *genome,
                   ga::Genome                   *bestGenome,
-                  std::vector<bool>            *changed,
                   std::map<iMolSelect, double> *prevEval,
                   size_t                        pp,
                   int                           iter,

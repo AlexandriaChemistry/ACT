@@ -189,7 +189,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto forceComp = new ForceComputer(pd);
+            auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mymol.atomsConst().size());
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())

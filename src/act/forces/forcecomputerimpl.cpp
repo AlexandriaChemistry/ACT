@@ -347,7 +347,7 @@ static void computeMorse(const std::vector<TopologyEntry *>    &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>                 *energies)
+                         std::map<InteractionType, double>     *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;

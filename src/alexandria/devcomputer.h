@@ -44,7 +44,7 @@
 #include "act/utility/communicationrecord.h"
 #include "confighandler.h"
 #include "mymol.h"
-#include "molgen.h"
+#include "staticindividualinfo.h"
 #include "molhandler.h"
 
 namespace alexandria
@@ -77,19 +77,16 @@ protected:
 
 public:
 
-    /*! \brief Computes a component of the chi-squared deviation and place it into the appropriate FittingTarget
+    /*! \brief Computes a component of the chi-squared deviation.
+     * Put the value into the appropriate FittingTarget.
      * @param mymol     pointer to the molecule to compute the deviation for
      * @param targets   map between different components of chi-squared and their fitting targets
-     * @param poldata   pointer to Poldata structure
-     * @param param     the current force field parameter vector
-     * @param commrec   pointer to communications record
+     * @param poldata   pointer to Poldata structure, that should contain the newest parameters
      */
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+    virtual void calcDeviation(const ForceComputer           *forceComputer,
                                MyMol                         *mymol,
-                                     std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec) = 0;
+                               std::map<eRMS, FittingTarget> *targets,
+                               const Poldata                 *poldata) = 0;
 
 };
 
@@ -123,9 +120,7 @@ public:
     virtual void calcDeviation(const ForceComputer           *forceComputer,
                                MyMol                         *mymol,
                                std::map<eRMS, FittingTarget> *targets,
-                               Poldata                       *poldata,
-                               const std::vector<double>     &param,
-                               const CommunicationRecord     *commrec);
+                               const Poldata                 *poldata);
 
 };
 
@@ -156,9 +151,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+                               const Poldata                       *poldata);
 };
 
 /*!
@@ -182,9 +175,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+                               const Poldata                       *poldata);
 
 };
 
@@ -226,9 +217,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+                               const Poldata                       *poldata);
 
 };
 
@@ -253,9 +242,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+                               const Poldata                       *poldata);
 
 };
 
@@ -285,9 +272,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord                         *commrec);
+                               const Poldata                       *poldata);
 
 };
 
@@ -313,9 +298,7 @@ public:
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+                               const Poldata                       *poldata);
 
 };
 

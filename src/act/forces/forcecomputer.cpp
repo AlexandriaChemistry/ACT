@@ -55,17 +55,18 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-double ForceComputer::compute(const Topology                    *top,
+double ForceComputer::compute(const Poldata                     *pd,
+                              const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
                               const gmx::RVec                   &field) const
 {
     // Do first calculation every time.
-    computeOnce(top, coordinates, forces, energies, field);
+    computeOnce(pd, top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
-    if (!pd_->polarizable() || !top->hasEntry(itype))
+    if (!pd->polarizable() || !top->hasEntry(itype))
     {
         return 0;
     }
@@ -73,7 +74,7 @@ double ForceComputer::compute(const Topology                    *top,
     std::vector<bool>   isShell;
     // One over force constant for this particle
     std::vector<double> fcShell_1;
-    auto &ffpl  = pd_->findForcesConst(itype);
+    auto &ffpl  = pd->findForcesConst(itype);
     int  nshell = 0;
     for(auto &aa : top->atoms())
     {
@@ -114,14 +115,15 @@ double ForceComputer::compute(const Topology                    *top,
             }
         }
         // Do next calculation
-        computeOnce(top, coordinates, forces, energies, field);
+        computeOnce(pd, top, coordinates, forces, energies, field);
         msForce  = dotProdRvec(isShell, *forces);
         iter    += 1;
     }
     return msForce/nshell;
 }
 
-void ForceComputer::computeOnce(const Topology                    *top,
+void ForceComputer::computeOnce(const Poldata                     *pd,
+                                const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,
                                 std::map<InteractionType, double> *energies,
@@ -154,7 +156,7 @@ void ForceComputer::computeOnce(const Topology                    *top,
             continue;
         }
         // Force field parameter list
-        auto &ffpl = pd_->findForcesConst(entry.first);
+        auto &ffpl = pd->findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.fType());
         if (nullptr == bfc)
@@ -188,7 +190,8 @@ void ForceComputer::computeOnce(const Topology                    *top,
     energies->insert({ InteractionType::EPOT, epot });
 }
 
-void ForceComputer::calcPolarizability(const Topology         *top,
+void ForceComputer::calcPolarizability(const Poldata          *pd,
+                                       const Topology         *top,
                                        std::vector<gmx::RVec> *coordinates,
                                        QtypeProps             *qtp) const
 {
@@ -196,7 +199,7 @@ void ForceComputer::calcPolarizability(const Topology         *top,
     std::map<InteractionType, double> energies;
     gmx::RVec                         field = { 0, 0, 0 };
 
-    compute(top, coordinates, &forces, &energies, field);
+    compute(pd, top, coordinates, &forces, &energies, field);
     std::vector<double> q;
     for (auto &at : top->atoms())
     {
@@ -219,7 +222,7 @@ void ForceComputer::calcPolarizability(const Topology         *top,
     for (int m = 0; m < DIM; m++)
     {
         field[m] = efield;
-        compute(top, coordinates, &forces, &energies, field);
+        compute(pd, top, coordinates, &forces, &energies, field);
         qtp->setX(*coordinates);
         field[m] = 0;
         qtp->calcMoments();
@@ -232,28 +235,30 @@ void ForceComputer::calcPolarizability(const Topology         *top,
     // Store the tensor
     qtp->setPolarizabilityTensor(alpha);
     // Reset energies etc.
-    compute(top, coordinates, &forces, &energies, field);
+    compute(pd, top, coordinates, &forces, &energies, field);
 }
 
-int ForceComputer::ftype(InteractionType itype) const
+int ForceComputer::ftype(const Poldata   *pd,
+                         InteractionType  itype) const
 {
     int ftype = F_EPOT;
-    if (pd_->interactionPresent(itype))
+    if (pd->interactionPresent(itype))
     {
-        ftype = pd_->findForcesConst(itype).fType();
+        ftype = pd->findForcesConst(itype).fType();
     }
     return ftype;
 }
 
-void ForceComputer::plot(InteractionType itype) const
+void ForceComputer::plot(const Poldata  *pd,
+                         InteractionType itype) const
 {
-    if (!pd_->interactionPresent(itype))
+    if (!pd->interactionPresent(itype))
     {
         fprintf(stderr, "No such interaction %s in the force field.\n",
                 interactionTypeToString(itype).c_str());
         return;
     }
-    auto &fs = pd_->findForcesConst(itype);
+    auto &fs = pd->findForcesConst(itype);
     // The function we need to do the math
     auto bfc = getBondForceComputer(fs.fType());
     if (nullptr == bfc)
@@ -302,8 +307,8 @@ void ForceComputer::plot(InteractionType itype) const
             gmx::RVec rvnul = { 0, 0, 0 };
             for(const auto &atomname : f.first.atoms())
             {
-                auto p = pd_->findParticleType(itype, atomname);
-                if (p != pd_->particleTypesConst().end())
+                auto p = pd->findParticleType(itype, atomname);
+                if (p != pd->particleTypesConst().end())
                 {
                     top.addAtom(ActAtom(*p));
                 }
@@ -325,9 +330,9 @@ void ForceComputer::plot(InteractionType itype) const
             case InteractionType::VDW:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
-                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd_);
-                    top.fillParameters(pd_);
+                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd);
+                    top.fillParameters(pd);
                     
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.01;
@@ -345,9 +350,9 @@ void ForceComputer::plot(InteractionType itype) const
             case InteractionType::ANGLES:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
-                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd_);
-                    top.fillParameters(pd_);
+                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd);
+                    top.fillParameters(pd);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -365,9 +370,9 @@ void ForceComputer::plot(InteractionType itype) const
                 {
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd_);
-                    top.fillParameters(pd_);
+                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd);
+                    top.fillParameters(pd);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -384,9 +389,9 @@ void ForceComputer::plot(InteractionType itype) const
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd_);
-                    top.fillParameters(pd_);
+                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd);
+                    top.fillParameters(pd);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -403,9 +408,9 @@ void ForceComputer::plot(InteractionType itype) const
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd_);
-                    top.fillParameters(pd_);
+                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd);
+                    top.fillParameters(pd);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)

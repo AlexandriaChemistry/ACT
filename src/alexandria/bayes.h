@@ -55,12 +55,14 @@ namespace alexandria
 
 //! How to perform the calculation of deviations (chi-squared)
 enum class CalcDev {
-    //! Do it in parallel
-    Parallel = 1,
-    //! Do it on the master only
-    Master = 2,
-    //! Do the final one only (typically on the master)
-    Final = 3
+    //! Do a calculation local
+    Compute = 7,
+    //! Compute all the deviations
+    ComputeAll = 13,
+    //! Distribute parameters
+    Parameters = 17,
+    //! Ready to stop
+    Stop = 23,
 };
 
 class Sensitivity

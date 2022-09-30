@@ -311,12 +311,14 @@ public:
      * All energy components are stored as a vector of
      * reference energies paired with a map of ACT energy components. The integer
      * index points into the gromacs energy types.
+     * \param[in]  pd         The force field structure
      * \param[in]  forceComp  The force computer utility
      * \param[out] forceMap   The forces
      * \param[out] enerMap    The potential energies
      * \param[out] enerAllMap The energy components for each calculation
      */
-    void forceEnergyMaps(const ForceComputer                                     *forceComp,
+    void forceEnergyMaps(const Poldata                                           *pd,
+                         const ForceComputer                                     *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                          std::vector<std::pair<double, double> >                 *enerMap,
                          std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap);
@@ -411,9 +413,11 @@ public:
      *  electric field. The result is stored in 
      *  mymol->qTypeProps(qType::Calc).
      *
+     * \param[in] pd        The force field
      * \param[in] forceComp The force computer
      */
-    void CalcPolarizability(const ForceComputer *forceComp);
+    void CalcPolarizability(const Poldata       *pd,
+                            const ForceComputer *forceComp);
     
     /*! \brief
      * Generate atomic partial charges
@@ -469,11 +473,13 @@ public:
      * Will compute the electrostatic potential around the compound
      * and make a correlation plot between the QM potential and the
      * Alexandria potential.
+     * \param[in] pd        Force field
      * \param[in] espcorr   File name to plot to
      * \param[in] oenv      Gromacs output structure
      * \param[in] forceComp Utility to compute forces
      */
-    void plotEspCorrelation(const char             *espcorr,
+    void plotEspCorrelation(const Poldata          *pd,
+                            const char             *espcorr,
                             const gmx_output_env_t *oenv,
                             const ForceComputer    *forceComp);
     
@@ -533,10 +539,12 @@ public:
      * Epot(system) - Sum_f Epot(f) 
      * where f are the fragments.
      * For a polarizable model the shell positions are minimized.
+     * \param[in] pd            The force field
      * \param[in] forceComputer The code to run the calculations.
      * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const ForceComputer *forceComputer);
+    double calculateInteractionEnergy(const Poldata       *pd,
+                                      const ForceComputer *forceComputer);
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd

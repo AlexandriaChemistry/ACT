@@ -74,9 +74,7 @@ static double l2_regularizer(double x, double min, double max)
 void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                       gmx_unused MyMol                     *mymol,
                                       std::map<eRMS, FittingTarget>        *targets,
-                                      Poldata                              *poldata,
-                                      const std::vector<double>            &param,
-                                      gmx_unused const CommunicationRecord *commrec)
+                                      const Poldata                        *poldata)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
     if (targets->end() != mytarget)
@@ -98,20 +96,18 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
             }
             if (p.mutability() == Mutability::Bounded)
             {
-                real db = l2_regularizer(param[n], p.minimum(), p.maximum());
+                real db = l2_regularizer(p.value(), p.minimum(), p.maximum());
                 bound += db;
                 if (verbose_ && logfile_ && db != 0.0)
                 {
                     fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n",
-                            optIndex.name().c_str(), param[n], p.minimum(), p.maximum());
+                            optIndex.name().c_str(), p.value(), p.minimum(), p.maximum());
                 }
             }
 
             n++;
         }
         mytarget->second.increase(1, bound);
-        GMX_RELEASE_ASSERT(n == param.size(),
-                           gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
     }
     mytarget = targets->find(eRMS::UNPHYSICAL);
     if (targets->end() != mytarget)
@@ -156,9 +152,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
 void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                          MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
-                                         Poldata                              *poldata,
-                                         gmx_unused const std::vector<double> &param,
-                                         gmx_unused const CommunicationRecord *commrec)
+                                         const Poldata                        *poldata)
 {
     double qtot = 0;
     int i = 0;
@@ -183,7 +177,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         {
             continue;
         }
-        ParticleTypeIterator       atype = poldata->findParticleType(myatoms[j].ffType());
+        ParticleTypeConstIterator  atype = poldata->findParticleType(myatoms[j].ffType());
         const ForceFieldParameter &qparm = atype->parameterConst("charge");
         double qj  = myatoms[j].charge();
         double qjj = qj;
@@ -244,11 +238,8 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                    MyMol                                *mymol,
                                    std::map<eRMS, FittingTarget>        *targets,
-                                   Poldata                              *poldata,
-                                   gmx_unused const std::vector<double> &param,
-                                   gmx_unused const CommunicationRecord *commrec)
+                                   const Poldata                        *poldata)
 {
-
     real rrms     = 0;
     real cosangle = 0;
     QgenResp *qgr = mymol->qTypeProps(qType::Calc)->qgenResp();
@@ -322,11 +313,9 @@ PolarDevComputer::PolarDevComputer(    FILE  *logfile,
 void PolarDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                      MyMol                                *mymol,
                                      std::map<eRMS, FittingTarget>        *targets,
-                                     gmx_unused Poldata                   *poldata,
-                                     gmx_unused const std::vector<double> &param,
-                                     gmx_unused const CommunicationRecord *commrec)
+                                     const Poldata                        *poldata)
 {
-    mymol->CalcPolarizability(forceComputer);
+    mymol->CalcPolarizability(poldata, forceComputer);
     auto aelec = mymol->qTypeProps(qType::Elec)->polarizabilityTensor();
     auto acalc = mymol->qTypeProps(qType::Calc)->polarizabilityTensor();
     double diff2 = 0;
@@ -356,9 +345,7 @@ void PolarDevComputer::calcDeviation(const ForceComputer                  *force
 void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                          MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
-                                         gmx_unused Poldata                   *poldata,
-                                         gmx_unused const std::vector<double> &param,
-                                         gmx_unused const CommunicationRecord *commrec)
+                                         gmx_unused const Poldata             *poldata)
 {
     if (!(mymol->qTypeProps(qType::Elec)->hasMultipole(mpo_) &&
           mymol->qTypeProps(qType::Calc)->hasMultipole(mpo_)))
@@ -412,9 +399,7 @@ HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
 void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                          MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
-                                         gmx_unused Poldata                   *poldata,
-                                         gmx_unused const std::vector<double> &param,
-                                         gmx_unused const CommunicationRecord *commrec)
+                                         const Poldata                        *poldata)
 {
     // Only compute frequencies for structures that have an optimize reference
     if (JobType::OPT != mymol->jobType())
@@ -422,7 +407,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
         return;
     }
     std::vector<gmx::RVec> coords = mymol->xOriginal();
-    auto eMin = handler_.minimizeCoordinates(mymol, forceComputer, simConfig_, &coords,
+    auto eMin = handler_.minimizeCoordinates(poldata, mymol, forceComputer, simConfig_, &coords,
                                              nullptr, nullptr);
     if (eMinimizeStatus::OK != eMin)
     {
@@ -432,7 +417,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     }
     // Compute frequencies
     std::vector<double> frequencies, intensities;
-    handler_.nma(mymol, forceComputer, &coords, &frequencies, &intensities);
+    handler_.nma(poldata, mymol, forceComputer, &coords, &frequencies, &intensities);
 
     switch (mpo_)
     {
@@ -492,14 +477,12 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
 void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                            MyMol                                *mymol,
                                            std::map<eRMS, FittingTarget>        *targets,
-                                           gmx_unused Poldata                   *poldata,
-                                           gmx_unused const std::vector<double> &param,
-                                           gmx_unused const CommunicationRecord *commrec)
+                                           const Poldata                        *poldata)
 {
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
-    mymol->forceEnergyMaps(forceComputer, &fMap, &eMap, &enerAllMap);
+    mymol->forceEnergyMaps(poldata, forceComputer, &fMap, &eMap, &enerAllMap);
 
     auto tf = targets->find(eRMS::Force2);
     if (tf != targets->end() && !fMap.empty())

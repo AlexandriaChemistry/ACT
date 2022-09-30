@@ -39,20 +39,40 @@ namespace alexandria
 ACTHelper::ACTHelper(StaticIndividualInfo *sii,
                      MolGen               *mg)
 {
-    forceComp_ = new ForceComputer(sii->poldata());
+    forceComp_ = new ForceComputer();
     fitComp_   = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
 }
 
 void ACTHelper::run()
 {
     // H E L P E R   N O D E
-    // All variables are set by the master or middlemen, but
-    // we have to pass something.
-    // If the result is less than zero (-1), we are done.
-    std::vector<double> dummy;
-    while (fitComp_->calcDeviation(&dummy, CalcDev::Parallel, iMolSelect::Train) >= 0)
+    CalcDev cd = CalcDev::Compute;
+    cd = fitComp_->distributeTasks(cd);
+    while (CalcDev::Stop != cd)
     {
-        ;
+        switch (cd)
+        {
+        case CalcDev::Parameters:
+            {
+                // All variables are set by the master or middlemen, but
+                // we have to pass something.
+                std::vector<double> dummy;
+                std::set<int>       changed;
+                // Get the new parameters to evaluate
+                fitComp_->distributeParameters(&dummy, changed);
+            }
+            break;
+        case CalcDev::Compute:
+            // Evaluate on my part of the dataset
+            (void) fitComp_->calcDeviation(cd, iMolSelect::Train);
+            break;
+        case CalcDev::ComputeAll:
+        case CalcDev::Stop:
+            gmx_fatal(FARGS, "Incorrect calcdev %d in helper", static_cast<int>(cd));
+            // This should never happen, but without the compiler will complain.
+            break;
+        }
+        cd = fitComp_->distributeTasks(cd);
     }
 }
 

@@ -118,15 +118,27 @@ public:
                  iMolSelect     trgtFit,
                  bool           verbose = false) override;  // Does not inherit the default value, damn C++ ...
 
-    /*! \brief Computes deviation from target
+    /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] params   The force field parameters
-     * \param[in] calcDev  The type of calculation to do
+     * \param[in] changed  Indication of which parameters have changed and for which
+     *                     the poldata should be updated. If empty, all parameters will
+     *                     be updated.
+     */
+    void distributeParameters(const std::vector<double> *params,
+                              const std::set<int>       &changed);
+                     
+    /*! \brief Distribute the work
+     * \param[in] task Tell the middlemen what task to distribute
+     * \return what a poor helper is to do    
+     */
+    CalcDev distributeTasks(CalcDev task);
+    
+    /*! \brief Computes deviation from target
      * \param[in] ims      The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(std::vector<double> *params,
-                         CalcDev              calcDev,
-                         iMolSelect           ims);
+    double calcDeviation(CalcDev    task,
+                         iMolSelect ims);
 
 };
 

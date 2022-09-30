@@ -67,8 +67,8 @@ void ForceFieldParameter::setValue(double value)
             double newval = std::min(maximum_, std::max(minimum_, value));
             if (strict_)
             {
-                auto buf = gmx::formatString("Can not modify value outside its bounds of %g-%g. Setting it to %g %s",
-                                             minimum_, maximum_, newval, unit_.c_str());
+                auto buf = gmx::formatString("Can not modify value to %g as it would be outside its bounds of %g-%g. Setting it to %g %s",
+                                             value, minimum_, maximum_, newval, unit_.c_str());
                 GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
@@ -202,6 +202,7 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }
+        calculateInternalValue();
     }
     return cs;
 }

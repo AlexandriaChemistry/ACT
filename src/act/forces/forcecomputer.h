@@ -44,8 +44,6 @@ class QtypeProps;
 class ForceComputer
 {
 private:
-    //! Force field structure
-    const Poldata *pd_;
     //! Convergence criterium for minimizing shells: mean square force
     double         msForce_;
     //! Maximum number of iterations to spend on minimizing shells
@@ -62,7 +60,8 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      */
-    void computeOnce(const Topology                    *top,
+    void computeOnce(const Poldata                     *pd,
+                     const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
@@ -70,16 +69,15 @@ private:
 
  public:
     /*! \brief Constructor
-     * \param[in] pd      Pointer to force field structure
      * \param[in] msForce The tolerance for the mean square force on shells
      * \param[in] maxiter The maximum number of iterations for shell minimization
      */
-    ForceComputer(const Poldata *pd,
-                  double         msForce = 1e-6,
-                  int            maxiter = 25) : pd_(pd), msForce_(msForce), maxiter_(maxiter) {}
+    ForceComputer(double   msForce = 1e-6,
+                  int      maxiter = 25) : msForce_(msForce), maxiter_(maxiter) {}
     
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
+     * \param[in]  pd          Pointer to force field structure
      * \param[in]  top         The molecular topology
      * \param[in]  charges     The charges for all particles
      * \param[in]  coordinates The atomic coordinates. Coordinates of
@@ -89,7 +87,8 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const Topology                    *top,
+    double compute(const Poldata                     *pd,
+                   const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
                    std::map<InteractionType, double> *energies,
@@ -98,10 +97,12 @@ private:
     /*! \brief Return the gromacs type used
      * In practice this converts the InteractionType to the ftype
      * used within the force computer.
+     * \param[in] pd      Pointer to force field structure
      * \param[in] itype The interaction type
      * \return the force type
      */
-    int ftype(InteractionType itype) const;
+    int ftype(const Poldata  *pd,
+              InteractionType itype) const;
     
     //! \return the force tolerance
     double forceTolerance() const { return msForce_; }
@@ -114,16 +115,20 @@ private:
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.
-     * \param[in] itype    The interaction type
+     * \param[in] pd    Pointer to force field structure
+     * \param[in] itype The interaction type
      */
-    void plot(InteractionType itype) const;
+    void plot(const Poldata   *pd,
+              InteractionType  itype) const;
 
     /*! \brief Compute the polarizability tensor
+     * \param[in]  pd          Pointer to force field structure
      * \param[in]  top         The topology
      * \param[in]  coordinates The coordinates
      * \param[out] qtp         The charge type properties
      */
-    void calcPolarizability(const Topology         *top,
+    void calcPolarizability(const Poldata          *pd,
+                            const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
                             QtypeProps             *qtp) const;
 

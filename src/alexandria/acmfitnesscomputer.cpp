@@ -36,7 +36,6 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "act/forces/combinationrules.h"
 #include "act/ga/Genome.h"
 
 namespace alexandria
@@ -54,9 +53,13 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     {
         GMX_THROW(gmx::InternalError("Empty genome"));
     }
-    sii_->updatePoldata(genome);
-    double fitness = calcDeviation(genome->basesPtr(),
-                                   CalcDev::Parallel, trgtFit);
+    // First send around parameters
+    distributeTasks(CalcDev::Parameters);
+    std::set<int> changed;
+    distributeParameters(genome->basesPtr(), changed);
+    // Then do the computation
+    auto cd = distributeTasks(CalcDev::Compute);
+    double fitness = calcDeviation(cd, trgtFit);
     genome->setFitness(trgtFit, fitness);
     if (debug)
     {
@@ -73,49 +76,82 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     }
 }
 
-double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
-                                         CalcDev              calcDev,
-                                         iMolSelect           ims)
+CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
 {
-    // Send / receive parameters
-    std::vector<double> *myparams = nullptr;
     auto cr = sii_->commRec();
+    // Send / receive parameters
     if (cr->isHelper())
     {
-        // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
-        // O M H M H M H. Now who is my middleman? This is handled by the library
+        // Now who is my middleman?
         int src = cr->superior();
-        calcDev  = static_cast<CalcDev>(cr->recv_int(src));
-        ims      = static_cast<iMolSelect>(cr->recv_int(src));
-        myparams = new std::vector<double>;
-        cr->recv_double_vector(src, myparams);
-        sii_->poldata()->receiveEemprops(cr, src);
-        sii_->poldata()->receiveParticles(cr, src);
+        return static_cast<CalcDev>(cr->recv_int(src));
     }
-    else if (calcDev != CalcDev::Master)
+    else 
     {
         // Send only to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_int(dest, static_cast<int>(calcDev));
-            cr->send_int(dest, static_cast<int>(ims));
-            cr->send_double_vector(dest, params);
-            sii_->poldata()->sendEemprops(cr, dest);
-            sii_->poldata()->sendParticles(cr, dest);
+            cr->send_int(dest, static_cast<int>(task));
         }
-        myparams = params;
+        // If final call, return -1
+        return task;
     }
-    else
-    {
-        myparams = params;
-    }
+}
 
-    // If final call, return -1
-    if (calcDev == CalcDev::Final)
+void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
+                                              const std::set<int>       &changed)
+{
+    auto cr = sii_->commRec();
+    // Send / receive parameters
+    if (cr->isHelper())
     {
-        return -1;
+        // Find out who to talk to
+        int src = cr->superior();
+        std::vector<double> myparams;
+        cr->recv_double_vector(src, &myparams);
+        std::set<int>       mychanged;
+        int nchanged = cr->recv_int(src);
+        for(int i = 0; i < nchanged; i++)
+        {
+            mychanged.insert(cr->recv_int(src));
+        }
+        sii_->updatePoldata(mychanged, myparams);
     }
+    else 
+    {
+        // Send only to my helpers
+        for (auto &dest : cr->helpers())
+        {
+            cr->send_double_vector(dest, params);
+            cr->send_int(dest, changed.size());
+            for(int iset : changed)
+            {
+                cr->send_int(dest, iset);
+            }
+        }
+        sii_->updatePoldata(changed, *params);
+    }
+}
 
+double ACMFitnessComputer::calcDeviation(CalcDev    task,
+                                         iMolSelect ims)
+{
+    auto cr = sii_->commRec();
+    // Send / receive parameters
+    if (cr->isHelper())
+    {
+        // Now who is my middleman?
+        int src  = cr->superior();
+        ims      = static_cast<iMolSelect>(cr->recv_int(src));
+    }
+    else 
+    {
+        // Send ims to my helpers
+        for (auto &dest : cr->helpers())
+        {
+            cr->send_int(dest, static_cast<int>(ims));
+        }
+    }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
 
@@ -125,11 +161,8 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata(),
-                            *myparams, nullptr);
+        bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata());
     }
-
-    generateDependentParameter(sii_->poldata());
 
     // Loop over molecules
     for (MyMol &mymol : molgen_->mymols())
@@ -139,7 +172,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
             continue;
         }
         if ((mymol.support() == eSupport::Local) ||
-            (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
+            (task == CalcDev::ComputeAll && mymol.support() == eSupport::Remote))
         {
             std::vector<InteractionType> itUpdate;
             for(auto &io : molgen_->iopt())
@@ -150,11 +183,11 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 }
             }
             // Update the polarizabilities and other params only once before the loop
-            mymol.UpdateIdef(sii_->poldata(), itUpdate, 
-                             molgen_->fit("zeta"));
+            // TODO: is this still needed if we do not use GROMACS code for force
+            // calculations?
+            mymol.UpdateIdef(sii_->poldata(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
-            gmx::RVec vzero = { 0, 0, 0 };
-            std::vector<gmx::RVec> forces(mymol.atomsConst().size(), vzero);
+            std::vector<gmx::RVec> forces(mymol.atomsConst().size(), { 0, 0, 0 });
             immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &forces);
 
             // Check whether we have to disable this compound
@@ -168,14 +201,13 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &mymol, targets, sii_->poldata(),
-                                     *myparams, cr);
+                mydev->calcDeviation(forceComp_, &mymol, targets, sii_->poldata());
             }
         }
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
-    sii_->sumChiSquared(calcDev == CalcDev::Parallel, ims);
+    sii_->sumChiSquared(task == CalcDev::Compute, ims);
 
     numberCalcDevCalled_ += 1;
     
@@ -186,10 +218,10 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
                                            MyMol                         *mymol)
 {
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
-    if ((*targets).find(eRMS::MU)->second.weight() > 0   ||
-        (*targets).find(eRMS::QUAD)->second.weight() > 0 ||
-        (*targets).find(eRMS::OCT)->second.weight() > 0  ||
-        (*targets).find(eRMS::HEXADEC)->second.weight() > 0)
+    if (targets->find(eRMS::MU)->second.weight() > 0   ||
+        targets->find(eRMS::QUAD)->second.weight() > 0 ||
+        targets->find(eRMS::OCT)->second.weight() > 0  ||
+        targets->find(eRMS::HEXADEC)->second.weight() > 0)
     {
         qcalc->setQ(mymol->atomsConst());
         qcalc->setX(mymol->x());

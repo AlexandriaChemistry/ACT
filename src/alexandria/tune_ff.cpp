@@ -249,7 +249,7 @@ void OptACM::initMaster()
         }
     }
     // Force computer
-    forceComp_ = new ForceComputer(sii_->poldata());
+    forceComp_ = new ForceComputer;
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
@@ -607,7 +607,8 @@ bool OptACM::runMaster(bool optimize,
         // Save force field of best individual(s)
         for (const auto &pair : bestGenome)
         {
-            sii_->updatePoldata(&(pair.second));
+            std::set<int> changed;
+            sii_->updatePoldata(changed, pair.second.bases());
             // sii_->setFinalOutputFile(baseOutputFileName_);
             sii_->saveState(
                 true,
@@ -615,7 +616,8 @@ bool OptACM::runMaster(bool optimize,
             );
         }
         // FIXME: resetting the train parameters for the TuneFFPrinter. We may have to work on that if we want to show the best test parameters too
-        sii_->updatePoldata(&(bestGenome.find(iMolSelect::Train)->second));
+        std::set<int> changed;
+        sii_->updatePoldata(changed, bestGenome.find(iMolSelect::Train)->second.bases());
     }
     else if (optimize)
     {
@@ -626,12 +628,14 @@ bool OptACM::runMaster(bool optimize,
     }
 
     // Stop MASTER's helpers
-    std::vector<double> dummy;
-    fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
+    fitComp_->distributeTasks(CalcDev::Stop);
 
     // Final energy calculation for all molecules
     // TODO: parallellize this. FIXME: there is no need to do this I believe, it's done above, and parallel!
-    // fitComp_->calcDeviation(bestGenome.basesPtr(), CalcDev::Master, iMolSelect::Train);
+    std::set<int> changed;
+    auto ims = iMolSelect::Train;
+    sii_->updatePoldata(changed, bestGenome.find(ims)->second.bases());
+    fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
 
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
@@ -822,7 +826,7 @@ int tune_ff(int argc, char *argv[])
 
 
     // StaticIndividualInfo things
-    opt.sii()->generateOptimizationIndex(fp, opt.mg());
+    opt.sii()->generateOptimizationIndex(fp, opt.mg(), opt.commRec());
     opt.sii()->fillVectors(opt.mg()->mindata());
     opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
     // Set the output file names, has to be done before

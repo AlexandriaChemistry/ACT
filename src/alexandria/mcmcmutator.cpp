@@ -80,15 +80,6 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
 
-    // changed.resize(nParam, true);
-    // Update all parameters in poldata
-    sii_->updatePoldata(genome);
-    // Create and fill the changed vector
-    // Now set them back to false, further spreading is done
-    // one parameter at a time.
-    // std::fill(changed.begin(), changed.end(), false);
-    std::vector<bool> changed(nParam, false);
-    // changed.resize(nParam, false);
 
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
@@ -101,20 +92,25 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     }
 
     // Gather initial chi2 evaluations for training and test sets
+    // Update all parameters in poldata
     std::map<iMolSelect, double> prevEval;
-    prevEval.insert({iMolSelect::Train, fitComp_->calcDeviation(genome->basesPtr(),
-                                                                CalcDev::Parallel,
-                                                                iMolSelect::Train)});  
-    // This does not fill the fitness attribute in individual!
-    // TODO Print results
-    genome->setFitness(iMolSelect::Train, prevEval[iMolSelect::Train]);
+    std::set<int> changed;
+    auto cd = CalcDev::Parameters;
+    fitComp_->distributeTasks(cd);
+    fitComp_->distributeParameters(genome->basesPtr(), changed);
+
+    cd        = CalcDev::Compute;
+    auto ims  = iMolSelect::Train;
+    fitComp_->distributeTasks(cd);
+    auto chi2 = fitComp_->calcDeviation(cd, ims);
+    prevEval.insert({ims, chi2});  
+    genome->setFitness(ims, chi2);
     if (evaluateTestSet_)
     {
-        prevEval.insert({iMolSelect::Test, fitComp_->calcDeviation(genome->basesPtr(),
-                                                                   CalcDev::Parallel,
-                                                                   iMolSelect::Test)});
-        // TODO printing
-        genome->setFitness(iMolSelect::Test, prevEval[iMolSelect::Test]);
+        auto ims_test  = iMolSelect::Test;
+        auto chi2_test = fitComp_->calcDeviation(cd, ims_test);
+        prevEval.insert({ims_test, chi2_test});
+        genome->setFitness(ims_test, chi2_test);
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
     auto initEval = prevEval;
@@ -130,7 +126,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
-            stepMCMC(genome, bestGenome, &changed, &prevEval,
+            stepMCMC(genome, bestGenome, &prevEval,
                      pp, iter, iterOffset, &beta0);
 
             // For the second half of the optimization, collect data 
@@ -157,7 +153,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
 
     // Assume no better minimum was found
     bMinimum_ = false;
-    auto ims  = iMolSelect::Train;
+    ims       = iMolSelect::Train;
     if (bestGenome->hasFitness(ims) &&
         bestGenome->fitness(ims) < initEval[ims])
     {
@@ -169,7 +165,6 @@ void MCMCMutator::mutate(ga::Genome        *genome,
 
 void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                            ga::Genome                   *bestGenome,
-                           std::vector<bool>            *changed,
                            std::map<iMolSelect, double> *prevEval,
                            size_t                        pp,
                            int                           iter,
@@ -191,26 +186,30 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
 
     // Change the parameter
     changeParam(genome, paramIndex);
-
     attemptedMoves_[paramIndex] += 1;
-    (*changed)[paramIndex]         = true;
+    std::set<int> changed;
+    changed.insert(paramIndex);
 
     // Update FF parameter data structure with
     // the new value of parameter j
-    sii_->updatePoldata(*changed, genome);
+    auto cd = CalcDev::Parameters;
+    (void) fitComp_->distributeTasks(cd);
+    fitComp_->distributeParameters(genome->basesPtr(), changed);
 
     std::map<iMolSelect, double> currEval;
     // Evaluate the energy on training set
-    currEval.insert({imstr,
-            fitComp_->calcDeviation(param, CalcDev::Parallel, imstr) });
-    double deltaEval = currEval[imstr] - prevEval->find(imstr)->second;
+    cd = CalcDev::Compute;
+    (void) fitComp_->distributeTasks(cd);
+    auto chi2 = fitComp_->calcDeviation(cd, imstr);
+    currEval.insert({ imstr, chi2 });
+    double deltaEval = chi2 - prevEval->find(imstr)->second;
     // Evaluate the energy on the test set only on whole steps!
     if (evaluateTestSet_)
     {
         currEval.insert({imste, prevEval->find(imste)->second});
         if (pp == 0)  // Recompute for test set
         {
-            currEval[imste] = fitComp_->calcDeviation(param, CalcDev::Parallel, imste);
+            currEval[imste] = fitComp_->calcDeviation(cd, imste);
         }
     }
 
@@ -265,11 +264,10 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
         // If the parameter change is not accepted
         // Set the old value of the parameter back
         genome->setBase(paramIndex, storeParam);
-        // poldata needs to change back as well!
-        sii_->updatePoldata(*changed, genome);
+        // poldata on helpers needs to know if we undo the change
+        fitComp_->distributeTasks(CalcDev::Parameters);
+        fitComp_->distributeParameters(genome->basesPtr(), changed);
     }
-    // Set changed[j] back to false for upcoming iterations
-    (*changed)[paramIndex] = false;
 
     printParameterStep(genome, xiter);
     printChi2Step(*prevEval, xiter);
@@ -451,11 +449,11 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     {
         return;
     }
-    sii_->updatePoldata(genome);
-    // std::fill(changed.begin(), changed.end(), false);
-    std::vector<bool> changed(param->size(), false);
-    // changed.resize(param->size(), false);
-    double chi2_0 = fitComp_->calcDeviation(param, CalcDev::Parallel, ims);
+    std::set<int> changed;
+    sii_->updatePoldata(changed, genome->bases());
+    auto cdc    = CalcDev::Compute;
+    auto cdp    = CalcDev::Parameters;
+    auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {
         fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
@@ -470,19 +468,19 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
         double pmin   = std::max((*param)[i]-deltap, lowerBound[i]);
         double pmax   = std::min((*param)[i]+deltap, upperBound[i]);
         double p_0    = 0.5*(pmin+pmax);
-        changed[i]    = true;
+        std::set<int> changed;
+        changed.insert(i);
         (*param)[i]     = pmin;
-        sii_->updatePoldata(changed, genome);
-        s.add((*param)[i], fitComp_->calcDeviation(param, CalcDev::Parallel, ims));
+        sii_->updatePoldata(changed, *param);
+        s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = p_0;
-        sii_->updatePoldata(changed, genome);
-        s.add((*param)[i], fitComp_->calcDeviation(param, CalcDev::Parallel, ims));
+        sii_->updatePoldata(changed, *param);
+        s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pmax;
-        sii_->updatePoldata(changed, genome);
-        s.add((*param)[i],  fitComp_->calcDeviation(param, CalcDev::Parallel, ims));
+        sii_->updatePoldata(changed, *param);
+        s.add((*param)[i],  fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pstore;
-        sii_->updatePoldata(changed, genome);
-        changed[i]    = false;
+        sii_->updatePoldata(changed, *param);
         s.computeForceConstants(logfile_);
         s.print(logfile_, paramNames[i]);
     }

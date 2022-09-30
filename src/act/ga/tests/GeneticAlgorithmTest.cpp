@@ -127,7 +127,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             (void) molgen.Read(nullptr, mpDataName.c_str(), sii.poldata(),
                                gms, false);
             // Continue filling the shared individual
-            sii.generateOptimizationIndex(nullptr, &molgen);
+            sii.generateOptimizationIndex(nullptr, &molgen, sii.commRec());
             sii.fillVectors(molgen.mindata());
             std::string xvgconv("param_conv.xvg"), xvgepot("param_epot.xvg");
             std::vector<std::string> paramClass;
@@ -203,7 +203,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
                 // Initializer
                 auto initializer  = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
-                auto forceComp    = new alexandria::ForceComputer(sii.poldata());
+                auto forceComp    = new alexandria::ForceComputer();
                 auto fitComp      = new alexandria::ACMFitnessComputer(nullptr, false, &sii, &molgen,
                                                                        false, forceComp);
 
@@ -287,7 +287,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
                 // Stop MASTER's helpers
                 std::vector<double> dummy;
-                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, imstr);
+                std::set<int>       changed;
+                fitComp->distributeTasks(alexandria::CalcDev::Stop);
             }
             else if (cr.isMiddleMan())
             {

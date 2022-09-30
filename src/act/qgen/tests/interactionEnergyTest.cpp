@@ -225,7 +225,7 @@ protected:
         CommunicationRecord cr;
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
-        auto forceComp = new ForceComputer(pd);
+        auto forceComp = new ForceComputer();
         std::vector<gmx::RVec> forces(mp_.atomsConst().size());
         auto alg = ChargeGenerationAlgorithm::NONE;
         if (!qcustom.empty())
@@ -269,10 +269,10 @@ protected:
         }
         // Now the energies
         double rmsToler = 0.00001;
-        auto fcomp = new ForceComputer(pd, rmsToler, 25);
+        auto fcomp = new ForceComputer(rmsToler, 25);
         if (mp_.fragmentHandler()->topologies().size() > 1)
         {
-            auto einter = mp_.calculateInteractionEnergy(fcomp);
+            auto einter = mp_.calculateInteractionEnergy(pd, fcomp);
             checker_.checkReal(einter, "InteractionEnergy");
         }
     }

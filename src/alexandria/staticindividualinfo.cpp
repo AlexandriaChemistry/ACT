@@ -37,6 +37,7 @@
 
 #include <algorithm>
 
+#include "act/forces/combinationrules.h"
 #include "act/ga/Genome.h"
 #include "act/utility/memory_check.h"
 #include "act/poldata/poldata_xml.h"
@@ -111,63 +112,51 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
     }
 }
 
-void StaticIndividualInfo::updatePoldata(const std::vector<bool> &changed,
-                                         const ga::Genome        *genome)
+void StaticIndividualInfo::updatePoldata(const std::set<int>       &changed,
+                                         const std::vector<double> &bases)
 {
-    size_t n = 0;
-    for (const auto &optIndex : optIndex())
+    if (bases.size() == 0)
     {
-        if (changed[n])
-        {
-            auto                 iType = optIndex.iType();
-            ForceFieldParameter *p  = nullptr;
-            if (iType != InteractionType::CHARGE)
-            {
-                p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
-            }
-            else if (pd_.hasParticleType(optIndex.particleType()))
-            {
-                p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
-            }
-            GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
-            if (p)
-            {
-                p->setValue(genome->base(n));
-                // TODO fix the uncertainty
-                // p->setUncertainty(psigma_[n]);
-            }
-        }
-        n++;
+        return;
     }
-    GMX_RELEASE_ASSERT(n == changed.size(),
-                       gmx::formatString("n = %zu changed.size() = %zu",
-                                         n, changed.size()).c_str());
-}
-
-void StaticIndividualInfo::updatePoldata(const ga::Genome *genome)
-{
-    size_t n = 0;
-    for (const auto &optIndex : optIndex())
+    if (bases.size() != optIndex().size())
     {
-        auto iType = optIndex.iType();
-        ForceFieldParameter *p  = nullptr;
+        GMX_THROW(gmx::InternalError(gmx::formatString("Number of parameters to update in poldata (%zu) does not match the known number of parameters (%zu)",
+                                                       bases.size(),
+                                                       optIndex().size()).c_str()));
+    }
+    std::set<int> mychanged = changed;
+    if (mychanged.empty())
+    {
+        for(size_t i = 0; i < optIndex().size(); i++)
+        {
+            mychanged.insert(i);
+        }
+    }
+    for(int n : mychanged)
+    {
+        auto                 iType = optIndex_[n].iType();
+        ForceFieldParameter *p     = nullptr;
         if (iType != InteractionType::CHARGE)
         {
-            p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+            p = pd_.findForces(iType)->findParameterType(optIndex_[n].id(), optIndex_[n].parameterType());
         }
-        else if (pd_.hasParticleType(optIndex.particleType()))
+        else if (pd_.hasParticleType(optIndex_[n].particleType()))
         {
-            p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+            p = pd_.findParticleType(optIndex_[n].particleType())->parameter(optIndex_[n].parameterType());
         }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
         if (p)
         {
-            p->setValue(genome->base(n));
+            p->setValue(bases[n]);
             // TODO fix the uncertainty
             // p->setUncertainty(psigma_[n]);
         }
-        n++;
     }
+    // TODO: This will generate the whole matrix of parameters from scratch.
+    // It would be more efficient to only generate the atom type pair parameters for
+    // which one of the atomic Van der Waals or Coulomb parameters changed.
+    generateDependentParameter(&pd_);
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
@@ -322,44 +311,95 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * BEGIN: OptimizationIndex stuff           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::generateOptimizationIndex(FILE   *fp,
-                                                     MolGen *mg)
+CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
+                                            int                        dest)
 {
-    for(auto &fs : pd_.forcesConst())
+    cr->send_str(dest, &particleType_);
+    std::string itype = interactionTypeToString(iType_);
+    cr->send_str(dest, &itype);
+    parameterId_.Send(cr, dest);
+    cr->send_str(dest, &parameterType_);
+    
+    return CommunicationStatus::OK;
+}
+
+CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
+                                               int                        src)
+{
+    cr->recv_str(src, &particleType_);
+    std::string itype;
+    cr->recv_str(src, &itype);
+    iType_ = stringToInteractionType(itype);
+    parameterId_.Receive(cr, src);
+    cr->recv_str(src, &parameterType_);
+
+    return CommunicationStatus::OK;
+}
+
+
+void StaticIndividualInfo::generateOptimizationIndex(FILE                      *fp,
+                                                     const MolGen              *mg,
+                                                     const CommunicationRecord *cr)
+{
+    if (!cr->isHelper())
     {
-        if (mg->optimize(fs.first))
+        for(auto &fs : pd_.forcesConst())
         {
-            for(auto &fpl : fs.second.parametersConst())
+            if (mg->optimize(fs.first))
             {
-                for(auto &param : fpl.second)
+                for(auto &fpl : fs.second.parametersConst())
                 {
-                    if (mg->fit(param.first))
+                    for(auto &param : fpl.second)
                     {
-                        if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
+                        if (mg->fit(param.first))
                         {
-                            optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                            if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
+                            {
+                                optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                            }
                         }
                     }
                 }
             }
         }
-    }
-    for(auto &pt : pd_.particleTypesConst())
-    {
-        for(auto &p : pt.parametersConst())
+        for(auto &pt : pd_.particleTypesConst())
         {
-            if (mg->fit(p.first) && p.second.ntrain() > 0)
+            for(auto &p : pt.parametersConst())
             {
-                optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
+                if (mg->fit(p.first) && p.second.ntrain() > 0)
+                {
+                    optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
+                }
+            }
+        }
+        if (fp)
+        {
+            fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+            for(auto &i : optIndex_)
+            {
+                fprintf(fp, "Will optimize %s\n", i.name().c_str());
+            }
+        }
+        // Now send the data over to my helpers
+        for(const int dst : cr->helpers())
+        {
+            cr->send_int(dst, optIndex_.size());
+            for(size_t i = 0; i < optIndex_.size(); i++)
+            {
+                optIndex_[i].send(cr, dst);
             }
         }
     }
-    if (fp)
+    else
     {
-        fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
-        for(auto &i : optIndex_)
+        // Receive the data from my superior
+        int src = cr->superior();
+        GMX_RELEASE_ASSERT(src >= 0, "No superior");
+        int nOpt = cr->recv_int(src);
+        optIndex_.resize(nOpt);
+        for(int i = 0; i < nOpt; i++)
         {
-            fprintf(fp, "Will optimize %s\n", i.name().c_str());
+            optIndex_[i].receive(cr, src);
         }
     }
 }
@@ -374,36 +414,79 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE   *fp,
 
 void StaticIndividualInfo::fillVectors(const int mindata)
 {
-
-    for(auto &optIndex : optIndex_)
+    if (cr_->isMasterOrMiddleMan())
     {
-        auto                iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
+        for(auto &optIndex : optIndex_)
         {
-            if (pd_.hasParticleType(optIndex.particleType()))
+            auto                iType = optIndex.iType();
+            ForceFieldParameter p;
+            if (iType == InteractionType::CHARGE)
             {
-                p = pd_.findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+                if (pd_.hasParticleType(optIndex.particleType()))
+                {
+                    p = pd_.findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+                }
+            }
+            else if (pd_.interactionPresent(iType))
+            {
+                p = pd_.findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+            }
+            if (p.ntrain() >= mindata)
+            {
+                defaultParam_.push_back(p.value());
+                paramNames_.push_back(optIndex.name());
+                paramNamesWOClass_.push_back(
+                                             optIndex.name().substr(0, optIndex.name().find("-"))
+                                             );
+                mutability_.push_back(p.mutability());
+                lowerBound_.push_back(p.minimum());
+                upperBound_.push_back(p.maximum());
+                ntrain_.push_back(p.ntrain());
             }
         }
-        else if (pd_.interactionPresent(iType))
+        for(int dest : cr_->helpers())
         {
-            p = pd_.findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.ntrain() >= mindata)
-        {
-            defaultParam_.push_back(p.value());
-            paramNames_.push_back(optIndex.name());
-            paramNamesWOClass_.push_back(
-                optIndex.name().substr(0, optIndex.name().find("-"))
-            );
-            mutability_.push_back(p.mutability());
-            lowerBound_.push_back(p.minimum());
-            upperBound_.push_back(p.maximum());
-            ntrain_.push_back(p.ntrain());
+            cr_->send_double_vector(dest, &defaultParam_);
+            cr_->send_double_vector(dest, &lowerBound_);
+            cr_->send_double_vector(dest, &upperBound_);
+            cr_->send_int(dest, paramNames_.size());
+            for(size_t i = 0; i < paramNames_.size(); i++)
+            {
+                cr_->send_str(dest, &paramNames_[i]);
+                cr_->send_str(dest, &paramNamesWOClass_[i]);
+                cr_->send_int(dest, ntrain_[i]);
+                std::string mutab = mutabilityName(mutability_[i]);
+                cr_->send_str(dest, &mutab);
+            }
         }
     }
-
+    else
+    {
+        int src = cr_->superior();
+        cr_->recv_double_vector(src, &defaultParam_);
+        cr_->recv_double_vector(src, &lowerBound_);
+        cr_->recv_double_vector(src, &upperBound_);
+        int nparam = cr_->recv_int(src);
+        for(int i = 0; i < nparam; i++)
+        {
+            std::string paramName, paramNameWOClass, mutab;
+            cr_->recv_str(src, &paramName);
+            cr_->recv_str(src, &paramNameWOClass);
+            paramNames_.push_back(paramName);
+            paramNamesWOClass_.push_back(paramNameWOClass);
+            ntrain_.push_back(cr_->recv_int(src));
+            cr_->recv_str(src, &mutab);
+            Mutability mmm;
+            if (nameToMutability(mutab, &mmm))
+            {
+                mutability_.push_back(mmm);
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Received unintelligable string %s instead of a mutability", mutab.c_str()).c_str()));
+            }
+        }
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

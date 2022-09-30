@@ -62,6 +62,7 @@ public:
 
     /*! \brief Compute the second derivative matrix of the potential energy
      *
+     * \param[in]  pd          Pointer to force field structure
      * \param[in]  mol        Molecule to get the hessian for
      * \param[in]  forceComp  Force Computer utility
      * \param[inout] coords   Atomic coordinates to operate on
@@ -83,7 +84,8 @@ public:
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
      * \return the potential energy of the input structure
      */
-    void computeHessian(const MyMol                       *mol,
+    void computeHessian(const Poldata                     *pd,
+                        const MyMol                       *mol,
                         const ForceComputer               *forceComp,
                         std::vector<gmx::RVec>            *coords,
                         const std::vector<int>            &atomIndex,
@@ -99,6 +101,7 @@ public:
      * Also prints eigenvalues and eigenvectors of the mass-weighted 
      * hessian matrix to the debug file, if not nullptr.
      * 
+     * \param[in]  pd          Pointer to force field structure
      * \param[in]  mol          The molecule to analyze
      * \param[in]  forceComp    Force Computer utility
      * \param[in]  coords       Coordinates for a minimized structure
@@ -108,7 +111,8 @@ public:
      * \param[in]  useLapack    Whether or not to use the Lapack library iso Eigen
      * \param[in]  debugNMA     Will provide excessive printing statements
      */
-    void nma(const MyMol              *mol,
+    void nma(const Poldata            *pd,
+             const MyMol              *mol,
              const ForceComputer      *forceComp,
              std::vector<gmx::RVec>   *coords,
              std::vector<double>      *frequencies,
@@ -124,6 +128,7 @@ public:
      * tolerance inside the forceComp, accoring to:
      * toler = 10*forceComp->rmsForce()^2
      *
+     * \param[in]  pd          Pointer to force field structure
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
      * \param[in] sch          Configuration options
@@ -131,7 +136,8 @@ public:
      * \param[in] logFile      File to write some info to, may be a nullptr
      * \return Status flag
      */
-    eMinimizeStatus minimizeCoordinates(const MyMol                       *mol,
+    eMinimizeStatus minimizeCoordinates(const Poldata                     *pd,
+                                        const MyMol                       *mol,
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
@@ -141,6 +147,7 @@ public:
      * The routine will perform a MD simulation of a molecule or multiple
      * molecules, while relaxing shells if present.
      *
+     * \param[in]  pd          Pointer to force field structure
      * \param[in] mol            The molecule object (will be modified)
      * \param[in] forceComp      Force Computer utility
      * \param[in] simConfig      Simulation configuration handler
@@ -149,7 +156,8 @@ public:
      * \param[in] energyFile     Filename for writing energies
      * \param[in] oenv           GROMACS output environment
      */
-    void simulate(MyMol                         *mol,
+    void simulate(const Poldata                 *pd,
+                  MyMol                         *mol,
                   const ForceComputer           *forceComp,
                   const SimulationConfigHandler &simConfig,
                   FILE                          *logFile,

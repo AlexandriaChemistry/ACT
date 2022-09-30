@@ -92,6 +92,7 @@ using qtStats = std::map<qType, gmx_stats>;
 
         //! \brief Analyse polarizability, add to statistics and print
         void analysePolarisability(FILE                *fp,
+                                   const Poldata       *pd,
                                    alexandria::MyMol   *mol,
                                    const ForceComputer *forceComp,
                                    qtStats             *lsq_isoPol,
@@ -107,6 +108,7 @@ using qtStats = std::map<qType, gmx_stats>;
          * \return the potential energy before minimization
          */
         double printEnergyForces(std::vector<std::string> *tcout,
+                                 const Poldata            *pd,
                                  const ForceComputer      *forceComp,
                                  const AtomizationEnergy  &atomenergy,
                                  alexandria::MyMol        *mol,
@@ -145,6 +147,7 @@ void print_header(FILE                       *fp,
                   const std::vector<t_pargs> &pargs);
 
 /*! \brief Do an analysis of frequencies compared to reference if present.
+ * \param[in]    pd           The force field
  * \param[in]    mol          Molecule data
  * \param[in]    molhandler   The molecule handler
  * \param[in]    forceComp    The force computer
@@ -158,7 +161,8 @@ void print_header(FILE                       *fp,
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
-void doFrequencyAnalysis(alexandria::MyMol        *mol,
+void doFrequencyAnalysis(const Poldata            *pd,
+                         alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,

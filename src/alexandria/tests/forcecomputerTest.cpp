@@ -128,7 +128,7 @@ protected:
         auto pd  = getPoldata(forcefield);
         
         double rmsToler = 0.0000001;
-        auto fcomp = new ForceComputer(pd, rmsToler, 25);
+        auto fcomp = new ForceComputer(rmsToler, 25);
         
         t_inputrec      inputrecInstance;
         
@@ -151,7 +151,7 @@ protected:
         if (testPolarizability)
         {
             auto qCalc = mp_.qTypeProps(qType::Calc);
-            fcomp->calcPolarizability(mp_.topology(), &coordinates, qCalc);
+            fcomp->calcPolarizability(pd, mp_.topology(), &coordinates, qCalc);
             auto alpha = qCalc->polarizabilityTensor();
             const char *xyz[DIM] = { "X", "Y", "Z" };
             
@@ -179,7 +179,7 @@ protected:
             
             auto fsc = pd->forcesConst();
             mp_.calculateEnergyOld(crtmp, &coordinates, &gmxforces, &gmxEnergies, &shellRmsf);
-            fcomp->compute(mp_.topology(), &coordinates, &forces, &actEnergies);
+            fcomp->compute(pd, mp_.topology(), &coordinates, &forces, &actEnergies);
             for(auto &ifm : gmxEnergies)
             {
                 int ftype = F_EPOT;

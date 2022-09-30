@@ -463,10 +463,10 @@ static void plotInteractions(Poldata           *pd,
     {
         return;
     }
-    ForceComputer fc(pd);
+    ForceComputer fc;
     for(auto &m : myset)
     {
-        fc.plot(m);
+        fc.plot(pd, m);
     }
 }
 

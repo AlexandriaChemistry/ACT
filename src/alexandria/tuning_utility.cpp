@@ -522,6 +522,7 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 }
 
 void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
+                                                  const Poldata       *pd,
                                                   alexandria::MyMol   *mol,
                                                   const ForceComputer *forceComp,
                                                   qtStats             *lsq_isoPol,
@@ -530,7 +531,7 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
 {
     auto qelec = mol->qTypeProps(qType::Elec);
     auto aelec = qelec->polarizabilityTensor();
-    mol->CalcPolarizability(forceComp);
+    mol->CalcPolarizability(pd, forceComp);
     auto qcalc = mol->qTypeProps(qType::Calc);
     auto acalc = qcalc->polarizabilityTensor();
     
@@ -748,7 +749,8 @@ static void plot_spectrum(const char                *filenm,
 }
 
 
-void doFrequencyAnalysis(alexandria::MyMol        *mol,
+void doFrequencyAnalysis(const Poldata            *pd,
+                         alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,
@@ -762,7 +764,7 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          bool                      debugNMA)
 {
     std::vector<double> alex_freq, intensities;
-    molhandler.nma(mol, forceComp, coords, &alex_freq, &intensities,
+    molhandler.nma(pd, mol, forceComp, coords, &alex_freq, &intensities,
                    output, useLapack, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
@@ -865,6 +867,7 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
 }
 
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                                const Poldata            *pd,
                                                 const ForceComputer      *forceComp,
                                                 const AtomizationEnergy  &atomenergy,
                                                 alexandria::MyMol        *mol,
@@ -875,7 +878,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
-    mol->forceEnergyMaps(forceComp, &fMap, &eMap, &enerAllMap);
+    mol->forceEnergyMaps(pd, forceComp, &fMap, &eMap, &enerAllMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -942,7 +945,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::map<InteractionType, double> eBefore;
     std::vector<gmx::RVec> coords = mol->xOriginal();
     std::vector<gmx::RVec> forces(coords.size());
-    (void) forceComp->compute(mol->topology(), &coords, &forces, &eBefore);
+    (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
 
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
@@ -958,7 +961,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         SimulationConfigHandler simConfig;
         std::vector<gmx::RVec>  xmin   = coords;
         std::map<InteractionType, double> eAfter;
-        molHandler_.minimizeCoordinates(mol, forceComp, simConfig, 
+        molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
                                         &xmin, &eAfter, nullptr);
         double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
         
@@ -981,7 +984,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis etc.
-        doFrequencyAnalysis(mol, molHandler_, forceComp, &coords,
+        doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
                             atomenergy, lsq_freq, tcout,
                             nullptr, 24, nullptr, false, false);
         
@@ -1084,7 +1087,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         { MolPropObservable::HEXADECAPOLE, hex_toler_  },
     };
     
-    auto forceComp = new ForceComputer(pd);
+    auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
     std::map<std::string, double> molEpot;
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
@@ -1146,7 +1149,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Polarizability
             if (bPolar)
             {
-                analysePolarisability(fp, &(*mol), forceComp, &(lsq_isoPol[ims]),
+                analysePolarisability(fp, pd, &(*mol), forceComp, &(lsq_isoPol[ims]),
                                       &(lsq_anisoPol[ims]), &(lsq_alpha[ims]));
             }
 
@@ -1154,7 +1157,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol), forces);
             // Energies
             std::vector<std::string> tcout;
-            auto epot = printEnergyForces(&tcout, forceComp, atomenergy, &(*mol),
+            auto epot = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
                                           &lsq_rmsf[ims], &lsq_epot[ims],
                                           &lsq_freq[ims]);
             molEpot.insert({mol->getMolname(), epot});

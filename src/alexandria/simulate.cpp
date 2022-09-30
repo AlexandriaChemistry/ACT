@@ -155,7 +155,7 @@ int simulate(int argc, char *argv[])
         shellToler = sch.forceTolerance()/10;
         printf("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
-    auto  forceComp = new ForceComputer(&pd, shellToler, 100);
+    auto  forceComp = new ForceComputer(shellToler, 100);
     print_header(logFile, pa);
     if (verbose)
     {
@@ -209,7 +209,7 @@ int simulate(int argc, char *argv[])
             copy_rvec(mymol.x()[i], xx[i]);
         }
         auto qCalc = mymol.qTypeProps(qType::Calc);
-        forceComp->calcPolarizability(mymol.topology(), &xx, qCalc);
+        forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
         auto alpha = qCalc->polarizabilityTensor();
         double fac = convertFromGromacs(1, "A^3");
         fprintf(logFile, "Alpha trace: %10g %10g %10g. Isotropic: %10g\n",
@@ -231,7 +231,7 @@ int simulate(int argc, char *argv[])
         if (sch.nma() || sch.minimize())
         {
             std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&mymol, forceComp, sch,
+            eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
                                                   &xmin, &energies, logFile);
             if (eMinimizeStatus::OK == eMin)
             {
@@ -261,7 +261,7 @@ int simulate(int argc, char *argv[])
                 {
                     AtomizationEnergy        atomenergy;
                     std::vector<std::string> output;
-                    doFrequencyAnalysis(&mymol, molhandler, forceComp, &coords,
+                    doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
                                         atomenergy, nullptr, &output,
                                         opt2fn_null("-ir", fnm.size(), fnm.data()),
                                         sch.lineWidth(), oenv,
@@ -278,7 +278,7 @@ int simulate(int argc, char *argv[])
             }
             else
             {
-                molhandler.simulate(&mymol, forceComp, sch, logFile,
+                molhandler.simulate(&pd, &mymol, forceComp, sch, logFile,
                                     opt2fn("-o", fnm.size(),fnm.data()),
                                     opt2fn("-e", fnm.size(),fnm.data()),
                                     oenv);

@@ -87,7 +87,7 @@ public:
                        mutator, terminators, penalizers, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile), seed_(seed)
     {
-        forceComp_ = new alexandria::ForceComputer(sii->poldata());
+        forceComp_ = new alexandria::ForceComputer();
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
@@ -120,7 +120,7 @@ public:
                        mutator, nullptr, nullptr, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile)
     {
-        forceComp_ = new alexandria::ForceComputer(sii->poldata());
+        forceComp_ = new alexandria::ForceComputer();
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve

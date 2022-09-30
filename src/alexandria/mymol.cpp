@@ -426,7 +426,8 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(const ForceComputer                                     *forceComp,
+void MyMol::forceEnergyMaps(const Poldata                                           *pd,
+                            const ForceComputer                                     *forceComp,
                             std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                             std::vector<std::pair<double, double> >                 *enerMap,
                             std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap)
@@ -458,7 +459,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
         std::vector<gmx::RVec> forces(myatoms.size());
         if (forceComp)
         {
-            (void) forceComp->compute(topology_, &coords, &forces, &energies);
+            (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
         }
         else
         {
@@ -482,7 +483,7 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             {
                 if (forceComp)
                 {
-                    double Einter = calculateInteractionEnergy(forceComp);
+                    double Einter = calculateInteractionEnergy(pd, forceComp);
                     
                     enerMap->push_back({ eprops[0]->getValue(), Einter });
                 }
@@ -1454,7 +1455,8 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
+double MyMol::calculateInteractionEnergy(const Poldata       *pd,
+                                         const ForceComputer *forceComputer)
 {
     auto &tops = fraghandler_->topologies();
     if (tops.size() <= 1)
@@ -1465,7 +1467,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
     std::vector<gmx::RVec> coords = xOriginal();
     std::vector<gmx::RVec> ftotal(coords.size());
     std::map<InteractionType, double> etot;
-    (void) forceComputer->compute(topology_, &coords, &ftotal, &etot);
+    (void) forceComputer->compute(pd, topology_, &coords, &ftotal, &etot);
     // Now compute interaction energies if there are fragments
     double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
@@ -1482,7 +1484,7 @@ double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
             j++;
         }
         std::map<InteractionType, double> energies;
-        (void) forceComputer->compute(&tops[ff], &myx, &forces, &energies);
+        (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
         Einter -= energies[InteractionType::EPOT];
         if (debug)
         {
@@ -1654,7 +1656,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
         if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
                                                        coords, pd, atoms()))
         {
-            (void) forceComp->compute(topology_, &coords, forces, &energies);
+            (void) forceComp->compute(pd, topology_, &coords, forces, &energies);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1753,7 +1755,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             }
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            (void) forceComp->compute(topology_, &optimizedCoordinates_,
+            (void) forceComp->compute(pd, topology_, &optimizedCoordinates_,
                                       forces, &energies);
             if (haveShells())
             {
@@ -1833,7 +1835,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     (*myatoms)[i].setCharge(qq[i]);
                 }
                 // Copy charges to topology
-                chi2[cur] = forceComp->compute(topology_, &optimizedCoordinates_,
+                chi2[cur] = forceComp->compute(pd, topology_, &optimizedCoordinates_,
                                                forces, &energies);
                 qcalc->setX(x());
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
@@ -1867,7 +1869,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     return imm;
 }
 
-void MyMol::CalcPolarizability(const ForceComputer *forceComp)
+void MyMol::CalcPolarizability(const Poldata       *pd,
+                               const ForceComputer *forceComp)
 {
     auto natoms = atomsConst().size();
     std::vector<gmx::RVec> coordinates(natoms);
@@ -1875,7 +1878,7 @@ void MyMol::CalcPolarizability(const ForceComputer *forceComp)
     {
         copy_rvec(state_->x[i], coordinates[i]);
     }
-    forceComp->calcPolarizability(topology_, &coordinates,
+    forceComp->calcPolarizability(pd, topology_, &coordinates,
                                   qTypeProps(qType::Calc));
 }
 
@@ -1985,7 +1988,7 @@ void MyMol::PrintTopology(const char                *fn,
 
     if (nullptr != cr)
     {
-        CalcPolarizability(forceComp);
+        CalcPolarizability(pd, forceComp);
         auto qcalc = qTypeProps(qType::Calc);
         auto acalc = qcalc->polarizabilityTensor();
         std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
@@ -2451,7 +2454,8 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void MyMol::plotEspCorrelation(const char             *espcorr,
+void MyMol::plotEspCorrelation(const Poldata          *pd,
+                               const char             *espcorr,
                                const gmx_output_env_t *oenv,
                                const ForceComputer    *forceComp)
 {
@@ -2462,7 +2466,7 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
         qgr->updateAtomCoords(x());
         std::vector<gmx::RVec> forces(atomsConst().size());
         std::map<InteractionType, double> energies;
-        (void) forceComp->compute(topology_, &optimizedCoordinates_,
+        (void) forceComp->compute(pd, topology_, &optimizedCoordinates_,
                                   &forces, &energies);
         qgr->calcPot(1.0);
         qgr->plotLsq(oenv, espcorr);

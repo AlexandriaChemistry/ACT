@@ -532,7 +532,7 @@ size_t MolGen::Read(FILE            *fp,
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
     
-    auto forceComp = new ForceComputer(pd);
+    auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
     //  Now  we have read the poldata and spread it to processors

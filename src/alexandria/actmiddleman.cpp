@@ -67,7 +67,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Create force computer
-    forceComp_ = new ForceComputer(sii->poldata());
+    forceComp_ = new ForceComputer();
 
     // Fitness computer FIXME: what about those false flags?
     fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
@@ -99,20 +99,21 @@ void ACTMiddleMan::run()
         fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
     }
     // The send my initial genome and fitness to the master
-    ind_->genome().Send(cr, 0);
+    int master = cr->superior();
+    ind_->genome().Send(cr, master);
     auto cont = CommunicationStatus::OK;
     
-    cont = cr->recv_data(0);
+    cont = cr->recv_data(master);
     while (CommunicationStatus::RECV_DATA == cont)
     {
         // Get the dataset
         // FIXME: is this really necessary?
-        iMolSelect ims = cr->recv_iMolSelect(0);
+        iMolSelect ims = cr->recv_iMolSelect(master);
         
         // Now get the parameters
-        cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
+        cr->recv_double_vector(master, ind_->genomePtr()->basesPtr());
         
-        TuneFFMiddlemanMode mode = cr->recv_ff_middleman_mode(0);
+        TuneFFMiddlemanMode mode = cr->recv_ff_middleman_mode(master);
         if (mode == TuneFFMiddlemanMode::MUTATION)
         {
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
@@ -123,28 +124,28 @@ void ACTMiddleMan::run()
             }
             
             // Send the mutated vector
-            cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
+            cr->send_double_vector(master, ind_->genomePtr()->basesPtr());
             
             // Send the new train fitness
-            cr->send_double(0, ind_->genome().fitness(ims));
+            cr->send_double(master, ind_->genome().fitness(ims));
             if (gach_->evaluateTestset() && gach_->optimizer() != OptimizerAlg::MCMC)
             {
                 fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
-                cr->send_double(0, ind_->genome().fitness(iMolSelect::Test));
+                cr->send_double(master, ind_->genome().fitness(iMolSelect::Test));
             }
             
             // If we are working with MCMC, send the best found to the MASTER
             if (gach_->optimizer() == OptimizerAlg::MCMC)
             {
-                ind_->bestGenome().Send(cr, 0);
+                ind_->bestGenome().Send(cr, master);
             }
         }
         else if (mode == TuneFFMiddlemanMode::FITNESS)
         {
             fitComp_->compute(ind_->genomePtr(), ims);
-            cr->send_double(0, ind_->genome().fitness(ims));
+            cr->send_double(master, ind_->genome().fitness(ims));
         }
-        cont = cr->recv_data(0);
+        cont = cr->recv_data(master);
     }
     
     // Stop my helpers too.
@@ -165,9 +166,7 @@ void ACTMiddleMan::printStatistics(FILE *logFile)
 
 void ACTMiddleMan::stopHelpers()
 {
-    std::vector<double> dummy;
-    fitComp_->calcDeviation(&dummy,
-                            alexandria::CalcDev::Final, iMolSelect::Train);
+    (void) fitComp_->distributeTasks(CalcDev::Stop);
 }
 
 } // namespace alexandria

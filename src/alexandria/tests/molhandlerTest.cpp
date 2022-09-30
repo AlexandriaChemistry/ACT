@@ -152,7 +152,7 @@ protected:
         auto alg = ChargeGenerationAlgorithm::NONE;
         double shellTolerance = 1e-12;
         int    shellMaxIter   = 100;
-        auto forceComp = new ForceComputer(pd, shellTolerance, shellMaxIter);
+        auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
         bool                   qSymm = false;
         std::vector<gmx::RVec> forces(mp_.atomsConst().size());
@@ -161,7 +161,7 @@ protected:
         
         std::vector<gmx::RVec> coords = mp_.xOriginal();
         std::map<InteractionType, double> eBefore;
-        (void) forceComp->compute(mp_.topology(), &coords, &forces, &eBefore);
+        (void) forceComp->compute(pd, mp_.topology(), &coords, &forces, &eBefore);
         add_energies(pd, &checker_, eBefore, "before");
         
         MolHandler mh;
@@ -173,7 +173,7 @@ protected:
         std::map<InteractionType, double> eAfter;
         SimulationConfigHandler simConfig;
         simConfig.setForceTolerance(1e-4);
-        auto eMin = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
+        auto eMin = mh.minimizeCoordinates(pd, &mp_, forceComp, simConfig,
                                            &xmin, &eAfter, nullptr);
         if (eMinimizeStatus::OK != eMin)
         {
@@ -181,7 +181,7 @@ protected:
             simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
             xmin    = coords;
             simConfig.setMaxIter(5000);
-            eMin    = mh.minimizeCoordinates(&mp_, forceComp, simConfig,
+            eMin    = mh.minimizeCoordinates(pd, &mp_, forceComp, simConfig,
                                              &xmin, &eAfter, nullptr);
         }
         EXPECT_TRUE(eMinimizeStatus::OK == eMin);
@@ -211,7 +211,7 @@ protected:
             const int     matrixSide = DIM*atomIndex.size();
             {
                 MatrixWrapper hessian(matrixSide, matrixSide);
-                mh.computeHessian(&mp_, forceComp, &xmin, atomIndex,
+                mh.computeHessian(pd, &mp_, forceComp, &xmin, atomIndex,
                                   &hessian, &forceZero, &energyZero);
                 checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
                 // Now test the solver used in minimization
@@ -222,7 +222,7 @@ protected:
                 
             }
             std::vector<double> freq, freq_extern, inten, inten_extern;
-            mh.nma(&mp_, forceComp, &xmin, &freq, &inten, nullptr);
+            mh.nma(pd, &mp_, forceComp, &xmin, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
             const char *unit = mpo_unit2(mpo);
             for(auto f = freq.begin(); f < freq.end(); ++f)
