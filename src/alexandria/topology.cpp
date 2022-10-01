@@ -821,6 +821,9 @@ void Topology::fillParameters(const Poldata *pd)
             case F_BHAM:
                 fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
+            case F_GBHAM:
+                fillParams(fs, topID, gbhNR, gbh_name, &param);
+                break;
             case F_COUL_SR:
                 fillParams(fs, topID, coulNR, coul_name, &param);
                 break;

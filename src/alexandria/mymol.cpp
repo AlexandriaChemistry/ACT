@@ -836,6 +836,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_LJ:
     case F_COUL_SR:
     case F_BHAM:
+    case F_GBHAM:
         break;
     default:
         GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",

@@ -168,7 +168,7 @@ protected:
         else
         {
             std::map<InteractionType, double> gmxEnergies, actEnergies;
-            // This turn comparison of gromacs and ACT on. For debugging
+            // This turns on comparison of gromacs and ACT. For debugging
             // you may want to set this to false.
             bool       strict    = true;
             double     shellRmsf;
@@ -243,6 +243,72 @@ protected:
                     if (strict)
                     {
                         EXPECT_TRUE(std::abs(forces[i][m]-gmxforces[i][m]) < 1e-3);
+                    }
+                }
+            }
+        }
+    }
+    
+    void testSimple(const char *molname, const char *forcefield)
+    {
+        // Get poldata
+        auto pd  = getPoldata(forcefield);
+        
+        double rmsToler = 0.0000001;
+        auto fcomp = new ForceComputer(rmsToler, 25);
+        
+        t_inputrec      inputrecInstance;
+        
+        // The molecule
+        MyMol mp_;
+        initMyMol(molname, pd, fcomp, &inputrecInstance, &mp_);
+   
+        std::vector<gmx::RVec> coordinates, forces;
+        auto xo = mp_.xOriginal();
+        for(size_t i = 0; i < xo.size(); i++)
+        {
+            coordinates.push_back(xo[i]);
+            forces.push_back({ 0, 0, 0 });
+        }
+        std::map<InteractionType, double> actEnergies;
+        double     shellRmsf;
+        auto fsc = pd->forcesConst();
+        fcomp->compute(pd, mp_.topology(), &coordinates, &forces, &actEnergies);
+        for(auto &ifm : actEnergies)
+        {
+            int ftype = F_EPOT;
+            switch (ifm.first)
+            {
+            case InteractionType::EPOT:
+                break;
+            case InteractionType::DISPERSION:
+                ftype = F_DISPERSION;
+                break;
+            case InteractionType::REPULSION:
+                ftype = F_REPULSION;
+                break;
+            default:
+                {
+                    auto fs = fsc.find(ifm.first);
+                    EXPECT_TRUE(fsc.end() != fs);
+                    ftype = fs->second.fType();
+                }
+            }
+            std::string label = gmx::formatString("%s", interaction_function[ftype].name);
+            auto actEner  = actEnergies[ifm.first];
+            checker_.checkReal(actEner, label.c_str());
+            auto atoms = mp_.atomsConst();
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+            for(size_t i = 0; i < forces.size(); i++)
+            {
+                bool shell = atoms[i].pType() == eptShell;
+                for(int m = 0; m < DIM; m++)
+                {
+                    if (!shell)
+                    {
+                        checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu f%s", 
+                                                                           atoms[i].ffType().c_str(),
+                                                                           i+1, xyz[m]).c_str());
                     }
                 }
             }
@@ -394,6 +460,11 @@ TEST_F (ForceComputerTest, WaterPolarizability)
 TEST_F (ForceComputerTest, AcetonePolarizability)
 {
     test("acetone-3-oep.log.pdb", "ACS-pg", true);
+}
+
+TEST_F (ForceComputerTest, AcetonePolGbham)
+{
+    testSimple("acetone-3-oep.log.pdb", "ACS-pg-gbham");
 }
 
 TEST_F (ForceComputerTest, AcetonePolarizabilityGbham)
