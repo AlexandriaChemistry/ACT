@@ -138,7 +138,7 @@ static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
-                             std::map<InteractionType, double>                 *energies)
+                             std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -148,10 +148,11 @@ static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[wbhSIGMA_IJ];
-        auto epsilon    = params[wbhEPSILON_IJ];
-        auto gamma      = params[wbhGAMMA_IJ];
-        if (epsilon > 0 && gamma > 0 && sigma > 0)
+        auto rmin       = params[gbhRMIN_IJ];
+        auto epsilon    = params[gbhEPSILON_IJ];
+        auto gamma      = params[gbhGAMMA_IJ];
+        auto delta      = params[gbhGAMMA_IJ];
+        if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
             auto &indices   = b->atomIndices();
@@ -159,11 +160,22 @@ static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
             auto rinv       = gmx::invsqrt(dr2);
-            real eerep = 0, eedisp = 0, fwbh = 0;
-            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
+
+            real delta6     = 6+delta;
+            real delta6gam2 = delta6 + 2*gamma;
+            real rstar      = dr2*rinv/rmin;
+            real sixterm    = 1 + std::pow(rstar,6);
+            real delterm    = 1 + std::pow(rstar,delta);
+            real expterm    = std::exp(gamma*(1 - rstar));
+            real sixdenom   = 1/(2*gamma*sixterm);
+            real eerep      = epsilon*delta6*expterm*sixdenom;
+            real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
+            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) + 
+                                        ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/2.;
+
             erep     += eerep;
             edisp    += eedisp;
-            real fbond  = fwbh*rinv;
+            real fbond  = fgbham*rinv;
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij          = fbond*dx[m];
@@ -802,6 +814,7 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_LINEAR_ANGLES, computeLinearAngles },
     { F_LJ,            computeLJ           },
     { F_BHAM,          computeWBH          },
+    { F_GBHAM,         computeNonBonded    },
     { F_COUL_SR,       computeCoulomb      },
     { F_POLARIZATION,  computePolarization },
     { F_IDIHS,         computeImpropers    },

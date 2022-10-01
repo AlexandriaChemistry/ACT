@@ -159,6 +159,7 @@ enum
     F_LJC_PAIRS_NB,
     F_LJ,
     F_BHAM,
+    F_GBHAM,
     F_REPULSION,
     F_DISPERSION,
     F_LJ_LR_NOLONGERUSED,

@@ -45,6 +45,10 @@ namespace alexandria
     
     extern const char *wbh_name[wbhNR];
     
+    enum { gbhRMIN_IJ = 0, gbhEPSILON_IJ = 1, gbhGAMMA_IJ = 2, gbhDELTA_IJ = 3, gbhNR = 4 };
+    
+    extern const char *gbh_name[gbhNR];
+    
     enum { coulZETAI = 0, coulZETAJ = 1, coulNR = 2 };
     
     extern const char *coul_name[coulNR];

@@ -139,6 +139,26 @@ void CombineBham(int     CombinationRule,
     }
 }
 
+void CombineGBham(int     CombinationRule,
+                  double  rminI,
+                  double  rminJ,
+                  double  epsilonI,
+                  double  epsilonJ,
+                  double  gammaI,
+                  double  gammaJ,
+                  double  deltaI,
+                  double  deltaJ,
+                  double *rminIJ,
+                  double *epsilonIJ,
+                  double *gammaIJ,
+                  double *deltaIJ)
+{
+    // This is just a quick hack!
+    CombineBham(CombinationRule, rminI, rminJ, epsilonI, epsilonJ,
+                gammaI, gammaJ, rminIJ, epsilonIJ, gammaIJ);
+    *deltaIJ = (deltaI+deltaJ)/2;
+}
+
 static int getCombinationRule(const ForceFieldParameterList &vdw)
 {
     auto combRule = vdw.optionValue("combination_rule");
@@ -180,13 +200,6 @@ static void generateVdwParameterPairs(Poldata *pd)
             continue;
         }
         auto iparam = ivdw.second;
-        double igamma   = 0;
-        double isigma   = ivdw.second["sigma"].internalValue();
-        double iepsilon = ivdw.second["epsilon"].internalValue();
-        if (ftypeVdW == F_BHAM)
-        {
-            igamma = ivdw.second["gamma"].internalValue();
-        }
         for (auto &jvdw : *forcesVdw->parameters())
         {
             auto jid    = jvdw.first;
@@ -197,18 +210,15 @@ static void generateVdwParameterPairs(Poldata *pd)
                 continue;
             }
             auto jparam = jvdw.second;
-            double jgamma   = 0;
-            double jsigma   = jvdw.second["sigma"].internalValue();
-            double jepsilon = jvdw.second["epsilon"].internalValue();
-            if (ftypeVdW == F_BHAM)
-            {
-                jgamma = jvdw.second["gamma"].internalValue();
-            }
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
             switch (ftypeVdW)
             {
             case F_LJ:
                 {
+                    double isigma   = ivdw.second["sigma"].internalValue();
+                    double iepsilon = ivdw.second["epsilon"].internalValue();
+                    double jsigma   = jvdw.second["sigma"].internalValue();
+                    double jepsilon = jvdw.second["epsilon"].internalValue();
                     double c6 = 0, c12 = 0;
                     CombineLJ(comb_rule, isigma, jsigma,
                               iepsilon, jepsilon, &c6, &c12);
@@ -222,6 +232,12 @@ static void generateVdwParameterPairs(Poldata *pd)
                 break;
             case F_BHAM:
                 {
+                    double isigma   = ivdw.second["sigma"].internalValue();
+                    double iepsilon = ivdw.second["epsilon"].internalValue();
+                    double igamma   = ivdw.second["gamma"].internalValue();
+                    double jsigma   = jvdw.second["sigma"].internalValue();
+                    double jepsilon = jvdw.second["epsilon"].internalValue();
+                    double jgamma   = jvdw.second["gamma"].internalValue();
                     double sigmaij = 0, epsilonij = 0, gammaij = 0;
                     CombineBham(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon, 
@@ -241,13 +257,45 @@ static void generateVdwParameterPairs(Poldata *pd)
                     newParams.addParameter(pairID, wbh_name[wbhGAMMA_IJ], gamparm);
                 }
                 break;
+            case F_GBHAM:
+                {
+                    double irmin    = ivdw.second["rmin"].internalValue();
+                    double iepsilon = ivdw.second["epsilon"].internalValue();
+                    double igamma   = ivdw.second["gamma"].internalValue();
+                    double idelta   = ivdw.second["delta"].internalValue();
+                    double jrmin    = jvdw.second["rmin"].internalValue();
+                    double jepsilon = jvdw.second["epsilon"].internalValue();
+                    double jgamma   = jvdw.second["gamma"].internalValue();
+                    double jdelta   = jvdw.second["delta"].internalValue();
+                    double rminij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
+                    CombineGBham(comb_rule, irmin, jrmin, iepsilon, jepsilon, 
+                                 igamma, jgamma, idelta, jdelta, &rminij,
+                                 &epsilonij, &gammaij, &deltaij);
+                    ForceFieldParameter sigparm(unit, rminij, 0, 1,
+                                                rminij, rminij,
+                                                mut, true, true);
+                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
+                                                epsilonij, epsilonij,
+                                                mut, true, true);
+                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
+                                                gammaij, gammaij,
+                                                mut, true, true);
+                    ForceFieldParameter delparm(unit, deltaij, 0, 1,
+                                                deltaij, deltaij,
+                                                mut, true, true);
+                    newParams.addParameter(pairID, gbh_name[gbhRMIN_IJ], sigparm);
+                    newParams.addParameter(pairID, gbh_name[gbhEPSILON_IJ], epsparm);
+                    newParams.addParameter(pairID, gbh_name[gbhGAMMA_IJ], gamparm);
+                    newParams.addParameter(pairID, gbh_name[gbhDELTA_IJ], delparm);
+                }
+                break;
             default:
                 fprintf(stderr, "Invalid van der waals type %s\n",
                         interaction_function[ftypeVdW].longname);
             }
         }
     }
-    // Finally add the new parameters to the exisiting list
+    // Finally add the new parameters to the existing list
     auto fold = forcesVdw->parameters();
     for(const auto &np : newParams.parametersConst())
     {

@@ -396,6 +396,11 @@ TEST_F (ForceComputerTest, AcetonePolarizability)
     test("acetone-3-oep.log.pdb", "ACS-pg", true);
 }
 
+TEST_F (ForceComputerTest, AcetonePolarizabilityGbham)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg-gbham", true);
+}
+
 TEST_F (ForceComputerTest, UracilPolarizability)
 {
     test("uracil.sdf", "ACS-pg", true);

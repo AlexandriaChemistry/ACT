@@ -76,6 +76,20 @@ void CombineBham(int     CombinationRule,
                  double *epsilonIJ,
                  double *gammaIJ);
 
+void CombineGBham(int     CombinationRule,
+                  double  rminI,
+                  double  rminJ,
+                  double  epsilonI,
+                  double  epsilonJ,
+                  double  gammaI,
+                  double  gammaJ,
+                  double  deltaI,
+                  double  deltaJ,
+                  double *rminIJ,
+                  double *epsilonIJ,
+                  double *gammaIJ,
+                  double *deltaIJ);
+
 /*! \brief Generate nonbonded parameters for pairs of atoms
  * as well as force constants force shells.
  * \param[inout] pd The force field structure

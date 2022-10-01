@@ -14,7 +14,7 @@ from elements     import AtomNumberToAtomName
 
 BohrInverse2nmInverse = 18.897268
 
-vdwfunctions = [ "BHAM", "LJ_SR" ]
+vdwfunctions = [ "BHAM", "GBHAM", "LJ_SR" ]
 
 def string2bool(string):
   return string == "True" or string == "true" or string == "yes" or string == "Yes"
@@ -25,7 +25,7 @@ def param_header(out, identifier):
 def param_footer(out):
   out.write("    </parameterlist>\n")
   
-def format_params(function, types, units, minval, maxval, sigma,
+def format_params(types, units, minval, maxval, sigma,
                   mutability, ntrain, nonnegative):
   try:
     value = str((float(minval)+float(maxval))/2)
@@ -44,10 +44,10 @@ class AtomTypes:
     self.atp = {}
     
   def read4(self, filename, aprops, polarizable):
-    rows   = get_csv_rows(act_library_filename(filename), 34)
+    rows   = get_csv_rows(act_library_filename(filename), 37)
     header = rows[0]
     # Expecting these elements in the file
-    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "eta_min", "eta_max", "eta_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "reference" ]
+    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "delta_min", "delta_max", "delta_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "eta_min", "eta_max", "eta_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "reference" ]
     # Simple check for completeness and correctness
     if len(header) != len(elements):
       sys.exit("Found %d elements on the header line in %s, expected %d" % ( len(header), filename, len(elements)))
@@ -75,11 +75,7 @@ class AtomTypes:
       self.atp[key]["vdwtype"]    = key
       
   def write_parm(self, out, mytype, myunit, mymut, minval, maxval, nonnegative):
-    nnstr = "no"
-    if nonnegative:
-      nnstr = "yes"
-    value = str((float(minval)+float(maxval))/2)
-    out.write("      <parameter type=\"%s\" unit=\"%s\" value=\"%s\" uncertainty=\"0\" minimum=\"%s\" maximum=\"%s\" ntrain=\"0\" mutability=\"%s\" nonnegative=\"%s\"/>\n" % ( mytype, myunit, value, minval, maxval, mymut, nnstr ))
+    out.write("%s\n" % format_params(mytype, myunit, minval, maxval, 0, mymut, 0, nonnegative ))
     
   def write_xml(self, myff, out, nexcl):
     out.write("  <version checksum=\"\" timestamp=\"\"/>\n")
@@ -117,29 +113,37 @@ class AtomTypes:
   def delete(self, key):
     del self.atp[key]
     
-  def set_vdwparam(self, atomtype, sigma, epsilon, gamma):
-    if not atomtype in self.atp:
-      sys.exit("No such atomtype %s" % atomtype)
-    self.atp[atomtype]["sigma"]   = sigma
-    self.atp[atomtype]["gamma"]   = gamma
-    self.atp[atomtype]["epsilon"] = epsilon
-    
   def set_reference(self, atomtype, reference):
     if not atomtype in self.atp:
       sys.exit("Unknown atomtype %s when adding reference %s" % ( atomtype, reference ))
     self.atp[atomtype]["reference"] = reference
     
-  def print_vdwparams(self, outf, bham:bool):
+  def print_vdwparams(self, outf, vdwfunc:str):
     vdwparamlist = []
-    units = { "epsilon": "kJ/mol", "sigma": "nm" }
-    if bham:
+    units = { "epsilon": "kJ/mol" }
+    if vdwfunc == "LJ_SR":
+      units["sigma"] = "nm"
+    elif vdwfunc == "BHAM":
+      units["sigma"] = "nm"
       units["gamma"] = ""
-      
+    elif vdwfunc == "GBHAM":
+      units["rmin"] = "nm"
+      units["gamma"] = ""
+      units["delta"] = ""
+    # We use the sigma field in the force field tables for both sigma
+    # and rmin.
+    utranslate = { "rmin": "sigma" }
+    
     for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
       param_header(outf, key)
-      for u in units.keys():
-        outf.write("%s\n" % format_params(key, u, units[u], 
-                                          self.atp[key][u+"_min"], self.atp[key][u+"_max"],
+      for uuu in units.keys():
+        u = uuu
+        if uuu in utranslate:
+          u = utranslate[uuu]
+        
+        outf.write("%s\n" % format_params(uuu, units[uuu], 
+                                          self.atp[key][u+"_min"],
+                                          self.atp[key][u+"_max"],
                                           None, self.atp[key][u+"_mutability"], 0, True))
       param_footer(outf)
       
@@ -289,7 +293,7 @@ def write_polarization(out, myff, myatp):
       if alpha_min and alpha_max:
         mutab  = myatp.subtype(key, "alpha_mutability")
         param_header(out, key)
-        out.write("%s\n" % format_params("Polarization", "alpha", 
+        out.write("%s\n" % format_params("alpha", 
                                          "Angstrom3", alpha_min, alpha_max, "0", mutab, 
                                          0, True))
         param_footer(out)
@@ -319,7 +323,7 @@ def print_gentop(output, myff, myatp, bs,
   write_interactions(out, "VANDERWAALS", myff.vanderwaals,
                     "true", False,
                      [ [ "combination_rule", combRule ] ] )
-  myatp.print_vdwparams(out, bham)
+  myatp.print_vdwparams(out, myff.vanderwaals)
   out.write("  </interaction>\n")
   write_interactions(out, "BONDS", bondfunc, "true", True)
   write_interactions(out, "ANGLES", anglefunc, "true", True)
@@ -362,7 +366,7 @@ if __name__ == '__main__':
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defvdw = vdwfunctions[0]
-        vdwhelp = "Which GROMACS function to use for Van der Waals interaction. Choose from:"
+        vdwhelp = "Which function to use for Van der Waals interaction. Choose from:"
         for vvv in vdwfunctions:
           vdwhelp += " " + vvv
         vdwhelp += " Default is read from share/ffnames.csv"

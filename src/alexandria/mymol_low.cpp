@@ -380,7 +380,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                     mtop->ffparams.functype[idx] = ftypeVdW;
                     switch (ftypeVdW)
                     {
-                        case F_LJ:
+                    case F_LJ:
                         {
                             double c6 = 0, c12 = 0;
                             getLjParams(fa, mytypes[i].name,
@@ -394,7 +394,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                             }
                         }
                         break;
-                        case F_BHAM:
+                    case F_BHAM:
                         {
                             double a = 0, b = 0, c = 0;
                             getBhamParams(fa, mytypes[i].name,
@@ -421,9 +421,12 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                             }
                         }
                         break;
-                        default:
-                            fprintf(stderr, "Invalid van der waals type %s\n",
-                                    interaction_function[ftypeVdW].longname);
+                    case F_GBHAM:
+                        // Not supported in GROMACS
+                        break;
+                    default:
+                        fprintf(stderr, "Invalid van der waals type %s\n",
+                                interaction_function[ftypeVdW].longname);
                     }
                 }
             }

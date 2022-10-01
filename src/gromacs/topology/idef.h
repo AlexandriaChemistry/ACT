@@ -59,6 +59,9 @@ typedef union t_iparams
         real a, b, c;
     } bham;
     struct {
+        real rmin, epsilon, gamma, delta;
+    } gbham;
+    struct {
         real rA, krA, rB, krB;
     } harmonic;
     struct {

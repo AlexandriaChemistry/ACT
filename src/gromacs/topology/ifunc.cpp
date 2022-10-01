@@ -120,6 +120,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 0),
     def_nb      ("LJ_SR",    "LJ (SR)",         2, 2                                ),
     def_nb      ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
+    def_nb      ("GBHAM",    "Gen. Buck.ham (SR)",   2, 4                                ),
     def_nb      ("REPULSION","Repulsion",       2, 2),
     def_nb      ("DISPERSION","Dispersion",     2, 2),
     def_nofc    ("LJ_LR",    "LJ (unused)"                                          ),

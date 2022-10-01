@@ -35,6 +35,8 @@ const char *lj_name[ljNR] = { "c6_ij", "c12_ij" };
 
 const char *wbh_name[wbhNR] = { "sigma_ij", "epsilon_ij", "gamma_ij" };
     
+const char *gbh_name[gbhNR] = { "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
+    
 const char *coul_name[coulNR] = { "zeta_i", "zeta_j" };
 
 const char *bond_name[bondNR] = { "kb", "bondlength", "bondenergy" };
