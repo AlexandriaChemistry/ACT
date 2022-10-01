@@ -301,7 +301,7 @@ static void computeBonds(const std::vector<TopologyEntry *>    &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>                 *energies)
+                         std::map<InteractionType, double>     *energies)
 {
     if (nullptr == coordinates || nullptr == forces)
     {

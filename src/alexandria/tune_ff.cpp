@@ -632,11 +632,17 @@ bool OptACM::runMaster(bool optimize,
 
     // Final energy calculation for all molecules
     // TODO: parallellize this. FIXME: there is no need to do this I believe, it's done above, and parallel!
-    std::set<int> changed;
-    auto ims = iMolSelect::Train;
-    sii_->updatePoldata(changed, bestGenome.find(ims)->second.bases());
-    fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
-
+    if (!bestGenome.empty())
+    {
+        std::set<int> changed;
+        auto ims = iMolSelect::Train;
+        auto bbb = bestGenome.find(ims);
+        if (bestGenome.end() != bbb)
+        {
+            sii_->updatePoldata(changed, bbb->second.bases());
+            fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
+        }
+    }
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
     {
