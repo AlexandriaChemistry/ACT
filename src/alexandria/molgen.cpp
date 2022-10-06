@@ -315,67 +315,74 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             }
             // Now check bonds and bondcorrections
             auto btype = InteractionType::BONDS;
-            auto bonds = pd->findForces(btype);
-            auto top   = mol.topology();
-            for (const auto &topentry : top->entry(btype))
+            if (pd->interactionPresent(btype))
             {
-                if (optimize(btype))
+                auto bonds = pd->findForces(btype);
+                auto top   = mol.topology();
+                if (top->hasEntry(btype))
                 {
-                    // TODO check the loop over multiple ids
-                    for(auto &ff : *(bonds->findParameters(topentry->id())))
+                    for (const auto &topentry : top->entry(btype))
                     {
-                        if (ff.second.isMutable())
+                        if (optimize(btype))
                         {
-                            ff.second.incrementNtrain();
-                        }
-                    }
-                }
-                auto bcctype = InteractionType::BONDCORRECTIONS;
-                if (optimize(bcctype) && pd->interactionPresent(bcctype))
-                {
-                    int ai = topentry->atomIndex(0);
-                    int aj = topentry->atomIndex(1);
-                    auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
-                    auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
-                    auto bcc   = pd->findForces(bcctype);
-                    auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
-                    if (!bcc->parameterExists(bccId))
-                    {
-                        bccId = Identifier({jPType, iPType}, topentry->bondOrders(), bcc->canSwap());
-                        if (!bcc->parameterExists(bccId))
-                        {
-                            GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
-                        }
-                    }
-                    for(auto &ff : *(bcc->findParameters(bccId)))
-                    {
-                        if (ff.second.isMutable())
-                        {
-                            ff.second.incrementNtrain();
-                        }
-                    }
-                }
-            }
-            // Now angles and dihedrals
-            std::vector<InteractionType> atypes = {
-                InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
-                InteractionType::PROPER_DIHEDRALS,
-                InteractionType::IMPROPER_DIHEDRALS
-            };
-            for (const auto &atype : atypes)
-            {
-                if (optimize(atype))
-                {
-                    auto angles = pd->findForces(atype);
-                    for (const auto &topentry : top->entry(atype))
-                    {
-                        // TODO check multiple ids
-                        for (auto &ff : *(angles->findParameters(topentry->id())))
-                        {
-                            if (ff.second.isMutable())
+                            // TODO check the loop over multiple ids
+                            for(auto &ff : *(bonds->findParameters(topentry->id())))
                             {
-                                ff.second.incrementNtrain();
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
+                                }
+                            }
+                        }
+                        
+                        auto bcctype = InteractionType::BONDCORRECTIONS;
+                        if (optimize(bcctype) && pd->interactionPresent(bcctype))
+                        {
+                            int ai = topentry->atomIndex(0);
+                            int aj = topentry->atomIndex(1);
+                            auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                            auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
+                            auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
+                            auto bcc   = pd->findForces(bcctype);
+                            auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
+                            if (!bcc->parameterExists(bccId))
+                            {
+                                bccId = Identifier({jPType, iPType}, topentry->bondOrders(), bcc->canSwap());
+                                if (!bcc->parameterExists(bccId))
+                                {
+                                    GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
+                                }
+                            }
+                            for(auto &ff : *(bcc->findParameters(bccId)))
+                            {
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
+                                }
+                            }
+                        }
+                    }
+                    // Now angles and dihedrals
+                    std::vector<InteractionType> atypes = {
+                        InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                        InteractionType::PROPER_DIHEDRALS,
+                        InteractionType::IMPROPER_DIHEDRALS
+                    };
+                    for (const auto &atype : atypes)
+                    {
+                        if (optimize(atype) && pd->interactionPresent(atype))
+                        {
+                            auto angles = pd->findForces(atype);
+                            for (const auto &topentry : top->entry(atype))
+                            {
+                                // TODO check multiple ids
+                                for (auto &ff : *(angles->findParameters(topentry->id())))
+                                {
+                                    if (ff.second.isMutable())
+                                    {
+                                        ff.second.incrementNtrain();
+                                    }
+                                }
                             }
                         }
                     }
