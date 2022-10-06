@@ -75,7 +75,7 @@ class AtomicHOF:
                 print("Read %d entries from %s" % ( len(self.ahof.keys()), datafile) )
 
     def get_atomization(self, elem:str, method:str, temp:float, charge:int):
-        akey = elem + "|" + str(charge)
+        akey = ("%s|%g" % ( elem, charge))
         if not akey in self.ahof:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|" + str(charge)

@@ -83,8 +83,4 @@ He|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2.9025336|1|Hartree|Kriz2022||
 Ne|0|ccsd(t)/aug-cc-pVQZ|E0|0|-128.8474594|1|Hartree|Kriz2022||
 Ar|0|ccsd(t)/aug-cc-pVQZ|E0|0|-527.0750553|1|Hartree|Kriz2022||
 Kr|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2752.3869829|1|Hartree|Kriz2022||
-<<<<<<< HEAD
 Xe|0|ccsd(t)/aug-cc-pVQZ|E0|0|-329.4330791|1|Hartree|Kriz2022|pseudopotential|
-=======
-Xe |0|ccsd(t)/aug-cc-pVQZ|E0|0|-329.4330791|1|Hartree|Kriz2022|pseudopotential|
->>>>>>> dc8a8c4ec10f6f75e764eabc44896a5854fe42b8
