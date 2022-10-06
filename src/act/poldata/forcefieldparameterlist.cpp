@@ -214,6 +214,10 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     {
         cr->send_str(dest, &function_);
         std::string canSwapString = canSwapToString(canSwap_);
+        if (canSwapString.empty())
+        {
+            GMX_THROW(gmx::InternalError("Empty canSwapString"));
+        }
         cr->send_str(dest, &canSwapString);
         cr->send_int(dest, fType_);
         cr->send_int(dest, options_.size());

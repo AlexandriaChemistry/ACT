@@ -38,6 +38,7 @@
 #include <set>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/poldata/forcefieldparametername.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
@@ -52,7 +53,7 @@ void TopologyEntry::check(size_t nAtom) const
     if (indices_.size() != nAtom)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Expected %d atom indices, found %d",
-                static_cast<int>(nAtom), static_cast<int>(indices_.size())).c_str()));
+                                                       static_cast<int>(nAtom), static_cast<int>(indices_.size())).c_str()));
     }
 }
 
@@ -266,15 +267,26 @@ void Proper::renumberAtoms(const std::vector<int> &renumber)
 
 Topology::Topology(const std::vector<Bond> &bonds)
 {
-    entries_.insert({ InteractionType::BONDS, {} });
-    for(auto &b : bonds)
+    if (!bonds.empty())
     {
-        entries_[InteractionType::BONDS].push_back(new Bond(b));
+        entries_.insert({ InteractionType::BONDS, {} });
+        for(auto &b : bonds)
+        {
+            if (b.aI() < 0 || b.aJ() < 0)
+            {
+                GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
+            }
+            entries_[InteractionType::BONDS].push_back(new Bond(b));
+        }
     }
 }
 
 void Topology::addBond(const Bond &bond)
 {
+    if (bond.aI() < 0 || bond.aJ() < 0)
+    {
+        GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
+    }
     entries_.insert({ InteractionType::BONDS, {} });
     entries_[InteractionType::BONDS].push_back(new Bond(bond));
 }
@@ -297,16 +309,25 @@ void Topology::setAtoms(const t_atoms *atoms)
 const Bond *Topology::findBond(int ai, int aj) const
 {
     Bond b(ai, aj, 1.0);
-    auto bonds = entries_.find(InteractionType::BONDS)->second;
-    auto bptr  = std::find_if(bonds.begin(), bonds.end(),
-                              [b](const TopologyEntry *bb)
-    { return (bb->atomIndex(0) == b.atomIndex(0) && bb->atomIndex(1) == b.atomIndex(1)) ||
-             (bb->atomIndex(0) == b.atomIndex(1) && bb->atomIndex(1) == b.atomIndex(0)); });
-    if (bptr == bonds.end())
+    const TopologyEntry *bptr;
+    auto bondsptr = entries_.find(InteractionType::BONDS);
+    if (entries_.end() != bondsptr)
     {
-        GMX_THROW(gmx::InternalError("Cannot find bond"));
+        const std::vector<TopologyEntry *> &bonds = bondsptr->second;
+        bptr  = *std::find_if(bonds.begin(), bonds.end(),
+                              [b](const TopologyEntry *bb)
+                              { return (bb->atomIndex(0) == b.atomIndex(0) && bb->atomIndex(1) == b.atomIndex(1)) ||
+                                (bb->atomIndex(0) == b.atomIndex(1) && bb->atomIndex(1) == b.atomIndex(0)); });
+        if (bptr == *(bonds.end()))
+        {
+            GMX_THROW(gmx::InternalError("Cannot find bond"));
+        }
     }
-    auto myptr = static_cast<Bond *>(*bptr);
+    else
+    {
+        GMX_THROW(gmx::InternalError("There are no bonds at all."));
+    }
+    auto myptr = static_cast<const Bond *>(bptr);
     if (myptr->aI() == ai)
     {
         return myptr;
@@ -326,7 +347,12 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
     {
         return nullptr;
     }
-    auto entry = entries_.find(itype)->second;
+    auto eptr  = entries_.find(itype);
+    if (entries_.end() == eptr)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No such entry %s in topology", interactionTypeToString(itype).c_str()).c_str()));
+    }
+    auto entry = eptr->second;
     TopologyEntry te;
     for (auto &a : aindex)
     {
@@ -684,9 +710,12 @@ void Topology::addEntry(InteractionType                     itype,
     if (hasEntry(itype))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s already present",
-                                     interactionTypeToString(itype).c_str()).c_str()));
+                                                       interactionTypeToString(itype).c_str()).c_str()));
     }
-    entries_.insert({ itype, entry });
+    if (entry.size() > 0)
+    {
+        entries_.insert({ itype, entry });
+    }
 }
 
 void Topology::generateExclusions(int nrexcl,
@@ -894,23 +923,30 @@ void Topology::setIdentifiers(const Poldata *pd)
                     }
                 default:
                     {
-                        btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
+                        auto itype = InteractionType::BONDS;
+                        if (atype->hasInteractionType(itype))
+                        {
+                            btype.push_back(atype->interactionTypeToIdentifier(itype).id());
+                        }
                         break;
                     }
                 }
             }
-            if (btype.size() == 1)
+            if (!btype.empty())
             {
-                topentry->setId(Identifier(btype[0]));
-            }
-            else
-            {
-                topentry->setId({ Identifier(btype, topentry->bondOrders(),
-                                             fs.canSwap()) });
-                if ((btype.size() == 3 && btype[2].compare("h_b") == 0 && topentry->bondOrders()[1] != 1) || 
-                    (topentry->id().id().compare("c2_b:c2_b:h_b~c2_b") == 0))
+                if (btype.size() == 1)
                 {
-                    fprintf(stderr, "Found a funny one: %s\n", topentry->id().id().c_str());
+                    topentry->setId(Identifier(btype[0]));
+                }
+                else
+                {
+                    topentry->setId({ Identifier(btype, topentry->bondOrders(),
+                                                 fs.canSwap()) });
+                    if ((btype.size() == 3 && btype[2].compare("h_b") == 0 && topentry->bondOrders()[1] != 1) || 
+                        (topentry->id().id().compare("c2_b:c2_b:h_b~c2_b") == 0))
+                    {
+                        fprintf(stderr, "Found a funny one: %s\n", topentry->id().id().c_str());
+                    }
                 }
             }
         }

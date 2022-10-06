@@ -1065,6 +1065,12 @@ void MyMol::addBondVsites(FILE          *fp,
                           const Poldata *pd,
                           t_atoms       *atoms)
 {
+    if (!topology_->hasEntry(InteractionType::BONDS))
+    {
+        return;
+    }
+    auto bonds = topology_->entry(InteractionType::BONDS);
+
     int     atomNrOld = atoms->nr;
     // First add virtual sites for bond shells if needed.
     auto   &vs2       = pd->findForcesConst(InteractionType::VSITE2);
@@ -1072,7 +1078,6 @@ void MyMol::addBondVsites(FILE          *fp,
     // TODO: add a flag to turn that on or off?
     t_atom  vsite_atom = { 0 };
     t_param nb         = { { 0 } };
-    auto bonds = topology_->entry(InteractionType::BONDS);
     std::vector<TopologyEntry *> vsites;
     for (auto &b: bonds)
     {

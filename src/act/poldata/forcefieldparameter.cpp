@@ -79,7 +79,8 @@ void ForceFieldParameter::setValue(double value)
     case Mutability::Fixed:
         if (strict_)
         {
-            auto buf = gmx::formatString("Cannot modify parameter since it is fixed/dependent");
+            auto buf = gmx::formatString("Cannot set parameter value to %g %s since it has mutability %s",
+                                         value, unit_.c_str(), mutabilityName(mutability_).c_str());
             GMX_THROW(gmx::InvalidInputError(buf));
         }
         break;
