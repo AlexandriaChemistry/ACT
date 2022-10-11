@@ -46,8 +46,8 @@ Br|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-2574.15154944803|2|Hartree|Spoel2022a||
 Br|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-2574.12785587655|2|Hartree|Spoel2022a||
 Br|-1|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-2574.27768688104|1|Hartree|Spoel2022a||
 Br|-1|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-2574.25322505852|1|Hartree|Spoel2022a||
-C|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-37.7753234580807|1|Hartree|Spoel2022a||
-C|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-37.7680248807251|1|Hartree|Spoel2022a||
+C|0|pwpb95-d3bj|aug-cc-pVTZ|E0|0|-37.8317130812097915|3|Hartree|Spoel2022a||
+C|0|pwpb95-d3bj|aug-cc-pVQZ|E0|0|-37.8384520186138786|3|Hartree|Spoel2022a||
 Cl|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-460.129877064219|2|Hartree|Spoel2022a||
 Cl|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-460.11683650173|2|Hartree|Spoel2022a||
 Cl|-1|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-460.261041296294|1|Hartree|Spoel2022a||
@@ -78,7 +78,8 @@ P|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-341.227275030378|4|Hartree|Spoel2022a||
 P|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-341.22121172713|4|Hartree|Spoel2022a||
 S|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-398.085421922916|3|Hartree|Spoel2022a||
 S|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-398.075020995379|3|Hartree|Spoel2022a||
-Si|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-289.285112721876|1|Hartree|Spoel2022a||
+Si|0|pwpb95-d3bj|aug-cc-pVTZ|E0|0|-289.3251852417294003|3|Hartree|Spoel2022a||
+Si|0|pwpb95-d3bj|aug-cc-pVQZ|E0|0|-289.3258547773226041|3|Hartree|Spoel2022a||
 He|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2.9025336|1|Hartree|Kriz2022||
 Ne|0|ccsd(t)/aug-cc-pVQZ|E0|0|-128.8474594|1|Hartree|Kriz2022||
 Ar|0|ccsd(t)/aug-cc-pVQZ|E0|0|-527.0750553|1|Hartree|Kriz2022||
