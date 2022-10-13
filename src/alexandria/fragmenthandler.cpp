@@ -55,6 +55,7 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
     natoms_           = 0;
     size_t  ff        = 0;
     atomStart_.push_back(0);
+    std::vector<bool> atomFound(atoms.size(), false);
     for(auto f = fragments->begin(); f < fragments->end(); ++f)
     {
         if (f->atoms().size() == 0)
@@ -65,12 +66,27 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
         std::vector<int> toAdd;
         for(auto &a : f->atoms())
         {
-            auto anew = a;
+            size_t anew = a;
+            // Check whether this atom is present already
+            if (anew >= atoms.size()) 
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom number %zu in fragment %zu too large (max %zu)",
+                                                              anew, fragments->size(), atoms.size()).c_str()));
+            }
+            else if (atomFound[anew])
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom %zu occurs more than once in fragment description", anew).c_str()));
+            }
+            else
+            {
+                atomFound[anew] = true;
+            }
             if (!shellRenumber.empty())
             {
                 GMX_RELEASE_ASSERT(a < static_cast<int>(shellRenumber.size()), "Atom number out of range");
                 anew = shellRenumber[a];
             }
+            
             // We add the new atom index, but relative to the first atom
             // in the compound.
             toAdd.push_back(anew-atomStart_[ff]);
