@@ -452,7 +452,6 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     std::set<int> changed;
     sii_->updatePoldata(changed, genome->bases());
     auto cdc    = CalcDev::Compute;
-    auto cdp    = CalcDev::Parameters;
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {

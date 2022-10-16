@@ -65,6 +65,8 @@ enum class CalcDev {
     Stop = 23,
 };
 
+const char *calcDevName(CalcDev cd);
+
 class Sensitivity
 {
 private:

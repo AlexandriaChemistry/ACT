@@ -873,12 +873,14 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                 alexandria::MyMol        *mol,
                                                 gmx_stats                *lsq_rmsf,
                                                 qtStats                  *lsq_epot,
+                                                qtStats                  *lsq_eInter,
                                                 gmx_stats                *lsq_freq)
 {
-    std::vector<std::pair<double, double> >                 eMap;
-    std::vector<std::vector<std::pair<double, double> > >   fMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
-    mol->forceEnergyMaps(pd, forceComp, &fMap, &eMap, &enerAllMap);
+    std::vector<std::pair<double, double> >                 energyMap;
+    std::vector<std::pair<double, double> >                 interactionEnergyMap;
+    std::vector<std::vector<std::pair<double, double> > >   forceMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
+    mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap, &energyComponentMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -888,16 +890,22 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
     }
     double de2 = 0;
-    for(const auto &ff : eMap)
+    for(const auto &ff : energyMap)
     {
         auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
         (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
         de2 += gmx::square(enerexp - ff.second);
     }
+    double dinterE2 = 0;
+    for(const auto &ff : interactionEnergyMap)
+    {
+        (*lsq_eInter)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+        dinterE2 += gmx::square(ff.first - ff.second);
+    }
     if (printSP_)
     {
         size_t ccc = 0;
-        for(const auto &eam : enerAllMap)
+        for(const auto &eam : energyComponentMap)
         {
             auto enerexp = /* mol->atomizationEnergy() + */ eam.first;
             std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
@@ -912,15 +920,15 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
     }
     // RMS energy
-    if (eMap.size() > 0)
+    if (energyMap.size() > 0)
     {
         tcout->push_back(gmx::formatString("RMS energy  %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(de2/eMap.size()), eMap.size()));
+                                           std::sqrt(de2/energyMap.size()), energyMap.size()));
     }
     double df2    = 0;
     size_t nforce = 0;
     auto atoms    = mol->atomsConst();
-    for(const auto &fstruct : fMap)
+    for(const auto &fstruct : forceMap)
     {
         // Only count the real atoms for force RMSD
         for(size_t i = 0; i < atoms.size(); i++)
@@ -935,10 +943,10 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         nforce += mol->nRealAtoms();
     }
     // RMS force
-    if (fMap.size() > 0)
+    if (forceMap.size() > 0)
     {
         tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
-                                           std::sqrt(df2/nforce), fMap.size()));
+                                           std::sqrt(df2/nforce), forceMap.size()));
     }
     // Energy
     tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
@@ -1011,7 +1019,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
-                                                                lsq_anisoPol, lsq_charge, lsq_epot;
+        lsq_anisoPol, lsq_charge, lsq_epot, lsq_eInter;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
     std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
@@ -1038,7 +1046,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             gmx_stats freq;
             lsq_freq.insert({ ims.first, std::move(freq) });
         }
-        qtStats qesp, qepot;
+        qtStats qesp, qepot, qinter;
         for (auto &i : qTypes())
         {
             //TODO Add checks for existence
@@ -1046,9 +1054,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             qesp.insert({ i.first, std::move(gesp) });
             gmx_stats gepot;
             qepot.insert({ i.first, std::move(gepot) });
+            gmx_stats ginter;
+            qinter.insert({ i.first, std::move(ginter) });
         }
         lsq_esp.insert({ ims.first, std::move(qesp) });
         lsq_epot.insert({ ims.first, std::move(qepot) });
+        lsq_eInter.insert({ ims.first, std::move(qinter) });
         
         gmx_stats galpha;
         lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
@@ -1159,7 +1170,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<std::string> tcout;
             auto epot = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
                                           &lsq_rmsf[ims], &lsq_epot[ims],
-                                          &lsq_freq[ims]);
+                                          &lsq_eInter[ims], &lsq_freq[ims]);
             molEpot.insert({mol->getMolname(), epot});
             for(const auto &tout : tcout)
             {
@@ -1186,6 +1197,11 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             if (lsq_epot[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "QM/DFT", name, useOffset_);
+                header = false;
+            }
+            if (lsq_eInter[ims.first][qt].get_npoints() > 0)
+            {
+                print_stats(fp, "Interaction energy", "kJ/mol", 1.0, &lsq_eInter[ims.first][qt],  header, "QM/DFT", name, useOffset_);
                 header = false;
             }
             if (lsq_rmsf[ims.first].get_npoints() > 0 && qt == qType::Calc)

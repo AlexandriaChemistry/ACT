@@ -426,24 +426,27 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(const Poldata                                           *pd,
-                            const ForceComputer                                     *forceComp,
-                            std::vector<std::vector<std::pair<double, double> > >   *forceMap,
-                            std::vector<std::pair<double, double> >                 *enerMap,
-                            std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap)
+void MyMol::forceEnergyMaps(const Poldata                                                       *pd,
+                            const ForceComputer                                                 *forceComp,
+                            std::vector<std::vector<std::pair<double, double> > >               *forceMap,
+                            std::vector<std::pair<double, double> >                             *energyMap,
+                            std::vector<std::pair<double, double> >                             *interactionEnergyMap,
+                            std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
     t_commrec *crtmp   = init_commrec();
     crtmp->nnodes      = 1;
     forceMap->clear();
-    enerMap->clear();
-    enerAllMap->clear();
+    energyMap->clear();
+    interactionEnergyMap->clear();
+    energyComponentMap->clear();
     for (auto &ei : experimentConst())
     {
+        gmx::RVec fzero = { 0, 0, 0 };
         // TODO: no need to recompute the energy if we just have
         // done that. Check for OPT being the first calculation.
         const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
-        std::vector<gmx::RVec> coords(myatoms.size());
+        std::vector<gmx::RVec> coords(myatoms.size(), fzero);
         int j = 0;
         for(size_t i = 0; i < myatoms.size(); i++)
         {
@@ -453,25 +456,16 @@ void MyMol::forceEnergyMaps(const Poldata                                       
                 copy_rvec(xxx[j], state_->x[i]);
                 j += 1;
             }
-            // TODO initiate shells?
-        }
-        std::map<InteractionType, double> energies;
-        std::vector<gmx::RVec> forces(myatoms.size());
-        if (forceComp)
-        {
-            (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
-        }
-        else
-        {
-            real shellForceRMS;
-            PaddedVector<gmx::RVec> gmxforces;
-            gmxforces.resizeWithPadding(myatoms.size());
-            calculateEnergyOld(crtmp, &coords, &gmxforces, &energies, &shellForceRMS);
-            for(size_t i = 0; i < myatoms.size(); i++)
+            // TODO initiate shells correctly, not assuming they are connected to the previous atom.
+            else if (myatoms[i].pType() == eptShell)
             {
-                copy_rvec(gmxforces[i], forces[i]);
+                if (i > 0 && myatoms[i-1].pType() == eptAtom)
+                {
+                    copy_rvec(coords[i-1], coords[i]);
+                }
             }
         }
+        // We compute either interaction energies or normal energies for one experiment
         if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
         {
             auto eprops = ei.propertyConst(MolPropObservable::INTERACTIONENERGY);
@@ -483,14 +477,33 @@ void MyMol::forceEnergyMaps(const Poldata                                       
             {
                 if (forceComp)
                 {
-                    double Einter = calculateInteractionEnergy(pd, forceComp);
+                    std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
+                    double Einter = calculateInteractionEnergy(pd, forceComp, &interactionForces);
                     
-                    enerMap->push_back({ eprops[0]->getValue(), Einter });
+                    interactionEnergyMap->push_back({ eprops[0]->getValue(), Einter });
+                    // TODO Store the interaction forces
                 }
             }
         }
         else if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
+            std::map<InteractionType, double> energies;
+            std::vector<gmx::RVec> forces(myatoms.size(), fzero);
+            if (forceComp)
+            {
+                (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
+            }
+            else
+            {
+                real shellForceRMS;
+                PaddedVector<gmx::RVec> gmxforces;
+                gmxforces.resizeWithPadding(myatoms.size());
+                //calculateEnergyOld(crtmp, &coords, &gmxforces, &energies, &shellForceRMS);
+                for(size_t i = 0; i < myatoms.size(); i++)
+                {
+                    copy_rvec(gmxforces[i], forces[i]);
+                }
+            }
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
@@ -498,31 +511,32 @@ void MyMol::forceEnergyMaps(const Poldata                                       
             }
             else if (eprops.size() == 1)
             {
-                enerMap->push_back({ eprops[0]->getValue(), energies[InteractionType::EPOT] });
-                enerAllMap->push_back({ eprops[0]->getValue(), std::move(energies) });
+                energyMap->push_back({ eprops[0]->getValue(), energies[InteractionType::EPOT] });
+                energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }
-        }
-        const std::vector<gmx::RVec> &fff = ei.getForces();
-        if (!fff.empty())
-        {
-            size_t ifff = 0;
-            std::vector<std::pair<double, double> > thisForce;
-            for (size_t i = 0; i < myatoms.size(); i++)
+        
+            const std::vector<gmx::RVec> &fff = ei.getForces();
+            if (!fff.empty())
             {
-                if (myatoms[i].pType() == eptAtom)
+                size_t ifff = 0;
+                std::vector<std::pair<double, double> > thisForce;
+                for (size_t i = 0; i < myatoms.size(); i++)
                 {
-                    if (ifff >= fff.size())
+                    if (myatoms[i].pType() == eptAtom)
                     {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %lu atoms and shells, but only %zu forces", myatoms.size(), fff.size())));
+                        if (ifff >= fff.size())
+                        {
+                            GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %lu atoms and shells, but only %zu forces", myatoms.size(), fff.size())));
+                        }
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            thisForce.push_back({ fff[ifff][m], forces[i][m] });
+                        }
+                        ifff += 1;
                     }
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        thisForce.push_back({ fff[ifff][m], forces[i][m] });
-                    }
-                    ifff += 1;
                 }
+                forceMap->push_back(std::move(thisForce));
             }
-            forceMap->push_back(std::move(thisForce));
         }
     }
     done_commrec(crtmp);
@@ -1461,8 +1475,9 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateInteractionEnergy(const Poldata       *pd,
-                                         const ForceComputer *forceComputer)
+double MyMol::calculateInteractionEnergy(const Poldata          *pd,
+                                         const ForceComputer    *forceComputer,
+                                         std::vector<gmx::RVec> *interactionForces) const
 {
     auto &tops = fraghandler_->topologies();
     if (tops.size() <= 1)
@@ -1471,27 +1486,36 @@ double MyMol::calculateInteractionEnergy(const Poldata       *pd,
     }
     // First, compute the total energy
     std::vector<gmx::RVec> coords = xOriginal();
-    std::vector<gmx::RVec> ftotal(coords.size());
+    gmx::RVec fzero = { 0, 0, 0 };
+    interactionForces->resize(coords.size(), fzero);
     std::map<InteractionType, double> etot;
-    (void) forceComputer->compute(pd, topology_, &coords, &ftotal, &etot);
+    (void) forceComputer->compute(pd, topology_, &coords, interactionForces, &etot);
     // Now compute interaction energies if there are fragments
     double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
         int natom = tops[ff].atoms().size();
-        std::vector<gmx::RVec> forces(natom);
+        std::vector<gmx::RVec> forces(natom, fzero);
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
         for (size_t i = astart[ff]; i < astart[ff+1]; i++)
         {
             copy_rvec(coords[i], myx[j]);
-            clear_rvec(forces[j]);
             j++;
         }
         std::map<InteractionType, double> energies;
         (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
         Einter -= energies[InteractionType::EPOT];
+        j = 0;
+        for (size_t i = astart[ff]; i < astart[ff+1]; i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                (*interactionForces)[i][m] -= forces[j][m];
+            }
+            j++;
+        }
         if (debug)
         {
             fprintf(debug, "%s Fragment %zu Epot %g\n", getMolname().c_str(), ff, 

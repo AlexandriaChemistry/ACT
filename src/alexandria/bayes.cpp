@@ -59,6 +59,19 @@
 namespace alexandria
 {
 
+std::map<CalcDev, const char *> cdMap =
+    {
+        { CalcDev::Compute, "Compute" },
+        { CalcDev::ComputeAll, "ComputeAll" },
+        { CalcDev::Parameters, "Parameter" },
+        { CalcDev::Stop, "Stop" }
+    };
+
+const char *calcDevName(CalcDev cd)
+{
+    return cdMap[cd];
+}
+
 void Sensitivity::computeForceConstants(FILE *fp)
 {
     if (p_.size() >= 3)
