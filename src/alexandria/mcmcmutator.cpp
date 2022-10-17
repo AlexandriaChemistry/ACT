@@ -53,9 +53,8 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii,
                          bool                  evaluateTestSet)
-    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
-    gen.seed(seed);
     logfile_ = logfile;
     verbose_ = verbose;
     flush_   = flush;

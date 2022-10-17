@@ -90,9 +90,8 @@ private:
     //! Evaluate the test set at each iteration?
     bool                  evaluateTestSet_ = false;
     // Random number generation
-    std::random_device                      rd;
-    std::mt19937                            gen;
-    std::uniform_int_distribution<size_t>   dis;
+    std::mt19937                            gen_;
+    std::uniform_int_distribution<size_t>   dis_;
 
     /*!
      * \brief Change force field parameter at a given index for an individual
@@ -127,7 +126,7 @@ private:
                        double                              xiter);
 
     //! \return a random index of the force field parameter vector
-    size_t randIndex() { return dis(gen); }
+    size_t randIndex() { return dis_(gen_); }
 
     /*!
      * \brief Compute mean and standard deviation for each force field parameter
