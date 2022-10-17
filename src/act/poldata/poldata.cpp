@@ -313,10 +313,11 @@ void Poldata::addForces(const std::string             &interaction,
 bool Poldata::atypeToBtype(const std::string &atype,
                            std::string       *btype) const
 {
-    auto ai = findParticleType(atype);
-    if (ai != alexandria_.end())
+    auto ai    = findParticleType(atype);
+    auto itype = InteractionType::BONDS;
+    if (ai != alexandria_.end() && ai->hasInteractionType(itype))
     {
-        btype->assign(ai->interactionTypeToIdentifier(InteractionType::BONDS).id());
+        btype->assign(ai->interactionTypeToIdentifier(itype).id());
         return true;
     }
     return false;
