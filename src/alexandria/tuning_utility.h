@@ -62,81 +62,82 @@ namespace alexandria
 using qtStats = std::map<qType, gmx_stats>;
 
 
-    /*! \brief Class to managa output from force field tuning
+/*! \brief Class to managa output from force field tuning
+ */
+class TuneForceFieldPrinter
+{
+private:
+    //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
+    MolHandler molHandler_;
+    //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
+    real esp_toler_           = 30;
+    //! Tolerance (Debye) for marking dipole as an outlier in the log file
+    real dip_toler_           = 0.5;
+    //! Tolerance (Buckingham) for marking quadrupole as an outlier in the log file
+    real quad_toler_          = 5;
+    //! Tolerance (Debye A^2) for marking octupole as an outlier in the log file
+    real oct_toler_          = 5;
+    //! Tolerance (Debye A^3) for marking hexadecapole as an outlier in the log file
+    real hex_toler_          = 5;
+    //! Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file
+    real alpha_toler_         = 3;
+    //! Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file
+    real isopol_toler_        = 2;
+    //! Fit regression analysis of results to y = ax+b instead of y = ax
+    bool useOffset_           = false;
+    //! Print all information from all SP calculation
+    bool printSP_             = false;
+    //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
+    bool calcFrequencies_     = true;
+
+    //! \brief Analyse polarizability, add to statistics and print
+    void analysePolarisability(FILE                *fp,
+                               const Poldata       *pd,
+                               alexandria::MyMol   *mol,
+                               const ForceComputer *forceComp,
+                               qtStats             *lsq_isoPol,
+                               qtStats             *lsq_anisoPol,
+                               qtStats             *lsq_alpha);
+    
+    //! \brief And the atoms.
+    void printAtoms(FILE                   *fp,
+                    alexandria::MyMol      *mol,
+                    std::vector<gmx::RVec> &forces);
+    
+    /*! \brief do part of the printing, add to statistics
+     * \return the potential energy before minimization
      */
-    class TuneForceFieldPrinter
-    {
-    private:
-        //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
-        MolHandler molHandler_;
-        //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
-        real esp_toler_           = 30;
-        //! Tolerance (Debye) for marking dipole as an outlier in the log file
-        real dip_toler_           = 0.5;
-        //! Tolerance (Buckingham) for marking quadrupole as an outlier in the log file
-        real quad_toler_          = 5;
-        //! Tolerance (Debye A^2) for marking octupole as an outlier in the log file
-        real oct_toler_          = 5;
-        //! Tolerance (Debye A^3) for marking hexadecapole as an outlier in the log file
-        real hex_toler_          = 5;
-        //! Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file
-        real alpha_toler_         = 3;
-        //! Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file
-        real isopol_toler_        = 2;
-        //! Fit regression analysis of results to y = ax+b instead of y = ax
-        bool useOffset_           = false;
-        //! Print all information from all SP calculation
-        bool printSP_             = false;
-        //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
-        bool calcFrequencies_     = true;
-
-        //! \brief Analyse polarizability, add to statistics and print
-        void analysePolarisability(FILE                *fp,
-                                   const Poldata       *pd,
-                                   alexandria::MyMol   *mol,
-                                   const ForceComputer *forceComp,
-                                   qtStats             *lsq_isoPol,
-                                   qtStats             *lsq_anisoPol,
-                                   qtStats             *lsq_alpha);
-
-        //! \brief And the atoms.
-        void printAtoms(FILE                   *fp,
-                        alexandria::MyMol      *mol,
-                        std::vector<gmx::RVec> &forces);
-
-        /*! \brief do part of the printing, add to statistics
-         * \return the potential energy before minimization
-         */
-        double printEnergyForces(std::vector<std::string> *tcout,
-                                 const Poldata            *pd,
-                                 const ForceComputer      *forceComp,
-                                 const AtomizationEnergy  &atomenergy,
-                                 alexandria::MyMol        *mol,
-                                 gmx_stats                *lsq_rmsf,
-                                 qtStats                  *lsq_epot,
-                                 gmx_stats                *lsq_freq);
-    public:
-        TuneForceFieldPrinter() {}
+    double printEnergyForces(std::vector<std::string> *tcout,
+                             const Poldata            *pd,
+                             const ForceComputer      *forceComp,
+                             const AtomizationEnergy  &atomenergy,
+                             alexandria::MyMol        *mol,
+                             gmx_stats                *lsq_rmsf,
+                             qtStats                  *lsq_epot,
+                             qtStats                  *lsq_eInter,
+                             gmx_stats                *lsq_freq);
+public:
+    TuneForceFieldPrinter() {}
     
-        /*! \brief Add my options to the list of command line arguments
-         * \param[out] pargs The vector to add to
-         */
-        void addOptions(std::vector<t_pargs> *pargs);
-        
-        /*! \brief Add my files to the list of command line arguments
-         * \param[out] pargs The vector to add to
-         */
-        void addFileOptions(std::vector<t_filenm> *filenm);
+    /*! \brief Add my options to the list of command line arguments
+     * \param[out] pargs The vector to add to
+     */
+    void addOptions(std::vector<t_pargs> *pargs);
     
-        void print(FILE                           *fp,
-                   std::vector<alexandria::MyMol> *mymol,
-                   const Poldata                  *pd,
-                   const gmx::MDLogger            &fplog,
-                   const gmx_output_env_t         *oenv,
-                   const CommunicationRecord      *cr,
-                   const std::vector<t_filenm>    &filenm);
-    };
+    /*! \brief Add my files to the list of command line arguments
+     * \param[out] pargs The vector to add to
+     */
+    void addFileOptions(std::vector<t_filenm> *filenm);
     
+    void print(FILE                           *fp,
+               std::vector<alexandria::MyMol> *mymol,
+               const Poldata                  *pd,
+               const gmx::MDLogger            &fplog,
+               const gmx_output_env_t         *oenv,
+               const CommunicationRecord      *cr,
+               const std::vector<t_filenm>    &filenm);
+};
+
 /*! \brief Print header and command line arguments
  *
  * \param[in] fp    File pointer, if nullptr the function returns 

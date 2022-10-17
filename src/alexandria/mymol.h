@@ -309,19 +309,22 @@ public:
      * Forces are stored as a vector of structures and then a
      * vector of atoms. Energies are stored as a 1D vector pair.
      * All energy components are stored as a vector of
-     * reference energies paired with a map of ACT energy components. The integer
-     * index points into the gromacs energy types.
-     * \param[in]  pd         The force field structure
-     * \param[in]  forceComp  The force computer utility
-     * \param[out] forceMap   The forces
-     * \param[out] enerMap    The potential energies
-     * \param[out] enerAllMap The energy components for each calculation
+     * reference energies paired with a map of ACT energy components. The 
+     * InteractionType index points to the energy type in the
+     * energyComponentsMap.
+     * \param[in]  pd                   The force field structure
+     * \param[in]  forceComp            The force computer utility
+     * \param[out] forceMap             The forces
+     * \param[out] energyMap            The energy components for a single structure
+     * \param[out] interactionEnergyMap The interaction energies
+     * \param[out] energyComponentsMap  The energy components
      */
-    void forceEnergyMaps(const Poldata                                           *pd,
-                         const ForceComputer                                     *forceComp,
-                         std::vector<std::vector<std::pair<double, double> > >   *forceMap,
-                         std::vector<std::pair<double, double> >                 *enerMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double> > > *enerAllMap);
+    void forceEnergyMaps(const Poldata                                                       *pd,
+                         const ForceComputer                                                 *forceComp,
+                         std::vector<std::vector<std::pair<double, double> > >               *forceMap,
+                         std::vector<std::pair<double, double> >                             *energyMap,
+                         std::vector<std::pair<double, double> >                             *interactionEnergyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
@@ -539,12 +542,14 @@ public:
      * Epot(system) - Sum_f Epot(f) 
      * where f are the fragments.
      * For a polarizable model the shell positions are minimized.
-     * \param[in] pd            The force field
-     * \param[in] forceComputer The code to run the calculations.
+     * \param[in] pd                 The force field
+     * \param[in] forceComputer      The code to run the calculations.
+     * \param[out] interactionForces The forces on the atoms due to the interacting components
      * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const Poldata       *pd,
-                                      const ForceComputer *forceComputer);
+    double calculateInteractionEnergy(const Poldata          *pd,
+                                      const ForceComputer    *forceComputer,
+                                      std::vector<gmx::RVec> *interactionForces) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd

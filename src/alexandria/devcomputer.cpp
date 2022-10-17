@@ -479,36 +479,56 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
                                            std::map<eRMS, FittingTarget>        *targets,
                                            const Poldata                        *poldata)
 {
-    std::vector<std::pair<double, double> >                 eMap;
-    std::vector<std::vector<std::pair<double, double> > >   fMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerAllMap;
-    mymol->forceEnergyMaps(poldata, forceComputer, &fMap, &eMap, &enerAllMap);
+    std::vector<std::pair<double, double> >                 energyMap;
+    std::vector<std::pair<double, double> >                 interactionEnergyMap;
+    std::vector<std::vector<std::pair<double, double> > >   forceMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
+    mymol->forceEnergyMaps(poldata, forceComputer, &forceMap, &energyMap,
+                           &interactionEnergyMap, &enerComponentMap);
 
     auto tf = targets->find(eRMS::Force2);
-    if (tf != targets->end() && !fMap.empty())
+    if (tf != targets->end() && !forceMap.empty())
     {
-        for(const auto &fstruct : fMap)
+        for(const auto &fstruct : forceMap)
         {
             for(const auto &ff : fstruct)
             {
+                if (std::isnan(ff.second))
+                {
+                    printf("Force for %s is NaN\n", mymol->getMolname().c_str());
+                }
                 tf->second.increase(1, gmx::square(ff.first-ff.second));
             }
         }
     }
-    auto te = targets->find(eRMS::EPOT);
-    if (te != targets->end() && !eMap.empty())
+    if (energyMap.empty())
     {
-        for(const auto &ff : eMap)
+        printf("Did not find any energies for %s\n", mymol->getMolname().c_str());
+    }
+    auto te = targets->find(eRMS::EPOT);
+    if (te != targets->end() && !energyMap.empty())
+    {
+        for(const auto &ff : energyMap)
         {
+            if (std::isnan(ff.second))
+            {
+                printf("Energy for %s is NaN\n", mymol->getMolname().c_str());
+            }
             // TODO Double check if the atomizationEnergy is needed.
             // auto enerexp = mymol->atomizationEnergy() + ff.first;
-            te->second.increase(1, gmx::square(ff.first-ff.second));
+            double mydev2 = gmx::square(ff.first-ff.second);
+            if (mydev2 == 0)
+            {
+                printf("Energy difference exactly zero for %s. Ref ener %g\n",
+                       mymol->getMolname().c_str(), ff.first);
+            }
+            te->second.increase(1, mydev2);
         }
     }
     auto ti = targets->find(eRMS::Interaction);
-    if (ti != targets->end() && !eMap.empty())
+    if (ti != targets->end() && !interactionEnergyMap.empty())
     {
-        for(const auto &ff : eMap)
+        for(const auto &ff : interactionEnergyMap)
         {
             ti->second.increase(1, gmx::square(ff.first-ff.second));
         }

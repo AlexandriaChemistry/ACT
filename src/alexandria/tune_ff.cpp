@@ -256,26 +256,38 @@ void OptACM::initMaster()
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
-    // Create random number generator and feed it the global seed
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
-    gen.seed(seed);
-    seed = dis(gen);
+    if (0 == seed)
+    {
+        // Create random number generator and feed it the global seed
+        std::random_device rd;  // Will be used to obtain a seed for the random number engine
+        seed = rd();
+    }
+    
+    // Standard mersenne_twister_engine seeded with seed
+    std::mt19937 gen(seed);
+    // Default constructor to cover all available (positive) range
+    std::uniform_int_distribution<int> dis(0);
+    // Distribute different random number seeds to the middlemen
+    for(const auto mman : sii_->commRec()->middlemen())
+    {
+        // Generate new seed for each of the middlemen
+        // and send it over.
+        sii_->commRec()->send_int(mman, dis(gen));
+    }
 
     // Initializer
-    auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), seed);
+    auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
     // Create and initialize the mutator
     ga::Mutator *mutator;
     sii_->makeIndividualDir();  // We need to call this before opening working files!
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator = new alexandria::PercentMutator(sii_, seed, gach_.percent());
+        mutator = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
         // TODO Only open these files when we are optimizing.
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
@@ -283,7 +295,7 @@ void OptACM::initMaster()
     }
 
     // Selector
-    auto *selector = new ga::RouletteSelector(seed);
+    auto *selector = new ga::RouletteSelector(dis(gen));
 
     // Crossover
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
@@ -291,7 +303,7 @@ void OptACM::initMaster()
 
     auto *crossover = new ga::NPointCrossover(sii_->nParam(),
                                               gach_.nCrossovers(),
-                                              seed);
+                                              dis(gen));
 
     // Penalizer(s)
     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
@@ -332,9 +344,10 @@ void OptACM::initMaster()
             );
         }
         penalizers->push_back(
-            new ga::CatastrophePenalizer(
-                logFile(), seed, gach_.cpGenInterval(), gach_.cpPopFrac(),
-                initializer, gach_.popSize()
+            new ga::CatastrophePenalizer(logFile(), dis(gen),
+                                         gach_.cpGenInterval(),
+                                         gach_.cpPopFrac(),
+                                         initializer, gach_.popSize()
             )
         );
     }
@@ -364,7 +377,6 @@ void OptACM::initMaster()
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
         ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator, sii_, &gach_);
     }
     else
@@ -372,7 +384,7 @@ void OptACM::initMaster()
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(
             logFile(), initializer, fitComp_, probComputer, selector, crossover,
-            mutator, terminators, penalizers, sii_, &gach_, bch_.seed()
+            mutator, terminators, penalizers, sii_, &gach_, dis(gen)
         );
     }
 }

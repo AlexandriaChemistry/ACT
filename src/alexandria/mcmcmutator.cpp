@@ -53,9 +53,8 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii,
                          bool                  evaluateTestSet)
-    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
-    gen.seed(seed);
     logfile_ = logfile;
     verbose_ = verbose;
     flush_   = flush;
@@ -452,7 +451,6 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     std::set<int> changed;
     sii_->updatePoldata(changed, genome->bases());
     auto cdc    = CalcDev::Compute;
-    auto cdp    = CalcDev::Parameters;
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {

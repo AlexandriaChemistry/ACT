@@ -272,8 +272,10 @@ protected:
         auto fcomp = new ForceComputer(rmsToler, 25);
         if (mp_.fragmentHandler()->topologies().size() > 1)
         {
-            auto einter = mp_.calculateInteractionEnergy(pd, fcomp);
+            std::vector<gmx::RVec> forces;
+            auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces);
             checker_.checkReal(einter, "InteractionEnergy");
+            // TODO: Check the forces as well
         }
     }
     

@@ -309,25 +309,25 @@ void Topology::setAtoms(const t_atoms *atoms)
 const Bond *Topology::findBond(int ai, int aj) const
 {
     Bond b(ai, aj, 1.0);
-    const TopologyEntry *bptr;
+    std::vector<TopologyEntry *>::const_iterator bptr;
     auto bondsptr = entries_.find(InteractionType::BONDS);
     if (entries_.end() != bondsptr)
     {
         const std::vector<TopologyEntry *> &bonds = bondsptr->second;
-        bptr  = *std::find_if(bonds.begin(), bonds.end(),
-                              [b](const TopologyEntry *bb)
-                              { return (bb->atomIndex(0) == b.atomIndex(0) && bb->atomIndex(1) == b.atomIndex(1)) ||
-                                (bb->atomIndex(0) == b.atomIndex(1) && bb->atomIndex(1) == b.atomIndex(0)); });
-        if (bptr == *(bonds.end()))
+        bptr  = std::find_if(bonds.begin(), bonds.end(),
+                             [b](const TopologyEntry *bb)
+                             { return (bb->atomIndex(0) == b.atomIndex(0) && bb->atomIndex(1) == b.atomIndex(1)) ||
+                               (bb->atomIndex(0) == b.atomIndex(1) && bb->atomIndex(1) == b.atomIndex(0)); });
+        if (bptr == bonds.end())
         {
-            GMX_THROW(gmx::InternalError("Cannot find bond"));
+            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond between %d and %d", ai, aj).c_str()));
         }
     }
     else
     {
         GMX_THROW(gmx::InternalError("There are no bonds at all."));
     }
-    auto myptr = static_cast<const Bond *>(bptr);
+    auto myptr = static_cast<const Bond *>(*bptr);
     if (myptr->aI() == ai)
     {
         return myptr;
