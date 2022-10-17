@@ -47,21 +47,13 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
 : gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
-    int seed = bch->seed();
-    // Create random number generator and feed it the global seed
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
-    gen.seed(seed);
-    // Use the random number generator to get a seed for this processor based on the global seed
-    // Skip the first "nodeid" numbers and grab the next one
-    for (int i = 0; i < sii->commRec()->middleManOrdinal(); i++)
-    {
-        dis(gen);
-    }
-    seed = dis(gen);
+    int seed = sii->commRec()->recv_int(sii->commRec()->superior());
+    // Standard mersenne_twister_engine seeded with what we received
+    std::mt19937 gen(seed);
+    // Default constructor to cover all available (positive) range
+    std::uniform_int_distribution<int> dis(0);
     
-    auto initializer = new ACMInitializer(sii, gach->randomInit(), seed);
+    auto initializer = new ACMInitializer(sii, gach->randomInit(), dis(gen));
     
     // Create and initialize the individual
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
@@ -70,18 +62,22 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     forceComp_ = new ForceComputer();
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,
+                                      false, forceComp_);
     
     // Create and initialize the mutator
     sii->makeIndividualDir();  // We need to call this before opening working files!
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, seed, gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, dis(gen),
+                                                  gach->percent());
     }
     else
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
-        auto mut = new alexandria::MCMCMutator(nullptr, false, flush, seed, bch, fitComp_, sii, bch->evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(nullptr, false, flush, dis(gen),
+                                               bch, fitComp_, sii,
+                                               bch->evaluateTestset());
         mut->openParamConvFiles(oenv);
         mut->openChi2ConvFile(oenv);
         mutator_ = mut;

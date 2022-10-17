@@ -262,10 +262,12 @@ void OptACM::initMaster()
         std::random_device rd;  // Will be used to obtain a seed for the random number engine
         seed = rd();
     }
-    //std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::mt19937 gen(seed); // Standard mersenne_twister_engine seeded with seed
-    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
-    //gen.seed(seed);
+    
+    // Standard mersenne_twister_engine seeded with seed
+    std::mt19937 gen(seed);
+    // Default constructor to cover all available (positive) range
+    std::uniform_int_distribution<int> dis(0);
+    // Distribute different random number seeds to the middlemen
     for(const auto mman : sii_->commRec()->middlemen())
     {
         // Generate new seed for each of the middlemen
