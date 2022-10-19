@@ -59,7 +59,7 @@ namespace alexandria
 
 typedef std::map<const std::string, int> stringCount;
 
-static void dump_molecule(FILE              *fp,
+static bool dump_molecule(FILE              *fp,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
                           const Poldata     &pd,
@@ -69,14 +69,13 @@ static void dump_molecule(FILE              *fp,
     alexandria::MyMol mymol;
     mymol.Merge(&mp);
     mymol.setInputrec(inputrec);
-    auto imm = mymol.GenerateTopology(fp,
-                                      &pd,
-                                      missingParameters::Error,
+    auto imm = mymol.GenerateTopology(fp, &pd, missingParameters::Error,
                                       false);
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
                 mymol.getMolname().c_str(), immsg(imm));
+        return false;
     }
     else
     {
@@ -176,6 +175,7 @@ static void dump_molecule(FILE              *fp,
             fprintf(fp, "\n");
         }
     }
+    return true;
 }
 
 int molprop_check(int argc, char*argv[])
@@ -221,6 +221,7 @@ std::vector<alexandria::MolProp> mp;
     FILE *mylog = gmx_fio_fopen(opt2fn("-g", NFILE, fnm), "w");
     fprintf(mylog, "Force field file %s\n", opt2fn("-ff", NFILE, fnm));
     fprintf(mylog, "Molprop file     %s\n", opt2fn("-mp", NFILE, fnm));
+    int numberOk = 0, numberFailed = 0;
     for (auto &m : mp)
     {
         typedef struct
@@ -307,8 +308,17 @@ std::vector<alexandria::MolProp> mp;
             }
         }
 
-        dump_molecule(mylog, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
+        if (dump_molecule(mylog, &atomTypeCount, &bccTypeCount, pd, m, inputrec))
+        {
+            numberOk++;
+        }
+        else
+        {
+            numberFailed++;
+        }
     }
+    fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
+            numberOk, numberFailed);
     fprintf(mylog, "Statistics\n");
     for(auto &atc : atomTypeCount)
     {
