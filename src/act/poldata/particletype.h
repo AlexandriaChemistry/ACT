@@ -201,6 +201,11 @@ class ParticleType
      */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
+    /*! \brief Broadcast my data
+     * \param[in] cr  communication record
+     */
+    CommunicationStatus Bcast(const CommunicationRecord *cr);
+
     /*! \brief Receive my data
      * \param[in] cr  communication record
      * \param[in] src Source processor

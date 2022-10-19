@@ -163,6 +163,51 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
     return cs;
 }
 
+CommunicationStatus ForceFieldParameter::Bcast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_str(&unit_);
+        cr->bcast_double(&value_);
+        std::string mutstr;
+        if (cr->isMaster())
+        {
+            mutstr = mutabilityName(mutability_);
+        }
+        cr->bcast_str(&mutstr);
+        Mutability mut;
+        if (!nameToMutability(mutstr, &mut))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
+        }
+        mutability_          = mut;
+        cr->bcast_double(&originalValue_);
+        cr->bcast_double(&uncertainty_);
+        cr->bcast_double(&originalUncertainty_);
+        cr->bcast_int(&ntrain_);
+        cr->bcast_int(&originalNtrain_);
+        cr->bcast_double(&minimum_);
+        cr->bcast_double(&maximum_);
+        int strict = strict_;
+        cr->bcast_int(&strict);
+        strict_ = strict;
+        if (debug)
+        {
+            fprintf(debug, "Received most of ff param\n");
+            fflush(debug);
+        }
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received ForceFieldParameter %g %g %s %d, status %s\n",
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+            fflush(debug);
+        }
+        calculateInternalValue();
+    }
+    return cs;
+}
+
 CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

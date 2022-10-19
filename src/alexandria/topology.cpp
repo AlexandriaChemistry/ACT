@@ -126,6 +126,48 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
+CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+
+    if (CommunicationStatus::OK == cs)
+    {
+        int nai = indices_.size();
+        cr->bcast_int(&nai);
+        if (cr->isMaster())
+        {
+            for (int i= 0; i < nai; i++)
+            {
+                cr->bcast_int(&indices_[i]);
+            }
+        }
+        else
+        {
+            indices_.resize(nai, 0);
+            for (int i = 0; i < nai; i++)
+            {
+                cr->bcast_int(&indices_[i]);
+            }
+        }
+        int nbo = bondOrder_.size();
+        if (cr->isMaster())
+        {
+            cr->bcast_double_vector(&bondOrder_);
+        }
+        else
+        {
+            bondOrder_.resize(nbo);
+            cr->bcast_double_vector(&bondOrder_);
+        }
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive TopologyEntry, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

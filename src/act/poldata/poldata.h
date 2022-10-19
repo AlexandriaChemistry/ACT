@@ -463,6 +463,8 @@ class Poldata
          * \param[in] src Source node
          */
         void receiveParticles(const CommunicationRecord *cr, int src);
+
+        CommunicationStatus BroadCast(const CommunicationRecord *cr);
         
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 

@@ -496,6 +496,127 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     return cs;
 }
 
+CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+
+    /* Generic stuff */
+    if (CommunicationStatus::OK == cs)
+    {
+        //! Receive index and more
+        cr->bcast_int(&index_);
+        cr->bcast_str(&molname_);
+        cr->bcast_str(&iupac_);
+        cr->bcast_str(&cas_);
+        cr->bcast_str(&cid_);
+        cr->bcast_str(&inchi_);
+        int Nbond = bond_.size();
+        cr->bcast_int(&Nbond);
+        if (cr->isMaster())
+        {
+            for(auto &b : *bonds())
+            {
+                b.BroadCast(cr);
+            }
+        }
+        else
+        {
+            //! Receive Bonds
+            cs = CommunicationStatus::OK;
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
+            {
+                Bond b;
+                cs = b.BroadCast(cr);
+                if (CommunicationStatus::OK == cs)
+                {
+                    AddBond(b);
+                }
+            }
+        }
+
+        int Ncategory = category_.size();
+        cr->bcast_int(&Ncategory);
+        //! Receive Categories
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
+        {
+            if (CommunicationStatus::OK == cr->bcast_data())
+            {
+                std::string str;
+                cr->bcast_str(&str);
+                if (!str.empty())
+                {
+                    AddCategory(str);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Received a category %s\n", str.c_str());
+                        fflush(debug);
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
+                }
+            }
+        }
+
+        int Nfrag     = fragment_.size();
+        cr->bcast_int(&Nfrag);
+        if (cr->isMaster())
+        {
+            for(size_t ii = 0; ii < fragment_.size(); ii++)
+            {
+                fragment_[ii].BroadCast(cr);
+            }
+        }
+        else
+        {
+            //! Receive Fragments
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+            {
+                Fragment f;
+                cs = f.BroadCast(cr);
+                if (CommunicationStatus::OK == cs)
+                {
+                    fragment_.push_back(std::move(f));
+                }
+            }
+        }
+
+        int Nexper    = exper_.size();
+        cr->bcast_int(&Nexper);
+        //! Receive Experiments
+        if (cr->isMaster())
+        {
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            {
+                exper_[n].BroadCast(cr);
+            }
+        }
+        else
+        {
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            {
+                Experiment ex;
+                cs = ex.BroadCast(cr);
+                if (CommunicationStatus::OK == cs)
+                {
+                    AddExperiment(ex);
+                }
+            }
+        }
+
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received %zu experiments from %d for mol %s\n",
+                    exper_.size(), 0, getMolname().c_str());
+            fprintf(debug, "Received MolProp %s, status %s\n",
+                    getMolname().c_str(), cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
 CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

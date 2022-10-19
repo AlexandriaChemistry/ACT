@@ -303,7 +303,7 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
@@ -313,7 +313,15 @@ public:
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr);
+
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */

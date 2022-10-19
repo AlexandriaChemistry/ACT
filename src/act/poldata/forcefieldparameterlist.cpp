@@ -253,6 +253,119 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     return cs;
 }
 
+CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_str(&function_);
+        std::string canSwapString;
+        if (cr->isMaster())
+        {
+            canSwapString.assign(canSwapToString(canSwap_));
+        }
+        cr->bcast_str(&canSwapString);
+        canSwap_ = stringToCanSwap(canSwapString);
+        int ftype = fType_;
+        cr->bcast_int(&ftype);
+        fType_ = ftype;
+        int noptions = options_.size();
+        cr->bcast_int(&noptions);
+        if (cr->isMaster())
+        {
+            for(const auto &opt : options_)
+            {
+                std::string key   = opt.first;
+                std::string value = opt.second;
+                cr->bcast_str(&key);
+                cr->bcast_str(&value);
+            }
+        }
+        else
+        {
+            options_.clear();
+            for(int i = 0; i < noptions; i++)
+            {
+                std::string key, value;
+                cr->bcast_str(&key);
+                cr->bcast_str(&value);
+                options_.insert({key, value});
+            }
+        }
+        if (debug)
+        {
+            fprintf(debug, "Done receiving options\n");
+            fflush(debug);
+        }
+        int nparam = parameters_.size();
+        cr->bcast_int(&nparam);
+        if (cr->isMaster())
+        {
+            for(auto &p : parameters_)
+            {
+                Identifier pp = p.first;
+                pp.Bcast(cr);
+                int ntype = p.second.size();
+                cr->bcast_int(&ntype);
+                for(auto &q : p.second)
+                {
+                    std::string type = q.first;
+                    cr->bcast_str(&type);
+                    q.second.Bcast(cr);
+                }
+            }
+        }
+        else
+        {
+            parameters_.clear();
+            for(int i = 0; i < nparam; i++)
+            {
+                Identifier key;
+                cs = key.Bcast(cr);
+                if (debug)
+                {
+                    fprintf(debug, "Done broadcasting key %s\n", key.id().c_str());
+                    fflush(debug);
+                }
+                if (CommunicationStatus::OK == cs)
+                {
+                    int ntype;
+                    cr->bcast_int(&ntype);
+                    for(int j = 0; j < ntype; j++)
+                    {
+                        std::string type;
+                        cr->bcast_str(&type);
+                        ForceFieldParameter p;
+                        cs = p.Bcast(cr);
+                        if (CommunicationStatus::OK == cs)
+                        {
+                            parameters_[key].insert({type, p});
+                            if (debug)
+                            {
+                                fprintf(debug, "Done receiving parameter\n");
+                                fflush(debug);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fflush(debug);
+                }
+            }
+        }
+        int ctr = counter_;
+        cr->bcast_int(&ctr);
+        counter_ = ctr;
+    }
+    return cs;
+}
+
 CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

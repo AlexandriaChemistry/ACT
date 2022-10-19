@@ -282,6 +282,64 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
     return CommunicationStatus::OK;
 }
 
+CommunicationStatus Identifier::Bcast(const CommunicationRecord *cr)
+{
+    int nids = ids_.size();
+    cr->bcast_int(&nids);
+    std::string tmp;
+    for(int i = 0; i < nids; i++)
+    {
+        if (cr->isMaster())
+        {
+            tmp.assign(ids_[i]);
+        }
+        cr->bcast_str(&tmp);
+        if (!cr->isMaster())
+        {
+            ids_.push_back(tmp);
+        }
+    }
+    
+    if (cr->isMaster())
+    {
+        tmp.assign(canSwapToString(canSwap_));
+    }
+    cr->bcast_str(&tmp);
+    if (!cr->isMaster())
+    {
+        canSwap_ = stringToCanSwap(tmp);
+    }
+    int natoms = atoms_.size();
+    cr->bcast_int(&natoms);
+    if (cr->isMaster())
+    {
+        for(auto a = atoms_.begin(); a < atoms_.end(); ++a)
+        {
+            std::string aa(*a);
+            cr->bcast_str(&aa);
+        }
+    }
+    else
+    {
+        atoms_.clear();
+        for(int i = 0; i < natoms; i++)
+        {
+            std::string a;
+            cr->bcast_str(&a);
+            atoms_.push_back(a);
+        }
+    }
+    int nbo = bondOrders_.size();
+    cr->bcast_int(&nbo);
+    if (!cr->isMaster())
+    {
+        bondOrders_.resize(nbo);
+    }
+    cr->bcast_double_vector(&bondOrders_);
+
+    return CommunicationStatus::OK;
+}
+
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
     int nids = cr->recv_int(src);

@@ -197,6 +197,26 @@ public:
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
 
+    /*! Broadcast a string to all processors from the master.
+     * \param[inout] str  Pointer to the string
+     */
+    void bcast_str(std::string *str) const;
+    
+    /*! Broadcast an integer to all processors from the master.
+     * \param[inout] i  Pointer to the integer
+     */
+    void bcast_int(int *i) const;
+    
+    /*! Broadcast a double to all processors from the master.
+     * \param[inout] d  Pointer to the double
+     */
+    void bcast_double(double *d) const;
+    
+    /*! Broadcast a double vector to all processors from the master.
+     * \param[in] d    Pointer to vector of the doubles
+     */
+    void bcast_double_vector(std::vector<double> *d) const;
+
     /*! Send a string to another processor.
      * \param[in] dest The destination processor
      * \param[in] str  Pointer to the string
@@ -291,11 +311,21 @@ public:
     /*********************************************************
      * Routines to initiate and finalize data transmissions
      *********************************************************/
+    /*! \brief Initiate broadcasting data to a processor
+     * \return CommunicationStatus::OK, if OK
+     */
+    CommunicationStatus  bcast_data() const;
+    
     /*! \brief Initiate sending data to a processor
      * \param[in] dest The destination processor
      * \return CommunicationStatus::SEND_DATA, if OK
      */
     CommunicationStatus send_data(int dest) const;
+    
+    /*! \brief Finish broadcasting data to a processor
+     * \return CommunicationStatus::OK, if OK
+     */
+    CommunicationStatus  bcast_done() const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor

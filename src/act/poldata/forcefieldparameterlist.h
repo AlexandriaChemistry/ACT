@@ -221,6 +221,11 @@ class ForceFieldParameterList
      */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
 
+    /*! \brief Broadcast contents from another processor
+     * \param[in] cr  Communication data structure
+     */
+    CommunicationStatus Bcast(const CommunicationRecord *cr);
+
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from

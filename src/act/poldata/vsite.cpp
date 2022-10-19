@@ -108,6 +108,10 @@ CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
+CommunicationStatus Vsite::Bcast(const CommunicationRecord *cr)
+{
+}
+
 CommunicationStatus Vsite::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

@@ -868,7 +868,7 @@ static void add_exper_properties(xmlNodePtr        exp,
 {
     xmlNodePtr child;
 
-    for (auto &props : exper.propertyConst())
+    for (auto &props : exper.propertiesConst())
     {
         auto mpo = props.first;
         for (auto &prop : props.second)

@@ -435,6 +435,126 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
+CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_str(&filename_);
+        cr->bcast_str(&checkSum_);
+        cr->bcast_str(&timeStamp_);
+        cr->bcast_int(&nexcl_);
+        cr->bcast_double(&gtEpsilonR_);
+        cr->bcast_str(&vsite_angle_unit_);
+        cr->bcast_str(&vsite_length_unit_);
+        int icq = static_cast<int>(ChargeGenerationAlgorithm_);
+        cr->bcast_int(&icq);
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
+        int pol = polarizable_ ? 1 : 0;
+        cr->bcast_int(&pol);
+        polarizable_ = pol == 1;
+        /* Bcast Ffatype */
+        int asize = alexandria_.size();
+        cr->bcast_int(&asize);
+        if (cr->isMaster())
+        {
+            for(auto &aa : alexandria_)
+            {
+                aa.Bcast(cr);
+            }
+        }
+        else
+        {
+            for(int as = 0; as < asize; as++)
+            {
+                ParticleType pt;
+                cs = pt.Bcast(cr);
+                if (CommunicationStatus::OK == cs)
+                {
+                    alexandria_.push_back(pt);
+                }
+            }
+        }
+
+        /* Bcast Vsite */
+        if (CommunicationStatus::OK == cs)
+        {
+            int vsize = vsite_.size();
+            cr->bcast_int(&vsize);
+            if (!cr->isMaster())
+            {
+                vsite_.resize(vsize);
+            }
+            for (int vs = 0; vs < vsize; vs++)
+            {
+                cs = vsite_[vs].Bcast(cr);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+
+        /* Force Field Parameter Lists */
+        if (CommunicationStatus::OK == cs)
+        {
+            int fsize = forces_.size();
+            cr->bcast_int(&fsize);
+            if (cr->isMaster())
+            {
+                for(auto &ff : forces_)
+                {
+                    std::string key(interactionTypeToString(ff.first));
+                    cr->bcast_str(&key);
+                    ff.second.Bcast(cr);   
+                }
+            }
+            else
+            {
+                forces_.clear();
+            
+                for (int n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
+                {
+                    ForceFieldParameterList fs;
+                    std::string             key;
+                    cr->bcast_str(&key);
+                    InteractionType iType = stringToInteractionType(key.c_str());
+                    cs                    = fs.Bcast(cr);
+                    if (CommunicationStatus::OK == cs && !cr->isMaster())
+                    {
+                        forces_.insert({iType, fs});
+                    }
+                    if (debug)
+                    {
+                        fprintf(debug, "Done Listed force %s\n", key.c_str());
+                        fflush(debug);
+                    }
+                }
+            }
+        }
+
+        /* Bcast Symcharges */
+        if (CommunicationStatus::OK == cs)
+        {
+            int scsize = symcharges_.size();
+            cr->bcast_int(&scsize);
+            if (!cr->isMaster())
+            {
+                symcharges_.resize(scsize);
+            }
+            for(int scs = 0; scs < scsize; scs++)
+            {
+                cs = symcharges_[scs].Bcast(cr);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+    }
+    return cs;
+}
+
 CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

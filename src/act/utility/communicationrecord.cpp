@@ -256,6 +256,39 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
+void CommunicationRecord::bcast_str(std::string *str) const
+{
+    int ssize = str->size(); 
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, 0, mpi_act_world_);
+    if (0 != rank_)
+    {
+        str->resize(ssize);
+    }
+    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, 0, mpi_act_world_);
+}
+    
+void CommunicationRecord::bcast_int(int *i) const
+{
+    MPI_Bcast((void *)i, 1, MPI_INT, 0, mpi_act_world_);
+}
+    
+void CommunicationRecord::bcast_double(double *d) const
+{
+    MPI_Bcast((void *)d, 1, MPI_DOUBLE, 0, mpi_act_world_);
+}
+   
+void CommunicationRecord::bcast_double_vector(std::vector<double> *d) const
+{
+    int ssize = d->size(); 
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, 0, mpi_act_world_);
+    if (0 != rank_)
+    {
+        d->resize(ssize);
+    }
+
+    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, 0, mpi_act_world_);
+}
+
 void CommunicationRecord::send_str(int dest, const std::string *str) const
 {
     int len = str->size();
@@ -438,6 +471,21 @@ void CommunicationRecord::sumi_helpers(int nr,
 
 #define ACT_SEND_DATA 19823
 #define ACT_SEND_DONE -666
+CommunicationStatus CommunicationRecord::bcast_data() const
+{
+    int acd = ACT_SEND_DATA;
+    bcast_int(&acd);
+
+    if (ACT_SEND_DATA == acd)
+    {
+        return CommunicationStatus::OK;
+    }
+    else
+    {
+        return CommunicationStatus::ERROR;
+    }
+}
+
 CommunicationStatus CommunicationRecord::send_data(int dest) const
 {
     send_int(dest, ACT_SEND_DATA);
@@ -450,6 +498,21 @@ CommunicationStatus CommunicationRecord::send_done(int dest) const
     send_int(dest, ACT_SEND_DONE);
 
     return CommunicationStatus::OK;
+}
+
+CommunicationStatus CommunicationRecord::bcast_done() const
+{
+    int acd = ACT_SEND_DONE;
+    bcast_int(&acd);
+
+    if (ACT_SEND_DONE == acd)
+    {
+        return CommunicationStatus::OK;
+    }
+    else
+    {
+        return CommunicationStatus::ERROR;
+    }
 }
 
 CommunicationStatus CommunicationRecord::recv_data(int src) const

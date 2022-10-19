@@ -135,7 +135,7 @@ protected:
                     snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
                     myCheck.checkString(ci.getMethod(), mbuf);
                 }
-                for (auto &propi : ci.propertyConst())
+                for (auto &propi : ci.propertiesConst())
                 {
                     for(auto gp : propi.second)
                     {

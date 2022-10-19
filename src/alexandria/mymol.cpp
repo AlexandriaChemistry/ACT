@@ -495,7 +495,6 @@ void MyMol::forceEnergyMaps(const Poldata                                       
             }
             else
             {
-                real shellForceRMS;
                 PaddedVector<gmx::RVec> gmxforces;
                 gmxforces.resizeWithPadding(myatoms.size());
                 //calculateEnergyOld(crtmp, &coords, &gmxforces, &energies, &shellForceRMS);

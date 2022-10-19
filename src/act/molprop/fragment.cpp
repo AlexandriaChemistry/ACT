@@ -74,12 +74,43 @@ void Fragment::dump(FILE *fp) const
             atomString_.c_str());
 }
     
+CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_double(&mass_);
+        cr->bcast_int(&charge_);
+        cr->bcast_int(&multiplicity_);
+        cr->bcast_int(&symmetryNumber_);
+        cr->bcast_str(&formula_);
+        cr->bcast_str(&texform_);
+        cr->bcast_str(&id_);
+        int natom     = atoms_.size();
+        cr->bcast_int(&natom);
+        if (!cr->isMaster())
+        {
+            atoms_.resize(natom);
+        }
+        for(int i = 0; i < natom; i++)
+        {
+            cr->bcast_int(&atoms_[i]);
+        }
+    }
+    if (!cr->isMaster())
+    {
+        makeAtomString();
+    }
+    return cs;
+}
+
 CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     mass_         = cr->recv_double(src);
     charge_       = cr->recv_int(src);
     multiplicity_ = cr->recv_int(src);
+    symmetryNumber_ = cr->recv_int(src);
     cr->recv_str(src, &formula_);
     cr->recv_str(src, &texform_);
     cr->recv_str(src, &id_);
@@ -89,6 +120,7 @@ CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
     {
         atoms_.push_back(cr->recv_int(src));
     }
+    makeAtomString();
     return cs;
 }
 
@@ -98,6 +130,7 @@ CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) cons
     cr->send_double(dest, mass_);
     cr->send_int(dest, charge_);
     cr->send_int(dest, multiplicity_);
+    cr->send_int(dest, symmetryNumber_);
     cr->send_str(dest, &formula_);
     cr->send_str(dest, &texform_);
     cr->send_str(dest, &id_);

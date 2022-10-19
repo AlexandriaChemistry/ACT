@@ -112,6 +112,55 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
     return cs;
 }
 
+CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_str(&name_);
+        cr->bcast_str(&obType_);
+        cr->bcast_str(&residueName_);
+        cr->bcast_int(&residueNumber_);
+        cr->bcast_int(&atomID_);
+        cr->bcast_str(&coord_unit_);
+        cr->bcast_double(&x_);
+        cr->bcast_double(&y_);
+        cr->bcast_double(&z_);
+        cr->bcast_str(&force_unit_);
+        cr->bcast_double(&fx_);
+        cr->bcast_double(&fy_);
+        cr->bcast_double(&fz_);
+        int Ncharge = q_.size();
+        cr->bcast_int(&Ncharge);
+        if (cr->isMaster())
+        {
+            for (auto &qi : q_)
+            {
+                std::string type = qTypeName(qi.first);
+                cr->bcast_str(&type);
+                cr->bcast_double(&qi.second);
+            }
+        }
+        else
+        {
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
+            {
+                std::string type;
+                cr->bcast_str(&type);
+                double q;
+                cr->bcast_double(&q);
+                AddCharge(stringToQtype(type), q);
+            }
+        }
+    }
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
+    }
+    return cs;
+}
+
 CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus  cs = CommunicationStatus::OK;

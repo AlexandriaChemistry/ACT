@@ -116,6 +116,8 @@ class Vsite
 
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
+        CommunicationStatus Bcast(const CommunicationRecord *cr);
+
         CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
 

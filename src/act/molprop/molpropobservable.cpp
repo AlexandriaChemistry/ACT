@@ -145,6 +145,36 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
     return cs;
 }
 
+CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+
+    if (CommunicationStatus::OK == cs)
+    {
+        const char *mn = mpo_name(mpo_);
+        std::string mpo_type(mn);
+        cr->bcast_str(&mpo_type);
+        if (!stringToMolPropObservable(mpo_type, &mpo_))
+        {
+            gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
+        }
+        cr->bcast_str(&type_);
+        cr->bcast_str(&inputUnit_);
+        cr->bcast_str(&unit_);
+        cr->bcast_double(&T_);
+        int ep = static_cast<int>(eP_);
+        cr->bcast_int(&ep);
+        eP_ = static_cast<ePhase>(ep);
+        
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -239,6 +269,30 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
     return cs;
 }
 
+CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+
+    if (CommunicationStatus::OK == cs)
+    {
+        int nvalue = values_.size();
+        cr->bcast_int(&nvalue);
+        if (!cr->isMaster())
+        {
+            values_.resize(nvalue);
+        }
+        cr->bcast_double_vector(&values_);
+        cr->bcast_double(&average_);
+        cr->bcast_double(&error_);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
@@ -300,6 +354,28 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
     else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send Harmonics, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+
+    if (CommunicationStatus::OK == cs)
+    {
+        int nvalue = values_.size();
+        cr->bcast_int(&nvalue);
+        if (!cr->isMaster())
+        {
+            values_.clear();
+        }
+        cr->bcast_double_vector(&values_);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -397,6 +473,30 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     return cs;
 }
 
+CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+
+    if (CommunicationStatus::OK == cs)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            for(int n = 0; n < DIM; n++)
+            {
+                cr->bcast_double(&alpha_[m][n]);
+            }
+        }
+        cr->bcast_double(&average_);
+        cr->bcast_double(&error_);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to received Polarizability, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
@@ -438,6 +538,23 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
 { 
     Set(convertToGromacs(average, inputUnit), convertToGromacs(error, inputUnit));
     setUnit(gromacsUnit(inputUnit));
+}
+
+CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_double(&average_);
+        cr->bcast_double(&error_);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
 }
 
 CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int src)
@@ -493,6 +610,30 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
         y_     = cr->recv_double(src);
         z_     = cr->recv_double(src);
         V_     = cr->recv_double(src);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr)
+{
+    CommunicationStatus cs = cr->bcast_data();
+
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast_str(&xyzInputUnit_);
+        cr->bcast_str(&vInputUnit_);
+        cr->bcast_str(&xyzUnit_);
+        cr->bcast_str(&vUnit_);
+        cr->bcast_int(&espID_);
+        cr->bcast_double(&x_);
+        cr->bcast_double(&y_);
+        cr->bcast_double(&z_);
+        cr->bcast_double(&V_);
     }
     else if (nullptr != debug)
     {
