@@ -46,6 +46,11 @@ std::map<CommunicationStatus, const char*> csToString = {
     { CommunicationStatus::RECV_DATA, "Communication OK"        }
 };
 
+std::map<bool, const char *> boolName = {
+    { false, "false" },
+    { true, "true" }
+};
+
 const char *cs_name(CommunicationStatus cs)
 {
     return csToString[cs];
@@ -60,12 +65,20 @@ std::map<NodeType, const char *> ntToString = {
 CommunicationRecord::CommunicationRecord()
 {
     cr_            = init_commrec();
-    mpi_act_world_ = cr_->mpi_comm_mysim;
-    rank_          = cr_->nodeid;
-    size_          = cr_->nnodes;
+    mpi_act_world_ = MPI_COMM_WORLD;
+    (void) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+    (void) MPI_Comm_size(MPI_COMM_WORLD, &size_);
     if (rank_ == 0)
     {
         nt_ = NodeType::Master;
+    }
+}
+
+void CommunicationRecord::check_init() const
+{
+    if (!initCalled_)
+    {
+        GMX_THROW(gmx::InternalError("ComunicationRecord::init has not been called"));
     }
 }
 
@@ -108,8 +121,12 @@ void CommunicationRecord::print(FILE *fp)
     fprintf(fp, "%s", strToPrint.c_str());
 }
 
-void CommunicationRecord::init(int nmiddleman)
+CommunicationStatus CommunicationRecord::init(int nmiddleman)
 {
+    if (initCalled_)
+    {
+        return CommunicationStatus::TWOINIT;
+    }
     nmiddlemen_ = nmiddleman;
     if (nmiddlemen_ > size_ || nmiddlemen_ < 1)
     {
@@ -133,12 +150,6 @@ void CommunicationRecord::init(int nmiddleman)
     // Select the node type etc.
     if (rank_ == 0)  // If I am the MASTER
     {
-        // nt_ = NodeType::Master;  ALREADY DONE IN THE CONSTRUCTOR!
-
-        // Not updating superior_ from the default value. If it is
-        // used for communication the program will crash, since
-        // it is an error to do so.
-
         // Set ordinal to 0, as the first middleman
         ordinal_ = 0;
         // middlemen_.push_back(0);
@@ -200,9 +211,14 @@ void CommunicationRecord::init(int nmiddleman)
     // Default value
     mpi_act_helpers_ = mpi_act_world_;
     // Split the non-masters into nmiddlemen X nhelpers
-    MPI_Comm_split(mpi_act_world_, rank_ / (nhelper_per_middleman_ + 1),
-                   rank_ % (nhelper_per_middleman_ + 1), &mpi_act_helpers_);
-    print(stderr);
+    if (nhelper_per_middleman_ > 0)
+    {
+        MPI_Comm_split(mpi_act_world_, rank_ / (nhelper_per_middleman_ + 1),
+                       rank_ % (nhelper_per_middleman_ + 1), &mpi_act_helpers_);
+    }
+    print(stdout);
+    initCalled_ = true;
+    return CommunicationStatus::OK;
 }
 
 CommunicationRecord::~CommunicationRecord()
@@ -217,7 +233,7 @@ CommunicationRecord::~CommunicationRecord()
  *           LOW LEVEL ROUTINES                  *
  *************************************************/
 
- static void check_return(const char *msg, int returnvalue)
+static void check_return(const char *msg, int returnvalue)
 {
     switch (returnvalue)
     {
@@ -238,6 +254,7 @@ void CommunicationRecord::send(int dest, const void *buf, int bufsize) const
     MPI_Status  status;
     MPI_Request req;
 
+    check_init();
     check_return("MPI_Isend Failed",
                  MPI_Isend(buf, bufsize, MPI_BYTE, RANK(cr, dest), tag,
                            mpi_act_world_, &req));
@@ -250,37 +267,61 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     MPI_Status  status;
     MPI_Request req;
 
+    check_init();
     check_return ("MPI_Irecv Failed",
                   MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
                             mpi_act_world_, &req));
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-void CommunicationRecord::bcast_str(std::string *str) const
+void CommunicationRecord::bcast_str(std::string *str,
+                                    bool helpers_only) const
 {
-    int ssize = str->size(); 
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, 0, mpi_act_world_);
+    check_init();
+    int ssize = str->size();
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(),
+              helpers_only ? mpi_act_helpers_ : mpi_act_world_);
     if (0 != rank_)
     {
         str->resize(ssize);
     }
-    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, 0, mpi_act_world_);
+    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, superior(), 
+              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
 }
     
-void CommunicationRecord::bcast_int(int *i) const
+void CommunicationRecord::bcast_int(int *i,
+                                    bool helpers_only) const
 {
-    MPI_Bcast((void *)i, 1, MPI_INT, 0, mpi_act_world_);
+    check_init();
+    MPI_Bcast((void *)i, 1, MPI_INT, superior(),
+              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
 }
     
-void CommunicationRecord::bcast_double(double *d) const
+void CommunicationRecord::bcast_bool(bool *b,
+                                     bool helpers_only) const
 {
-    MPI_Bcast((void *)d, 1, MPI_DOUBLE, 0, mpi_act_world_);
+    check_init();
+    int d = *b ? 1 : 0;
+    MPI_Bcast((void *)&d, 1, MPI_INT, superior(),
+              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    *b = d;
+}
+    
+void CommunicationRecord::bcast_double(double *d,
+                                       bool helpers_only) const
+{
+    check_init();
+    MPI_Bcast((void *)d, 1, MPI_DOUBLE, superior(),
+              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
 }
    
-void CommunicationRecord::bcast_double_vector(std::vector<double> *d) const
+void CommunicationRecord::bcast_double_vector(std::vector<double> *d,
+                                              bool helpers_only) const
 {
+    check_init();
     int ssize = d->size(); 
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, 0, mpi_act_world_);
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(),
+              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
     if (0 != rank_)
     {
         d->resize(ssize);
@@ -291,6 +332,7 @@ void CommunicationRecord::bcast_double_vector(std::vector<double> *d) const
 
 void CommunicationRecord::send_str(int dest, const std::string *str) const
 {
+    check_init();
     int len = str->size();
 
     if (nullptr != debug)
@@ -306,6 +348,7 @@ void CommunicationRecord::send_str(int dest, const std::string *str) const
 
 void CommunicationRecord::recv_str(int src, std::string *str) const
 {
+    check_init();
     int   len;
 
     recv(src, &len, sizeof(len));
@@ -326,6 +369,7 @@ void CommunicationRecord::recv_str(int src, std::string *str) const
 
 void CommunicationRecord::send_double(int dest, double d) const
 {
+    check_init();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending double '%g' to %d\n", d, dest);
@@ -335,6 +379,7 @@ void CommunicationRecord::send_double(int dest, double d) const
 
 double CommunicationRecord::recv_double(int src) const
 {
+    check_init();
     double d;
 
     recv(src, &d, sizeof(d));
@@ -348,6 +393,7 @@ double CommunicationRecord::recv_double(int src) const
 
 void CommunicationRecord::send_int(int dest, int d) const
 {
+    check_init();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending int '%d' to %d\n", d, dest);
@@ -355,8 +401,20 @@ void CommunicationRecord::send_int(int dest, int d) const
     send(dest, &d, sizeof(d));
 }
 
+void CommunicationRecord::send_bool(int dest, bool b) const
+{
+    check_init();
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Sending bool '%s' to %d\n", boolName[b], dest);
+    }
+    int d = b ? 1 : 0;
+    send(dest, &d, sizeof(d));
+}
+
 int CommunicationRecord::recv_int(int src) const
 {
+    check_init();
     int d;
 
     recv(src, &d, sizeof(d));
@@ -368,13 +426,30 @@ int CommunicationRecord::recv_int(int src) const
     return d;
 }
 
+bool CommunicationRecord::recv_bool(int src) const
+{
+    check_init();
+    int d;
+
+    recv(src, &d, sizeof(d));
+    bool b = d;
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received bool '%s' from %d\n", boolName[b], src);
+    }
+
+    return b;
+}
+
 void CommunicationRecord::send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const
 {
+    check_init();
     send_int(dest, static_cast<int>(mode));
 }
 
 TuneFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
 {
+    check_init();
     return static_cast<TuneFFMiddlemanMode>( recv_int(src) );
 }
 

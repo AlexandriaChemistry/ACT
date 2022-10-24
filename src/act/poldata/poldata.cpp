@@ -773,46 +773,58 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 
 void Poldata::sendToHelpers(const CommunicationRecord *cr)
 {
-    // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
-    // if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
     if (cr->isMasterOrMiddleMan())
     {
-        for (auto &dest : cr->helpers())
+        if (true)
         {
-            if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
+            BroadCast(cr);
+        }
+        else
+        {
+            for (auto &dest : cr->helpers())
             {
-                if (nullptr != debug)
+                if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
-                    fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                    }
+                    Send(cr, dest);
                 }
-                Send(cr, dest);
+                cr->send_done(dest);
             }
-            cr->send_done(dest);
         }
     }
     else if (cr->isHelper())
     {
-        int src = cr->superior();
-        if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
+        if (true)
         {
-            auto cs = Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
-                }
-            }
-            else
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
-                }
-            }
+            BroadCast(cr);
         }
-        GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
-                           "Communication did not end correctly");
+        else
+        {
+            int src = cr->superior();
+            if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
+            {
+                auto cs = Receive(cr, src);
+                if (CommunicationStatus::OK == cs)
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
+                    }
+                }
+                else
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
+                    }
+                }
+            }
+            GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
+                               "Communication did not end correctly");
+        }
     }
 }
 

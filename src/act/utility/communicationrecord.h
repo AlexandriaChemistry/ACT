@@ -59,7 +59,8 @@ enum CommunicationStatus {
     DONE      = 6789,
     ERROR     = 7777,
     SEND_DATA = 8888,
-    RECV_DATA = 9999
+    RECV_DATA = 9999,
+    TWOINIT   = 4567
 };
 
 /*!
@@ -100,13 +101,15 @@ private:
     //! Number of helpers per middleman
     int               nhelper_per_middleman_ = 0;
     //! My source for receiving instructions and reporting back to
-    int               superior_              = -1;
+    int               superior_              = 0;
     //! If I am a middleman, this is my ordinal in the ranks of middlemen
     int               ordinal_               = -1;
     //! My helpers (if any)
     std::vector<int>  helpers_;
     //! All the middlemen (not including the MASTER), as if anyone should care
     std::vector<int>  middlemen_;
+    //! Check whether init has been called
+    bool              initCalled_            = false;
     
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
@@ -129,6 +132,8 @@ private:
      * \param[in] fp The file pointer to print to
      */
     void print(FILE *fp);
+    //! Check whether init has been called and throw if not
+    void check_init() const;
     
 public:
     //! \brief Constructor
@@ -138,12 +143,14 @@ public:
     ~CommunicationRecord();
 
     /*! \brief Initiate the internal data once and for all.
+     * This routine should be called exactly once. 
      * Only constant data can be extracted from this.
      * \param[in] nmiddlemen The number of middlemen. Knowing the total 
      *                       number of cores is then sufficient to derive
      *                       the rest.
+     * \return Outcome of the initiation.
      */
-    void init(int nmiddleman);
+   CommunicationStatus init(int nmiddleman);
     
     //! \return my MPI rank
     int rank() const { return rank_; }
@@ -197,25 +204,36 @@ public:
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
 
-    /*! Broadcast a string to all processors from the master.
-     * \param[inout] str  Pointer to the string
+    /*! Broadcast a string to helpers or all processors from the master.
+     * \param[inout] str          Pointer to the string
+     * \param[in]    helpers_only Send only to helpers
      */
-    void bcast_str(std::string *str) const;
+    void bcast_str(std::string *str, bool helpers_only=true) const;
     
     /*! Broadcast an integer to all processors from the master.
-     * \param[inout] i  Pointer to the integer
+     * \param[inout] i             Pointer to the integer
+     * \param[in]    helpers_only Send only to helpers
      */
-    void bcast_int(int *i) const;
+    void bcast_int(int *i, bool helpers_only=true) const;
+    
+    /*! Broadcast a bool to all processors from the master.
+     * \param[inout] b             Pointer to the bool
+     * \param[in]    helpers_only Send only to helpers
+     */
+    void bcast_bool(bool *b, bool helpers_only=true) const;
     
     /*! Broadcast a double to all processors from the master.
-     * \param[inout] d  Pointer to the double
+     * \param[inout] d            Pointer to the double
+     * \param[in]    helpers_only Send only to helpers
      */
-    void bcast_double(double *d) const;
+    void bcast_double(double *d, bool helpers_only=true) const;
     
     /*! Broadcast a double vector to all processors from the master.
-     * \param[in] d    Pointer to vector of the doubles
+     * \param[inout] d            Pointer to vector of the doubles
+     * \param[in]    helpers_only Send only to helpers
      */
-    void bcast_double_vector(std::vector<double> *d) const;
+    void bcast_double_vector(std::vector<double> *d,
+                             bool helpers_only=true) const;
 
     /*! Send a string to another processor.
      * \param[in] dest The destination processor
@@ -253,6 +271,12 @@ public:
      */
     void recv_double_vector(int src, std::vector<double> *d) const;
     
+    /*! Send a bool to another processor.
+     * \param[in] dest The destination processor
+     * \param[in] b    The value of the boolean
+     */
+    void send_bool(int dest, bool b) const;
+    
     /*! Send an int to another processor.
      * \param[in] dest The destination processor
      * \param[in] d    The value of the integer
@@ -264,6 +288,12 @@ public:
      * \return The int received
      */
     int recv_int(int src) const;
+
+    /*! \brief Receive a bool
+     * \param[in] src The source processor
+     * \return The boolean received
+     */
+    bool recv_bool(int src) const;
 
     /*!
      * \brief Send a tune_ff middleman mode to another processor

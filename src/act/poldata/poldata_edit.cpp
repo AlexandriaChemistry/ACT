@@ -776,6 +776,7 @@ int edit(int argc, char*argv[])
         return 0;
     }
     CommunicationRecord cr;
+    cr.init(cr.size());
     if (cr.isMaster())
     {
         try 
@@ -898,10 +899,6 @@ int edit(int argc, char*argv[])
                 if (CommunicationStatus::OK == cs && cr.rank() == 2)
                 {
                     alexandria::writePoldata(outfile, &pd, 0);
-                }
-                else
-                {
-                    printf("Problem communicating\n");
                 }
             }
         }

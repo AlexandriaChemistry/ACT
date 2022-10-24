@@ -73,6 +73,7 @@ int molprop_test(int argc, char*argv[])
     }
 
     CommunicationRecord cr;
+    cr.init(cr.size());
     if (cr.isMaster())
     {
         MolPropRead(opt2fn("-mp", NFILE, fnm), &mpt);
@@ -113,11 +114,11 @@ int molprop_test(int argc, char*argv[])
         }
         else
         {
-            int nmpt = cr.recv_int(0);
+            int nmpt = cr.recv_int(cr.superior());
             for(int i = 0; i < nmpt; i++)
             {
                 MolProp mp;
-                mp.Receive(&cr, 0);
+                mp.Receive(&cr, cr.superior());
                 mpt.push_back(mp);
             }
         }

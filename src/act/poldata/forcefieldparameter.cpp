@@ -144,6 +144,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
         cr->send_int(dest, originalNtrain_);
         cr->send_double(dest, minimum_);
         cr->send_double(dest, maximum_);
+        cr->send_bool(dest, nonNegative_);
         cr->send_int(dest, strict_ ? 1 : 0);
         if (debug)
         {
@@ -189,6 +190,7 @@ CommunicationStatus ForceFieldParameter::Bcast(const CommunicationRecord *cr)
         cr->bcast_int(&originalNtrain_);
         cr->bcast_double(&minimum_);
         cr->bcast_double(&maximum_);
+        cr->bcast_bool(&nonNegative_);
         int strict = strict_;
         cr->bcast_int(&strict);
         strict_ = strict;
@@ -230,6 +232,7 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
         originalNtrain_      = cr->recv_int(src);
         minimum_             = cr->recv_double(src);
         maximum_             = cr->recv_double(src);
+        nonNegative_         = cr->recv_bool(src);
         strict_              = cr->recv_int(src);
         if (debug)
         {
