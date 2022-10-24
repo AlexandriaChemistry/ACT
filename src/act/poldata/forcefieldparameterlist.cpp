@@ -253,32 +253,33 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr)
+CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord *cr,
+                                                       MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&function_);
+        cr->bcast(&function_, comm);
         std::string canSwapString;
         if (cr->isMaster())
         {
             canSwapString.assign(canSwapToString(canSwap_));
         }
-        cr->bcast_str(&canSwapString);
+        cr->bcast(&canSwapString, comm);
         canSwap_ = stringToCanSwap(canSwapString);
         int ftype = fType_;
-        cr->bcast_int(&ftype);
+        cr->bcast(&ftype, comm);
         fType_ = ftype;
         int noptions = options_.size();
-        cr->bcast_int(&noptions);
+        cr->bcast(&noptions, comm);
         if (cr->isMaster())
         {
             for(const auto &opt : options_)
             {
                 std::string key   = opt.first;
                 std::string value = opt.second;
-                cr->bcast_str(&key);
-                cr->bcast_str(&value);
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
             }
         }
         else
@@ -287,8 +288,8 @@ CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr
             for(int i = 0; i < noptions; i++)
             {
                 std::string key, value;
-                cr->bcast_str(&key);
-                cr->bcast_str(&value);
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
                 options_.insert({key, value});
             }
         }
@@ -298,20 +299,20 @@ CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr
             fflush(debug);
         }
         int nparam = parameters_.size();
-        cr->bcast_int(&nparam);
+        cr->bcast(&nparam, comm);
         if (cr->isMaster())
         {
             for(auto &p : parameters_)
             {
                 Identifier pp = p.first;
-                pp.Bcast(cr);
+                pp.BroadCast(cr, comm);
                 int ntype = p.second.size();
-                cr->bcast_int(&ntype);
+                cr->bcast(&ntype, comm);
                 for(auto &q : p.second)
                 {
                     std::string type = q.first;
-                    cr->bcast_str(&type);
-                    q.second.Bcast(cr);
+                    cr->bcast(&type, comm);
+                    q.second.BroadCast(cr, comm);
                 }
             }
         }
@@ -321,7 +322,7 @@ CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr
             for(int i = 0; i < nparam; i++)
             {
                 Identifier key;
-                cs = key.Bcast(cr);
+                cs = key.BroadCast(cr, comm);
                 if (debug)
                 {
                     fprintf(debug, "Done broadcasting key %s\n", key.id().c_str());
@@ -330,13 +331,13 @@ CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr
                 if (CommunicationStatus::OK == cs)
                 {
                     int ntype;
-                    cr->bcast_int(&ntype);
+                    cr->bcast(&ntype, comm);
                     for(int j = 0; j < ntype; j++)
                     {
                         std::string type;
-                        cr->bcast_str(&type);
+                        cr->bcast(&type, comm);
                         ForceFieldParameter p;
-                        cs = p.Bcast(cr);
+                        cs = p.BroadCast(cr, comm);
                         if (CommunicationStatus::OK == cs)
                         {
                             parameters_[key].insert({type, p});
@@ -360,7 +361,7 @@ CommunicationStatus ForceFieldParameterList::Bcast(const CommunicationRecord *cr
             }
         }
         int ctr = counter_;
-        cr->bcast_int(&ctr);
+        cr->bcast(&ctr, comm);
         counter_ = ctr;
     }
     return cs;

@@ -167,10 +167,12 @@ class Fragment
     /*! \brief
      * Broadcast this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
+     * \param[in] comm MPI Communicator
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus BroadCast(const CommunicationRecord *cr);
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
 
     /*! \brief
      * Receives this object over an MPI connection

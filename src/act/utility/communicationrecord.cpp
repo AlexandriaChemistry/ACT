@@ -43,7 +43,8 @@ std::map<CommunicationStatus, const char*> csToString = {
     { CommunicationStatus::DONE,      "Communication Done"      },
     { CommunicationStatus::ERROR,     "Communication Error"     },
     { CommunicationStatus::SEND_DATA, "Communication sent data" },
-    { CommunicationStatus::RECV_DATA, "Communication OK"        }
+    { CommunicationStatus::RECV_DATA, "Communication OK"        },
+    { CommunicationStatus::TWOINIT,   "Double initiation"       }
 };
 
 std::map<bool, const char *> boolName = {
@@ -274,60 +275,50 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-void CommunicationRecord::bcast_str(std::string *str,
-                                    bool helpers_only) const
+void CommunicationRecord::bcast(std::string *str, MPI_Comm comm) const
 {
     check_init();
     int ssize = str->size();
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(),
-              helpers_only ? mpi_act_helpers_ : mpi_act_world_);
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(), comm);
     if (0 != rank_)
     {
         str->resize(ssize);
     }
-    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, superior(), 
-              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, superior(), comm);
 }
     
-void CommunicationRecord::bcast_int(int *i,
-                                    bool helpers_only) const
+void CommunicationRecord::bcast(int *i, MPI_Comm comm) const
 {
     check_init();
-    MPI_Bcast((void *)i, 1, MPI_INT, superior(),
-              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    MPI_Bcast((void *)i, 1, MPI_INT, superior(), comm);
 }
     
-void CommunicationRecord::bcast_bool(bool *b,
-                                     bool helpers_only) const
+void CommunicationRecord::bcast(bool *b, MPI_Comm comm) const
 {
     check_init();
     int d = *b ? 1 : 0;
-    MPI_Bcast((void *)&d, 1, MPI_INT, superior(),
-              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    MPI_Bcast((void *)&d, 1, MPI_INT, superior(), comm);
     *b = d;
 }
     
-void CommunicationRecord::bcast_double(double *d,
-                                       bool helpers_only) const
+void CommunicationRecord::bcast(double *d, MPI_Comm comm) const
 {
     check_init();
-    MPI_Bcast((void *)d, 1, MPI_DOUBLE, superior(),
-              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    MPI_Bcast((void *)d, 1, MPI_DOUBLE, superior(), comm);
 }
    
-void CommunicationRecord::bcast_double_vector(std::vector<double> *d,
-                                              bool helpers_only) const
+void CommunicationRecord::bcast(std::vector<double> *d,
+                                MPI_Comm comm) const
 {
     check_init();
     int ssize = d->size(); 
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(),
-              helpers_only ? mpi_act_helpers_ :  mpi_act_world_);
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(), comm);
     if (0 != rank_)
     {
         d->resize(ssize);
     }
 
-    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, 0, mpi_act_world_);
+    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, 0, comm);
 }
 
 void CommunicationRecord::send_str(int dest, const std::string *str) const
@@ -546,10 +537,10 @@ void CommunicationRecord::sumi_helpers(int nr,
 
 #define ACT_SEND_DATA 19823
 #define ACT_SEND_DONE -666
-CommunicationStatus CommunicationRecord::bcast_data() const
+CommunicationStatus CommunicationRecord::bcast_data(MPI_Comm comm) const
 {
     int acd = ACT_SEND_DATA;
-    bcast_int(&acd);
+    bcast(&acd, comm);
 
     if (ACT_SEND_DATA == acd)
     {
@@ -575,10 +566,10 @@ CommunicationStatus CommunicationRecord::send_done(int dest) const
     return CommunicationStatus::OK;
 }
 
-CommunicationStatus CommunicationRecord::bcast_done() const
+CommunicationStatus CommunicationRecord::bcast_done(MPI_Comm comm) const
 {
     int acd = ACT_SEND_DONE;
-    bcast_int(&acd);
+    bcast(&acd, comm);
 
     if (ACT_SEND_DONE == acd)
     {

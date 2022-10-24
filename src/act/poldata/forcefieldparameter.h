@@ -257,8 +257,10 @@ class ForceFieldParameter
 
     /*! \brief Bcast contents to and from other processors
      * \param[in] cr  Communication data structure
+     * \param[in] comm Communication structure
      */
-    CommunicationStatus Bcast(const CommunicationRecord *cr);
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
 
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure

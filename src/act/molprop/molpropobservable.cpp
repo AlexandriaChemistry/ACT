@@ -145,25 +145,26 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
     return cs;
 }
 
-CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
+                                               MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
 
     if (CommunicationStatus::OK == cs)
     {
         const char *mn = mpo_name(mpo_);
         std::string mpo_type(mn);
-        cr->bcast_str(&mpo_type);
+        cr->bcast(&mpo_type, comm);
         if (!stringToMolPropObservable(mpo_type, &mpo_))
         {
             gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
         }
-        cr->bcast_str(&type_);
-        cr->bcast_str(&inputUnit_);
-        cr->bcast_str(&unit_);
-        cr->bcast_double(&T_);
+        cr->bcast(&type_, comm);
+        cr->bcast(&inputUnit_, comm);
+        cr->bcast(&unit_, comm);
+        cr->bcast(&T_, comm);
         int ep = static_cast<int>(eP_);
-        cr->bcast_int(&ep);
+        cr->bcast(&ep, comm);
         eP_ = static_cast<ePhase>(ep);
         
     }
@@ -269,21 +270,22 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
     return cs;
 }
 
-CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
+                                                  MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
 
     if (CommunicationStatus::OK == cs)
     {
         int nvalue = values_.size();
-        cr->bcast_int(&nvalue);
+        cr->bcast(&nvalue, comm);
         if (!cr->isMaster())
         {
             values_.resize(nvalue);
         }
-        cr->bcast_double_vector(&values_);
-        cr->bcast_double(&average_);
-        cr->bcast_double(&error_);
+        cr->bcast(&values_, comm);
+        cr->bcast(&average_, comm);
+        cr->bcast(&error_, comm);
     }
     else if (nullptr != debug)
     {
@@ -359,19 +361,20 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
     return cs;
 }
 
-CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
+                                         MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
 
     if (CommunicationStatus::OK == cs)
     {
         int nvalue = values_.size();
-        cr->bcast_int(&nvalue);
+        cr->bcast(&nvalue, comm);
         if (!cr->isMaster())
         {
             values_.clear();
         }
-        cr->bcast_double_vector(&values_);
+        cr->bcast(&values_, comm);
     }
     else if (nullptr != debug)
     {
@@ -473,9 +476,10 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord *cr,
+                                                       MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
 
     if (CommunicationStatus::OK == cs)
     {
@@ -483,11 +487,11 @@ CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord
         {
             for(int n = 0; n < DIM; n++)
             {
-                cr->bcast_double(&alpha_[m][n]);
+                cr->bcast(&alpha_[m][n], comm);
             }
         }
-        cr->bcast_double(&average_);
-        cr->bcast_double(&error_);
+        cr->bcast(&average_, comm);
+        cr->bcast(&error_, comm);
     }
     else if (nullptr != debug)
     {
@@ -540,14 +544,15 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
     setUnit(gromacsUnit(inputUnit));
 }
 
-CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
+                                               MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
 
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_double(&average_);
-        cr->bcast_double(&error_);
+        cr->bcast(&average_, comm);
+        cr->bcast(&error_, comm);
     }
     else if (nullptr != debug)
     {
@@ -619,21 +624,22 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr,
+                                                      MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
 
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&xyzInputUnit_);
-        cr->bcast_str(&vInputUnit_);
-        cr->bcast_str(&xyzUnit_);
-        cr->bcast_str(&vUnit_);
-        cr->bcast_int(&espID_);
-        cr->bcast_double(&x_);
-        cr->bcast_double(&y_);
-        cr->bcast_double(&z_);
-        cr->bcast_double(&V_);
+        cr->bcast(&xyzInputUnit_, comm);
+        cr->bcast(&vInputUnit_, comm);
+        cr->bcast(&xyzUnit_, comm);
+        cr->bcast(&vUnit_, comm);
+        cr->bcast(&espID_, comm);
+        cr->bcast(&x_, comm);
+        cr->bcast(&y_, comm);
+        cr->bcast(&z_, comm);
+        cr->bcast(&V_, comm);
     }
     else if (nullptr != debug)
     {

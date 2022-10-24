@@ -74,27 +74,28 @@ void Fragment::dump(FILE *fp) const
             atomString_.c_str());
 }
     
-CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
+                                        MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_double(&mass_);
-        cr->bcast_int(&charge_);
-        cr->bcast_int(&multiplicity_);
-        cr->bcast_int(&symmetryNumber_);
-        cr->bcast_str(&formula_);
-        cr->bcast_str(&texform_);
-        cr->bcast_str(&id_);
+        cr->bcast(&mass_, comm);
+        cr->bcast(&charge_, comm);
+        cr->bcast(&multiplicity_, comm);
+        cr->bcast(&symmetryNumber_, comm);
+        cr->bcast(&formula_, comm);
+        cr->bcast(&texform_, comm);
+        cr->bcast(&id_, comm);
         int natom     = atoms_.size();
-        cr->bcast_int(&natom);
+        cr->bcast(&natom, comm);
         if (!cr->isMaster())
         {
             atoms_.resize(natom);
         }
         for(int i = 0; i < natom; i++)
         {
-            cr->bcast_int(&atoms_[i]);
+            cr->bcast(&atoms_[i], comm);
         }
     }
     if (!cr->isMaster())

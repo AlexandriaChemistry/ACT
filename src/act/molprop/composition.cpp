@@ -112,34 +112,35 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
     return cs;
 }
 
-CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
+                                        MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
 
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&name_);
-        cr->bcast_str(&obType_);
-        cr->bcast_str(&residueName_);
-        cr->bcast_int(&residueNumber_);
-        cr->bcast_int(&atomID_);
-        cr->bcast_str(&coord_unit_);
-        cr->bcast_double(&x_);
-        cr->bcast_double(&y_);
-        cr->bcast_double(&z_);
-        cr->bcast_str(&force_unit_);
-        cr->bcast_double(&fx_);
-        cr->bcast_double(&fy_);
-        cr->bcast_double(&fz_);
+        cr->bcast(&name_, comm);
+        cr->bcast(&obType_, comm);
+        cr->bcast(&residueName_, comm);
+        cr->bcast(&residueNumber_, comm);
+        cr->bcast(&atomID_, comm);
+        cr->bcast(&coord_unit_, comm);
+        cr->bcast(&x_, comm);
+        cr->bcast(&y_, comm);
+        cr->bcast(&z_, comm);
+        cr->bcast(&force_unit_, comm);
+        cr->bcast(&fx_, comm);
+        cr->bcast(&fy_, comm);
+        cr->bcast(&fz_, comm);
         int Ncharge = q_.size();
-        cr->bcast_int(&Ncharge);
+        cr->bcast(&Ncharge, comm);
         if (cr->isMaster())
         {
             for (auto &qi : q_)
             {
                 std::string type = qTypeName(qi.first);
-                cr->bcast_str(&type);
-                cr->bcast_double(&qi.second);
+                cr->bcast(&type, comm);
+                cr->bcast(&qi.second, comm);
             }
         }
         else
@@ -147,9 +148,9 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
             {
                 std::string type;
-                cr->bcast_str(&type);
+                cr->bcast(&type, comm);
                 double q;
-                cr->bcast_double(&q);
+                cr->bcast(&q, comm);
                 AddCharge(stringToQtype(type), q);
             }
         }

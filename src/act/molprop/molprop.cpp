@@ -496,27 +496,28 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
+                                       MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
 
     /* Generic stuff */
     if (CommunicationStatus::OK == cs)
     {
         //! Receive index and more
-        cr->bcast_int(&index_);
-        cr->bcast_str(&molname_);
-        cr->bcast_str(&iupac_);
-        cr->bcast_str(&cas_);
-        cr->bcast_str(&cid_);
-        cr->bcast_str(&inchi_);
+        cr->bcast(&index_, comm);
+        cr->bcast(&molname_, comm);
+        cr->bcast(&iupac_, comm);
+        cr->bcast(&cas_, comm);
+        cr->bcast(&cid_, comm);
+        cr->bcast(&inchi_, comm);
         int Nbond = bond_.size();
-        cr->bcast_int(&Nbond);
+        cr->bcast(&Nbond, comm);
         if (cr->isMaster())
         {
             for(auto &b : *bonds())
             {
-                b.BroadCast(cr);
+                b.BroadCast(cr, comm);
             }
         }
         else
@@ -526,7 +527,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
             {
                 Bond b;
-                cs = b.BroadCast(cr);
+                cs = b.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddBond(b);
@@ -535,14 +536,14 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
         }
 
         int Ncategory = category_.size();
-        cr->bcast_int(&Ncategory);
+        cr->bcast(&Ncategory, comm);
         //! Receive Categories
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
-            if (CommunicationStatus::OK == cr->bcast_data())
+            if (CommunicationStatus::OK == cr->bcast_data(comm))
             {
                 std::string str;
-                cr->bcast_str(&str);
+                cr->bcast(&str, comm);
                 if (!str.empty())
                 {
                     AddCategory(str);
@@ -560,12 +561,12 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
         }
 
         int Nfrag     = fragment_.size();
-        cr->bcast_int(&Nfrag);
+        cr->bcast(&Nfrag, comm);
         if (cr->isMaster())
         {
             for(size_t ii = 0; ii < fragment_.size(); ii++)
             {
-                fragment_[ii].BroadCast(cr);
+                fragment_[ii].BroadCast(cr, comm);
             }
         }
         else
@@ -574,7 +575,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
             {
                 Fragment f;
-                cs = f.BroadCast(cr);
+                cs = f.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     fragment_.push_back(std::move(f));
@@ -583,13 +584,13 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
         }
 
         int Nexper    = exper_.size();
-        cr->bcast_int(&Nexper);
+        cr->bcast(&Nexper, comm);
         //! Receive Experiments
         if (cr->isMaster())
         {
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
-                exper_[n].BroadCast(cr);
+                exper_[n].BroadCast(cr, comm);
             }
         }
         else
@@ -597,7 +598,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 Experiment ex;
-                cs = ex.BroadCast(cr);
+                cs = ex.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddExperiment(ex);

@@ -335,38 +335,39 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
     return cs;
 }
 
-CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
         int         dt = static_cast<int>(dataSource_);
-        cr->bcast_int(&dt);
+        cr->bcast(&dt, comm);
         dataSource_ = static_cast<DataSource>(dt);
-        cr->bcast_str(&reference_);
-        cr->bcast_str(&conformation_);
-        cr->bcast_str(&program_);
-        cr->bcast_str(&method_);
-        cr->bcast_str(&basisset_);
-        cr->bcast_str(&datafile_);
+        cr->bcast(&reference_, comm);
+        cr->bcast(&conformation_, comm);
+        cr->bcast(&program_, comm);
+        cr->bcast(&method_, comm);
+        cr->bcast(&basisset_, comm);
+        cr->bcast(&datafile_, comm);
         const char *jt = jobType2string(jobtype_);
         std::string jobtype(jt);
-        cr->bcast_str(&jobtype);
+        cr->bcast(&jobtype, comm);
         jobtype_  = string2jobType(jobtype);
         //! BroadCast
         int nprop = propertiesConst().size();
-        cr->bcast_int(&nprop);
+        cr->bcast(&nprop, comm);
         if (cr->isMaster())
         {
             for (auto &p : *properties())
             {
                 std::string mpo_str(mpo_name(p.first));
-                cr->bcast_str(&mpo_str);
+                cr->bcast(&mpo_str, comm);
                 if (!p.second.empty())
                 {
                     for(auto &gp : p.second)
                     {
-                        gp->BroadCast(cr);
+                        gp->BroadCast(cr, comm);
                     }
                 }
             }
@@ -376,7 +377,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; n < nprop; n++)
             {
                 std::string mpo_str;
-                cr->bcast_str(&mpo_str);
+                cr->bcast(&mpo_str, comm);
                 MolPropObservable mpo;
                 if (!stringToMolPropObservable(mpo_str, &mpo))
                 {
@@ -430,7 +431,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
                 }
                 if (gp)
                 {
-                    gp->BroadCast(cr);
+                    gp->BroadCast(cr, comm);
                     addProperty(mpo, gp);
                 }
             }
@@ -438,12 +439,12 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
         
         //! Receive Potentials
         int Npotential = potential_.size();
-        cr->bcast_int(&Npotential);
+        cr->bcast(&Npotential, comm);
         if (cr->isMaster())
         {
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
             {
-                cs = potential_[n].BroadCast(cr);
+                cs = potential_[n].BroadCast(cr, comm);
             }
         }
         else
@@ -452,7 +453,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
             {
                 ElectrostaticPotential ep;
-                cs = ep.BroadCast(cr);
+                cs = ep.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddPotential(ep);
@@ -462,17 +463,17 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr)
 
         //! Broadcast Atoms
         int Natom = catom_.size();
-        cr->bcast_int(&Natom);
+        cr->bcast(&Natom, comm);
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
         {
             if (cr->isMaster())
             {
-                catom_[n].BroadCast(cr);
+                catom_[n].BroadCast(cr, comm);
             }
             else
             {
                 CalcAtom ca;
-                cs = ca.BroadCast(cr);
+                cs = ca.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddAtom(ca);

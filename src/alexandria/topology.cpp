@@ -126,19 +126,20 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
-CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
+                                             MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
 
     if (CommunicationStatus::OK == cs)
     {
         int nai = indices_.size();
-        cr->bcast_int(&nai);
+        cr->bcast(&nai, comm);
         if (cr->isMaster())
         {
             for (int i= 0; i < nai; i++)
             {
-                cr->bcast_int(&indices_[i]);
+                cr->bcast(&indices_[i], comm);
             }
         }
         else
@@ -146,19 +147,16 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr)
             indices_.resize(nai, 0);
             for (int i = 0; i < nai; i++)
             {
-                cr->bcast_int(&indices_[i]);
+                cr->bcast(&indices_[i], comm);
             }
         }
         int nbo = bondOrder_.size();
-        if (cr->isMaster())
-        {
-            cr->bcast_double_vector(&bondOrder_);
-        }
-        else
+        cr->bcast(&nbo, comm);
+        if (!cr->isMaster())
         {
             bondOrder_.resize(nbo);
-            cr->bcast_double_vector(&bondOrder_);
         }
+        cr->bcast(&bondOrder_, comm);
     }
     else if (nullptr != debug)
     {

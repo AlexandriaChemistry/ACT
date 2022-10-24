@@ -282,10 +282,11 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
     return CommunicationStatus::OK;
 }
 
-CommunicationStatus Identifier::Bcast(const CommunicationRecord *cr)
+CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm)
 {
     int nids = ids_.size();
-    cr->bcast_int(&nids);
+    cr->bcast(&nids, comm);
     std::string tmp;
     for(int i = 0; i < nids; i++)
     {
@@ -293,7 +294,7 @@ CommunicationStatus Identifier::Bcast(const CommunicationRecord *cr)
         {
             tmp.assign(ids_[i]);
         }
-        cr->bcast_str(&tmp);
+        cr->bcast(&tmp, comm);
         if (!cr->isMaster())
         {
             ids_.push_back(tmp);
@@ -304,19 +305,19 @@ CommunicationStatus Identifier::Bcast(const CommunicationRecord *cr)
     {
         tmp.assign(canSwapToString(canSwap_));
     }
-    cr->bcast_str(&tmp);
+    cr->bcast(&tmp, comm);
     if (!cr->isMaster())
     {
         canSwap_ = stringToCanSwap(tmp);
     }
     int natoms = atoms_.size();
-    cr->bcast_int(&natoms);
+    cr->bcast(&natoms, comm);
     if (cr->isMaster())
     {
         for(auto a = atoms_.begin(); a < atoms_.end(); ++a)
         {
             std::string aa(*a);
-            cr->bcast_str(&aa);
+            cr->bcast(&aa, comm);
         }
     }
     else
@@ -325,17 +326,17 @@ CommunicationStatus Identifier::Bcast(const CommunicationRecord *cr)
         for(int i = 0; i < natoms; i++)
         {
             std::string a;
-            cr->bcast_str(&a);
+            cr->bcast(&a, comm);
             atoms_.push_back(a);
         }
     }
     int nbo = bondOrders_.size();
-    cr->bcast_int(&nbo);
+    cr->bcast(&nbo, comm);
     if (!cr->isMaster())
     {
         bondOrders_.resize(nbo);
     }
-    cr->bcast_double_vector(&bondOrders_);
+    cr->bcast(&bondOrders_, comm);
 
     return CommunicationStatus::OK;
 }

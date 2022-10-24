@@ -202,9 +202,11 @@ class ParticleType
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
     /*! \brief Broadcast my data
-     * \param[in] cr  communication record
+     * \param[in] cr   communication record
+     * \param[in] comm MPI communicator
      */
-    CommunicationStatus Bcast(const CommunicationRecord *cr);
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
 
     /*! \brief Receive my data
      * \param[in] cr  communication record

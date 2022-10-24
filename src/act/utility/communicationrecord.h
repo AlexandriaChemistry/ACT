@@ -169,6 +169,12 @@ public:
 
     //! \return all the middlemen, or empty vector if none
     const std::vector<int> &middlemen() const { return middlemen_; }
+    
+    //! \return communicator for helpers
+    MPI_Comm comm_helpers() const { return mpi_act_helpers_; }
+
+    //! \return communicator for all cores
+    MPI_Comm comm_world() const { return mpi_act_world_; }
 
     //! \return my superior node, or -1 if none
     int superior() const { return superior_; }
@@ -205,35 +211,35 @@ public:
      *************************************************/
 
     /*! Broadcast a string to helpers or all processors from the master.
-     * \param[inout] str          Pointer to the string
-     * \param[in]    helpers_only Send only to helpers
+     * \param[inout] str  Pointer to the string
+     * \param[in]    comm MPI communicator
      */
-    void bcast_str(std::string *str, bool helpers_only=true) const;
+    void bcast(std::string *str, MPI_Comm comm) const;
     
     /*! Broadcast an integer to all processors from the master.
-     * \param[inout] i             Pointer to the integer
-     * \param[in]    helpers_only Send only to helpers
+     * \param[inout] i    Pointer to the integer
+     * \param[in]    comm MPI communicator
      */
-    void bcast_int(int *i, bool helpers_only=true) const;
+    void bcast(int *i, MPI_Comm comm) const;
     
     /*! Broadcast a bool to all processors from the master.
-     * \param[inout] b             Pointer to the bool
-     * \param[in]    helpers_only Send only to helpers
+     * \param[inout] b    Pointer to the bool
+     * \param[in]    comm MPI communicator
      */
-    void bcast_bool(bool *b, bool helpers_only=true) const;
+    void bcast(bool *b, MPI_Comm comm) const;
     
     /*! Broadcast a double to all processors from the master.
-     * \param[inout] d            Pointer to the double
-     * \param[in]    helpers_only Send only to helpers
+     * \param[inout] d    Pointer to the double
+     * \param[in]    comm MPI communicator
      */
-    void bcast_double(double *d, bool helpers_only=true) const;
+    void bcast(double *d, MPI_Comm comm) const;
     
     /*! Broadcast a double vector to all processors from the master.
-     * \param[inout] d            Pointer to vector of the doubles
-     * \param[in]    helpers_only Send only to helpers
+     * \param[inout] d    Pointer to vector of the doubles
+     * \param[in]    comm MPI communicator
      */
-    void bcast_double_vector(std::vector<double> *d,
-                             bool helpers_only=true) const;
+    void bcast(std::vector<double> *d,
+               MPI_Comm             comm) const;
 
     /*! Send a string to another processor.
      * \param[in] dest The destination processor
@@ -342,9 +348,10 @@ public:
      * Routines to initiate and finalize data transmissions
      *********************************************************/
     /*! \brief Initiate broadcasting data to a processor
+     * \param[in] comm The MPI communicator
      * \return CommunicationStatus::OK, if OK
      */
-    CommunicationStatus  bcast_data() const;
+    CommunicationStatus  bcast_data(MPI_Comm comm) const;
     
     /*! \brief Initiate sending data to a processor
      * \param[in] dest The destination processor
@@ -353,9 +360,10 @@ public:
     CommunicationStatus send_data(int dest) const;
     
     /*! \brief Finish broadcasting data to a processor
+     * \param[in] comm The MPI communicator
      * \return CommunicationStatus::OK, if OK
      */
-    CommunicationStatus  bcast_done() const;
+    CommunicationStatus  bcast_done(MPI_Comm comm) const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor

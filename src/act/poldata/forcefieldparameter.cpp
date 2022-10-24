@@ -164,35 +164,36 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
     return cs;
 }
 
-CommunicationStatus ForceFieldParameter::Bcast(const CommunicationRecord *cr)
+CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr,
+                                                   MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&unit_);
-        cr->bcast_double(&value_);
+        cr->bcast(&unit_, comm);
+        cr->bcast(&value_, comm);
         std::string mutstr;
         if (cr->isMaster())
         {
             mutstr = mutabilityName(mutability_);
         }
-        cr->bcast_str(&mutstr);
+        cr->bcast(&mutstr, comm);
         Mutability mut;
         if (!nameToMutability(mutstr, &mut))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
         }
         mutability_          = mut;
-        cr->bcast_double(&originalValue_);
-        cr->bcast_double(&uncertainty_);
-        cr->bcast_double(&originalUncertainty_);
-        cr->bcast_int(&ntrain_);
-        cr->bcast_int(&originalNtrain_);
-        cr->bcast_double(&minimum_);
-        cr->bcast_double(&maximum_);
-        cr->bcast_bool(&nonNegative_);
+        cr->bcast(&originalValue_, comm);
+        cr->bcast(&uncertainty_, comm);
+        cr->bcast(&originalUncertainty_, comm);
+        cr->bcast(&ntrain_, comm);
+        cr->bcast(&originalNtrain_, comm);
+        cr->bcast(&minimum_, comm);
+        cr->bcast(&maximum_, comm);
+        cr->bcast(&nonNegative_, comm);
         int strict = strict_;
-        cr->bcast_int(&strict);
+        cr->bcast(&strict, comm);
         strict_ = strict;
         if (debug)
         {

@@ -173,14 +173,15 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Symcharges::Bcast(const CommunicationRecord *cr)
+CommunicationStatus Symcharges::BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&central_);
-        cr->bcast_str(&attached_);
-        cr->bcast_int(&numattach_);
+        cr->bcast(&central_, comm);
+        cr->bcast(&attached_, comm);
+        cr->bcast(&numattach_, comm);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",

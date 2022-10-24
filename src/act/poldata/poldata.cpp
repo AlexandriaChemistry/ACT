@@ -436,32 +436,33 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
+CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
+                                       MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data();
+    CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast_str(&filename_);
-        cr->bcast_str(&checkSum_);
-        cr->bcast_str(&timeStamp_);
-        cr->bcast_int(&nexcl_);
-        cr->bcast_double(&gtEpsilonR_);
-        cr->bcast_str(&vsite_angle_unit_);
-        cr->bcast_str(&vsite_length_unit_);
+        cr->bcast(&filename_, comm);
+        cr->bcast(&checkSum_, comm);
+        cr->bcast(&timeStamp_, comm);
+        cr->bcast(&nexcl_, comm);
+        cr->bcast(&gtEpsilonR_, comm);
+        cr->bcast(&vsite_angle_unit_, comm);
+        cr->bcast(&vsite_length_unit_, comm);
         int icq = static_cast<int>(ChargeGenerationAlgorithm_);
-        cr->bcast_int(&icq);
+        cr->bcast(&icq, comm);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
         int pol = polarizable_ ? 1 : 0;
-        cr->bcast_int(&pol);
+        cr->bcast(&pol, comm);
         polarizable_ = pol == 1;
         /* Bcast Ffatype */
         int asize = alexandria_.size();
-        cr->bcast_int(&asize);
+        cr->bcast(&asize, comm);
         if (cr->isMaster())
         {
             for(auto &aa : alexandria_)
             {
-                aa.Bcast(cr);
+                aa.BroadCast(cr, comm);
             }
         }
         else
@@ -469,7 +470,7 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
             for(int as = 0; as < asize; as++)
             {
                 ParticleType pt;
-                cs = pt.Bcast(cr);
+                cs = pt.BroadCast(cr, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     alexandria_.push_back(pt);
@@ -481,14 +482,14 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
         if (CommunicationStatus::OK == cs)
         {
             int vsize = vsite_.size();
-            cr->bcast_int(&vsize);
+            cr->bcast(&vsize, comm);
             if (!cr->isMaster())
             {
                 vsite_.resize(vsize);
             }
             for (int vs = 0; vs < vsize; vs++)
             {
-                cs = vsite_[vs].Bcast(cr);
+                cs = vsite_[vs].BroadCast(cr, comm);
                 if (CommunicationStatus::OK != cs)
                 {
                     break;
@@ -500,14 +501,14 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
         if (CommunicationStatus::OK == cs)
         {
             int fsize = forces_.size();
-            cr->bcast_int(&fsize);
+            cr->bcast(&fsize, comm);
             if (cr->isMaster())
             {
                 for(auto &ff : forces_)
                 {
                     std::string key(interactionTypeToString(ff.first));
-                    cr->bcast_str(&key);
-                    ff.second.Bcast(cr);   
+                    cr->bcast(&key, comm);
+                    ff.second.BroadCast(cr, comm);   
                 }
             }
             else
@@ -518,9 +519,9 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
                 {
                     ForceFieldParameterList fs;
                     std::string             key;
-                    cr->bcast_str(&key);
+                    cr->bcast(&key, comm);
                     InteractionType iType = stringToInteractionType(key.c_str());
-                    cs                    = fs.Bcast(cr);
+                    cs                    = fs.BroadCast(cr, comm);
                     if (CommunicationStatus::OK == cs && !cr->isMaster())
                     {
                         forces_.insert({iType, fs});
@@ -538,14 +539,14 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr)
         if (CommunicationStatus::OK == cs)
         {
             int scsize = symcharges_.size();
-            cr->bcast_int(&scsize);
+            cr->bcast(&scsize, comm);
             if (!cr->isMaster())
             {
                 symcharges_.resize(scsize);
             }
             for(int scs = 0; scs < scsize; scs++)
             {
-                cs = symcharges_[scs].Bcast(cr);
+                cs = symcharges_[scs].BroadCast(cr, comm);
                 if (CommunicationStatus::OK != cs)
                 {
                     break;
@@ -777,7 +778,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
     {
         if (true)
         {
-            BroadCast(cr);
+            BroadCast(cr, cr->comm_helpers());
         }
         else
         {
@@ -799,7 +800,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
     {
         if (true)
         {
-            BroadCast(cr);
+            BroadCast(cr, cr->comm_helpers());
         }
         else
         {
