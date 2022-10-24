@@ -67,7 +67,7 @@ def get_prefix(myprefix):
             if len(pp) > 0:
                 pp += ";"
             pp += prefix[p]
-        return pp
+        return pp.lstrip(';')
     
 def find_lib(prefix, libname, verbose):
     if verbose:
@@ -158,10 +158,13 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
                     os.chdir(obversion)
                     for lib in glob.glob("*.so"):
                         for rpath in [ "libz.1.dylib", "libcairo.2.dylib" ]:
-                            cmd = ("install_name_tool -change @rpath/%s %s/lib/%s %s" % ( rpath, SW, rpath, lib) )
-                            if debug:
-                                print("Will run commans '%s'" % cmd)
-                            os.system(cmd)
+                            for SW_path in SW.split(';'):
+                                lib_path = f'{SW_path}/lib/{rpath}'
+                                if os.path.exists(lib_path):
+                                    cmd = ("install_name_tool -change @rpath/%s %s %s" % ( rpath, lib_path, lib) )
+                                    if debug:
+                                        print("Will run command '%s'" % cmd)
+                                    os.system(cmd)
                     os.chdir("..")
     # Go back to where we came from
     os.chdir(pwd)
@@ -217,14 +220,6 @@ def install_act(args, CXX, CC, HOST, prefix):
         os.system(f'git checkout {args.branch}')
         os.system('git pull')
 
-    # The prefix path where to look for libraries
-    # Delete anaconda from prefix if provided by args
-    if conda_prefix_provided(args.prefix):
-        split_prefix = [ele for ele in prefix.split(';')
-                        if ('anaconda3' not in ele.split('/') and 'miniconda3' not in ele.split('/'))]
-        prefix = ';'.join(split_prefix)
-        prefix += f';{args.prefix}'
-    prefix = prefix.lstrip(';')
     PPATH  = prefix + ";" + args.destination
     LAPACK = None
     BLAS   = None
@@ -312,6 +307,8 @@ if __name__ == '__main__':
     HOST    = get_host()
     CC, CXX = get_compilers(HOST)
     SW      = get_prefix(args.prefix)
+    # Remove duplicates from SW
+    SW = ';'.join(list(set(SW.split(';'))))
     debug = args.debug
     if debug:
         print("args.prefix = %s SW = '%s'" % ( args.prefix, SW ))
