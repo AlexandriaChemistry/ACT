@@ -58,10 +58,13 @@ int molprop_test(int argc, char*argv[])
         { efXML, "-o", "molout",    ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    int compress = 1;
+    int      compress = 1;
+    gmx_bool bcast    = false;
     std::vector<t_pargs> pa  = {
         { "-compress", FALSE, etBOOL, {&compress},
-          "Compress the output file" }
+          "Compress the output file" },
+        { "-bcast", FALSE, etBOOL, {&bcast},
+          "Use broadcast instead of send/receive" }
     };
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, pa.size(), pa.data(),
                            sizeof(desc)/sizeof(desc[0]), desc, 0, nullptr, &oenv))
@@ -69,8 +72,58 @@ int molprop_test(int argc, char*argv[])
         return 0;
     }
 
-    MolPropRead(opt2fn("-mp", NFILE, fnm), &mpt);
-    printf("Read %d molecules from %s\n", (int)mpt.size(), opt2fn("-mp", NFILE, fnm));
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    auto comm = MPI_COMM_WORLD;
+    if (cr.isMaster())
+    {
+        MolPropRead(opt2fn("-mp", NFILE, fnm), &mpt);
+        int mptsize = mpt.size();
+        printf("Read %d molecules from %s\n", mptsize, opt2fn("-mp", NFILE, fnm));
+        if (bcast)
+        {
+            cr.bcast(&mptsize, comm);
+            for(auto &mm : mpt)
+            {
+                mm.BroadCast(&cr, comm);
+            }
+        }
+        else
+        {
+            for(int dest = 1; dest < cr.size(); dest++)
+            {
+                cr.send_int(dest, mptsize);
+                for(const auto &mm : mpt)
+                {
+                    mm.Send(&cr, dest);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (bcast)
+        {
+            int nmpt;
+            cr.bcast(&nmpt, comm);
+            for(int i = 0; i < nmpt; i++)
+            {
+                MolProp mp;
+                mp.BroadCast(&cr, comm);
+                mpt.push_back(mp);
+            }
+        }
+        else
+        {
+            int nmpt = cr.recv_int(cr.superior());
+            for(int i = 0; i < nmpt; i++)
+            {
+                MolProp mp;
+                mp.Receive(&cr, cr.superior());
+                mpt.push_back(mp);
+            }
+        }
+    }
     MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, compress);
 
     return 0;

@@ -46,8 +46,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+#include "act/qgen/qtype.h"
 #include "act/utility/communicationrecord.h"
-#include "act/molprop/experiment.h"
 
 namespace alexandria
 {
@@ -276,6 +276,185 @@ class MolecularComposition
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
 //! Const iterator over MolecularComposition items
 using MolecularCompositionConstIterator = typename std::vector<MolecularComposition>::const_iterator;
+
+/*! \brief
+ * Contains data on an atom based on a calculation.
+ * Coordinates and Forces are store in the specified units.
+ * This class coordinates, name, atom type and an array of
+ * Charge values based on different methods.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class CalcAtom
+{
+private:
+    std::string             name_, obType_, coord_unit_, force_unit_, residueName_;
+    double                  x_ = 0, y_ = 0, z_ = 0;
+    double                  fx_ = 0, fy_ = 0, fz_ = 0;
+    int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
+    char                    chain_ = ' ';
+    std::map<qType, double> q_;
+public:
+    //! Default constructor
+    CalcAtom() {}
+    
+    //! Constructor initiating the name, type and atomid
+    CalcAtom(const char *name, const char *obtype, int atomid)
+    {
+        name_.assign(name); obType_.assign(obtype); atomID_ = atomid; residueName_.assign(nullptr);
+    };
+    
+    //! Constructor initiating the name, type and atomid
+    CalcAtom(const std::string &name,
+             const std::string &obtype,
+             int                atomid)
+    {
+        name_ = name; obType_ = obtype; atomID_ = atomid;
+    };
+    
+    
+    //! Function returning true if the two atoms are equal
+    bool Equal(CalcAtom ca);
+    
+    /*! \brief Add an AtomicCharge element to the atom
+     * \param[in] type Charge type
+     * \param[in] q    The charge
+     */
+    void AddCharge(qType type, double q)
+    {
+        q_.insert(std::pair<qType, double>(type, q));
+    }
+    
+    /*! \brief Return whether the charge type is present
+     * \param[in] type Charge type
+     * \return true if found
+     */
+    bool hasCharge(qType type) const
+    {
+        return q_.find(type) != q_.end();
+    }
+    
+    /*! \brief Return charge of a certain type
+     * \param[in] type Charge type
+     * \return charge if found, or crash otherwise
+     */
+    double charge(qType type) const
+    {
+        return q_.find(type)->second;
+    }
+    
+    //! \brief Return the whole charge map
+    const std::map<qType, double> &chargesConst() const { return q_; }
+    
+    //! Return the atom id of the atom
+    int getAtomid() const { return atomID_; }
+    
+    //! Return the name of the atom
+    const std::string &getName() const { return name_; }
+    
+    //! Return the OpenBabel type of the atom
+    const std::string &getObtype() const { return obType_; }
+    
+    //! Set the OpenBabel type of the atom
+    void setObtype(const std::string &obtype) { obType_ = obtype; }
+    
+    //! Return the unit of the coordinates of the atom
+    const std::string &coordUnit() const { return coord_unit_; }
+    
+    //! Return the unit of the coordinates of the atom
+    const std::string &forceUnit() const { return force_unit_; }
+    
+    //! Return the name of residue
+    const std::string &ResidueName() const { return residueName_; }
+    
+    //! Return the residue number
+    int ResidueNumber() const { return residueNumber_; }
+
+    //! Set the unit of the coordinates of the atom
+    void setCoordUnit(const std::string &unit);
+    
+    //! Set the unit of the forces on the atom
+    void setForceUnit(const std::string &unit);
+    
+    //! Set the residue name for the atom
+    void SetResidue(const std::string &residueName, int residueNumber)
+    {
+        residueName_   = residueName;
+        residueNumber_ = residueNumber;
+    }
+    
+    //! Set the chain information (from pdb files)
+    void SetChain(int chainId, char chain)
+    {
+        chainId_ = chainId;
+        chain_   = chain;
+    }
+    
+    //! Return chain ID
+    int chainId() const { return chainId_; }
+    
+    //! Return chain
+    char chain() const { return chain_; }
+    
+    //! Set the coordinates of the atom
+    void setCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
+    
+    //! Return all the coordinates of the atom
+    void coords(double *x, double *y, double *z) const
+    { *x = x_; *y = y_; *z = z_; }
+
+    //! Set the forces on the atom
+    void setForces(double fx, double fy, double fz) { fx_ = fx; fy_ = fy; fz_ = fz; }
+    
+    //! Return all the coordinates of the atom
+    void forces(double *fx, double *fy, double *fz) const
+    { *fx = fx_; *fy = fy_; *fz = fz_; }
+
+    //! Return the X coordinate of the atom
+    double getX() const { return x_; }
+    
+    //! Return the Y coordinate of the atom
+    double getY() const { return y_; }
+    
+    //! Return the Z coordinate of the atom
+    double getZ() const { return z_; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] cr   data structure for MPI communication
+     * \param[in] dest Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
+    
+    /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr   data structure for MPI communication
+     * \param[in] comm MPI communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr, MPI_Comm comm);
+
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] cr  data structure for MPI communication
+     * \param[in] src Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
+};
+
+//! Iterator over CalcAtom items
+using  CalcAtomIterator      = typename std::vector<CalcAtom>::iterator;
+
+//! Const iterator over CalcAtom items
+using  CalcAtomConstIterator = typename std::vector<CalcAtom>::const_iterator;
 
 } // namespace alexandria
 

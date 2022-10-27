@@ -720,6 +720,7 @@ int edit(int argc, char*argv[])
     gmx_bool     De2D0      = false;
     gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
+    gmx_bool     bcast      = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -760,6 +761,8 @@ int edit(int argc, char*argv[])
           "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" },
+        { "-bcast",   FALSE, etBOOL, {&bcast},
+          "Use broadcast rather than send/receive to communicate force field" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
@@ -767,15 +770,15 @@ int edit(int argc, char*argv[])
     int                 NFILE  = asize(fnm);
     alexandria::Poldata pd;
     
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
+    {
+        return 0;
+    }
     CommunicationRecord cr;
+    cr.init(cr.size());
     if (cr.isMaster())
     {
-        if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
-                               asize(desc), desc, 0, nullptr, &oenv))
-        {
-            return 0;
-        }
-        
         try 
         {
             alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
@@ -860,18 +863,43 @@ int edit(int argc, char*argv[])
     {
         if (cr.isParallel())
         {
+            CommunicationStatus cs;
             if (cr.isMaster())
             {
-                pd.Send(&cr, 1);
+            
                 std::string outfile(opt2fn("-o", NFILE, fnm));
-                cr.send_str(1, &outfile);
+                printf("Will send force field to my helpers to write %s\n", outfile.c_str());
+                if (bcast)
+                {
+                    cs = pd.BroadCast(&cr, cr.comm_world());
+                    cr.bcast(&outfile, cr.comm_world());
+                }
+                else
+                {
+                    for(int dest = 1; dest < cr.size(); dest++)
+                    {
+                        cs = pd.Send(&cr, dest);
+                        cr.send_str(dest, &outfile);
+                    }
+                }
             }
-            else if (cr.rank() == 1)
+            else
             {
-                pd.Receive(&cr, 0);
                 std::string outfile;
-                cr.recv_str(0, &outfile);
-                alexandria::writePoldata(outfile, &pd, 0);
+                if (bcast)
+                {
+                    cs = pd.BroadCast(&cr, cr.comm_world());
+                    cr.bcast(&outfile, cr.comm_world());
+                }
+                else
+                {
+                    cs = pd.Receive(&cr, 0);
+                    cr.recv_str(0, &outfile);
+                }
+                if (CommunicationStatus::OK == cs && cr.rank() == 2)
+                {
+                    alexandria::writePoldata(outfile, &pd, 0);
+                }
             }
         }
         else

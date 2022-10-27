@@ -282,6 +282,65 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
     return CommunicationStatus::OK;
 }
 
+CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm)
+{
+    int nids = ids_.size();
+    cr->bcast(&nids, comm);
+    std::string tmp;
+    for(int i = 0; i < nids; i++)
+    {
+        if (cr->isMaster())
+        {
+            tmp.assign(ids_[i]);
+        }
+        cr->bcast(&tmp, comm);
+        if (!cr->isMaster())
+        {
+            ids_.push_back(tmp);
+        }
+    }
+    
+    if (cr->isMaster())
+    {
+        tmp.assign(canSwapToString(canSwap_));
+    }
+    cr->bcast(&tmp, comm);
+    if (!cr->isMaster())
+    {
+        canSwap_ = stringToCanSwap(tmp);
+    }
+    int natoms = atoms_.size();
+    cr->bcast(&natoms, comm);
+    if (cr->isMaster())
+    {
+        for(auto a = atoms_.begin(); a < atoms_.end(); ++a)
+        {
+            std::string aa(*a);
+            cr->bcast(&aa, comm);
+        }
+    }
+    else
+    {
+        atoms_.clear();
+        for(int i = 0; i < natoms; i++)
+        {
+            std::string a;
+            cr->bcast(&a, comm);
+            atoms_.push_back(a);
+        }
+    }
+    int nbo = bondOrders_.size();
+    cr->bcast(&nbo, comm);
+    if (!cr->isMaster())
+    {
+        bondOrders_.resize(nbo);
+    }
+    cr->bcast(&bondOrders_, comm);
+
+    return CommunicationStatus::OK;
+}
+
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
     int nids = cr->recv_int(src);

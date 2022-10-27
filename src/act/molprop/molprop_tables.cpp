@@ -825,7 +825,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                                    real                  abs_toler,
                                    std::vector<MolProp> &mp,
                                    const QmCount        &qmc,
-                                   bool                  bPrintAll,
+                                   gmx_unused bool       bPrintAll,
                                    bool                  bPrintBasis,
                                    bool                  bPrintMultQ,
                                    const MolSelect      &gms,
@@ -861,7 +861,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
             std::vector<CalcData> cd;
             for (auto ei : mpi.experimentConst())
             {
-                for(const auto &prop : ei.propertyConst())
+                for(const auto &prop : ei.propertiesConst())
                 {
                     for(const auto &pp : prop.second)
                     {

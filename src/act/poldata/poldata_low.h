@@ -179,6 +179,8 @@ class Symcharges
 
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
+    CommunicationStatus BroadCast(const CommunicationRecord *cr, MPI_Comm comm);
+
         CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     private:

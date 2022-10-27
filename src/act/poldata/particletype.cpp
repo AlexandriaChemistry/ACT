@@ -241,6 +241,64 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
     
+CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
+                                            MPI_Comm                   comm)
+{
+    CommunicationStatus cs = cr->bcast_data(comm);
+    if (CommunicationStatus::OK == cs)
+    {
+        cs = id_.BroadCast(cr, comm);
+        cr->bcast(&desc_, comm);
+        cr->bcast(&gmxParticleType_, comm);
+        int nopt = option_.size();
+        cr->bcast(&nopt, comm);
+        if (cr->isMaster())
+        {
+            for(auto &opt : option_)
+            {
+                std::string key(opt.first), value(opt.second);
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+            }
+        }
+        else
+        {
+            option_.clear();
+            for(int i = 0; i < nopt; i++)
+            {
+                std::string key, value;
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+                setOption(key, value);
+            }
+        }
+    }
+    int nparm = parameterMap_.size();
+    cr->bcast(&nparm, comm);
+    if (cr->isMaster())
+    {
+        for(auto &pp : parameterMap_)
+        {
+            std::string type(pp.first);
+            cr->bcast(&type, comm);
+            pp.second.BroadCast(cr, comm);
+        }
+    }
+    else
+    {
+        parameterMap_.clear();
+        for(int i = 0; i < nparm; i++)
+        {
+            std::string type;
+            cr->bcast(&type, comm);
+            ForceFieldParameter ff;
+            ff.BroadCast(cr, comm);
+            parameterMap_.insert({type, ff});
+        }
+    }
+    return cs;
+}
+
 CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

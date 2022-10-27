@@ -463,18 +463,26 @@ class Poldata
          * \param[in] src Source node
          */
         void receiveParticles(const CommunicationRecord *cr, int src);
+
+    /*! \brief BroadCast a whole force field
+     * \param[in] cr  Communication data structure
+     * \param[in] comm MPI communication structure
+     * \return The status of the whole thing
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
         
-        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
-
-        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
-
-        //! \brief Check internal consistency of data structures
-        void checkConsistency(FILE *fplog) const;
-
-        //! \return a constant \p type2Itype_ reference
-        const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
-
-    private:
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest);
+    
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
+    
+    //! \brief Check internal consistency of data structures
+    void checkConsistency(FILE *fplog) const;
+    
+    //! \return a constant \p type2Itype_ reference
+    const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
+    
+private:
         std::string                           checkSum_;
         std::string                           timeStamp_;
         std::map<std::string, InteractionType> type2Itype_;

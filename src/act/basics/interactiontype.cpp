@@ -99,7 +99,7 @@ InteractionType stringToInteractionType(const std::string &name)
             return eit.first;
         }
     }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type %s",
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s'",
                                                        name.c_str()).c_str()));
     return InteractionType::BONDS;
 }

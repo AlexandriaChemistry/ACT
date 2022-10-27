@@ -156,7 +156,7 @@ private:
      * to internal units. When the data should be exported it can be converted
      * back. Conversion should use the functions in act/utility/units.h.
      */
-    MolPropObservable mpo_;
+    MolPropObservable mpo_ = MolPropObservable::POTENTIAL;
     //! Subtype of this property
     std::string       type_;
     //! Internal unit of this property
@@ -166,14 +166,14 @@ private:
     /*! \brief
      * Temperature at which the property is measured or computed.
      */
-    double            T_;
+    double            T_ = 0;
     /*! \brief
      * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
      */
-    ePhase            eP_;
+    ePhase            eP_ = ePhase::PLASMA;
 public:
     //! Default constructor
-    GenericProperty() { T_ = 0; eP_ = ePhase::GAS; };
+    GenericProperty() {};
     
     /*! \brief
      * Creates a new GenericProperty object.
@@ -252,6 +252,16 @@ public:
     virtual CommunicationStatus Send(const CommunicationRecord *cr,
                                      int                        dest) const;
     
+    /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    virtual CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm);
+
     /*! \brief
      * Receives this object over an MPI connection
      *
@@ -337,6 +347,16 @@ public:
                              int                        dest) const;
     
     /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr   Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    virtual CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm);
+
+    /*! \brief
      * Receives this object over an MPI connection
      *
      * \param[in] cr  Data structure for MPI communication
@@ -399,6 +419,16 @@ public:
     CommunicationStatus Send(const CommunicationRecord *cr,
                              int                        dest) const;
     
+    /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
+                                
     /*! \brief
      * Receives this object over an MPI connection
      *
@@ -474,6 +504,16 @@ public:
                              int                        dest) const;
     
     /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
+
+    /*! \brief
      * Receives this object over an MPI connection
      *
      * \param[in] cr  Data structure for MPI communication
@@ -543,6 +583,16 @@ public:
     CommunicationStatus Send(const CommunicationRecord *cr,
                              int                        dest) const;
     
+    /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr   Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
+                                
     /*! \brief
      * Receives this object over an MPI connection
      *
@@ -665,6 +715,16 @@ public:
      */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
     
+    /*! \brief
+     * Broadcast this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
+     * \param[in] comm MPI Communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  MPI_Comm                   comm);
+
     /*! \brief
      * Receives this object over an MPI connection
      *

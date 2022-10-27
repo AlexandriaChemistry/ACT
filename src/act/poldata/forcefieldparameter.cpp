@@ -144,6 +144,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
         cr->send_int(dest, originalNtrain_);
         cr->send_double(dest, minimum_);
         cr->send_double(dest, maximum_);
+        cr->send_bool(dest, nonNegative_);
         cr->send_int(dest, strict_ ? 1 : 0);
         if (debug)
         {
@@ -159,6 +160,53 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }
+    }
+    return cs;
+}
+
+CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr,
+                                                   MPI_Comm                   comm)
+{
+    CommunicationStatus cs = cr->bcast_data(comm);
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast(&unit_, comm);
+        cr->bcast(&value_, comm);
+        std::string mutstr;
+        if (cr->isMaster())
+        {
+            mutstr = mutabilityName(mutability_);
+        }
+        cr->bcast(&mutstr, comm);
+        Mutability mut;
+        if (!nameToMutability(mutstr, &mut))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
+        }
+        mutability_          = mut;
+        cr->bcast(&originalValue_, comm);
+        cr->bcast(&uncertainty_, comm);
+        cr->bcast(&originalUncertainty_, comm);
+        cr->bcast(&ntrain_, comm);
+        cr->bcast(&originalNtrain_, comm);
+        cr->bcast(&minimum_, comm);
+        cr->bcast(&maximum_, comm);
+        cr->bcast(&nonNegative_, comm);
+        int strict = strict_;
+        cr->bcast(&strict, comm);
+        strict_ = strict;
+        if (debug)
+        {
+            fprintf(debug, "Received most of ff param\n");
+            fflush(debug);
+        }
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received ForceFieldParameter %g %g %s %d, status %s\n",
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+            fflush(debug);
+        }
+        calculateInternalValue();
     }
     return cs;
 }
@@ -185,6 +233,7 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
         originalNtrain_      = cr->recv_int(src);
         minimum_             = cr->recv_double(src);
         maximum_             = cr->recv_double(src);
+        nonNegative_         = cr->recv_bool(src);
         strict_              = cr->recv_int(src);
         if (debug)
         {

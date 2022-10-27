@@ -108,6 +108,32 @@ CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
+CommunicationStatus Vsite::BroadCast(const CommunicationRecord *cr,
+                                     MPI_Comm                   comm)
+{
+    CommunicationStatus cs = cr->bcast_data(comm);
+    
+    if (CommunicationStatus::OK == cs)
+    {
+        std::string type;
+        cr->bcast(&atype_, comm);
+        cr->bcast(&type, comm);
+        type_ = string2vsiteType(type.c_str());
+        cr->bcast(&number_, comm);
+        cr->bcast(&distance_, comm);
+        cr->bcast(&angle_, comm);
+        cr->bcast(&ncontrolatoms_, comm);
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received Vsite %s %s %d %g %g %d, status %s\n",
+                    atype_.c_str(), vsiteType2string(type_), number_,
+                    distance_, angle_, ncontrolatoms_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
 CommunicationStatus Vsite::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;

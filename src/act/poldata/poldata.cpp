@@ -436,6 +436,127 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
+CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
+                                       MPI_Comm                   comm)
+{
+    CommunicationStatus cs = cr->bcast_data(comm);
+    if (CommunicationStatus::OK == cs)
+    {
+        cr->bcast(&filename_, comm);
+        cr->bcast(&checkSum_, comm);
+        cr->bcast(&timeStamp_, comm);
+        cr->bcast(&nexcl_, comm);
+        cr->bcast(&gtEpsilonR_, comm);
+        cr->bcast(&vsite_angle_unit_, comm);
+        cr->bcast(&vsite_length_unit_, comm);
+        int icq = static_cast<int>(ChargeGenerationAlgorithm_);
+        cr->bcast(&icq, comm);
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
+        int pol = polarizable_ ? 1 : 0;
+        cr->bcast(&pol, comm);
+        polarizable_ = pol == 1;
+        /* Bcast Ffatype */
+        int asize = alexandria_.size();
+        cr->bcast(&asize, comm);
+        if (cr->isMaster())
+        {
+            for(auto &aa : alexandria_)
+            {
+                aa.BroadCast(cr, comm);
+            }
+        }
+        else
+        {
+            for(int as = 0; as < asize; as++)
+            {
+                ParticleType pt;
+                cs = pt.BroadCast(cr, comm);
+                if (CommunicationStatus::OK == cs)
+                {
+                    alexandria_.push_back(pt);
+                }
+            }
+        }
+
+        /* Bcast Vsite */
+        if (CommunicationStatus::OK == cs)
+        {
+            int vsize = vsite_.size();
+            cr->bcast(&vsize, comm);
+            if (!cr->isMaster())
+            {
+                vsite_.resize(vsize);
+            }
+            for (int vs = 0; vs < vsize; vs++)
+            {
+                cs = vsite_[vs].BroadCast(cr, comm);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+
+        /* Force Field Parameter Lists */
+        if (CommunicationStatus::OK == cs)
+        {
+            int fsize = forces_.size();
+            cr->bcast(&fsize, comm);
+            if (cr->isMaster())
+            {
+                for(auto &ff : forces_)
+                {
+                    std::string key(interactionTypeToString(ff.first));
+                    cr->bcast(&key, comm);
+                    ff.second.BroadCast(cr, comm);   
+                }
+            }
+            else
+            {
+                forces_.clear();
+            
+                for (int n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
+                {
+                    ForceFieldParameterList fs;
+                    std::string             key;
+                    cr->bcast(&key, comm);
+                    InteractionType iType = stringToInteractionType(key.c_str());
+                    cs                    = fs.BroadCast(cr, comm);
+                    if (CommunicationStatus::OK == cs && !cr->isMaster())
+                    {
+                        forces_.insert({iType, fs});
+                    }
+                    if (debug)
+                    {
+                        fprintf(debug, "Done Listed force %s\n", key.c_str());
+                        fflush(debug);
+                    }
+                }
+            }
+        }
+
+        /* Bcast Symcharges */
+        if (CommunicationStatus::OK == cs)
+        {
+            int scsize = symcharges_.size();
+            cr->bcast(&scsize, comm);
+            if (!cr->isMaster())
+            {
+                symcharges_.resize(scsize);
+            }
+            for(int scs = 0; scs < scsize; scs++)
+            {
+                cs = symcharges_[scs].BroadCast(cr, comm);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+    }
+    return cs;
+}
+
 CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -653,46 +774,58 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 
 void Poldata::sendToHelpers(const CommunicationRecord *cr)
 {
-    // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
-    // if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
     if (cr->isMasterOrMiddleMan())
     {
-        for (auto &dest : cr->helpers())
+        if (true)
         {
-            if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
+            BroadCast(cr, cr->comm_helpers());
+        }
+        else
+        {
+            for (auto &dest : cr->helpers())
             {
-                if (nullptr != debug)
+                if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
-                    fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                    }
+                    Send(cr, dest);
                 }
-                Send(cr, dest);
+                cr->send_done(dest);
             }
-            cr->send_done(dest);
         }
     }
     else if (cr->isHelper())
     {
-        int src = cr->superior();
-        if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
+        if (true)
         {
-            auto cs = Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
-                }
-            }
-            else
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
-                }
-            }
+            BroadCast(cr, cr->comm_helpers());
         }
-        GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
-                           "Communication did not end correctly");
+        else
+        {
+            int src = cr->superior();
+            if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
+            {
+                auto cs = Receive(cr, src);
+                if (CommunicationStatus::OK == cs)
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
+                    }
+                }
+                else
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
+                    }
+                }
+            }
+            GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
+                               "Communication did not end correctly");
+        }
     }
 }
 

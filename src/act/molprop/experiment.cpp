@@ -270,6 +270,226 @@ bool Experiment::getCharges(std::vector<double> *q,
     return i == NAtom();
 }
 
+CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) const
+{
+    CommunicationStatus cs = CommunicationStatus::OK;
+    std::string         jobtype;
+
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
+    {
+        cr->send_int(dest, static_cast<int>(dataSource_));
+        cr->send_str(dest, &reference_);
+        cr->send_str(dest, &conformation_);
+        cr->send_str(dest, &program_);
+        cr->send_str(dest, &method_);
+        cr->send_str(dest, &basisset_);
+        cr->send_str(dest, &datafile_);
+        jobtype.assign(jobType2string(jobtype_));
+        cr->send_str(dest, &jobtype);
+        cr->send_int(dest, property_.size());
+        for(const auto &prop : property_)
+        {
+            std::string mpo_str(mpo_name(prop.first));
+            cr->send_str(dest, &mpo_str);
+            cr->send_int(dest, prop.second.size());
+            for (const auto &p : prop.second)
+            {
+                p->Send(cr, dest);
+            }
+        }
+        
+        //! Send Potentials
+        if (CommunicationStatus::OK == cs)
+        {
+            cr->send_int(dest, electrostaticPotentialConst().size());
+            for (auto &epi : electrostaticPotentialConst())
+            {
+                cs = epi.Send(cr, dest);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+
+        //! Send Atoms
+        if (CommunicationStatus::OK == cs)
+        {
+            cr->send_int(dest, calcAtomConst().size());
+            for (auto &cai : calcAtomConst())
+            {
+                cs = cai.Send(cr, dest);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    {
+        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
+                                          MPI_Comm                   comm)
+{
+    CommunicationStatus cs = cr->bcast_data(comm);
+    if (CommunicationStatus::OK == cs)
+    {
+        int         dt = static_cast<int>(dataSource_);
+        cr->bcast(&dt, comm);
+        dataSource_ = static_cast<DataSource>(dt);
+        cr->bcast(&reference_, comm);
+        cr->bcast(&conformation_, comm);
+        cr->bcast(&program_, comm);
+        cr->bcast(&method_, comm);
+        cr->bcast(&basisset_, comm);
+        cr->bcast(&datafile_, comm);
+        const char *jt = jobType2string(jobtype_);
+        std::string jobtype(jt);
+        cr->bcast(&jobtype, comm);
+        jobtype_  = string2jobType(jobtype);
+        //! BroadCast
+        int nprop = propertiesConst().size();
+        cr->bcast(&nprop, comm);
+        if (cr->isMaster())
+        {
+            for (auto &p : *properties())
+            {
+                std::string mpo_str(mpo_name(p.first));
+                cr->bcast(&mpo_str, comm);
+                if (!p.second.empty())
+                {
+                    for(auto &gp : p.second)
+                    {
+                        gp->BroadCast(cr, comm);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int n = 0; n < nprop; n++)
+            {
+                std::string mpo_str;
+                cr->bcast(&mpo_str, comm);
+                MolPropObservable mpo;
+                if (!stringToMolPropObservable(mpo_str, &mpo))
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown string %s for a MolPropObservable", mpo_str.c_str()).c_str()));
+                }
+                GenericProperty *gp = nullptr;
+                switch (mpo)
+                {
+                case MolPropObservable::DIPOLE:
+                case MolPropObservable::QUADRUPOLE:
+                case MolPropObservable::OCTUPOLE:
+                case MolPropObservable::HEXADECAPOLE:
+                    {
+                       gp = new MolecularMultipole;
+                       break;
+                    }
+                case MolPropObservable::POLARIZABILITY:
+                    {
+                        gp = new MolecularPolarizability;
+                        break;
+                    }
+                case MolPropObservable::FREQUENCY:
+                case MolPropObservable::INTENSITY:
+                    {
+                        gp = new Harmonics;
+                        break;
+                    }
+                case MolPropObservable::HF:
+                case MolPropObservable::DELTAE0:
+                case MolPropObservable::INTERACTIONENERGY:
+                case MolPropObservable::DHFORM:
+                case MolPropObservable::DGFORM:
+                case MolPropObservable::DSFORM:
+                case MolPropObservable::ENTROPY:
+                case MolPropObservable::STRANS:
+                case MolPropObservable::SROT:
+                case MolPropObservable::SVIB:
+                case MolPropObservable::CP:
+                case MolPropObservable::CV:
+                case MolPropObservable::ZPE:
+                    {
+                        gp = new MolecularEnergy;
+                        break;
+                    }
+                case MolPropObservable::POTENTIAL:
+                case MolPropObservable::CHARGE:
+                case MolPropObservable::COORDINATES:
+                    {
+                        gmx_fatal(FARGS, "Don't know what to do...");
+                    }
+                }
+                if (gp)
+                {
+                    gp->BroadCast(cr, comm);
+                    addProperty(mpo, gp);
+                }
+            }
+        } 
+        
+        //! Receive Potentials
+        int Npotential = potential_.size();
+        cr->bcast(&Npotential, comm);
+        if (cr->isMaster())
+        {
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
+            {
+                cs = potential_[n].BroadCast(cr, comm);
+            }
+        }
+        else
+        {
+            potential_.clear();
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
+            {
+                ElectrostaticPotential ep;
+                cs = ep.BroadCast(cr, comm);
+                if (CommunicationStatus::OK == cs)
+                {
+                    AddPotential(ep);
+                }
+            }
+        }
+
+        //! Broadcast Atoms
+        int Natom = catom_.size();
+        cr->bcast(&Natom, comm);
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
+        {
+            if (cr->isMaster())
+            {
+                catom_[n].BroadCast(cr, comm);
+            }
+            else
+            {
+                CalcAtom ca;
+                cs = ca.BroadCast(cr, comm);
+                if (CommunicationStatus::OK == cs)
+                {
+                    AddAtom(ca);
+                }
+            }
+        }
+    }
+
+    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    {
+        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
 CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -384,71 +604,6 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
     if ((CommunicationStatus::OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    std::string         jobtype;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send_int(dest, static_cast<int>(dataSource_));
-        cr->send_str(dest, &reference_);
-        cr->send_str(dest, &conformation_);
-        cr->send_str(dest, &program_);
-        cr->send_str(dest, &method_);
-        cr->send_str(dest, &basisset_);
-        cr->send_str(dest, &datafile_);
-        jobtype.assign(jobType2string(jobtype_));
-        cr->send_str(dest, &jobtype);
-        cr->send_int(dest, property_.size());
-        for(const auto &prop : property_)
-        {
-            std::string mpo_str(mpo_name(prop.first));
-            cr->send_str(dest, &mpo_str);
-            cr->send_int(dest, prop.second.size());
-            for (const auto &p : prop.second)
-            {
-                p->Send(cr, dest);
-            }
-        }
-        
-        //! Send Potentials
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send_int(dest, electrostaticPotentialConst().size());
-            for (auto &epi : electrostaticPotentialConst())
-            {
-                cs = epi.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
-        //! Send Atoms
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send_int(dest, calcAtomConst().size());
-            for (auto &cai : calcAtomConst())
-            {
-                cs = cai.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
-    {
-        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;

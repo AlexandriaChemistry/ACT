@@ -59,7 +59,8 @@ enum CommunicationStatus {
     DONE      = 6789,
     ERROR     = 7777,
     SEND_DATA = 8888,
-    RECV_DATA = 9999
+    RECV_DATA = 9999,
+    TWOINIT   = 4567
 };
 
 /*!
@@ -100,13 +101,15 @@ private:
     //! Number of helpers per middleman
     int               nhelper_per_middleman_ = 0;
     //! My source for receiving instructions and reporting back to
-    int               superior_              = -1;
+    int               superior_              = 0;
     //! If I am a middleman, this is my ordinal in the ranks of middlemen
     int               ordinal_               = -1;
     //! My helpers (if any)
     std::vector<int>  helpers_;
     //! All the middlemen (not including the MASTER), as if anyone should care
     std::vector<int>  middlemen_;
+    //! Check whether init has been called
+    bool              initCalled_            = false;
     
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
@@ -129,6 +132,8 @@ private:
      * \param[in] fp The file pointer to print to
      */
     void print(FILE *fp);
+    //! Check whether init has been called and throw if not
+    void check_init() const;
     
 public:
     //! \brief Constructor
@@ -138,12 +143,14 @@ public:
     ~CommunicationRecord();
 
     /*! \brief Initiate the internal data once and for all.
+     * This routine should be called exactly once. 
      * Only constant data can be extracted from this.
      * \param[in] nmiddlemen The number of middlemen. Knowing the total 
      *                       number of cores is then sufficient to derive
      *                       the rest.
+     * \return Outcome of the initiation.
      */
-    void init(int nmiddleman);
+   CommunicationStatus init(int nmiddleman);
     
     //! \return my MPI rank
     int rank() const { return rank_; }
@@ -162,6 +169,12 @@ public:
 
     //! \return all the middlemen, or empty vector if none
     const std::vector<int> &middlemen() const { return middlemen_; }
+    
+    //! \return communicator for helpers
+    MPI_Comm comm_helpers() const { return mpi_act_helpers_; }
+
+    //! \return communicator for all cores
+    MPI_Comm comm_world() const { return mpi_act_world_; }
 
     //! \return my superior node, or -1 if none
     int superior() const { return superior_; }
@@ -196,6 +209,37 @@ public:
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
+
+    /*! Broadcast a string to helpers or all processors from the master.
+     * \param[inout] str  Pointer to the string
+     * \param[in]    comm MPI communicator
+     */
+    void bcast(std::string *str, MPI_Comm comm) const;
+    
+    /*! Broadcast an integer to all processors from the master.
+     * \param[inout] i    Pointer to the integer
+     * \param[in]    comm MPI communicator
+     */
+    void bcast(int *i, MPI_Comm comm) const;
+    
+    /*! Broadcast a bool to all processors from the master.
+     * \param[inout] b    Pointer to the bool
+     * \param[in]    comm MPI communicator
+     */
+    void bcast(bool *b, MPI_Comm comm) const;
+    
+    /*! Broadcast a double to all processors from the master.
+     * \param[inout] d    Pointer to the double
+     * \param[in]    comm MPI communicator
+     */
+    void bcast(double *d, MPI_Comm comm) const;
+    
+    /*! Broadcast a double vector to all processors from the master.
+     * \param[inout] d    Pointer to vector of the doubles
+     * \param[in]    comm MPI communicator
+     */
+    void bcast(std::vector<double> *d,
+               MPI_Comm             comm) const;
 
     /*! Send a string to another processor.
      * \param[in] dest The destination processor
@@ -233,6 +277,12 @@ public:
      */
     void recv_double_vector(int src, std::vector<double> *d) const;
     
+    /*! Send a bool to another processor.
+     * \param[in] dest The destination processor
+     * \param[in] b    The value of the boolean
+     */
+    void send_bool(int dest, bool b) const;
+    
     /*! Send an int to another processor.
      * \param[in] dest The destination processor
      * \param[in] d    The value of the integer
@@ -244,6 +294,12 @@ public:
      * \return The int received
      */
     int recv_int(int src) const;
+
+    /*! \brief Receive a bool
+     * \param[in] src The source processor
+     * \return The boolean received
+     */
+    bool recv_bool(int src) const;
 
     /*!
      * \brief Send a tune_ff middleman mode to another processor
@@ -291,11 +347,23 @@ public:
     /*********************************************************
      * Routines to initiate and finalize data transmissions
      *********************************************************/
+    /*! \brief Initiate broadcasting data to a processor
+     * \param[in] comm The MPI communicator
+     * \return CommunicationStatus::OK, if OK
+     */
+    CommunicationStatus  bcast_data(MPI_Comm comm) const;
+    
     /*! \brief Initiate sending data to a processor
      * \param[in] dest The destination processor
      * \return CommunicationStatus::SEND_DATA, if OK
      */
     CommunicationStatus send_data(int dest) const;
+    
+    /*! \brief Finish broadcasting data to a processor
+     * \param[in] comm The MPI communicator
+     * \return CommunicationStatus::OK, if OK
+     */
+    CommunicationStatus  bcast_done(MPI_Comm comm) const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor
