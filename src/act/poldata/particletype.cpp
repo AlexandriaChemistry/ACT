@@ -242,17 +242,18 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 }
     
 CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
+                                            int                        root,
                                             MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cs = id_.BroadCast(cr, comm);
+        cs = id_.BroadCast(cr, root, comm);
         cr->bcast(&desc_, comm);
         cr->bcast(&gmxParticleType_, comm);
         int nopt = option_.size();
         cr->bcast(&nopt, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(auto &opt : option_)
             {
@@ -275,13 +276,13 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     }
     int nparm = parameterMap_.size();
     cr->bcast(&nparm, comm);
-    if (cr->isMaster())
+    if (cr->rank() == root)
     {
         for(auto &pp : parameterMap_)
         {
             std::string type(pp.first);
             cr->bcast(&type, comm);
-            pp.second.BroadCast(cr, comm);
+            pp.second.BroadCast(cr, root, comm);
         }
     }
     else
@@ -292,7 +293,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
             std::string type;
             cr->bcast(&type, comm);
             ForceFieldParameter ff;
-            ff.BroadCast(cr, comm);
+            ff.BroadCast(cr, root, comm);
             parameterMap_.insert({type, ff});
         }
     }

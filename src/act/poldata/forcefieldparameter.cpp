@@ -156,7 +156,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent ForceFieldParameter %g %g %s %d, status %s\n",
+            fprintf(debug, "Sent ForceFieldParameter %g %g %s ntrain %d, status %s\n",
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }
@@ -165,6 +165,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
 }
 
 CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr,
+                                                   int                        root,
                                                    MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -173,7 +174,7 @@ CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr
         cr->bcast(&unit_, comm);
         cr->bcast(&value_, comm);
         std::string mutstr;
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             mutstr = mutabilityName(mutability_);
         }
@@ -202,7 +203,7 @@ CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr
         }
         if (nullptr != debug)
         {
-            fprintf(debug, "Received ForceFieldParameter %g %g %s %d, status %s\n",
+            fprintf(debug, "Received ForceFieldParameter %g %g %s ntrain %d, status %s\n",
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }
@@ -248,7 +249,7 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
         }
         if (nullptr != debug)
         {
-            fprintf(debug, "Received ForceFieldParameter %g %g %s %d, status %s\n",
+            fprintf(debug, "Received ForceFieldParameter %g %g %s ntrain %d, status %s\n",
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }

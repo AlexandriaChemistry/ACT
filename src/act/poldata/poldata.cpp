@@ -437,6 +437,7 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 }
 
 CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
+                                       int                        root,
                                        MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -458,11 +459,11 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
         /* Bcast Ffatype */
         int asize = alexandria_.size();
         cr->bcast(&asize, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(auto &aa : alexandria_)
             {
-                aa.BroadCast(cr, comm);
+                aa.BroadCast(cr, root, comm);
             }
         }
         else
@@ -470,7 +471,7 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
             for(int as = 0; as < asize; as++)
             {
                 ParticleType pt;
-                cs = pt.BroadCast(cr, comm);
+                cs = pt.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     alexandria_.push_back(pt);
@@ -483,13 +484,13 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
         {
             int vsize = vsite_.size();
             cr->bcast(&vsize, comm);
-            if (!cr->isMaster())
+            if (cr->rank() != root)
             {
                 vsite_.resize(vsize);
             }
             for (int vs = 0; vs < vsize; vs++)
             {
-                cs = vsite_[vs].BroadCast(cr, comm);
+                cs = vsite_[vs].BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK != cs)
                 {
                     break;
@@ -502,13 +503,13 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
         {
             int fsize = forces_.size();
             cr->bcast(&fsize, comm);
-            if (cr->isMaster())
+            if (cr->rank() == root)
             {
                 for(auto &ff : forces_)
                 {
                     std::string key(interactionTypeToString(ff.first));
                     cr->bcast(&key, comm);
-                    ff.second.BroadCast(cr, comm);   
+                    ff.second.BroadCast(cr, root, comm);   
                 }
             }
             else
@@ -521,8 +522,8 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
                     std::string             key;
                     cr->bcast(&key, comm);
                     InteractionType iType = stringToInteractionType(key.c_str());
-                    cs                    = fs.BroadCast(cr, comm);
-                    if (CommunicationStatus::OK == cs && !cr->isMaster())
+                    cs                    = fs.BroadCast(cr, root, comm);
+                    if (CommunicationStatus::OK == cs && cr->rank() != root)
                     {
                         forces_.insert({iType, fs});
                     }
@@ -540,13 +541,13 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
         {
             int scsize = symcharges_.size();
             cr->bcast(&scsize, comm);
-            if (!cr->isMaster())
+            if (cr->rank() != root)
             {
                 symcharges_.resize(scsize);
             }
             for(int scs = 0; scs < scsize; scs++)
             {
-                cs = symcharges_[scs].BroadCast(cr, comm);
+                cs = symcharges_[scs].BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK != cs)
                 {
                     break;
@@ -772,13 +773,23 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
                        "Communication did not end correctly");
 }
 
-void Poldata::sendToHelpers(const CommunicationRecord *cr)
+void Poldata::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
 {
-    if (cr->isMasterOrMiddleMan())
+    if (bcast && debug)
     {
-        if (true)
+        fprintf(debug, "Will send force field from node %d to helper", cr->rank());
+        for(const auto &i: cr->helpers())
         {
-            BroadCast(cr, cr->comm_helpers());
+            fprintf(debug, " %d", i);
+        }
+        fprintf(debug, "\n");
+        fflush(debug);
+    }
+    if (cr->rank() == root)
+    {
+        if (bcast)
+        {
+            BroadCast(cr, root, cr->send_helpers());
         }
         else
         {
@@ -796,11 +807,11 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
             }
         }
     }
-    else if (cr->isHelper())
+    else
     {
-        if (true)
+        if (bcast)
         {
-            BroadCast(cr, cr->comm_helpers());
+            BroadCast(cr, root, cr->send_helpers());
         }
         else
         {

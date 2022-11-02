@@ -2512,6 +2512,18 @@ CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
     return cs;
 }
 
+CommunicationStatus MyMol::BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm)
+{
+    auto cs = MolProp::BroadCast(cr, root, comm);
+    if (CommunicationStatus::OK == cs)
+    {
+        int ims = static_cast<int>(dataset_type_);
+        cr->bcast(&ims, comm);
+        set_datasetType(static_cast<iMolSelect>(ims));
+    }
+    return cs;
+}
+
 CommunicationStatus MyMol::Receive(const CommunicationRecord *cr, int src)
 {
     auto cs = MolProp::Receive(cr, src);

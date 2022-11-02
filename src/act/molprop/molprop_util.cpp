@@ -56,7 +56,7 @@ void generate_index(std::vector<MolProp> *mp)
         // We have to set some kind of index here to distinguish
         // the compounds.
         // TODO: implement alexandria ID here.
-        mpi->SetIndex(index++);
+        mpi->setIndex(index++);
     }
 }
 
@@ -370,7 +370,7 @@ void MolPropSort(std::vector<alexandria::MolProp> *mp,
                     {
                         gmx_fatal(FARGS, "Cannot find index for %s", mpi->getIupac().c_str());
                     }
-                    mpi->SetIndex(index);
+                    mpi->setIndex(index);
                 }
                 std::sort(mp->begin(), mp->end(), comp_mp_index);
             }
