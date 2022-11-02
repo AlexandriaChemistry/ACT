@@ -192,6 +192,11 @@ int simulate(int argc, char *argv[])
     }
     auto imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error,
                                       false);
+    if (immStatus::OK != imm)
+    {
+        fprintf(stderr, "Problem generating topology: %s\n", immsg(imm));
+        return 0;
+    }
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     std::vector<gmx::RVec> forces(mymol.atomsConst().size());

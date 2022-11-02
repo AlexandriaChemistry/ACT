@@ -188,6 +188,8 @@ FILE *OptACM::logFile() {
     }
 }
 
+// TODO rename function and make a coupling between targets from the command line
+// and properties to fetch from the training dataset.
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
@@ -198,32 +200,13 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         {
             continue;
         }
-        if (mg_.fit("alpha"))
+        // For fitting alpha we need a reference polarizability
+        double T = 0;
+        auto gp = reinterpret_cast<const MolecularPolarizability*>(mymol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
+        if (gp)
         {
-            // For fitting alpha we need a reference polarizability
-            double T = 0;
-            auto gp = reinterpret_cast<const MolecularPolarizability*>(mymol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
-            if (gp)
-            {
-                auto qelec = mymol.qTypeProps(qType::Elec);
-                qelec->setPolarizabilityTensor(gp->getTensor());
-            }
-            else
-            {
-                if (logFile())
-                {
-                    fprintf(logFile(), "Removing %s due to lacking reference polarizability at the %s/%s LoT.\n",
-                            mymol.getMolname().c_str(),
-                            method.c_str(), basis.c_str());
-                }
-                mymol.setSupport(eSupport::No);
-            }
-        }
-        if (mymol.support() != eSupport::No)
-        {
-            // TODO check if this is needed
-            //mymol.addQgenAcm(QgenAcm(sii_->poldata(), mymol.atoms(),
-            //                       mymol.fragmentPtr()));
+            auto qelec = mymol.qTypeProps(qType::Elec);
+            qelec->setPolarizabilityTensor(gp->getTensor());
         }
     }
 }
