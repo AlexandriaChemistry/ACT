@@ -28,6 +28,7 @@
 #include "communicationrecord.h"
 
 #include <map>
+#include <set>
 
 #include "mpi.h"
 
@@ -209,13 +210,16 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     }
     
     // Create ACT communicators for helpers and middlemen
-    // Default value
-    mpi_act_helpers_ = mpi_act_world_;
     // Split the non-masters into nmiddlemen X nhelpers
     if (nhelper_per_middleman_ > 0)
     {
-        MPI_Comm_split(mpi_act_world_, rank_ / (nhelper_per_middleman_ + 1),
-                       rank_ % (nhelper_per_middleman_ + 1), &mpi_act_helpers_);
+        int colour = rank_ / (nhelper_per_middleman_ + 1);
+        int key    = rank_ % (nhelper_per_middleman_ + 1);
+        MPI_Comm_split(mpi_act_world_, colour, key, &mpi_act_helpers_);
+    }
+    if (MPI_COMM_NULL == mpi_act_helpers_)
+    {
+        MPI_Comm_dup(mpi_act_world_, &mpi_act_helpers_);
     }
     print(stdout);
     initCalled_ = true;
@@ -228,7 +232,50 @@ CommunicationRecord::~CommunicationRecord()
     {
         done_commrec(cr_);
     }
+    if (mpi_act_helpers_ != mpi_act_world_)
+    {
+        MPI_Comm_free(&mpi_act_helpers_);
+    }
+    //if (mpi_act_subsystem_ != mpi_act_world_)
+    //{
+    //  MPI_Comm_free(&mpi_act_subsystem_);
+    //}
+    //    MPI_Comm_free(&mpi_act_world_);
 }
+
+MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
+{
+    MPI_Comm my_comm = comm_world();
+    if (nhelper_per_middleman() > 0)
+    {
+        std::set<int> ranks;
+        ranks.insert(superior);
+        for(int i = 0; i < size(); i++)
+        {
+            if (i % (1 + nhelper_per_middleman()) == column)
+            {
+                ranks.insert(i);
+            }
+        }
+        MPI_Group world_group, mygroup;
+        MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+        std::vector<int> iranks;
+        std::string      cgroup;
+        for(int i : ranks)
+        {
+            iranks.push_back(i);
+            cgroup += gmx::formatString(" %d", i);
+        }
+        if (debug)
+        {
+            fprintf(debug, "Rank: %d cgroup %s\n", rank(), cgroup.c_str());
+        }
+        MPI_Group_incl(world_group, iranks.size(), iranks.data(), &mygroup);
+        MPI_Comm_create_group(MPI_COMM_WORLD, mygroup, 0, &my_comm);
+    }
+    return my_comm;
+}
+
 
 /*************************************************
  *           LOW LEVEL ROUTINES                  *
@@ -275,50 +322,51 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-void CommunicationRecord::bcast(std::string *str, MPI_Comm comm) const
+void CommunicationRecord::bcast(std::string *str, MPI_Comm comm, int root) const
 {
     check_init();
     int ssize = str->size();
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(), comm);
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm);
     if (0 != rank_)
     {
         str->resize(ssize);
     }
-    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, superior(), comm);
+    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm);
 }
     
-void CommunicationRecord::bcast(int *i, MPI_Comm comm) const
+void CommunicationRecord::bcast(int *i, MPI_Comm comm, int root) const
 {
     check_init();
-    MPI_Bcast((void *)i, 1, MPI_INT, superior(), comm);
+    MPI_Bcast((void *)i, 1, MPI_INT, root, comm);
 }
     
-void CommunicationRecord::bcast(bool *b, MPI_Comm comm) const
+void CommunicationRecord::bcast(bool *b, MPI_Comm comm, int root) const
 {
     check_init();
     int d = *b ? 1 : 0;
-    MPI_Bcast((void *)&d, 1, MPI_INT, superior(), comm);
+    MPI_Bcast((void *)&d, 1, MPI_INT, root, comm);
     *b = d;
 }
     
-void CommunicationRecord::bcast(double *d, MPI_Comm comm) const
+void CommunicationRecord::bcast(double *d, MPI_Comm comm, int root) const
 {
     check_init();
-    MPI_Bcast((void *)d, 1, MPI_DOUBLE, superior(), comm);
+    MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm);
 }
    
 void CommunicationRecord::bcast(std::vector<double> *d,
-                                MPI_Comm comm) const
+                                MPI_Comm             comm,
+                                int                  root) const
 {
     check_init();
     int ssize = d->size(); 
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, superior(), comm);
+    MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm);
     if (0 != rank_)
     {
         d->resize(ssize);
     }
 
-    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, 0, comm);
+    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm);
 }
 
 void CommunicationRecord::send_str(int dest, const std::string *str) const
@@ -537,10 +585,10 @@ void CommunicationRecord::sumi_helpers(int nr,
 
 #define ACT_SEND_DATA 19823
 #define ACT_SEND_DONE -666
-CommunicationStatus CommunicationRecord::bcast_data(MPI_Comm comm) const
+CommunicationStatus CommunicationRecord::bcast_data(MPI_Comm comm, int root) const
 {
     int acd = ACT_SEND_DATA;
-    bcast(&acd, comm);
+    bcast(&acd, comm, root);
 
     if (ACT_SEND_DATA == acd)
     {
@@ -566,10 +614,10 @@ CommunicationStatus CommunicationRecord::send_done(int dest) const
     return CommunicationStatus::OK;
 }
 
-CommunicationStatus CommunicationRecord::bcast_done(MPI_Comm comm) const
+CommunicationStatus CommunicationRecord::bcast_done(MPI_Comm comm, int root) const
 {
     int acd = ACT_SEND_DONE;
-    bcast(&acd, comm);
+    bcast(&acd, comm, root);
 
     if (ACT_SEND_DONE == acd)
     {

@@ -336,6 +336,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
 }
 
 CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
+                                          int                        root,
                                           MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -357,7 +358,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         //! BroadCast
         int nprop = propertiesConst().size();
         cr->bcast(&nprop, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for (auto &p : *properties())
             {
@@ -367,7 +368,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                 {
                     for(auto &gp : p.second)
                     {
-                        gp->BroadCast(cr, comm);
+                        gp->BroadCast(cr, root, comm);
                     }
                 }
             }
@@ -431,7 +432,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                 }
                 if (gp)
                 {
-                    gp->BroadCast(cr, comm);
+                    gp->BroadCast(cr, root, comm);
                     addProperty(mpo, gp);
                 }
             }
@@ -440,11 +441,11 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         //! Receive Potentials
         int Npotential = potential_.size();
         cr->bcast(&Npotential, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
             {
-                cs = potential_[n].BroadCast(cr, comm);
+                cs = potential_[n].BroadCast(cr, root, comm);
             }
         }
         else
@@ -453,7 +454,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
             {
                 ElectrostaticPotential ep;
-                cs = ep.BroadCast(cr, comm);
+                cs = ep.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddPotential(ep);
@@ -466,14 +467,14 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&Natom, comm);
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
         {
-            if (cr->isMaster())
+            if (cr->rank() == root)
             {
-                catom_[n].BroadCast(cr, comm);
+                catom_[n].BroadCast(cr, root, comm);
             }
             else
             {
                 CalcAtom ca;
-                cs = ca.BroadCast(cr, comm);
+                cs = ca.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddAtom(ca);

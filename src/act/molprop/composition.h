@@ -434,10 +434,13 @@ public:
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
+     * \param[in] root The root of this communication
      * \param[in] comm MPI communicator
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus BroadCast(const CommunicationRecord *cr, MPI_Comm comm);
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
+                                  MPI_Comm                   comm);
 
     /*! \brief
      * Receives this object over an MPI connection

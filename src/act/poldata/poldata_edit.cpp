@@ -863,6 +863,7 @@ int edit(int argc, char*argv[])
     {
         if (cr.isParallel())
         {
+            int root = 0;
             CommunicationStatus cs;
             if (cr.isMaster())
             {
@@ -871,7 +872,7 @@ int edit(int argc, char*argv[])
                 printf("Will send force field to my helpers to write %s\n", outfile.c_str());
                 if (bcast)
                 {
-                    cs = pd.BroadCast(&cr, cr.comm_world());
+                    cs = pd.BroadCast(&cr, root, cr.comm_world());
                     cr.bcast(&outfile, cr.comm_world());
                 }
                 else
@@ -888,7 +889,7 @@ int edit(int argc, char*argv[])
                 std::string outfile;
                 if (bcast)
                 {
-                    cs = pd.BroadCast(&cr, cr.comm_world());
+                    cs = pd.BroadCast(&cr, root, cr.comm_world());
                     cr.bcast(&outfile, cr.comm_world());
                 }
                 else

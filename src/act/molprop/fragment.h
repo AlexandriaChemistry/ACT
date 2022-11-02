@@ -168,10 +168,12 @@ class Fragment
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
+     * \param[in] root The MPI root
      * \param[in] comm MPI Communicator
      * \return the CommunicationStatus of the operation
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
     /*! \brief

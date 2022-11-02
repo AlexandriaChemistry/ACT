@@ -113,6 +113,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 }
 
 CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
+                                        int                        root,
                                         MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -134,7 +135,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&fz_, comm);
         int Ncharge = q_.size();
         cr->bcast(&Ncharge, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for (auto &qi : q_)
             {

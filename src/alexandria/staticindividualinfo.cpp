@@ -86,6 +86,7 @@ void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
 void StaticIndividualInfo::fillPoldata(      FILE *fp,
                                        const char *pd_fn)
 {
+    int root = 0;
     if (!cr_->isHelper())
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
@@ -99,11 +100,16 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         print_memory_usage(debug);
+        root = cr_->rank();
     }
-    /* Broadcasting Force Field Data from Master to Helper nodes */
+    else
+    {
+        root = cr_->superior();
+    }
+    /* Broadcasting Force Field Data from Middlemen to Helper nodes */
     if (cr_->isParallelCalc())
     {
-        pd_.sendToHelpers(cr_);
+        pd_.sendToHelpers(cr_, root);
     }
     if (nullptr != fp)
     {

@@ -256,10 +256,12 @@ class ForceFieldParameter
     CommunicationStatus Send(const CommunicationRecord *cr, int dest)  const;
 
     /*! \brief Bcast contents to and from other processors
-     * \param[in] cr  Communication data structure
+     * \param[in] cr   Communication data structure
+     * \param[in] root The MPI root
      * \param[in] comm Communication structure
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive contents from another processor

@@ -254,6 +254,7 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
 }
 
 CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord *cr,
+                                                       int                        root,
                                                        MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -261,7 +262,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
     {
         cr->bcast(&function_, comm);
         std::string canSwapString;
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             canSwapString.assign(canSwapToString(canSwap_));
         }
@@ -272,7 +273,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         fType_ = ftype;
         int noptions = options_.size();
         cr->bcast(&noptions, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(const auto &opt : options_)
             {
@@ -300,19 +301,19 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         }
         int nparam = parameters_.size();
         cr->bcast(&nparam, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(auto &p : parameters_)
             {
                 Identifier pp = p.first;
-                pp.BroadCast(cr, comm);
+                pp.BroadCast(cr, root, comm);
                 int ntype = p.second.size();
                 cr->bcast(&ntype, comm);
                 for(auto &q : p.second)
                 {
                     std::string type = q.first;
                     cr->bcast(&type, comm);
-                    q.second.BroadCast(cr, comm);
+                    q.second.BroadCast(cr, root, comm);
                 }
             }
         }
@@ -322,7 +323,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
             for(int i = 0; i < nparam; i++)
             {
                 Identifier key;
-                cs = key.BroadCast(cr, comm);
+                cs = key.BroadCast(cr, root, comm);
                 if (debug)
                 {
                     fprintf(debug, "Done broadcasting key %s\n", key.id().c_str());
@@ -337,7 +338,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                         std::string type;
                         cr->bcast(&type, comm);
                         ForceFieldParameter p;
-                        cs = p.BroadCast(cr, comm);
+                        cs = p.BroadCast(cr, root, comm);
                         if (CommunicationStatus::OK == cs)
                         {
                             parameters_[key].insert({type, p});

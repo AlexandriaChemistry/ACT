@@ -74,10 +74,6 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-void MolProp::CheckConsistency()
-{
-}
-
 void MolProp::generateComposition()
 {
     for (const auto &ex : exper_)
@@ -197,7 +193,7 @@ int MolProp::Merge(const MolProp *src)
     {
         AddCategory(si);
     }
-    SetIndex(src->getIndex());
+    setIndex(src->getIndex());
     for(auto &src_f : src->fragments())
     {
         bool found = false;
@@ -497,6 +493,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 }
 
 CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
+                                       int                        root,
                                        MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -513,11 +510,11 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&inchi_, comm);
         int Nbond = bond_.size();
         cr->bcast(&Nbond, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(auto &b : *bonds())
             {
-                b.BroadCast(cr, comm);
+                b.BroadCast(cr, root, comm);
             }
         }
         else
@@ -527,7 +524,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
             {
                 Bond b;
-                cs = b.BroadCast(cr, comm);
+                cs = b.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddBond(b);
@@ -562,11 +559,11 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
 
         int Nfrag     = fragment_.size();
         cr->bcast(&Nfrag, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for(size_t ii = 0; ii < fragment_.size(); ii++)
             {
-                fragment_[ii].BroadCast(cr, comm);
+                fragment_[ii].BroadCast(cr, root, comm);
             }
         }
         else
@@ -575,7 +572,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
             {
                 Fragment f;
-                cs = f.BroadCast(cr, comm);
+                cs = f.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     fragment_.push_back(std::move(f));
@@ -586,11 +583,11 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         int Nexper    = exper_.size();
         cr->bcast(&Nexper, comm);
         //! Receive Experiments
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
-                exper_[n].BroadCast(cr, comm);
+                exper_[n].BroadCast(cr, root, comm);
             }
         }
         else
@@ -598,7 +595,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 Experiment ex;
-                cs = ex.BroadCast(cr, comm);
+                cs = ex.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
                     AddExperiment(ex);

@@ -436,9 +436,11 @@ class Poldata
         void checkForPolarizability();
 
         /*! Spread from master to other nodes
-         * \param[in] cr Communication record
+         * \param[in] cr    Communication record
+         * \param[in] root  The root of this communication
+         * \param[in] bcast Whether or not to use boradcast functionality
          */
-        void sendToHelpers(const CommunicationRecord *cr);
+        void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true);
 
         /*! Spread eemprop to a helper node
          * \param[in] cr   Communication record
@@ -466,10 +468,12 @@ class Poldata
 
     /*! \brief BroadCast a whole force field
      * \param[in] cr  Communication data structure
+     * \param[in] root The root of this communication
      * \param[in] comm MPI communication structure
      * \return The status of the whole thing
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
         
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);

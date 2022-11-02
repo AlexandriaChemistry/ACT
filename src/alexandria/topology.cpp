@@ -127,6 +127,7 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
 }
 
 CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
+                                             int                        root,
                                              MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -135,7 +136,7 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
     {
         int nai = indices_.size();
         cr->bcast(&nai, comm);
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             for (int i= 0; i < nai; i++)
             {
@@ -152,7 +153,7 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
         }
         int nbo = bondOrder_.size();
         cr->bcast(&nbo, comm);
-        if (!cr->isMaster())
+        if (cr->rank() != root)
         {
             bondOrder_.resize(nbo);
         }

@@ -117,6 +117,7 @@ class Vsite
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
         CommunicationStatus Receive(const CommunicationRecord *cr, int src);

@@ -219,20 +219,21 @@ private:
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
     Topology                      *topology_;
-    int                            nRealAtoms_     = 0;
+    int                            nRealAtoms_    = 0;
  
     // Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
     t_nrnb                         nrnb_;
     gmx_wallcycle_t                wcycle_;
-    gmx_shellfc_t                 *shellfc_        = nullptr;
+    gmx_shellfc_t                 *shellfc_       = nullptr;
     std::vector<int>               symmetric_charges_;
     std::vector<std::string>       error_messages_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
     FragmentHandler               *fraghandler_   = nullptr;
-    
+    iMolSelect                     dataset_type_  = iMolSelect::Ignore;
+
 public:
 
     //! \return a GROMACS style array with energy terms
@@ -253,8 +254,6 @@ public:
      * Constructor
      */
     MyMol();
-    
-    iMolSelect                     dataset_type_   = iMolSelect::Ignore;
     
     iMolSelect datasetType() const { return dataset_type_; }
     
@@ -641,7 +640,7 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
@@ -650,7 +649,19 @@ public:
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr   data structure for MPI communication
+     * \param[in] root The MPI root
+     * \param[in] comm The MPI communicator
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root, 
+                                  MPI_Comm                   comm);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] cr  data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */

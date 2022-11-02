@@ -159,6 +159,11 @@ void OptACM::optionsFinished(const std::string &outputFile)
 {
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
+    if (debug)
+    {
+        fprintf(debug, "nmiddlemen = %d\n", nmiddlemen);
+        fflush(debug);
+    }
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_
@@ -823,9 +828,12 @@ int tune_ff(int argc, char *argv[])
             fnIndex = opt.commRec()->middleManOrdinal();
         }
         opt.sii()->fillPoldata(fp, fns[fnIndex].c_str());
-        printf("On proc %d, found %d particle types\n",
-               opt.sii()->commRec()->rank(),
-               opt.sii()->poldata()->nParticleTypes());
+        if (fp)
+        {
+            fprintf(fp, "On proc %d, found %d particle types\n",
+                    opt.sii()->commRec()->rank(),
+                    opt.sii()->poldata()->nParticleTypes());
+        }
     }
 
     // MolGen read being called here!
