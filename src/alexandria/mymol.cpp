@@ -2173,7 +2173,7 @@ void MyMol::calcEspRms(const Poldata *pd)
             natoms++;
         }
     }
-    gmx::HostVector<gmx::RVec> myx(nRealAtoms());
+    std::vector<gmx::RVec> myx(nRealAtoms());
     std::vector<ActAtom> realAtoms;
     size_t ii = 0;
     for (size_t i = 0; i < myatoms.size(); i++)
@@ -2201,7 +2201,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         {
             QgenResp *qgr = i.second.qgenResp();
             qgr->setChargeType(ChargeType::Point);
-            qgr->setAtomInfo(realAtoms, pd, x(), totalCharge());
+            qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
             qgr->updateAtomCharges(i.second.charge());
             for (size_t j = realAtoms.size(); j < qgrcalc->nEsp(); j++)
             {

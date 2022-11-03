@@ -67,9 +67,10 @@ std::map<NodeType, const char *> ntToString = {
 CommunicationRecord::CommunicationRecord()
 {
     cr_            = init_commrec();
-    mpi_act_world_ = MPI_COMM_WORLD;
-    (void) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
-    (void) MPI_Comm_size(MPI_COMM_WORLD, &size_);
+    // TODO check return values
+    (void) MPI_Comm_dup(MPI_COMM_WORLD, &mpi_act_world_);
+    (void) MPI_Comm_rank(mpi_act_world_, &rank_);
+    (void) MPI_Comm_size(mpi_act_world_, &size_);
     if (rank_ == 0)
     {
         nt_ = NodeType::Master;
@@ -232,20 +233,19 @@ CommunicationRecord::~CommunicationRecord()
     {
         done_commrec(cr_);
     }
-    if (mpi_act_helpers_ != mpi_act_world_)
+    if (mpi_act_helpers_ != mpi_act_world_ && mpi_act_helpers_ != MPI_COMM_NULL)
     {
         MPI_Comm_free(&mpi_act_helpers_);
     }
-    //if (mpi_act_subsystem_ != mpi_act_world_)
-    //{
-    //  MPI_Comm_free(&mpi_act_subsystem_);
-    //}
-    //    MPI_Comm_free(&mpi_act_world_);
+    if (MPI_COMM_NULL != mpi_act_world_)
+    {
+        MPI_Comm_free(&mpi_act_world_);
+    }
 }
 
 MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
 {
-    MPI_Comm my_comm = comm_world();
+    MPI_Comm my_comm = MPI_COMM_NULL;
     if (nhelper_per_middleman() > 0)
     {
         std::set<int> ranks;
@@ -272,6 +272,11 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
         }
         MPI_Group_incl(world_group, iranks.size(), iranks.data(), &mygroup);
         MPI_Comm_create_group(MPI_COMM_WORLD, mygroup, 0, &my_comm);
+    }
+    if (my_comm == MPI_COMM_NULL)
+    {
+        // Check error messages
+        (void) MPI_Comm_dup(comm_world(), &my_comm);
     }
     return my_comm;
 }
