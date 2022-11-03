@@ -76,6 +76,8 @@ void CombineLJ(int     CombinationRule,
             *c12 = *c6 * sig6;
         }
         break;
+    case eCOMB_NONE:
+        break;
     default:
         gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", CombinationRule);
     }
@@ -134,6 +136,7 @@ void CombineBham(int     CombinationRule,
             *gammaIJ = 0.5 * (gammaI + gammaJ);;
             break;            
         case eCOMB_NONE:
+	    break;
         case eCOMB_NR:
             gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
     }
