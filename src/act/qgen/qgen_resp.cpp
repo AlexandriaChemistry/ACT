@@ -107,8 +107,10 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
     GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ - atoms.size() == 0),
                        gmx::formatString("Changing the number of atoms from %d to %lu", nAtom_, atoms.size()).c_str());
     nAtom_   = atoms.size();
-    GMX_RELEASE_ASSERT(nAtom_ - x.size() == 0,
-                       gmx::formatString("Number of coordinates %d does not match atoms structure %d", static_cast<int>(x.size()), nAtom_).c_str());
+    if (nAtom_ - x.size() != 0)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Number of coordinates %d does not match atoms structure %d", static_cast<int>(x.size()), nAtom_).c_str()));
+    }
     qtot_    = qtotal;
     qshell_  = 0;
     x_       = x;
