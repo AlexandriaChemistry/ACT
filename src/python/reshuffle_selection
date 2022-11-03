@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import argparse, random, os, sys
+from get_csv_rows import *
+
+def parse_args():
+    desc = "Randomly assign Train status to a selection file"
+    parser  = argparse.ArgumentParser(description=desc)
+    parser.add_argument("-f", "--infile", help="Selection input file", type=str, default=None)
+    parser.add_argument("-o", "--outfile", help="Selection output file", type=str, default=None)
+    train = 0.3
+    parser.add_argument("-train","--train", help="Fraction training compounds, default "+str(train), type=float, default=train)
+    args = parser.parse_args()
+    return args
+
+if __name__ == "__main__":
+    
+    args = parse_args()
+    if not args.infile:
+        sys.exit("Please pass an infile name")
+    if not args.outfile:
+        sys.exit("Please pass an outfile name")
+    ntrain = 0
+    ntotal = 0
+    with open(args.outfile, "w") as outf:
+        for row in get_csv_rows(args.infile, 2):
+            ntotal += 1
+            r = random.uniform(0, 1)
+            if r < args.train:
+                outf.write("%s|Train\n" % row[0])
+                ntrain += 1
+            else:
+                outf.write("%s|Test\n" % row[0])
+    print("Generated %s with %d Train compounds out of %d" % ( args.outfile, ntrain, ntotal ))

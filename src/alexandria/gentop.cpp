@@ -113,7 +113,7 @@ int gentop(int argc, char *argv[])
         { efNDX, "-n",        "renum",         ffOPTWR },
         { efDAT, "-q",        "qout",          ffOPTWR },
         { efXML, "-mp",       "molprops",      ffOPTRD },
-        { efXML, "-ff",       "gentop",        ffOPTRD },
+        { efXML, "-ff",       "gentop",        ffREAD },
         { efCUB, "-pot",      "potential",     ffOPTWR },
         { efCUB, "-ref",      "refpot",        ffOPTRD },
         { efCUB, "-diff",     "diffpot",       ffOPTWR },
@@ -180,8 +180,6 @@ int gentop(int argc, char *argv[])
           "Spacing around the compound (nm) for computing the potential (not used when a reference file is read)." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
-        //{ "-ff",     FALSE, etENUM, {ff},
-        //  "Force field model. Note that only ACM-xx will yield complete topologies but see help text ([TT]-h[tt])." },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Total charge of the molecule. This will be taken from the input file by default, but that is reliable only if the input is a Gaussian log file." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
@@ -218,15 +216,11 @@ int gentop(int argc, char *argv[])
         gmx_fatal(FARGS, "Specify either the -db or the -f option. No output without input");
     }
     const char *gentop_fnm = opt2fn_null("-ff", NFILE, fnm);
-    //if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
-    //{
-    //    gentop_fnm = gmx::formatString("%s.dat", ff[0]).c_str();
-    // }
-    //if (nullptr == gentop_fnm)
-    //{
-    //    fprintf(stderr, "Please specify either a force field file name or use the -ff flag");
-    //    return 0;
-    //}
+    if (nullptr == gentop_fnm)
+    {
+        fprintf(stderr, "Please pass me a force field file name with the -ff option.\n");
+        return 0;
+    }
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
