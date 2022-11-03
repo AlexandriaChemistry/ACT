@@ -81,10 +81,10 @@ S|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-398.075020995379|3|Hartree|Spoel2022a||
 Si|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-289.325185241729|3|Hartree|Spoel2022a||
 Si|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-289.325854777323|3|Hartree|Spoel2022a||
 He|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2.9025336|1|Hartree|Kriz2022||
-Ne|0|ccsd(t)/aug-cc-pVQZ|E0|0|-128.8474594|1|Hartree|Kriz2022||
-Ar|0|ccsd(t)/aug-cc-pVQZ|E0|0|-527.0750553|1|Hartree|Kriz2022||
-Kr|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2752.3869829|1|Hartree|Kriz2022||
-Xe|0|ccsd(t)/aug-cc-pVQZ|E0|0|-329.4330791|1|Hartree|Kriz2022|pseudopotential|
+Ne|0|ccsd(t)/aug-cc-pVQZ|E0|0|-128.8806074|1|Hartree|Kriz2022|Window=FreezeInnerNobleGasCore|
+Ar|0|ccsd(t)/aug-cc-pVQZ|E0|0|-527.137075|1|Hartree|Kriz2022|Window=FreezeInnerNobleGasCore|
+Kr|0|ccsd(t)/aug-cc-pVQZ|E0|0|-463.3369445|1|Hartree|Kriz2022|pseudopotential, Window=FreezeInnerNobleGasCore|
+Xe|0|ccsd(t)/aug-cc-pVQZ|E0|0|-329.4330791|1|Hartree|Kriz2022|pseudopotential, Window=FreezeInnerNobleGasCore|
 H|0|WB97X-D3BJ/def2-QZVP|E0|0|-0.505670076197405|2|Hartree|Kriz2022||
 C|0|WB97X-D3BJ/def2-QZVP|E0|0|-37.874593889794|3|Hartree|Kriz2022||
 N|0|WB97X-D3BJ/def2-QZVP|E0|0|-54.619368867719|4|Hartree|Kriz2022||
