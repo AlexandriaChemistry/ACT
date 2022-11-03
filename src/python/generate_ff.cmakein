@@ -7,7 +7,7 @@ import os, sys, subprocess, argparse, glob
 from enum    import Enum
 
 # ACT python code
-sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+sys.path.insert(1, "/home/icm/tools/lib/site-packages/act")
 from actutils     import *
 from get_csv_rows import *
 from elements     import AtomNumberToAtomName
@@ -118,7 +118,7 @@ class AtomTypes:
       sys.exit("Unknown atomtype %s when adding reference %s" % ( atomtype, reference ))
     self.atp[atomtype]["reference"] = reference
     
-  def print_vdwparams(self, outf, vdwfunc:str):
+  def print_vdwparams(self, outf, vdwfunc:str, combRule):
     vdwparamlist = []
     units = { "epsilon": "kJ/mol" }
     if vdwfunc == "LJ_SR":
@@ -133,19 +133,43 @@ class AtomTypes:
     # We use the sigma field in the force field tables for both sigma
     # and rmin.
     utranslate = { "rmin": "sigma" }
-    
-    for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
-      param_header(outf, key)
-      for uuu in units.keys():
-        u = uuu
-        if uuu in utranslate:
-          u = utranslate[uuu]
-        
-        outf.write("%s\n" % format_params(uuu, units[uuu], 
-                                          self.atp[key][u+"_min"],
-                                          self.atp[key][u+"_max"],
-                                          None, self.atp[key][u+"_mutability"], 0, True))
-      param_footer(outf)
+    print(f"Combination rule = {combRule}")    
+    if combRule == "None":
+        for Ikey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+            for Jkey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+                IJkey = Ikey + "~" + Jkey
+
+                param_header(outf, IJkey)
+                for uuu in units.keys():
+                   u = uuu
+                   if uuu in utranslate:
+                       u = utranslate[uuu]
+                   if self.atp[Ikey][u+"_min"] > self.atp[Jkey][u+"_min"]:
+                        MAX = self.atp[Ikey][u+"_max"]
+                        MIN = self.atp[Jkey][u+"_min"]
+                   else:
+                        MAX = self.atp[Jkey][u+"_max"]
+                        MIN = self.atp[Ikey][u+"_min"]
+                   ijuuu = uuu + "_ij"
+                   outf.write("%s\n" % format_params(ijuuu, units[uuu],
+                                              MIN,
+                                              MAX,
+                                              None, "Bounded", 0, True))
+                param_footer(outf)
+
+
+    else:
+        for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+          param_header(outf, key)
+          for uuu in units.keys():
+            u = uuu
+            if uuu in utranslate:
+              u = utranslate[uuu]
+            outf.write("%s\n" % format_params(uuu, units[uuu], 
+                                              self.atp[key][u+"_min"],
+                                              self.atp[key][u+"_max"],
+                                              None, self.atp[key][u+"_mutability"], 0, True))
+          param_footer(outf)
       
 class ForceField:
   """Class to hold generic FF information"""
@@ -323,7 +347,7 @@ def print_gentop(output, myff, myatp, bs,
   write_interactions(out, "VANDERWAALS", myff.vanderwaals,
                     "true", False,
                      [ [ "combination_rule", combRule ] ] )
-  myatp.print_vdwparams(out, myff.vanderwaals)
+  myatp.print_vdwparams(out, myff.vanderwaals, combRule)
   out.write("  </interaction>\n")
   write_interactions(out, "BONDS", bondfunc, "true", True)
   write_interactions(out, "ANGLES", anglefunc, "true", True)
@@ -362,7 +386,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
         defcomb = "Geometric"
-        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  Arithmetic, Geometric, Kong. Default %s" % defcomb), type=str, default =defcomb)
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule options: None, Arithmetic, Geometric, Hogervorst, Kong_Mason, Waldman_Hagler, Yang for Buckingham van der Waals potential option (BHAM) or None,  Arithmetic, Geometric, Lorentz_Berthelot for Lennard-Jones van der Waals potential (LJ_SR). Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defvdw = vdwfunctions[0]
