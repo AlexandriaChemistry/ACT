@@ -146,6 +146,7 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
 }
 
 CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
+                                               int                        root,
                                                MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -271,15 +272,16 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
 }
 
 CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
+                                                  int                        root,
                                                   MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, root, comm);
 
     if (CommunicationStatus::OK == cs)
     {
         int nvalue = values_.size();
         cr->bcast(&nvalue, comm);
-        if (!cr->isMaster())
+        if (cr->rank() != root)
         {
             values_.resize(nvalue);
         }
@@ -362,15 +364,16 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
 }
 
 CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
+                                         int                        root,
                                          MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, root, comm);
 
     if (CommunicationStatus::OK == cs)
     {
         int nvalue = values_.size();
         cr->bcast(&nvalue, comm);
-        if (!cr->isMaster())
+        if (cr->rank() != root)
         {
             values_.clear();
         }
@@ -477,9 +480,10 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
 }
 
 CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord *cr,
+                                                       int                        root,
                                                        MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, root, comm);
 
     if (CommunicationStatus::OK == cs)
     {
@@ -545,9 +549,10 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
 }
 
 CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
+                                               int                        root,
                                                MPI_Comm                   comm)
 {
-    CommunicationStatus cs = GenericProperty::BroadCast(cr, comm);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, root, comm);
 
     if (CommunicationStatus::OK == cs)
     {
@@ -625,6 +630,7 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 }
 
 CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr,
+                                                      int                        root,
                                                       MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);

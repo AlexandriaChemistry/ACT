@@ -283,6 +283,7 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
 }
 
 CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
+                                          int                        root,
                                           MPI_Comm                   comm)
 {
     int nids = ids_.size();
@@ -290,29 +291,29 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
     std::string tmp;
     for(int i = 0; i < nids; i++)
     {
-        if (cr->isMaster())
+        if (cr->rank() == root)
         {
             tmp.assign(ids_[i]);
         }
         cr->bcast(&tmp, comm);
-        if (!cr->isMaster())
+        if (cr->rank() != root)
         {
             ids_.push_back(tmp);
         }
     }
     
-    if (cr->isMaster())
+    if (cr->rank() == root)
     {
         tmp.assign(canSwapToString(canSwap_));
     }
     cr->bcast(&tmp, comm);
-    if (!cr->isMaster())
+    if (cr->rank() != root)
     {
         canSwap_ = stringToCanSwap(tmp);
     }
     int natoms = atoms_.size();
     cr->bcast(&natoms, comm);
-    if (cr->isMaster())
+    if (cr->rank() == root)
     {
         for(auto a = atoms_.begin(); a < atoms_.end(); ++a)
         {
@@ -332,7 +333,7 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
     }
     int nbo = bondOrders_.size();
     cr->bcast(&nbo, comm);
-    if (!cr->isMaster())
+    if (cr->rank() != root)
     {
         bondOrders_.resize(nbo);
     }

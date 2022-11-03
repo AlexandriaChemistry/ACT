@@ -85,7 +85,9 @@ private:
     NodeType          nt_                    = NodeType::Helper;
     //! MPI Communicator for the whole system
     MPI_Comm          mpi_act_world_         = MPI_COMM_NULL;
-    //! MPI Communicator for my local helpers
+    /*! \brief MPI Communicator for my local helpers.
+     * This corresponds to the rows in the matrix of processors
+     */
     MPI_Comm          mpi_act_helpers_       = MPI_COMM_NULL;
     //! My MPI rank
     int               rank_                  = 0;
@@ -150,7 +152,7 @@ public:
      *                       the rest.
      * \return Outcome of the initiation.
      */
-   CommunicationStatus init(int nmiddleman);
+    CommunicationStatus init(int nmiddleman);
     
     //! \return my MPI rank
     int rank() const { return rank_; }
@@ -170,14 +172,29 @@ public:
     //! \return all the middlemen, or empty vector if none
     const std::vector<int> &middlemen() const { return middlemen_; }
     
-    //! \return communicator for helpers
-    MPI_Comm comm_helpers() const { return mpi_act_helpers_; }
+    //! \return communicator for sending to helpers
+    MPI_Comm send_helpers() const { return mpi_act_helpers_; }
 
     //! \return communicator for all cores
     MPI_Comm comm_world() const { return mpi_act_world_; }
+    
+    /*! \brief Create special communicator for one column in the
+     * the node matrix. It includes the master node, allowing to
+     * broadcast. The communicator should be freed by the caller.
+     * \param[in] column The column number
+     * \param[in] superior The master or middleman (if wanted). Default master.
+     * \return communicator
+     */
+    MPI_Comm create_column_comm(int column, int superior = 0) const;
+
+    //! \return communicator for subsystem
+    // MPI_Comm comm_subsystem() const { return mpi_act_subsystem_; }
 
     //! \return my superior node, or -1 if none
     int superior() const { return superior_; }
+
+    //! \return my superior node, or -1 if none
+    int superiorOrMeIfMiddleman() const { return 0; } //if (isMiddleMan()) { return rank_; } else { return superior_; } }
 
     //! \return number of middlemen
     int nmiddlemen() const { return nmiddlemen_; }
@@ -213,33 +230,39 @@ public:
     /*! Broadcast a string to helpers or all processors from the master.
      * \param[inout] str  Pointer to the string
      * \param[in]    comm MPI communicator
+     * \param[in]    root Who is the root of this communicatione
      */
-    void bcast(std::string *str, MPI_Comm comm) const;
+    void bcast(std::string *str, MPI_Comm comm, int root=0) const;
     
     /*! Broadcast an integer to all processors from the master.
      * \param[inout] i    Pointer to the integer
      * \param[in]    comm MPI communicator
+     * \param[in]    root Who is the root of this communicatione
      */
-    void bcast(int *i, MPI_Comm comm) const;
+    void bcast(int *i, MPI_Comm comm, int root=0) const;
     
     /*! Broadcast a bool to all processors from the master.
      * \param[inout] b    Pointer to the bool
      * \param[in]    comm MPI communicator
+     * \param[in]    root Who is the root of this communicatione
      */
-    void bcast(bool *b, MPI_Comm comm) const;
+    void bcast(bool *b, MPI_Comm comm, int root=0) const;
     
     /*! Broadcast a double to all processors from the master.
      * \param[inout] d    Pointer to the double
      * \param[in]    comm MPI communicator
+     * \param[in]    root Who is the root of this communicatione
      */
-    void bcast(double *d, MPI_Comm comm) const;
+    void bcast(double *d, MPI_Comm comm, int root=0) const;
     
     /*! Broadcast a double vector to all processors from the master.
      * \param[inout] d    Pointer to vector of the doubles
      * \param[in]    comm MPI communicator
+     * \param[in]    root Who is the root of this communicatione
      */
     void bcast(std::vector<double> *d,
-               MPI_Comm             comm) const;
+               MPI_Comm             comm,
+               int                  root=0) const;
 
     /*! Send a string to another processor.
      * \param[in] dest The destination processor
@@ -349,9 +372,10 @@ public:
      *********************************************************/
     /*! \brief Initiate broadcasting data to a processor
      * \param[in] comm The MPI communicator
+     * \param[in] root Who is the root for this communication
      * \return CommunicationStatus::OK, if OK
      */
-    CommunicationStatus  bcast_data(MPI_Comm comm) const;
+    CommunicationStatus  bcast_data(MPI_Comm comm, int root=0) const;
     
     /*! \brief Initiate sending data to a processor
      * \param[in] dest The destination processor
@@ -361,9 +385,10 @@ public:
     
     /*! \brief Finish broadcasting data to a processor
      * \param[in] comm The MPI communicator
+     * \param[in] root Who is the root for this communication
      * \return CommunicationStatus::OK, if OK
      */
-    CommunicationStatus  bcast_done(MPI_Comm comm) const;
+    CommunicationStatus  bcast_done(MPI_Comm comm, int root=0) const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor

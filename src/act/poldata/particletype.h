@@ -203,9 +203,11 @@ class ParticleType
     
     /*! \brief Broadcast my data
      * \param[in] cr   communication record
+     * \param[in] root The MPI root
      * \param[in] comm MPI communicator
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive my data

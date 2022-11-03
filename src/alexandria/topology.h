@@ -155,11 +155,13 @@ public:
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
+     * \param[in] root The MPI root
      * \param[in] comm MPI communicator
      * \return the CommunicationStatus of the operation
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
     /*! \brief

@@ -136,9 +136,11 @@ class Identifier
 
     /*! \brief Broadcast content to and from other processors
      * \param[in] cr   Communication data structure
+     * \param[in] root The root of this communication
      * \param[in] comm MPI communicator
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
+                                  int                        root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive contents from another processor

@@ -75,6 +75,7 @@ int molprop_test(int argc, char*argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     auto comm = MPI_COMM_WORLD;
+    int root = 0;
     if (cr.isMaster())
     {
         MolPropRead(opt2fn("-mp", NFILE, fnm), &mpt);
@@ -85,7 +86,7 @@ int molprop_test(int argc, char*argv[])
             cr.bcast(&mptsize, comm);
             for(auto &mm : mpt)
             {
-                mm.BroadCast(&cr, comm);
+                mm.BroadCast(&cr, root, comm);
             }
         }
         else
@@ -109,7 +110,7 @@ int molprop_test(int argc, char*argv[])
             for(int i = 0; i < nmpt; i++)
             {
                 MolProp mp;
-                mp.BroadCast(&cr, comm);
+                mp.BroadCast(&cr, root, comm);
                 mpt.push_back(mp);
             }
         }

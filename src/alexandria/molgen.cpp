@@ -556,7 +556,7 @@ size_t MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->generateComposition();
-            mpi->CheckConsistency();
+            mpi->checkConsistency();
             if (!mpi->hasAllAtomTypes())
             {
                 /*
@@ -572,13 +572,6 @@ size_t MolGen::Read(FILE            *fp,
         }
         generate_index(&mp);
 
-        /* Sort Molecules based on the number of atoms */
-        std::sort(mp.begin(), mp.end(),
-                  [](alexandria::MolProp &mp1,
-                     alexandria::MolProp &mp2)
-                  {
-                      return (mp1.NAtom() < mp2.NAtom());
-                  });
         print_memory_usage(debug);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
@@ -598,6 +591,7 @@ size_t MolGen::Read(FILE            *fp,
             { MolPropObservable::POLARIZABILITY, iqmType::QM },
             { MolPropObservable::CHARGE,         iqmType::QM }
         };
+    int  root = 0;
     if (cr_->isMaster())
     {
         if (fp)
@@ -661,12 +655,13 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 else
                 {
-                    // Only include the compound if we have all data. 
+                    // Only include the compound if we have all data.
                     mymol.set_datasetType(ims);
 
                     // mymol_ contains all molecules
                     mymol_.push_back(std::move(mymol));
                 }
+                incrementImmCount(&imm_count, imm);
             }
             else if (verbose && fp)
             {
@@ -680,111 +675,57 @@ size_t MolGen::Read(FILE            *fp,
         // Make sure the master has a bit less work to do
         // than the helpers and that in particular train
         // compounds are distributed equally otherwise.
-        for(auto &ts: targetSize_)
+        std::map<int, MPI_Comm> mycomms;
+        int start = 1;
+        if (cr_->nmiddlemen() > 1)
         {
-            int mymolIndex = 0;
-            std::set<int> destMiddleMen;
-            destMiddleMen.insert(cr_->rank());
-            for(auto &i : cr_->middlemen())
-            {
-                destMiddleMen.insert(i);
-            }
-            for(auto mymol = mymol_.begin(); mymol < mymol_.end(); ++mymol)
-            {
-                if (mymol->datasetType() != ts.first)
-                {
-                    // Do one set at a time,
-                    continue;
-                }
-                std::set<int> destAll = destMiddleMen;
-                if (cr_->nmiddlemen() == 1)  // Only MASTER as MIDDLEMAN
-                {
-                    // Looks like an MCMC run where compounds are distributed evenly
-                    destAll.insert(mymolIndex % cr_->size());
-                }
-                else if (cr_->nhelper_per_middleman() > 0)
-                {
-                    // If we have more than one middleman, and we also have helpers
-                    // we have to divide the molecules in a complicated manner.
-                    // Each individual (middleman) gets the complete set and helpers
-                    // only get their share to compute. However for middleman only
-                    // the real part that they should compute gets the eSupport::Local.
-                    int helperDest = mymolIndex % (1+cr_->nhelper_per_middleman());
-                    // Add the coorect helper for each middleman
-                    for(auto &mm : destMiddleMen)
-                    {
-                        // TODO Check this
-                        destAll.insert(mm + helperDest);
-                    }
-                }
-                // Now we have a list of destination processors that should receive this 
-                // molecule.
-                for (auto &mydest : destAll)
-                {
-                    if (mydest == cr_->rank())
-                    {
-                        // Do not send to myself, but put the compound
-                        // in the right support category.
-                        if (cr_->nhelper_per_middleman() == 0 ||
-                            mymolIndex % (1+cr_->nhelper_per_middleman()) == 0)
-                        {
-                            mymol->setSupport(eSupport::Local);
-                            nLocal.find(ts.first)->second += 1;
-                        }
-                        else
-                        {
-                            mymol->setSupport(eSupport::Remote);
-                        }
-                        continue;
-                    }
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Going to send %s to cpu %d\n", mymol->getMolname().c_str(), mydest);
-                    }
-                    if (CommunicationStatus::SEND_DATA != cr_->send_data(mydest))
-                    {
-                        GMX_THROW(gmx::InternalError("Communication problem."));
-                    }
-                    CommunicationStatus cs = mymol->Send(cr_, mydest);
-                    if (CommunicationStatus::OK != cs)
-                    {
-                        imm = immStatus::CommProblem;
-                        if (immStatus::OK != imm)
-                        {
-                            GMX_THROW(gmx::InternalError("Comunication problem."));
-                        }
-                    }
-                    incrementImmCount(&imm_count, imm);
-                }
-                // Small optimization. First send to all processors,
-                // then wait for the answer.
-                for (auto &mydest : destAll)
-                {
-                    if (mydest != cr_->rank())
-                    {
-                        // Do not wait for a message from myself. It will
-                        // hang the MPI implementation on some machines.
-                        imm = static_cast<immStatus>(cr_->recv_int(mydest));
-                        
-                        if (imm != immStatus::OK)
-                        {
-                            fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                    mymol->getMolname().c_str(), mydest, alexandria::immsg(imm));
-                        }
-                        else if (nullptr != debug)
-                        {
-                            fprintf(debug, "Succesfully beamed over %s\n", mymol->getMolname().c_str());
-                        }
-                    }
-                }
-                mymolIndex += 1;
-            }
+            start = 0;
         }
-        /* Send signal done with transferring molecules */
-        for (int i = 1;  i < cr_->size(); i++)
+        for (int i = start; i < start + 1 + cr_->nhelper_per_middleman(); i++)
         {
-            cr_->send_done(i);
+            mycomms.insert({ i, cr_->create_column_comm(i) });
         }
+        int  mymolIndex = 0;
+        auto cs         = CommunicationStatus::OK; 
+        int  bcint      = 1;
+        std::set<int> comm_used;
+        for(auto mymol = mymol_.begin(); mymol < mymol_.end() && CommunicationStatus::OK == cs; ++mymol)
+        {
+            // Local compounds are computed locally
+            mymol->setSupport(eSupport::Local);
+            // See if we need to send stuff around
+            if (mycomms.size() > 0)
+            {
+                int comm_index = mymolIndex % (1+cr_->nhelper_per_middleman());
+                if (cr_->nmiddlemen() > 1)
+                {
+                    // We always need to send the molecules to the middlemen
+                    int myindex = 0;
+                    cr_->bcast(&bcint, mycomms[myindex]);
+                    cs = mymol->BroadCast(cr_, root, mycomms[myindex]);
+                    comm_used.insert(myindex);
+                }
+                if (comm_index > 0)
+                {
+                    // We only send relevant molecules to the helpers
+                    cr_->bcast(&bcint, mycomms[comm_index]);
+                    cs = mymol->BroadCast(cr_, root, mycomms[comm_index]);
+                    comm_used.insert(comm_index);
+                    mymol->setSupport(eSupport::Remote);
+                }
+            }
+            mymolIndex += 1;
+        }
+        if (CommunicationStatus::OK != cs)
+        {
+            GMX_THROW(gmx::InternalError("Error broadcasting molecules"));
+        }
+        bcint = 0;
+        for (auto &cc : comm_used)
+        {
+            cr_->bcast(&bcint, mycomms[cc]);
+        }
+        // TODO: Free mycomms
         for (int i = 0; i < cr_->size(); i++)
         {
             if (fp)
@@ -796,7 +737,7 @@ size_t MolGen::Read(FILE            *fp,
                 int n = nLocal.find(ims.first)->second;
                 if (i > 0)
                 {
-                    n = cr_->recv_int(i);
+                    //    n = cr_->recv_int(i);
                 }
                 if (fp)
                 {
@@ -814,18 +755,22 @@ size_t MolGen::Read(FILE            *fp,
     {
         /***********************************************
          *                                             *
-         *          H E L P E R  N O D E S             *
+         *  H E L P E R S & M I D D L E M E N          *
          *                                             *
          ***********************************************/
-        int mymolIndex = 0;
-        while (CommunicationStatus::RECV_DATA == cr_->recv_data(0))
+        // Generate the correct communicator for this helper node.
+        auto mycomm     = cr_->create_column_comm(cr_->rank() % (1 + cr_->nhelper_per_middleman()));
+        int  mymolIndex = 0;
+        int  bcint      = 0;
+        cr_->bcast(&bcint, mycomm);
+        while (1 == bcint)
         {
             alexandria::MyMol mymol;
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
-            CommunicationStatus cs = mymol.Receive(cr_, 0);
+            CommunicationStatus cs = mymol.BroadCast(cr_, root, mycomm);
             if (CommunicationStatus::OK != cs)
             {
                 imm = immStatus::CommProblem;
@@ -912,11 +857,8 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 mymol_.push_back(std::move(mymol));
             }
-            cr_->send_int(0, static_cast<int>(imm));
-        }
-        for(const auto &ims : iMolSelectNames())
-        {
-            cr_->send_int(0, nLocal.find(ims.first)->second);
+            // See whether there is more data coming.
+            cr_->bcast(&bcint, mycomm);
         }
         countTargetSize();
     }

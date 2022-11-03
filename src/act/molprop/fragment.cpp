@@ -75,6 +75,7 @@ void Fragment::dump(FILE *fp) const
 }
     
 CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
+                                        int                        root,
                                         MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -89,7 +90,7 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&id_, comm);
         int natom     = atoms_.size();
         cr->bcast(&natom, comm);
-        if (!cr->isMaster())
+        if (cr->rank() != root)
         {
             atoms_.resize(natom);
         }
@@ -98,7 +99,7 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
             cr->bcast(&atoms_[i], comm);
         }
     }
-    if (!cr->isMaster())
+    if (cr->rank() != root)
     {
         makeAtomString();
     }
