@@ -39,6 +39,7 @@ class ACT:
         self.pop_size = self.node_count
         self.set_algorithm(Alg.HYBRID, self.pop_size)
         self.debug = False
+        self.popsize = 4
     
     def set_debug(self, debug:bool):
         self.debug = debug
@@ -65,6 +66,7 @@ class ACT:
                   ( self.ntrain, self.ntest ) )
 
     def set_algorithm(self, algorithm:Alg, popsize:int):
+        self.popsize = popsize
         self.algopts = { "-optimizer":       algorithm.name,
                          "-cp_gen_interval": "5",
                          "-cp_pop_frac":     "0.2",
@@ -89,7 +91,10 @@ class ACT:
             return runit
         runit = shutil.which("mpirun")
         if None != runit:
-            return ( "%s -n %d -oversubscribe " % ( runit, self.node_count ))
+            nprocs = self.node_count
+            if self.popsize > nprocs:
+                nprocs = self.popsize
+            return ( "%s -n %d -oversubscribe " % ( runit, nprocs ))
         return ""
         
     def bastat(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
@@ -110,8 +115,8 @@ class ACT:
                 LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
-        cmd = ( "%s alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
-                ( self.runpar(), ForceFieldFileIn, ForceFieldFileOut,
+        cmd = ( "alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
+                ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
@@ -148,10 +153,14 @@ class ACT:
             # Check for negated booleans as well in user options
             if not opt in options and not ( ("-no"+opt[1:]) in options ):
                 cmd += ( " %s %s " % ( opt, myopts[opt] ))
+                if opt == "-pop_size":
+                    self.popsize = myopts[opt]
+                    
         for opt in self.algopts:
             if not opt in options:
                 cmd += ( " %s %s " % ( opt, self.algopts[opt] ))
       
+        cmd = self.runpar() + " " + cmd
         if self.verbose or self.debug:
             print(cmd)
         if not self.debug:
