@@ -64,7 +64,9 @@ class GaussianReader:
         # Thermochemistry variables
         self.tcmap         = { "CV": None, "Ezpe": None, "Hcorr": None,
                                "Gcorr": None, "Temp": None, "Method": None,
-                               "E0": None, "Scomponent": [], "RotSymNum": 1 }
+                               "E0": 0, "Scomponent": [], "RotSymNum": 1 }
+        self.testvalue = 0
+        self.oldvalue = 0
         
     def coordinates(self):
         myindex = -1
@@ -233,9 +235,18 @@ class GaussianReader:
         words = line.split()
         if len(words) >= 8:
             try:
-                self.tcmap["E0"] = float(words[4])
+                self.testvalue = float(words[4])
+                self.oldvalue = float(self.tcmap["E0"])
+                if self.testvalue < self.oldvalue:
+                    self.tcmap["E0"] = self.testvalue
+#                self.tcmap["E0"] = float(words[4])
             except ValueError:
                 print("Do not understand energy in line '%s'" % line)
+        if line.find("CCSD(T)=") >= 0:
+            self.testvalue = float(line.partition("CCSD(T)=")[2].partition("\\")[0])
+            self.oldvalue = float(self.tcmap["E0"])
+        if self.testvalue < self.oldvalue:
+            self.tcmap["E0"] = self.testvalue
         return 1
 
     def get_dipole(self, content, content_index:int) -> int:
@@ -503,7 +514,10 @@ class GaussianReader:
 
             elif line.find("SCF Done:") >= 0:
                 content_index += self.get_energy(line)
-                
+            elif line.find("\CCSD=") >= 0 or line.find("\CCSD(T)=") >= 0:
+                nextline = content[content_index + 1].strip()
+                stringline = line + nextline
+                content_index += self.get_energy(stringline)
             elif line.find("Dipole moment") >= 0:
                 content_index += self.get_dipole(content, content_index)
                 
@@ -573,7 +587,6 @@ class GaussianReader:
                 words  = line.split()
                 self.tcmap["Temp"] = float(words[1])
                 content_index += 1
-                
             else:
                 # Will check for thermochemistry now
                 # This has to be the last else!
