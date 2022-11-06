@@ -156,10 +156,10 @@ protected:
         std::vector<double>    qcustom;
         bool                   qSymm = false;
         std::vector<gmx::RVec> forces(mp_.atomsConst().size());
+        std::vector<gmx::RVec> coords = mp_.x();
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
+        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
         
-        std::vector<gmx::RVec> coords = mp_.xOriginal();
         std::map<InteractionType, double> eBefore;
         (void) forceComp->compute(pd, mp_.topology(), &coords, &forces, &eBefore);
         add_energies(pd, &checker_, eBefore, "before");

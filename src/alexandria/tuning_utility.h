@@ -100,9 +100,10 @@ private:
                                qtStats             *lsq_alpha);
     
     //! \brief And the atoms.
-    void printAtoms(FILE                   *fp,
-                    alexandria::MyMol      *mol,
-                    std::vector<gmx::RVec> &forces);
+    void printAtoms(FILE                         *fp,
+                    alexandria::MyMol            *mol,
+                    const std::vector<gmx::RVec> &coords,
+                    const std::vector<gmx::RVec> &forces);
     
     /*! \brief do part of the printing, add to statistics
      * \return the potential energy before minimization

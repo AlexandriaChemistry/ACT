@@ -549,9 +549,10 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
     }
 }
 
-void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
-                                       alexandria::MyMol      *mol,
-                                       std::vector<gmx::RVec> &forces)
+void TuneForceFieldPrinter::printAtoms(FILE                         *fp,
+                                       alexandria::MyMol            *mol,
+                                       const std::vector<gmx::RVec> &coords,
+                                       const std::vector<gmx::RVec> &forces)
 {
     std::map<qType, std::vector<double> > qQM;
     std::vector<qType>                    typeQM = { 
@@ -576,7 +577,6 @@ void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
         }
     }
     fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
-    auto     x       = mol->x();
     int      i       = 0;
     double   qtot    = 0;
     auto    &myatoms = mol->atomsConst();
@@ -600,9 +600,9 @@ void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
                 }
             }
             fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
-                    convertFromGromacs(x[j][XX], "pm"),
-                    convertFromGromacs(x[j][YY], "pm"),
-                    convertFromGromacs(x[j][ZZ], "pm"),
+                    convertFromGromacs(coords[j][XX], "pm"),
+                    convertFromGromacs(coords[j][YY], "pm"),
+                    convertFromGromacs(coords[j][ZZ], "pm"),
                     forces[j][XX], forces[j][YY], forces[j][ZZ],
                     qtot);
             i++;
@@ -624,9 +624,9 @@ void TuneForceFieldPrinter::printAtoms(FILE                   *fp,
                 }
             }
             fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
-                    convertFromGromacs(x[j][XX], "pm"),
-                    convertFromGromacs(x[j][YY], "pm"),
-                    convertFromGromacs(x[j][ZZ], "pm"),
+                    convertFromGromacs(coords[j][XX], "pm"),
+                    convertFromGromacs(coords[j][YY], "pm"),
+                    convertFromGromacs(coords[j][ZZ], "pm"),
                     forces[j][XX], forces[j][YY], forces[j][ZZ],
                     qtot);
         }
@@ -1118,11 +1118,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double>    dummy;
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
+            std::vector<gmx::RVec> coords = mol->x();
             mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy, &forces);
+                                 ChargeGenerationAlgorithm::NONE, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
-            mol->calcEspRms(pd);
+            mol->calcEspRms(pd, &coords);
             for (auto &i : qTypes())
             {
                 auto qi  = i.first;
@@ -1165,7 +1166,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
 
             // Atomic charges
-            printAtoms(fp, &(*mol), forces);
+            printAtoms(fp, &(*mol), coords, forces);
             // Energies
             std::vector<std::string> tcout;
             auto epot = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),

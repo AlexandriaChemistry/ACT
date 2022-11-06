@@ -191,13 +191,14 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+            std::vector<gmx::RVec> coords = mymol.x();
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mymol.symmetrizeCharges(pd, qSymm, nullptr);
-            mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &forces);
+            mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
                                 
             std::vector<double> q;
             auto myatoms = mymol.atomsConst();

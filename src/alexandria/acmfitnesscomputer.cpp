@@ -161,7 +161,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata());
+        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->poldata());
     }
 
     // Loop over molecules
@@ -192,7 +192,8 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             mymol.UpdateIdef(sii_->poldata(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(mymol.atomsConst().size(), { 0, 0, 0 });
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &forces);
+            std::vector<gmx::RVec> coords = mymol.x();
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
@@ -209,7 +210,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &mymol, targets, sii_->poldata());
+                mydev->calcDeviation(forceComp_, &mymol, &coords, targets, sii_->poldata());
             }
         }
     }

@@ -431,6 +431,7 @@ public:
      * \param[in]  algorithm The algorithm for determining charges,
      *                       if NONE it is read from the Poldata structure.
      * \param[in]  qcustom   Custom (user-provided) charges
+     * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
      */
     immStatus GenerateCharges(const Poldata             *pd,
@@ -439,17 +440,20 @@ public:
                               const CommunicationRecord *cr,
                               ChargeGenerationAlgorithm  algorithm,
                               const std::vector<double> &qcustom,
+                              std::vector<gmx::RVec>    *coords,
                               std::vector<gmx::RVec>    *forces);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
      *
-     * \param[in] pd        Data structure containing atomic properties
-     * \param[in] forceComp The force computer
-     * \param[in] forces    The forces
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp The force computer
+     * \param[out] coords    The coordinates, will be updated for shells
+     * \param[out] forces    The forces
      */
     immStatus GenerateAcmCharges(const Poldata          *pd,
                                  const ForceComputer    *forceComp,
+                                 std::vector<gmx::RVec> *coords,
                                  std::vector<gmx::RVec> *forces);
     
     /*! \brief Implement charge symmetrization
@@ -466,9 +470,11 @@ public:
                            const char     *symm_string);
     
     /*! \brief Calculate the RMSD from ESP for QM charges
-     * \param[in]  pd     Poldata structure
+     * \param[in] pd     Poldata structure
+     * \param[in] coords Coordinates
      */
-    void calcEspRms(const Poldata *pd);
+    void calcEspRms(const Poldata                *pd,
+                    const std::vector<gmx::RVec> *coords);
     
     /*! \brief Make a ESP correlation plot
      *

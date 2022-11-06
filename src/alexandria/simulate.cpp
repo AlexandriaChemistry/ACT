@@ -200,11 +200,12 @@ int simulate(int argc, char *argv[])
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+    std::vector<gmx::RVec> coords = mymol.x();
     if (immStatus::OK == imm)
     {
         std::vector<double> myq;
         auto alg = pd.chargeGenerationAlgorithm();
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &forces);
+        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
     }
     if (verbose && pd.polarizable())
     {

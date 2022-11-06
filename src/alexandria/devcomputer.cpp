@@ -73,6 +73,7 @@ static double l2_regularizer(double x, double min, double max)
 
 void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                       gmx_unused MyMol                     *mymol,
+                                      gmx_unused std::vector<gmx::RVec>    *coords,
                                       std::map<eRMS, FittingTarget>        *targets,
                                       const Poldata                        *poldata)
 {
@@ -151,6 +152,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
 
 void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                          MyMol                                *mymol,
+                                         gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          const Poldata                        *poldata)
 {
@@ -237,6 +239,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 
 void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                    MyMol                                *mymol,
+                                   std::vector<gmx::RVec>               *coords,
                                    std::map<eRMS, FittingTarget>        *targets,
                                    const Poldata                        *poldata)
 {
@@ -245,7 +248,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     QgenResp *qgr = mymol->qTypeProps(qType::Calc)->qgenResp();
     if (mymol->haveShells())
     {
-        qgr->updateAtomCoords(mymol->x());
+        qgr->updateAtomCoords(*coords);
     }
     if (fit_)
     {
@@ -312,6 +315,7 @@ PolarDevComputer::PolarDevComputer(    FILE  *logfile,
 
 void PolarDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                      MyMol                                *mymol,
+                                     gmx_unused std::vector<gmx::RVec>    *coords,
                                      std::map<eRMS, FittingTarget>        *targets,
                                      const Poldata                        *poldata)
 {
@@ -344,6 +348,7 @@ void PolarDevComputer::calcDeviation(const ForceComputer                  *force
 
 void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
                                          MyMol                                *mymol,
+                                         gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          gmx_unused const Poldata             *poldata)
 {
@@ -398,6 +403,7 @@ HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
 
 void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                          MyMol                                *mymol,
+                                         std::vector<gmx::RVec>               *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          const Poldata                        *poldata)
 {
@@ -406,8 +412,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     {
         return;
     }
-    std::vector<gmx::RVec> coords = mymol->xOriginal();
-    auto eMin = handler_.minimizeCoordinates(poldata, mymol, forceComputer, simConfig_, &coords,
+    auto eMin = handler_.minimizeCoordinates(poldata, mymol, forceComputer, simConfig_, coords,
                                              nullptr, nullptr);
     if (eMinimizeStatus::OK != eMin)
     {
@@ -417,7 +422,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     }
     // Compute frequencies
     std::vector<double> frequencies, intensities;
-    handler_.nma(poldata, mymol, forceComputer, &coords, &frequencies, &intensities);
+    handler_.nma(poldata, mymol, forceComputer, coords, &frequencies, &intensities);
 
     switch (mpo_)
     {
@@ -476,6 +481,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
 
 void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                            MyMol                                *mymol,
+                                           gmx_unused std::vector<gmx::RVec>    *coords,
                                            std::map<eRMS, FittingTarget>        *targets,
                                            const Poldata                        *poldata)
 {

@@ -79,12 +79,15 @@ public:
 
     /*! \brief Computes a component of the chi-squared deviation.
      * Put the value into the appropriate FittingTarget.
+     * @param forceComputer The utility to compute forces and energies
      * @param mymol     pointer to the molecule to compute the deviation for
+     * @param coords    the coordinates
      * @param targets   map between different components of chi-squared and their fitting targets
      * @param poldata   pointer to Poldata structure, that should contain the newest parameters
      */
     virtual void calcDeviation(const ForceComputer           *forceComputer,
                                MyMol                         *mymol,
+                               std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
                                const Poldata                 *poldata) = 0;
 
@@ -119,6 +122,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer           *forceComputer,
                                MyMol                         *mymol,
+                               std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
                                const Poldata                 *poldata);
 
@@ -150,6 +154,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 };
@@ -174,6 +179,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 
@@ -216,6 +222,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 
@@ -241,6 +248,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 
@@ -271,6 +279,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 
@@ -297,6 +306,7 @@ public:
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
                                      MyMol                         *mymol,
+                                     std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
                                const Poldata                       *poldata);
 

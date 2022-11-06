@@ -627,12 +627,13 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<double> dummy;
                 std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+                std::vector<gmx::RVec> coords = mymol.x();
                 imm = mymol.GenerateCharges(pd,
                                             forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy, &forces);
+                                            dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
                 {
@@ -672,7 +673,7 @@ size_t MolGen::Read(FILE            *fp,
         print_memory_usage(debug);
         countTargetSize();
         // Now distribute the molecules over processors.
-        // Make sure the master has a bit less work to do
+        // TODO: Make sure the master has a bit less work to do
         // than the helpers and that in particular train
         // compounds are distributed equally otherwise.
         std::map<int, MPI_Comm> mycomms;
@@ -726,29 +727,6 @@ size_t MolGen::Read(FILE            *fp,
             cr_->bcast(&bcint, mycomms[cc]);
         }
         // TODO: Free mycomms
-        for (int i = 0; i < cr_->size(); i++)
-        {
-            if (fp)
-            {
-                fprintf(fp, "Node %2d ", i);
-            }
-            for(const auto &ims : iMolSelectNames())
-            {
-                int n = nLocal.find(ims.first)->second;
-                if (i > 0)
-                {
-                    //    n = cr_->recv_int(i);
-                }
-                if (fp)
-                {
-                    fprintf(fp, " %s: %d", ims.second, n);
-                }
-            }
-            if (fp)
-            {
-                fprintf(fp, " compounds.\n");
-            }
-        }
         print_memory_usage(debug);
     }
     else
@@ -791,12 +769,13 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+                std::vector<gmx::RVec> coords = mymol.x();
                 imm = mymol.GenerateCharges(pd,
                                             forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy, &forces);
+                                            dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)
             {

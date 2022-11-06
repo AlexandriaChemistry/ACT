@@ -118,7 +118,8 @@ protected:
         bool qSymm = false;
         mp->symmetrizeCharges(pd, qSymm, nullptr);
         std::vector<gmx::RVec> forces(mp->atomsConst().size());
-        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &forces);
+        std::vector<gmx::RVec> coords = mp->x();
+        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &coords, &forces);
     }
     
     void test(const char *molname, const char *forcefield, 
