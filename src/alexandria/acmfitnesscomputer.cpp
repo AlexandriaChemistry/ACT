@@ -68,10 +68,14 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     }
     if (verbose && logfile_)
     {
-        fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
-        for (const auto &ft : sii_->targets().find(trgtFit)->second)
+        auto fts = sii_->targets().find(trgtFit)->second;
+        if (!fts.empty())
         {
-            ft.second.print(logfile_);
+            fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
+            for (const auto &ft : fts)
+            {
+                ft.second.print(logfile_);
+            }
         }
     }
 }
@@ -105,6 +109,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
     // Send / receive parameters
     if (cr->isHelper())
     {
+        // TODO: Implement broadcast
         // Find out who to talk to
         int src = cr->superior();
         std::vector<double> myparams;

@@ -63,7 +63,8 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
-    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Not really needed but just to print the components
+    // Not really needed but just to print the components
+    fitnessComputer()->compute(ind->genomePtr(), imste, true);
     if (logFile_)
     {
         fprintf(logFile_, "\n");
@@ -118,8 +119,10 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     for (size_t i = 1; i < pool.popSize(); i++)
     {
         int src      = cr->middlemen()[i-1];
-        cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());  // Receiving the mutated parameters
-        auto fitness = cr->recv_double(src);  // Receiving the new training fitness
+        // Receiving the mutated parameters
+        cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());
+        // Receiving the new training fitness
+        auto fitness = cr->recv_double(src);
         pool.genomePtr(i)->setFitness(imstr, fitness);
     }
 
@@ -141,9 +144,9 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     const auto tmpBest   = bestGenome->find(imstr)->second;
     if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
     {
-        tmpBest.print("A new best individual has been found!\nPrevious best:\n",
+        tmpBest.print("\nA new best individual has been found!\nPrevious best:\n",
                       logFile_);
-        (*bestGenome)[imstr] = tmpGenome; 
+        (*bestGenome)[imstr] = tmpGenome;
         tmpGenome.print("New best:\n", logFile_);
         fprintf(logFile_, "\nMCMC Statistics for the master node only\n");
         auto mymut = reinterpret_cast<alexandria::MCMCMutator *>(mutator());
@@ -165,13 +168,15 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
 bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 {
-    if (gach_->popSize() < 2)  // FIXME: This is already checked in GAConfigHandler::check_pargs()
+    // FIXME: This is already checked in GAConfigHandler::check_pargs()
+    if (gach_->popSize() < 2)
     {
         fprintf(stderr, "Need at least two individuals in the population.\n");
         return false;
     }
     auto cr = sii_->commRec();
-    if (cr->nmiddlemen() < 2)  // FIXME: have we already checked that the number of processors is the correct one?
+    // FIXME: have we already checked that the number of processors is the correct one?
+    if (cr->nmiddlemen() < 2)
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
         return false; 

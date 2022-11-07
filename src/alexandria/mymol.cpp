@@ -2193,8 +2193,8 @@ void MyMol::calcEspRms(const Poldata                *pd,
         auto qi = i.first;
         if (qType::Calc == qi)
         {
-            //qgrcalc->setAtomInfo(atomsConst(), pd, x(), totalCharge());
             qgrcalc->updateAtomCharges(atomsConst());
+            qgrcalc->updateAtomCoords(*coords);
             qgrcalc->calcPot(pd->getEpsilonR());
         }
         else if (qType::Elec != qi)
