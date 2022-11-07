@@ -136,17 +136,19 @@ private:
 public:
     /*! \brief Constructor that computes everything at once
      * \param[in] mymol        Molecule info
+     * \param[in] coords       The coordinates
      * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] temperature  Temperature (K)
      * \param[in] pressure     Pressure (bar) at which to compute
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
-    ThermoChemistry(const MyMol               *mymol,
-                    const AtomizationEnergy   &atomenergy,
-                    const std::vector<double> &frequencies,
-                    double                     temperature,
-                    double                     pressure,
-                    double                     scale_factor);
+    ThermoChemistry(const MyMol                  *mymol,
+                    const std::vector<gmx::RVec> &coords,
+                    const AtomizationEnergy      &atomenergy,
+                    const std::vector<double>    &frequencies,
+                    double                        temperature,
+                    double                        pressure,
+                    double                        scale_factor);
 
     //! return the zero point energy
     double ZPE() const { return zpe_; }

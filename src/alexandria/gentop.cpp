@@ -325,14 +325,14 @@ int gentop(int argc, char *argv[])
 
     auto forceComp = new ForceComputer();
     std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-    std::vector<gmx::RVec> coords = mymol.x();
+    std::vector<gmx::RVec> coords = mymol.xOriginal();
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
     {
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
         
-        mymol.initQgenResp(&pd, 0.0, maxpot);
+        mymol.initQgenResp(&pd, coords, 0.0, maxpot);
 
         ChargeGenerationAlgorithm alg = pd.chargeGenerationAlgorithm();
         std::vector<double> myq;
@@ -355,13 +355,15 @@ int gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(&pd, opt2fn_null("-plot_esp", NFILE, fnm),
+        mymol.plotEspCorrelation(&pd, coords,
+                                 opt2fn_null("-plot_esp", NFILE, fnm),
                                  oenv, forceComp);
     }
 
     if (immStatus::OK == imm)
     {
         mymol.GenerateCube(&pd,
+                           coords,
                            spacing, border,
                            opt2fn_null("-ref",      NFILE, fnm),
                            opt2fn_null("-pc",       NFILE, fnm),
@@ -382,15 +384,10 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
+            mymol.PrintConformation(opt2fn("-c", NFILE, fnm), coords);
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
-                                bVerbose,
-                                &pd,
-                                forceComp,
-                                &cr,
-                                method,
-                                basis,
-                                bITP);
+                                bVerbose, &pd, forceComp,
+                                &cr, coords, method, basis, bITP);
         }
     }
     else

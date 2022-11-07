@@ -156,10 +156,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.initQgenResp(pd, 0.0, 100);
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+            mp_.initQgenResp(pd, coords, 0.0, 100);
             std::vector<double> qcustom;
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-            std::vector<gmx::RVec> coords = mp_.x();
             mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
                                 ChargeGenerationAlgorithm::ESP,
                                 qcustom, &coords, &forces);

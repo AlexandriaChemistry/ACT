@@ -147,7 +147,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
                            const Identifier               &bondId,
                            const std::vector<int>         &atomid)
 {
-    auto x = mmi.x();
+    auto x = mmi.xOriginal();
     // We need to check for linear angles here before we
     // add this to the tables.
     double refValue = 0;

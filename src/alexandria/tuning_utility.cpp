@@ -810,14 +810,14 @@ void doFrequencyAnalysis(const Poldata            *pd,
     }
     real scale_factor = 1;
     real roomTemp     = 298.15;
-    ThermoChemistry tc0(mol, atomenergy, alex_freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, atomenergy, alex_freq, roomTemp, 1, scale_factor);
+    ThermoChemistry tc0(mol, *coords, atomenergy, alex_freq, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, *coords, atomenergy, alex_freq, roomTemp, 1, scale_factor);
     std::vector<std::string> ref_str;
     ref_str.resize(1+3*tccmap().size());
     if (!ref_freq.empty())
     {
-        ThermoChemistry tcdft0(mol, atomenergy, ref_freq, 0.0, 1, scale_factor);
-        ThermoChemistry tcdftRT(mol, atomenergy, ref_freq, roomTemp, 1, scale_factor);
+        ThermoChemistry tcdft0(mol, *coords, atomenergy, ref_freq, 0.0, 1, scale_factor);
+        ThermoChemistry tcdftRT(mol, *coords, atomenergy, ref_freq, roomTemp, 1, scale_factor);
         int index = 0;
         ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.ZPE(), tcdftRT.ZPE());
         for(const auto &tcc : tccmap())
@@ -1118,7 +1118,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double>    dummy;
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
-            std::vector<gmx::RVec> coords = mol->x();
+            std::vector<gmx::RVec> coords = mol->xOriginal();
             mol->GenerateCharges(pd, forceComp, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.

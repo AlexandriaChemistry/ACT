@@ -201,9 +201,13 @@ private:
      * \TODO move to cpp file
      * \param[in] fp   The file pointer to print to
      * \param[in] mol  The molecule to read from
+     * \param[in] coords The atomic coordinates
      * \param[in] info Additional debugging information
      */
-    void dumpQX(FILE *fp, MyMol *mol, const std::string &info);
+    void dumpQX(FILE                         *fp,
+                const MyMol                  *mol,
+                const std::vector<gmx::RVec> &coords,
+                const std::string            &info);
    
 public:
 

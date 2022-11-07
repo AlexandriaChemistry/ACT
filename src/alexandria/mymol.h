@@ -238,11 +238,6 @@ public:
 
     //! \return a GROMACS style array with energy terms
     const real *energyTerms() const;
-    /*! \brief
-     * Return the coordinate vector of the molecule in GROMACS format
-     */
-    //const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
-    const std::vector<gmx::RVec> &x() const { return optimizedCoordinates_; }
     
     /*! \brief
      * Return the original coordinate vector of the molecule. If there are shell particles
@@ -482,14 +477,16 @@ public:
      * and make a correlation plot between the QM potential and the
      * Alexandria potential.
      * \param[in] pd        Force field
+     * \param[in] coords    The coordinates
      * \param[in] espcorr   File name to plot to
      * \param[in] oenv      Gromacs output structure
      * \param[in] forceComp Utility to compute forces
      */
-    void plotEspCorrelation(const Poldata          *pd,
-                            const char             *espcorr,
-                            const gmx_output_env_t *oenv,
-                            const ForceComputer    *forceComp);
+    void plotEspCorrelation(const Poldata                *pd,
+                            const std::vector<gmx::RVec> &coords,
+                            const char                   *espcorr,
+                            const gmx_output_env_t       *oenv,
+                            const ForceComputer          *forceComp);
     
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
@@ -508,19 +505,21 @@ public:
      * \param[in] bVerbose  Verbose
      * \param[in] pd        Data structure containing atomic properties
      * \param[in] forceComp The force computer utility
-     * \param[in] cr        Gromacs communication record
+     * \param[in] cr        Communication record
+     * \param[in] coords    The coordinates
      * \param[in] method    QC method
      * \param[in] basis     QC basis set
      * \param[in] bITP      Whether or not to write an itp file iso top file
      */
-    void PrintTopology(const char                *fn,
-                       bool                       bVerbose,
-                       const Poldata             *pd,
-                       const ForceComputer       *forceComp,
-                       const CommunicationRecord *cr,
-                       const std::string         &method,
-                       const std::string         &basis,
-                       bool                       bITP = false);
+    void PrintTopology(const char                   *fn,
+                       bool                          bVerbose,
+                       const Poldata                *pd,
+                       const ForceComputer          *forceComp,
+                       const CommunicationRecord    *cr,
+                       const std::vector<gmx::RVec> &coords,
+                       const std::string            &method,
+                       const std::string            &basis,
+                       bool                          bITP = false);
     
     //! \brief Update GROMACS data structures
     void updateMDAtoms();
@@ -579,6 +578,7 @@ public:
      * Generate cube
      *
      * \param[in] pd          Data structure containing atomic properties
+     * \param[in] coords      Atomic coordinates
      * \param[in] spacing     The grid space
      * \param[in] border      The amount of space around the molecule
      * \param[in] reffn
@@ -592,6 +592,7 @@ public:
      * \param[in] oenv
      */
     void GenerateCube(const Poldata          *pd,
+                      const std::vector<gmx::RVec> &coords,
                       real                    spacing,
                       real                    border,
                       const char             *reffn,
@@ -607,9 +608,11 @@ public:
     /*! \brief
      * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
      *
-     * \param[in] fn The filename.
+     * \param[in] fn     The filename.
+     * \param[in] coords The atomic coordinates
      */
-    void PrintConformation(const char *fn);
+    void PrintConformation(const char                   *fn,
+                           const std::vector<gmx::RVec> &coords);
     
     /*! \brief
      * set the inputrec of the MyMol object
@@ -635,13 +638,15 @@ public:
      * is used for charge generation, since ESP points can be used
      * in analysis.
      * \param[in]  pd      Data structure containing atomic properties
+     * \param[in]  coords  The coordinates
      * \param[in]  watoms  Weight for the potential on the atoms in 
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    void initQgenResp(const Poldata     *pd,
-                      real               watoms,
-                      int                maxESP);
+    void initQgenResp(const Poldata                *pd,
+                      const std::vector<gmx::RVec> &coords,
+                      real                          watoms,
+                      int                           maxESP);
     
     /*! \brief
      * Sends this object over an MPI connection

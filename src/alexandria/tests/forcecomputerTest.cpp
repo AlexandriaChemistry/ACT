@@ -118,7 +118,7 @@ protected:
         bool qSymm = false;
         mp->symmetrizeCharges(pd, qSymm, nullptr);
         std::vector<gmx::RVec> forces(mp->atomsConst().size());
-        std::vector<gmx::RVec> coords = mp->x();
+        std::vector<gmx::RVec> coords = mp->xOriginal();
         mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &coords, &forces);
     }
     
@@ -272,7 +272,6 @@ protected:
             forces.push_back({ 0, 0, 0 });
         }
         std::map<InteractionType, double> actEnergies;
-        double     shellRmsf;
         auto fsc = pd->forcesConst();
         fcomp->compute(pd, mp_.topology(), &coordinates, &forces, &actEnergies);
         for(auto &ifm : actEnergies)

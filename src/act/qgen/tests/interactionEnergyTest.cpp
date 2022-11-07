@@ -227,7 +227,7 @@ protected:
         gmx::MDLogger  mdlog {};
         auto forceComp = new ForceComputer();
         std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-        std::vector<gmx::RVec> coords = mp_.x();
+        std::vector<gmx::RVec> coords = mp_.xOriginal();
         auto alg = ChargeGenerationAlgorithm::NONE;
         if (!qcustom.empty())
         {

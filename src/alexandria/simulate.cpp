@@ -200,7 +200,7 @@ int simulate(int argc, char *argv[])
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-    std::vector<gmx::RVec> coords = mymol.x();
+    std::vector<gmx::RVec> coords = mymol.xOriginal();
     if (immStatus::OK == imm)
     {
         std::vector<double> myq;
@@ -212,7 +212,7 @@ int simulate(int argc, char *argv[])
         std::vector<gmx::RVec> xx(mymol.atomsConst().size());
         for(size_t i = 0; i < xx.size(); i++)
         {
-            copy_rvec(mymol.x()[i], xx[i]);
+            copy_rvec(coords[i], xx[i]);
         }
         auto qCalc = mymol.qTypeProps(qType::Calc);
         forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);

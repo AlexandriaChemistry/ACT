@@ -176,8 +176,9 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
     return universalGasConstant * SR;
 }
 
-static void calcTheta(const MyMol *mymol,
-                      rvec         theta)
+static void calcTheta(const MyMol                  *mymol,
+                      const std::vector<gmx::RVec> &coords,
+                      rvec                          theta)
 {
     rvec       xcm;
     const auto atoms = mymol->gmxAtomsConst();
@@ -192,7 +193,7 @@ static void calcTheta(const MyMol *mymol,
         rvec zzz;
         for(int m = 0; m < DIM; m++)
         {
-            zzz[m] = mymol->x()[i][m];
+            zzz[m] = coords[i][m];
         }
         xx.push_back(zzz);
     }
@@ -204,7 +205,7 @@ static void calcTheta(const MyMol *mymol,
     clear_rvec(theta);
     for (int i = 0; i < atoms->nr; i++)
     {
-        copy_rvec(mymol->x()[i], x_com[i]);
+        copy_rvec(coords[i], x_com[i]);
     }
     (void)sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(), 
                   atoms->atom, xcm, false);
@@ -237,15 +238,16 @@ static void calcTheta(const MyMol *mymol,
     }
 }
 
-ThermoChemistry::ThermoChemistry(const MyMol               *mymol,
-                                 const AtomizationEnergy   &atomenergy,
-                                 const std::vector<double> &frequencies,
-                                 double                     temperature,
-                                 double                     pressure,
-                                 double                     scale_factor)
+ThermoChemistry::ThermoChemistry(const MyMol                  *mymol,
+                                 const std::vector<gmx::RVec> &coords,
+                                 const AtomizationEnergy      &atomenergy,
+                                 const std::vector<double>    &frequencies,
+                                 double                        temperature,
+                                 double                        pressure,
+                                 double                        scale_factor)
 {
     rvec   theta;
-    calcTheta(mymol, theta);
+    calcTheta(mymol, coords, theta);
     double sigma_r = 1;
     if (mymol->fragments().size() == 1)
     {

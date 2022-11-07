@@ -197,7 +197,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             mymol.UpdateIdef(sii_->poldata(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(mymol.atomsConst().size(), { 0, 0, 0 });
-            std::vector<gmx::RVec> coords = mymol.x();
+            std::vector<gmx::RVec> coords = mymol.xOriginal();
             immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
@@ -207,7 +207,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                 continue;
             }
 
-            computeMultipoles(targets, &mymol);
+            computeMultipoles(targets, &mymol, coords);
 
             if (devComputers_.size() == 0)
             {
@@ -235,7 +235,8 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,
-                                           MyMol                         *mymol)
+                                           MyMol                         *mymol,
+                                           const std::vector<gmx::RVec>  &coords)
 {
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
     if (targets->find(eRMS::MU)->second.weight() > 0   ||
@@ -244,7 +245,7 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
         targets->find(eRMS::HEXADEC)->second.weight() > 0)
     {
         qcalc->setQ(mymol->atomsConst());
-        qcalc->setX(mymol->x());
+        qcalc->setX(coords);
         qcalc->calcMoments();
     }
 }

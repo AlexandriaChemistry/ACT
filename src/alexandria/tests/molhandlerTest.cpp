@@ -156,7 +156,7 @@ protected:
         std::vector<double>    qcustom;
         bool                   qSymm = false;
         std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-        std::vector<gmx::RVec> coords = mp_.x();
+        std::vector<gmx::RVec> coords = mp_.xOriginal();
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
         
@@ -240,7 +240,7 @@ protected:
             
             double scale_factor = 1;
             AtomizationEnergy atomenergy;
-            ThermoChemistry tc(&mp_, atomenergy, freq, 298.15, 1, scale_factor);
+            ThermoChemistry tc(&mp_, coords, atomenergy, freq, 298.15, 1, scale_factor);
             checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
             checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
             for(const auto &tcc : tccmap())

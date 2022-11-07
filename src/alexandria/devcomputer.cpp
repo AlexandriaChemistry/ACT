@@ -254,7 +254,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     {
         qgr->updateZeta(mymol->atomsConst(), poldata);
     }
-    dumpQX(logfile_, mymol, "ESP");
+    dumpQX(logfile_, mymol, *coords, "ESP");
     qgr->updateAtomCharges(mymol->atomsConst());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;
@@ -271,7 +271,10 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
 
 }
 
-void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
+void EspDevComputer::dumpQX(FILE                         *fp,
+                            const MyMol                  *mol,
+                            const std::vector<gmx::RVec> &coords,
+                            const std::string            &info)
 {
     if (false && fp)
     {
@@ -293,7 +296,8 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
             }
             fprintf(fp, "\n");
         }
-        pr_rvecs(fp, 0, label.c_str(), as_rvec_array(mol->x().data()), myatoms.size());
+        pr_rvecs(fp, 0, label.c_str(), as_rvec_array(coords.data()),
+                 myatoms.size());
     }
 }
 

@@ -191,7 +191,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-            std::vector<gmx::RVec> coords = mymol.x();
+            std::vector<gmx::RVec> coords = mymol.xOriginal();
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())
             {
@@ -209,7 +209,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             checker_.checkSequence(q.begin(), q.end(), "Charge");
             QtypeProps qp(qType::Calc);
             
-            qp.setQandX(q, mymol.x());
+            qp.setQandX(q, coords);
             if (useCenterOfCharge)
             {
                 qp.setCenterOfCharge(mymol.centerOfCharge());
