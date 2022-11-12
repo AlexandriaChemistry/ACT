@@ -164,25 +164,29 @@ int simulate(int argc, char *argv[])
 
     MyMol                mymol;
     {
-        MolProp     mp;
+        std::vector<MolProp> mps;
         double      qtot_babel = qtot;
         std::string method, basis;
         int         maxpot = 100;
         int         nsymm  = 1;
-        if (readBabel(filename, &mp, molnm, molnm, "", &method,
+        if (readBabel(filename, &mps, molnm, molnm, "", &method,
                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
                       false))
         {
+            if (mps.size() > 1)
+            {
+                fprintf(stderr, "Warning: will only use the first coordinate set (out of %zu)\n", mps.size());
+            }
             std::map<std::string, std::string> g2a;
             gaffToAlexandria("", &g2a);
             bool mappingOK = true;
             if (!g2a.empty())
             {
-                mappingOK = renameAtomTypes(&mp, g2a);
+                mappingOK = renameAtomTypes(&mps[0], g2a);
             }
             if (mappingOK)
             {
-                mymol.Merge(&mp);
+                mymol.Merge(&mps[0]);
             }
         }
         else

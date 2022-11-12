@@ -250,7 +250,8 @@ int gentop(int argc, char *argv[])
                static_cast<int>(pd.getNatypes()));
     }
 
-    MyMol                mymol;
+    fill_inputrec(inputrec);
+    std::vector<MyMol> mymols;
     if (strlen(dbname) > 0)
     {
         const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
@@ -277,7 +278,10 @@ int gentop(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
         }
-        mymol.Merge(&(*mpi));
+        MyMol mm;
+        mm.Merge(&(*mpi));
+        mm.setInputrec(inputrec);
+        mymols.push_back(mm);
     }
     else
     {
@@ -285,31 +289,27 @@ int gentop(int argc, char *argv[])
         {
             molnm = (char *)"MOL";
         }
-        MolProp  mp;
+        std::vector<MolProp>  mps;
         double qtot_babel = qtot;
-        if (readBabel(filename,
-                      &mp,
-                      molnm,
-                      iupac,
-                      conf,
-                      &method, 
-                      &basis,
-                      maxpot,
-                      nsymm,
-                      jobtype,
-                      &qtot_babel,
-                      addHydrogens))
+        if (readBabel(filename, &mps, molnm, iupac, conf, &method, &basis,
+                      maxpot, nsymm, jobtype, &qtot_babel, addHydrogens))
         {
             std::map<std::string, std::string> g2a;
             gaffToAlexandria("", &g2a);
-            bool mappingOK = true;
-            if (!g2a.empty())
+            for(auto &mp : mps)
             {
-                mappingOK = renameAtomTypes(&mp, g2a);
-            }
-            if (mappingOK)
-            {
-                mymol.Merge(&mp);
+                bool mappingOK = true;
+                if (!g2a.empty())
+                {
+                    mappingOK = renameAtomTypes(&mp, g2a);
+                }
+                if (mappingOK)
+                {
+                    MyMol mm;
+                    mm.Merge(&mp);
+                    mm.setInputrec(inputrec);
+                    mymols.push_back(mm);
+                }
             }
         }
         else
@@ -317,84 +317,97 @@ int gentop(int argc, char *argv[])
             gmx_fatal(FARGS, "No input file has been specified.");
         }
     }
-    fill_inputrec(inputrec);
-    mymol.setInputrec(inputrec);
-    imm = mymol.GenerateTopology(stdout, &pd,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
-                                 false);
-
-    auto forceComp = new ForceComputer();
-    std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-    std::vector<gmx::RVec> coords = mymol.xOriginal();
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
-    if (immStatus::OK == imm)
+    auto forceComp = new ForceComputer();
+    int mp_index   = 1;
+    for(auto mymol : mymols)
     {
-        mymol.symmetrizeCharges(&pd, bQsym, symm_string);
-        maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
-        
-        mymol.initQgenResp(&pd, coords, 0.0, maxpot);
+        imm = mymol.GenerateTopology(stdout, &pd,
+                                     bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
+                                     false);
 
-        ChargeGenerationAlgorithm alg = pd.chargeGenerationAlgorithm();
-        std::vector<double> myq;
-        if (qcustom)
+        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+        std::vector<gmx::RVec> coords = mymol.xOriginal();
+        if (immStatus::OK == imm)
         {
-            auto mycharges = gmx::splitString(qcustom);
-            for(auto &q : mycharges)
+            mymol.symmetrizeCharges(&pd, bQsym, symm_string);
+            maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
+            
+            mymol.initQgenResp(&pd, coords, 0.0, maxpot);
+            
+            ChargeGenerationAlgorithm alg = pd.chargeGenerationAlgorithm();
+            std::vector<double> myq;
+            if (qcustom)
             {
-                myq.push_back(my_atof(q.c_str(), "custom q"));
+                auto mycharges = gmx::splitString(qcustom);
+                for(auto &q : mycharges)
+                {
+                    myq.push_back(my_atof(q.c_str(), "custom q"));
+                }
+                alg = ChargeGenerationAlgorithm::Custom;
             }
-            alg = ChargeGenerationAlgorithm::Custom;
+            else if (strlen(qqm) > 0)
+            {
+                alg = nameToChargeGenerationAlgorithm(qqm);
+            }
+            printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
+            imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
         }
-        else if (strlen(qqm) > 0)
+        /* Generate output file for debugging if requested */
+        if (immStatus::OK == imm)
         {
-            alg = nameToChargeGenerationAlgorithm(qqm);
+            mymol.plotEspCorrelation(&pd, coords,
+                                     opt2fn_null("-plot_esp", NFILE, fnm),
+                                     oenv, forceComp);
         }
-        printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
-    }
-    /* Generate output file for debugging if requested */
-    if (immStatus::OK == imm)
-    {
-        mymol.plotEspCorrelation(&pd, coords,
-                                 opt2fn_null("-plot_esp", NFILE, fnm),
-                                 oenv, forceComp);
-    }
-
-    if (immStatus::OK == imm)
-    {
-        mymol.GenerateCube(&pd,
-                           coords,
-                           spacing, border,
-                           opt2fn_null("-ref",      NFILE, fnm),
-                           opt2fn_null("-pc",       NFILE, fnm),
-                           opt2fn_null("-pdbdiff",  NFILE, fnm),
-                           opt2fn_null("-pot",      NFILE, fnm),
-                           opt2fn_null("-rho",      NFILE, fnm),
-                           opt2fn_null("-his",      NFILE, fnm),
-                           opt2fn_null("-diff",     NFILE, fnm),
-                           opt2fn_null("-diffhist", NFILE, fnm),
-                           oenv);
-    }
-
-    if (immStatus::OK == imm && mymol.errors().size() == 0)
-    {
-        if (opt2bSet("-openmm", NFILE, fnm))
+        
+        if (immStatus::OK == imm)
         {
-            writeOpenMM(opt2fn("-openmm", NFILE, fnm), &pd, &mymol, 0);
+            mymol.GenerateCube(&pd,
+                               coords,
+                               spacing, border,
+                               opt2fn_null("-ref",      NFILE, fnm),
+                               opt2fn_null("-pc",       NFILE, fnm),
+                               opt2fn_null("-pdbdiff",  NFILE, fnm),
+                               opt2fn_null("-pot",      NFILE, fnm),
+                               opt2fn_null("-rho",      NFILE, fnm),
+                               opt2fn_null("-his",      NFILE, fnm),
+                               opt2fn_null("-diff",     NFILE, fnm),
+                               opt2fn_null("-diffhist", NFILE, fnm),
+                               oenv);
+        }
+        
+        if (immStatus::OK == imm && mymol.errors().size() == 0)
+        {
+            std::string index;
+            if (mymols.size() > 1)
+            {
+                index = gmx::formatString("%d_", mp_index);
+            }
+            if (opt2bSet("-openmm", NFILE, fnm))
+            {
+                std::string ofn = gmx::formatString("%s%s", index.c_str(),
+                                                    opt2fn("-openmm", NFILE, fnm));
+                writeOpenMM(ofn, &pd, &mymol, 0);
+            }
+            else
+            {
+                std::string cfn = gmx::formatString("%s%s", index.c_str(),
+                                                    opt2fn("-c", NFILE, fnm));
+                mymol.PrintConformation(cfn.c_str(), coords);
+                std::string tfn = gmx::formatString("%s%s", index.c_str(),
+                                                    bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm));
+                mymol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
+                                    &cr, coords, method, basis, bITP);
+            }
         }
         else
         {
-            mymol.PrintConformation(opt2fn("-c", NFILE, fnm), coords);
-            mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
-                                bVerbose, &pd, forceComp,
-                                &cr, coords, method, basis, bITP);
+            auto fn = opt2fn("-g", NFILE, fnm);
+            fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
+            print_errors(fn, mymol.errors(), imm);
         }
-    }
-    else
-    {
-        auto fn = opt2fn("-g", NFILE, fnm);
-        fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
-        print_errors(fn, mymol.errors(), imm);
+        mp_index++;
     }
     return 0;
 }

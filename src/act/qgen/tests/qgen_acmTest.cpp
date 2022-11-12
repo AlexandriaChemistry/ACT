@@ -107,7 +107,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             std::string           method;
             std::string           basis;
             std::string           fileName(molname);
-            alexandria::MolProp   molprop;
+            std::vector<alexandria::MolProp> molprops;
             bool                  trustObCharge = false;
             
             if (inputformat == inputFormat::LOG)
@@ -151,7 +151,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             double qtot_babel = myqtot;
             if (readBabel(dataName.c_str(),
-                          &molprop,
+                          &molprops,
                           molname.c_str(),
                           molname.c_str(),
                           conf,
@@ -167,7 +167,10 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 gaffToAlexandria("", &g2a);
                 if (!g2a.empty())
                 {
-                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    for(auto &molprop: molprops)
+                    {
+                        EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    }
                 }
             }
             else
@@ -184,6 +187,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
             {
                 GMX_THROW(gmx::InternalError("Different numbers of qtotal and moleculeStart"));
             }
+            auto &molprop = molprops[0];
+            
             molprop.clearFragments();
             molprop.generateComposition();
             double qtot_sum = 0;
@@ -203,14 +208,14 @@ class AcmTest : public gmx::test::CommandLineTestBase
                                              formula[i], atomIndices));
                 qtot_sum += qtotal[i];
             }
-
+            
             mp_.Merge(&molprop);
             // Generate charges and topology
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
-
+            
             // Get poldata
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(stdout, pd,
@@ -220,7 +225,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
-
+            
             // Needed for GenerateCharges
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
@@ -235,7 +240,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
-                                
+            
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
             for (size_t atom = 0; atom < myatoms.size(); atom++)

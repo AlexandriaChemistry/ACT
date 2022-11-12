@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <set>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
@@ -163,79 +164,6 @@ static bool isGzipFile(const std::string &fileName,
     return false;
 }
 
-static OpenBabel::OBConversion *readBabel(const std::string &g09,
-                                          OpenBabel::OBMol  *mol,
-                                          einformat         *inputformat)
-{
-    std::string fileName(g09);
-    if (!gmx_fexist(fileName.c_str()))
-    {
-        fileName += ".gz";
-        printf("fileName2: %s\n", fileName.c_str());
-        if (!gmx_fexist(fileName.c_str()))
-        {
-            return nullptr;
-        }
-    }
-    
-    std::ifstream g09f;
-    std::string   strippedFileName;
-    bool          isGzip = isGzipFile(fileName, &strippedFileName);
-    
-    g09f.open(fileName, std::ios::in);
-    
-    if (!g09f.is_open())
-    {
-        gmx_fatal(FARGS, "Cannot open file %s for reading", g09.c_str());
-    }
-    
-    OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
-    auto                     babelfiles = BabelFiles();
-    const char              *informat   = nullptr;
-    if (isGzip)
-    {
-        informat = babelfiles.findBabelFile(strippedFileName)->informat().c_str();
-    }
-    else
-    {
-        informat = babelfiles.findBabelFile(g09)->informat().c_str();
-    }
-
-    if (strcmp (informat, "g03") == 0 || strcmp (informat, "g09") == 0)
-    {
-        *inputformat = einfGaussian;
-    }
-
-    if (conv->SetInFormat(informat, isGzip))
-    {
-        bool read_ok = false;
-        try
-        {
-            read_ok = conv->Read(mol, &g09f);
-        }
-        catch (const std::exception &ex)
-        {
-            gmx::printFatalErrorMessage(stderr, ex);
-        }
-
-        if (read_ok)
-        {
-            g09f.close();
-            return conv; // exit with success
-        }
-        else
-        {
-            fprintf(stderr, "Could not read input file %s with OpenBabel3.\n", g09.c_str());
-        }
-    }
-    else
-    {
-        fprintf(stderr, "Input file %s has incomprehensible format.\n", g09.c_str());
-    }
-    g09f.close();
-    return nullptr;
-}
-
 static void checkBondOrders(alexandria::MolProp *mpt)
 {
     // We cannot be sure that this is the right one
@@ -313,75 +241,53 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     }
 }
 
-bool readBabel(const char          *g09,
-               alexandria::MolProp *mpt,
-               const char          *molnm,
-               const char          *iupac,
-               const char          *conformation,
-               std::string         *method,
-               std::string         *basisset,
-               int                  maxPotential,
-               int                  nsymm,
-               const char          *jobType,
-               double              *qtot,
-               bool                 addHydrogen)
+static bool babel2ACT(OpenBabel::OBMol    *mol,
+                      alexandria::MolProp *mpt,
+                      const char          *molnm,
+                      const char          *iupac,
+                      const char          *conformation,
+                      std::string         *method,
+                      std::string         *basisset,
+                      int                  maxPotential,
+                      int                  nsymm,
+                      const char          *jobType,
+                      double              *qtot,
+                      bool                 addHydrogen,
+                      const char          *g09,
+                      einformat            inputformat)
 {
     std::string                formula;
     std::string                attr;
     std::string                value;
-    einformat                  inputformat = einfNotGaussian;
     const char                *reference   = "Spoel2022a";
     const char                *mymol       = "AMM";
     const char                *myprogram   = "ACT2022";
 
     /* Variables to read a Gaussian log file */
     char                      *g09ptr;
-    OpenBabel::OBMol           mol;
-    OpenBabel::OBAtomIterator  OBai;
-    OpenBabel::OBBondIterator  OBbi;
-    OpenBabel::OBPairData     *OBpd;
-    OpenBabel::OBPcharge      *OBpc       = new OpenBabel::OBPcharge();
-    OpenBabel::OBVectorData   *dipole     = new OpenBabel::OBVectorData;
-    OpenBabel::OBMatrixData   *quadrupole = new OpenBabel::OBMatrixData;
-    OpenBabel::OBMatrixData   *pol_tensor = new OpenBabel::OBMatrixData;
-    OpenBabel::OBFreeGrid     *esp;
-    std::vector<alexandria::ElectrostaticPotential> espv;
+    alexandria::JobType jobtype = alexandria::string2jobType(jobType);
 
-    alexandria::JobType         jobtype = alexandria::string2jobType(jobType);
-    OpenBabel::OBConversion    *conv    = readBabel(g09, &mol, &inputformat);
-    if (nullptr == conv)
-    {
-        fprintf(stderr, "Failed reading %s\n", g09);
-        return false;
-    }
-    delete conv;
-    conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
+    auto conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
 
     // Chemical Categories
     if (conv->SetOutFormat("fpt"))
     {
-        std::vector<std::string> excluded_categories = {
+        std::set<std::string> excluded_categories = {
             ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond",
             "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond",
             "Trans_double_bond"
         };
-
+        
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        OpenBabel::OBMol         mol_copy   = mol;  // We need a copy here because WriteString removes the H.
+        
+        // We need a copy here because WriteString removes the H.
+        OpenBabel::OBMol  mol_copy = *mol;
         std::vector<std::string> categories = gmx::splitString(conv->WriteString(&mol_copy, false));
         for (const auto &category : categories)
         {
-            size_t j;
-            for (j = 0; j < excluded_categories.size(); j++)
-            {
-                if (excluded_categories[j] == category)
-                {
-                    break;
-                }
-            }
-            if (j == excluded_categories.size())
+            if (excluded_categories.find(category) == excluded_categories.end())
             {
                 std::string dup = category;
                 std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_'; }, ' ');
@@ -392,7 +298,7 @@ bool readBabel(const char          *g09,
 
     // Basis Set
     std::string basis;
-    OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
+    auto OBpd = (OpenBabel::OBPairData *)mol->GetData("basis");
     if (!basisset->empty())
     {
         basis.assign(*basisset);
@@ -414,14 +320,14 @@ bool readBabel(const char          *g09,
 
     // QM Program
     std::string program(myprogram);
-    OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
+    OBpd = (OpenBabel::OBPairData *)mol->GetData("program");
     if (nullptr != OBpd)
     {
         program.assign(OBpd->GetValue());
     }
 
     // Method
-    OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
+    OBpd = (OpenBabel::OBPairData *)mol->GetData("method");
     if (nullptr != OBpd)
     {
         method->assign(OBpd->GetValue());
@@ -446,17 +352,17 @@ bool readBabel(const char          *g09,
     // the input, unless it is a Gaussian log file.
     if (*qtot != 0)
     {
-        double qtest = mol.GetTotalCharge();
+        double qtest = mol->GetTotalCharge();
         if (qtest != *qtot)
         {
             fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, user specified %g. File %s.\n",
                     qtest, *qtot, g09);
         }
-        mol.SetTotalCharge(*qtot);
+        mol->SetTotalCharge(*qtot);
     }
     else
     {
-        *qtot = mol.GetTotalCharge();
+        *qtot = mol->GetTotalCharge();
     }
     mpt->AddExperiment(exp);
     if (nullptr != molnm)
@@ -489,7 +395,7 @@ bool readBabel(const char          *g09,
         double              DeltaGfT    = 0, DeltaSfT = 0, S0T      = 0;
         double              CVT         = 0, CPT      = 0, ZPE      = 0;
         std::vector<double> Scomponents;
-        if (extract_thermochemistry(mol, false, &nsymm,
+        if (extract_thermochemistry(*mol, false, &nsymm,
                                     0, 0.0,
                                     &temperature,
                                     &DeltaHf0,
@@ -571,19 +477,19 @@ bool readBabel(const char          *g09,
         auto mpo = MolPropObservable::HF;
         auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
                                                    0, ePhase::GAS, 
-                                                   alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
+                                                   alexandria::convertToGromacs(mol->GetEnergy(), energyUnit), 0);
         mpt->LastExperiment()->addProperty(mpo, me);
     }
 
     if (addHydrogen)
     {
-        mol.AddHydrogens();
+        mol->AddHydrogens();
     }
     // Frequencies
     auto vibtype = OpenBabel::OBGenericDataType::VibrationData;
-    if (mol.HasData(vibtype))
+    if (mol->HasData(vibtype))
     {
-        auto vibdata = static_cast<OpenBabel::OBVibrationData *>(mol.GetData(vibtype));
+        auto vibdata = static_cast<OpenBabel::OBVibrationData *>(mol->GetData(vibtype));
         auto freq    = vibdata->GetFrequencies();
         if (!freq.empty())
         {
@@ -612,10 +518,10 @@ bool readBabel(const char          *g09,
     const std::string forcefield("alexandria");
     auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     std::vector<int> atomIndices;
-    if (ff && (ff->Setup(mol)))
+    if (ff && (ff->Setup(*mol)))
     {
-        ff->GetAtomTypes(mol);
-        FOR_ATOMS_OF_MOL (atom, mol)
+        ff->GetAtomTypes(*mol);
+        FOR_ATOMS_OF_MOL (atom, *mol)
         {
             // For our molecular fragments the indices start at 0
             atomIndices.push_back(atom->GetIdx()-1);
@@ -650,10 +556,10 @@ bool readBabel(const char          *g09,
                     {
                         std::string qstr = cs.second;
                         qstr.append(" charges");
-                        OBpd = (OpenBabel::OBPairData *) mol.GetData(qstr.c_str());
+                        OBpd = (OpenBabel::OBPairData *) mol->GetData(qstr.c_str());
                         if (nullptr != OBpd)
                         {
-                            OBpc = (OpenBabel::OBPcharge *) mol.GetData(qstr.c_str());
+                            auto OBpc = (OpenBabel::OBPcharge *) mol->GetData(qstr.c_str());
                             if (OBpc && !OBpc->GetPartialCharge().empty())
                             {
                                 ca.AddCharge(stringToQtype(cs.second),
@@ -680,17 +586,18 @@ bool readBabel(const char          *g09,
     }
     // Fragment information
     // TODO: extract correct symmetry number
-    Fragment f("1", mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), 
-               1, mol.GetFormula(), atomIndices);
+    Fragment f("1", mol->GetMolWt(), *qtot, mol->GetTotalSpinMultiplicity(), 
+               1, mol->GetFormula(), atomIndices);
     mpt->addFragment(f);
 
     // Bonds
-    getBondsFromOpenBabel(&mol, mpt, g09, forcefield.compare("alexandria") == 0);
+    getBondsFromOpenBabel(mol, mpt, g09, forcefield.compare("alexandria") == 0);
 
     // Dipole
-    dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");
-    if (nullptr != dipole)
+    auto my_dipole = mol->GetData("Dipole Moment");
+    if (nullptr != my_dipole)
     {
+        auto dipole = (OpenBabel::OBVectorData *) my_dipole;
         OpenBabel::vector3 v3  = dipole->GetData();
         auto               mpo = MolPropObservable::DIPOLE;
         auto               dp  = new alexandria::MolecularMultipole(qm_type, "D", 0.0, mpo);
@@ -701,9 +608,10 @@ bool readBabel(const char          *g09,
     }
     
     // Quadrupole
-    quadrupole = (OpenBabel::OBMatrixData *) mol.GetData("Traceless Quadrupole Moment");
-    if (nullptr != quadrupole)
+    auto my_quadrupole = mol->GetData("Traceless Quadrupole Moment");
+    if (nullptr != my_quadrupole)
     {
+        auto quadrupole = (OpenBabel::OBMatrixData *) my_quadrupole;
         OpenBabel::matrix3x3            m3 = quadrupole->GetData();
         double                          mm[9];
         m3.GetArray(mm);
@@ -719,9 +627,10 @@ bool readBabel(const char          *g09,
     }
 
     // Polarizability
-    pol_tensor = (OpenBabel::OBMatrixData *) mol.GetData("Exact polarizability");
-    if (nullptr != pol_tensor)
+    auto my_pol_tensor = mol->GetData("Exact polarizability");
+    if (nullptr != my_pol_tensor)
     {
+        auto pol_tensor = (OpenBabel::OBMatrixData *) my_pol_tensor;
         OpenBabel::matrix3x3 m3 = pol_tensor->GetData();
         double               mm[9], alpha;
         m3.GetArray(mm);
@@ -734,22 +643,158 @@ bool readBabel(const char          *g09,
     }
 
     // Electrostatic potential
-    esp = (OpenBabel::OBFreeGrid *) mol.GetData("Electrostatic Potential");
+    auto esp = mol->GetData("Electrostatic Potential");
     if (nullptr != esp && maxPotential > 0)
     {
-        OpenBabel::OBFreeGridPoint        *fgp;
-        OpenBabel::OBFreeGridPointIterator fgpi;
-        int                                espid = 0;
-
-        fgpi = esp->BeginPoints();
-        for (fgp = esp->BeginPoint(fgpi); (nullptr != fgp); fgp = esp->NextPoint(fgpi))
+        auto                                            espptr = (OpenBabel::OBFreeGrid *) esp;
+        OpenBabel::OBFreeGridPoint                     *fgp;
+        OpenBabel::OBFreeGridPointIterator              fgpi;
+        int                                             espid  = 0;
+        std::vector<alexandria::ElectrostaticPotential> espv;
+        
+        fgpi = espptr->BeginPoints();
+        for (fgp = espptr->BeginPoint(fgpi); (nullptr != fgp); fgp = espptr->NextPoint(fgpi))
         {
             alexandria::ElectrostaticPotential ep("Angstrom", "Hartree/e", ++espid,
                                                   fgp->GetX(), fgp->GetY(), fgp->GetZ(),
                                                   fgp->GetV());
             espv.push_back(ep);
         }
-        merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxPotential);
+        merge_electrostatic_potential(mpt, espv, mol->NumAtoms(), maxPotential);
+    }
+    return true;
+}
+
+static bool readBabel(const std::string               &g09,
+                      std::vector<OpenBabel::OBMol *> *mols,
+                      einformat                       *inputformat)
+{
+    std::string baseFileName(g09);
+    std::string fileName(g09);
+    bool        isGzip = false;
+    if (!gmx_fexist(fileName.c_str()))
+    {
+        fileName += ".gz";
+        printf("fileName2: %s\n", fileName.c_str());
+        if (!gmx_fexist(fileName.c_str()))
+        {
+            fprintf(stderr, "Can neither find file %s or %s\n", g09.c_str(), fileName.c_str());
+            return false;
+        }
+        isGzip = true;
+    }
+    else
+    {
+        isGzip = isGzipFile(g09, &baseFileName);
+    }
+    
+    std::ifstream g09f;
+    
+    g09f.open(fileName, std::ios::in);
+    if (!g09f.is_open())
+    {
+        fprintf(stderr, "Cannot open file %s for reading", g09.c_str());
+        return false;
+    }
+    // Read from g09f
+    auto        conv        = new OpenBabel::OBConversion(&g09f, &std::cout);
+    BabelFiles  babelfiles;
+    std::string informat;
+    if (isGzip)
+    {
+        informat = babelfiles.findBabelFile(baseFileName)->informat();
+    }
+    else
+    {
+        informat = babelfiles.findBabelFile(fileName)->informat();
+    }
+
+    if (informat == "g03" || informat == "g09" || informat == "g16")
+    {
+        *inputformat = einfGaussian;
+    }
+
+    bool read_ok = false;
+    if (conv->SetInFormat(informat.c_str(), isGzip))
+    {
+        try
+        {
+            do
+            {
+                read_ok = false;
+                if (mols->empty())
+                {
+                    auto mol = new OpenBabel::OBMol;
+                    if (conv->ReadFile(mol, fileName) && !mol->Empty())
+                    {
+                        mols->push_back(mol);
+                        read_ok = true;
+                    }
+                }
+                else
+                {
+                    auto mol = new OpenBabel::OBMol;
+                    if (conv->Read(mol, nullptr) && !mol->Empty())
+                    {
+                        mols->push_back(mol);
+                        read_ok = true;
+                    }
+                }
+                // TODO: remove this hack that just reads one molecule
+                //read_ok = false;
+            }
+            while (read_ok);
+
+            // If we read anything at all we are happy.
+            read_ok = mols->size() > 0;
+        }
+        catch (const std::exception &ex)
+        {
+            gmx::printFatalErrorMessage(stderr, ex);
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Input file %s has incomprehensible format.\n", g09.c_str());
+    }
+    if (read_ok)
+    {
+        g09f.close();
+    }
+    return read_ok;
+}
+
+bool readBabel(const char          *g09,
+               std::vector<alexandria::MolProp> *mpt,
+               const char          *molnm,
+               const char          *iupac,
+               const char          *conformation,
+               std::string         *method,
+               std::string         *basisset,
+               int                  maxPotential,
+               int                  nsymm,
+               const char          *jobType,
+               double              *qtot,
+               bool                 addHydrogen)
+{
+    std::vector<OpenBabel::OBMol *> mols;
+    einformat                       inputformat = einfNotGaussian;
+    bool                            read_ok     = readBabel(g09, &mols, &inputformat);
+    if (!read_ok)
+    {
+        fprintf(stderr, "Failed reading %s\n", g09);
+        return false;
+    }
+    for(auto mol : mols)
+    {
+        alexandria::MolProp mp;
+        if (babel2ACT(mol, &mp, molnm, iupac, conformation, method, basisset, 
+                      maxPotential, nsymm, jobType, qtot, addHydrogen, g09,
+                      inputformat))
+        {
+            mpt->push_back(mp);
+        }
+        delete mol;
     }
     return true;
 }

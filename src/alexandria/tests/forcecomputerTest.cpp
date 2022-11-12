@@ -74,11 +74,11 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
     
-    void initMyMol(const char    *molname, 
-                   const Poldata *pd,
-                   ForceComputer *fcomp,
-                   t_inputrec    *inputrec,
-                   MyMol         *mp)
+    void initMyMol(const char         *molname, 
+                   const Poldata      *pd,
+                   ForceComputer      *fcomp,
+                   t_inputrec         *inputrec,
+                   std::vector<MyMol> *mps)
     {
         int           maxpot   = 100;
         int           nsymm    = 0;
@@ -87,9 +87,17 @@ protected:
         const char   *jobtype  = (char *)"Opt";
         
         std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-        auto          molprop  = new alexandria::MolProp;
+        std::vector<alexandria::MolProp> molprops;
         double        qtot     = 0;
-        bool readOK = readBabel(dataName.c_str(), molprop, molname, molname,
+        // Needed for GenerateCharges
+        CommunicationRecord cr;
+        // Generate charges and topology
+        fill_inputrec(inputrec);
+        // Charge gen params
+        auto alg = ChargeGenerationAlgorithm::NONE;
+        std::vector<double> qcustom;
+        bool qSymm = false;
+        bool readOK = readBabel(dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
@@ -99,27 +107,23 @@ protected:
             gaffToAlexandria("", &g2a);
             if (!g2a.empty())
             {
-                EXPECT_TRUE(renameAtomTypes(molprop, g2a));
+                for(auto &molprop : molprops)
+                {
+                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    MyMol mm;
+                    mm.Merge(&molprop);
+                    auto imm = mm.GenerateTopology(stdout, pd,
+                                                   missingParameters::Error, true);
+                    EXPECT_TRUE(immStatus::OK == imm);
+                    mm.setInputrec(inputrec);
+                    mm.symmetrizeCharges(pd, qSymm, nullptr);
+                    std::vector<gmx::RVec> forces(mm.atomsConst().size());
+                    std::vector<gmx::RVec> coords = mm.xOriginal();
+                    mm.GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &coords, &forces);
+                    mps->push_back(mm);
+                }
             }
         }
-        mp->Merge(molprop);
-        // Generate charges and topology
-        fill_inputrec(inputrec);
-        mp->setInputrec(inputrec);
-        
-        auto imm = mp->GenerateTopology(stdout, pd,
-                                        missingParameters::Error, true);
-        EXPECT_TRUE(immStatus::OK == imm);
-        
-        // Needed for GenerateCharges
-        CommunicationRecord cr;
-        auto alg = ChargeGenerationAlgorithm::NONE;
-        std::vector<double> qcustom;
-        bool qSymm = false;
-        mp->symmetrizeCharges(pd, qSymm, nullptr);
-        std::vector<gmx::RVec> forces(mp->atomsConst().size());
-        std::vector<gmx::RVec> coords = mp->xOriginal();
-        mp->GenerateCharges(pd, fcomp, mdlog_, &cr, alg, qcustom, &coords, &forces);
     }
     
     void test(const char *molname, const char *forcefield, 
@@ -134,116 +138,119 @@ protected:
         t_inputrec      inputrecInstance;
         
         // The molecule
-        MyMol mp_;
-        initMyMol(molname, pd, fcomp, &inputrecInstance, &mp_);
+        std::vector<MyMol> mps;
+        initMyMol(molname, pd, fcomp, &inputrecInstance, &mps);
    
-        std::vector<gmx::RVec> coordinates, forces;
-        auto xo = mp_.xOriginal();
-        for(size_t i = 0; i < xo.size(); i++)
+        for(auto &mp : mps)
         {
-            rvec xxx;
-            for(int m = 0; m < DIM; m++)
+            std::vector<gmx::RVec> coordinates, forces;
+            auto xo = mp.xOriginal();
+            for(size_t i = 0; i < xo.size(); i++)
             {
-                xxx[m] = xo[i][m]*stretch;
-            }
-            coordinates.push_back(xxx);
-            forces.push_back({ 0, 0, 0 });
-        }
-        if (testPolarizability)
-        {
-            auto qCalc = mp_.qTypeProps(qType::Calc);
-            fcomp->calcPolarizability(pd, mp_.topology(), &coordinates, qCalc);
-            auto alpha = qCalc->polarizabilityTensor();
-            const char *xyz[DIM] = { "X", "Y", "Z" };
-            
-            for(int m = 0; m < DIM; m++)
-            {
-                for(int n = 0; n < DIM; n++)
-                {
-                    std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
-                    checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
-                                                          label.c_str());
-                }
-            }
-        }
-        else
-        {
-            std::map<InteractionType, double> gmxEnergies, actEnergies;
-            // This turns on comparison of gromacs and ACT. For debugging
-            // you may want to set this to false.
-            bool       strict    = true;
-            double     shellRmsf;
-            t_commrec *crtmp     = init_commrec();
-            crtmp->nnodes = 1;
-            PaddedVector<gmx::RVec> gmxforces;
-            gmxforces.resizeWithPadding(mp_.atomsConst().size());
-            
-            auto fsc = pd->forcesConst();
-            mp_.calculateEnergyOld(crtmp, &coordinates, &gmxforces, &gmxEnergies, &shellRmsf);
-            fcomp->compute(pd, mp_.topology(), &coordinates, &forces, &actEnergies);
-            for(auto &ifm : gmxEnergies)
-            {
-                int ftype = F_EPOT;
-                if (ifm.first != InteractionType::EPOT)
-                {
-                    auto fs = fsc.find(ifm.first);
-                    EXPECT_TRUE(fsc.end() != fs);
-                    ftype = fs->second.fType();
-                }
-                std::string label = gmx::formatString("%s", interaction_function[ftype].name);
-                if (stretch != 1)
-                {
-                    label += gmx::formatString("%g", stretch);
-                }
-                auto gmxlabel = label+"_gmx";
-                checker_.checkReal(ifm.second, gmxlabel.c_str());
-                auto actlabel = label+"_act";
-                // Hack to compare GROMACS Buckingham or LJ to ACT
-                double actEner;
-                auto irep  = InteractionType::REPULSION;
-                auto idisp = InteractionType::DISPERSION;
-                if (ifm.first == InteractionType::VDW &&
-                    actEnergies.find(irep) != actEnergies.end() &&
-                    actEnergies.find(idisp) != actEnergies.end())
-                {
-                    actEner  = (actEnergies[irep]+actEnergies[idisp]);
-                }
-                else
-                {
-                    actEner  = actEnergies[ifm.first];
-                }
-                checker_.checkReal(actEner, actlabel.c_str());
-                if (strict)
-                {
-                    EXPECT_TRUE(std::abs(ifm.second-actEner) < 1e-3);
-                }
-            }
-            auto atoms = mp_.atomsConst();
-            const char *xyz[DIM] = { "X", "Y", "Z" };
-            for(size_t i = 0; i < forces.size(); i++)
-            {
-                bool shell = atoms[i].pType() == eptShell;
+                rvec xxx;
                 for(int m = 0; m < DIM; m++)
                 {
-                    if (!shell)
+                    xxx[m] = xo[i][m]*stretch;
+                }
+                coordinates.push_back(xxx);
+                forces.push_back({ 0, 0, 0 });
+            }
+            if (testPolarizability)
+            {
+                auto qCalc = mp.qTypeProps(qType::Calc);
+                fcomp->calcPolarizability(pd, mp.topology(), &coordinates, qCalc);
+                auto alpha = qCalc->polarizabilityTensor();
+                const char *xyz[DIM] = { "X", "Y", "Z" };
+                
+                for(int m = 0; m < DIM; m++)
+                {
+                    for(int n = 0; n < DIM; n++)
                     {
-                        std::string stretchName;
-                        if (stretch != 1)
-                        {
-                            stretchName += gmx::formatString("%g", stretch);
-                        }
-                        checker_.checkReal(gmxforces[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
-                                                                              atoms[i].ffType().c_str(),
-                                                                              i+1, stretchName.c_str(),
-                                                                              xyz[m]).c_str());
-                        checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
-                                                                           atoms[i].ffType().c_str(),
-                                                                           i+1, stretchName.c_str(),
-                                                                           xyz[m]).c_str());
+                        std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
+                        checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
+                                           label.c_str());
                     }
+                }
+            }
+            else
+            {
+                std::map<InteractionType, double> gmxEnergies, actEnergies;
+                // This turns on comparison of gromacs and ACT. For debugging
+                // you may want to set this to false.
+                bool       strict    = true;
+                double     shellRmsf;
+                t_commrec *crtmp     = init_commrec();
+                crtmp->nnodes = 1;
+                PaddedVector<gmx::RVec> gmxforces;
+                gmxforces.resizeWithPadding(mp.atomsConst().size());
+                
+                auto fsc = pd->forcesConst();
+                mp.calculateEnergyOld(crtmp, &coordinates, &gmxforces, &gmxEnergies, &shellRmsf);
+                fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
+                for(auto &ifm : gmxEnergies)
+                {
+                    int ftype = F_EPOT;
+                    if (ifm.first != InteractionType::EPOT)
+                    {
+                        auto fs = fsc.find(ifm.first);
+                        EXPECT_TRUE(fsc.end() != fs);
+                        ftype = fs->second.fType();
+                    }
+                    std::string label = gmx::formatString("%s", interaction_function[ftype].name);
+                    if (stretch != 1)
+                    {
+                        label += gmx::formatString("%g", stretch);
+                    }
+                    auto gmxlabel = label+"_gmx";
+                    checker_.checkReal(ifm.second, gmxlabel.c_str());
+                    auto actlabel = label+"_act";
+                    // Hack to compare GROMACS Buckingham or LJ to ACT
+                    double actEner;
+                    auto irep  = InteractionType::REPULSION;
+                    auto idisp = InteractionType::DISPERSION;
+                    if (ifm.first == InteractionType::VDW &&
+                        actEnergies.find(irep) != actEnergies.end() &&
+                        actEnergies.find(idisp) != actEnergies.end())
+                    {
+                        actEner  = (actEnergies[irep]+actEnergies[idisp]);
+                    }
+                    else
+                    {
+                        actEner  = actEnergies[ifm.first];
+                    }
+                    checker_.checkReal(actEner, actlabel.c_str());
                     if (strict)
                     {
-                        EXPECT_TRUE(std::abs(forces[i][m]-gmxforces[i][m]) < 1e-3);
+                        EXPECT_TRUE(std::abs(ifm.second-actEner) < 1e-3);
+                    }
+                }
+                auto atoms = mp.atomsConst();
+                const char *xyz[DIM] = { "X", "Y", "Z" };
+                for(size_t i = 0; i < forces.size(); i++)
+                {
+                    bool shell = atoms[i].pType() == eptShell;
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        if (!shell)
+                        {
+                            std::string stretchName;
+                            if (stretch != 1)
+                            {
+                                stretchName += gmx::formatString("%g", stretch);
+                            }
+                            checker_.checkReal(gmxforces[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
+                                                                                  atoms[i].ffType().c_str(),
+                                                                                  i+1, stretchName.c_str(),
+                                                                                  xyz[m]).c_str());
+                            checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
+                                                                               atoms[i].ffType().c_str(),
+                                                                               i+1, stretchName.c_str(),
+                                                                               xyz[m]).c_str());
+                        }
+                        if (strict)
+                        {
+                            EXPECT_TRUE(std::abs(forces[i][m]-gmxforces[i][m]) < 1e-3);
+                        }
                     }
                 }
             }
@@ -261,54 +268,57 @@ protected:
         t_inputrec      inputrecInstance;
         
         // The molecule
-        MyMol mp_;
-        initMyMol(molname, pd, fcomp, &inputrecInstance, &mp_);
+        std::vector<MyMol> mps;
+        initMyMol(molname, pd, fcomp, &inputrecInstance, &mps);
    
-        std::vector<gmx::RVec> coordinates, forces;
-        auto xo = mp_.xOriginal();
-        for(size_t i = 0; i < xo.size(); i++)
+        for(auto &mp : mps)
         {
-            coordinates.push_back(xo[i]);
-            forces.push_back({ 0, 0, 0 });
-        }
-        std::map<InteractionType, double> actEnergies;
-        auto fsc = pd->forcesConst();
-        fcomp->compute(pd, mp_.topology(), &coordinates, &forces, &actEnergies);
-        for(auto &ifm : actEnergies)
-        {
-            int ftype = F_EPOT;
-            switch (ifm.first)
+            std::vector<gmx::RVec> coordinates, forces;
+            auto xo = mp.xOriginal();
+            for(size_t i = 0; i < xo.size(); i++)
             {
-            case InteractionType::EPOT:
-                break;
-            case InteractionType::DISPERSION:
-                ftype = F_DISPERSION;
-                break;
-            case InteractionType::REPULSION:
-                ftype = F_REPULSION;
-                break;
-            default:
-                {
-                    auto fs = fsc.find(ifm.first);
-                    EXPECT_TRUE(fsc.end() != fs);
-                    ftype = fs->second.fType();
-                }
+                coordinates.push_back(xo[i]);
+                forces.push_back({ 0, 0, 0 });
             }
-            std::string label = gmx::formatString("%s", interaction_function[ftype].name);
-            auto actEner  = actEnergies[ifm.first];
-            checker_.checkReal(actEner, label.c_str());
-            auto atoms = mp_.atomsConst();
-            const char *xyz[DIM] = { "X", "Y", "Z" };
-            for(size_t i = 0; i < forces.size(); i++)
+            std::map<InteractionType, double> actEnergies;
+            auto fsc = pd->forcesConst();
+            fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
+            for(auto &ifm : actEnergies)
             {
-                bool shell = atoms[i].pType() == eptShell;
-                for(int m = 0; m < DIM; m++)
+                int ftype = F_EPOT;
+                switch (ifm.first)
                 {
-                    if (!shell)
+                case InteractionType::EPOT:
+                    break;
+                case InteractionType::DISPERSION:
+                    ftype = F_DISPERSION;
+                    break;
+                case InteractionType::REPULSION:
+                    ftype = F_REPULSION;
+                    break;
+                default:
                     {
-                        checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu f%s", 
-                                                                           atoms[i].ffType().c_str(),
-                                                                           i+1, xyz[m]).c_str());
+                        auto fs = fsc.find(ifm.first);
+                        EXPECT_TRUE(fsc.end() != fs);
+                        ftype = fs->second.fType();
+                    }
+                }
+                std::string label = gmx::formatString("%s", interaction_function[ftype].name);
+                auto actEner  = actEnergies[ifm.first];
+                checker_.checkReal(actEner, label.c_str());
+                auto atoms = mp.atomsConst();
+                const char *xyz[DIM] = { "X", "Y", "Z" };
+                for(size_t i = 0; i < forces.size(); i++)
+                {
+                    bool shell = atoms[i].pType() == eptShell;
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        if (!shell)
+                        {
+                            checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu f%s", 
+                                                                               atoms[i].ffType().c_str(),
+                                                                               i+1, xyz[m]).c_str());
+                        }
                     }
                 }
             }

@@ -437,8 +437,11 @@ void QgenResp::optimizeCharges(double epsilonr)
     MatrixWrapper         lhs(ncolumn, nrow);
     std::vector<double>   rhs;
     double                scale_factor = 1.0/std::sqrt(epsilonr);
-    
-    GMX_RELEASE_ASSERT(nEsp() > static_cast<size_t>(fitQ_), gmx::formatString("WARNING: Only %zu ESP points for %d atoms. Cannot generate charges.", nEsp(), nAtom_).c_str());
+
+    if (nEsp() < static_cast<size_t>(fitQ_))
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("WARNING: Only %zu ESP points for %d atoms. Cannot generate charges.", nEsp(), nAtom_).c_str()));
+    }
     
     // Algorithm as described in Ghahremanpour et al., JCTC 14 (2018)
     // pp. 5553-5566.

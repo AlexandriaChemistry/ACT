@@ -76,7 +76,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         //! Init set tolerance
         RespTest () : checker_(this->rootChecker())
         {
-            alexandria::MolProp     molprop;
+            std::vector<alexandria::MolProp> molprops;
 
             // needed for ReadGauss
             const char *molnm    = (char *)"XXX";
@@ -90,14 +90,17 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             double qtot = 0;
-            if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, &method, &basis,
+            if (readBabel(dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
                           maxpot, nsymm, jobtype, &qtot, false))
             {
                 std::map<std::string, std::string> g2a;
                 gaffToAlexandria("", &g2a);
                 if (!g2a.empty())
                 {
-                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    for(auto &molprop: molprops)
+                    {
+                        EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    }
                 }
                 else
                 {
@@ -111,7 +114,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                 return;
             }
             EXPECT_TRUE(qtot == 0.0);
-            mp_.Merge(&molprop);
+            mp_.Merge(&molprops[0]);
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);

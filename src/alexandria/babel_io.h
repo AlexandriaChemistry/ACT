@@ -36,8 +36,9 @@
 #ifndef BABEL_IO_H
 #define BABEL_IO_H
 
-#include "act/molprop/molprop.h"
+#include <vector>
 
+#include "act/molprop/molprop.h"
 
 enum BabelFileType {
     ebftPDB  = 0,
@@ -90,7 +91,7 @@ class BabelFiles
  *
  * \param[in]  g98         The gaussian log file, or in case OpenBabel is used anything
  *                         that can be read by OpenBabel
- * \param[out] mp          Pointer to a MolProp object
+ * \param[out] mp          Pointer to a MolProp vector
  * \param[in]  molnm       Molecule name to override the one from the filename [ maybe nullptr ]
  * \param[in]  iupac       IUPAC name to override the one from the filename [ maybe nullptr ]
  * \param[in]  conf        Conformation the molecule is in [ maybe nullptr ]
@@ -108,7 +109,7 @@ class BabelFiles
  * \ingroup module_alexandria
  */
 bool readBabel(const char          *g98,
-               alexandria::MolProp *mp,
+               std::vector<alexandria::MolProp> *mp,
                const char          *molnm,
                const char          *iupac,
                const char          *conf,

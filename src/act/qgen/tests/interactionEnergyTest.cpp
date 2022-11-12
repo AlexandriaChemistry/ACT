@@ -107,7 +107,7 @@ protected:
         std::string           method;
         std::string           basis;
         std::string           fileName(molname);
-        alexandria::MolProp   molprop;
+        std::vector<alexandria::MolProp> molprops;
         bool                  trustObCharge = false;
         
         if (inputformat == inputFormat::LOG)
@@ -151,7 +151,7 @@ protected:
         
         double qtot_babel = myqtot;
         if (readBabel(dataName.c_str(),
-                      &molprop,
+                      &molprops,
                       molname.c_str(),
                       molname.c_str(),
                       conf,
@@ -167,7 +167,10 @@ protected:
             gaffToAlexandria("", &g2a);
             if (!g2a.empty())
             {
-                EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                for(auto &molprop: molprops)
+                {
+                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                }
             }
         }
         else
@@ -184,102 +187,105 @@ protected:
         {
             GMX_THROW(gmx::InternalError("Different numbers of qtotal and moleculeStart"));
         }
-        molprop.clearFragments();
-        molprop.generateComposition();
-        double qtot_sum = 0;
-        for(size_t i = 0; i < qtotal.size(); i++)
+        for(auto &molprop: molprops)
         {
-            std::vector<int> atomIndices;
-            size_t           moleculeEnd = molprop.NAtom();
-            if (i < qtotal.size()-1)
+            molprop.clearFragments();
+            molprop.generateComposition();
+            double qtot_sum = 0;
+            for(size_t i = 0; i < qtotal.size(); i++)
             {
-                moleculeEnd = moleculeStart[i+1];
-            }
-            for(size_t k = moleculeStart[i]; k < moleculeEnd; k++)
-            {
-                atomIndices.push_back(k);
-            }
-            molprop.addFragment(Fragment(std::to_string(i), 0, qtotal[i], 1, 1, 
-                                         formula[i], atomIndices));
-            qtot_sum += qtotal[i];
-        }
-        
-        mp_.Merge(&molprop);
-        // Generate charges and topology
-        t_inputrec      inputrecInstance;
-        t_inputrec     *inputrec   = &inputrecInstance;
-        fill_inputrec(inputrec);
-        mp_.setInputrec(inputrec);
-        
-        // Get poldata
-        auto pd  = getPoldata(model);
-        auto imm = mp_.GenerateTopology(stdout, pd,
-                                        missingParameters::Error, false);
-        if (immStatus::OK != imm)
-        {
-            fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
-            return;
-        }
-        
-        // Needed for GenerateCharges
-        CommunicationRecord cr;
-        auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-        gmx::MDLogger  mdlog {};
-        auto forceComp = new ForceComputer();
-        std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-        std::vector<gmx::RVec> coords = mp_.xOriginal();
-        auto alg = ChargeGenerationAlgorithm::NONE;
-        if (!qcustom.empty())
-        {
-            alg = ChargeGenerationAlgorithm::Custom;
-        }
-        mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
-        
-        std::vector<double> qtotValues;
-        auto myatoms = mp_.atomsConst();
-        for (size_t atom = 0; atom < myatoms.size(); atom++)
-        {
-            qtotValues.push_back(myatoms[atom].charge());
-        }
-        double qtot_all = std::accumulate(qtotValues.begin(), qtotValues.end(), 0.0);
-        EXPECT_TRUE(std::fabs(qtot_all - qtot_sum) < 1e-4);
-        char   buf[256];
-        snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%s", 
-                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
-        checker_.checkInteger(static_cast<int>(qtotValues.size()), "qtotSize");
-        checker_.checkSequence(qtotValues.begin(), qtotValues.end(), buf);
-        // This vector has n+1 entries for n fragments
-        auto fh        = mp_.fragmentHandler();
-        if (fh)
-        {
-            auto atomStart = fh->atomStart();
-            if (atomStart.size() > 2)
-            {
-                for(size_t f = 0; f < atomStart.size()-1; f++)
+                std::vector<int> atomIndices;
+                size_t           moleculeEnd = molprop.NAtom();
+                if (i < qtotal.size()-1)
                 {
-                    double qt = 0;
-                    for(size_t atom = atomStart[f]; atom < atomStart[f+1]; atom++)
+                    moleculeEnd = moleculeStart[i+1];
+                }
+                for(size_t k = moleculeStart[i]; k < moleculeEnd; k++)
+                {
+                    atomIndices.push_back(k);
+                }
+                molprop.addFragment(Fragment(std::to_string(i), 0, qtotal[i], 1, 1, 
+                                             formula[i], atomIndices));
+                qtot_sum += qtotal[i];
+            }
+            
+            mp_.Merge(&molprop);
+            // Generate charges and topology
+            t_inputrec      inputrecInstance;
+            t_inputrec     *inputrec   = &inputrecInstance;
+            fill_inputrec(inputrec);
+            mp_.setInputrec(inputrec);
+            
+            // Get poldata
+            auto pd  = getPoldata(model);
+            auto imm = mp_.GenerateTopology(stdout, pd,
+                                            missingParameters::Error, false);
+            if (immStatus::OK != imm)
+            {
+                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                return;
+            }
+            
+            // Needed for GenerateCharges
+            CommunicationRecord cr;
+            auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            gmx::MDLogger  mdlog {};
+            auto forceComp = new ForceComputer();
+            std::vector<gmx::RVec> forces(mp_.atomsConst().size());
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+            auto alg = ChargeGenerationAlgorithm::NONE;
+            if (!qcustom.empty())
+            {
+                alg = ChargeGenerationAlgorithm::Custom;
+            }
+            mp_.symmetrizeCharges(pd, qSymm, nullptr);
+            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+            
+            std::vector<double> qtotValues;
+            auto myatoms = mp_.atomsConst();
+            for (size_t atom = 0; atom < myatoms.size(); atom++)
+            {
+                qtotValues.push_back(myatoms[atom].charge());
+            }
+            double qtot_all = std::accumulate(qtotValues.begin(), qtotValues.end(), 0.0);
+            EXPECT_TRUE(std::fabs(qtot_all - qtot_sum) < 1e-4);
+            char   buf[256];
+            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%s", 
+                     chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
+            checker_.checkInteger(static_cast<int>(qtotValues.size()), "qtotSize");
+            checker_.checkSequence(qtotValues.begin(), qtotValues.end(), buf);
+            // This vector has n+1 entries for n fragments
+            auto fh        = mp_.fragmentHandler();
+            if (fh)
+            {
+                auto atomStart = fh->atomStart();
+                if (atomStart.size() > 2)
+                {
+                    for(size_t f = 0; f < atomStart.size()-1; f++)
                     {
-                        qt += myatoms[atom].charge();
+                        double qt = 0;
+                        for(size_t atom = atomStart[f]; atom < atomStart[f+1]; atom++)
+                        {
+                            qt += myatoms[atom].charge();
+                        }
+                        auto label = gmx::formatString("Molecule %zu charge", f+1);
+                        checker_.checkReal(qt, label.c_str());
                     }
-                    auto label = gmx::formatString("Molecule %zu charge", f+1);
-                    checker_.checkReal(qt, label.c_str());
                 }
             }
-        }
-        // Now the energies
-        double rmsToler = 0.00001;
-        auto fcomp = new ForceComputer(rmsToler, 25);
-        if (mp_.fragmentHandler()->topologies().size() > 1)
-        {
-            std::vector<gmx::RVec> forces;
-            auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces);
-            checker_.checkReal(einter, "InteractionEnergy");
-            // TODO: Check the forces as well
+            // Now the energies
+            double rmsToler = 0.00001;
+            auto fcomp = new ForceComputer(rmsToler, 25);
+            if (mp_.fragmentHandler()->topologies().size() > 1)
+            {
+                std::vector<gmx::RVec> forces;
+                auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces);
+                checker_.checkReal(einter, "InteractionEnergy");
+                // TODO: Check the forces as well
+            }
         }
     }
-    
+            
     static void TearDownTestCase()
     {
     }

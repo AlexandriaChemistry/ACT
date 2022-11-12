@@ -103,49 +103,27 @@ protected:
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
-        int                             maxpot   = 100;
-        int                             nsymm    = 0;
-        const char                     *conf     = (char *)"minimum";
-        std::string                     method, basis;
-        const char                     *jobtype  = (char *)"Opt";
+        int                              maxpot   = 100;
+        int                              nsymm    = 0;
+        const char                      *conf     = (char *)"minimum";
+        std::string                      method, basis;
+        const char                      *jobtype  = (char *)"Opt";
         
-        std::string                     dataName;
-        auto molprop = new alexandria::MolProp;
+        std::string                      dataName;
+        std::vector<alexandria::MolProp> molprops;
         
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
-        bool readOK = readBabel(dataName.c_str(), molprop, molname, molname,
+        bool readOK = readBabel(dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
-        if (readOK)
-        {
-            std::map<std::string, std::string> g2a;
-            gaffToAlexandria("", &g2a);
-            if (!g2a.empty())
-            {
-                EXPECT_TRUE(renameAtomTypes(molprop, g2a));
-            }
-        }
-        MyMol mp_;
-        mp_.Merge(molprop);
-        // Generate charges and topology
+        std::vector<MyMol> mps;
         t_inputrec      inputrecInstance;
         t_inputrec     *inputrec   = &inputrecInstance;
         fill_inputrec(inputrec);
-        mp_.setInputrec(inputrec);
-        
         // Get poldata
         auto pd  = getPoldata(forcefield);
-        auto imm = mp_.GenerateTopology(stdout, pd,
-                                        missingParameters::Error, false);
-        EXPECT_TRUE(immStatus::OK == imm);
-        if (immStatus::OK != imm)
-        {
-            fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                    immsg(imm), basis.c_str(), method.c_str());
-            return;
-        }
         // Needed for GenerateCharges
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
@@ -155,108 +133,139 @@ protected:
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
         bool                   qSymm = false;
-        std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-        std::vector<gmx::RVec> coords = mp_.xOriginal();
-        mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
-        
-        std::map<InteractionType, double> eBefore;
-        (void) forceComp->compute(pd, mp_.topology(), &coords, &forces, &eBefore);
-        add_energies(pd, &checker_, eBefore, "before");
-        
-        MolHandler mh;
-        
-        std::vector<gmx::RVec> xmin = coords;
-        double rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
-        checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
-        // Infinite number of shell iterations, i.e. until convergence.
-        std::map<InteractionType, double> eAfter;
-        SimulationConfigHandler simConfig;
-        simConfig.setForceTolerance(1e-4);
-        auto eMin = mh.minimizeCoordinates(pd, &mp_, forceComp, simConfig,
-                                           &xmin, &eAfter, nullptr);
-        if (eMinimizeStatus::OK != eMin)
+        if (readOK)
         {
-            // New try using steepest descents
-            simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
-            xmin    = coords;
-            simConfig.setMaxIter(5000);
-            eMin    = mh.minimizeCoordinates(pd, &mp_, forceComp, simConfig,
-                                             &xmin, &eAfter, nullptr);
-        }
-        EXPECT_TRUE(eMinimizeStatus::OK == eMin);
-        // Let's see which algorithm we ended up using.
-        checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
-        rmsd = mh.coordinateRmsd(&mp_, coords, &xmin);
-        checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-        add_energies(pd, &checker_, eAfter, "after");
-
-        // Verify that the energy has gone down, not up.
-        EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);
-
-        if (nma && eMinimizeStatus::OK == eMin)
-        {
-            // First, test calculation of the Hessian
-            std::vector<double> forceZero;
-            std::map<InteractionType, double> energyZero;
-            std::vector<int> atomIndex;
-            auto &atoms = mp_.atomsConst();
-            for(size_t atom = 0; atom < atoms.size(); atom++)
+            std::map<std::string, std::string> g2a;
+            gaffToAlexandria("", &g2a);
+            if (!g2a.empty())
             {
-                if (atoms[atom].pType() == eptAtom)
+                for(auto &molprop: molprops)
                 {
-                    atomIndex.push_back(atom);
+                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    MyMol mm;
+                    mm.Merge(&molprop);
+                    // Generate charges and topology
+                    mm.setInputrec(inputrec);
+                    auto imm = mm.GenerateTopology(stdout, pd,
+                                                   missingParameters::Error, false);
+                    EXPECT_TRUE(immStatus::OK == imm);
+                    if (immStatus::OK != imm)
+                    {
+                        fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
+                                immsg(imm), basis.c_str(), method.c_str());
+                        return;
+                    }
+                    std::vector<gmx::RVec> forces(mm.atomsConst().size());
+                    std::vector<gmx::RVec> coords = mm.xOriginal();
+                    mm.symmetrizeCharges(pd, qSymm, nullptr);
+                    mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+                    mps.push_back(mm);
                 }
             }
-            const int     matrixSide = DIM*atomIndex.size();
-            {
-                MatrixWrapper hessian(matrixSide, matrixSide);
-                mh.computeHessian(pd, &mp_, forceComp, &xmin, atomIndex,
-                                  &hessian, &forceZero, &energyZero);
-                checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
-                // Now test the solver used in minimization
-                std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
-                int result = hessian.solve(forceZero, &deltaX);
-                EXPECT_TRUE(0 == result);
-                checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
-                
-            }
-            std::vector<double> freq, freq_extern, inten, inten_extern;
-            mh.nma(pd, &mp_, forceComp, &xmin, &freq, &inten, nullptr);
-            auto mpo = MolPropObservable::FREQUENCY;
-            const char *unit = mpo_unit2(mpo);
-            for(auto f = freq.begin(); f < freq.end(); ++f)
-            {
-                freq_extern.push_back(convertFromGromacs(*f, unit));
-            }
-            auto mpoi = MolPropObservable::INTENSITY;
-            const char *uniti = mpo_unit2(mpoi);
-            for(auto f = inten.begin(); f < inten.end(); ++f)
-            {
-                inten_extern.push_back(convertFromGromacs(*f, uniti));
-            }
-            checker_.checkSequence(freq_extern.begin(), freq_extern.end(), "Frequencies");
-            checker_.checkSequence(inten_extern.begin(), inten_extern.end(), "Intensities");
+        }
+        
+        for(auto &mp : mps)
+        {
+            std::vector<gmx::RVec> forces(mp.atomsConst().size());
+            std::vector<gmx::RVec> coords = mp.xOriginal();
+            std::map<InteractionType, double> eBefore;
+            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
+            add_energies(pd, &checker_, eBefore, "before");
             
-            double scale_factor = 1;
-            AtomizationEnergy atomenergy;
-            ThermoChemistry tc(&mp_, coords, atomenergy, freq, 298.15, 1, scale_factor);
-            checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
-            checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
-            for(const auto &tcc : tccmap())
+            MolHandler mh;
+            
+            std::vector<gmx::RVec> xmin = coords;
+            double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
+            // Infinite number of shell iterations, i.e. until convergence.
+            std::map<InteractionType, double> eAfter;
+            SimulationConfigHandler simConfig;
+            simConfig.setForceTolerance(1e-4);
+            auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
+                                               &xmin, &eAfter, nullptr);
+            if (eMinimizeStatus::OK != eMin)
             {
-                checker_.checkReal(tc.S0(tcc.first), gmx::formatString("Standard entropy - %11s  (J/mol K)",
-                                                                       tcc.second.c_str()).c_str());
+                // New try using steepest descents
+                simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
+                xmin    = coords;
+                simConfig.setMaxIter(5000);
+                eMin    = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
+                                                 &xmin, &eAfter, nullptr);
             }
-            for(const auto &tcc : tccmap())
+            EXPECT_TRUE(eMinimizeStatus::OK == eMin);
+            // Let's see which algorithm we ended up using.
+            checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
+            rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
+            add_energies(pd, &checker_, eAfter, "after");
+            
+            // Verify that the energy has gone down, not up.
+            EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);
+            
+            if (nma && eMinimizeStatus::OK == eMin)
             {
-                checker_.checkReal(tc.cv(tcc.first), gmx::formatString("Heat capacity cV - %11s (J/mol K)", 
-                                                                       tcc.second.c_str()).c_str());
-            }
-            for(const auto &tcc : tccmap())
-            {
-                checker_.checkReal(tc.Einternal(tcc.first), gmx::formatString("Internal energy  - %11s (kJ/mol)",
-                                                                              tcc.second.c_str()).c_str());
+                // First, test calculation of the Hessian
+                std::vector<double> forceZero;
+                std::map<InteractionType, double> energyZero;
+                std::vector<int> atomIndex;
+                auto &atoms = mp.atomsConst();
+                for(size_t atom = 0; atom < atoms.size(); atom++)
+                {
+                    if (atoms[atom].pType() == eptAtom)
+                    {
+                        atomIndex.push_back(atom);
+                    }
+                }
+                const int     matrixSide = DIM*atomIndex.size();
+                {
+                    MatrixWrapper hessian(matrixSide, matrixSide);
+                    mh.computeHessian(pd, &mp, forceComp, &xmin, atomIndex,
+                                      &hessian, &forceZero, &energyZero);
+                    checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
+                    // Now test the solver used in minimization
+                    std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
+                    int result = hessian.solve(forceZero, &deltaX);
+                    EXPECT_TRUE(0 == result);
+                    checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
+                    
+                }
+                std::vector<double> freq, freq_extern, inten, inten_extern;
+                mh.nma(pd, &mp, forceComp, &xmin, &freq, &inten, nullptr);
+                auto mpo = MolPropObservable::FREQUENCY;
+                const char *unit = mpo_unit2(mpo);
+                for(auto f = freq.begin(); f < freq.end(); ++f)
+                {
+                    freq_extern.push_back(convertFromGromacs(*f, unit));
+                }
+                auto mpoi = MolPropObservable::INTENSITY;
+                const char *uniti = mpo_unit2(mpoi);
+                for(auto f = inten.begin(); f < inten.end(); ++f)
+                {
+                    inten_extern.push_back(convertFromGromacs(*f, uniti));
+                }
+                checker_.checkSequence(freq_extern.begin(), freq_extern.end(), "Frequencies");
+                checker_.checkSequence(inten_extern.begin(), inten_extern.end(), "Intensities");
+                
+                double scale_factor = 1;
+                AtomizationEnergy atomenergy;
+                ThermoChemistry tc(&mp, coords, atomenergy, freq, 298.15, 1, scale_factor);
+                checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
+                checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
+                for(const auto &tcc : tccmap())
+                {
+                    checker_.checkReal(tc.S0(tcc.first), gmx::formatString("Standard entropy - %11s  (J/mol K)",
+                                                                           tcc.second.c_str()).c_str());
+                }
+                for(const auto &tcc : tccmap())
+                {
+                    checker_.checkReal(tc.cv(tcc.first), gmx::formatString("Heat capacity cV - %11s (J/mol K)", 
+                                                                           tcc.second.c_str()).c_str());
+                }
+                for(const auto &tcc : tccmap())
+                {
+                    checker_.checkReal(tc.Einternal(tcc.first), gmx::formatString("Internal energy  - %11s (kJ/mol)",
+                                                                                  tcc.second.c_str()).c_str());
+                }
             }
         }
     }

@@ -103,7 +103,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             std::string           method;
             std::string           basis;
             std::string           fileName(molname);
-            alexandria::MolProp   molprop;
+            std::vector<alexandria::MolProp> molprops;
             bool                  trustObCharge = false;
             
             switch (inputformat)
@@ -138,7 +138,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
  
             double qtot_babel = qtotal;
             if (readBabel(dataName.c_str(),
-                          &molprop,
+                          &molprops,
                           molname.c_str(),
                           molname.c_str(),
                           conf,
@@ -154,7 +154,10 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 gaffToAlexandria("", &g2a);
                 if (!g2a.empty())
                 {
-                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    for(auto &molprop: molprops)
+                    {
+                        EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                    }
                 }
             }
             else
@@ -167,62 +170,81 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
             }
-            alexandria::MyMol mymol;
-            mymol.Merge(&molprop);
-            // Generate charges and topology
+            // Get poldata
+            auto pd  = getPoldata(model);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);
-            mymol.setInputrec(inputrec);
-
-            // Get poldata
-            auto pd  = getPoldata(model);
-            auto imm = mymol.GenerateTopology(stdout, pd,
-                                              missingParameters::Error, false);
-            if (immStatus::OK != imm)
-            {
-                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
-                return;
-            }
-
-            // Needed for GenerateCharges
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
-            std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-            std::vector<gmx::RVec> coords = mymol.xOriginal();
-            auto alg = ChargeGenerationAlgorithm::NONE;
-            if (!qcustom.empty())
+
+            // Now loop over molprops, there may be more than one
+            int mp_index = 1;
+            for(const auto &molprop : molprops)
             {
-                alg = ChargeGenerationAlgorithm::Custom;
-            }
-            mymol.symmetrizeCharges(pd, qSymm, nullptr);
-            mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
-                                
-            std::vector<double> q;
-            auto myatoms = mymol.atomsConst();
-            for (size_t atom = 0; atom < myatoms.size(); atom++)
-            {
-                q.push_back(myatoms[atom].charge());
-            }
-            checker_.checkSequence(q.begin(), q.end(), "Charge");
-            QtypeProps qp(qType::Calc);
-            
-            qp.setQandX(q, coords);
-            if (useCenterOfCharge)
-            {
-                qp.setCenterOfCharge(mymol.centerOfCharge());
-            }
-            qp.calcMoments();
-            for(auto &mpo : mpoMultiPoles)
-            {
-                auto v = qp.getMultipole(mpo);
-                for(auto vv = v.begin(); vv < v.end(); ++vv)
+                alexandria::MyMol mymol;
+
+                mymol.Merge(&molprop);
+                // Generate charges and topology
+                mymol.setInputrec(inputrec);
+
+                auto imm = mymol.GenerateTopology(stdout, pd,
+                                                  missingParameters::Error, false);
+                if (immStatus::OK != imm)
                 {
-                    *vv = convertFromGromacs(*vv, mpo_unit2(mpo));
+                    fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                    break;
                 }
-                checker_.checkSequence(v.begin(), v.end(), mpo_name(mpo));
+
+                // Needed for GenerateCharges
+                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+                std::vector<gmx::RVec> coords = mymol.xOriginal();
+                auto alg = ChargeGenerationAlgorithm::NONE;
+                if (!qcustom.empty())
+                {
+                    alg = ChargeGenerationAlgorithm::Custom;
+                }
+                mymol.symmetrizeCharges(pd, qSymm, nullptr);
+                mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+                
+                std::vector<double> q;
+                auto myatoms = mymol.atomsConst();
+                for (size_t atom = 0; atom < myatoms.size(); atom++)
+                {
+                    q.push_back(myatoms[atom].charge());
+                }
+                std::string qlabel("Charge");
+                if (molprops.size() > 1)
+                {
+                    qlabel += gmx::formatString(" %d", mp_index); 
+                }
+
+                checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
+                QtypeProps qp(qType::Calc);
+                
+                qp.setQandX(q, coords);
+                if (useCenterOfCharge)
+                {
+                    qp.setCenterOfCharge(mymol.centerOfCharge());
+                }
+                qp.calcMoments();
+                for(auto &mpo : mpoMultiPoles)
+                {
+                    auto v = qp.getMultipole(mpo);
+                    for(auto vv = v.begin(); vv < v.end(); ++vv)
+                    {
+                        *vv = convertFromGromacs(*vv, mpo_unit2(mpo));
+                    }
+                    std::string mlabel(mpo_name(mpo));
+                    if (molprops.size() > 1)
+                    {
+                        mlabel += gmx::formatString(" %d", mp_index); 
+                    }
+                    checker_.checkSequence(v.begin(), v.end(), mlabel.c_str());
+                }
+                mp_index++;
             }
         }
 
@@ -236,6 +258,12 @@ TEST_F (QtypeTest, ButanolPDB)
 {
     std::vector<double> qcustom;
     testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom, false);
+}
+
+TEST_F (QtypeTest, TwoMolsSDF)
+{
+    std::vector<double> qcustom;
+    testQtype("ACS-g", inputFormat::SDF, "two_mols", true, 0, qcustom, false);
 }
 
 TEST_F (QtypeTest, CustomButanolPDB)
