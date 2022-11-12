@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charge 1">
+    <Int Name="Length">3</Int>
+    <Real>0.2527675094738745</Real>
+    <Real>-0.5055350189477491</Real>
+    <Real>0.25276750947387461</Real>
+  </Sequence>
+  <Sequence Name="dipole 1">
+    <Int Name="Length">3</Int>
+    <Real>0</Real>
+    <Real>-4.9993389695872359e-16</Real>
+    <Real>-1.4207328460794568</Real>
+  </Sequence>
+  <Sequence Name="quadrupole 1">
+    <Int Name="Length">6</Int>
+    <Real>-0.6379725611959095</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.77712582013332188</Real>
+    <Real>2.0830579039946819e-16</Real>
+    <Real>-0.13915325893741232</Real>
+  </Sequence>
+  <Sequence Name="octupole 1">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-1.9528667849950143e-16</Real>
+    <Real>-0.66240755230021331</Real>
+    <Real>-9.7643339249750715e-17</Real>
+    <Real>-0.25294572731718423</Real>
+  </Sequence>
+  <Sequence Name="hexadecapole 1">
+    <Int Name="Length">15</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.82469041202776172</Real>
+    <Real>1.2205417406218839e-16</Real>
+    <Real>0.31007297523172989</Real>
+    <Real>4.0684724687396131e-17</Real>
+    <Real>0.11612843076136609</Real>
+  </Sequence>
+  <Sequence Name="Charge 2">
+    <Int Name="Length">6</Int>
+    <Real>-0.31584373452500603</Real>
+    <Real>0.20429178632449993</Real>
+    <Real>-0.2934990919100654</Real>
+    <Real>0.13050742627175857</Real>
+    <Real>0.13053199809110319</Real>
+    <Real>0.14401161574770968</Real>
+  </Sequence>
+  <Sequence Name="dipole 2">
+    <Int Name="Length">3</Int>
+    <Real>-1.1025987457632864</Real>
+    <Real>-0.89372550863277944</Real>
+    <Real>-9.4570024097045957e-05</Real>
+  </Sequence>
+  <Sequence Name="quadrupole 2">
+    <Int Name="Length">6</Int>
+    <Real>0.44958808464795624</Real>
+    <Real>-1.0429593275869342</Real>
+    <Real>-9.3059145095823883e-05</Real>
+    <Real>0.06346664435884454</Real>
+    <Real>-4.5217378583185955e-06</Real>
+    <Real>-0.51305472900680082</Real>
+  </Sequence>
+  <Sequence Name="octupole 2">
+    <Int Name="Length">10</Int>
+    <Real>-0.95826845407886974</Real>
+    <Real>-0.98654036501425169</Real>
+    <Real>-0.00017609250411938722</Real>
+    <Real>-0.48912986080630694</Real>
+    <Real>0.00018821164479521508</Real>
+    <Real>-1.0215912488633683</Real>
+    <Real>0.041417276022784326</Real>
+    <Real>-0.00094162187076999063</Real>
+    <Real>-0.54148543864683385</Real>
+    <Real>0.00082953574864895268</Real>
+  </Sequence>
+  <Sequence Name="hexadecapole 2">
+    <Int Name="Length">15</Int>
+    <Real>3.3168626301201627</Real>
+    <Real>-1.3379334912471146</Real>
+    <Real>-7.4854354082038455e-05</Real>
+    <Real>1.898752805319385</Real>
+    <Real>-3.3802776679331776e-05</Real>
+    <Real>1.0490720933967088</Real>
+    <Real>-0.98742145395435132</Real>
+    <Real>0.00086951730549642383</Real>
+    <Real>0.55605136698190483</Real>
+    <Real>-0.00085185025393872261</Real>
+    <Real>1.0711298393132962</Real>
+    <Real>7.3858345522828878e-05</Real>
+    <Real>0.29473097200473053</Real>
+    <Real>-8.4440160395772261e-06</Real>
+    <Real>0.78933390214225307</Real>
+  </Sequence>
+</ReferenceData>

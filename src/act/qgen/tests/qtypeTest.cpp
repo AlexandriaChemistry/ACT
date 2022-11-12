@@ -69,6 +69,7 @@ enum class inputFormat {
     LOG,
     PDB,
     SDF,
+    XYZ,
     ZIP
 };
 
@@ -131,6 +132,11 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             case inputFormat::SDF:
                 {
                     fileName.append(".sdf");
+                }
+                break;
+            case inputFormat::XYZ:
+                {
+                    fileName.append(".xyz");
                 }
                 break;
             }
@@ -264,6 +270,12 @@ TEST_F (QtypeTest, TwoMolsSDF)
 {
     std::vector<double> qcustom;
     testQtype("ACS-g", inputFormat::SDF, "two_mols", true, 0, qcustom, false);
+}
+
+TEST_F (QtypeTest, TwoMolsXYZ)
+{
+    std::vector<double> qcustom;
+    testQtype("ACS-g", inputFormat::XYZ, "two_mols", true, 0, qcustom, false);
 }
 
 TEST_F (QtypeTest, CustomButanolPDB)
