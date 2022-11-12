@@ -91,6 +91,81 @@ static void forceFieldSummary(FILE          *fp,
     fprintf(fp, "\n");
 }
 
+static void do_rerun(FILE          *logFile,
+                     const Poldata *pd,
+                     const MyMol   *mymol,
+                     ForceComputer *forceComp,
+                     const char    *trajname,
+                     double         qtot)
+{
+    std::vector<MolProp> mps;
+    std::string          method, basis;
+    int                  maxpot = 100;
+    int                  nsymm  = 1;
+    const char          *molnm  = "";
+    if (readBabel(trajname, &mps, molnm, molnm, "", &method,
+                  &basis, maxpot, nsymm, "Opt", &qtot, false))
+    {
+        fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
+                mps.size(), trajname);       
+        std::map<InteractionType, double> energies;
+        int mp_index = 0;
+        for (auto mp : mps)
+        {
+            auto exper = mp.experimentConst();
+            if (exper.size() == 1)
+            {
+                auto expx = exper[0].getCoordinates();
+                std::vector<gmx::RVec> coords;
+                const auto &atoms = mymol->atomsConst();
+                if (expx.size() == atoms.size())
+                {
+                    // Assume there are shells in the input
+                    coords = expx;
+                }
+                else
+                {
+                    size_t index = 0;
+                    for(size_t i = 0; i < atoms.size(); i++)
+                    {
+                        if (index <= expx.size())
+                        {
+                            gmx::RVec xnm;
+                            for(int m = 0; m < DIM; m++)
+                            {
+                                xnm[m] = expx[index][m];
+                            }
+                            coords.push_back(xnm);
+                        }
+                        else
+                        {
+                            GMX_THROW(gmx::InvalidInputError("Number of coordinates in trajectory does not match input file"));
+                        }
+                        if (atoms[i].pType() == eptAtom)
+                        {
+                            index++;
+                        }
+                    }
+                }
+                std::vector<gmx::RVec> forces(coords.size());
+                forceComp->compute(pd, mymol->topology(),
+                                   &coords, &forces, &energies);
+                fprintf(logFile, "%5d", mp_index);
+                for(const auto &ee : energies)
+                {
+                    fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                }
+                fprintf(logFile, "\n");
+            }
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Could not read compounds from %s\n", trajname);
+    }
+}
+
+
 int simulate(int argc, char *argv[])
 {
     std::vector<const char *> desc = {
@@ -113,6 +188,7 @@ int simulate(int argc, char *argv[])
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
+    static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
@@ -120,6 +196,8 @@ int simulate(int argc, char *argv[])
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
+        { "-traj",   FALSE, etSTR,  {&trajname},
+          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -165,17 +243,17 @@ int simulate(int argc, char *argv[])
     MyMol                mymol;
     {
         std::vector<MolProp> mps;
-        double      qtot_babel = qtot;
-        std::string method, basis;
-        int         maxpot = 100;
-        int         nsymm  = 1;
+        double               qtot_babel = qtot;
+        std::string          method, basis;
+        int                  maxpot = 100;
+        int                  nsymm  = 1;
         if (readBabel(filename, &mps, molnm, molnm, "", &method,
                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
                       false))
         {
             if (mps.size() > 1)
             {
-                fprintf(stderr, "Warning: will only use the first coordinate set (out of %zu)\n", mps.size());
+                fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
             }
             std::map<std::string, std::string> g2a;
             gaffToAlexandria("", &g2a);
@@ -213,11 +291,8 @@ int simulate(int argc, char *argv[])
     }
     if (verbose && pd.polarizable())
     {
-        std::vector<gmx::RVec> xx(mymol.atomsConst().size());
-        for(size_t i = 0; i < xx.size(); i++)
-        {
-            copy_rvec(coords[i], xx[i]);
-        }
+        // Make a copy since it maybe changed
+        auto xx    = coords;
         auto qCalc = mymol.qTypeProps(qType::Calc);
         forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
         auto alpha = qCalc->polarizabilityTensor();
@@ -232,7 +307,11 @@ int simulate(int argc, char *argv[])
         mymol.topology()->dump(debug);
     }
     /* Generate output file for debugging if requested */
-    if (immStatus::OK == imm && mymol.errors().size() == 0)
+    if (strlen(trajname) > 0)
+    {
+        do_rerun(logFile, &pd, &mymol, forceComp, trajname, qtot);
+    }
+    else if (immStatus::OK == imm && mymol.errors().empty())
     {
         MolHandler molhandler;
         std::vector<gmx::RVec> coords = mymol.xOriginal();
