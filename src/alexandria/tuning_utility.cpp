@@ -935,9 +935,12 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         {
             if (atoms[i].pType() == eptAtom)
             {
-                auto ff = fstruct[i];
-                lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
-                df2    += gmx::square(ff.first - ff.second);
+                for(int m = 0; m < DIM; m++)
+                {
+                    auto ff = fstruct[i*DIM+m];
+                    lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+                    df2    += gmx::square(ff.first - ff.second);
+                }
             }
         }
         nforce += mol->nRealAtoms();
