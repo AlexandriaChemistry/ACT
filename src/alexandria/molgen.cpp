@@ -54,6 +54,7 @@
 
 #include "alex_modules.h"
 #include "fill_inputrec.h"
+#include "act/forces/combinationrules.h"
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
@@ -257,12 +258,22 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         }
         // TODO: Handle bonded interactions
         std::vector<InteractionType> atomicItypes = {
-            InteractionType::VDW,
             InteractionType::POLARIZATION,
             InteractionType::COULOMB,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE
         };
+        // If we use a combination rule for Van der Waals, it should be
+        // treated as an atomic type. If not, it should be a "bond"
+        // potential.
+        auto itype_vdw  = InteractionType::VDW;
+        auto forces_vdw = pd->findForces(itype_vdw);
+        int  comb_rule  = getCombinationRule(*forces_vdw);
+        if (comb_rule != eCOMB_NONE)
+        {
+            atomicItypes.push_back(InteractionType::VDW);
+        }
+        
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
         {
@@ -308,6 +319,27 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                                 {
                                     p->incrementNtrain();
                                 }
+                            }
+                        }
+                    }
+                }
+                if (comb_rule == eCOMB_NONE && optimize(itype_vdw))
+                {
+                    // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
+                    for(size_t j = i+1; j < myatoms.size(); j++)
+                    {
+                        auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype_vdw).id();
+                        auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype_vdw).id();
+                        auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces_vdw->canSwap());
+                        if (!forces_vdw->parameterExists(vdwId))
+                        {
+                            GMX_THROW(gmx::InternalError("Unknown Van der Waals pair"));
+                        }
+                        for(auto &ff : *(forces_vdw->findParameters(vdwId)))
+                        {
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.incrementNtrain();
                             }
                         }
                     }

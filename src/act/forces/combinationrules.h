@@ -1,4 +1,5 @@
-/*
+
+    /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2022
@@ -52,6 +53,12 @@ void CombineLJ(int     CombinationRule,
                double  epsilonJ,
                double *c6,
                double *c12);
+
+/*! \brief Extract the GROMACS style combination rule
+ * \param[in] vdw Van der Waals list of ff params
+ * \return index in GROMACS list of comb rules
+ */
+int getCombinationRule(const ForceFieldParameterList &vdw);
 
 /*! \brief Combine epsilon, sigma and gamm.
  * \param[in]  CombinationRule The combination rule used

@@ -232,22 +232,6 @@ std::vector<double> getDoubles(const std::string &s)
     return d;
 }
 
-static int getCombinationRule(const ForceFieldParameterList &vdw)
-{
-    auto combRule = vdw.optionValue("combination_rule");
-    int  i;
-    for(i = 0; i < eCOMB_NR; i++)
-    {
-        if (combRule.compare(ecomb_names[i]) == 0)
-        {
-            break;
-        }
-    }
-    GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
-                                                       combRule.c_str()).c_str());
-    return i;
-}
-
 static void getSigmaEpsilon(const ForceFieldParameterList &fa,
                             const std::string             &ai,
                             double                        *sigma,

@@ -162,7 +162,7 @@ void CombineGBham(int     CombinationRule,
     *deltaIJ = (deltaI+deltaJ)/2;
 }
 
-static int getCombinationRule(const ForceFieldParameterList &vdw)
+int getCombinationRule(const ForceFieldParameterList &vdw)
 {
     auto combRule = vdw.optionValue("combination_rule");
     int  i;
