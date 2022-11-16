@@ -930,23 +930,15 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     auto atoms    = mol->atomsConst();
     for(const auto &fstruct : forceMap)
     {
-        // Only count the real atoms for force RMSD
-        for(size_t i = 0; i < atoms.size(); i++)
+        for(auto &ff : fstruct)
         {
-            if (atoms[i].pType() == eptAtom)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    auto ff = fstruct[i*DIM+m];
-                    lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
-                    df2    += gmx::square(ff.first - ff.second);
-                }
-            }
+            lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+            df2    += gmx::square(ff.first - ff.second);
         }
         nforce += mol->nRealAtoms();
     }
     // RMS force
-    if (forceMap.size() > 0)
+    if (forceMap.size() > 0 && nforce > 0)
     {
         tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
                                            std::sqrt(df2/nforce), forceMap.size()));
