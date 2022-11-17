@@ -66,9 +66,6 @@ if [[ -d "${ALLDIR}" ]]; then
       fi
    fi
 fi
-if [[ -z "${BABEL_LIBDIR}" ]]; then
-  echo "Could not find the OpenBabel shared objects"
-fi
 
 LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
