@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+
+import argparse, os
+# ACT stuff
+from get_csv_rows import *
+from molprops     import *
+from mol_csv_api  import *
+import get_mol_dict as gmd
+import molprops     as mp
+
+def get_donchev(infile:str, verbose:bool)->list:
+    donchev = []
+    index   = 0
+    for row in get_csv_rows(infile, 54, 'utf-8', ','):
+        if 0 == index:
+            labels = row
+            if verbose:
+                print("There are %d labels" % len(labels))
+        else:
+            if len(labels) == len(row):
+                nd = {}
+                for i in range(len(labels)):
+                    nd[labels[i]] = row[i]
+                donchev.append(nd)
+            else:
+                print("Mismatch on line %d: Expected %d entries, found %d" % ( index, len(labels), len(row)))
+        index += 1
+    return donchev
+
+def get_selection(selection:str)->list:
+    sel = []
+    if selection: 
+        for row in get_csv_rows(selection, 2):
+            if row[1] == "Train" or row[1] == "Test":
+                sel.append(row[0])
+    return sel
+
+printed_oxidanium = False
+def get_iupac(M:Molecules, inchi:str, smiles:str):
+    if None != inchi:
+        mol = M.find_inchi(inchi)
+        if mol:
+            if mol.iupac == "oxidanium" and not printed_oxidanium:
+                print("Found oxidanium. inchi: %s smiles: %s formula: %s" % ( inchi, smiles, mol.formula ))
+                printed_oxidanium = True
+            return mol.iupac
+    return smiles
+
+def write_donchev(outfile:str, selection:str, donchev:list, verbose:bool, maxdimer:int):
+    # Do something
+    M          = Molecules()
+    M.read_default()
+    if verbose:
+        print("There are %d dimers, will write %s" % ( len(donchev), outfile ))
+    datasource = "Theory"
+    reference  = "Donchev2022a"
+    program    = "Gaussian"
+    method     = "CCSD(T)"
+    conformation = "dimer"
+    jobtype    = "SP"
+    datafile   = "infile"
+    useForce   = False
+    eterm      = "cbs_CCSD(T)_all"
+    basis_map  = { "avdz": "aug-cc-pVDZ",
+                   "avtz": "aug-cc-pVTZ",
+                   "avqz": "aug-cc-pVQZ",
+                   "avtz(d/p)": "aug-cc-pVTZ/D/P" }
+    coord_unit = "Angstrom"
+    force_unit = "Hartree/Bohr"
+    mysel      = get_selection(selection)
+    molprops   = mp.Molprops()
+    ndimer     = 0
+    for dd in range(len(donchev)):
+        d      = donchev[dd]
+        basis_set   = d["cc_basis"]
+        if basis_set in basis_map:
+            basis_set = basis_map[basis_set]
+        elif verbose:
+            print("Unknown basis set %s" % basis_set)
+        natom  = int(d["natoms0"]) + int(d["natoms1"])
+        labels = d["elements"].split()
+        coords = []
+        xxx    = d["xyz"].split()
+        for i in range(natom):
+            coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2])])
+        if verbose:
+            print("len(labels) %d natom %d ncoords %d" % ( len(labels), natom, len(coords)))
+        if len(labels) == natom and len(coords) == natom:
+            exper = mp.Experiment(datasource, reference, program, method, basis_set, conformation, jobtype, datafile, useForce)
+            Einter = d[eterm]
+            exper.add_energy("InteractionEnergy", "kcal/mol", "0", "gas", Einter)
+            fragname = {} 
+            mp1      = mp.Molprop("dimer")
+            cindex   = 0
+            for fff in [ "0", "1" ]:
+                natom   = int(d["natoms"+fff])
+                MD      = gmd.MoleculeDict()
+                MD.from_coords_elements(labels[cindex:cindex+natom], coords[cindex:cindex+natom])
+                atom_id = []
+                mass    = 0.0
+                if len(MD.atoms) != natom:
+                    print("Inconsistency. natom = %d, len(MD.atoms) = %d len(coords) = %d" % ( natom, len(MD.atoms), len(coords)))
+                for i in range(natom):
+                    atomtype = MD.atoms[i+1]["atomtype"]
+                    exper.add_atom(labels[cindex+i], atomtype, 
+                                   labels[cindex+i], coord_unit,
+                                   coords[cindex+i][0],
+                                   coords[cindex+i][1],
+                                   coords[cindex+i][2],
+                                   force_unit, 0, 0, 0)
+                    atom_id.append(cindex+i+1)
+                    mass += MD.atoms[i+1]["mass"]
+                fragname[fff] = get_iupac(M, MD.inchi, d["smiles"+fff])
+                frag = mp.Fragment(fragname[fff], d["charge"+fff],
+                                   1, 1, atom_id, mass, MD.formula)
+                mp1.add_fragment(frag)
+                for b in MD.bonds:
+                    mp1.add_bond(1+cindex+b[0], 1+cindex+b[1],
+                                 MD.bonds[b])
+                cindex += natom
+            if len(mysel) == 0 or (fragname["0"] in mysel and fragname["1"] in mysel):
+                molname = ("%s-%s" % ( fragname["0"], fragname["1"] ))
+                if verbose:
+                    print("Found %s with %d atoms" % ( molname, natom ))
+                mp1.set_molname(molname)
+                mp1.add_experiment(exper)
+                molprops.add_molecule(mp1)
+                ndimer += 1
+        if maxdimer > 0 and ndimer >= maxdimer:
+            break
+                
+    molprops.write(outfile)
+
+def parse_args():
+    desc = "Convert Donchev files to molprop"
+    parser  = argparse.ArgumentParser(description=desc)
+    parser.add_argument("-f", "--infile", help="Input file in csv format", type=str, default=None)
+    parser.add_argument("-o", "--outfile", help="Output molprop file", type=str, default=None)
+    parser.add_argument("-sel", "--selection", help="ACT selection file", type=str, default=None)
+    maxdim = 100
+    parser.add_argument("-md", "--maxdimer", help="Write only the first N dimers, 0 means write them all, default "+str(maxdim), type=int, default=maxdim)
+    parser.add_argument("-v", "--verbose", help="Write more output", action="store_true")
+    args = parser.parse_args()
+    return args
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    if args.infile and args.outfile:
+        donchev = get_donchev(args.infile, args.verbose)
+        print("There were %d dimers in %s" % (len(donchev), args.infile))
+        write_donchev(args.outfile, args.selection, donchev, args.verbose,
+                      args.maxdimer)
+    else:
+        print("Please pass me an input and out file (try -h first)")

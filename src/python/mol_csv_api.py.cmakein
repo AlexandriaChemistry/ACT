@@ -102,6 +102,28 @@ def compare_mol_formula(a, b):
                 delta = -1
     return delta
 
+def inchi_equal(their:str, our:str)->bool:
+    if their == our:
+        # All good
+        return True
+    else:
+        return False
+    if None == our:
+        return False
+    if None == their:
+        return False
+    # Check the layers. TODO: fix this to be correct.
+    in1 = their.split('/')
+    in2 = our.split('/')
+    minlen = min(len(in1), len(in2))
+    for k in range(minlen):
+        if (not ((in1[k] == in2[k]) or
+                 (k >= 3 and ((in1[k][0] in [ 'p', 'q' ]) and
+                              (in2[k][0] in [ 'p', 'q' ]) and
+                              (in1[k][1:] == in2[k][1:]))))):
+            return False
+    return True
+    
 def compare_inchi(logfile, their, our):
     if (their == our):
         # All good
@@ -194,7 +216,6 @@ class Molecule:
             self.pubchem         = row[8]
             self.stdinchi        = row[9]
             self.inchikey        = row[10]
-            self.inchi           = None
             self.classification  = row[11]
             self.synonyms        = row[12]
             self.filename        = row[13]
@@ -224,7 +245,6 @@ class Molecule:
             self.pubchem         = row[9]
             self.stdinchi        = row[10]
             self.inchikey        = row[11]
-            self.inchi           = None
             self.classification  = row[12]
             self.synonyms        = row[13]
             self.filename        = row[14]
@@ -645,6 +665,16 @@ class Molecules:
             print("Looking for %d" % pubchem)
         for m in self.mols:
             if self.mols[m].pubchem == pubchem:
+                return self.mols[m]
+        return None
+
+    def find_inchi(self, inchi:str):
+        if (debug):
+            print("Looking for %s" % inchi)
+        for m in self.mols:
+            if None == self.mols[m].stdinchi:
+               print("No inchi in %s" % ( self.mols[m].iupac ))
+            elif inchi_equal(self.mols[m].stdinchi, inchi):
                 return self.mols[m]
         return None
 

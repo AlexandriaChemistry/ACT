@@ -6,8 +6,7 @@ import csv
 
 debug = False
 
-def get_csv_rows(csv_file, minimum_nr_columns, enc='utf-8'):
-    delim     = "|"
+def get_csv_rows(csv_file, minimum_nr_columns, enc='utf-8', delim="|"):
     inputfile = open(csv_file, "r", encoding=enc)
     csv.register_dialect('pipes', delimiter=delim)
 

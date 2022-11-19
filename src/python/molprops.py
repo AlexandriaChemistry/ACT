@@ -185,12 +185,15 @@ class Molprop:
 
     def __init__(self, molname):
         self.properties = {}
-        self.properties["molname"] = molname
         self.bonds = []
         self.fragments = []
         self.experiments = []
         self.compounds = []
+        self.set_molname(molname)
         
+    def set_molname(self, molname):
+        self.properties["molname"] = molname
+
     def prop(self, propname):
         return self.properties[propname]
 

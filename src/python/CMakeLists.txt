@@ -38,4 +38,5 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/reshuffle_selection DESTINATION bin
 install(PROGRAMS install_act DESTINATION bin)
 install(PROGRAMS viewxvg DESTINATION bin)
 install(PROGRAMS view_fitness DESTINATION bin)
+install(PROGRAMS donchev2molprop DESTINATION bin)
 
