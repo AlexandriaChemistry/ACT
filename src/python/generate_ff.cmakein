@@ -158,8 +158,7 @@ class AtomTypes:
                 param_footer(outf)
 
 
-    else:
-        for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+    for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
           param_header(outf, key)
           for uuu in units.keys():
             u = uuu

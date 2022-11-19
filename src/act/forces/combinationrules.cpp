@@ -106,7 +106,7 @@ void CombineBham(int     CombinationRule,
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
             *gammaIJ = 0.5 * (gammaI + gammaJ);
             break;
-        case eCOMB_KONG_MASON:
+        case eCOMB_KONG_MASON: // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential and the Morse Potential. J. Chem. Phys. 1973, 59.
             *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
             *epsilonIJ = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
             *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
@@ -130,11 +130,21 @@ void CombineBham(int     CombinationRule,
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
             *gammaIJ = 0.5 * (gammaI + gammaJ);
             break;
+        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
+            *gammaIJ = (pow(gammaI,3) + pow(gammaJ,3))/(pow(gammaI,2) + pow(gammaJ,2));
+            break;    
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
             *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3.0) * pow(epsilonJ,3.0))/(pow(epsilonI,6.0) + pow(epsilonJ,6.0)));
             *gammaIJ = 0.5 * (gammaI + gammaJ);;
-            break;            
+            break;
+        case eCOMB_WALDMAN_HAGLER_2: // Waldman & Hagler, J. Comp. Chem., Year: 1993.
+            *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3.0) * pow(epsilonJ,3.0))/(pow(epsilonI,6.0) + pow(epsilonJ,6.0)));
+            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+            break;
         case eCOMB_NONE:
 	    break;
         case eCOMB_NR:
