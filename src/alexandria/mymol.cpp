@@ -478,7 +478,23 @@ void MyMol::forceEnergyMaps(const Poldata                                       
                 if (forceComp)
                 {
                     std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
-                    double Einter = calculateInteractionEnergy(pd, forceComp, &interactionForces);
+                    std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
+                    auto exp_coords = ei.getCoordinates();
+                    int eindex = 0;
+                    for(size_t i = 0; i < myatoms.size(); i++)
+                    {
+                        if (myatoms[i].pType() == eptAtom)
+                        {
+                            copy_rvec(exp_coords[eindex], mycoords[i]);
+                            eindex += 1;
+                        }
+                        else if (myatoms[i].pType() == eptShell && i > 0)
+                        {
+                            // TODO fix this hack
+                            copy_rvec(mycoords[i-1], mycoords[i]);
+                        }
+                    }
+                    double Einter = calculateInteractionEnergy(pd, forceComp, &interactionForces, &mycoords);
                     
                     interactionEnergyMap->push_back({ eprops[0]->getValue(), Einter });
                     // TODO Store the interaction forces
@@ -1476,7 +1492,8 @@ static void reset_f_e(int                      natoms,
 
 double MyMol::calculateInteractionEnergy(const Poldata          *pd,
                                          const ForceComputer    *forceComputer,
-                                         std::vector<gmx::RVec> *interactionForces) const
+                                         std::vector<gmx::RVec> *interactionForces,
+                                         std::vector<gmx::RVec> *coords) const
 {
     auto &tops = fraghandler_->topologies();
     if (tops.size() <= 1)
@@ -1484,11 +1501,10 @@ double MyMol::calculateInteractionEnergy(const Poldata          *pd,
         return 0;
     }
     // First, compute the total energy
-    std::vector<gmx::RVec> coords = xOriginal();
     gmx::RVec fzero = { 0, 0, 0 };
-    interactionForces->resize(coords.size(), fzero);
+    interactionForces->resize(coords->size(), fzero);
     std::map<InteractionType, double> etot;
-    (void) forceComputer->compute(pd, topology_, &coords, interactionForces, &etot);
+    (void) forceComputer->compute(pd, topology_, coords, interactionForces, &etot);
     // Now compute interaction energies if there are fragments
     double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
@@ -1500,7 +1516,7 @@ double MyMol::calculateInteractionEnergy(const Poldata          *pd,
         int j = 0;
         for (size_t i = astart[ff]; i < astart[ff+1]; i++)
         {
-            copy_rvec(coords[i], myx[j]);
+            copy_rvec((*coords)[i], myx[j]);
             j++;
         }
         std::map<InteractionType, double> energies;

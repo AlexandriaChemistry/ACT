@@ -101,6 +101,7 @@ class QtypeProps
     //! Electrostatic moments
     std::map<MolPropObservable, std::vector<double> > multipoles_;
     //! Polarizability tensor
+    bool                   hasAlpha_ = false;
     tensor                 alpha_ = { { 0 } };
     //! Polarizability anisotropy
     double                 anisotropy_ = 0;
@@ -116,12 +117,16 @@ class QtypeProps
     QgenResp               *QgenResp_   = nullptr;
     //! Reset all the calc moments to zero
     void resetMoments();
+
  public:
     /*! \brief Constructor
      * \param[in] qtype  My own identity
      */
     QtypeProps(qType qtype);
     
+    //! Initialize variables for multipoles
+    void initializeMoments();
+
     /*! \brief Set charges and coordinates.
      *
      * \param[in] q The charges
@@ -163,6 +168,9 @@ class QtypeProps
     /*! \brief Return dipole for charge type qt.
      */
     double dipole() const;
+    
+    //! Check whether a polarizability is present
+    bool hasPolarizability() const { return hasAlpha_; }
     
     /*! \brief Return polarizability tensor
      */

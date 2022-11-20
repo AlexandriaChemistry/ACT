@@ -81,7 +81,9 @@ qType stringToQtype(const std::string &type)
     return qType::ESP;
 }
 
-QtypeProps::QtypeProps(qType qtype) : qtype_(qtype)
+QtypeProps::QtypeProps(qType qtype) : qtype_(qtype) {}
+
+void QtypeProps::initializeMoments()
 {
     for(auto &mpo : mpoMultiPoles)
     {
@@ -89,7 +91,6 @@ QtypeProps::QtypeProps(qType qtype) : qtype_(qtype)
         dummy.resize(multipoleNames(mpo).size(), 0.0);
         multipoles_.insert({mpo, std::move(dummy)});
     }
-    resetMoments();
 }
 
 void QtypeProps::resetMoments()
@@ -161,6 +162,7 @@ void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
 
     anisotropy_ = sqrt(1/2.0) * sqrt(a + b + c + d);
     isotropy_   = (alpha_[XX][XX]+alpha_[YY][YY]+alpha_[ZZ][ZZ])/3;
+    hasAlpha_   = true;
 }
 
 double QtypeProps::dipole() const
@@ -212,11 +214,11 @@ void QtypeProps::calcMoments()
     GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
     // distance of atoms to center of charge
     rvec   r;
-    resetMoments(); 
-    auto &dipole       = multipoles_[MolPropObservable::DIPOLE];
-    auto &quadrupole   = multipoles_[MolPropObservable::QUADRUPOLE];
-    auto &octupole     = multipoles_[MolPropObservable::OCTUPOLE];
-    auto &hexadecapole = multipoles_[MolPropObservable::HEXADECAPOLE];
+    resetMoments();
+    auto dip  = MolPropObservable::DIPOLE;
+    auto quad = MolPropObservable::QUADRUPOLE;
+    auto oct  = MolPropObservable::OCTUPOLE;
+    auto hex  = MolPropObservable::HEXADECAPOLE;
     double dipfac  = 1; //convertFromGromacs(1.0, "Debye");
     double quadfac = 1; //dipfac*10;
     double octfac  = 1; //quadfac*10;
@@ -229,45 +231,60 @@ void QtypeProps::calcMoments()
         int hindex = 0;
         for (int m = 0; m < DIM; m++)
         {
-            dipole[m] += dipfac*r[m]*q_[i];
+            if (hasMultipole(dip))
+            {
+                multipoles_[dip][m] += dipfac*r[m]*q_[i];
+            }
             for (int n = m; n < DIM; n++)
             {
-                quadrupole[qindex++] += q_[i]*(r[m]*r[n])*quadfac;
+                if (hasMultipole(quad))
+                {
+                    multipoles_[quad][qindex++] += q_[i]*(r[m]*r[n])*quadfac;
+                }
                 for (int o = n; o < DIM; o++)
-                {    
-                    octupole[oindex++] += q_[i]*(r[m]*r[n]*r[o])*octfac;
+                {
+                    if (hasMultipole(oct))
+                    {    
+                        multipoles_[oct][oindex++] += q_[i]*(r[m]*r[n]*r[o])*octfac;
+                    }
                     for (int p = o; p < DIM; p++)
-                    {  
-                        hexadecapole[hindex++] += q_[i]*(r[m]*r[n]*r[o]*r[p])*hexfac;
+                    {
+                        if (hasMultipole(hex))
+                        {
+                            multipoles_[hex][hindex++] += q_[i]*(r[m]*r[n]*r[o]*r[p])*hexfac;
+                        }
                     }    
                 }
             }
         }
     }
-    if (debug)
+    if (hasMultipole(quad))
     {
-        fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", 
-                quadrupole[multipoleIndex({XX, XX})],
-                quadrupole[multipoleIndex({YY, YY})],
-                quadrupole[multipoleIndex({ZZ, ZZ})]);
-    }
-    // Compute trace divided by 3
-    double tr = 0.0;
-    for (int m = 0; m < DIM; m++)
-    {
-        tr += quadrupole[multipoleIndex({m, m})]/3.0;
-    }
-    // Subtract trace/3 to make the quadrupole traceless
-    for (int m = 0; m < DIM; m++)
-    {
-        quadrupole[multipoleIndex({m, m})] -= tr;
-    }
-    if (debug)
-    {
-        fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", 
-                quadrupole[multipoleIndex({XX, XX})],
-                quadrupole[multipoleIndex({YY, YY})],
-                quadrupole[multipoleIndex({ZZ, ZZ})]);
+        if (debug)
+        {
+            fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", 
+                    multipoles_[quad][multipoleIndex({XX, XX})],
+                    multipoles_[quad][multipoleIndex({YY, YY})],
+                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+        }
+        // Compute trace divided by 3
+        double tr = 0.0;
+        for (int m = 0; m < DIM; m++)
+        {
+            tr += multipoles_[quad][multipoleIndex({m, m})]/3.0;
+        }
+        // Subtract trace/3 to make the quadrupole traceless
+        for (int m = 0; m < DIM; m++)
+        {
+            multipoles_[quad][multipoleIndex({m, m})] -= tr;
+        }
+        if (debug)
+        {
+            fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", 
+                    multipoles_[quad][multipoleIndex({XX, XX})],
+                    multipoles_[quad][multipoleIndex({YY, YY})],
+                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+        }
     }
 }
 

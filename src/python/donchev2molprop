@@ -35,17 +35,27 @@ def get_selection(selection:str)->list:
                 sel.append(row[0])
     return sel
 
-printed_oxidanium = False
 def get_iupac(M:Molecules, inchi:str, smiles:str):
     if None != inchi:
         mol = M.find_inchi(inchi)
         if mol:
-            if mol.iupac == "oxidanium" and not printed_oxidanium:
-                print("Found oxidanium. inchi: %s smiles: %s formula: %s" % ( inchi, smiles, mol.formula ))
-                printed_oxidanium = True
             return mol.iupac
     return smiles
 
+def add_molprops(molprops, mpnew:Molprop):
+    if not mpnew:
+        return
+    ener_min = 1e12
+    ener_ind = -1
+    for i in range(len(mpnew.experiments)):
+        ener_i = float(mpnew.experiments[i].energies[0]["average"])
+        if ener_i < ener_min:
+            ener_min = ener_i
+            ener_ind = i
+    if ener_ind >= 0:
+        mpnew.experiments[ener_ind].properties["jobtype"] = "Opt"
+        molprops.add_molecule(mpnew)
+    
 def write_donchev(outfile:str, selection:str, donchev:list, verbose:bool, maxdimer:int):
     # Do something
     M          = Molecules()
@@ -70,40 +80,63 @@ def write_donchev(outfile:str, selection:str, donchev:list, verbose:bool, maxdim
     mysel      = get_selection(selection)
     molprops   = mp.Molprops()
     ndimer     = 0
+    smiles2    = None
+    mp1        = None
     for dd in range(len(donchev)):
-        d      = donchev[dd]
-        basis_set   = d["cc_basis"]
+        d          = donchev[dd]
+        # Check which combination we have
+        smiles2new = d["smiles0"] + "_" + d["smiles1"]
+        # First combination?
+        newdimer = True
+        if not smiles2:
+            smiles2 = smiles2new
+        elif smiles2 != smiles2new:
+            # New combination of smiles, store the molprop
+            add_molprops(molprops, mp1)
+            smiles2 = smiles2new
+        else:
+            newdimer = False
+        if newdimer:
+            mp1 = mp.Molprop("dimer")
+        # Check for a recognizable basis set
+        basis_set = d["cc_basis"]
         if basis_set in basis_map:
             basis_set = basis_map[basis_set]
         elif verbose:
             print("Unknown basis set %s" % basis_set)
+        # See what we've got and whether it is consistent
         natom  = int(d["natoms0"]) + int(d["natoms1"])
         labels = d["elements"].split()
+        # Copy coordinates to N x 3 list
         coords = []
         xxx    = d["xyz"].split()
         for i in range(natom):
-            coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2])])
+            coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2]) ])
         if verbose:
             print("len(labels) %d natom %d ncoords %d" % ( len(labels), natom, len(coords)))
         if len(labels) == natom and len(coords) == natom:
+            # Create new experiment
             exper = mp.Experiment(datasource, reference, program, method, basis_set, conformation, jobtype, datafile, useForce)
-            Einter = d[eterm]
+            Einter = float(d[eterm])
             exper.add_energy("InteractionEnergy", "kcal/mol", "0", "gas", Einter)
             fragname = {} 
-            mp1      = mp.Molprop("dimer")
+            # Create new molprop
             cindex   = 0
+            # Loop over two fragments
             for fff in [ "0", "1" ]:
                 natom   = int(d["natoms"+fff])
+                # Try and interpret the coordinates using OpenBabel
                 MD      = gmd.MoleculeDict()
                 MD.from_coords_elements(labels[cindex:cindex+natom], coords[cindex:cindex+natom])
                 atom_id = []
                 mass    = 0.0
                 if len(MD.atoms) != natom:
                     print("Inconsistency. natom = %d, len(MD.atoms) = %d len(coords) = %d" % ( natom, len(MD.atoms), len(coords)))
+                # Add the atoms to the experiment
                 for i in range(natom):
                     atomtype = MD.atoms[i+1]["atomtype"]
                     exper.add_atom(labels[cindex+i], atomtype, 
-                                   labels[cindex+i], coord_unit,
+                                   cindex+i+1, coord_unit,
                                    coords[cindex+i][0],
                                    coords[cindex+i][1],
                                    coords[cindex+i][2],
@@ -111,23 +144,25 @@ def write_donchev(outfile:str, selection:str, donchev:list, verbose:bool, maxdim
                     atom_id.append(cindex+i+1)
                     mass += MD.atoms[i+1]["mass"]
                 fragname[fff] = get_iupac(M, MD.inchi, d["smiles"+fff])
-                frag = mp.Fragment(fragname[fff], d["charge"+fff],
-                                   1, 1, atom_id, mass, MD.formula)
-                mp1.add_fragment(frag)
-                for b in MD.bonds:
-                    mp1.add_bond(1+cindex+b[0], 1+cindex+b[1],
-                                 MD.bonds[b])
+                if newdimer:
+                    frag = mp.Fragment(fragname[fff], d["charge"+fff],
+                                       1, 1, atom_id, mass, MD.formula)
+                    mp1.add_fragment(frag)
+                    for b in MD.bonds:
+                        mp1.add_bond(cindex+b[0], cindex+b[1], MD.bonds[b])
                 cindex += natom
             if len(mysel) == 0 or (fragname["0"] in mysel and fragname["1"] in mysel):
-                molname = ("%s-%s" % ( fragname["0"], fragname["1"] ))
-                if verbose:
-                    print("Found %s with %d atoms" % ( molname, natom ))
-                mp1.set_molname(molname)
+                if newdimer:
+                    molname = ("%s-%s" % ( fragname["0"], fragname["1"] ))
+                    if verbose:
+                        print("Found %s with %d atoms" % ( molname, natom ))
+                    mp1.set_molname(molname)
+                # If this is not the first cycle for this dimer, just add the experiment
                 mp1.add_experiment(exper)
-                molprops.add_molecule(mp1)
                 ndimer += 1
         if maxdimer > 0 and ndimer >= maxdimer:
             break
+    add_molprops(molprops, mp1)
                 
     molprops.write(outfile)
 
