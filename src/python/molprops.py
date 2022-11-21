@@ -2,12 +2,199 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-import xml.etree.ElementTree as ET
+try:
+#    import xml.etree.cElementTree as ET
+    import lxml.etree as ET
+except ImportError:
+    print("Cannot find lxml, using fall back cElementTree")
+    import xml.etree.cElementTree as ET
+
+import gc
 from xml.dom import minidom
 from atomic_heat_of_formation import *
 
 debug = False
 
+class Fragment:
+    '''
+    Class to store molecule "fragments" which in this context 
+    means compounds in e.g. a dimer.
+    '''
+    
+    def __init__(self, identifier:str, charge:int, multiplicity:int, symmetry_number: int, atoms:list, mass:float, formula: str):
+        self.identifier      = identifier
+        self.charge          = charge
+        self.multiplicity    = multiplicity
+        self.symmetry_number = symmetry_number
+        self.mass            = mass
+        self.formula         = formula
+        if len(atoms) == 0:
+            sys.exit("Trying to create a fragment without atoms")
+        self.atoms = ""
+        for a in atoms:
+            self.atoms += " " + str(a)
+        self.atoms = self.atoms.strip()
+        
+    def add_xml(self, xml):
+        xml.set("identifier", self.identifier)
+        xml.set("charge", str(self.charge))
+        xml.set("multiplicity", str(self.multiplicity))
+        xml.set("symmetry_number", str(self.symmetry_number))
+        xml.set("mass", str(self.mass))
+        xml.set("formula", self.formula)
+        xml.text = self.atoms
+
+class Experiment:
+    '''
+    Class to hold Experiment data for a molecule
+    '''
+    def __init__(self, datasource, reference, program, method, basisset, conformation, jobtype, datafile, useForces):
+        self.properties = {}
+        self.properties["datasource"] = datasource
+        self.properties["reference"]  = reference
+        self.properties["program"]    = program
+        self.properties["method"]     = method
+        self.properties["basisset"]   = basisset
+        self.properties["conformation"] = conformation
+        self.properties["jobtype"]  = jobtype
+        self.properties["datafile"] = datafile
+        self.energies   = []
+        self.dipoles    = []
+        self.potential  = []
+        self.quadrupole = []
+        self.octupole   = []
+        self.hexadecapole   = []
+        self.polarisability = []
+        self.frequencies = []
+        self.intensities = []
+        self.atoms = []
+        self.tcmap = None
+        self.useForce = useForces
+        
+    def add_prop(self, propname, value):
+        self.properties[propname] = str(value)
+        
+    def add_energy(self, type, unit, temperature, phase, value):
+        self.energies.append({ "type": type, "unit": unit, "temperature": str(temperature), "phase": phase, "average": str(value)})
+    
+    def add_dipole(self, type, unit, temperature, average, error, x, y, z): # phase,value
+        self.dipoles.append({ "type": type, "unit": unit, "temperature": str(temperature), "average": str(average), "error": str(error), "x": str(x), "y": str(y), "z": str(z)})   #"phase": phase, "value": str(value)
+    
+    def add_potential(self, espid, potential_unit, coord_unit, x, y, z, V):
+        self.potential.append({"espid": espid, "potential_unit": potential_unit, "coord_unit": coord_unit,"x": str(x), "y": str(y), "z": str(z), "V": str(V)})    
+
+    def add_quadrupole(self, type, unit, temperature, xx, yy, zz, xy, xz, yz):
+        self.quadrupole.append({"type":type, "unit":unit, "temperature": str(temperature), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
+
+    def add_octupole(self, type, unit, temperature, xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz):
+        self.octupole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxx":xxx, "xxy":xxy, "xxz":xxz, "xyy":xyy, "xyz":xyz, "xzz":xzz, "yyy":yyy, "yyz":yyz, "yzz":yzz, "zzz":zzz})
+
+    def add_hexadecapole(self, type, unit, temperature, xxxx, xxxy, xxxz,
+                         xxyy, xxyz, xxzz, xyyy, xyyz, xyzz, xzzz,
+                         yyyy, yyyz, yyzz, yzzz, zzzz):
+        self.hexadecapole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxxx":xxxx, "xxxy":xxxy, "xxxz":xxxz, "xxyy":xxyy, "xxyz":xxyz, "xxzz":xxzz, "xyyy":xyyy, "xyyz":xyyz, "xyzz":xyzz, "xzzz":xzzz, "yyyy":yyyy, "yyyz":yyyz, "yyzz":yyzz, "yzzz":yzzz, "zzzz":zzzz})
+
+    def add_polarisability(self, type, unit, temperature,
+                           average, error, xx, yy, zz, xy, xz, yz):    
+        self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
+
+    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
+                 force_unit, fx, fy, fz, qmap=None):
+        newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
+                    "coord_unit": coord_unit, 
+                    "x": str(x), "y": str(y), "z": str(z),
+                    "force_unit": force_unit,
+                    "fx": str(fx), "fy": str(fy), "fz": str(fz) }
+        if qmap:
+            newatom["qmap"] = {}
+            for q in qmap.keys():
+                newatom["qmap"][q] = qmap[q]
+        self.atoms.append(newatom)
+        
+    def extract_thermo(self, tcmap, atomname, ahof, verbose=False):
+        if (not tcmap["Ezpe"] or not tcmap["Hcorr"] or not tcmap["Gcorr"] or
+            not tcmap["E0"] or not tcmap["CV"] or not tcmap["Method"]):
+            return
+        eFactor   = UnitToConversionFactor("Hartree")
+        Rgas      = 1.9872041*UnitToConversionFactor("kcal/mol")
+        S0MT      = 0
+        kilo      = 1000
+        if tcmap["Temp"] > 0:
+            S0MT += kilo*eFactor*(tcmap["Hcorr"]-tcmap["Gcorr"])/tcmap["Temp"]
+        Srot    = -Rgas*math.log(float(tcmap["RotSymNum"]))
+        if tcmap["RotSymNum"] > 1:
+            Srot = 0
+        S0MT += Srot
+        DeltaSMT = S0MT
+        dhofM0   = tcmap["E0"]*eFactor
+        dhofMT   = dhofM0+(tcmap["Hcorr"]-tcmap["Ezpe"])*eFactor
+        # Now fetch the atomic contributions to the heat of formation.
+        # These depend on atomtype, temperature and method used as
+        # well as the charge.
+        charge = 0
+        atomid = 0
+        foundThermo = True
+        for a in atomname:
+            dhfx0, dhfxT, S0xT = ahof.get(a, tcmap["Temp"], charge)
+            if dhfx0 and dhfxT and S0xT:
+                dhofM0   += dhfx0
+                dhofMT   += dhfxT
+                DeltaSMT += S0xT
+                atomid   += 1
+            else:
+                foundThermo = False
+        # Final results, please check values and units!
+        myT = float(tcmap["Temp"])
+        self.add_energy("ZPE", "Hartree", 0, "gas", tcmap["Ezpe"])
+        self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
+        self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])
+        if not foundThermo:
+            if debug:
+                print("Could not get atomization energies for %s at T = %g" % ( a, tcmap["Temp"]))
+        else:
+            self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
+            self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
+            self.add_energy("DeltaHform", "kJ/mol", 0, "gas", dhofM0)
+            self.add_energy("DeltaSform", "J/mol K", myT, "gas", DeltaSMT)
+        Scomps = [ "Strans", "Srot", "Svib" ]
+        if len(tcmap["Scomponent"]) == len(Scomps):
+            for i in range(len(Scomps)):
+                self.add_energy(Scomps[i], "J/mol K", myT, "gas", tcmap["Scomponent"][i])
+class Molprop:
+    '''
+    Class to store a single molprop (molecule properties) from the
+    Alexandria Chemistry Toolkit
+    '''
+
+    def __init__(self, molname):
+        self.properties = {}
+        self.bonds = []
+        self.fragments = []
+        self.experiments = []
+        self.compounds = []
+        self.set_molname(molname)
+        
+    def set_molname(self, molname):
+        self.properties["molname"] = molname
+
+    def prop(self, propname):
+        return self.properties[propname]
+
+    def add_prop(self, propname, value):
+        self.properties[propname] = str(value)
+
+    def add_bond(self, atom1, atom2, bondorder):
+        self.bonds.append([str(atom1), str(atom2), str(bondorder)])
+    
+    def add_experiment(self, exper:Experiment):
+        self.experiments.append(exper)
+        
+    def add_fragment(self, f:Fragment):
+        self.fragments.append(f)
+
+    def add_compound(self, comp): 
+        self.compounds.append(comp)   
+        
 class Molprops:
     '''
     Class to write molprop files (molecule properties) from the
@@ -15,15 +202,26 @@ class Molprops:
     '''
 
     def __init__(self):
-        self.molecules = ET.Element("molecules")
+        self.outf      = None
+        
+    def open(self, outfile:str):
+        self.outf      = open(outfile, "w")
+        self.outf.write("<?xml version=\"1.0\" ?>\n")
+        self.outf.write("<molecules>\n")
+        
+    def close(self):
+        if self.outf:
+            self.outf.write("</molecules>\n")
+            self.outf.close()
  
-    def add_molecule(self, molecule):
+    def add_molecule(self, molecule:Molprop):
         if len(molecule.fragments) == 0:
             molname = ""
             if "molname" in molecule.properties:
                 molname = molecule.properties["molname"]
             print("There are no fragments. Ignoring molecule %s" % molname)
             return
+        self.molecules = ET.Element("molecules")
         lastmol = ET.SubElement(self.molecules, "molecule")
         for prop in molecule.properties.keys():
             lastmol.set(prop, molecule.properties[prop])
@@ -142,195 +340,33 @@ class Molprops:
                     if value in esp:
                        myvalue = ET.SubElement(myesp, value)
                        myvalue.text = esp[value]
+                       
+        # The code is a hack for not having the extra header.
+        skipped = True
+#        for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')).toprettyxml(indent="  ").splitlines():
+        for xmlstr in ET.tostring(lastmol, encoding='unicode').splitlines():
+            if skipped:
+                self.outf.write("%s\n" % xmlstr)
+            skipped = True
+        self.outf.write("\n")
+        self.outf.flush()
+        self.molecules.clear()
+        gc.collect()
 
-    def write(self, outfile):
-        xmlstr      = minidom.parseString(ET.tostring(self.molecules)).toprettyxml(indent="  ")
-        with open(outfile, "w") as f:
-            f.write(xmlstr)
-
-class Fragment:
-    '''
-    Class to store molecule "fragments" which in this context 
-    means compounds in e.g. a dimer.
-    '''
-    
-    def __init__(self, identifier:str, charge:int, multiplicity:int, symmetry_number: int, atoms:list, mass:float, formula: str):
-        self.identifier      = identifier
-        self.charge          = charge
-        self.multiplicity    = multiplicity
-        self.symmetry_number = symmetry_number
-        self.mass            = mass
-        self.formula         = formula
-        if len(atoms) == 0:
-            sys.exit("Trying to create a fragment without atoms")
-        self.atoms = ""
-        for a in atoms:
-            self.atoms += " " + str(a)
-        self.atoms = self.atoms.strip()
-        
-    def add_xml(self, xml):
-        xml.set("identifier", self.identifier)
-        xml.set("charge", str(self.charge))
-        xml.set("multiplicity", str(self.multiplicity))
-        xml.set("symmetry_number", str(self.symmetry_number))
-        xml.set("mass", str(self.mass))
-        xml.set("formula", self.formula)
-        xml.text = self.atoms
-
-class Molprop:
-    '''
-    Class to store a single molprop (molecule properties) from the
-    Alexandria Chemistry Toolkit
-    '''
-
-    def __init__(self, molname):
-        self.properties = {}
-        self.bonds = []
-        self.fragments = []
-        self.experiments = []
-        self.compounds = []
-        self.set_molname(molname)
-        
-    def set_molname(self, molname):
-        self.properties["molname"] = molname
-
-    def prop(self, propname):
-        return self.properties[propname]
-
-    def add_prop(self, propname, value):
-        self.properties[propname] = str(value)
-
-    def add_bond(self, atom1, atom2, bondorder):
-        self.bonds.append([str(atom1), str(atom2), str(bondorder)])
-    
-    def add_experiment(self, exper):
-        self.experiments.append(exper)
-        
-    def add_fragment(self, f:Fragment):
-        self.fragments.append(f)
-
-    def add_compound(self, comp): 
-        self.compounds.append(comp)   
-        
-class Experiment:
-    '''
-    Class to hold Experiment data for a molecule
-    '''
-    def __init__(self, datasource, reference, program, method, basisset, conformation, jobtype, datafile, useForces):
-        self.properties = {}
-        self.properties["datasource"] = datasource
-        self.properties["reference"]  = reference
-        self.properties["program"]    = program
-        self.properties["method"]     = method
-        self.properties["basisset"]   = basisset
-        self.properties["conformation"] = conformation
-        self.properties["jobtype"]  = jobtype
-        self.properties["datafile"] = datafile
-        self.energies   = []
-        self.dipoles    = []
-        self.potential  = []
-        self.quadrupole = []
-        self.octupole   = []
-        self.hexadecapole   = []
-        self.polarisability = []
-        self.frequencies = []
-        self.intensities = []
-        self.atoms = []
-        self.tcmap = None
-        self.useForce = useForces
-        
-    def add_prop(self, propname, value):
-        self.properties[propname] = str(value)
-        
-    def add_energy(self, type, unit, temperature, phase, value):
-        self.energies.append({ "type": type, "unit": unit, "temperature": str(temperature), "phase": phase, "average": str(value)})
-    
-    def add_dipole(self, type, unit, temperature, average, error, x, y, z): # phase,value
-        self.dipoles.append({ "type": type, "unit": unit, "temperature": str(temperature), "average": str(average), "error": str(error), "x": str(x), "y": str(y), "z": str(z)})   #"phase": phase, "value": str(value)
-    
-    def add_potential(self, espid, potential_unit, coord_unit, x, y, z, V):
-        self.potential.append({"espid": espid, "potential_unit": potential_unit, "coord_unit": coord_unit,"x": str(x), "y": str(y), "z": str(z), "V": str(V)})    
-
-    def add_quadrupole(self, type, unit, temperature, xx, yy, zz, xy, xz, yz):
-        self.quadrupole.append({"type":type, "unit":unit, "temperature": str(temperature), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
-
-    def add_octupole(self, type, unit, temperature, xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz):
-        self.octupole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxx":xxx, "xxy":xxy, "xxz":xxz, "xyy":xyy, "xyz":xyz, "xzz":xzz, "yyy":yyy, "yyz":yyz, "yzz":yzz, "zzz":zzz})
-
-    def add_hexadecapole(self, type, unit, temperature, xxxx, xxxy, xxxz,
-                         xxyy, xxyz, xxzz, xyyy, xyyz, xyzz, xzzz,
-                         yyyy, yyyz, yyzz, yzzz, zzzz):
-        self.hexadecapole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxxx":xxxx, "xxxy":xxxy, "xxxz":xxxz, "xxyy":xxyy, "xxyz":xxyz, "xxzz":xxzz, "xyyy":xyyy, "xyyz":xyyz, "xyzz":xyzz, "xzzz":xzzz, "yyyy":yyyy, "yyyz":yyyz, "yyzz":yyzz, "yzzz":yzzz, "zzzz":zzzz})
-
-    def add_polarisability(self, type, unit, temperature,
-                           average, error, xx, yy, zz, xy, xz, yz):    
-        self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
-
-    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
-                 force_unit, fx, fy, fz, qmap=None):
-        newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
-                    "coord_unit": coord_unit, 
-                    "x": str(x), "y": str(y), "z": str(z),
-                    "force_unit": force_unit,
-                    "fx": str(fx), "fy": str(fy), "fz": str(fz) }
-        if qmap:
-            newatom["qmap"] = {}
-            for q in qmap.keys():
-                newatom["qmap"][q] = qmap[q]
-        self.atoms.append(newatom)
-        
-    def extract_thermo(self, tcmap, atomname, ahof, verbose=False):
-        if (not tcmap["Ezpe"] or not tcmap["Hcorr"] or not tcmap["Gcorr"] or
-            not tcmap["E0"] or not tcmap["CV"] or not tcmap["Method"]):
+    def sort_energy_and_add_molecule(self, mpnew:Molprop):
+        if not mpnew:
             return
-        eFactor   = UnitToConversionFactor("Hartree")
-        Rgas      = 1.9872041*UnitToConversionFactor("kcal/mol")
-        S0MT      = 0
-        kilo      = 1000
-        if tcmap["Temp"] > 0:
-            S0MT += kilo*eFactor*(tcmap["Hcorr"]-tcmap["Gcorr"])/tcmap["Temp"]
-        Srot    = -Rgas*math.log(float(tcmap["RotSymNum"]))
-        if tcmap["RotSymNum"] > 1:
-            Srot = 0
-        S0MT += Srot
-        DeltaSMT = S0MT
-        dhofM0   = tcmap["E0"]*eFactor
-        dhofMT   = dhofM0+(tcmap["Hcorr"]-tcmap["Ezpe"])*eFactor
-        # Now fetch the atomic contributions to the heat of formation.
-        # These depend on atomtype, temperature and method used as
-        # well as the charge.
-        charge = 0
-        atomid = 0
-        foundThermo = True
-        for a in atomname:
-            dhfx0, dhfxT, S0xT = ahof.get(a, tcmap["Temp"], charge)
-            if dhfx0 and dhfxT and S0xT:
-                dhofM0   += dhfx0
-                dhofMT   += dhfxT
-                DeltaSMT += S0xT
-                atomid   += 1
-            else:
-                foundThermo = False
-        # Final results, please check values and units!
-        myT = float(tcmap["Temp"])
-        self.add_energy("ZPE", "Hartree", 0, "gas", tcmap["Ezpe"])
-        self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
-        self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])
-        if not foundThermo:
-            if debug:
-                print("Could not get atomization energies for %s at T = %g" % ( a, tcmap["Temp"]))
-        else:
-            self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
-            self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
-            self.add_energy("DeltaHform", "kJ/mol", 0, "gas", dhofM0)
-            self.add_energy("DeltaSform", "J/mol K", myT, "gas", DeltaSMT)
-        Scomps = [ "Strans", "Srot", "Svib" ]
-        if len(tcmap["Scomponent"]) == len(Scomps):
-            for i in range(len(Scomps)):
-                self.add_energy(Scomps[i], "J/mol K", myT, "gas", tcmap["Scomponent"][i])
+        ener_min = 1e12
+        ener_ind = -1
+        for i in range(len(mpnew.experiments)):
+            ener_i = float(mpnew.experiments[i].energies[0]["average"])
+            if ener_i < ener_min:
+                ener_min = ener_i
+                ener_ind = i
+        if ener_ind >= 0:
+            mpnew.experiments[ener_ind].properties["jobtype"] = "Opt"
+            self.add_molecule(mpnew)
 
-
-    
 def test_molprops():
     molprops = Molprops()
     

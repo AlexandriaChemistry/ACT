@@ -279,7 +279,8 @@ protected:
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<gmx::RVec> forces;
-                auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces);
+                std::vector<gmx::RVec> coords = mp_.xOriginal();
+                auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces, &coords);
                 checker_.checkReal(einter, "InteractionEnergy");
                 // TODO: Check the forces as well
             }
