@@ -57,9 +57,9 @@ static void print_bondeds(FILE                               *out,
             fprintf(out, "  %5d", 1+j);
         }
         fprintf(out, "  %5d", subtype);
-        for (int j = 0; (j < NRFPA(ftype)); j++)
+        for (const double &j : entry->params())
         {
-            fprintf(out, "  %10g", 0.0);
+            fprintf(out, "  %10g", j);
         }
         fprintf(out, "; %s\n", entry->id().id().c_str());
     }

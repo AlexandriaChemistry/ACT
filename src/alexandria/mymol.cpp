@@ -2003,6 +2003,7 @@ void MyMol::PrintTopology(const char                   *fn,
     auto qelec = qTypeProps(qType::Elec);
     qcalc->setQ(atomsConst());
     qcalc->setX(coords);
+    qcalc->initializeMoments();
     qcalc->calcMoments();
     
     T = -1;

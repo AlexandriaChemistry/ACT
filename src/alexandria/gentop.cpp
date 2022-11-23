@@ -241,9 +241,14 @@ int gentop(int argc, char *argv[])
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("The option %s is not defined in the force field file %s", ct, gentop_fnm).c_str()));
     }
+    std::string my_pol;
+    if (pd.polarizable())
+    {
+        my_pol.assign(" polarizable");
+    }
     auto qType = fs.optionValue(ct);
-    printf("Using force field file %s and charge distribution model %s\n",
-           gentop_fnm, qType.c_str());
+    printf("Using%s force field file %s and charge distribution model %s\n",
+           my_pol.c_str(), gentop_fnm, qType.c_str());
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
