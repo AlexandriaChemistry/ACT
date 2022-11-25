@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 
-import argparse, csv, os, sys
+try:
+    import openbabel as ob
+except:
+    print("OpenBabel not found. Check your PYTHONPATH environment variable.")
+    print("Proceed at your own risk")
+
+import argparse, csv, gc, os, sys
 # ACT stuff
-from get_csv_rows import *
-from molprops     import *
-from mol_csv_api  import *
+from get_csv_rows import get_csv_rows
+from mol_csv_api  import Molecules
 import get_mol_dict as gmd
 import molprops     as mp
+from guppy import hpy
+
+debug = False
 
 def get_selection(selection:str)->list:
     sel = []
@@ -16,26 +24,58 @@ def get_selection(selection:str)->list:
                 sel.append(row[0])
     return sel
 
-def get_iupac(M:Molecules, inchi:str, smiles:str):
-    if None != inchi:
+def get_iupac(M:Molecules, inchi:str, smiles:str)->str:
+    if inchi:
         mol = M.find_inchi(inchi)
         if mol:
             return mol.iupac
+        else:
+            print("No iupac for inchi %s smiles %s" % (inchi, smiles))    
+    else:
+        print("No inchi for smiles %s" % smiles)    
     return smiles
+    
+def actualsize(input_obj):
+    memory_size = 0
+    ids = set()
+    objects = [input_obj]
+    while objects:
+        new = []
+        for obj in objects:
+            if id(obj) not in ids:
+                ids.add(id(obj))
+                memory_size += sys.getsizeof(obj)
+                new.append(obj)
+        objects = gc.get_referents(*new)
+    return memory_size
 
-def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int):
+def string2coords(xyzstr:str)->list:
+    xxx    = xyzstr.split()
+    if len(xxx) % 3 != 0:
+        sys.exit("Weird number of coordinates %d, xstr %s" % (len(xxx), xyzstr))
+    natom  = int(len(xxx)/3)
+    if debug:
+        print("#coordinates %d natom %d" % ( len(xxx), natom ) )
+    coords = []
+    for i in range(natom):
+        coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2]) ])
+    return coords
+    
+def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int, prettyPrint:bool):
+    if debug:
+        h = hpy()
     # Do something
     M          = Molecules()
     M.read_default()
     datasource = "Theory"
-    reference  = "Donchev2022a"
+    reference  = "Donchev2021a"
     program    = "Gaussian"
     method     = "CCSD(T)"
     conformation = "dimer"
-    jobtype    = "SP"
     datafile   = "infile"
     useForce   = False
-    eterm      = "cbs_CCSD(T)_all"
+    eterm      = 33
+    xyzterm    = 52
     basis_map  = { "avdz": "aug-cc-pVDZ",
                    "avtz": "aug-cc-pVTZ",
                    "avqz": "aug-cc-pVQZ",
@@ -43,110 +83,181 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
     coord_unit = "Angstrom"
     force_unit = "Hartree/Bohr"
     mysel      = get_selection(selection)
+    if verbose and len(mysel) > 0:
+        print("There are %d compounds in the selection %s" % ( len(mysel), selection ))
     molprops   = mp.Molprops()
     molprops.open(outfile)
     ndimer     = 0
     smiles2    = None
     mp1        = None
-    labels     = []
-    lineno     = 1
-    with open(csv_file, "r") as inf:
-        for rows in inf:
-            row = rows.strip().split(",")
-            if len(labels) == 0:
-                labels = row
-                if verbose:
-                    print("There are %d labels" % len(labels))
-                continue
-            else:
-                if len(labels) == len(row):
-                    d = {}
-                    for i in range(len(labels)):
-                        d[labels[i]] = row[i]
-                else:
-                    print("Mismatch on line %d: Expected %d entries, found %d" % ( lineno, len(labels), len(row)))
-            lineno += 1
-            # Check which combination we have
-            smiles2new = d["smiles0"] + "_" + d["smiles1"]
-            # First combination?
-            newdimer = True
-            if not smiles2:
-                smiles2 = smiles2new
-            elif smiles2 != smiles2new:
-                # New combination of smiles, store the molprop
-                molprops.sort_energy_and_add_molecule(mp1)
-                smiles2 = smiles2new
-            else:
-                newdimer = False
-            if newdimer:
-                mp1 = mp.Molprop("dimer")
-            # Check for a recognizable basis set
-            basis_set = d["cc_basis"]
-            if basis_set in basis_map:
-                basis_set = basis_map[basis_set]
-            elif verbose:
-                print("Unknown basis set %s" % basis_set)
-            # See what we've got and whether it is consistent
-            natom  = int(d["natoms0"]) + int(d["natoms1"])
-            atom_labels = d["elements"].split()
-            # Copy coordinates to N x 3 list
-            coords = []
-            xxx    = d["xyz"].split()
-            for i in range(natom):
-                coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2]) ])
-            if verbose:
-                print("len(atom_labels) %d natom %d ncoords %d" % ( len(atom_labels), natom, len(coords)))
-            if len(atom_labels) == natom and len(coords) == natom:
-                # Create new experiment
-                exper = mp.Experiment(datasource, reference, program, method, basis_set, conformation, jobtype, datafile, useForce)
-                Einter = float(d[eterm])
-                exper.add_energy("InteractionEnergy", "kcal/mol", "0", "gas", Einter)
-                fragname = {} 
-                # Create new molprop
-                cindex   = 0
-                # Loop over two fragments
-                for fff in [ "0", "1" ]:
-                    natom   = int(d["natoms"+fff])
-                    # Try and interpret the coordinates using OpenBabel
-                    MD      = gmd.MoleculeDict()
-                    MD.from_coords_elements(atom_labels[cindex:cindex+natom], coords[cindex:cindex+natom])
-                    atom_id = []
-                    mass    = 0.0
-                    if len(MD.atoms) != natom:
-                        print("Inconsistency. natom = %d, len(MD.atoms) = %d len(coords) = %d" % ( natom, len(MD.atoms), len(coords)))
-                    # Add the atoms to the experiment
-                    for i in range(natom):
-                        atomtype = MD.atoms[i+1]["atomtype"]
-                        exper.add_atom(atom_labels[cindex+i], atomtype, 
-                                       cindex+i+1, coord_unit,
-                                       coords[cindex+i][0],
-                                       coords[cindex+i][1],
-                                       coords[cindex+i][2],
-                                       force_unit, 0, 0, 0)
-                        atom_id.append(cindex+i+1)
-                        mass += MD.atoms[i+1]["mass"]
-                    fragname[fff] = get_iupac(M, MD.inchi, d["smiles"+fff])
-                    if newdimer:
-                        frag = mp.Fragment(fragname[fff], d["charge"+fff],
-                                           1, 1, atom_id, mass, MD.formula)
-                        mp1.add_fragment(frag)
-                        for b in MD.bonds:
-                            mp1.add_bond(cindex+b[0], cindex+b[1], MD.bonds[b])
-                    cindex += natom
-                if len(mysel) == 0 or (fragname["0"] in mysel and fragname["1"] in mysel):
-                    if newdimer:
-                        molname = ("%s-%s" % ( fragname["0"], fragname["1"] ))
-                        if verbose:
-                            print("Found %s with %d atoms" % ( molname, natom ))
-                        mp1.set_molname(molname)
-                    # If this is not the first cycle for this dimer, just add the experiment
-                    mp1.add_experiment(exper)
-                    ndimer += 1
-            if maxdimer > 0 and ndimer >= maxdimer:
+
+    obConversion = ob.OBConversion()
+    obConversion.SetInFormat("xyz")
+    obmol = ob.OBMol()
+    csv = open(csv_file, "r")
+    csvlines = csv.readlines()
+    csv.close()
+    if debug:
+        print(h.heap())
+        h.setrelheap()
+        heap0 = h.heap()
+        print(heap0)
+
+    # Extract labels first
+    labels = csvlines[0].strip().split(",")
+    if verbose:
+        print("There are %d labels" % len(labels))
+    if labels[eterm] != "cbs_CCSD(T)_all":
+        sys.exit("labels[%d] = %s" % ( eterm, labels[eterm]))
+    
+    irow = 1
+    maxrow = len(csvlines)
+    if maxdimer > 0:
+        maxrow = maxdimer
+    while irow < maxrow:
+        row = csvlines[irow].strip().split(",")
+        if len(labels) != len(row):
+            print("Incorrect number of fields on line %. Found %d should be %d" % ( irow, len(row), len(labels)))
+        if debug and irow % 10 == 0:
+            heap1 = h.heap()-heap0
+            print(heap1)
+            del heap1
+        # Unpack some stuff from the row
+        smiles = [ row[0], row[1] ]
+        charge = [ int(row[2]), int(row[3])]
+        natoms = [ int(row[4]), int(row[5])]
+        # Check for a recognizable basis set
+        basis_set = row[11]
+        if basis_set in basis_map:
+            basis_set = basis_map[basis_set]
+        elif verbose:
+            print("Unknown basis set %s" % basis_set)
+        # Look for the lowest energy dimer
+        EinterMin = float(row[eterm])
+        jrowMin   = irow
+        jrow      = irow+1
+        samedimer = True
+        while jrow < maxrow and samedimer:
+            thisrow = csvlines[jrow].strip().split(",")
+            samedimer = thisrow[0] == row[0] and thisrow[1] == row[1]
+            if samedimer:
+                EinterJ = float(thisrow[eterm])
+                if EinterJ < EinterMin:
+                    jrowMin = jrow
+                    EinterMin = EinterJ
+                jrow += 1
+        # Now we have the lowest energy for this complex at jrowMin
+        # and we have a range of irow to jrow which all are the same dimer.
+        # We send the coordinates for the lowest energy structure to
+        # openbabel to get atomtypes and properties and use those for
+        # all the other complexes as well.
+        # TODO: Check that all dimers have the same basisset, otherwise
+        # we cannot compare them.
+        natom       = natoms[0] + natoms[1]
+        atom_labels = row[53].split()
+        
+        # Create a new molprop entry
+        mp1    = mp.Molprop("dimer")
+        
+        # Copy coordinates to N x 3 list
+        # Coordinates need to be taken from the minimum energy structure only
+        # when we determine the molecule properties
+        if debug:
+            print("Dimer row range %d - %d minimum %d" % (irow, jrow, jrowMin))
+        coords = string2coords(csvlines[jrowMin].strip().split(",")[xyzterm])
+            
+        # Generate two fragments and derived properties
+        atomtypes     = []
+        fragnames     = []
+        success       = False
+        atomnr_offset = 0
+        for fff in [ 0, 1 ]:
+            natom   = natoms[fff]
+            # Try and interpret the coordinates using OpenBabel
+            MD      = gmd.MoleculeDict()
+            if debug:
+                print("MD size %d bytes" % actualsize(MD))
+            success = MD.from_coords_elements_obc(atom_labels[atomnr_offset:atomnr_offset+natom],
+                                                  coords[atomnr_offset:atomnr_offset+natom],
+                                                  obmol, obConversion)
+            if not success:
+                print("Could not analyze coordinates for %s" % smiles[fff])
                 break
-    molprops.sort_energy_and_add_molecule(mp1)
+            # Collect atom properties
+            atom_id = []
+            mass    = 0.0
+            for i in range(natom):
+                atomtypes.append(MD.atoms[i+1]["atomtype"])
+                atom_id.append(atomnr_offset+i+1)
+                mass += MD.atoms[i+1]["mass"]
+            # Create fragment name from iupac names of monomers
+            fragnames.append(get_iupac(M, MD.inchi, smiles[fff]))
+            frag = mp.Fragment(fragnames[fff], charge[fff],
+                               1, 1, atom_id, mass, MD.formula)
+            # Add the fragment to the molprop and delete it
+            mp1.add_fragment(frag)
+            del frag
+            # Add bonds for this fragment
+            for b in MD.bonds:
+                mp1.add_bond(atomnr_offset+b[0], atomnr_offset+b[1], MD.bonds[b])
+            # Update the offset
+            atomnr_offset += natom
+            # Clean up
+            del MD
+        if not success:
+            continue
+        # Check for selection
+        if len(mysel) > 0 and not (fragnames[0] in mysel and fragnames[1] in mysel):
+            irow = jrow
+            del mp1
+            continue
+        # Update the dimer name
+        molname = ("%s-%s" % ( fragnames[0], fragnames[1] ))
+        mp1.set_molname(molname)
+        # Done with the generic stuff for this molprop, now add all the experiments
+        for krow in range(irow,jrow):
+            # Create new experiment
+            jobtype = "SP"
+            if krow == jrowMin:
+                jobtype = "Opt"
+            exper = mp.Experiment(datasource, reference, program, method, basis_set, conformation,
+                                  jobtype, datafile, useForce)
+            myrow = csvlines[krow].strip().split(",")
+            if len(labels) != len(myrow):
+                print("Incorrect number of fields on line %. Found %d should be %d" % ( krow, len(myrow), len(labels)))
+            exper.add_energy("InteractionEnergy", "kcal/mol", "0", "gas", myrow[eterm])
+            coords = string2coords(myrow[xyzterm])
+            if debug:
+                print("Dimer row %d #coords %g natoms %d " % (krow, len(coords), natoms[0]+natoms[1]))
+            # Add the atoms to the experiment
+            atomnr_offset = 0
+            for fff in [ 0, 1 ]:
+                natom   = natoms[fff]
+                for i in range(natom):
+                    exper.add_atom(atom_labels[atomnr_offset+i],
+                                   atomtypes[atomnr_offset+i], 
+                                   atomnr_offset+i+1, coord_unit,
+                                   coords[atomnr_offset+i][0],
+                                   coords[atomnr_offset+i][1],
+                                   coords[atomnr_offset+i][2],
+                                   force_unit, 0, 0, 0)
+                atomnr_offset += natom
+            # Add this experiment and then clean up
+            mp1.add_experiment(exper)
+            del coords
+            del exper
+            del myrow
+
+        # Add this dimer to the set and clean up
+        molprops.add_molecule(mp1, prettyPrint)
+        del mp1
+        del atom_labels
+        # Update loop variable
+        irow = jrow
+        gc.collect()
+
+    del obConversion
     molprops.close()
-#    molprops.write(outfile)
 
 def parse_args():
     desc = "Convert Donchev files to molprop"
@@ -154,17 +265,21 @@ def parse_args():
     parser.add_argument("-f", "--infile", help="Input file in csv format", type=str, default=None)
     parser.add_argument("-o", "--outfile", help="Output molprop file", type=str, default=None)
     parser.add_argument("-sel", "--selection", help="ACT selection file", type=str, default=None)
-    maxdim = 100
-    parser.add_argument("-md", "--maxdimer", help="Write only the first N dimers, 0 means write them all, default "+str(maxdim), type=int, default=maxdim)
+    maxdim = 1000
+    parser.add_argument("-md", "--maxdimer", help="Read only the first N rows from input file, 0 means read them all, default "+str(maxdim), type=int, default=maxdim)
     parser.add_argument("-v", "--verbose", help="Write more output", action="store_true")
+    parser.add_argument("-dbg", "--debug", help="Print debugging messages", action="store_true")
+    parser.add_argument("-pp",  "--pretty", help="Print pretty xml", action="store_true")
     args = parser.parse_args()
     return args
 
 if __name__ == "__main__":
     args = parse_args()
 
+    if args.debug:
+        debug = True
     if args.infile and args.outfile:
         convert(args.infile, args.outfile, args.selection, 
-                args.verbose, args.maxdimer)
+                args.verbose, args.maxdimer, args.pretty)
     else:
-        print("Please pass me an input and out file (try -h first)")
+        print("Please pass me input and output filenames (try -h first)")

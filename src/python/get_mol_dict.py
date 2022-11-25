@@ -44,8 +44,6 @@ class MoleculeDict:
         obmol.SetAromaticPerceived(False) 
         obconversion.SetOutFormat("inchi")
         self.inchi      = obconversion.WriteString(obmol).strip()
-        obconversion.SetOutFormat("inchikey")
-        self.inchikey   = obconversion.WriteString(obmol).strip()
 
         if None != forcefield:
             ff = ob.OBForceField.FindForceField(forcefield)
@@ -59,8 +57,9 @@ class MoleculeDict:
                 if not ff.GetAtomTypes(obmol):
                     print("Could not get atomtypes from force field %s for %s" % ( forcefield, filename))
                     return False
+            del ff
 
-        g2a      = GaffToAlexandria()
+        g2a = GaffToAlexandria()
         # Add the atoms
         for atom in ob.OBMolAtomIter(obmol):
             index      = atom.GetIdx()
@@ -81,13 +80,16 @@ class MoleculeDict:
             self.atoms[index] = {"atomic_number": atomic_number, "obtype": obtype.GetValue(),
                                  "atomtype": atomtype, "mass": mass,
                                  "X": X, "Y": Y, "Z": Z}
-    
+            atom.Clear()
+        g2a = None
         # Add the bonds
         for bond in ob.OBMolBondIter(obmol):
             bbb = (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
             self.bonds[bbb] = bond.GetBondOrder()
             if bond.IsAromatic() and forcefield == "alexandria":
                 self.bonds[bbb] = 1.5
+            bond.Clear()
+            del bond
         if forcefield == "alexandria":
             self.check_bondorder()
         if debug:
@@ -100,9 +102,14 @@ class MoleculeDict:
         obconversion.SetInFormat(fileformat)
         obmol    = ob.OBMol()
         notatend = obconversion.ReadFile(obmol,filename)
-        return self.analyse_obmol(obconversion, obmol, forcefield)
+        success  = self.analyse_obmol(obconversion, obmol, forcefield)
+        # Help garbage collecting
+        del obconversion
+        obmol.Clear()
+        del obmol
+        return success
         
-    def from_coords_elements(self, elements, coords, forcefield="alexandria"):
+    def from_coords_elements_obc(self, elements, coords, obmol, obConversion, forcefield="alexandria"):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
             return False
@@ -114,9 +121,20 @@ class MoleculeDict:
         for i in range(len(elements)):
             xyzstring += ("%2s%22.3f%22.3f%22.3f\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2] ))
 
+        obmol.Clear()
+        obConversion.ReadString(obmol, xyzstring)
+        success      = self.analyse_obmol(obConversion, obmol, forcefield)
+        # Help garbage collecting
+        del xyzstring
+        return success
+        
+    def from_coords_elements(self, elements, coords, forcefield="alexandria"):
         obConversion = ob.OBConversion()
         obConversion.SetInFormat("xyz")
-        obmol = ob.OBMol()
-
-        obConversion.ReadString(obmol, xyzstring)
-        return self.analyse_obmol(obConversion, obmol, forcefield)
+        obmol        = ob.OBMol()
+        success = self.from_coords_elements_obc(elements, coords, obmol, obConversion, forcefield)
+        # Help garbage collecting
+        obmol.Clear()
+        del obmol
+        del obConversion
+        return success

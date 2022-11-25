@@ -698,7 +698,7 @@ static void mp_process_tree(FILE                              *fp,
                         }
                         std::vector<MolPropXml> clean1 = {
                             MolPropXml::TYPE, MolPropXml::UNIT,
-                            MolPropXml::ENERGY, MolPropXml::TEMPERATURE,
+                            /*MolPropXml::ENERGY,*/ MolPropXml::TEMPERATURE,
                             MolPropXml::PHASE, MolPropXml::AVERAGE 
                         };
                         if (nullptr != last && xmlFound(xbuf, clean1))
@@ -725,8 +725,8 @@ static void mp_process_tree(FILE                              *fp,
                             }
                             clean_xbuf(xbuf, clean1);
                         }
-                        clean_xbuf(xbuf, { elem });
                     }
+                    clean_xbuf(xbuf, { elem });
                     break;
 
                 case MolPropXml::ATOM:

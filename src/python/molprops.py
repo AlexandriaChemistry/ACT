@@ -174,6 +174,13 @@ class Molprop:
         self.compounds = []
         self.set_molname(molname)
         
+    def __del__(self):
+        del self.properties
+        del self.bonds
+        del self.fragments
+        del self.experiments
+        del self.compounds
+        
     def set_molname(self, molname):
         self.properties["molname"] = molname
 
@@ -203,6 +210,7 @@ class Molprops:
 
     def __init__(self):
         self.outf      = None
+        self.molecules = ET.Element("molecules")
         
     def open(self, outfile:str):
         self.outf      = open(outfile, "w")
@@ -214,15 +222,14 @@ class Molprops:
             self.outf.write("</molecules>\n")
             self.outf.close()
  
-    def add_molecule(self, molecule:Molprop):
+    def add_molecule(self, molecule:Molprop, prettyPrint:bool):
         if len(molecule.fragments) == 0:
             molname = ""
             if "molname" in molecule.properties:
                 molname = molecule.properties["molname"]
             print("There are no fragments. Ignoring molecule %s" % molname)
             return
-        self.molecules = ET.Element("molecules")
-        lastmol = ET.SubElement(self.molecules, "molecule")
+        lastmol   = ET.SubElement(self.molecules, "molecule")
         for prop in molecule.properties.keys():
             lastmol.set(prop, molecule.properties[prop])
         if len(molecule.bonds) > 0:
@@ -342,30 +349,17 @@ class Molprops:
                        myvalue.text = esp[value]
                        
         # The code is a hack for not having the extra header.
-        skipped = True
-#        for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')).toprettyxml(indent="  ").splitlines():
-        for xmlstr in ET.tostring(lastmol, encoding='unicode').splitlines():
-            if skipped:
+        if not prettyPrint:
+            self.outf.write("%s\n" % (ET.tostring(lastmol, encoding='unicode')))
+        else:
+            for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')).toprettyxml(indent="  ").splitlines()[1:]:
                 self.outf.write("%s\n" % xmlstr)
-            skipped = True
-        self.outf.write("\n")
+                del xmlstr
         self.outf.flush()
+        lastmol.clear()
+        del lastmol
         self.molecules.clear()
         gc.collect()
-
-    def sort_energy_and_add_molecule(self, mpnew:Molprop):
-        if not mpnew:
-            return
-        ener_min = 1e12
-        ener_ind = -1
-        for i in range(len(mpnew.experiments)):
-            ener_i = float(mpnew.experiments[i].energies[0]["average"])
-            if ener_i < ener_min:
-                ener_min = ener_i
-                ener_ind = i
-        if ener_ind >= 0:
-            mpnew.experiments[ener_ind].properties["jobtype"] = "Opt"
-            self.add_molecule(mpnew)
 
 def test_molprops():
     molprops = Molprops()
