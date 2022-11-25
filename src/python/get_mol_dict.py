@@ -71,6 +71,7 @@ class MoleculeDict:
                 obtype = atp
                 if atp:
                     atomtype = g2a.rename(atp.GetValue())
+            print("atomtype %s index %d" % ( atomtype, index))
             X = atom.GetX()
             Y = atom.GetY()
             Z = atom.GetZ()
@@ -80,16 +81,16 @@ class MoleculeDict:
             self.atoms[index] = {"atomic_number": atomic_number, "obtype": obtype.GetValue(),
                                  "atomtype": atomtype, "mass": mass,
                                  "X": X, "Y": Y, "Z": Z}
-            atom.Clear()
         g2a = None
         # Add the bonds
+        print("There are %d bonds" % obmol.NumBonds())
         for bond in ob.OBMolBondIter(obmol):
             bbb = (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
             self.bonds[bbb] = bond.GetBondOrder()
             if bond.IsAromatic() and forcefield == "alexandria":
                 self.bonds[bbb] = 1.5
-            bond.Clear()
-            del bond
+            print(bbb)
+            print(self.bonds[bbb])
         if forcefield == "alexandria":
             self.check_bondorder()
         if debug:
@@ -109,7 +110,7 @@ class MoleculeDict:
         del obmol
         return success
         
-    def from_coords_elements_obc(self, elements, coords, obmol, obConversion, forcefield="alexandria"):
+    def from_coords_elements_obc(self, elements, coords, obConversion, forcefield="alexandria"):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
             return False
@@ -120,11 +121,11 @@ class MoleculeDict:
         xyzstring = ("%d\nCoordinates\n" % atomnumber)
         for i in range(len(elements)):
             xyzstring += ("%2s%22.3f%22.3f%22.3f\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2] ))
-
-        obmol.Clear()
+        obmol = ob.OBMol()
         obConversion.ReadString(obmol, xyzstring)
         success      = self.analyse_obmol(obConversion, obmol, forcefield)
         # Help garbage collecting
+        del obmol
         del xyzstring
         return success
         

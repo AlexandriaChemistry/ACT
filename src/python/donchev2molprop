@@ -93,7 +93,6 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
 
     obConversion = ob.OBConversion()
     obConversion.SetInFormat("xyz")
-    obmol = ob.OBMol()
     csv = open(csv_file, "r")
     csvlines = csv.readlines()
     csv.close()
@@ -179,7 +178,7 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
                 print("MD size %d bytes" % actualsize(MD))
             success = MD.from_coords_elements_obc(atom_labels[atomnr_offset:atomnr_offset+natom],
                                                   coords[atomnr_offset:atomnr_offset+natom],
-                                                  obmol, obConversion)
+                                                  obConversion)
             if not success:
                 print("Could not analyze coordinates for %s" % smiles[fff])
                 break
@@ -196,13 +195,15 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
                                1, 1, atom_id, mass, MD.formula)
             # Add the fragment to the molprop and delete it
             mp1.add_fragment(frag)
-            del frag
             # Add bonds for this fragment
+            if debug:
+                print("There are %d bonds in %s" % ( len(MD.bonds), fragnames[fff] ))
             for b in MD.bonds:
                 mp1.add_bond(atomnr_offset+b[0], atomnr_offset+b[1], MD.bonds[b])
             # Update the offset
             atomnr_offset += natom
             # Clean up
+            del frag
             del MD
         if not success:
             continue
