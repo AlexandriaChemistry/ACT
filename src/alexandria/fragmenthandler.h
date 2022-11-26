@@ -42,8 +42,6 @@ namespace alexandria
         std::vector<QgenAcm>               QgenAcm_;
         //! A complete topology for each fragment is needed to compute energies
         std::vector<Topology>              topologies_;
-        //! And a supporting atoms structure too
-        std::vector<std::vector<ActAtom> > FragAtoms_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
         //! Array denoting where the atoms start in the global

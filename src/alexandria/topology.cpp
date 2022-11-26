@@ -781,6 +781,15 @@ void Topology::generateExclusions(int nrexcl,
                 }
             }
             break;
+        case InteractionType::POLARIZATION:
+            {
+                for(auto &b : myEntry.second)
+                {
+                    auto a = b->atomIndices();
+                    exclusions_[a[0]].push_back(a[1]);
+                    exclusions_[a[1]].push_back(a[0]);
+                }
+            }
         case InteractionType::ANGLES:
         case InteractionType::LINEAR_ANGLES:
             {
@@ -813,11 +822,11 @@ void Topology::generateExclusions(int nrexcl,
                     AtomPair ap(ai, exclusions_[ai][j]);
                     for(auto pp = itt->begin(); pp < itt->end(); ++pp)
                     {
-                    if (ap == *static_cast<AtomPair *>(*pp))
-                    {
-                        itt->erase(pp);
-                        break;
-                    }
+                        if (ap == *static_cast<AtomPair *>(*pp))
+                        {
+                            itt->erase(pp);
+                            break;
+                        }
                     }
                 }
             }
@@ -942,6 +951,11 @@ void Topology::setIdentifiers(const Poldata *pd)
             std::vector<std::string> btype;
             for(auto &jj : topentry->atomIndices())
             {
+                // Check whether we do nog e.g. have a shell here
+                if (!pd->hasParticleType(atoms_[jj].ffType()))
+                {
+                    continue;
+                }
                 auto atype = pd->findParticleType(atoms_[jj].ffType());
                 switch (entry.first)
                 {
@@ -952,6 +966,15 @@ void Topology::setIdentifiers(const Poldata *pd)
                         break;
                     }
                 case InteractionType::POLARIZATION:
+                    {
+                        // For COULOMB there are two particles,
+                        // but for polarization just one.
+                        if (atype->hasInteractionType(entry.first))
+                        {
+                            btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
+                        }
+                        break;
+                    }
                 case InteractionType::COULOMB:
                     {
                         // For COULOMB there are two particles,

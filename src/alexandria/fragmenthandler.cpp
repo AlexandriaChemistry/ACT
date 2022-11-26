@@ -50,7 +50,6 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
     topologies_.resize(fragments->size());
 
-    FragAtoms_.resize(fragments->size());
     bonds_.resize(fragments->size());
     natoms_           = 0;
     size_t  ff        = 0;
@@ -62,6 +61,8 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("No atoms in fragment %zu with formula %s", ff, f->formula().c_str()).c_str()));
         }
+        // If polarizable we will need to add these
+        std::vector<TopologyEntry *> pols;
         // Count the number of atoms
         std::vector<int> toAdd;
         for(auto &a : f->atoms())
@@ -97,8 +98,17 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
                 {
                     // TODO remove assumption that shell is next to the atom in order
                     toAdd.push_back(anew+1-atomStart_[ff]);
+                    auto pp = new TopologyEntry();
+                    pp->addAtom(anew-atomStart_[ff]);
+                    pp->addAtom(anew-atomStart_[ff]+1);
+                    pp->addBondOrder(1.0);
+                    pols.push_back(pp);
                 }
             }
+        }
+        if (pd->polarizable())
+        {
+            topologies_[ff].addEntry(InteractionType::POLARIZATION, pols);
         }
         // The next fragment, if there is one, starts after this one!
         atomStart_.push_back(atomStart_[ff]+toAdd.size());
@@ -115,11 +125,10 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
                           anumber,
                           atoms[i+atomStart_[ff]].mass(),
                           atoms[i+atomStart_[ff]].charge());
-            FragAtoms_[ff].push_back(newat);
             topologies_[ff].addAtom(newat);
             j++;
         }
-        QgenAcm_.push_back(QgenAcm(pd, FragAtoms_[ff], f->charge()));
+        QgenAcm_.push_back(QgenAcm(pd, topologies_[ff].atoms(), f->charge()));
         // We need to compute the molecule offset, that is
         // the atom number where fragment ff starts.
         int offset = 0;
@@ -174,7 +183,7 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
         topologies_[ff].build(pd, myx, 175.0, 5.0, missingParameters::Error);
         if (pd->polarizable())
         {
-            topologies_[ff].addShellPairs();
+            //topologies_[ff].addShellPairs();
         }
         topologies_[ff].setIdentifiers(pd);
         if (missing != missingParameters::Generate)
@@ -185,21 +194,19 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
     if (debug)
     {
         fprintf(debug, "FragmentHandler: atoms.size() %lu natoms %zu nbonds %zu nfragments %zu\n",
-                atoms.size(), natoms_, bonds.size(), FragAtoms_.size());
+                atoms.size(), natoms_, bonds.size(), topologies_.size());
     }
 }
 
 void FragmentHandler::fetchCharges(std::vector<double> *qq)
 {
     qq->resize(natoms_, 0);
-    size_t ff = 0;
-    for (auto &fa : FragAtoms_)
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        for (size_t a = 0; a < fa.size(); a++)
+        for (size_t a = 0; a < topologies_[ff].atoms().size(); a++)
         {
             (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
         }
-        ff += 1;
     }
 }
 
@@ -210,27 +217,26 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        std::vector<ActAtom>         *atoms)
 {
     auto   eqgen = eQgen::OK;
-    size_t ff    = 0;
-    for (auto &fa : FragAtoms_)
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
         // TODO only copy the coordinates if there is more than one fragment.
         std::vector<gmx::RVec> xx;
-        xx.resize(fa.size());
-        for(size_t a = 0; a < fa.size(); a++)
+        xx.resize(topologies_[ff].atoms().size());
+        for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
         {
             copy_rvec(x[atomStart_[ff]+a], xx[a]);
         }
         eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
-                                             &fa, xx, bonds_[ff]);
+                                             topologies_[ff].atomsPtr(),
+                                             xx, bonds_[ff]);
         if (eQgen::OK != eqgen)
         {
             break;
         }
-        for(size_t a = 0; a < fa.size(); a++)
+        for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
         {
-            (*atoms)[atomStart_[ff]+a].setCharge(fa[a].charge());
+            (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
         }
-        ff += 1;
     }
     return eqgen;
 }
