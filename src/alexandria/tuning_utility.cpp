@@ -1368,28 +1368,22 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
         {
             double deltaE0;
-            if (!mol->energy(MolPropObservable::DELTAE0, &deltaE0))
+            if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("No molecular energy for %s",
-                                                               mol->getMolname().c_str()).c_str()));
-            }
-            // deltaE0 += mol->atomizationEnergy();
-            auto meiter = molEpot.find(mol->getMolname());
-            if (molEpot.end() != meiter)
-            {
-                auto epot = meiter->second;
-                auto diff = std::abs(epot-deltaE0);
-                if ((mol->support() != eSupport::No) && (diff > epotMax))
+                // deltaE0 += mol->atomizationEnergy();
+                auto meiter = molEpot.find(mol->getMolname());
+                if (molEpot.end() != meiter)
                 {
-                    fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
-                            mol->getMolname().c_str(), epot, deltaE0,
-                            iMolSelectName(mol->datasetType()));
-                    nout++;
+                    auto epot = meiter->second;
+                    auto diff = std::abs(epot-deltaE0);
+                    if ((mol->support() != eSupport::No) && (diff > epotMax))
+                    {
+                        fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
+                                mol->getMolname().c_str(), epot, deltaE0,
+                                iMolSelectName(mol->datasetType()));
+                        nout++;
+                    }
                 }
-            }
-            else
-            {
-                fprintf(fp, "WARNING: Cannot find %s in molEpot map\n", mol->getMolname().c_str());
             }
         }
         if (nout)

@@ -379,11 +379,12 @@ public:
      * \param[in] verbose Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
-    size_t Read(FILE            *fp,
-                const char      *fn,
-                Poldata         *pd,
-                const MolSelect &gms,
-                bool             verbose);
+    size_t Read(FILE                                *fp,
+                const char                          *fn,
+                Poldata                             *pd,
+                const MolSelect                     &gms,
+                const std::map<eRMS, FittingTarget> &targets,
+                bool                                 verbose);
 
 };
 

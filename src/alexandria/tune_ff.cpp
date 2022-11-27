@@ -824,6 +824,7 @@ int tune_ff(int argc, char *argv[])
                             opt2fn("-mp", filenms.size(), filenms.data()),
                             opt.sii()->poldata(),
                             gms,
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train),
                             opt.verbose()))
     {
         if (opt.logFile())

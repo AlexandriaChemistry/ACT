@@ -560,11 +560,43 @@ void MolGen::countTargetSize() // Called in read method
     }
 }
 
-size_t MolGen::Read(FILE            *fp,
-                    const char      *fn,
-                    Poldata         *pd,
-                    const MolSelect &gms,
-                    bool             verbose)
+static double computeCost(const MyMol                         *mymol,
+                          const std::map<eRMS, FittingTarget> &targets)
+{
+    double w = 1;
+    for(const auto &tg: targets)
+    {
+        switch(tg.first)
+        {
+        case eRMS::ESP:
+        case eRMS::EPOT:
+        case eRMS::Interaction:
+        case eRMS::Force2:
+        case eRMS::Polar:
+        case eRMS::BOUNDS:
+        case eRMS::UNPHYSICAL:
+            break;
+        case eRMS::CHARGE:
+        case eRMS::MU:
+        case eRMS::QUAD:
+        case eRMS::OCT:
+        case eRMS::HEXADEC:
+        case eRMS::FREQUENCY:
+        case eRMS::INTENSITY:
+        case eRMS::CM5:
+        case eRMS::TOT:
+            break;
+        }
+    }
+    return w;
+}
+                     
+size_t MolGen::Read(FILE                                *fp,
+                    const char                          *fn,
+                    Poldata                             *pd,
+                    const MolSelect                     &gms,
+                    const std::map<eRMS, FittingTarget> &targets,
+                    bool                                 verbose)
 {
     int                              nwarn    = 0;
     std::map<immStatus, int>         imm_count;
@@ -676,7 +708,7 @@ size_t MolGen::Read(FILE            *fp,
                     }
                     continue;
                 }
-
+                double cost = computeCost(&mymol, targets);
                 imm = mymol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
