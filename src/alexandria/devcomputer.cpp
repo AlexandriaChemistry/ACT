@@ -511,10 +511,6 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
             }
         }
     }
-    if (energyMap.empty())
-    {
-        printf("Did not find any energies for %s\n", mymol->getMolname().c_str());
-    }
     auto te = targets->find(eRMS::EPOT);
     if (te != targets->end() && !energyMap.empty())
     {
@@ -524,15 +520,18 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
             {
                 printf("Energy for %s is NaN\n", mymol->getMolname().c_str());
             }
-            // TODO Double check if the atomizationEnergy is needed.
-            // auto enerexp = mymol->atomizationEnergy() + ff.first;
-            double mydev2 = gmx::square(ff.first-ff.second);
-            if (mydev2 == 0)
+            else
             {
-                printf("Energy difference exactly zero for %s. Ref ener %g\n",
-                       mymol->getMolname().c_str(), ff.first);
+                // TODO Double check if the atomizationEnergy is needed.
+                // auto enerexp = mymol->atomizationEnergy() + ff.first;
+                double mydev2 = gmx::square(ff.first-ff.second);
+                if (mydev2 == 0)
+                {
+                    printf("Energy difference exactly zero for %s. Ref ener %g\n",
+                           mymol->getMolname().c_str(), ff.first);
+                }
+                te->second.increase(1, mydev2);
             }
-            te->second.increase(1, mydev2);
         }
     }
     auto ti = targets->find(eRMS::Interaction);
