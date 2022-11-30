@@ -827,11 +827,7 @@ int tune_ff(int argc, char *argv[])
                             opt.sii()->fittingTargetsConst(iMolSelect::Train),
                             opt.verbose()))
     {
-        if (opt.logFile())
-        {
-            fprintf(opt.logFile(), "Training set is empty, check your input. Rerun with -v option or -debug 1.\n");
-        }
-        return 0;
+        GMX_THROW(gmx::InvalidInputError("Training set is empty, check your input. Rerun with -v option or -debug 1"));
     }
 
 
