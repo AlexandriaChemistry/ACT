@@ -107,10 +107,12 @@ def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str,
     mp = read_gaussian_log(logfile, molname, basisset, False, 0)
     if mp:
       molprops = Molprops()
+      molprops.open(datafile)
       mp.experiments[0].add_prop("jobtype", jobtype)
       mp.fragments[0].symmetry_number = str(symmetry_number)
-      molprops.add_molecule(mp)
-      molprops.write(datafile)
+      molprops.add_molecule(mp, True)
+      molprops.close()
+      del molprops
   if os.path.exists(datafile):
     return datafile
   else:

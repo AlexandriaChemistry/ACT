@@ -71,7 +71,8 @@ class MoleculeDict:
                 obtype = atp
                 if atp:
                     atomtype = g2a.rename(atp.GetValue())
-            print("atomtype %s index %d" % ( atomtype, index))
+            if debug:
+                print("atomtype %s index %d" % ( atomtype, index))
             X = atom.GetX()
             Y = atom.GetY()
             Z = atom.GetZ()
@@ -83,14 +84,15 @@ class MoleculeDict:
                                  "X": X, "Y": Y, "Z": Z}
         g2a = None
         # Add the bonds
-        print("There are %d bonds" % obmol.NumBonds())
+        if debug:
+            print("There are %d bonds" % obmol.NumBonds())
         for bond in ob.OBMolBondIter(obmol):
             bbb = (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
             self.bonds[bbb] = bond.GetBondOrder()
             if bond.IsAromatic() and forcefield == "alexandria":
                 self.bonds[bbb] = 1.5
-            print(bbb)
-            print(self.bonds[bbb])
+            if debug:
+                print("bond %d-%d order %g" % ( bbb[0], bbb[1], self.bonds[bbb]))
         if forcefield == "alexandria":
             self.check_bondorder()
         if debug:
@@ -132,10 +134,7 @@ class MoleculeDict:
     def from_coords_elements(self, elements, coords, forcefield="alexandria"):
         obConversion = ob.OBConversion()
         obConversion.SetInFormat("xyz")
-        obmol        = ob.OBMol()
-        success = self.from_coords_elements_obc(elements, coords, obmol, obConversion, forcefield)
+        success = self.from_coords_elements_obc(elements, coords, obConversion, forcefield)
         # Help garbage collecting
-        obmol.Clear()
-        del obmol
         del obConversion
         return success
