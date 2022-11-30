@@ -209,12 +209,13 @@ int simulate(int argc, char *argv[])
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
-    
+    int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
-        return 0;
+        status = 1;
+        return status;
     }
     sch.check_pargs();
     
@@ -270,102 +271,90 @@ int simulate(int argc, char *argv[])
         else
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
+            status = 1;
         }
     }
-    auto imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error,
-                                      false);
-    if (immStatus::OK != imm)
+    immStatus imm = immStatus::OK;
+    if (status == 0)
     {
-        fprintf(stderr, "Problem generating topology: %s\n", immsg(imm));
-        return 0;
+        imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
     }
-    CommunicationRecord cr;
-    gmx::MDLogger  mdlog {};
-    std::vector<gmx::RVec> forces(mymol.atomsConst().size());
     std::vector<gmx::RVec> coords = mymol.xOriginal();
-    if (immStatus::OK == imm)
+    if (immStatus::OK == imm && status == 0)
     {
+        CommunicationRecord cr;
+        gmx::MDLogger  mdlog {};
+        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+
         std::vector<double> myq;
         auto alg = pd.chargeGenerationAlgorithm();
         imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
     }
-    if (verbose && pd.polarizable())
+    if (immStatus::OK == imm && status == 0)
     {
-        // Make a copy since it maybe changed
-        auto xx    = coords;
-        auto qCalc = mymol.qTypeProps(qType::Calc);
-        forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
-        auto alpha = qCalc->polarizabilityTensor();
-        double fac = convertFromGromacs(1, "A^3");
-        fprintf(logFile, "Alpha trace: %10g %10g %10g. Isotropic: %10g\n",
-                fac*alpha[XX][XX], fac*alpha[YY][YY], fac*alpha[ZZ][ZZ], 
-                fac*qCalc->isotropicPolarizability());
-    }
-
-    if (debug)
-    {
-        mymol.topology()->dump(debug);
-    }
-    /* Generate output file for debugging if requested */
-    if (strlen(trajname) > 0)
-    {
-        do_rerun(logFile, &pd, &mymol, forceComp, trajname, qtot);
-    }
-    else if (immStatus::OK == imm && mymol.errors().empty())
-    {
-        MolHandler molhandler;
-        std::vector<gmx::RVec> coords = mymol.xOriginal();
-        std::vector<gmx::RVec> xmin   = coords;
-        auto eMin = eMinimizeStatus::OK;
-        if (sch.nma() || sch.minimize())
+        if (verbose && pd.polarizable())
         {
-            std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
-                                                  &xmin, &energies, logFile);
-            if (eMinimizeStatus::OK == eMin)
-            {
-                auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
-                fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
-                        energies[InteractionType::EPOT], rmsd);
-                matrix box;
-                clear_mat(box);
-                write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
-                               mymol.getMolname().c_str(),
-                               mymol.gmxAtomsConst(),
-                               as_rvec_array(xmin.data()), nullptr,
-                               epbcNONE, box);
-            }
-            else
-            {
-                fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                        eMinimizeStatusToString(eMin).c_str(),
-                        logFileName);
-            }
+            // Make a copy since it maybe changed
+            auto xx    = coords;
+            auto qCalc = mymol.qTypeProps(qType::Calc);
+            forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
+            auto alpha = qCalc->polarizabilityTensor();
+            double fac = convertFromGromacs(1, "A^3");
+            fprintf(logFile, "Alpha trace: %10g %10g %10g. Isotropic: %10g\n",
+                    fac*alpha[XX][XX], fac*alpha[YY][YY], fac*alpha[ZZ][ZZ], 
+                    fac*qCalc->isotropicPolarizability());
         }
-        if (immStatus::OK == imm && eMinimizeStatus::OK == eMin)
+
+        if (debug)
         {
-            if (sch.nma())
+            mymol.topology()->dump(debug);
+        }
+        auto eMin = eMinimizeStatus::OK;
+        /* Generate output file for debugging if requested */
+        if (strlen(trajname) > 0)
+        {
+            do_rerun(logFile, &pd, &mymol, forceComp, trajname, qtot);
+        }
+        else if (mymol.errors().empty())
+        {
+            MolHandler molhandler;
+            std::vector<gmx::RVec> coords = mymol.xOriginal();
+            std::vector<gmx::RVec> xmin   = coords;
+            if (sch.nma() || sch.minimize())
             {
+                std::map<InteractionType, double> energies;
+                eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
+                                                  &xmin, &energies, logFile);
                 if (eMinimizeStatus::OK == eMin)
                 {
-                    AtomizationEnergy        atomenergy;
-                    std::vector<std::string> output;
-                    doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
-                                        atomenergy, nullptr, &output,
-                                        opt2fn_null("-ir", fnm.size(), fnm.data()),
-                                        sch.lineWidth(), oenv,
-                                        sch.lapack(), verbose);
-                    for(const auto &op : output)
+                    auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
+                    fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
+                            energies[InteractionType::EPOT], rmsd);
+                    matrix box;
+                    clear_mat(box);
+                    write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
+                                   mymol.getMolname().c_str(),
+                                   mymol.gmxAtomsConst(),
+                                   as_rvec_array(xmin.data()), nullptr,
+                                   epbcNONE, box);
+                    
+                    if (sch.nma())
                     {
-                        fprintf(logFile, "%s\n", op.c_str());
+                        AtomizationEnergy        atomenergy;
+                        std::vector<std::string> output;
+                        doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
+                                            atomenergy, nullptr, &output,
+                                            opt2fn_null("-ir", fnm.size(), fnm.data()),
+                                            sch.lineWidth(), oenv,
+                                            sch.lapack(), verbose);
+                        for(const auto &op : output)
+                        {
+                            fprintf(logFile, "%s\n", op.c_str());
+                        }
                     }
                 }
-                else
-                {
-                    fprintf(logFile, "Cannot do NMA because energy minimization failed to converge.\n");
-                }
             }
-            else
+            if (!sch.nma() && eMinimizeStatus::OK == eMin)
             {
                 molhandler.simulate(&pd, &mymol, forceComp, sch, logFile,
                                     opt2fn("-o", fnm.size(),fnm.data()),
@@ -373,18 +362,27 @@ int simulate(int argc, char *argv[])
                                     oenv);
             }
         }
-    }
-    else
-    {
-        fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
-        fprintf(logFile, "%s\n", immsg(imm));
-        for(const auto &err: mymol.errors())
+        
+        if (eMinimizeStatus::OK != eMin)
         {
-            fprintf(logFile, "%s\n", err.c_str());
+            fprintf(stderr, "Minimization failed: %s, check log file %s\n",
+                    eMinimizeStatusToString(eMin).c_str(),
+                    logFileName);
+            status = 1;
+        }
+        else if (immStatus::OK != imm)
+        {
+            fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
+            fprintf(logFile, "%s\n", immsg(imm));
+            for(const auto &err: mymol.errors())
+            {
+                fprintf(logFile, "%s\n", err.c_str());
+            }
+            status = 1;
         }
     }
     gmx_ffclose(logFile);
-    return 0;
+    return status;
 }
 
 } // namespace alexandria

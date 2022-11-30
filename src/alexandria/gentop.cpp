@@ -195,11 +195,12 @@ int gentop(int argc, char *argv[])
          { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
-
+    int status = 0;
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, nullptr, &oenv))
     {
-        return 0;
+        status = 1;
+        return status;
     }
 
     Poldata        pd;
@@ -219,7 +220,8 @@ int gentop(int argc, char *argv[])
     if (nullptr == gentop_fnm)
     {
         fprintf(stderr, "Please pass me a force field file name with the -ff option.\n");
-        return 0;
+        status = 1;
+        return status;
     }
 
     /* Read standard atom properties */
@@ -411,10 +413,11 @@ int gentop(int argc, char *argv[])
             auto fn = opt2fn("-g", NFILE, fnm);
             fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
             print_errors(fn, mymol.errors(), imm);
+            status = 1;
         }
         mp_index++;
     }
-    return 0;
+    return status;
 }
 
 } // namespace alexandria
