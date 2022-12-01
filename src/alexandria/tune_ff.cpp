@@ -268,6 +268,7 @@ void OptACM::initMaster()
 
     // Create and initialize the mutator
     ga::Mutator *mutator;
+    // TODO remove this for nooptimize
     sii_->makeIndividualDir();  // We need to call this before opening working files!
     if (gach_.optimizer() == OptimizerAlg::GA)
     {

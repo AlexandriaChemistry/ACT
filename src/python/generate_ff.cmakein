@@ -135,40 +135,43 @@ class AtomTypes:
     utranslate = { "rmin": "sigma" }
     print(f"Combination rule = {combRule}")    
     if combRule == "None":
-        for Ikey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
-            for Jkey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
-                IJkey = Ikey + "~" + Jkey
+      for Ikey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+        for Jkey in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+          # We only store half a matrix
+          if Jkey < Ikey:
+            continue
+          IJkey = Ikey + "~" + Jkey
 
-                param_header(outf, IJkey)
-                for uuu in units.keys():
-                   u = uuu
-                   if uuu in utranslate:
-                       u = utranslate[uuu]
-                   if self.atp[Ikey][u+"_min"] > self.atp[Jkey][u+"_min"]:
-                        MAX = self.atp[Ikey][u+"_max"]
-                        MIN = self.atp[Jkey][u+"_min"]
-                   else:
-                        MAX = self.atp[Jkey][u+"_max"]
-                        MIN = self.atp[Ikey][u+"_min"]
-                   ijuuu = uuu + "_ij"
-                   outf.write("%s\n" % format_params(ijuuu, units[uuu],
-                                              MIN,
-                                              MAX,
-                                              None, "Bounded", 0, True))
-                param_footer(outf)
-
-
-    for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
-          param_header(outf, key)
+          param_header(outf, IJkey)
           for uuu in units.keys():
             u = uuu
             if uuu in utranslate:
               u = utranslate[uuu]
-            outf.write("%s\n" % format_params(uuu, units[uuu], 
-                                              self.atp[key][u+"_min"],
-                                              self.atp[key][u+"_max"],
-                                              None, self.atp[key][u+"_mutability"], 0, True))
+            if self.atp[Ikey][u+"_min"] > self.atp[Jkey][u+"_min"]:
+              MAX = self.atp[Ikey][u+"_max"]
+              MIN = self.atp[Jkey][u+"_min"]
+            else:
+              MAX = self.atp[Jkey][u+"_max"]
+              MIN = self.atp[Ikey][u+"_min"]
+            ijuuu = uuu + "_ij"
+            outf.write("%s\n" % format_params(ijuuu, units[uuu],
+                                              MIN,
+                                              MAX,
+                                              None, "Bounded", 0, True))
           param_footer(outf)
+
+    else:
+      for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
+        param_header(outf, key)
+        for uuu in units.keys():
+          u = uuu
+          if uuu in utranslate:
+            u = utranslate[uuu]
+          outf.write("%s\n" % format_params(uuu, units[uuu], 
+                                            self.atp[key][u+"_min"],
+                                            self.atp[key][u+"_max"],
+                                            None, self.atp[key][u+"_mutability"], 0, True))
+        param_footer(outf)
       
 class ForceField:
   """Class to hold generic FF information"""
