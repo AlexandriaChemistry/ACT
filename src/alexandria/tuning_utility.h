@@ -48,6 +48,7 @@
 #include "molhandler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
+#include "act/utility/jsontree.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments
@@ -156,7 +157,7 @@ void print_header(FILE                       *fp,
  * \param[in]    coords       Minimized coordinates
  * \param[in]    atomenergy   The atomization energy data
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
- * \param[inout] output       Output strings
+ * \param[inout] jtree        Output structure
  * \paran[in]    spcetrumFileName If not nullptr, a simulated IR spectrum will be written to this file
  * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
  * \param[in]    oenv         Structure to print xvg files
@@ -170,7 +171,7 @@ void doFrequencyAnalysis(const Poldata            *pd,
                          std::vector<gmx::RVec>   *coords,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
-                         std::vector<std::string> *output,
+                         JsonTree                 *jtree,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,

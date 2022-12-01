@@ -48,10 +48,12 @@
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/units.h"
+#include "act/utility/stringutil.h"
 #include "alexandria/mymol.h"
 #include "alexandria/thermochemistry.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/utility/gmxassert.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {
@@ -782,6 +784,67 @@ static void plot_spectrum(const char                *filenm,
     xvgrclose(xvg);
 }
 
+static void addThermo(JsonTree                  *jtree, 
+                      alexandria::MyMol         *mol,
+                      std::vector<gmx::RVec>    *coords,
+                      const AtomizationEnergy   &atomenergy,
+                      const std::vector<double> &freq)
+{
+    real scale_factor = 1;
+    real roomTemp     = 298.15;
+    JsonTree jtc0("T=0");
+    JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
+    ThermoChemistry tc0(mol, *coords, atomenergy, freq, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, roomTemp, 1, scale_factor);
+    {
+        std::string unit("kJ/mol");
+        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), unit);
+        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), unit);
+    }
+    {
+        JsonTree jtS0("Standard entropy");
+        JsonTree jtSRT("Standard entropy");
+        for(const auto &tcc : tccmap())
+        {
+            std::string unit("J/mol K");
+            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), unit);
+            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), unit);
+        }
+        jtc0.addObject(jtS0);
+        jtcRT.addObject(jtSRT);
+    }
+    {
+        JsonTree jtcv0("Heat capacity cV");
+        JsonTree jtcvRT("Heat capacity cV");
+        for(const auto &tcc : tccmap())
+        {
+            std::string unit("J/mol K");
+            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), unit);
+            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), unit);
+        }
+        jtc0.addObject(jtcv0);
+        jtcRT.addObject(jtcvRT);
+    }
+    {
+        JsonTree jtcE0("Internal energy");
+        JsonTree jtcERT("Internal energy");
+        for(const auto &tcc : tccmap())
+        {
+            std::string unit("kJ/mol");
+            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), unit);
+            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), unit);
+        }
+        jtc0.addObject(jtcE0);
+        jtcRT.addObject(jtcERT);
+    }
+    {
+        std::string unit("kJ/mol");
+        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), unit);
+        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), unit);
+    }
+    jtree->addObject(jtc0);
+    jtree->addObject(jtcRT);
+}
 
 void doFrequencyAnalysis(const Poldata            *pd,
                          alexandria::MyMol        *mol,
@@ -790,7 +853,7 @@ void doFrequencyAnalysis(const Poldata            *pd,
                          std::vector<gmx::RVec>   *coords,
                          const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
-                         std::vector<std::string> *output,
+                         JsonTree                 *jtree,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
@@ -798,27 +861,40 @@ void doFrequencyAnalysis(const Poldata            *pd,
                          bool                      debugNMA)
 {
     std::vector<double> alex_freq, intensities;
+    std::vector<std::string> output;
     molhandler.nma(pd, mol, forceComp, coords, &alex_freq, &intensities,
-                   output, useLapack, debugNMA);
+                   &output, useLapack, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
     auto ref_inten = mol->referenceIntensities();
     plot_spectrum(spectrumFileName, mol->getMolname(), lineWidth, alex_freq,
                   intensities, ref_freq, ref_inten, oenv, true);
-    output->push_back(gmx::formatString("Frequencies (%s)     Intensities (%s)", unit, uniti));
-    output->push_back("Reference   Alexandria  Reference   Alexandria");
-    gmx_stats lsq_freq;
+    JsonTree ftree("Frequencies");
+    JsonTree itree("Intensities");
+    
+    // Now loop over frequncies and intensities
+    JsonTree aftree("Alexandria");
+    JsonTree aitree("Alexandria");
+    JsonTree rftree("Reference");
+    JsonTree ritree("Reference");
+    // Statistics
+    gmx_stats lsq_freq, lsq_inten;
     for(size_t k = 0; k < alex_freq.size(); k++)
     {
         double fcalc = convertFromGromacs(alex_freq[k], unit);
         double icalc = convertFromGromacs(intensities[k], uniti);
-        std::string rfs("N/A");
-        std::string ris("N/A");
+        aftree.addValueUnit(gmx::formatString("%lu", k+1),
+                            gmx_ftoa(fcalc), unit);
+        aitree.addValueUnit(gmx::formatString("%lu", k+1),
+                            gmx_ftoa(icalc), uniti);
+        
         if (!ref_freq.empty())
         {
             double fref  = convertFromGromacs(ref_freq[k], unit);
-            rfs = gmx::formatString("%10g", fref);
+            rftree.addValueUnit(gmx::formatString("%lu", k+1),
+                                gmx_ftoa(fref), unit);
+            
             if (nullptr != lsq_freq_all)
             {
                 lsq_freq_all->add_point(fref, fcalc, 0, 0);
@@ -827,77 +903,53 @@ void doFrequencyAnalysis(const Poldata            *pd,
         }
         if (!ref_inten.empty())
         {
-            ris = gmx::formatString("%10g", convertFromGromacs(ref_inten[k], uniti));
+            double iref = convertFromGromacs(ref_inten[k], uniti);
+            ritree.addValueUnit(gmx::formatString("%lu", k+1),
+                                gmx_ftoa(iref), uniti);
+            lsq_inten.add_point(iref, icalc, 0, 0);
         }
-        output->push_back(gmx::formatString("%10s  %10g  %10s  %10g",
-                                            rfs.c_str(), fcalc, ris.c_str(), icalc));
     }
-    if (lsq_freq.get_npoints() > 0)
+    ftree.addObject(aftree);
+    itree.addObject(aitree);
+    if (!rftree.empty())
     {
+        ftree.addObject(rftree);
+        GMX_RELEASE_ASSERT(lsq_freq.get_npoints() > 0, "No statistics");
+    
         real r, rmsd;
         if (eStats::OK == lsq_freq.get_corr_coeff(&r) &&
             eStats::OK == lsq_freq.get_rmsd(&rmsd))
         {
-            output->push_back(gmx::formatString("Frequency statistics: Pearson r^2 %g %% RMSD %g %s",
-                                                100*r*r, rmsd, unit));
+            ftree.addObject("Pearson r2", gmx_ftoa(100*r*r));
+            ftree.addObject("RMSD", gmx_ftoa(rmsd));
         }
     }
-    real scale_factor = 1;
-    real roomTemp     = 298.15;
-    ThermoChemistry tc0(mol, *coords, atomenergy, alex_freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, *coords, atomenergy, alex_freq, roomTemp, 1, scale_factor);
-    std::vector<std::string> ref_str;
-    ref_str.resize(1+3*tccmap().size());
+    if (!ritree.empty())
+    {
+        itree.addObject(ritree);
+        real r, rmsd;
+        if (eStats::OK == lsq_inten.get_corr_coeff(&r) &&
+            eStats::OK == lsq_inten.get_rmsd(&rmsd))
+        {
+            itree.addObject("Pearson r2", gmx_ftoa(100*r*r));
+            itree.addObject("RMSD", gmx_ftoa(rmsd));
+        }
+    }
+    jtree->addObject(ftree);
+    jtree->addObject(itree);
+    
+    // Now time for thermochemistry output
+    JsonTree tctree("Thermochemistry");
+    JsonTree ajtc("Alexandria");
+    addThermo(&ajtc, mol, coords, atomenergy, alex_freq);
+    tctree.addObject(ajtc);
     if (!ref_freq.empty())
     {
-        ThermoChemistry tcdft0(mol, *coords, atomenergy, ref_freq, 0.0, 1, scale_factor);
-        ThermoChemistry tcdftRT(mol, *coords, atomenergy, ref_freq, roomTemp, 1, scale_factor);
-        int index = 0;
-        ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.ZPE(), tcdftRT.ZPE());
-        for(const auto &tcc : tccmap())
-        {
-            ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.S0(tcc.first), tcdftRT.S0(tcc.first));
-        }
-        for(const auto &tcc : tccmap())
-        {
-            ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.cv(tcc.first), tcdftRT.cv(tcc.first));
-        }
-        for(const auto &tcc : tccmap())
-        {
-            ref_str[index++] = gmx::formatString("  %10g  %10g", 
-                                                 tcdft0.Einternal(tcc.first), tcdftRT.Einternal(tcc.first));
-        }
+        JsonTree rjtc("Reference");
+        addThermo(&rjtc, mol, coords, atomenergy, ref_freq);
+        tctree.addObject(rjtc);
     }
-    output->push_back(gmx::formatString("%-30s  %22s  %22s", "Thermochemistry", "Alexandria", "Reference"));
-    output->push_back(gmx::formatString("%-30s  %10s  %10s  %10s  %10s", "", "0 K", "298.15 K", "0 K", "298.15 K"));
-    int index = 0;
-    output->push_back(gmx::formatString("%-30s  %10g  %10g%s (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE(),
-                                        ref_str[index++].c_str()));
-    for(const auto &tcc : tccmap())
-    {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (J/mol K)",
-                                            gmx::formatString("Standard entropy - %s",
-                                                              tcc.second.c_str()).c_str(), 
-                                            tc0.S0(tcc.first), tcRT.S0(tcc.first),
-                                            ref_str[index++].c_str()));
-    }
-    for(const auto &tcc : tccmap())
-    {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (J/mol K)",
-                                            gmx::formatString("Heat capacity cV - %s",
-                                                              tcc.second.c_str()).c_str(),
-                                            tc0.cv(tcc.first), tcRT.cv(tcc.first),
-                                            ref_str[index++].c_str()));
-    }
-    for(const auto &tcc : tccmap())
-    {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (kJ/mol)",
-                                            gmx::formatString("Internal energy - %s",
-                                                              tcc.second.c_str()).c_str(),
-                                            tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first),
-                                            ref_str[index++].c_str()));
-    }
-    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
+    jtree->addObject(tctree);
 }
 
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
@@ -1028,10 +1080,12 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis etc.
+        JsonTree jtree("FrequencyAnalysis");
         doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
-                            atomenergy, lsq_freq, tcout,
+                            atomenergy, lsq_freq, &jtree,
                             nullptr, 24, nullptr, false, false);
-        
+        int indent = 0;
+        tcout->push_back(jtree.writeString(false, &indent));
     }
     else
     {

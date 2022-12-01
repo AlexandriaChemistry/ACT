@@ -60,6 +60,6 @@ std::string gromacsUnit(const std::string &unit);
  */
 double convertFromGromacs(double x, const std::string &unit);
 
-} // namespace gmx
+} // namespace alexandria
 
 #endif

@@ -42,6 +42,8 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/poldata/poldata_xml.h"
+#include "act/utility/jsontree.h"
+#include "act/utility/stringutil.h"
 #include "alexandria/alex_modules.h"
 #include "alexandria/atype_mapping.h"
 #include "alexandria/babel_io.h"
@@ -53,42 +55,41 @@
 namespace alexandria
 {
 
-static void forceFieldSummary(FILE          *fp,
+static void forceFieldSummary(JsonTree      *jtree,
                               const Poldata *pd)
 {
-    fprintf(fp, "\nForce field summary.\n--------------------\n");
-    fprintf(fp, "Input file:        %s\n", pd->filename().c_str());
-    fprintf(fp, "Created:           %s\n", pd->timeStamp().c_str());
-    fprintf(fp, "Checksum:          %s\n", pd->checkSum().c_str());
-    fprintf(fp, "Polarizable:       %s\n", yesno_names[pd->polarizable()]);
-    fprintf(fp, "Charge generation: %s\n", 
-            chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
-    fprintf(fp, "Using %d exclusions\n", pd->getNexcl());
-    fprintf(fp, "Relative dielectric constant epsilon_r %g\n", pd->getEpsilonR());
-    fprintf(fp, "There are %zu particle types\n", pd->getNatypes());
+    jtree->addObject(JsonTree("Force field file", pd->filename()));
+    jtree->addObject(JsonTree("Created", pd->timeStamp()));
+    jtree->addObject(JsonTree("Checksum", pd->checkSum()));
+    jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
+    jtree->addObject(JsonTree("Charge generation", 
+                              chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
+    jtree->addObject(JsonTree("# exclusions", gmx_itoa(pd->getNexcl())));
+    jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
+                              gmx_ftoa(pd->getEpsilonR())));
+    jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
+    
+    JsonTree ftree("InteractionTypes");
     for(const auto &fs : pd->forcesConst())
     {
         auto itype = fs.first;
         auto &ffpl = fs.second;
         if (!ffpl.parametersConst().empty())
         {
-            
+            JsonTree fftree(interactionTypeToString(itype));
             if (!ffpl.function().empty())
             {
-                fprintf(fp, "InteractionType %s force function %s has %zu entries.\n",
-                        interactionTypeToString(itype).c_str(),
-                        ffpl.function().c_str(),
-                        ffpl.parametersConst().size());
+                fftree.addObject(JsonTree("Force function", ffpl.function()));
             }
-            else
-            {
-                fprintf(fp, "There are %5zu entries for %s.\n",
-                        ffpl.parametersConst().size(),
-                        interactionTypeToString(itype).c_str());
-            }
+            fftree.addObject(JsonTree("# entries",
+                                      gmx_itoa(ffpl.parametersConst().size())));
+            ftree.addObject(fftree);
         }
     }
-    fprintf(fp, "\n");
+    if (!ftree.empty())
+    {
+        jtree->addObject(ftree);
+    }
 }
 
 static void do_rerun(FILE          *logFile,
@@ -193,6 +194,7 @@ int simulate(int argc, char *argv[])
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
+    bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -205,7 +207,9 @@ int simulate(int argc, char *argv[])
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
-          "Tolerance for shell force optimization (mean square force)" }
+          "Tolerance for shell force optimization (mean square force)" },
+        { "-json", FALSE, etBOOL, {&json},
+          "Print part of the output in json format" }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -236,9 +240,11 @@ int simulate(int argc, char *argv[])
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
     print_header(logFile, pa);
+    
+    JsonTree jtree("simulate");
     if (verbose)
     {
-        forceFieldSummary(logFile, &pd);
+        forceFieldSummary(&jtree, &pd);
     }
 
     MyMol                mymol;
@@ -292,17 +298,23 @@ int simulate(int argc, char *argv[])
     }
     if (immStatus::OK == imm && status == 0)
     {
-        if (verbose && pd.polarizable())
+        if (pd.polarizable())
         {
             // Make a copy since it maybe changed
             auto xx    = coords;
             auto qCalc = mymol.qTypeProps(qType::Calc);
+            qCalc->initializeMoments();
             forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
             auto alpha = qCalc->polarizabilityTensor();
-            double fac = convertFromGromacs(1, "A^3");
-            fprintf(logFile, "Alpha trace: %10g %10g %10g. Isotropic: %10g\n",
-                    fac*alpha[XX][XX], fac*alpha[YY][YY], fac*alpha[ZZ][ZZ], 
-                    fac*qCalc->isotropicPolarizability());
+            std::string unit("A^3");
+            double fac = convertFromGromacs(1, unit);
+            JsonTree poltree("Polarizability");
+            
+            poltree.addValueUnit("XX", gmx_ftoa(fac*alpha[XX][XX]), unit);
+            poltree.addValueUnit("YY", gmx_ftoa(fac*alpha[YY][YY]), unit);
+            poltree.addValueUnit("ZZ", gmx_ftoa(fac*alpha[ZZ][ZZ]), unit);
+            poltree.addValueUnit("Average", gmx_ftoa(fac*qCalc->isotropicPolarizability()), unit);
+            jtree.addObject(poltree);
         }
 
         if (debug)
@@ -324,12 +336,20 @@ int simulate(int argc, char *argv[])
             {
                 std::map<InteractionType, double> energies;
                 eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
-                                                  &xmin, &energies, logFile);
+                                                      &xmin, &energies, logFile);
                 if (eMinimizeStatus::OK == eMin)
                 {
                     auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
                     fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);
+                    JsonTree jtener("Energies");
+                    std::string unit("kJ/mol");
+                    for (const auto &ener : energies)
+                    {
+                        jtener.addValueUnit(interactionTypeToString(ener.first),
+                                            gmx_ftoa(ener.second), unit);
+                    }
+                    jtree.addObject(jtener);
                     matrix box;
                     clear_mat(box);
                     write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
@@ -341,16 +361,11 @@ int simulate(int argc, char *argv[])
                     if (sch.nma())
                     {
                         AtomizationEnergy        atomenergy;
-                        std::vector<std::string> output;
                         doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
-                                            atomenergy, nullptr, &output,
+                                            atomenergy, nullptr, &jtree,
                                             opt2fn_null("-ir", fnm.size(), fnm.data()),
                                             sch.lineWidth(), oenv,
                                             sch.lapack(), verbose);
-                        for(const auto &op : output)
-                        {
-                            fprintf(logFile, "%s\n", op.c_str());
-                        }
                     }
                 }
             }
@@ -380,6 +395,14 @@ int simulate(int argc, char *argv[])
             }
             status = 1;
         }
+    }
+    if (json)
+    {
+        jtree.write("simulate.json", json);
+    }
+    else
+    {
+        jtree.fwrite(logFile, json);
     }
     gmx_ffclose(logFile);
     return status;
