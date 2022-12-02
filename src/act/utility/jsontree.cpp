@@ -89,8 +89,16 @@ const std::string JsonTree::writeString(bool json, int *indent) const
         }
         else
         {
-            str += "\n";
             size_t count = 0;
+            bool leaf = true;
+            for (const auto &obj : objects_)
+            {
+                leaf = leaf && !obj.branched();
+            }
+            if (!leaf)
+            {
+                str += "\n";
+            }
             for (const auto &obj : objects_)
             {
                 str += obj.writeString(json, indent);
@@ -98,10 +106,23 @@ const std::string JsonTree::writeString(bool json, int *indent) const
                 {
                     str += ",";
                 }
-                str += "\n";
+                if (leaf)
+                {
+                    if (count < objects_.size()-1)
+                    {
+                        str += " ";
+                    }
+                }
+                else
+                {
+                    str += "\n";
+                }
                 count++;
             }
-            add_space(&str, *indent);
+            if (!leaf)
+            {
+                add_space(&str, *indent);
+            }
         }
         *indent -= 2;
     }

@@ -75,8 +75,12 @@ public:
         value_ = value;
     }
     
+    //! \return if there is nothing here
     bool empty() const { return objects_.empty() && value_.empty(); }
     
+    //! \return whether there are complex trees
+    bool branched() const { return !objects_.empty(); }
+
     /*! \brief Write everything in a single string
      * \param[in]    json   Whether or not to write JSON format
      * \param[inout] indent Indentation for printing
