@@ -158,6 +158,7 @@ protected:
             if (testPolarizability)
             {
                 auto qCalc = mp.qTypeProps(qType::Calc);
+                qCalc->initializeMoments();
                 fcomp->calcPolarizability(pd, mp.topology(), &coordinates, qCalc);
                 auto alpha = qCalc->polarizabilityTensor();
                 const char *xyz[DIM] = { "X", "Y", "Z" };

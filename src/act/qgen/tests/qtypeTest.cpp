@@ -229,7 +229,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
                 checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
                 QtypeProps qp(qType::Calc);
-                
+                qp.initializeMoments();
                 qp.setQandX(q, coords);
                 if (useCenterOfCharge)
                 {

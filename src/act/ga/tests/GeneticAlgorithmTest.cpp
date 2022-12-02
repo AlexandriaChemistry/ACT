@@ -125,7 +125,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             // TODO check return value
             (void) molgen.Read(nullptr, mpDataName.c_str(), sii.poldata(),
-                               gms, false);
+                               gms, sii.fittingTargetsConst(iMolSelect::Train),
+                               false);
             // Continue filling the shared individual
             sii.generateOptimizationIndex(nullptr, &molgen, sii.commRec());
             sii.fillVectors(molgen.mindata());

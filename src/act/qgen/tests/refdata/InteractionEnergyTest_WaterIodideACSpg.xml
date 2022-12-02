@@ -15,5 +15,5 @@
   </Sequence>
   <Real Name="Molecule 1 charge">-2.2204460492503131e-16</Real>
   <Real Name="Molecule 2 charge">-0.99999999999999911</Real>
-  <Real Name="InteractionEnergy">40818.19781158246</Real>
+  <Real Name="InteractionEnergy">-13.926437993857689</Real>
 </ReferenceData>
