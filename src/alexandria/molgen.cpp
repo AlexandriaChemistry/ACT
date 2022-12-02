@@ -168,11 +168,6 @@ void MolGen::optionsFinished()
             fit_.insert({ toFit, true });
         }
     }
-    else
-    {
-        fprintf(stderr, "Nothing to fit. Please provide the -fit option.\n");
-        exit(0);
-    }
     if (cr_->isMaster())
     {
         printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->size(), fit_.size());

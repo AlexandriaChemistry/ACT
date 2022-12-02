@@ -840,6 +840,11 @@ int tune_ff(int argc, char *argv[])
     // creating a mutator.
     if (bOptimize)
     {
+        if (opt.sii()->nParam() == 0)
+        {
+            fprintf(stderr, "Nothing to optimize. Check your input.\n");
+            return 1;
+        }
         std::vector<std::string> paramClass;
         for(const auto &fm : opt.mg()->typesToFit())
         {
@@ -864,15 +869,18 @@ int tune_ff(int argc, char *argv[])
 
     if (opt.commRec()->isMaster())
     {
-        opt.initMaster();
-
-        // Master only
-        bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
-        if (bOptimize)
+        bool bMinimum = false;
+        if (opt.sii()->nParam() > 0)
         {
-            printf("DONE WITH OPTIMIZATION\n");
-        }
+            opt.initMaster();
 
+            // Master only
+            bMinimum = opt.runMaster(bOptimize, bSensitivity);
+            if (bOptimize)
+            {
+                printf("DONE WITH OPTIMIZATION\n");
+            }
+        }
         if (bMinimum || bForceOutput || !bOptimize)
         {
             if (bForceOutput && !bMinimum)
@@ -894,16 +902,22 @@ int tune_ff(int argc, char *argv[])
     }
     else if (opt.commRec()->isMiddleMan())
     {
-        // Master and Individuals (middle-men) need to initialize more,
-        // so let's go.
-        ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                               opt.verbose(), opt.oenv());
-        middleman.run();
+        if (opt.sii()->nParam() > 0)
+        {
+            // Master and Individuals (middle-men) need to initialize more,
+            // so let's go.
+            ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+                                   opt.verbose(), opt.oenv());
+            middleman.run();
+        }
     }
     else if (bOptimize || bSensitivity)
     {
-        ACTHelper helper(opt.sii(), opt.mg());
-        helper.run();
+        if (opt.sii()->nParam() > 0)
+        {
+            ACTHelper helper(opt.sii(), opt.mg());
+            helper.run();
+        }
     }
     return 0;
 }
