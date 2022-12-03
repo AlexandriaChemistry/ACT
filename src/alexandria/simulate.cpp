@@ -97,6 +97,7 @@ static void do_rerun(FILE          *logFile,
                      const MyMol   *mymol,
                      ForceComputer *forceComp,
                      const char    *trajname,
+                     bool           eInter,
                      double         qtot)
 {
     std::vector<MolProp> mps;
@@ -149,12 +150,51 @@ static void do_rerun(FILE          *logFile,
                     }
                 }
                 std::vector<gmx::RVec> forces(coords.size());
-                forceComp->compute(pd, mymol->topology(),
-                                   &coords, &forces, &energies);
                 fprintf(logFile, "%5d", mp_index);
-                for(const auto &ee : energies)
+                if (eInter)
                 {
-                    fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                    auto EE         = mymol->calculateInteractionEnergy(pd, forceComp, &forces, &coords);
+                    auto atomStart  = mymol->fragmentHandler()->atomStart();
+                    GMX_RELEASE_ASSERT(atomStart.size() == 3, "This is not a dimer");
+                    gmx::RVec f1    = { 0, 0, 0 };
+                    gmx::RVec com   = { 0, 0, 0 };
+                    double    mtot  = 0;
+                    auto      tops  = mymol->fragmentHandler()->topologies();
+                    auto      atoms = tops[0].atoms();
+                    for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                    {
+                        gmx::RVec mr1;
+                        auto      mi = atoms[i-atomStart[0]].mass();
+                        svmul(mi, coords[i], mr1);
+                        mtot += mi;
+                        rvec_inc(com, mr1);
+                        rvec_inc(f1, forces[i]);
+                    }
+                    GMX_RELEASE_ASSERT(mtot > 0, "Zero mass");
+                    for(size_t m = 0; m < DIM; m++)
+                    {
+                        com[m] /= mtot;
+                    }
+                    gmx::RVec torque = { 0, 0, 0 };
+                    for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                    {
+                        gmx::RVec ri;
+                        rvec_sub(coords[i], com, ri);
+                        gmx::RVec ti;
+                        cprod(ri, forces[i], ti);
+                        rvec_inc(torque, ti);
+                    }
+                    fprintf(logFile, " Einter %g Force %g %g %g Torque %g %g %g",
+                            EE, f1[XX], f1[YY], f1[ZZ], torque[XX], torque[YY], torque[ZZ]);
+                }
+                else
+                {
+                    forceComp->compute(pd, mymol->topology(),
+                                       &coords, &forces, &energies);
+                    for(const auto &ee : energies)
+                    {
+                        fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                    }
                 }
                 fprintf(logFile, "\n");
             }
@@ -194,6 +234,7 @@ int simulate(int argc, char *argv[])
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
+    bool                      eInter     = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
@@ -204,6 +245,8 @@ int simulate(int argc, char *argv[])
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
+        { "-einter", FALSE, etBOOL, {&eInter},
+          "Compute dimer interaction energies when doing a rerun" },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -325,7 +368,7 @@ int simulate(int argc, char *argv[])
         /* Generate output file for debugging if requested */
         if (strlen(trajname) > 0)
         {
-            do_rerun(logFile, &pd, &mymol, forceComp, trajname, qtot);
+            do_rerun(logFile, &pd, &mymol, forceComp, trajname, eInter, qtot);
         }
         else if (mymol.errors().empty())
         {
