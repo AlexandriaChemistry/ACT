@@ -66,45 +66,6 @@ void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 namespace alexandria
 {
 
-class ZetaTypeLsq {
-private:
-    std::string ztype_;
-public:
-    gmx_stats lsq_;
-    
-    ZetaTypeLsq(const std::string &ztype) : ztype_(ztype) {}
-    
-    ZetaTypeLsq(const ZetaTypeLsq &zlsq)
-    {
-        lsq_   = zlsq.lsq_;
-        ztype_ = zlsq.ztype_;
-    }
-    ZetaTypeLsq(ZetaTypeLsq &zlsq)
-    {
-        lsq_   = zlsq.lsq_;
-        ztype_ = zlsq.ztype_;
-    }
-    ZetaTypeLsq& operator=(const ZetaTypeLsq &zlsq)
-    {
-        ZetaTypeLsq *zt = new ZetaTypeLsq(zlsq.name());
-        zt->lsq_ = zlsq.lsq_;
-        return *zt;
-    }
-    ZetaTypeLsq& operator=(ZetaTypeLsq &zlsq)
-    {
-        ZetaTypeLsq *zt = new ZetaTypeLsq(zlsq.name());
-        zt->lsq_ = zlsq.lsq_;
-        return *zt;
-    }
-        
-    const std::string &name() const { return ztype_; }
-
-    bool empty() const
-    { 
-        return 0 == lsq_.get_npoints();
-    }
-};
-
 static void print_stats(FILE        *fp,
                         const char  *prop,
                         const char  *unit,
@@ -440,17 +401,21 @@ static void print_corr(const char                      *outfile,
     }
 }
 
-static void write_q_histo(FILE                      *fplog,
-                          const char                *qhisto,
-                          std::vector<ZetaTypeLsq>  &lsqt,
-                          const gmx_output_env_t    *oenv,
-                          qtStats                   *lsq_charge,
-                          bool                       useOffset)
+static void write_q_histo(FILE                             *fplog,
+                          const char                       *qhisto,
+                          std::map<std::string, gmx_stats> *lsqt,
+                          const gmx_output_env_t           *oenv,
+                          qtStats                          *lsq_charge,
+                          bool                              useOffset)
 {
     std::vector<std::string> types;
-    for (auto i = lsqt.begin(); i < lsqt.end(); ++i)
+    for (const auto &i: *lsqt)
     {
-        types.push_back(i->name());
+        int N = i.second.get_npoints();
+        if (N > 0)
+        {
+            types.push_back(gmx::formatString("%s (N=%d)", i.first.c_str(), N));
+        }
     }
     FILE *hh = nullptr;
     if (nullptr != qhisto)
@@ -465,13 +430,13 @@ static void write_q_histo(FILE                      *fplog,
         print_stats(fplog, "All Partial Charges", "e", 1.0, &gs->second, true,
                     qTypeName(qType::CM5).c_str(), model.c_str(), useOffset);
     }
-    for (auto &q : lsqt)
+    for (auto &q : *lsqt)
     {
-        if (!q.empty())
+        if (q.second.get_npoints() > 0)
         {
             int  nbins = 20;
             std::vector<double> x, y;
-            if (q.lsq_.make_histogram(0, &nbins, eHisto::Y, 1, &x, &y) == eStats::OK)
+            if (q.second.make_histogram(0, &nbins, eHisto::Y, 1, &x, &y) == eStats::OK)
             {
                 if (hh)
                 {
@@ -482,7 +447,8 @@ static void write_q_histo(FILE                      *fplog,
                     }
                     fprintf(hh, "&\n");
                 }
-                print_stats(fplog, q.name().c_str(), "e", 1.0, &q.lsq_, false,  "CM5", model.c_str(), useOffset);
+                print_stats(fplog, q.first.c_str(), "e", 1.0, &q.second, false, 
+                            "CM5", model.c_str(), useOffset);
             }
         }
     }
@@ -1111,7 +1077,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
         lsq_anisoPol, lsq_charge, lsq_epot, lsq_eInter;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
-    std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
+    std::map<iMolSelect, std::map<std::string, gmx_stats> >     lsqt;
     std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
     for (auto &mpo : mpoMultiPoles)
     {
@@ -1163,19 +1129,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         for (auto ai : pd->particleTypesConst())
         {
             auto qparam = ai.parameterConst("charge");
-            if (qparam.isMutable())
+            if (Mutability::ACM == qparam.mutability())
             {
-                ZetaTypeLsq newz(ai.id().id());
                 auto lll = lsqt.find(ims.first);
                 if (lll == lsqt.end())
                 {
-                    std::vector<ZetaTypeLsq> zlsq = { std::move(newz) };
-                    lsqt.insert(std::pair<iMolSelect, std::vector<ZetaTypeLsq>>(ims.first, zlsq));
+                    lsqt.insert({ ims.first, {} });
+                    lll = lsqt.find(ims.first);
                 }
-                else
-                {
-                    lll->second.push_back(std::move(newz));
-                }
+                gmx_stats newz;
+                lll->second.insert({ai.id().id(), std::move(newz)});
             }
         }
     }
@@ -1210,7 +1173,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
             mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy, &coords, &forces);
+                                 ChargeGenerationAlgorithm::NONE, dummy,
+                                 &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd, &coords);
@@ -1243,6 +1207,27 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     {
                         lsq_esp[ims][qi].add_point(ep[j].v(), ep[j].vCalc(), 0, 0);
                     }
+                }
+            }
+            // Charges
+            auto atoms = mol->topology()->atoms();
+            auto lll   = lsqt.find(ims);
+            for(size_t ai = 0; ai < atoms.size(); ai++)
+            {
+                if (atoms[ai].pType() == eptAtom)
+                {
+                    auto llF = lll->second.find(atoms[ai].ffType());
+                    if (lll->second.end() == llF)
+                    {
+                        GMX_THROW(gmx::InternalError("Cannot find atomtype in lsqt"));
+                    }
+                    auto qa = atoms[ai].charge();
+                    if (ai < atoms.size() -1 && 
+                        atoms[ai+1].pType() == eptShell)
+                    {
+                        qa += atoms[ai+1].charge();
+                    }
+                    llF->second.add_point(1, qa, 0, 0);
                 }
             }
             // Multipoles
@@ -1327,7 +1312,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         }
     }
     write_q_histo(fp, opt2fn_null("-qhisto", filenm.size(), filenm.data()),
-                  lsqt[iMolSelect::Train], oenv,
+                  &lsqt[iMolSelect::Train], oenv,
                   &(lsq_charge[iMolSelect::Train]), useOffset_);
 
     for(auto &mpo : mpoMultiPoles)
