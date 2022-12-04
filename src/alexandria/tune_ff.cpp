@@ -643,6 +643,9 @@ bool OptACM::runMaster(bool optimize,
             sii_->updatePoldata(changed, bbb->second.bases());
             fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
         }
+        // Now compute the test compounds, with the best Train parameters.
+        ims = iMolSelect::Test;
+        fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
     }
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
