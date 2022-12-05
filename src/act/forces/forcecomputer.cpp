@@ -343,7 +343,18 @@ void ForceComputer::plot(const Poldata  *pd,
                         coordinates[1][0] = x;
                         energies.clear();
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
-                        fprintf(fp, "%10g  %10g\n", x, energies[itype]);
+                        auto ener = energies[itype];
+                        if (ener == 0 && InteractionType::VDW == itype)
+                        {
+                            auto irep = InteractionType::REPULSION;
+                            auto idsp = InteractionType::DISPERSION;
+                            if (energies.find(irep) != energies.end() &&
+                                energies.find(idsp) != energies.end())
+                            {
+                                ener = energies[irep] + energies[idsp];
+                            }
+                        }
+                        fprintf(fp, "%10g  %10g\n", x, ener);
                     }
                 }
                 break;
