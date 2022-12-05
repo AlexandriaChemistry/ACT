@@ -12,7 +12,6 @@ from get_csv_rows import get_csv_rows
 from mol_csv_api  import Molecules
 import get_mol_dict as gmd
 import molprops     as mp
-from guppy import hpy
 
 debug = False
 
@@ -62,8 +61,6 @@ def string2coords(xyzstr:str)->list:
     return coords
     
 def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int, prettyPrint:bool):
-    if debug:
-        h = hpy()
     # Do something
     M          = Molecules()
     M.read_default()
@@ -96,11 +93,6 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
     csv = open(csv_file, "r")
     csvlines = csv.readlines()
     csv.close()
-    if debug:
-        print(h.heap())
-        h.setrelheap()
-        heap0 = h.heap()
-        print(heap0)
 
     # Extract labels first
     labels = csvlines[0].strip().split(",")
@@ -117,10 +109,6 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
         row = csvlines[irow].strip().split(",")
         if len(labels) != len(row):
             print("Incorrect number of fields on line %. Found %d should be %d" % ( irow, len(row), len(labels)))
-        if debug and irow % 10 == 0:
-            heap1 = h.heap()-heap0
-            print(heap1)
-            del heap1
         # Unpack some stuff from the row
         smiles = [ row[0], row[1] ]
         charge = [ int(row[2]), int(row[3])]
