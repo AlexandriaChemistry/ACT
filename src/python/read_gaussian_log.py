@@ -644,7 +644,10 @@ class GaussianReader:
                 if not self.add_atoms(g2a):
                     print("Cannot add the atoms or atomtypes")
                     return None
-                frag = Fragment("1", self.charge, self.multiplicity, 1, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)
+                if len(md.inchi) > 0:
+                    print("Empy InChi")
+                    return None
+                frag = Fragment(md.inchi, self.charge, self.multiplicity, 1, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)
                 self.mp.add_fragment(frag)
                 for index_tuple in md.bonds:
                     self.mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
