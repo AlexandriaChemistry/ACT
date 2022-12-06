@@ -177,16 +177,19 @@ static void printCause(FILE         *out,
         "Melting of the Greenland ice cap released so much fresh water that the\nNorth Atlantic Current stopped and Europe became uninhabitable.\n%g percent of the population will be replaced.",
         "Deforestation leading to catastrophic loss of biodiversity reduced fitness.\n%g percent new species will be created.\n",
         "Alien invaders exterminate %g percent of the population and replaced them\nwith tenage Mutant Ninja turtles.\n",
-        "An asteroid hits earth and kills %g of all living organism.\nEvolution starts anew.\n",
-        "A tsunami hits the western pacific rim wiping out %g of the population.\nRebuilding will commence.\n",
+        "An asteroid hits earth and kills %g%% of all living organism.\nEvolution starts anew.\n",
+        "A tsunami hits the western pacific rim wiping out %g%% of the population.\nRebuilding will commence.\n",
+        "Strict reproduction laws in patriarchic countries lead to an inbreeding depression.\nTo address the reduced fitness of the population %g%% will be replaced.\n",
         "Tornadoes accross North America wipe out most major cities.\n%g percent of the population is replaced.\n",
         "Hurricanes wipe out the population in south-east Asia.\n%g percent of the population will be rejuvenated.\n",
-        "Collapsed hydrological dams devastate land in South America.%g percent of the population is reborn.\n",
-        "Drought, exacerbated by climate change, wipes out the population of\nsub-Saharan Africa. %g of the world population is replaced.\n",
+        "Collapsed hydrological dams devastate land in South America.\n%g percent of the population is reborn.\n",
+        "Drought, exacerbated by climate change, wipes out the population of\nsub-Saharan Africa.\n%g%% of the world population is replaced.\n",
         "A solar flare wipes out all communication on earth, killing %g percent.\nNewborns on the way.\n",
         "Major rivers on the Indian subcontent dry up due to dwindling glaciers in the Himalayas.\n%g percent of the world population is replaced.\n",
         "The empire fires off the death star, scraping the surface of the earth.\n%g percent of individuals are exterminated.\n",
-        "Desertification makes agriculture in  southern Europe impossible.\n %g percent of the population will be regrown.\n"
+        "Desertification makes agriculture in  southern Europe impossible.\n%g percent of the population will be regrown.\n",
+        "Mutant fungi wipe out industrial agriculture in North America.\n%g percent of the population has to start from scratch.\n",
+        "Tricholoma fungi adopt to oil palm trees in south east Asia, turning them into matsutake mushrooms.\n%g percent of the population are impoverished and replaced.\n"
     };
     std::uniform_int_distribution<int>  distr(0, ccc.size());
     int csel = distr(gen) % ccc.size();

@@ -257,6 +257,12 @@ public:
      */
     const Experiment *findExperimentConst(JobType job) const;
     
+    /*! \brief Return the first calculation that matches the specification
+     * \param[in] job The JobType, typically JobType::Opt
+     * \return the Experiment or nullptr
+     */
+    Experiment *findExperiment(JobType job);
+    
     //! Add an experiment
     void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
     

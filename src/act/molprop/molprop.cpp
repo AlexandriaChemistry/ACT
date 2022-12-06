@@ -366,6 +366,18 @@ const Experiment *MolProp::findExperimentConst(JobType job) const
     return nullptr;
 }
 
+Experiment *MolProp::findExperiment(JobType job)
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->getJobtype() == job)
+        {
+            return &(*ei);
+        }
+    }
+    return nullptr;
+}
+
 const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo, 
                                            double             T,
                                            JobType            jt) const

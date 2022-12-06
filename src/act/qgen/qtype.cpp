@@ -54,7 +54,8 @@ static std::map<qType, std::string> qTypeNames = {
     { qType::CM5,       "CM5"        },
     { qType::Calc,      "Alexandria" },
     { qType::Gasteiger, "Gasteiger"  },
-    { qType::Elec,      "Electronic" }
+    { qType::Elec,      "Electronic" },
+    { qType::ACM,       "ACM"        }
 };
 
 const std::string &qTypeName(qType qt)

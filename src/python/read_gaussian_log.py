@@ -644,7 +644,7 @@ class GaussianReader:
                 if not self.add_atoms(g2a):
                     print("Cannot add the atoms or atomtypes")
                     return None
-                if len(md.inchi) > 0:
+                if len(md.inchi) == 0:
                     print("Empty InChi")
                     return None
                 frag = Fragment(md.inchi, self.charge, self.multiplicity, 1, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)

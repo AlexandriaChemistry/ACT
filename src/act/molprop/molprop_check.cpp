@@ -59,18 +59,57 @@ namespace alexandria
 
 typedef std::map<const std::string, int> stringCount;
 
-static bool dump_molecule(FILE              *fp,
-                          stringCount       *atomTypeCount,
-                          stringCount       *bccTypeCount,
-                          const Poldata     &pd,
-                          const MolProp     &mp,
-                          t_inputrec        *inputrec)
+static bool dump_molecule(FILE                *fp,
+                          ForceComputer       *forceComp,
+                          CommunicationRecord *cr,
+                          const gmx::MDLogger &mdlog,
+                          stringCount         *atomTypeCount,
+                          stringCount         *bccTypeCount,
+                          const Poldata       &pd,
+                          MolProp             *mp,
+                          t_inputrec          *inputrec)
 {
     alexandria::MyMol mymol;
-    mymol.Merge(&mp);
+    mymol.Merge(mp);
     mymol.setInputrec(inputrec);
     auto imm = mymol.GenerateTopology(fp, &pd, missingParameters::Error,
                                       false);
+    if (immStatus::OK == imm)
+    {
+        std::vector<gmx::RVec> coords = mymol.xOriginal();
+        //mymol.symmetrizeCharges(pd, qsymm, nullptr);
+        mymol.initQgenResp(&pd, coords, 0.0, 100);
+        std::vector<double> dummy;
+        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+        imm = mymol.GenerateCharges(&pd, forceComp, mdlog, cr,
+                                    ChargeGenerationAlgorithm::NONE,
+                                    dummy, &coords, &forces);
+        if (immStatus::OK == imm)
+        {
+            // Add ACM charges
+            auto myexp = mp->findExperiment(JobType::OPT);
+            if (nullptr == myexp)
+            {
+                myexp = mp->findExperiment(JobType::TOPOLOGY);
+            }
+            if (nullptr != myexp)
+            {
+                auto topatoms = mymol.topology()->atoms();
+                auto ca       = myexp->calcAtom();
+                size_t index  = 0;
+                for(auto atom = ca->begin(); atom < ca->end(); atom++)
+                {
+                    // TODO this is not general!
+                    double qq = topatoms[index++].charge();
+                    if (pd.polarizable())
+                    {
+                        qq += topatoms[index++].charge();
+                    }
+                    atom->AddCharge(qType::ACM, qq);
+                }
+            }
+        }
+    }
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
@@ -125,7 +164,7 @@ static bool dump_molecule(FILE              *fp,
         }
         // Bonds!
         auto bctype = InteractionType::BONDCORRECTIONS;
-        for (const auto &b : mp.bondsConst())
+        for (const auto &b : mp->bondsConst())
         {
             int ai = b.aI();
             int aj = b.aJ();
@@ -183,17 +222,22 @@ int molprop_check(int argc, char*argv[])
     static const char               *desc[] = {
         "molprop_check checks calculations for missing hydrogens",
         "and inconsistent dipoles. It also tries to make a topology",
-        "and reports errors doing this. Output is to a file."
+        "and reports errors doing this. Output is to a file.",
+        "If the optional -mpout flag is given, this program will generate",
+        "charges according to the input force field file and store them",
+        "in a molprop file as ACM (Alexandria Charge Model) charges."
     };
     t_filenm                         fnm[] =
     {
         { efXML, "-ff",  "gentop",  ffREAD },
         { efXML, "-mp",  "allmols",  ffREAD },
+        { efXML, "-mpout", "newmols", ffOPTWR },
         { efLOG, "-g",   "molprop_check", ffWRITE }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
-
-std::vector<alexandria::MolProp> mp;
+    bool compress = false;
+    
+    std::vector<alexandria::MolProp> mp;
     gmx_output_env_t                *oenv;
     
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -218,11 +262,15 @@ std::vector<alexandria::MolProp> mp;
     stringCount atomTypeCount;
     stringCount bccTypeCount;
 
+    CommunicationRecord commRec;
+    auto forceComp = new ForceComputer();
+    auto mdlog     = gmx::MDLogger {};
+
     FILE *mylog = gmx_fio_fopen(opt2fn("-g", NFILE, fnm), "w");
     fprintf(mylog, "Force field file %s\n", opt2fn("-ff", NFILE, fnm));
     fprintf(mylog, "Molprop file     %s\n", opt2fn("-mp", NFILE, fnm));
     int numberOk = 0, numberFailed = 0;
-    for (auto &m : mp)
+    for (auto m = mp.begin(); m < mp.end(); ++m)
     {
         typedef struct
         {
@@ -231,7 +279,7 @@ std::vector<alexandria::MolProp> mp;
         } name_mu;
         std::string basis, method;
         std::vector<name_mu> mus;
-        for (auto &ci : m.experimentConst())
+        for (auto &ci : m->experimentConst())
         {
             int nH = 0, nC = 0;
             for (auto &cai : ci.calcAtomConst())
@@ -258,7 +306,7 @@ std::vector<alexandria::MolProp> mp;
                 basis  = ci.getBasisset();
             }
             double T = 0;
-            auto gp = m.qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
+            auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
             if (gp)
             {
                 std::vector<double> mu = gp->getVector();
@@ -283,7 +331,7 @@ std::vector<alexandria::MolProp> mp;
                 if (rmsd != 0)
                 {
                     fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
-                            m.getMolname().c_str(), rmsd);
+                            m->getMolname().c_str(), rmsd);
                 }
                 if (rmsd > 1e-3)
                 {
@@ -303,18 +351,20 @@ std::vector<alexandria::MolProp> mp;
         {
             for(const auto &mi : mus)
             {
-                fprintf(debug, "%s %s %.2f %.2f %.2f\n", m.getMolname().c_str(),
+                fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
                         mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
             }
         }
 
-        if (dump_molecule(mylog, &atomTypeCount, &bccTypeCount, pd, m, inputrec))
+        if (dump_molecule(mylog, forceComp, &commRec, mdlog, &atomTypeCount,
+                          &bccTypeCount, pd, &(*m), inputrec))
         {
             numberOk++;
         }
         else
         {
             numberFailed++;
+            mp.erase(m);
         }
     }
     fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
@@ -327,6 +377,10 @@ std::vector<alexandria::MolProp> mp;
     for(auto &bcc : bccTypeCount)
     {
         fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+    }
+    if (opt2bSet("-mpout", NFILE, fnm))
+    {
+        MolPropWrite(opt2fn("-mpout", NFILE, fnm), mp, compress);
     }
     fclose(mylog);
     return 0;
