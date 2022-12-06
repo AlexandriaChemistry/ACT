@@ -645,7 +645,7 @@ class GaussianReader:
                     print("Cannot add the atoms or atomtypes")
                     return None
                 if len(md.inchi) > 0:
-                    print("Empy InChi")
+                    print("Empty InChi")
                     return None
                 frag = Fragment(md.inchi, self.charge, self.multiplicity, 1, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)
                 self.mp.add_fragment(frag)
