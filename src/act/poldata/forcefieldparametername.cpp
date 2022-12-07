@@ -41,6 +41,8 @@ const char *coul_name[coulNR] = { "zeta_i", "zeta_j" };
 
 const char *bond_name[bondNR] = { "kb", "bondlength", "bondenergy" };
 
+const char *cubic_name[cubicNR] = { "B0", "B1", "B2", "B3" };
+
 const char *angle_name[angleNR] = { "kt", "angle" };
 
 const char *ub_name[ubNR] = { "kt", "ub_angle", "r13", "kub" };

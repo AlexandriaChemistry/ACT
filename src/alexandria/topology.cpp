@@ -909,6 +909,9 @@ void Topology::fillParameters(const Poldata *pd)
             case F_MORSE:
                 fillParams(fs, topID, morseNR, morse_name, &param);
                 break;
+            case F_CUBICBONDS:
+                fillParams(fs, topID, cubicNR, cubic_name, &param);
+                break;
             case F_BONDS:
                 fillParams(fs, topID, bondNR, bond_name, &param);
                 break;

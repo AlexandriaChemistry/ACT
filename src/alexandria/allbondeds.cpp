@@ -383,6 +383,26 @@ void AllBondeds::updatePoldata(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
             }
             break;
+        case F_CUBICBONDS:
+            {
+                // Compute the numbers such that they make sense
+                double B0 = -400;
+                // Location of minimum = av: c(x-av)^2(x+b) = c (x^2-2xav+av^2)(x+b) = c (x^3 - 2x^2(av+b) + x av^2 + b av^2)
+                // D0 = c av^2 b -> assuming av = 0.1 and b = 3*av yields c = -100000
+                double c  = B0/(2*av*av*av);
+                double B1 = c*av*av;
+                double B2 = 6*av;
+                double B3 = c;
+                fs->addParameter(bondId, cubic_name[cubicB0],
+                                 ForceFieldParameter("kJ/mol", B0, 0, N, B0/factor_, B0*factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, cubic_name[cubicB1],
+                                 ForceFieldParameter("kJ/mol nm", B1, 0, 1, B1/factor_, B1*factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, cubic_name[cubicB2],
+                                 ForceFieldParameter("kJ/mol nm2", B2, 0, 1, B2*factor_, B2/factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, cubic_name[cubicB3],
+                                 ForceFieldParameter("kJ/mol nm3", B3, 0, 1, B3/factor_, B3*factor_, Mutability::Bounded, false, true));
+            }
+            break;
         default:
             gmx_fatal(FARGS, "Don't know what to do for ftype %s", interaction_function[fType].name);
         }

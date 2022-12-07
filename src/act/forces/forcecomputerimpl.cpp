@@ -355,6 +355,49 @@ static void computeBonds(const std::vector<TopologyEntry *>    &bonds,
     energies->insert({InteractionType::BONDS, ebond});
 }
 
+static void computeCubic(const std::vector<TopologyEntry *>    &bonds,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces,
+                         std::map<InteractionType, double>     *energies)
+{
+    if (nullptr == coordinates || nullptr == forces)
+    {
+        GMX_THROW(gmx::InternalError("nullptr"));
+    }
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    
+    for (const auto &b : bonds)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto r2  = iprod(dx, dx);
+        auto r_1 = gmx::invsqrt(r2);
+        auto r1  = r2*r_1;
+
+        real vB, fbond;
+        vB    = params[0] + params[1]*r1 + params[2]*r2 + params[3]*r1*r2;
+        fbond = r_1*(params[1] + 2*params[2]*r1 + 3*params[3]*r2);
+        
+        ebond += vB;
+        
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    energies->insert({InteractionType::BONDS, ebond});
+}
+
 static void computeMorse(const std::vector<TopologyEntry *>    &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
@@ -810,6 +853,7 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_DUMMY,         computeDummy        },
     { F_BONDS,         computeBonds        },
     { F_MORSE,         computeMorse        },
+    { F_CUBICBONDS,    computeCubic        },
     { F_ANGLES,        computeAngles       },
     { F_LINEAR_ANGLES, computeLinearAngles },
     { F_LJ,            computeLJ           },
