@@ -59,15 +59,16 @@ namespace alexandria
 
 typedef std::map<const std::string, int> stringCount;
 
-static bool dump_molecule(FILE                *fp,
-                          ForceComputer       *forceComp,
-                          CommunicationRecord *cr,
-                          const gmx::MDLogger &mdlog,
-                          stringCount         *atomTypeCount,
-                          stringCount         *bccTypeCount,
-                          const Poldata       &pd,
-                          MolProp             *mp,
-                          t_inputrec          *inputrec)
+static bool dump_molecule(FILE                                        *fp,
+                          ForceComputer                               *forceComp,
+                          CommunicationRecord                         *cr,
+                          const gmx::MDLogger                         &mdlog,
+                          stringCount                                 *atomTypeCount,
+                          stringCount                                 *bccTypeCount,
+                          const Poldata                               &pd,
+                          MolProp                                     *mp,
+                          std::map<std::string, std::vector<double> > *qmap,
+                          t_inputrec                                  *inputrec)
 {
     alexandria::MyMol mymol;
     mymol.Merge(mp);
@@ -79,33 +80,40 @@ static bool dump_molecule(FILE                *fp,
         std::vector<gmx::RVec> coords = mymol.xOriginal();
         //mymol.symmetrizeCharges(pd, qsymm, nullptr);
         mymol.initQgenResp(&pd, coords, 0.0, 100);
-        std::vector<double> dummy;
-        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-        imm = mymol.GenerateCharges(&pd, forceComp, mdlog, cr,
-                                    ChargeGenerationAlgorithm::NONE,
-                                    dummy, &coords, &forces);
-        if (immStatus::OK == imm)
+        auto fhandler = mymol.fragmentHandler();
+        if (fhandler->topologies().size() == 1)
         {
-            // Add ACM charges
-            auto myexp = mp->findExperiment(JobType::OPT);
-            if (nullptr == myexp)
+            std::vector<double> dummy;
+            std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+            imm = mymol.GenerateCharges(&pd, forceComp, mdlog, cr,
+                                        ChargeGenerationAlgorithm::NONE,
+                                        dummy, &coords, &forces);
+            if (immStatus::OK == imm)
             {
-                myexp = mp->findExperiment(JobType::TOPOLOGY);
-            }
-            if (nullptr != myexp)
-            {
-                auto topatoms = mymol.topology()->atoms();
-                auto ca       = myexp->calcAtom();
-                size_t index  = 0;
-                for(auto atom = ca->begin(); atom < ca->end(); atom++)
+                // Add ACM charges
+                auto myexp = mp->findExperiment(JobType::OPT);
+                if (nullptr == myexp)
                 {
-                    // TODO this is not general!
-                    double qq = topatoms[index++].charge();
-                    if (pd.polarizable())
+                    myexp = mp->findExperiment(JobType::TOPOLOGY);
+                }
+                if (nullptr != myexp)
+                {
+                    auto ca       = myexp->calcAtom();
+                    auto topatoms = mymol.topology()->atoms();
+                    size_t index  = 0;
+                    std::vector<double> newq;
+                    for(auto atom = ca->begin(); atom < ca->end(); atom++)
                     {
-                        qq += topatoms[index++].charge();
+                        // TODO this is not general!
+                        double qq = topatoms[index++].charge();
+                        if (pd.polarizable())
+                        {
+                            qq += topatoms[index++].charge();
+                        }
+                        newq.push_back(qq);
+                        atom->AddCharge(qType::ACM, qq);
                     }
-                    atom->AddCharge(qType::ACM, qq);
+                    qmap->insert({fhandler->ids()[0], newq});
                 }
             }
         }
@@ -217,15 +225,90 @@ static bool dump_molecule(FILE                *fp,
     return true;
 }
 
+static void monomer2cluster(FILE                                              *fp,
+                            std::vector<MolProp>                              *mp,
+                            const Poldata                                     &pd,
+                            const std::map<std::string, std::vector<double> > &qmap,
+                            t_inputrec                                        *inputrec)
+{
+    // Premature optimization and all that
+    for(auto mm = mp->begin(); mm < mp->end(); mm++)
+    {
+         alexandria::MyMol mymol;
+         mymol.Merge(&(*mm));
+         mymol.setInputrec(inputrec);
+         auto imm = mymol.GenerateTopology(fp, &pd, missingParameters::Error,
+                                           false);
+         if (immStatus::OK == imm)
+         {
+             std::vector<gmx::RVec> coords = mymol.xOriginal();
+             //mymol.symmetrizeCharges(pd, qsymm, nullptr);
+             mymol.initQgenResp(&pd, coords, 0.0, 100);
+             auto fhandler = mymol.fragmentHandler();
+             if (fhandler->topologies().size() > 1)
+             {
+                 // Add ACM charges
+                 auto allexp = mm->experiment();
+                 if (allexp->empty())
+                 {
+                     if (fp)
+                     {
+                         fprintf(fp, "No experiment for %s, removing it.\n",
+                                 mm->getMolname().c_str());
+                     }
+                     mp->erase(mm);
+                 }
+                 for(auto myexp = allexp->begin(); myexp < allexp->end(); ++myexp)
+                 {
+                     auto ca    = myexp->calcAtom();
+                     size_t idx = 0;
+                     bool found = true;
+                     for(const auto &id : fhandler->ids())
+                     {
+                         auto qm = qmap.find(id);
+                         found   = qmap.end() != qm;
+                         if (!found)
+                         {
+                             break;
+                         }
+                         for(size_t iq = 0; iq < qm->second.size(); iq++)
+                         {
+                             if (idx == ca->size())
+                             {
+                                 GMX_THROW(gmx::InternalError(gmx::formatString("Size of charge array (%lu) does not match number of atoms (%d) for %s", qm->second.size(), myexp->NAtom(), mm->getMolname().c_str()).c_str()));
+                             }
+                             (*ca)[idx].AddCharge(qType::ACM, qm->second[iq]);
+                             idx++;
+                         }
+                     }
+                     if (!found)
+                     {
+                         // No support for this dimer, remove it.
+                         if (fp)
+                         {
+                             fprintf(fp, "No charge support for all fragments in %s, removing it.\n",
+                                     mm->getMolname().c_str());
+                         }
+                         mp->erase(mm);
+                     }
+                 }
+             }
+         }
+    }
+}
+
 int molprop_check(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "molprop_check checks calculations for missing hydrogens",
         "and inconsistent dipoles. It also tries to make a topology",
-        "and reports errors doing this. Output is to a file.",
+        "and reports errors doing this. Output is to a log file.",
         "If the optional -mpout flag is given, this program will generate",
-        "charges according to the input force field file and store them",
-        "in a molprop file as ACM (Alexandria Charge Model) charges."
+        "charges for all the monomeric compounds in the molprop file,",
+        "according to the input force field file and store them",
+        "in a molprop file as ACM (Alexandria Charge Model) charges.",
+        "If there are clusters in the input molprop file they will get charges",
+        "from the monomers."
     };
     t_filenm                         fnm[] =
     {
@@ -265,6 +348,7 @@ int molprop_check(int argc, char*argv[])
     CommunicationRecord commRec;
     auto forceComp = new ForceComputer();
     auto mdlog     = gmx::MDLogger {};
+    std::map<std::string, std::vector<double> > qmap;
 
     FILE *mylog = gmx_fio_fopen(opt2fn("-g", NFILE, fnm), "w");
     fprintf(mylog, "Force field file %s\n", opt2fn("-ff", NFILE, fnm));
@@ -357,7 +441,7 @@ int molprop_check(int argc, char*argv[])
         }
 
         if (dump_molecule(mylog, forceComp, &commRec, mdlog, &atomTypeCount,
-                          &bccTypeCount, pd, &(*m), inputrec))
+                          &bccTypeCount, pd, &(*m), &qmap, inputrec))
         {
             numberOk++;
         }
@@ -380,6 +464,8 @@ int molprop_check(int argc, char*argv[])
     }
     if (opt2bSet("-mpout", NFILE, fnm))
     {
+        // Copy charges from monomers
+        monomer2cluster(mylog, &mp, pd, qmap, inputrec);
         MolPropWrite(opt2fn("-mpout", NFILE, fnm), mp, compress);
     }
     fclose(mylog);

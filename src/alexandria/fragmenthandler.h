@@ -44,6 +44,8 @@ namespace alexandria
         std::vector<Topology>              topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
+        //! Fragment identifiers
+        std::vector<std::string>           ids_;
         //! Array denoting where the atoms start in the global
         std::vector<size_t>                atomStart_;
         //! Total number of atoms
@@ -67,9 +69,12 @@ namespace alexandria
                         missingParameters             missing);
 
         /*! \brief Fetch charges for all atoms
-         * \param[out] qq Vector that will be reinitialized at correct lenght
+         * \param[out] qq Vector that will be reinitialized at correct length
          */
         void fetchCharges(std::vector<double> *qq);
+        
+        //! Return the fragment ids
+        const std::vector<std::string> &ids() const { return ids_; }
         
         //! \return the atomStart_ vector, containing one extra index more than the number of fragments.
         const std::vector<size_t> atomStart() const { return atomStart_; }

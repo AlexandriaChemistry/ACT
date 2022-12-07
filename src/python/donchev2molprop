@@ -178,8 +178,8 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
                 atom_id.append(atomnr_offset+i+1)
                 mass += MD.atoms[i+1]["mass"]
             # Create fragment name from iupac names of monomers
-            fragnames.append(MD.inchi) #get_iupac(M, MD.inchi, smiles[fff]))
-            frag = mp.Fragment(fragnames[fff], charge[fff],
+            fragnames.append(get_iupac(M, MD.inchi, smiles[fff]))
+            frag = mp.Fragment(MD.inchi, charge[fff],
                                1, 1, atom_id, mass, MD.formula)
             # Add the fragment to the molprop and delete it
             mp1.add_fragment(frag)
