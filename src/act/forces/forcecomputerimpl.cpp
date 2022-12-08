@@ -373,6 +373,10 @@ static void computeCubic(const std::vector<TopologyEntry *>    &bonds,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
+        auto bondlength = params[cubicLENGTH];
+        auto rmax       = params[cubicRMAX];
+        auto kb         = params[cubicKB];
+        auto De         = params[cubicDE];
         // Get the atom indices
         auto &indices   = b->atomIndices();
 
@@ -383,8 +387,8 @@ static void computeCubic(const std::vector<TopologyEntry *>    &bonds,
         auto r1  = r2*r_1;
 
         real vB, fbond;
-        vB    = params[0] + params[1]*r1 + params[2]*r2 + params[3]*r1*r2;
-        fbond = r_1*(params[1] + 2*params[2]*r1 + 3*params[3]*r2);
+        vB    = kb*gmx::square(r1-bondlength)*(rmax-r1) - De;
+        fbond = r_1*kb*(bondlength+2*rmax-3*r1)*(bondlength-r1);
         
         ebond += vB;
         

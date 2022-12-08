@@ -386,21 +386,15 @@ void AllBondeds::updatePoldata(FILE    *fp,
         case F_CUBICBONDS:
             {
                 // Compute the numbers such that they make sense
-                double B0 = -400;
-                // Location of minimum = av: c(x-av)^2(x+b) = c (x^2-2xav+av^2)(x+b) = c (x^3 - 2x^2(av+b) + x av^2 + b av^2)
-                // D0 = c av^2 b -> assuming av = 0.1 and b = 3*av yields c = -100000
-                double c  = B0/(2*av*av*av);
-                double B1 = c*av*av;
-                double B2 = 6*av;
-                double B3 = c;
-                fs->addParameter(bondId, cubic_name[cubicB0],
-                                 ForceFieldParameter("kJ/mol", B0, 0, N, B0/factor_, B0*factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, cubic_name[cubicB1],
-                                 ForceFieldParameter("kJ/mol nm", B1, 0, 1, B1/factor_, B1*factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, cubic_name[cubicB2],
-                                 ForceFieldParameter("kJ/mol nm2", B2, 0, 1, B2*factor_, B2/factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, cubic_name[cubicB3],
-                                 ForceFieldParameter("kJ/mol nm3", B3, 0, 1, B3/factor_, B3*factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, cubic_name[cubicLENGTH],
+                                 ForceFieldParameter("pm", av, 0, N, av*factor_, av/factor_, Mutability::Bounded, true, true));
+                double rmax = 3*av;
+                fs->addParameter(bondId, cubic_name[cubicRMAX],
+                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*factor_, rmax/factor_, Mutability::Bounded, true, true));
+                fs->addParameter(bondId, cubic_name[cubicKB],
+                                 ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
+                fs->addParameter(bondId, cubic_name[cubicDE],
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
             }
             break;
         default:
