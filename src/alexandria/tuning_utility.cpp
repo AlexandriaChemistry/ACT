@@ -943,16 +943,20 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
     }
     double de2 = 0;
+    double mse = 0;
     for(const auto &ff : energyMap)
     {
         auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
         (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
+        mse += ff.second - enerexp;
         de2 += gmx::square(enerexp - ff.second);
     }
     double dinterE2 = 0;
+    double mseInter = 0;
     for(const auto &ff : interactionEnergyMap)
     {
         (*lsq_eInter)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+        mseInter += ff.second - ff.first;
         dinterE2 += gmx::square(ff.first - ff.second);
     }
     if (printSP_)
@@ -975,13 +979,15 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS energy  %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(de2/energyMap.size()), energyMap.size()));
+        tcout->push_back(gmx::formatString("RMS energy  %g MSE %g (kJ/mol) #structures = %zu",
+                                           std::sqrt(de2/energyMap.size()), 
+                                           mse/energyMap.size(), energyMap.size()));
     }
     if (interactionEnergyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS Einteraction %g (kJ/mol) #structures = %zu",
+        tcout->push_back(gmx::formatString("RMS Einteraction %g MSE %g (kJ/mol) #structures = %zu",
                                            std::sqrt(dinterE2/interactionEnergyMap.size()),
+                                           mseInter/interactionEnergyMap.size(),
                                            interactionEnergyMap.size()));
     }
     double df2    = 0;
