@@ -89,7 +89,7 @@ private:
     //! Print all information from all SP calculation
     bool printSP_             = false;
     //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
-    bool calcFrequencies_     = true;
+    bool calcFrequencies_     = false;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,

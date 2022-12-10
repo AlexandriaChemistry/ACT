@@ -942,29 +942,24 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
             dataFileNames.push_back(ei.getDatafile());
         }
     }
-    double de2 = 0;
-    double mse = 0;
+    gmx_stats myepot;
     for(const auto &ff : energyMap)
     {
-        auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
-        (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
-        mse += ff.second - enerexp;
-        de2 += gmx::square(enerexp - ff.second);
+        (*lsq_epot)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+        myepot.add_point(ff.first, ff.second, 0, 0);
     }
-    double dinterE2 = 0;
-    double mseInter = 0;
+    gmx_stats myinter;
     for(const auto &ff : interactionEnergyMap)
     {
         (*lsq_eInter)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
-        mseInter += ff.second - ff.first;
-        dinterE2 += gmx::square(ff.first - ff.second);
+        myinter.add_point(ff.first, ff.second, 0, 0);
     }
     if (printSP_)
     {
         size_t ccc = 0;
         for(const auto &eam : energyComponentMap)
         {
-            auto enerexp = /* mol->atomizationEnergy() + */ eam.first;
+            auto enerexp = eam.first;
             std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
                                                 enerexp);
             for(const auto &terms : eam.second)
@@ -979,16 +974,29 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS energy  %g MSE %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(de2/energyMap.size()), 
-                                           mse/energyMap.size(), energyMap.size()));
+        real mse, mae, rmsd, R = 0, r2;
+        myepot.get_mse_mae(&mse, &mae);
+        myepot.get_rmsd(&rmsd);
+        if (myepot.get_npoints() > 2)
+        {
+            myepot.get_corr_coeff(&R);
+        }
+        r2 = 100*R*R;
+        tcout->push_back(gmx::formatString("Energy RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
+                                           rmsd, mse, r2, myepot.get_npoints()));
     }
     if (interactionEnergyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS Einteraction %g MSE %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(dinterE2/interactionEnergyMap.size()),
-                                           mseInter/interactionEnergyMap.size(),
-                                           interactionEnergyMap.size()));
+        real mse, mae, rmsd, R = 0, r2;
+        myinter.get_mse_mae(&mse, &mae);
+        myinter.get_rmsd(&rmsd);
+        if (myinter.get_npoints() > 2)
+        {
+            myinter.get_corr_coeff(&R);
+        }
+        r2 = 100*R*R;
+        tcout->push_back(gmx::formatString("Einteraction RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
+                                           rmsd, mse, r2, myinter.get_npoints()));
     }
     double df2    = 0;
     size_t nforce = 0;
