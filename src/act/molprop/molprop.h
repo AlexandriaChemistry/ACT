@@ -288,24 +288,6 @@ public:
         }
     }
     
-    /*! \brief Return a calculation iterator
-     *
-     * Return iterator corresponding to the level of theory
-     * as determined by method and basis or EndExperiment in
-     * case it is not found. If either method or basis are empty
-     * any calculation may be taken. The calculation should
-     * hold the requested observable of the type (can be nullptr)
-     * \param[in]  method  The QM method
-     * \param[in]  basis   The QM basis set
-     * \param[out] mylot   The level of theory found
-     * \param[in]  mpo     The observable type
-     * \param[in]  type    The observable subtype
-     */
-    ExperimentIterator getCalcPropType(const std::string &method,
-                                       const std::string &basis,
-                                       std::string       *mylot,
-                                       MolPropObservable  mpo,
-                                       const char        *type);
     /*! \brief
      * Sends this object over an MPI connection
      *

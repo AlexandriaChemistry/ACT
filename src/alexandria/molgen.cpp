@@ -120,6 +120,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
+        { "-lb",  FALSE, etBOOL, {&loadBalance_},
+          "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
@@ -558,29 +560,50 @@ void MolGen::countTargetSize() // Called in read method
 static double computeCost(const MyMol                         *mymol,
                           const std::map<eRMS, FittingTarget> &targets)
 {
+    // Estimate the cost of computing the chi squared for this compound.
+    // Since the number of experiments can vary between molecules,
+    // so can the cost. We take the cost to be proportional to the number
+    // coulomb calculations.
     double w = 1;
-    for(const auto &tg: targets)
+    for(auto &myexp : mymol->experimentConst())
     {
-        switch(tg.first)
+        for(const auto &tg: targets)
         {
-        case eRMS::ESP:
-        case eRMS::EPOT:
-        case eRMS::Interaction:
-        case eRMS::Force2:
-        case eRMS::Polar:
-        case eRMS::BOUNDS:
-        case eRMS::UNPHYSICAL:
-            break;
-        case eRMS::CHARGE:
-        case eRMS::MU:
-        case eRMS::QUAD:
-        case eRMS::OCT:
-        case eRMS::HEXADEC:
-        case eRMS::FREQUENCY:
-        case eRMS::INTENSITY:
-        case eRMS::CM5:
-        case eRMS::TOT:
-            break;
+            switch(tg.first)
+            {
+            case eRMS::ESP:
+                w += myexp.NPotential();
+                break;
+            case eRMS::EPOT:
+                // All versus all interactions
+                w += gmx::square(myexp.NAtom());
+                break;
+            case eRMS::Interaction:
+                // All versus all interactions for dimer and monomers separately
+                w += 2*gmx::square(myexp.NAtom());
+                break;
+            case eRMS::Force2:
+                // Since we typically do both energy and force, this one is for free
+                break;
+            case eRMS::Polar:
+                // Does 7 energy calculations per polarizability
+                w += 7*gmx::square(myexp.NAtom());
+                break;
+            case eRMS::BOUNDS:
+            case eRMS::UNPHYSICAL:
+                // Too small to measure
+                break;
+            case eRMS::CHARGE:
+            case eRMS::MU:
+            case eRMS::QUAD:
+            case eRMS::OCT:
+            case eRMS::HEXADEC:
+            case eRMS::FREQUENCY:
+            case eRMS::INTENSITY:
+            case eRMS::CM5:
+            case eRMS::TOT:
+                break;
+            }
         }
     }
     return w;
@@ -703,7 +726,6 @@ size_t MolGen::Read(FILE                                *fp,
                     }
                     continue;
                 }
-                double cost = computeCost(&mymol, targets);
                 imm = mymol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
@@ -749,6 +771,8 @@ size_t MolGen::Read(FILE                                *fp,
         auto cs         = CommunicationStatus::OK; 
         int  bcint      = 1;
         std::set<int> comm_used;
+        std::vector<double> totalCost;
+        totalCost.resize(1+cr_->nhelper_per_middleman(), 0);
         for(auto mymol = mymol_.begin(); mymol < mymol_.end() && CommunicationStatus::OK == cs; ++mymol)
         {
             // Local compounds are computed locally
@@ -756,7 +780,16 @@ size_t MolGen::Read(FILE                                *fp,
             // See if we need to send stuff around
             if (mycomms.size() > 0)
             {
-                int comm_index = mymolIndex % (1+cr_->nhelper_per_middleman());
+                int comm_index;
+                if (loadBalance_)
+                {
+                    comm_index = std::min_element(totalCost.begin(), totalCost.end()) - totalCost.begin();
+                }
+                else
+                {
+                    comm_index = mymolIndex % (1+cr_->nhelper_per_middleman());
+                }
+                totalCost[comm_index] += computeCost(&(*mymol), targets);
                 if (cr_->nmiddlemen() > 1)
                 {
                     // We always need to send the molecules to the middlemen
@@ -787,6 +820,15 @@ size_t MolGen::Read(FILE                                *fp,
         }
         // TODO: Free mycomms
         print_memory_usage(debug);
+        // Print cost per helper
+        if (fp)
+        {
+            fprintf(fp, "Computational cost estimate per helper:\n");
+            for(size_t i = 0; i < totalCost.size(); i++)
+            {
+                fprintf(fp,"Helper %2lu  Cost %g\n", i, totalCost[i]);
+            }
+        }
     }
     else
     {

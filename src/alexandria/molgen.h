@@ -250,7 +250,7 @@ private:
     //! Tell us whether this interaction type needs optimizing
     std::map<InteractionType, bool> iOpt_;
     //! Whether or not to use charge symmetry
-    gmx_bool                        qsymm_      = false;
+    bool                            qsymm_      = false;
     //! GROMACS logger structure
     gmx::MDLogger                   mdlog_;
     //! GROMACS MD parameter structure
@@ -263,6 +263,8 @@ private:
     gmx::MDModules                  mdModules_;
     //! The molecules used in the optimization
     std::vector<alexandria::MyMol>  mymol_;
+    //! Whether or not to load balance the inputs
+    bool                            loadBalance_ = true;
     
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
