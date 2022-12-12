@@ -60,7 +60,8 @@ def string2coords(xyzstr:str)->list:
         coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2]) ])
     return coords
     
-def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int, prettyPrint:bool):
+def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int,
+            prettyPrint:bool, saveXyz:bool):
     # Do something
     M          = Molecules()
     M.read_default()
@@ -203,6 +204,7 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
         # Update the dimer name
         molname = ("%s-%s" % ( fragnames[0], fragnames[1] ))
         mp1.set_molname(molname)
+        
         # Done with the generic stuff for this molprop, now add all the experiments
         for krow in range(irow,jrow):
             # Create new experiment
@@ -239,6 +241,8 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
 
         # Add this dimer to the set and clean up
         molprops.add_molecule(mp1, prettyPrint)
+        if saveXyz:
+            mp1.dump_xyz()
         del mp1
         del atom_labels
         # Update loop variable
@@ -259,6 +263,7 @@ def parse_args():
     parser.add_argument("-v", "--verbose", help="Write more output", action="store_true")
     parser.add_argument("-dbg", "--debug", help="Print debugging messages", action="store_true")
     parser.add_argument("-pp",  "--pretty", help="Print pretty xml", action="store_true")
+    parser.add_argument("-xyz", "--xyz",    help="Dump an xyz file with multiple structures for each compound in the selection", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -269,6 +274,6 @@ if __name__ == "__main__":
         debug = True
     if args.infile and args.outfile:
         convert(args.infile, args.outfile, args.selection, 
-                args.verbose, args.maxdimer, args.pretty)
+                args.verbose, args.maxdimer, args.pretty, args.xyz)
     else:
         print("Please pass me input and output filenames (try -h first)")

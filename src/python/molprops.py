@@ -111,6 +111,19 @@ class Experiment:
                 newatom["qmap"][q] = qmap[q]
         self.atoms.append(newatom)
         
+    def dump_xyz(self, outf, molname):
+        outf.write("%d\n" % len(self.atoms))
+        myener = ""
+        for ener in self.energies:
+            if ener["type"] == "DeltaE0" or ener["type"] == "InteractionEnergy":
+                myener = ( " %s %s %s" % ( ener["type"], ener["average"], ener["unit"] ))
+        outf.write("%s%s\n" % ( molname, myener ))
+        for i in range(len(self.atoms)):
+            outf.write("%5s  %10s  %10s  %10s\n" % ( self.atoms[i]["name"],
+                                                     self.atoms[i]["x"],
+                                                     self.atoms[i]["y"],
+                                                     self.atoms[i]["z"] ))
+        
     def extract_thermo(self, tcmap, atomname, ahof, verbose=False):
         if (not tcmap["Ezpe"] or not tcmap["Hcorr"] or not tcmap["Gcorr"] or
             not tcmap["E0"] or not tcmap["CV"] or not tcmap["Method"]):
@@ -160,6 +173,7 @@ class Experiment:
         if len(tcmap["Scomponent"]) == len(Scomps):
             for i in range(len(Scomps)):
                 self.add_energy(Scomps[i], "J/mol K", myT, "gas", tcmap["Scomponent"][i])
+
 class Molprop:
     '''
     Class to store a single molprop (molecule properties) from the
@@ -200,7 +214,21 @@ class Molprop:
         self.fragments.append(f)
 
     def add_compound(self, comp): 
-        self.compounds.append(comp)   
+        self.compounds.append(comp)
+    
+    def dump_xyz(self):
+        if len(self.experiments) == 0:
+            return
+        mn = "molname"
+        if not mn in self.properties:
+            return
+        with open(self.properties[mn]+".xyz", "w") as outf:
+            for myexp in self.experiments:
+                if myexp.properties["jobtype"] == "Opt":
+                    myexp.dump_xyz(outf, self.properties[mn])
+            for myexp in self.experiments:
+                if myexp.properties["jobtype"] != "Opt":
+                    myexp.dump_xyz(outf, self.properties[mn])
         
 class Molprops:
     '''
