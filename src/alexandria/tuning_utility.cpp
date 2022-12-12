@@ -1231,17 +1231,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 if (atoms[ai].pType() == eptAtom)
                 {
                     auto llF = lll->second.find(atoms[ai].ffType());
-                    if (lll->second.end() == llF)
+                    if (lll->second.end() != llF)
                     {
-                        GMX_THROW(gmx::InternalError("Cannot find atomtype in lsqt"));
+                        auto qa = atoms[ai].charge();
+                        if (ai < atoms.size() -1 && 
+                            atoms[ai+1].pType() == eptShell)
+                        {
+                            qa += atoms[ai+1].charge();
+                        }
+                        llF->second.add_point(1, qa, 0, 0);
                     }
-                    auto qa = atoms[ai].charge();
-                    if (ai < atoms.size() -1 && 
-                        atoms[ai+1].pType() == eptShell)
-                    {
-                        qa += atoms[ai+1].charge();
-                    }
-                    llF->second.add_point(1, qa, 0, 0);
                 }
             }
             // Multipoles
