@@ -2305,6 +2305,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             {
                 std::string conf;
                 auto ei = findExperimentConst(JobType::OPT);
+                if (!ei)
+                {
+                    ei = findExperimentConst(JobType::TOPOLOGY);
+                }
                 if (ei)
                 {
                     for(auto &i : qTypes())
