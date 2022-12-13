@@ -137,7 +137,7 @@ static void computeB2(FILE                         *logFile,
                     double r    = xmin+(ii+0.5)*binwidth;
                     double aver = exp_U12[ii]/n_U12[ii];
                     fprintf(fp, "%10g  %10g\n", r, aver);
-                    Bclass -= 4*M_PI*r*r*aver/2;
+                    Bclass -= 2*M_PI*r*r*aver/2;
                 }
             }
             xvgrclose(fp);
