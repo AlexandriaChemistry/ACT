@@ -37,6 +37,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
 
 #include "act/molprop/molprop_util.h"
@@ -92,13 +94,68 @@ static void forceFieldSummary(JsonTree      *jtree,
     }
 }
 
-static void do_rerun(FILE          *logFile,
-                     const Poldata *pd,
-                     const MyMol   *mymol,
-                     ForceComputer *forceComp,
-                     const char    *trajname,
-                     bool           eInter,
-                     double         qtot)
+static void computeB2(FILE                         *logFile,
+                      gmx_stats                     edist,
+                      gmx_output_env_t             *oenv,
+                      double                        Temperature,
+                      const std::vector<gmx::RVec> &force1,
+                      const std::vector<gmx::RVec> &torque1)
+{
+    if (Temperature == 0)
+    {
+        fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
+    }
+    auto N = edist.get_npoints();
+    if (N > 2 && Temperature > 0)
+    {
+        real binwidth = 0.02; // nm
+        const std::vector<double> x = edist.getX();
+        const std::vector<double> y = edist.getY();
+        double xmin  = *std::min_element(x.begin(), x.end());
+        double xmax  = *std::max_element(x.begin(), x.end());
+        if (xmax > xmin)
+        {
+            int    nbins = 1+std::round((xmax-xmin)/binwidth);
+            binwidth = (xmax-xmin)/nbins;
+            std::vector<double> exp_U12(nbins, 0.0);
+            std::vector<int>    n_U12(nbins, 0);
+            double beta = 1.0/(BOLTZ*Temperature);
+            for(size_t ii = 0; ii < x.size(); ii++)
+            {
+                int index = (x[ii]-xmin)/binwidth;
+                exp_U12[index] += std::exp(-y[ii]*beta)-1;
+                n_U12[index] += 1;
+            }
+            double Bclass = 0;
+            FILE *fp = xvgropen("energy_histo.xvg", "Energy/Distance", "r (nm)",
+                                "< exp[-U12/kBT]-1 >", oenv);
+            
+            for(size_t ii = 0; ii < exp_U12.size(); ii++)
+            {
+                if (n_U12[ii] > 0)
+                {
+                    double r    = xmin+(ii+0.5)*binwidth;
+                    double aver = exp_U12[ii]/n_U12[ii];
+                    fprintf(fp, "%10g  %10g\n", r, aver);
+                    Bclass -= 4*M_PI*r*r*aver/2;
+                }
+            }
+            xvgrclose(fp);
+            fprintf(logFile, "Classical second virial coefficient B2 %g nm^3 %g cm^3/mol\n",
+                    Bclass, Bclass*AVOGADRO*1e-21);
+        }
+    }
+}
+
+static void do_rerun(FILE             *logFile,
+                     const Poldata    *pd,
+                     const MyMol      *mymol,
+                     ForceComputer    *forceComp,
+                     const char       *trajname,
+                     bool              eInter,
+                     double            qtot,
+                     gmx_output_env_t *oenv,
+                     double            Temperature)
 {
     std::vector<MolProp> mps;
     std::string          method, basis;
@@ -112,6 +169,9 @@ static void do_rerun(FILE          *logFile,
                 mps.size(), trajname);       
         std::map<InteractionType, double> energies;
         int mp_index = 0;
+        gmx_stats edist;
+        std::vector<gmx::RVec> force1;
+        std::vector<gmx::RVec> torque1;
         for (auto mp : mps)
         {
             auto exper = mp.experimentConst();
@@ -155,37 +215,49 @@ static void do_rerun(FILE          *logFile,
                 {
                     auto EE         = mymol->calculateInteractionEnergy(pd, forceComp, &forces, &coords);
                     auto atomStart  = mymol->fragmentHandler()->atomStart();
-                    GMX_RELEASE_ASSERT(atomStart.size() == 3, "This is not a dimer");
-                    gmx::RVec f1    = { 0, 0, 0 };
-                    gmx::RVec com   = { 0, 0, 0 };
-                    double    mtot  = 0;
+                    if (atomStart.size() != 3)
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
+                    }
+                    gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
+                    gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+                    double    mtot[2] = { 0, 0 };
                     auto      tops  = mymol->fragmentHandler()->topologies();
-                    auto      atoms = tops[0].atoms();
-                    for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                    for(int kk = 0; kk < 2; kk++)
                     {
-                        gmx::RVec mr1;
-                        auto      mi = atoms[i-atomStart[0]].mass();
-                        svmul(mi, coords[i], mr1);
-                        mtot += mi;
-                        rvec_inc(com, mr1);
-                        rvec_inc(f1, forces[i]);
+                        auto atoms = tops[kk].atoms();
+                        for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                        {
+                            gmx::RVec mr1;
+                            auto      mi = atoms[i-atomStart[kk]].mass();
+                            svmul(mi, coords[i], mr1);
+                            mtot[kk] += mi;
+                            rvec_inc(com[kk], mr1);
+                            rvec_inc(f[kk], forces[i]);
+                        }
+                        GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
+                        for(size_t m = 0; m < DIM; m++)
+                        {
+                            com[kk][m] /= mtot[kk];
+                        }
                     }
-                    GMX_RELEASE_ASSERT(mtot > 0, "Zero mass");
-                    for(size_t m = 0; m < DIM; m++)
-                    {
-                        com[m] /= mtot;
-                    }
+                    force1.push_back(f[0]);
                     gmx::RVec torque = { 0, 0, 0 };
                     for(size_t i = atomStart[0]; i < atomStart[1]; i++)
                     {
                         gmx::RVec ri;
-                        rvec_sub(coords[i], com, ri);
+                        rvec_sub(coords[i], com[0], ri);
                         gmx::RVec ti;
                         cprod(ri, forces[i], ti);
                         rvec_inc(torque, ti);
                     }
-                    fprintf(logFile, " Einter %g Force %g %g %g Torque %g %g %g",
-                            EE, f1[XX], f1[YY], f1[ZZ], torque[XX], torque[YY], torque[ZZ]);
+                    torque1.push_back(torque);
+                    gmx::RVec dcom;
+                    rvec_sub(com[0], com[1], dcom);
+                    double rcom = norm(dcom);
+                    fprintf(logFile, " r %g Einter %g Force %g %g %g Torque %g %g %g",
+                            rcom, EE, f[0][XX], f[0][YY], f[0][ZZ], torque[XX], torque[YY], torque[ZZ]);
+                    edist.add_point(rcom, EE, 0, 0);
                 }
                 else
                 {
@@ -198,6 +270,11 @@ static void do_rerun(FILE          *logFile,
                 }
                 fprintf(logFile, "\n");
             }
+            mp_index += 1;
+        }
+        if (eInter)
+        {
+            computeB2(logFile, edist, oenv, Temperature, force1, torque1);
         }
     }
     else
@@ -212,15 +289,25 @@ int simulate(int argc, char *argv[])
     std::vector<const char *> desc = {
         "alexandria simulate performs a proof-of-principle MD simulation, typically using",
         "a force field derived by the Alexandria Chemistry Toolkit.", 
-        "The features are limited to",
-        "constant energy simulations in vacuum on one core.",
+        "The program can perform energy minimization and normal mode",
+        "analysis including thermochemistry calculations, or do a",
+        "constant energy molecular dynamics simulation in vacuum.",
+        "In addition, a series of conformations (trajectory) may be",
+        "submitted after which the energy per conformation is printed.",
+        "If the input trajectory consists of dimers, the second virial",
+        "coefficient can be estimated as well.[PAR]",
         "The input is given by a coordinate file, a force field file and",
         "command line options. During the simulation an energy file,",
-        "a trajectory file and a log file are generated."
+        "a trajectory file and a log file are generated. If a trajectory",
+        "of dimers is presented as input for energy calculations, the",
+        "corresponding molecule file, used for generating the topology",
+        "needs to be a molprop (xml) file and contain information about",
+        "the compounds in the dimer."
     };
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "gentop",     ffREAD  },
+        { efXML, "-mp", "molprop",    ffOPTRD },
         { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
         { efXVG, "-e",  "energy",     ffWRITE },
@@ -265,6 +352,19 @@ int simulate(int argc, char *argv[])
         return status;
     }
     sch.check_pargs();
+
+    if (opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) > 0)
+    {
+        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option), but not both.\n");
+        status = 1;
+        return status;
+    }
+    else if (!opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) == 0)
+    {
+        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option)\n");
+        status = 1;
+        return status;
+    }
     
     Poldata        pd;
     try
@@ -293,34 +393,44 @@ int simulate(int argc, char *argv[])
     MyMol                mymol;
     {
         std::vector<MolProp> mps;
-        double               qtot_babel = qtot;
-        std::string          method, basis;
-        int                  maxpot = 100;
-        int                  nsymm  = 1;
-        if (readBabel(filename, &mps, molnm, molnm, "", &method,
-                      &basis, maxpot, nsymm, "Opt", &qtot_babel,
-                      false))
+        if (opt2bSet("-mp", fnm.size(), fnm.data()))
+        {
+            MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
+        }
+        else
+        {
+            double               qtot_babel = qtot;
+            std::string          method, basis;
+            int                  maxpot = 100;
+            int                  nsymm  = 1;
+            if (!readBabel(filename, &mps, molnm, molnm, "", &method,
+                           &basis, maxpot, nsymm, "Opt", &qtot_babel,
+                           false))
+            {
+                fprintf(logFile, "Reading %s failed.\n", filename);
+                status = 1;
+            }
+            else
+            {
+                std::map<std::string, std::string> g2a;
+                gaffToAlexandria("", &g2a);
+                if (!g2a.empty())
+                {
+                    if (!renameAtomTypes(&mps[0], g2a))
+                    {
+                        status = 1;
+                    }
+                }
+            }
+            
+        }
+        if (status == 0)
         {
             if (mps.size() > 1)
             {
                 fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
             }
-            std::map<std::string, std::string> g2a;
-            gaffToAlexandria("", &g2a);
-            bool mappingOK = true;
-            if (!g2a.empty())
-            {
-                mappingOK = renameAtomTypes(&mps[0], g2a);
-            }
-            if (mappingOK)
-            {
-                mymol.Merge(&mps[0]);
-            }
-        }
-        else
-        {
-            fprintf(logFile, "Reading %s failed.\n", filename);
-            status = 1;
+            mymol.Merge(&mps[0]);
         }
     }
     immStatus imm = immStatus::OK;
@@ -368,7 +478,7 @@ int simulate(int argc, char *argv[])
         /* Generate output file for debugging if requested */
         if (strlen(trajname) > 0)
         {
-            do_rerun(logFile, &pd, &mymol, forceComp, trajname, eInter, qtot);
+            do_rerun(logFile, &pd, &mymol, forceComp, trajname, eInter, qtot, oenv, sch.temperature());
         }
         else if (mymol.errors().empty())
         {

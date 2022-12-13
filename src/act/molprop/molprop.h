@@ -236,6 +236,10 @@ public:
      */    
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
     
+    /*! Generate fragments based on bonds
+     */    
+    void generateFragments();
+    
     //! Clear the fragment information
     void clearFragments() { fragment_.clear(); }
     

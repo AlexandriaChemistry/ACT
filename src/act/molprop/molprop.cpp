@@ -184,6 +184,72 @@ int MolProp::symmetryNumber() const
     return symm;
 }
 
+void MolProp::generateFragments()
+{
+    gmx_fatal(FARGS, "Implement complete function");
+    std::vector<int> fragIndex;
+    for(int i = 0; i < natom_; i++)
+    {
+        fragIndex[i] = -1;
+    }
+    int maxBond = 0;
+    for(auto b : bond_)
+    {
+        int ai = b.aI();
+        int aj = b.aJ();
+        if (fragIndex[ai] == -1 && fragIndex[aj] == -1)
+        {
+            fragIndex[ai] = maxBond;
+            fragIndex[aj] = maxBond;
+            maxBond += 1;
+        }
+        else if (fragIndex[ai] == -1)
+        {
+            fragIndex[ai] = fragIndex[aj];
+        }
+        else if (fragIndex[aj] == -1)
+        {
+            fragIndex[aj] = fragIndex[ai];
+        }
+        else if (fragIndex[ai] != fragIndex[aj])
+        {
+            // Merge them.
+            if (fragIndex[ai] < fragIndex[aj])
+            {
+                int faj = fragIndex[aj];
+                for(int i = 0; i < natom_; i++)
+                {
+                    if (faj == fragIndex[i])
+                    {
+                        fragIndex[i] = fragIndex[ai];
+                    }
+                }
+            }
+            else
+            {
+                int fai = fragIndex[ai];
+                for(int i = 0; i < natom_; i++)
+                {
+                    if (fai == fragIndex[i])
+                    {
+                        fragIndex[i] = fragIndex[aj];
+                    }
+                }
+            }
+        }
+    }
+    clearFragments();
+    int fragI = fragIndex[0];
+    for(int i = 1; i < natom_; i++)
+    {
+        if (fragIndex[i] != fragI)
+        {
+            // New Fragment
+            Fragment f;
+        }
+    }
+}
+
 int MolProp::Merge(const MolProp *src)
 {
     std::string stmp;
