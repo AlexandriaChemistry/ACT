@@ -104,46 +104,58 @@ static void computeB2(FILE                         *logFile,
     if (Temperature == 0)
     {
         fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
+        return;
     }
-    auto N = edist.get_npoints();
-    if (N > 2 && Temperature > 0)
+    auto                      N = edist.get_npoints();
+    const std::vector<double> x = edist.getX();
+    const std::vector<double> y = edist.getY();
+    double xmin                 = *std::min_element(x.begin(), x.end());
+    double xmax                 = *std::max_element(x.begin(), x.end());
+    if (N > 2 && xmax > xmin)
     {
-        real binwidth = 0.02; // nm
-        const std::vector<double> x = edist.getX();
-        const std::vector<double> y = edist.getY();
-        double xmin  = *std::min_element(x.begin(), x.end());
-        double xmax  = *std::max_element(x.begin(), x.end());
-        if (xmax > xmin)
+        real   binwidth = 0.01; // nm
+        size_t nbins    = 1+std::round((xmax-xmin)/binwidth);
+        binwidth        = (xmax-xmin)/(nbins-1);
+        std::vector<double> exp_U12(nbins, 0.0);
+        std::vector<int>    n_U12(nbins, 0);
+        double beta = 1.0/(BOLTZ*Temperature);
+        for(size_t ii = 0; ii < x.size(); ii++)
         {
-            int    nbins = 1+std::round((xmax-xmin)/binwidth);
-            binwidth = (xmax-xmin)/nbins;
-            std::vector<double> exp_U12(nbins, 0.0);
-            std::vector<int>    n_U12(nbins, 0);
-            double beta = 1.0/(BOLTZ*Temperature);
-            for(size_t ii = 0; ii < x.size(); ii++)
-            {
-                int index = (x[ii]-xmin)/binwidth;
-                exp_U12[index] += std::exp(-y[ii]*beta)-1;
-                n_U12[index] += 1;
-            }
-            double Bclass = 0;
-            FILE *fp = xvgropen("energy_histo.xvg", "Energy/Distance", "r (nm)",
-                                "< exp[-U12/kBT]-1 >", oenv);
-            
-            for(size_t ii = 0; ii < exp_U12.size(); ii++)
-            {
-                if (n_U12[ii] > 0)
-                {
-                    double r    = xmin+(ii+0.5)*binwidth;
-                    double aver = exp_U12[ii]/n_U12[ii];
-                    fprintf(fp, "%10g  %10g\n", r, aver);
-                    Bclass -= 2*M_PI*r*r*aver/2;
-                }
-            }
-            xvgrclose(fp);
-            fprintf(logFile, "Classical second virial coefficient B2 %g nm^3 %g cm^3/mol\n",
-                    Bclass, Bclass*AVOGADRO*1e-21);
+            double rindex = (x[ii]-xmin)/binwidth;
+            size_t index  = rindex;
+            exp_U12[index] += std::exp(-y[ii]*beta)-1;
+            n_U12[index] += 1;
         }
+        double Bclass = 0;
+        FILE *fp = xvgropen("energy_histo.xvg", "Energy/Distance", "r (nm)",
+                            "< exp[-U12/kBT]-1 >", oenv);
+        double rprev    =  0;
+        double averprev = -1;
+        fprintf(fp, "%10g  %10g\n", rprev, averprev);
+        for(size_t ii = 0; ii < nbins; ii++)
+        {
+            double r = xmin+(ii+0.5)*binwidth;
+            if (n_U12[ii] > 0)
+            {
+                double aver = exp_U12[ii]/n_U12[ii];
+                fprintf(fp, "%10g  %10g\n", r, aver);
+                // Approximate trapezium by y = ax + b (a == slope)
+                // then integrate that multiplied by x^2 to get
+                // a/4 x^4 + b/3 x^3
+                // insert old and new point
+                double a_4       = 0.25*(aver-averprev)/(r-rprev);
+                double b_3       = averprev/3;
+                double r3        = r*r*r;
+                double rp3       = rprev*rprev*rprev;
+                double integral  = a_4*(r3*r - rp3*rprev) + b_3*(r3 - rp3);
+                Bclass          -= 2*M_PI*integral;
+                averprev         = aver;
+                rprev            = r;
+            }
+        }
+        xvgrclose(fp);
+        fprintf(logFile, "Classical second virial coefficient B2 %g nm^3 %g cm^3/mol\n",
+                Bclass, Bclass*AVOGADRO*1e-21);
     }
 }
 
