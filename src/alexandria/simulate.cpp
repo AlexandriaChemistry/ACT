@@ -318,6 +318,7 @@ int simulate(int argc, char *argv[])
     static char              *filename   = (char *)"";
     static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
+    static char              *qqm        = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
@@ -332,6 +333,8 @@ int simulate(int argc, char *argv[])
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
+        { "-qqm",    FALSE, etSTR,  {&qqm},
+          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-einter", FALSE, etBOOL, {&eInter},
           "Compute dimer interaction energies when doing a rerun" },
         { "-v", FALSE, etBOOL, {&verbose},
@@ -446,8 +449,14 @@ int simulate(int argc, char *argv[])
         std::vector<gmx::RVec> forces(mymol.atomsConst().size());
 
         std::vector<double> myq;
-        auto alg = pd.chargeGenerationAlgorithm();
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
+        auto alg   = pd.chargeGenerationAlgorithm();
+        auto qtype = qType::Calc;
+        if (strlen(qqm) > 0)
+        {
+            alg   = ChargeGenerationAlgorithm::Read;
+            qtype = stringToQtype(qqm);
+        }
+        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {

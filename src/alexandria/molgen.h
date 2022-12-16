@@ -256,11 +256,13 @@ private:
     //! GROMACS MD parameter structure
     t_inputrec                     *inputrec_   = nullptr;
     //! String for command line to harvest the options to fit
-    char                            *fitString_ = nullptr;
+    char                           *fitString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! GROMACS structure containing optional MD modules, used for electric fields
     gmx::MDModules                  mdModules_;
+    //! Which charge type to use
+    char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
     std::vector<alexandria::MyMol>  mymol_;
     //! Whether or not to load balance the inputs

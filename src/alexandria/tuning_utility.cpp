@@ -463,6 +463,8 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
+        { "-qqm",    FALSE, etSTR,  {&chargeMethod_},
+          "Use a method from quantum mechanics that needs to be present in the input file. Either ACM, ESP, Hirshfeld, CM5 or Mulliken may be available., depending on your molprop file." },
         { "-esp_toler", FALSE, etREAL, {&esp_toler_},
           "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
         { "-dip_toler", FALSE, etREAL, {&dip_toler_},
@@ -1168,6 +1170,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
     std::map<std::string, double> molEpot;
+    auto alg   = pd->chargeGenerationAlgorithm();
+    auto qtype = qType::Calc;
+    if (nullptr != chargeMethod_)
+    {
+        qtype = stringToQtype(chargeMethod_);
+        alg   = ChargeGenerationAlgorithm::Read;
+    }
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -1187,8 +1196,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
             mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy,
-                                 &coords, &forces);
+                                 alg, qtype, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd, &coords);

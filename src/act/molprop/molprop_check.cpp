@@ -86,7 +86,8 @@ static bool dump_molecule(FILE                                        *fp,
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(mymol.atomsConst().size());
             imm = mymol.GenerateCharges(&pd, forceComp, mdlog, cr,
-                                        ChargeGenerationAlgorithm::NONE,
+                                        pd.chargeGenerationAlgorithm(),
+                                        qType::ACM,
                                         dummy, &coords, &forces);
             if (immStatus::OK == imm)
             {

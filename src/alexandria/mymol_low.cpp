@@ -82,6 +82,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
     { immStatus::Test,                     "Compound not in training set" },
     { immStatus::NoData,                   "No experimental data" },
+    { immStatus::NoMolpropCharges,         "No charges in the molprop file" },
     { immStatus::GenShells,                "Generating shells" },
     { immStatus::GenBonds,                 "Generating bonds" },
     { immStatus::CommProblem,              "Communicating MolProp" },

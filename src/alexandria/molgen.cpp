@@ -120,6 +120,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
+        { "-qqm",    FALSE, etSTR,  {&chargeMethod_},
+          "Use a method from quantum mechanics that needs to be present in the input file. Either ACM, ESP, Hirshfeld, CM5 or Mulliken may be available., depending on your molprop file." },
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
           "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
@@ -673,7 +675,14 @@ size_t MolGen::Read(FILE                                *fp,
             { MolPropObservable::POLARIZABILITY, iqmType::QM },
             { MolPropObservable::CHARGE,         iqmType::QM }
         };
-    int  root = 0;
+    int  root  = 0;
+    auto alg   = pd->chargeGenerationAlgorithm();
+    auto qtype = qType::Calc;
+    if (nullptr != chargeMethod_)
+    {
+        qtype = stringToQtype(chargeMethod_);
+        alg   = ChargeGenerationAlgorithm::Read;
+    }
     if (cr_->isMaster())
     {
         if (fp)
@@ -710,12 +719,8 @@ size_t MolGen::Read(FILE                                *fp,
                 mymol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<double> dummy;
                 std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-                imm = mymol.GenerateCharges(pd,
-                                            forceComp,
-                                            mdlog_,
-                                            cr_,
-                                            ChargeGenerationAlgorithm::NONE,
-                                            dummy, &coords, &forces);
+                imm = mymol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                                            qtype, dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
                 {
@@ -871,12 +876,8 @@ size_t MolGen::Read(FILE                                *fp,
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-                imm = mymol.GenerateCharges(pd,
-                                            forceComp,
-                                            mdlog_,
-                                            cr_,
-                                            ChargeGenerationAlgorithm::NONE,
-                                            dummy, &coords, &forces);
+                imm = mymol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                                            qtype, dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)
             {

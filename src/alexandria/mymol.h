@@ -425,6 +425,8 @@ public:
      * \param[in]  cr        Communication parameters
      * \param[in]  algorithm The algorithm for determining charges,
      *                       if NONE it is read from the Poldata structure.
+     * \param[in]  qtype     If algorithm is Read this type of charges will
+     *                       be extracted from the molprop structure.
      * \param[in]  qcustom   Custom (user-provided) charges
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
@@ -434,6 +436,7 @@ public:
                               const gmx::MDLogger       &fplog,
                               const CommunicationRecord *cr,
                               ChargeGenerationAlgorithm  algorithm,
+                              qType                      qtype,
                               const std::vector<double> &qcustom,
                               std::vector<gmx::RVec>    *coords,
                               std::vector<gmx::RVec>    *forces);

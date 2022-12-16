@@ -158,7 +158,7 @@ protected:
                     std::vector<gmx::RVec> forces(mm.atomsConst().size());
                     std::vector<gmx::RVec> coords = mm.xOriginal();
                     mm.symmetrizeCharges(pd, qSymm, nullptr);
-                    mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+                    mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
                     mps.push_back(mm);
                 }
             }

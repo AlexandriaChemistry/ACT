@@ -342,7 +342,8 @@ int gentop(int argc, char *argv[])
             
             mymol.initQgenResp(&pd, coords, 0.0, maxpot);
             
-            ChargeGenerationAlgorithm alg = pd.chargeGenerationAlgorithm();
+            auto alg   = pd.chargeGenerationAlgorithm();
+            auto qtype = qType::Calc;
             std::vector<double> myq;
             if (qcustom)
             {
@@ -355,10 +356,12 @@ int gentop(int argc, char *argv[])
             }
             else if (strlen(qqm) > 0)
             {
-                alg = nameToChargeGenerationAlgorithm(qqm);
+                alg   = ChargeGenerationAlgorithm::Read;
+                qtype = stringToQtype(qqm);
+
             }
             printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
-            imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq, &coords, &forces);
+            imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
         }
         /* Generate output file for debugging if requested */
         if (immStatus::OK == imm)

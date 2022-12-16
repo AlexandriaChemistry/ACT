@@ -90,6 +90,8 @@ private:
     bool printSP_             = false;
     //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
     bool calcFrequencies_     = false;
+    //! Which charge type to use
+    char *chargeMethod_       = nullptr;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
