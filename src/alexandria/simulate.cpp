@@ -173,9 +173,12 @@ static void computeB2(FILE                         *logFile,
                 Fprev         = Fnew;
                 for(int m = 0; m < DIM; m++)
                 {
-                    double Tnew  = exp_tau2[ii][m]/inertia[m];
-                    BqmTorque   += 2*M_PI*hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
-                    Tprev[m]     = Tnew;
+                    if (inertia[m] > 0)
+                    {
+                        double Tnew  = exp_tau2[ii][m]/inertia[m];
+                        BqmTorque   += 2*M_PI*hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
+                        Tprev[m]     = Tnew;
+                    }
                 }
                 r1            = r2;
             }
