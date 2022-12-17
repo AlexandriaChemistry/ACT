@@ -94,10 +94,26 @@ static void forceFieldSummary(JsonTree      *jtree,
     }
 }
 
+static double sphere_int(double r1, double r2, double val1, double val2)
+{
+    // Approximate trapezium by y = ax + b (a == slope)
+    // then integrate that multiplied by x^2 to get
+    // a/4 x^4 + b/3 x^3
+    // insert old and new point
+    double a_4       = 0.25*(val2-val1)/(r2-r1);
+    double b_3       = val1/3;
+    double r3        = r2*r2*r2;
+    double rp3       = r1*r1*r1;
+    double integral  = a_4*(r3*r2 - rp3*r1) + b_3*(r3 - rp3);
+    return integral;
+}
+
 static void computeB2(FILE                         *logFile,
                       gmx_stats                     edist,
                       gmx_output_env_t             *oenv,
                       double                        Temperature,
+                      double                        mass,
+                      const gmx::RVec              &inertia,
                       const std::vector<gmx::RVec> &force1,
                       const std::vector<gmx::RVec> &torque1)
 {
@@ -116,46 +132,58 @@ static void computeB2(FILE                         *logFile,
         real   binwidth = 0.01; // nm
         size_t nbins    = 1+std::round((xmax-xmin)/binwidth);
         binwidth        = (xmax-xmin)/(nbins-1);
-        std::vector<double> exp_U12(nbins, 0.0);
-        std::vector<int>    n_U12(nbins, 0);
+        std::vector<double>    exp_U12(nbins, 0.0);
+        std::vector<double>    exp_F2(nbins, 0.0);
+        std::vector<gmx::RVec> exp_tau2(nbins, { 0.0, 0.0, 0.0 });
+        std::vector<int>       n_U12(nbins, 0);
         double beta = 1.0/(BOLTZ*Temperature);
         for(size_t ii = 0; ii < x.size(); ii++)
         {
             double rindex = (x[ii]-xmin)/binwidth;
             size_t index  = rindex;
-            exp_U12[index] += std::exp(-y[ii]*beta)-1;
-            n_U12[index] += 1;
+            double weight = std::exp(-y[ii]*beta);
+            exp_U12[index] += weight-1;
+            exp_F2[index]  += weight*iprod(force1[ii], force1[ii]);
+            for(int m = 0; m < DIM; m++)
+            {
+                exp_tau2[index][m] += weight*torque1[ii][m]*torque1[ii][m];
+            }
+            n_U12[index]   += 1;
         }
-        double Bclass = 0;
+        double Bclass = 0, BqmForce = 0, BqmTorque = 0;
         FILE *fp = xvgropen("energy_histo.xvg", "Energy/Distance", "r (nm)",
                             "< exp[-U12/kBT]-1 >", oenv);
-        double rprev    =  0;
-        double averprev = -1;
-        fprintf(fp, "%10g  %10g\n", rprev, averprev);
+        double    r1    = 0;
+        double    Uprev = 0;
+        double    Fprev = 0;
+        gmx::RVec Tprev = { 0, 0, 0 };
+        fprintf(fp, "%10g  %10g\n", r1, Uprev);
+        double hbarfac  = gmx::square(PLANCK)*beta*beta/24;
         for(size_t ii = 0; ii < nbins; ii++)
         {
-            double r = xmin+(ii+0.5)*binwidth;
+            double r2 = xmin+(ii+0.5)*binwidth;
             if (n_U12[ii] > 0)
             {
-                double aver = exp_U12[ii]/n_U12[ii];
-                fprintf(fp, "%10g  %10g\n", r, aver);
-                // Approximate trapezium by y = ax + b (a == slope)
-                // then integrate that multiplied by x^2 to get
-                // a/4 x^4 + b/3 x^3
-                // insert old and new point
-                double a_4       = 0.25*(aver-averprev)/(r-rprev);
-                double b_3       = averprev/3;
-                double r3        = r*r*r;
-                double rp3       = rprev*rprev*rprev;
-                double integral  = a_4*(r3*r - rp3*rprev) + b_3*(r3 - rp3);
-                Bclass          -= 2*M_PI*integral;
-                averprev         = aver;
-                rprev            = r;
+                double Unew = exp_U12[ii]/n_U12[ii];
+                fprintf(fp, "%10g  %10g\n", r2, Unew);
+                Bclass       -= 2*M_PI*sphere_int(r1, r2, Uprev, Unew);
+                Uprev         = Unew;
+                double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
+                BqmForce     += 2*M_PI*hbarfac*sphere_int(r1, r2, Fprev, Fnew);
+                Fprev         = Fnew;
+                for(int m = 0; m < DIM; m++)
+                {
+                    double Tnew  = exp_tau2[ii][m]/inertia[m];
+                    BqmTorque   += 2*M_PI*hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
+                    Tprev[m]     = Tnew;
+                }
+                r1            = r2;
             }
         }
         xvgrclose(fp);
-        fprintf(logFile, "Classical second virial coefficient B2 %g nm^3 %g cm^3/mol\n",
-                Bclass, Bclass*AVOGADRO*1e-21);
+        double Btot = Bclass + BqmForce + BqmTorque;
+        fprintf(logFile, "Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n",
+                Bclass, BqmForce, BqmTorque, Btot*AVOGADRO*1e-21);
     }
 }
 
@@ -184,6 +212,7 @@ static void do_rerun(FILE             *logFile,
         gmx_stats edist;
         std::vector<gmx::RVec> force1;
         std::vector<gmx::RVec> torque1;
+        gmx::RVec              inertia  = { 0, 0, 0 };
         for (auto mp : mps)
         {
             auto exper = mp.experimentConst();
@@ -262,6 +291,10 @@ static void do_rerun(FILE             *logFile,
                         gmx::RVec ti;
                         cprod(ri, forces[i], ti);
                         rvec_inc(torque, ti);
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            inertia[m] += ri[m]*ri[m]*atoms[i].mass();
+                        }
                     }
                     torque1.push_back(torque);
                     gmx::RVec dcom;
@@ -286,7 +319,12 @@ static void do_rerun(FILE             *logFile,
         }
         if (eInter)
         {
-            computeB2(logFile, edist, oenv, Temperature, force1, torque1);
+            for(int m = 0; m < DIM; m++)
+            {
+                inertia[m] /= edist.get_npoints();
+            }
+            computeB2(logFile, edist, oenv, Temperature, mymol->fragmentHandler()->topologies()[0].mass(),
+                      inertia, force1, torque1);
         }
     }
     else
