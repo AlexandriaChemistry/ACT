@@ -100,28 +100,24 @@ static double sphere_int(double r1, double r2, double val1, double val2)
     // then integrate that multiplied by x^2 to get
     // a/4 x^4 + b/3 x^3
     // insert old and new point
-    double a_4       = 0.25*(val2-val1)/(r2-r1);
-    double b_3       = val1/3;
-    double r3        = r2*r2*r2;
-    double rp3       = r1*r1*r1;
-    double integral  = a_4*(r3*r2 - rp3*r1) + b_3*(r3 - rp3);
-    return integral;
+    double a        = (val2-val1)/(r2-r1);
+    double b        = val1 - a*r1;
+    double integral = ((a/4)*(r2*r2*r2*r2 - r1*r1*r1*r1) + 
+                       (b/3)*(r2*r2*r2 - r1*r1*r1));
+    return 4*M_PI*integral;
 }
 
 static void computeB2(FILE                         *logFile,
+                      const char                   *ehisto,
+                      const char                   *b2file,
                       gmx_stats                     edist,
                       gmx_output_env_t             *oenv,
-                      double                        Temperature,
+                      const std::vector<double>    &Temperature,
                       double                        mass,
                       const gmx::RVec              &inertia,
                       const std::vector<gmx::RVec> &force1,
                       const std::vector<gmx::RVec> &torque1)
 {
-    if (Temperature == 0)
-    {
-        fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
-        return;
-    }
     auto                      N = edist.get_npoints();
     const std::vector<double> x = edist.getX();
     const std::vector<double> y = edist.getY();
@@ -129,76 +125,136 @@ static void computeB2(FILE                         *logFile,
     double xmax                 = *std::max_element(x.begin(), x.end());
     if (N > 2 && xmax > xmin)
     {
+        FILE *fp = nullptr;
+        if (ehisto)
+        {
+            fp = xvgropen(ehisto, "Mayer function", "r (nm)",
+                          "< exp[-U12/kBT]-1 >", oenv);
+            std::vector<std::string> label;
+            for(auto T : Temperature)
+            {
+                if (T != 0)
+                {
+                    label.push_back(gmx::formatString("T = %g K", T));
+                }
+            }
+            xvgrLegend(fp, label, oenv);
+        }
+        FILE *b2p = nullptr;
+        if (b2file)
+        {
+            b2p = xvgropen(b2file, "Second virial coefficient",
+                           "Temperature (K)", "B2(T) cm^3/mol", oenv);
+        }
         real   binwidth = 0.01; // nm
         size_t nbins    = 1+std::round((xmax-xmin)/binwidth);
         binwidth        = (xmax-xmin)/(nbins-1);
-        std::vector<double>    exp_U12(nbins, 0.0);
-        std::vector<double>    exp_F2(nbins, 0.0);
-        std::vector<gmx::RVec> exp_tau2(nbins, { 0.0, 0.0, 0.0 });
-        std::vector<int>       n_U12(nbins, 0);
-        double beta = 1.0/(BOLTZ*Temperature);
-        for(size_t ii = 0; ii < x.size(); ii++)
+        for(auto T : Temperature)
         {
-            double rindex = (x[ii]-xmin)/binwidth;
-            size_t index  = rindex;
-            double weight = std::exp(-y[ii]*beta);
-            exp_U12[index] += weight-1;
-            exp_F2[index]  += weight*iprod(force1[ii], force1[ii]);
-            for(int m = 0; m < DIM; m++)
+            if (T == 0)
             {
-                exp_tau2[index][m] += weight*torque1[ii][m]*torque1[ii][m];
+                fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
+                continue;
             }
-            n_U12[index]   += 1;
-        }
-        double Bclass = 0, BqmForce = 0, BqmTorque = 0;
-        FILE *fp = xvgropen("energy_histo.xvg", "Energy/Distance", "r (nm)",
-                            "< exp[-U12/kBT]-1 >", oenv);
-        double    r1    = 0;
-        double    Uprev = 0;
-        double    Fprev = 0;
-        gmx::RVec Tprev = { 0, 0, 0 };
-        fprintf(fp, "%10g  %10g\n", r1, Uprev);
-        double hbarfac  = gmx::square(PLANCK)*beta*beta/24;
-        for(size_t ii = 0; ii < nbins; ii++)
-        {
-            double r2 = xmin+(ii+0.5)*binwidth;
-            if (n_U12[ii] > 0)
+            std::vector<double>    exp_U12(nbins, 0.0);
+            std::vector<double>    exp_F2(nbins, 0.0);
+            std::vector<gmx::RVec> exp_tau2(nbins, { 0.0, 0.0, 0.0 });
+            std::vector<int>       n_U12(nbins, 0);
+            double beta = 1.0/(BOLTZ*T);
+            for(size_t ii = 0; ii < x.size(); ii++)
             {
-                double Unew = exp_U12[ii]/n_U12[ii];
-                fprintf(fp, "%10g  %10g\n", r2, Unew);
-                Bclass       -= 2*M_PI*sphere_int(r1, r2, Uprev, Unew);
-                Uprev         = Unew;
-                double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
-                BqmForce     += 2*M_PI*hbarfac*sphere_int(r1, r2, Fprev, Fnew);
-                Fprev         = Fnew;
+                double rindex = (x[ii]-xmin)/binwidth;
+                size_t index  = rindex;
+                // Gray and Gubbins Eqn. 3.261
+                double g0_12 = std::exp(-y[ii]*beta);
+                // Gray and Gubbins Eqn. 3.272
+                exp_U12[index] += g0_12-1;
+                // Gray and Gubbins Eqn. 3.281
+                exp_F2[index]  += g0_12*iprod(force1[ii], force1[ii]);
                 for(int m = 0; m < DIM; m++)
                 {
-                    if (inertia[m] > 0)
-                    {
-                        double Tnew  = exp_tau2[ii][m]/inertia[m];
-                        BqmTorque   += 2*M_PI*hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
-                        Tprev[m]     = Tnew;
-                    }
+                    // Gray and Gubbins Eqn. 3.282
+                    exp_tau2[index][m] += g0_12*torque1[ii][m]*torque1[ii][m];
                 }
-                r1            = r2;
+                n_U12[index]   += 1;
+            }
+            double    Bclass    =  0;
+            double    BqmForce  =  0;
+            double    BqmTorque =  0;
+            // We start in the origin even if there is no data.
+            double    r1        =  0;
+            double    Uprev     = -1;
+            double    Fprev     =  0;
+            gmx::RVec Tprev     = { 0, 0, 0 };
+            if (fp)
+            {
+                fprintf(fp, "@ type xy\n");
+                fprintf(fp, "%10g  %10g\n", r1, Uprev);
+            }
+            double hbarfac  = gmx::square(PLANCK/(M_PI*beta))/24;
+            for(size_t ii = 0; ii < nbins; ii++)
+            {
+                double r2 = xmin+ii*binwidth;
+                if (n_U12[ii] > 0)
+                {
+                    double Unew = exp_U12[ii]/n_U12[ii];
+                    if (fp)
+                    {
+                        fprintf(fp, "%10g  %10g\n", r2, Unew);
+                    }
+                    auto dB       = sphere_int(r1, r2, Uprev, Unew);
+                    // TODO: Should really be factor 0.5 here!
+                    Bclass       -= dB;
+                    Uprev         = Unew;
+                    double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
+                    BqmForce     += hbarfac*sphere_int(r1, r2, Fprev, Fnew);
+                    Fprev         = Fnew;
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        if (inertia[m] > 0)
+                        {
+                            double Tnew  = exp_tau2[ii][m]/inertia[m];
+                            BqmTorque   += hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
+                            Tprev[m]     = Tnew;
+                        }
+                    }
+                    r1            = r2;
+                }
+            }
+            if (fp)
+            {
+                fprintf(fp, "&\n");
+            }
+            double Btot = (Bclass + BqmForce + BqmTorque)*AVOGADRO*1e-21;
+            fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n", T,
+                    Bclass, BqmForce, BqmTorque, Btot);
+            if (b2p)
+            {
+                fprintf(b2p, "%10g  %10g\n", T, Btot);
             }
         }
-        xvgrclose(fp);
-        double Btot = Bclass + BqmForce + BqmTorque;
-        fprintf(logFile, "Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n",
-                Bclass, BqmForce, BqmTorque, Btot*AVOGADRO*1e-21);
+        if (fp)
+        {
+            xvgrclose(fp);
+        }
+        if (b2p)
+        {
+            xvgrclose(b2p);
+        }
     }
 }
 
-static void do_rerun(FILE             *logFile,
-                     const Poldata    *pd,
-                     const MyMol      *mymol,
-                     ForceComputer    *forceComp,
-                     const char       *trajname,
-                     bool              eInter,
-                     double            qtot,
-                     gmx_output_env_t *oenv,
-                     double            Temperature)
+static void do_rerun(FILE                      *logFile,
+                     const Poldata             *pd,
+                     const MyMol               *mymol,
+                     ForceComputer             *forceComp,
+                     const char                *trajname,
+                     const char                *ehisto,
+                     const char                *b2file,
+                     bool                       eInter,
+                     double                     qtot,
+                     gmx_output_env_t          *oenv,
+                     const std::vector<double> &Temperature)
 {
     std::vector<MolProp> mps;
     std::string          method, basis;
@@ -326,7 +382,8 @@ static void do_rerun(FILE             *logFile,
             {
                 inertia[m] /= edist.get_npoints();
             }
-            computeB2(logFile, edist, oenv, Temperature, mymol->fragmentHandler()->topologies()[0].mass(),
+            computeB2(logFile, ehisto, b2file, edist, oenv, Temperature,
+                      mymol->fragmentHandler()->topologies()[0].mass(),
                       inertia, force1, torque1);
         }
     }
@@ -355,7 +412,10 @@ int simulate(int argc, char *argv[])
         "of dimers is presented as input for energy calculations, the",
         "corresponding molecule file, used for generating the topology",
         "needs to be a molprop (xml) file and contain information about",
-        "the compounds in the dimer."
+        "the compounds in the dimer. Based on dimer energies the second",
+        "virial coefficient will be estimated. Mayer curves can optionally",
+        "be plotted and the second viriail can be plotted as a function",
+        "of temperature."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -364,6 +424,8 @@ int simulate(int argc, char *argv[])
         { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
         { efXVG, "-e",  "energy",     ffWRITE },
+        { efXVG, "-eh", "mayer",      ffOPTWR },
+        { efXVG, "-b2", "B2T",        ffOPTWR },
         { efLOG, "-g",  "simulation", ffWRITE },
         { efXVG, "-ir", "IRspectrum", ffOPTWR }
     };
@@ -374,6 +436,9 @@ int simulate(int argc, char *argv[])
     static char              *qqm        = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
+    double                    T1         = 0;
+    double                    T2         = 0;
+    double                    deltaT     = 10;
     bool                      verbose    = false;
     bool                      eInter     = false;
     bool                      json       = false;
@@ -382,6 +447,12 @@ int simulate(int argc, char *argv[])
           "Molecular structure file in e.g. pdb format" },
         { "-traj",   FALSE, etSTR,  {&trajname},
           "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
+        { "-T1",     FALSE, etREAL, {&T1},
+          "Starting temperature for second virial calculations" },
+        { "-T2",     FALSE, etREAL, {&T2},
+          "Starting temperature for second virial calculations" },
+        { "-dT",     FALSE, etREAL, {&deltaT},
+          "Temperature increment for calculation of second virial" },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -540,7 +611,25 @@ int simulate(int argc, char *argv[])
         /* Generate output file for debugging if requested */
         if (strlen(trajname) > 0)
         {
-            do_rerun(logFile, &pd, &mymol, forceComp, trajname, eInter, qtot, oenv, sch.temperature());
+            std::vector<double> Temperature;
+            Temperature.push_back(T1);
+            if (deltaT > 0)
+            {
+                double T = T1+deltaT;
+                while (T <= T2)
+                {
+                    Temperature.push_back(T);
+                    T += deltaT;
+                }
+            }
+            else
+            {
+                Temperature.push_back(T2);
+            }
+            do_rerun(logFile, &pd, &mymol, forceComp, trajname,
+                     opt2fn_null("-eh", fnm.size(), fnm.data()),
+                     opt2fn_null("-b2", fnm.size(), fnm.data()),
+                     eInter, qtot, oenv, Temperature);
         }
         else if (mymol.errors().empty())
         {
