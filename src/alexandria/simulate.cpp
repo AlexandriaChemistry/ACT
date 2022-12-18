@@ -183,15 +183,18 @@ static void computeB2(FILE                         *logFile,
             double    BqmTorque =  0;
             // We start in the origin even if there is no data.
             double    r1        =  0;
+            // Starting energy
             double    Uprev     = -1;
+            // Starting force
             double    Fprev     =  0;
+            // Starting torque
             gmx::RVec Tprev     = { 0, 0, 0 };
             if (fp)
             {
                 fprintf(fp, "@ type xy\n");
                 fprintf(fp, "%10g  %10g\n", r1, Uprev);
             }
-            double hbarfac  = gmx::square(PLANCK/(M_PI*beta))/24;
+            double hbarfac  = gmx::square(PLANCK*beta/(2*M_PI))/24;
             for(size_t ii = 0; ii < nbins; ii++)
             {
                 double r2 = xmin+ii*binwidth;
@@ -204,7 +207,7 @@ static void computeB2(FILE                         *logFile,
                     }
                     auto dB       = sphere_int(r1, r2, Uprev, Unew);
                     // TODO: Should really be factor 0.5 here!
-                    Bclass       -= dB;
+                    Bclass       -= 0.5*dB;
                     Uprev         = Unew;
                     double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
                     BqmForce     += hbarfac*sphere_int(r1, r2, Fprev, Fnew);
