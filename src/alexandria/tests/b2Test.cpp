@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/simulate.h"
+#include "alexandria/secondvirial.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

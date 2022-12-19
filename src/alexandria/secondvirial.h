@@ -36,6 +36,10 @@
 
 #include <vector>
 
+#include "act/forces/forcecomputer.h"
+#include "act/poldata/poldata.h"
+#include "act/utility/jsontree.h"
+#include "alexandria/mymol.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
@@ -43,17 +47,32 @@
 namespace alexandria
 {
 
-    void computeB2(FILE                         *logFile,
-                   const char                   *ehisto,
-                   gmx_stats                     edist,
-                   gmx_output_env_t             *oenv,
-                   const std::vector<double>    &Temperature,
-                   double                        mass,
-                   const gmx::RVec              &inertia,
-                   const std::vector<gmx::RVec> &force1,
-                   const std::vector<gmx::RVec> &torque1,
-                   std::vector<double>          *b2t);
+void forceFieldSummary(JsonTree      *jtree,
+                       const Poldata *pd);
 
+void computeB2(FILE                         *logFile,
+               const char                   *ehisto,
+               gmx_stats                     edist,
+               gmx_output_env_t             *oenv,
+               const std::vector<double>    &Temperature,
+               double                        mass,
+               const gmx::RVec              &inertia,
+               const std::vector<gmx::RVec> &force1,
+               const std::vector<gmx::RVec> &torque1,
+               std::vector<double>          *b2t);
+
+void do_rerun(FILE                      *logFile,
+              const Poldata             *pd,
+              const MyMol               *mymol,
+              ForceComputer             *forceComp,
+              const char                *trajname,
+              const char                *ehisto,
+              const char                *b2file,
+              bool                       eInter,
+              double                     qtot,
+              gmx_output_env_t          *oenv,
+              const std::vector<double> &Temperature);
+              
 } // namespace alexandria
 
 #endif // ACT_SIMULATE_H
