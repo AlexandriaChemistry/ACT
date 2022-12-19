@@ -276,7 +276,7 @@ gmx_add_cache_dependency(GMX_COMPILER_WARNINGS BOOL "NOT GMX_DEVELOPER_BUILD" ON
 
 option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
-    ON)
+    OFF)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
 option(GMX_PHYSICAL_VALIDATION
@@ -449,7 +449,7 @@ set(PKG_LIBXML2 "")
 mark_as_advanced(GMX_LIBXML2)
 # Crash if not found.
 if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
-    message(FATAL_ERROR "libxml2 not found. Set GMX_LIBXML2=OFF to compile without XML support")
+    message(FATAL_ERROR "libxml2 not found.")
 endif()
 
 if(GMX_LIBXML2)

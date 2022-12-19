@@ -30,6 +30,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "simulate.h"
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -107,48 +108,73 @@ static double sphere_int(double r1, double r2, double val1, double val2)
     return 4*M_PI*integral;
 }
 
-static void computeB2(FILE                         *logFile,
-                      const char                   *ehisto,
-                      const char                   *b2file,
-                      gmx_stats                     edist,
-                      gmx_output_env_t             *oenv,
-                      const std::vector<double>    &Temperature,
-                      double                        mass,
-                      const gmx::RVec              &inertia,
-                      const std::vector<gmx::RVec> &force1,
-                      const std::vector<gmx::RVec> &torque1)
+static void dump_mayer(const char                             *ehisto,
+                       gmx_output_env_t                       *oenv,
+                       const std::vector<double>              &Temperature,
+                       const std::vector<std::vector<double>> &mayer)
+{
+    if (ehisto)
+    {
+        FILE *fp = xvgropen(ehisto, "Mayer function", "r (nm)",
+                            "< exp[-U12/kBT]-1 >", oenv);
+        std::vector<std::string> label;
+        for(auto T : Temperature)
+        {
+            if (T != 0)
+            {
+                label.push_back(gmx::formatString("T = %g K", T));
+            }
+        }
+        xvgrLegend(fp, label, oenv);
+        for(size_t i = 0; i < mayer[0].size(); i++)
+        {
+            for(size_t j = 0; j < mayer.size(); j++)
+            {
+                fprintf(fp, "  %10g", mayer[j][i]);
+            }
+            fprintf(fp, "\n");
+        }
+        xvgrclose(fp);
+    }
+}
+
+void computeB2(FILE                         *logFile,
+               const char                   *ehisto,
+               gmx_stats                     edist,
+               gmx_output_env_t             *oenv,
+               const std::vector<double>    &Temperature,
+               double                        mass,
+               const gmx::RVec              &inertia,
+               const std::vector<gmx::RVec> &force1,
+               const std::vector<gmx::RVec> &torque1,
+               std::vector<double>          *b2t)
 {
     auto                      N = edist.get_npoints();
     const std::vector<double> x = edist.getX();
     const std::vector<double> y = edist.getY();
     double xmin                 = *std::min_element(x.begin(), x.end());
     double xmax                 = *std::max_element(x.begin(), x.end());
+    if (false && logFile)
+    {
+        // Test integration routine.
+        double B = 0;
+        for(int i=0; i<100; i++)
+        {
+            double dB = sphere_int(i*0.01, (i+1)*0.01, 1, 1);
+            B += dB;
+            fprintf(logFile, "r: %g, B: %g, dB: %g\n", i*0.01, B, dB);
+        }
+       
+    }
     if (N > 2 && xmax > xmin)
     {
-        FILE *fp = nullptr;
-        if (ehisto)
-        {
-            fp = xvgropen(ehisto, "Mayer function", "r (nm)",
-                          "< exp[-U12/kBT]-1 >", oenv);
-            std::vector<std::string> label;
-            for(auto T : Temperature)
-            {
-                if (T != 0)
-                {
-                    label.push_back(gmx::formatString("T = %g K", T));
-                }
-            }
-            xvgrLegend(fp, label, oenv);
-        }
-        FILE *b2p = nullptr;
-        if (b2file)
-        {
-            b2p = xvgropen(b2file, "Second virial coefficient",
-                           "Temperature (K)", "B2(T) cm^3/mol", oenv);
-        }
         real   binwidth = 0.01; // nm
-        size_t nbins    = 1+std::round((xmax-xmin)/binwidth);
-        binwidth        = (xmax-xmin)/(nbins-1);
+        // Bins start from zero for proper integration
+        size_t nbins    = 1+std::round(xmax/binwidth);
+        binwidth        = xmax/(nbins-1);
+        // Temp array to store distance and Mayer functions
+        std::vector<std::vector<double> > mayer(1+Temperature.size());
+        size_t iTemp = 1;
         for(auto T : Temperature)
         {
             if (T == 0)
@@ -156,6 +182,7 @@ static void computeB2(FILE                         *logFile,
                 fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
                 continue;
             }
+            // Temporary arrays for weughted properties.
             std::vector<double>    exp_U12(nbins, 0.0);
             std::vector<double>    exp_F2(nbins, 0.0);
             std::vector<gmx::RVec> exp_tau2(nbins, { 0.0, 0.0, 0.0 });
@@ -163,7 +190,7 @@ static void computeB2(FILE                         *logFile,
             double beta = 1.0/(BOLTZ*T);
             for(size_t ii = 0; ii < x.size(); ii++)
             {
-                double rindex = (x[ii]-xmin)/binwidth;
+                double rindex = x[ii]/binwidth;
                 size_t index  = rindex;
                 // Gray and Gubbins Eqn. 3.261
                 double g0_12 = std::exp(-y[ii]*beta);
@@ -183,35 +210,47 @@ static void computeB2(FILE                         *logFile,
             double    BqmTorque =  0;
             // We start in the origin even if there is no data.
             double    r1        =  0;
-            // Starting energy
+            // Starting energy, all values until first data entry
             double    Uprev     = -1;
+            int jj = 0;
+            while(jj*binwidth < xmin)
+            {
+                exp_U12[jj] = -1;
+                n_U12[jj]   = 1;
+                jj += 1;
+            }
             // Starting force
             double    Fprev     =  0;
             // Starting torque
             gmx::RVec Tprev     = { 0, 0, 0 };
-            if (fp)
-            {
-                fprintf(fp, "@ type xy\n");
-                fprintf(fp, "%10g  %10g\n", r1, Uprev);
-            }
             double hbarfac  = gmx::square(PLANCK*beta/(2*M_PI))/24;
-            for(size_t ii = 0; ii < nbins; ii++)
+            if (iTemp == 1)
             {
-                double r2 = xmin+ii*binwidth;
+                // Store distance first time around only
+                mayer[0].push_back(r1);
+            }
+            mayer[iTemp].push_back(Uprev);
+            for(size_t ii = 1; ii < nbins; ii++)
+            {
+                double r2 = ii*binwidth;
                 if (n_U12[ii] > 0)
                 {
                     double Unew = exp_U12[ii]/n_U12[ii];
-                    if (fp)
+                    if (iTemp == 1)
                     {
-                        fprintf(fp, "%10g  %10g\n", r2, Unew);
+                        // Store distance first time around only
+                        mayer[0].push_back(r2);
                     }
+                    mayer[iTemp].push_back(Unew);
                     auto dB       = sphere_int(r1, r2, Uprev, Unew);
-                    // TODO: Should really be factor 0.5 here!
+                    // TODO: There is factor 0.5 here, but results are off by a factor two.
                     Bclass       -= 0.5*dB;
                     Uprev         = Unew;
+                    // Weighted square force
                     double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
                     BqmForce     += hbarfac*sphere_int(r1, r2, Fprev, Fnew);
                     Fprev         = Fnew;
+                    // Contributions from torque
                     for(int m = 0; m < DIM; m++)
                     {
                         if (inertia[m] > 0)
@@ -221,29 +260,21 @@ static void computeB2(FILE                         *logFile,
                             Tprev[m]     = Tnew;
                         }
                     }
-                    r1            = r2;
+                    r1 = r2;
                 }
             }
-            if (fp)
-            {
-                fprintf(fp, "&\n");
-            }
+            // Conversion to regular units cm^3/mol.
             double Btot = (Bclass + BqmForce + BqmTorque)*AVOGADRO*1e-21;
-            fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n", T,
-                    Bclass, BqmForce, BqmTorque, Btot);
-            if (b2p)
+            b2t->push_back(Btot);
+            if (logFile)
             {
-                fprintf(b2p, "%10g  %10g\n", T, Btot);
+                fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n", T,
+                        Bclass, BqmForce, BqmTorque, Btot);
             }
+            iTemp += 1;
         }
-        if (fp)
-        {
-            xvgrclose(fp);
-        }
-        if (b2p)
-        {
-            xvgrclose(b2p);
-        }
+        // Store Mayer functions if requested.
+        dump_mayer(ehisto, oenv, Temperature, mayer);
     }
 }
 
@@ -275,6 +306,7 @@ static void do_rerun(FILE                      *logFile,
         std::vector<gmx::RVec> force1;
         std::vector<gmx::RVec> torque1;
         gmx::RVec              inertia  = { 0, 0, 0 };
+        // Loop over molecules
         for (auto mp : mps)
         {
             auto exper = mp.experimentConst();
@@ -345,6 +377,7 @@ static void do_rerun(FILE                      *logFile,
                         }
                     }
                     force1.push_back(f[0]);
+                    // Compute the torque
                     gmx::RVec torque = { 0, 0, 0 };
                     for(size_t i = atomStart[0]; i < atomStart[1]; i++)
                     {
@@ -385,9 +418,20 @@ static void do_rerun(FILE                      *logFile,
             {
                 inertia[m] /= edist.get_npoints();
             }
-            computeB2(logFile, ehisto, b2file, edist, oenv, Temperature,
+            std::vector<double> b2t;
+            computeB2(logFile, ehisto, edist, oenv, Temperature,
                       mymol->fragmentHandler()->topologies()[0].mass(),
-                      inertia, force1, torque1);
+                      inertia, force1, torque1, &b2t);
+            if (b2file)
+            {
+                FILE *b2p = xvgropen(b2file, "Second virial coefficient",
+                                     "Temperature (K)", "B2(T) cm^3/mol", oenv);
+                for(size_t ii = 0; ii < Temperature.size(); ii++)
+                {
+                    fprintf(b2p, "%10g  %10g\n", Temperature[ii], b2t[ii]);
+                }
+                xvgrclose(b2p);
+            }
         }
     }
     else
