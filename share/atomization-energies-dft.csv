@@ -67,6 +67,11 @@ P|0|B3LYP-D3BJ/aug-cc-pVTZ|E0|0|-341.286267641|4|Hartree|Spoel2022a||
 Rb|1|B3LYP-D3BJ/def2-tzvpp|E0|0|-23.93962685|1|Hartree|Walz2023a|Effective core potential|
 S|0|B3LYP-D3BJ/aug-cc-pVTZ|E0|0|-398.139308517|3|Hartree|Spoel2022a||
 Si|0|B3LYP-D3BJ/aug-cc-pVTZ|E0|0|-289.396773206|3|Hartree|Spoel2022a||
+Br|0|MP2/aug-cc-pVTZ|E0|0|-2572.693149021646|2|Hartree|Spoel2023a||
+Cl|0|MP2/aug-cc-pVTZ|E0|0|-459.68075444449227|2|Hartree|Spoel2023a||
+F|0|MP2/aug-cc-pVTZ|E0|0|-99.62446795111889|2|Hartree|Spoel2023a||
+I|0|MP2/aug-cc-pVTZ-pp|E0|0|-294.8744683785291|2|Hartree|Spoel2023a|ECP|
+H|0|MP2/aug-cc-pVTZ|E0|0|-0.49982117602395865|2|Hartree|Spoel2023a||
 Al|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-242.313657244721|2|Hartree|Spoel2022a||
 Al|3|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-240.364402356255|1|Hartree|Spoel2022a||
 Ar|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-527.526125736564|1|Hartree|Spoel2022a||
