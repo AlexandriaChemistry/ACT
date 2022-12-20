@@ -32,6 +32,8 @@
  */
 #include "secondvirial.h"
 
+#include <random>
+
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -278,6 +280,155 @@ void computeB2(FILE                         *logFile,
     }
 }
 
+class Rotator
+{
+private:
+    std::random_device                     rd_;
+    std::mt19937                           gen_;
+    std::uniform_real_distribution<double> dis_;
+public:
+    Rotator(int seed = 1993) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, M_PI))
+    {
+        gen_.seed(seed);
+    }
+
+    void random(std::vector<gmx::RVec> *coords)
+    {
+        // Distribution is 0-M_PI, multiply by two to get to 2*M_PI
+        double alpha = dis_(gen_) * 2;
+        double beta  = dis_(gen_) * 2; 
+        double gamma = dis_(gen_);
+        double cosa  = std::cos(alpha);
+        double sina  = std::sin(alpha);
+        double cosb  = std::cos(beta);
+        double sinb  = std::sin(beta);
+        double cosg  = std::cos(gamma);
+        double sing  = std::sin(gamma);
+        
+        matrix A;
+        A[0][0] = cosb * cosg;
+        A[0][1] =-cosb * sing;
+        A[0][2] = sinb;
+        
+        A[1][0] = sina * sinb * cosg + cosa * sing;
+        A[1][1] =-sina * sinb * sing + cosa * cosg;
+        A[1][2] =-sina * cosb;
+        
+        A[2][0] =-cosa * sinb * cosg + sina * sing;
+        A[2][1] = cosa * sinb * sing + sina * cosg;
+        A[2][2] = cosa * cosb;
+        
+        auto oldX = *coords;
+        for(size_t i = 0; i < oldX.size(); i++)
+        {
+            gmx::RVec newx;
+            mvmul(A, oldX[i], newx);
+            copy_rvec(newx, (*coords)[i]);
+        }
+    }
+};
+
+static void generateDimers(const MyMol          *mymol,
+                           std::vector<MolProp> *mps,
+                           int                   maxdimers,
+                           int                   ndist,
+                           double                mindist,
+                           double                maxdist)
+{
+    auto fragptr = mymol->fragmentHandler();
+    if (fragptr->topologies().size() == 2)
+    {
+        // Random number generation
+        Rotator rot;
+        
+        // Copy original coordinates
+        auto xorig     = mymol->xOriginal();
+        // Split the coordinates into two fragments
+        auto atomStart = fragptr->atomStart();
+        std::vector<gmx::RVec> xmOrig[2];
+        for(int m = 0; m < 2; m++)
+        {
+            for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+            {
+                xmOrig[m].push_back(xorig[j]);
+            } 
+        }
+        // Topologies
+        auto tops = fragptr->topologies();
+        // Move molecules to their respective COM
+        gmx::RVec com[2];
+        for(int m = 0; m < 2; m++)
+        {
+            // Compute center of mass
+            clear_rvec(com[m]);
+            auto   atoms   = tops[m].atoms();
+            double totmass = 0;
+            for(size_t j = 0; j < atoms.size(); j++)
+            {
+                gmx::RVec mx;
+                svmul(atoms[j].mass(), xmOrig[m][j], mx);
+                rvec_inc(com[m], mx);
+                totmass += atoms[j].mass();
+            }
+            for(int n = 0; n < DIM; n++)
+            {
+                com[m][n] /= totmass;
+            }
+            // Subtract center of mass
+            for(size_t j = 0; j < atoms.size(); j++)
+            {
+                rvec_sub(xmOrig[m][j], com[m], xmOrig[m][j]);
+            }
+        }
+        // Loop over orientations
+        for(int ndim = 0; ndim < maxdimers; ndim++)
+        {
+            // Copy the coordinates and rotate them
+            std::vector<gmx::RVec> xrand[2];
+            for(int m = 0; m < 2; m++)
+            {
+                xrand[m] = xmOrig[m];
+                // Random rotation
+                rot.random(&xrand[m]);
+            }
+            // Loop over distances from mindist to maxdist
+            double range = maxdist - mindist;
+            for(int idist = 0; idist < ndist; idist++)
+            {
+                double    dist  = mindist + range*((1.0*idist)/(ndist-1));
+                gmx::RVec trans = { 0, 0, dist };
+                auto      atoms = tops[1].atoms();
+                for(size_t j = 0; j < atoms.size(); j++)
+                {
+                    rvec_inc(xrand[1][j], trans);
+                }
+                MolProp mp = *mymol;
+                auto exper = mp.experiment();
+                exper->clear();
+                Experiment newexp("alexandria", "b2", "ff", "Spoel2023a", "unknown", "none", JobType::SP);
+                for(int m = 0; m < 2; m++)
+                {
+                    for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+                    {
+                        auto jindex = j - atomStart[m];
+                        CalcAtom ca(atoms[jindex].name().c_str(), atoms[jindex].ffType().c_str(), j);
+                        ca.setCoords(xrand[m][jindex][XX], xrand[m][jindex][YY], xrand[m][jindex][ZZ]);
+                        ca.AddCharge(qType::ACM, atoms[j].charge());
+                        newexp.AddAtom(ca);
+                    }
+                }
+                exper->push_back(newexp);
+                mps->push_back(mp);
+                // Put the coordinates back!
+                for(size_t j = 0; j < atoms.size(); j++)
+                {
+                    rvec_dec(xrand[1][j], trans);
+                }
+            }
+        }
+    }
+}
+
 void do_rerun(FILE                      *logFile,
               const Poldata             *pd,
               const MyMol               *mymol,
@@ -287,6 +438,7 @@ void do_rerun(FILE                      *logFile,
               const char                *b2file,
               bool                       eInter,
               double                     qtot,
+              int                        maxdimers,
               gmx_output_env_t          *oenv,
               const std::vector<double> &Temperature)
 {
@@ -295,161 +447,180 @@ void do_rerun(FILE                      *logFile,
     int                  maxpot = 100;
     int                  nsymm  = 1;
     const char          *molnm  = "";
-    if (readBabel(trajname, &mps, molnm, molnm, "", &method,
-                  &basis, maxpot, nsymm, "Opt", &qtot, false))
+    if (trajname && strlen(trajname) > 0)
     {
-        fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
-                mps.size(), trajname);       
-        std::map<InteractionType, double> energies;
-        int mp_index = 0;
-        gmx_stats edist;
-        std::vector<gmx::RVec> force1;
-        std::vector<gmx::RVec> torque1;
-        gmx::RVec              inertia  = { 0, 0, 0 };
-        // Loop over molecules
-        for (auto mp : mps)
+        // Read compounds
+        if (!readBabel(trajname, &mps, molnm, molnm, "", &method,
+                       &basis, maxpot, nsymm, "Opt", &qtot, false))
         {
-            auto exper = mp.experimentConst();
-            if (exper.size() == 1)
-            {
-                auto expx = exper[0].getCoordinates();
-                std::vector<gmx::RVec> coords;
-                const auto &atoms = mymol->atomsConst();
-                if (expx.size() == atoms.size())
-                {
-                    // Assume there are shells in the input
-                    coords = expx;
-                }
-                else
-                {
-                    size_t index = 0;
-                    for(size_t i = 0; i < atoms.size(); i++)
-                    {
-                        if (index <= expx.size())
-                        {
-                            gmx::RVec xnm;
-                            for(int m = 0; m < DIM; m++)
-                            {
-                                xnm[m] = expx[index][m];
-                            }
-                            coords.push_back(xnm);
-                        }
-                        else
-                        {
-                            GMX_THROW(gmx::InvalidInputError("Number of coordinates in trajectory does not match input file"));
-                        }
-                        if (atoms[i].pType() == eptAtom)
-                        {
-                            index++;
-                        }
-                    }
-                }
-                std::vector<gmx::RVec> forces(coords.size());
-                fprintf(logFile, "%5d", mp_index);
-                if (eInter)
-                {
-                    auto EE         = mymol->calculateInteractionEnergy(pd, forceComp, &forces, &coords);
-                    auto atomStart  = mymol->fragmentHandler()->atomStart();
-                    if (atomStart.size() != 3)
-                    {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
-                    }
-                    gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
-                    gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-                    double    mtot[2] = { 0, 0 };
-                    auto      tops  = mymol->fragmentHandler()->topologies();
-                    for(int kk = 0; kk < 2; kk++)
-                    {
-                        auto atoms = tops[kk].atoms();
-                        for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
-                        {
-                            gmx::RVec mr1;
-                            auto      mi = atoms[i-atomStart[kk]].mass();
-                            svmul(mi, coords[i], mr1);
-                            mtot[kk] += mi;
-                            rvec_inc(com[kk], mr1);
-                            rvec_inc(f[kk], forces[i]);
-                        }
-                        GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
-                        for(size_t m = 0; m < DIM; m++)
-                        {
-                            com[kk][m] /= mtot[kk];
-                        }
-                    }
-                    force1.push_back(f[0]);
-                    // Compute the torque
-                    gmx::RVec torque = { 0, 0, 0 };
-                    for(size_t i = atomStart[0]; i < atomStart[1]; i++)
-                    {
-                        gmx::RVec ri;
-                        rvec_sub(coords[i], com[0], ri);
-                        gmx::RVec ti;
-                        cprod(ri, forces[i], ti);
-                        rvec_inc(torque, ti);
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            inertia[m] += ri[m]*ri[m]*atoms[i].mass();
-                        }
-                    }
-                    torque1.push_back(torque);
-                    gmx::RVec dcom;
-                    rvec_sub(com[0], com[1], dcom);
-                    double rcom = norm(dcom);
-                    fprintf(logFile, " r %g Einter %g Force %g %g %g Torque %g %g %g",
-                            rcom, EE, f[0][XX], f[0][YY], f[0][ZZ], torque[XX], torque[YY], torque[ZZ]);
-                    edist.add_point(rcom, EE, 0, 0);
-                }
-                else
-                {
-                    forceComp->compute(pd, mymol->topology(),
-                                       &coords, &forces, &energies);
-                    for(const auto &ee : energies)
-                    {
-                        fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
-                    }
-                }
-                fprintf(logFile, "\n");
-            }
-            mp_index += 1;
+            fprintf(stderr, "Could not read compounds from %s\n", trajname);
+            return;
         }
-        if (eInter)
+        if (logFile)
         {
-            for(int m = 0; m < DIM; m++)
-            {
-                inertia[m] /= edist.get_npoints();
-            }
-            std::vector<double> b2t;
-            computeB2(logFile, ehisto, edist, oenv, Temperature,
-                      mymol->fragmentHandler()->topologies()[0].mass(),
-                      inertia, force1, torque1, &b2t);
-            if (b2file)
-            {
-                FILE *b2p = xvgropen(b2file, "Second virial coefficient",
-                                     "Temperature (K)", "B2(T) cm^3/mol", oenv);
-                for(size_t ii = 0; ii < Temperature.size(); ii++)
-                {
-                    fprintf(b2p, "%10g  %10g\n", Temperature[ii], b2t[ii]);
-                }
-                xvgrclose(b2p);
-            }
+            fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
+                    mps.size(), trajname);
         }
     }
     else
     {
-        fprintf(stderr, "Could not read compounds from %s\n", trajname);
+        // Generate compounds
+        int    ndist     = 20;  // Distance scan
+        double mindist   = 0.2; // Min distance in nm
+        double maxdist   = 2;   // Max distance in nm
+        generateDimers(mymol, &mps, maxdimers, ndist, mindist, maxdist);
+        if (logFile)
+        {
+            fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
+                    mps.size(), ndist);
+        }
+    }
+    std::map<InteractionType, double> energies;
+    int mp_index = 0;
+    gmx_stats edist;
+    std::vector<gmx::RVec> force1;
+    std::vector<gmx::RVec> torque1;
+    gmx::RVec              inertia  = { 0, 0, 0 };
+    // Loop over molecules
+    for (auto mp : mps)
+    {
+        auto exper = mp.experimentConst();
+        if (exper.size() == 1)
+        {
+            auto expx = exper[0].getCoordinates();
+            std::vector<gmx::RVec> coords;
+            const auto &atoms = mymol->atomsConst();
+            if (expx.size() == atoms.size())
+            {
+                // Assume there are shells in the input
+                    coords = expx;
+            }
+            else
+            {
+                size_t index = 0;
+                for(size_t i = 0; i < atoms.size(); i++)
+                {
+                    if (index <= expx.size())
+                    {
+                        gmx::RVec xnm;
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            xnm[m] = expx[index][m];
+                        }
+                        coords.push_back(xnm);
+                    }
+                    else
+                    {
+                        GMX_THROW(gmx::InvalidInputError("Number of coordinates in trajectory does not match input file"));
+                    }
+                    if (atoms[i].pType() == eptAtom)
+                    {
+                        index++;
+                    }
+                }
+            }
+            std::vector<gmx::RVec> forces(coords.size());
+            fprintf(logFile, "%5d", mp_index);
+            if (eInter)
+            {
+                auto EE         = mymol->calculateInteractionEnergy(pd, forceComp, &forces, &coords);
+                auto atomStart  = mymol->fragmentHandler()->atomStart();
+                if (atomStart.size() != 3)
+                {
+                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
+                }
+                gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
+                gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+                double    mtot[2] = { 0, 0 };
+                auto      tops  = mymol->fragmentHandler()->topologies();
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    auto atoms = tops[kk].atoms();
+                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                    {
+                        gmx::RVec mr1;
+                        auto      mi = atoms[i-atomStart[kk]].mass();
+                        svmul(mi, coords[i], mr1);
+                        mtot[kk] += mi;
+                        rvec_inc(com[kk], mr1);
+                        rvec_inc(f[kk], forces[i]);
+                    }
+                    GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
+                    for(size_t m = 0; m < DIM; m++)
+                    {
+                        com[kk][m] /= mtot[kk];
+                    }
+                }
+                force1.push_back(f[0]);
+                // Compute the torque
+                gmx::RVec torque = { 0, 0, 0 };
+                for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                {
+                    gmx::RVec ri;
+                    rvec_sub(coords[i], com[0], ri);
+                    gmx::RVec ti;
+                    cprod(ri, forces[i], ti);
+                    rvec_inc(torque, ti);
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        inertia[m] += ri[m]*ri[m]*atoms[i].mass();
+                    }
+                }
+                torque1.push_back(torque);
+                gmx::RVec dcom;
+                rvec_sub(com[0], com[1], dcom);
+                double rcom = norm(dcom);
+                fprintf(logFile, " r %g Einter %g Force %g %g %g Torque %g %g %g",
+                        rcom, EE, f[0][XX], f[0][YY], f[0][ZZ], torque[XX], torque[YY], torque[ZZ]);
+                edist.add_point(rcom, EE, 0, 0);
+            }
+            else
+            {
+                forceComp->compute(pd, mymol->topology(),
+                                   &coords, &forces, &energies);
+                for(const auto &ee : energies)
+                {
+                    fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                }
+            }
+            fprintf(logFile, "\n");
+        }
+        mp_index += 1;
+    }
+    if (eInter)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            inertia[m] /= edist.get_npoints();
+        }
+        std::vector<double> b2t;
+        computeB2(logFile, ehisto, edist, oenv, Temperature,
+                  mymol->fragmentHandler()->topologies()[0].mass(),
+                  inertia, force1, torque1, &b2t);
+        if (b2file)
+        {
+            FILE *b2p = xvgropen(b2file, "Second virial coefficient",
+                                 "Temperature (K)", "B2(T) cm^3/mol", oenv);
+            for(size_t ii = 0; ii < Temperature.size(); ii++)
+            {
+                fprintf(b2p, "%10g  %10g\n", Temperature[ii], b2t[ii]);
+            }
+            xvgrclose(b2p);
+        }
     }
 }
 
 int b2(int argc, char *argv[])
 {
     std::vector<const char *> desc = {
-        "alexandria b2 will read a trajectory",
-        "of dimers as input for energy calculations. The",
+        "alexandria b2 will either read a trajectory",
+        "of dimers as input for energy calculations or generate",
+        "conformations of dimers. The",
         "corresponding molecule file, used for generating the topology",
         "needs to be a molprop (xml) file and contain information about",
         "the compounds in the dimer. Based on dimer energies the second",
         "virial coefficient will be estimated. Mayer curves can optionally",
-        "be plotted and the second viriail can be plotted as a function",
+        "be plotted and the second virial can be plotted as a function",
         "of temperature."
     };
 
@@ -464,6 +635,7 @@ int b2(int argc, char *argv[])
     static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
     static char              *qqm        = (char *)"";
+    int                       maxdimers  = 1000; // Different relative orientations
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     double                    T1         = 0;
@@ -475,13 +647,15 @@ int b2(int argc, char *argv[])
         { "-traj",   FALSE, etSTR,  {&trajname},
           "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-T1",     FALSE, etREAL, {&T1},
-          "Starting temperature for second virial calculations" },
+          "Starting temperature for second virial calculations." },
         { "-T2",     FALSE, etREAL, {&T2},
-          "Starting temperature for second virial calculations" },
+          "Starting temperature for second virial calculations." },
         { "-dT",     FALSE, etREAL, {&deltaT},
-          "Temperature increment for calculation of second virial" },
+          "Temperature increment for calculation of second virial." },
+        { "-maxdimer", FALSE, etINT, {&maxdimers},
+          "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-name",   FALSE, etSTR,  {&molnm},
-          "Name of your molecule" },
+          "Name of your molecule." },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
@@ -489,9 +663,9 @@ int b2(int argc, char *argv[])
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
-          "Tolerance for shell force optimization (mean square force)" },
+          "Tolerance for shell force optimization (mean square force)." },
         { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format" }
+          "Print part of the output in json format." }
     };
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
@@ -499,12 +673,6 @@ int b2(int argc, char *argv[])
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         status = 1;
-        return status;
-    }
-    if (strlen(trajname) == 0)
-    {
-        status = 1;
-        fprintf(stderr, "Please provide an input trajectory\n");
         return status;
     }
     Poldata        pd;
@@ -584,7 +752,7 @@ int b2(int argc, char *argv[])
         do_rerun(logFile, &pd, &mymol, forceComp, trajname,
                  opt2fn_null("-eh", fnm.size(), fnm.data()),
                  opt2fn_null("-b2", fnm.size(), fnm.data()),
-                 true, qtot, oenv, Temperature);
+                 true, qtot, maxdimers, oenv, Temperature);
     }
     if (json)
     {

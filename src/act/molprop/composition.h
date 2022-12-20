@@ -302,7 +302,7 @@ public:
     //! Constructor initiating the name, type and atomid
     CalcAtom(const char *name, const char *obtype, int atomid)
     {
-        name_.assign(name); obType_.assign(obtype); atomID_ = atomid; residueName_.assign(nullptr);
+        name_.assign(name); obType_.assign(obtype); atomID_ = atomid;
     };
     
     //! Constructor initiating the name, type and atomid

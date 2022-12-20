@@ -257,7 +257,7 @@ int simulate(int argc, char *argv[])
             std::vector<double> Temperature;
             do_rerun(logFile, &pd, &mymol, forceComp, trajname,
                      nullptr, nullptr,
-                     eInter, qtot, oenv, Temperature);
+                     eInter, qtot, 0, oenv, Temperature);
         }
         else if (mymol.errors().empty())
         {
