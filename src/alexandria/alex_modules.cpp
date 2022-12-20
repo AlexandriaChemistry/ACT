@@ -69,9 +69,11 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &alexandria::gentop, "gentop",
                    "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian.");
     registerModule(manager, &alexandria::simulate, "simulate",
-                   "Do a baby MD simulation.");
+                   "Perform a MD simulation and generate a trajectory.");
     registerModule(manager, &alexandria::b2, "b2",
                    "Compute second virial coefficient.");
+    registerModule(manager, &alexandria::nma, "nma",
+                   "Perform normal mode analysis and compute thermochemistry properties.");
     registerModule(manager, &alexandria::tune_ff, "tune_ff",
                    "Optimize force field parameters.");
     registerModule(manager, &alexandria::bastat, "bastat",

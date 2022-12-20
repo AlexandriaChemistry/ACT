@@ -400,13 +400,8 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
           "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
-        { "-nma",      FALSE, etBOOL, {&nma_},
-          "Do a normal mode analysis rather than a MD simulation. Coordinates will be minimized before the NMA." },
         { "-lapack", FALSE, etBOOL, {&lapack_},
-          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." },
-        { "-linewidth", FALSE, etREAL, {&linewidth_},
-          "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" }
-          
+          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
     };
     for(auto &i : extra)
     {
