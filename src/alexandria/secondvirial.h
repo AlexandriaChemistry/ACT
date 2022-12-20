@@ -70,6 +70,7 @@ void do_rerun(FILE                      *logFile,
               const char                *b2file,
               bool                       eInter,
               double                     qtot,
+              int                        maxdimers,
               gmx_output_env_t          *oenv,
               const std::vector<double> &Temperature);
               
