@@ -365,6 +365,9 @@ public:
     {
         return iOpt_.find(itype) !=  iOpt_.end(); 
     }
+    
+    //! Return which chargemethod was selectod
+    const char *chargeMethod() const { return chargeMethod_; }
         
     //! Return the whole optimization map
     const std::map<InteractionType, bool> iopt() const { return iOpt_; }
