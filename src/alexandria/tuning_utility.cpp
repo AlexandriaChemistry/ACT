@@ -463,8 +463,6 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
-        { "-qqm",    FALSE, etSTR,  {&chargeMethod_},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ACM, ESP, Hirshfeld, CM5 or Mulliken may be available., depending on your molprop file." },
         { "-esp_toler", FALSE, etREAL, {&esp_toler_},
           "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
         { "-dip_toler", FALSE, etREAL, {&dip_toler_},
@@ -1087,7 +1085,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   const gmx::MDLogger            &fplog,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,
-                                  const std::vector<t_filenm>    &filenm)
+                                  const std::vector<t_filenm>    &filenm,
+                                  const char                     *chargeMethod)
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
@@ -1172,9 +1171,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     std::map<std::string, double> molEpot;
     auto alg   = pd->chargeGenerationAlgorithm();
     auto qtype = qType::Calc;
-    if (nullptr != chargeMethod_)
+    if (nullptr != chargeMethod && strlen(chargeMethod) > 0)
     {
-        qtype = stringToQtype(chargeMethod_);
+        qtype = stringToQtype(chargeMethod);
         alg   = ChargeGenerationAlgorithm::Read;
     }
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)

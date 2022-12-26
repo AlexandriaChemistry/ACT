@@ -90,8 +90,6 @@ private:
     bool printSP_             = false;
     //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
     bool calcFrequencies_     = false;
-    //! Which charge type to use
-    char *chargeMethod_       = nullptr;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
@@ -139,7 +137,8 @@ public:
                const gmx::MDLogger            &fplog,
                const gmx_output_env_t         *oenv,
                const CommunicationRecord      *cr,
-               const std::vector<t_filenm>    &filenm);
+               const std::vector<t_filenm>    &filenm,
+               const char                     *chargeMethod);
 };
 
 /*! \brief Print header and command line arguments
