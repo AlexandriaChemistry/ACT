@@ -288,9 +288,12 @@ private:
     std::mt19937                           gen_;
     std::uniform_real_distribution<double> dis_;
 public:
-    Rotator(int seed = 1993) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, M_PI))
+    Rotator(int seed) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, M_PI))
     {
-        gen_.seed(seed);
+        if (seed > 0)
+        {
+            gen_.seed(seed);
+        }
     }
 
     void random(std::vector<gmx::RVec> *coords)
@@ -329,17 +332,19 @@ public:
     }
 };
 
-void GenDimers::addOptions(std::vector<t_pargs> *pa)
+void DimerGenerator::addOptions(std::vector<t_pargs> *pa)
 {
     std::vector<t_pargs> mypa = {
         { "-maxdimer", FALSE, etINT, {&maxdimers_},
           "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-ndist", FALSE, etINT, {&ndist_},
-          "Number of distances to use for computing interaction energies and forces" },
+          "Number of distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist." },
         { "-mindist", FALSE, etREAL, {&mindist_},
-          "Minimum com-com distance to generate dimers for" },
+          "Minimum com-com distance to generate dimers for." },
         { "-maxdist", FALSE, etREAL, {&maxdist_},
-          "Maximum com-com distance to generate dimers for" }
+          "Maximum com-com distance to generate dimers for." },
+        { "-seed", FALSE, etINT, {&seed_},
+          "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used." }
     };
     for(auto &pp : mypa)
     {
@@ -347,14 +352,14 @@ void GenDimers::addOptions(std::vector<t_pargs> *pa)
     }
 }
     
-void GenDimers::generate(const MyMol          *mymol,
-                         std::vector<MolProp> *mps)
+void DimerGenerator::generate(const MyMol          *mymol,
+                              std::vector<MolProp> *mps)
 {
     auto fragptr = mymol->fragmentHandler();
     if (fragptr->topologies().size() == 2)
     {
         // Random number generation
-        Rotator rot;
+        Rotator rot(seed_);
         
         // Copy original coordinates
         auto xorig     = mymol->xOriginal();
@@ -448,7 +453,7 @@ void do_rerun(FILE                      *logFile,
               const Poldata             *pd,
               const MyMol               *mymol,
               ForceComputer             *forceComp,
-              GenDimers                 *gendimers,
+              DimerGenerator            *gendimers,
               const char                *trajname,
               const char                *ehisto,
               const char                *b2file,
@@ -676,7 +681,7 @@ int b2(int argc, char *argv[])
         { "-json", FALSE, etBOOL, {&json},
           "Print part of the output in json format." }
     };
-    GenDimers gendimers;
+    DimerGenerator gendimers;
     gendimers.addOptions(&pa);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 

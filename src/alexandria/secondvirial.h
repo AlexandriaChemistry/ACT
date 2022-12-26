@@ -48,7 +48,7 @@
 namespace alexandria
 {
 
-class GenDimers
+class DimerGenerator
 {
 private:
     //! Number of dimers to generate
@@ -59,10 +59,11 @@ private:
     double mindist_ = 0.2;
     //! Maximum com-com distance
     double maxdist_ = 2.0;
-    
+    //! Random number seed
+    int    seed_    = 1993;    
 public:
     //! Constructor
-    GenDimers() {}
+    DimerGenerator() {}
     
     /*! \brief Add my options
      * \param[inout] pa The command line options
@@ -99,7 +100,7 @@ void do_rerun(FILE                      *logFile,
               const Poldata             *pd,
               const MyMol               *mymol,
               ForceComputer             *forceComp,
-              GenDimers                 *gendimers,
+              DimerGenerator            *gendimers,
               const char                *trajname,
               const char                *ehisto,
               const char                *b2file,

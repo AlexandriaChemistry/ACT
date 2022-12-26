@@ -112,7 +112,7 @@ int simulate(int argc, char *argv[])
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
-    GenDimers                gendimers;
+    DimerGenerator           gendimers;
     // We do not want to see those options in simulate, just in b2.
     // gendimers.addOptions(&pa);
     int status = 0;
