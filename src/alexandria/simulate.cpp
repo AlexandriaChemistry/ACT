@@ -112,6 +112,9 @@ int simulate(int argc, char *argv[])
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
+    GenDimers                gendimers;
+    // We do not want to see those options in simulate, just in b2.
+    // gendimers.addOptions(&pa);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -255,9 +258,10 @@ int simulate(int argc, char *argv[])
         if (strlen(trajname) > 0)
         {
             std::vector<double> Temperature;
-            do_rerun(logFile, &pd, &mymol, forceComp, trajname,
+            do_rerun(logFile, &pd, &mymol, forceComp, &gendimers,
+                     trajname,
                      nullptr, nullptr,
-                     eInter, qtot, 0, oenv, Temperature);
+                     eInter, qtot, oenv, Temperature);
         }
         else if (mymol.errors().empty())
         {

@@ -329,12 +329,26 @@ public:
     }
 };
 
-static void generateDimers(const MyMol          *mymol,
-                           std::vector<MolProp> *mps,
-                           int                   maxdimers,
-                           int                   ndist,
-                           double                mindist,
-                           double                maxdist)
+void GenDimers::addOptions(std::vector<t_pargs> *pa)
+{
+    std::vector<t_pargs> mypa = {
+        { "-maxdimer", FALSE, etINT, {&maxdimers_},
+          "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
+        { "-ndist", FALSE, etINT, {&ndist_},
+          "Number of distances to use for computing interaction energies and forces" },
+        { "-mindist", FALSE, etREAL, {&mindist_},
+          "Minimum com-com distance to generate dimers for" },
+        { "-maxdist", FALSE, etREAL, {&maxdist_},
+          "Maximum com-com distance to generate dimers for" }
+    };
+    for(auto &pp : mypa)
+    {
+        pa->push_back(pp);
+    }
+}
+    
+void GenDimers::generate(const MyMol          *mymol,
+                         std::vector<MolProp> *mps)
 {
     auto fragptr = mymol->fragmentHandler();
     if (fragptr->topologies().size() == 2)
@@ -382,7 +396,7 @@ static void generateDimers(const MyMol          *mymol,
             }
         }
         // Loop over orientations
-        for(int ndim = 0; ndim < maxdimers; ndim++)
+        for(int ndim = 0; ndim < maxdimers_; ndim++)
         {
             // Copy the coordinates and rotate them
             std::vector<gmx::RVec> xrand[2];
@@ -393,10 +407,10 @@ static void generateDimers(const MyMol          *mymol,
                 rot.random(&xrand[m]);
             }
             // Loop over distances from mindist to maxdist
-            double range = maxdist - mindist;
-            for(int idist = 0; idist < ndist; idist++)
+            double range = maxdist_ - mindist_;
+            for(int idist = 0; idist < ndist_; idist++)
             {
-                double    dist  = mindist + range*((1.0*idist)/(ndist-1));
+                double    dist  = mindist_ + range*((1.0*idist)/(ndist_-1));
                 gmx::RVec trans = { 0, 0, dist };
                 auto      atoms = tops[1].atoms();
                 for(size_t j = 0; j < atoms.size(); j++)
@@ -434,12 +448,12 @@ void do_rerun(FILE                      *logFile,
               const Poldata             *pd,
               const MyMol               *mymol,
               ForceComputer             *forceComp,
+              GenDimers                 *gendimers,
               const char                *trajname,
               const char                *ehisto,
               const char                *b2file,
               bool                       eInter,
               double                     qtot,
-              int                        maxdimers,
               gmx_output_env_t          *oenv,
               const std::vector<double> &Temperature)
 {
@@ -466,14 +480,11 @@ void do_rerun(FILE                      *logFile,
     else
     {
         // Generate compounds
-        int    ndist     = 20;  // Distance scan
-        double mindist   = 0.2; // Min distance in nm
-        double maxdist   = 2;   // Max distance in nm
-        generateDimers(mymol, &mps, maxdimers, ndist, mindist, maxdist);
+        gendimers->generate(mymol, &mps);
         if (logFile)
         {
             fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
-                    mps.size(), ndist);
+                    mps.size(), gendimers->ndist());
         }
     }
     std::map<InteractionType, double> energies;
@@ -636,7 +647,6 @@ int b2(int argc, char *argv[])
     static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
     static char              *qqm        = (char *)"";
-    int                       maxdimers  = 1000; // Different relative orientations
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     double                    T1         = 0;
@@ -653,8 +663,6 @@ int b2(int argc, char *argv[])
           "Starting temperature for second virial calculations." },
         { "-dT",     FALSE, etREAL, {&deltaT},
           "Temperature increment for calculation of second virial." },
-        { "-maxdimer", FALSE, etINT, {&maxdimers},
-          "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -668,6 +676,8 @@ int b2(int argc, char *argv[])
         { "-json", FALSE, etBOOL, {&json},
           "Print part of the output in json format." }
     };
+    GenDimers gendimers;
+    gendimers.addOptions(&pa);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -750,10 +760,11 @@ int b2(int argc, char *argv[])
         {
             Temperature.push_back(T2);
         }
-        do_rerun(logFile, &pd, &mymol, forceComp, trajname,
+        do_rerun(logFile, &pd, &mymol, forceComp, &gendimers,
+                 trajname,
                  opt2fn_null("-eh", fnm.size(), fnm.data()),
                  opt2fn_null("-b2", fnm.size(), fnm.data()),
-                 true, qtot, maxdimers, oenv, Temperature);
+                 true, qtot, oenv, Temperature);
     }
     if (json)
     {

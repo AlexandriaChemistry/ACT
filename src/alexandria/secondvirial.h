@@ -40,12 +40,46 @@
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
 #include "alexandria/mymol.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
 
 namespace alexandria
 {
+
+class GenDimers
+{
+private:
+    //! Number of dimers to generate
+    int maxdimers_ = 1000;
+    //! Number of distances to use
+    int ndist_      = 20;
+    //! Minimum com-com distance
+    double mindist_ = 0.2;
+    //! Maximum com-com distance
+    double maxdist_ = 2.0;
+    
+public:
+    //! Constructor
+    GenDimers() {}
+    
+    /*! \brief Add my options
+     * \param[inout] pa The command line options
+     */
+    void addOptions(std::vector<t_pargs> *pa);
+    
+    //! Return the number of distancea
+    int ndist() const { return ndist_; }
+    
+    /*! \brief Do the actual generation
+     * \param[in] mymol The molecule description
+     * \param[out] mps  The generated dimers
+     */
+    void generate(const MyMol          *mymol,
+                  std::vector<MolProp> *mps);
+};
+
 
 void forceFieldSummary(JsonTree      *jtree,
                        const Poldata *pd);
@@ -65,12 +99,12 @@ void do_rerun(FILE                      *logFile,
               const Poldata             *pd,
               const MyMol               *mymol,
               ForceComputer             *forceComp,
+              GenDimers                 *gendimers,
               const char                *trajname,
               const char                *ehisto,
               const char                *b2file,
               bool                       eInter,
               double                     qtot,
-              int                        maxdimers,
               gmx_output_env_t          *oenv,
               const std::vector<double> &Temperature);
               
