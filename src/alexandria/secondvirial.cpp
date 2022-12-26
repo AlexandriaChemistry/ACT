@@ -266,12 +266,13 @@ void computeB2(FILE                         *logFile,
                 }
             }
             // Conversion to regular units cm^3/mol.
-            double Btot = (Bclass + BqmForce + BqmTorque)*AVOGADRO*1e-21;
+            double fac  = AVOGADRO*1e-21;
+            double Btot = (Bclass + BqmForce + BqmTorque)*fac;
             b2t->push_back(Btot);
             if (logFile)
             {
-                fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g nm^3 Total %g cm^3/mol\n", T,
-                        Bclass, BqmForce, BqmTorque, Btot);
+                fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g Total %g cm^3/mol\n", T,
+                        Bclass*fac, BqmForce*fac, BqmTorque*fac, Btot);
             }
             iTemp += 1;
         }
