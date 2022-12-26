@@ -45,15 +45,29 @@
 struct t_atom;
 struct t_atoms;
 
-void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
-/* Rotate all atoms in index using matrix trans */
-
-void principal_comp(int n, const int index[], t_atom atom[], rvec x[], matrix trans, rvec d);
-/* Calculate the principal components of atoms in index. Atoms are
- * mass weighted. It is assumed that the center of mass is in the origin!
+/*! \brief Rotate all atoms in index using matrix trans 
+ * \param[in]    gnx    Size of the index array
+ * \param[in]    index  List of atom numbers
+ * \param[inout] x      The coordinates
+ * \param[in]    matrix The 3x3 rotation matrix
  */
+void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
 
-void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d);
+/*! \brief Compute principal components
+ * Atoms are mass weighted and it is assumed that the center of 
+ * mass is in the origin!
+ * \param[in]  n       Size of the index array
+ * \param[in]  index   List of atom numbers
+ * \param[in]  mass    Atomic masses
+ * \param[in]  x       The coordinates
+ * \param[out] trans   The matrix needed to rotate the molecule to the reference frame
+ * \param[out] inertia The moments of inertia
+ */
+void principal_comp(int n, const int index[], const real mass[], 
+                    const rvec x[], matrix trans, rvec inertia);
+
+                    
+//void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d);
 /* rotates molecule to align principal axes with coordinate axes */
 
 real calc_xcm(const rvec x[], int gnx, const int* index, const t_atom* atom, rvec xcm, gmx_bool bQ);

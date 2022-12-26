@@ -95,7 +95,12 @@ void t_trans(matrix trans, real d[], real** ev)
 }
 #endif
 
-void principal_comp(int n, const int index[], t_atom atom[], rvec x[], matrix trans, rvec d)
+void principal_comp(int n, 
+                    const int index[], 
+                    const real mass[], 
+                    const rvec x[], 
+                    matrix trans,
+                    rvec inertia)
 {
     int      i, j, ai, m, nrot;
     real     mm, rx, ry, rz;
@@ -127,7 +132,7 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[], matrix tr
     for (i = 0; (i < n); i++)
     {
         ai = index[i];
-        mm = atom[ai].m;
+        mm = mass[ai];
         rx = x[ai][XX];
         ry = x[ai][YY];
         rz = x[ai][ZZ];
@@ -189,7 +194,7 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[], matrix tr
 
     for (i = 0; (i < DIM); i++)
     {
-        d[i] = dd[i];
+        inertia[i] = dd[i];
         for (m = 0; (m < DIM); m++)
         {
             trans[i][m] = ev[m][i];
@@ -297,7 +302,7 @@ void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms,
     {
         rvec_dec(x[i], xcm);
     }
-    principal_comp(isize, index, atoms->atom, x, trans, prcomp);
+    //    principal_comp(isize, index, atoms->atom, x, trans, prcomp);
     if (d)
     {
         copy_rvec(prcomp, d);

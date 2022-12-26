@@ -55,6 +55,7 @@
 #include "alexandria/confighandler.h"
 #include "alexandria/molhandler.h"
 #include "alexandria/mymol.h"
+#include "alexandria/princ.h"
 #include "alexandria/tuning_utility.h"
 
 namespace alexandria
@@ -184,7 +185,7 @@ void computeB2(FILE                         *logFile,
                 fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
                 continue;
             }
-            // Temporary arrays for weughted properties.
+            // Temporary arrays for weighted properties.
             std::vector<double>    exp_U12(nbins, 0.0);
             std::vector<double>    exp_F2(nbins, 0.0);
             std::vector<gmx::RVec> exp_tau2(nbins, { 0.0, 0.0, 0.0 });
@@ -570,20 +571,33 @@ void do_rerun(FILE                      *logFile,
                 }
                 force1.push_back(f[0]);
                 // Compute the torque
+                std::vector<real> mass;
+                std::vector<int>  index;
+                for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                {
+                    index.push_back(i);
+                    mass.push_back(atoms[i].mass());
+                }
                 gmx::RVec torque = { 0, 0, 0 };
+                std::vector<gmx::RVec> x_com;
                 for(size_t i = atomStart[0]; i < atomStart[1]; i++)
                 {
                     gmx::RVec ri;
                     rvec_sub(coords[i], com[0], ri);
+                    x_com.push_back(ri);
                     gmx::RVec ti;
                     cprod(ri, forces[i], ti);
                     rvec_inc(torque, ti);
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        inertia[m] += ri[m]*ri[m]*atoms[i].mass();
-                    }
                 }
-                torque1.push_back(torque);
+                rvec   inertia1;
+                matrix trans;
+                principal_comp(index.size(), index.data(), mass.data(), 
+                               as_rvec_array(x_com.data()),
+                               trans, inertia1);
+                rvec_inc(inertia, inertia1);
+                gmx::RVec dtorque;
+                mvmul(trans, torque, dtorque);
+                torque1.push_back(dtorque);
                 gmx::RVec dcom;
                 rvec_sub(com[0], com[1], dcom);
                 double rcom = norm(dcom);

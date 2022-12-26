@@ -74,7 +74,7 @@ public:
     int ndist() const { return ndist_; }
     
     /*! \brief Do the actual generation
-     * \param[in] mymol The molecule description
+     * \param[in] mymol The description of the two fragments
      * \param[out] mps  The generated dimers
      */
     void generate(const MyMol          *mymol,

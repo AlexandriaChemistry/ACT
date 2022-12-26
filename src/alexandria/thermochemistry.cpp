@@ -203,16 +203,19 @@ static void calcTheta(const MyMol                  *mymol,
     std::vector<gmx::RVec> x_com;
     x_com.resize(atoms->nr);
     clear_rvec(theta);
+    std::vector<real> mass;
     for (int i = 0; i < atoms->nr; i++)
     {
         copy_rvec(coords[i], x_com[i]);
+        mass.push_back(atoms->atom[i].m);
     }
     (void)sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(), 
                   atoms->atom, xcm, false);
 
     rvec   inertia;
     matrix trans;
-    principal_comp(index.size(), index.data(), atoms->atom, as_rvec_array(x_com.data()),
+    principal_comp(index.size(), index.data(), mass.data(), 
+                   as_rvec_array(x_com.data()),
                    trans, inertia);
     // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
     // c_kilo kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
