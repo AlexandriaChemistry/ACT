@@ -44,6 +44,7 @@ gmx_add_unit_test(
     b2Test.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
+    sphereIntegratorTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>

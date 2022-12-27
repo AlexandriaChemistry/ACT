@@ -85,6 +85,15 @@ public:
 void forceFieldSummary(JsonTree      *jtree,
                        const Poldata *pd);
 
+/*! \brief Compute integral over sphere section
+ * \param[in] r1   The radius to start at
+ * \param[in] r2   The radius to stop at
+ * \param[in] val1 The function value at r1
+ * \param[in] val2 The function value at r2
+ * \return The integral of 4 pi r^2 f(r) from r1 to r2
+ */
+double sphereIntegrator(double r1, double r2, double val1, double val2);
+
 void computeB2(FILE                         *logFile,
                const char                   *ehisto,
                gmx_stats                     edist,

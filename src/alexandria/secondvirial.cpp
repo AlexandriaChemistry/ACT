@@ -98,7 +98,7 @@ void forceFieldSummary(JsonTree      *jtree,
     }
 }
 
-static double sphere_int(double r1, double r2, double val1, double val2)
+double sphereIntegrator(double r1, double r2, double val1, double val2)
 {
     // Approximate trapezium by y = ax + b (a == slope)
     // then integrate that multiplied by x^2 to get
@@ -157,18 +157,7 @@ void computeB2(FILE                         *logFile,
     const std::vector<double> y = edist.getY();
     double xmin                 = *std::min_element(x.begin(), x.end());
     double xmax                 = *std::max_element(x.begin(), x.end());
-    if (false && logFile)
-    {
-        // Test integration routine.
-        double B = 0;
-        for(int i=0; i<100; i++)
-        {
-            double dB = sphere_int(i*0.01, (i+1)*0.01, 1, 1);
-            B += dB;
-            fprintf(logFile, "r: %g, B: %g, dB: %g\n", i*0.01, B, dB);
-        }
-       
-    }
+
     if (N > 2 && xmax > xmin)
     {
         real   binwidth = 0.01; // nm
@@ -245,13 +234,13 @@ void computeB2(FILE                         *logFile,
                         mayer[0].push_back(r2);
                     }
                     mayer[iTemp].push_back(Unew);
-                    auto dB       = sphere_int(r1, r2, Uprev, Unew);
+                    auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
                     // TODO: There is factor 0.5 here, but results are off by a factor two.
                     Bclass       -= 0.5*dB;
                     Uprev         = Unew;
                     // Weighted square force
                     double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
-                    BqmForce     += hbarfac*sphere_int(r1, r2, Fprev, Fnew);
+                    BqmForce     += hbarfac*sphereIntegrator(r1, r2, Fprev, Fnew);
                     Fprev         = Fnew;
                     // Contributions from torque
                     for(int m = 0; m < DIM; m++)
@@ -259,7 +248,7 @@ void computeB2(FILE                         *logFile,
                         if (inertia[m] > 0)
                         {
                             double Tnew  = exp_tau2[ii][m]/inertia[m];
-                            BqmTorque   += hbarfac*sphere_int(r1, r2, Tprev[m], Tnew);
+                            BqmTorque   += hbarfac*sphereIntegrator(r1, r2, Tprev[m], Tnew);
                             Tprev[m]     = Tnew;
                         }
                     }
@@ -560,49 +549,71 @@ void do_rerun(FILE                      *logFile,
                         auto      mi = atoms[i-atomStart[kk]].mass();
                         svmul(mi, coords[i], mr1);
                         mtot[kk] += mi;
+                        // Compute center of mass of compound kk
                         rvec_inc(com[kk], mr1);
+                        // Compute total force on compound kk
                         rvec_inc(f[kk], forces[i]);
                     }
                     GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
                     for(size_t m = 0; m < DIM; m++)
                     {
+                        // Normalize
                         com[kk][m] /= mtot[kk];
                     }
                 }
                 force1.push_back(f[0]);
-                // Compute the torque
-                std::vector<real> mass;
-                std::vector<int>  index;
-                for(size_t i = atomStart[0]; i < atomStart[1]; i++)
+                gmx::RVec torque[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+                for(int kk = 0; kk < 2; kk++)
                 {
-                    index.push_back(i);
-                    mass.push_back(atoms[i].mass());
+                    // Compute the coordinates relative to the center of mass
+                    std::vector<real>      mass;
+                    std::vector<int>       index;
+                    std::vector<gmx::RVec> x_com;
+                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                    {
+                        // Store atom index relative to molecule start
+                        index.push_back(i-atomStart[kk]);
+                        // Store mass
+                        mass.push_back(atoms[i].mass());
+                        // Subtract COM and store
+                        gmx::RVec ri;
+                        rvec_sub(coords[i], com[0], ri);
+                        x_com.push_back(ri);
+                    }
+                    // Compute moments of inertia and transformation matrix
+                    rvec   inertia1;
+                    matrix trans;
+                    principal_comp(index.size(), index.data(), mass.data(), 
+                                   as_rvec_array(x_com.data()),
+                                   trans, inertia1);
+                    // Move to inertial frame (only well-defined for
+                    // rigid molecules)
+                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                    {
+                        gmx::RVec ri, fi, ti;
+                        // Rotate coordinates
+                        mvmul(trans, x_com[i-atomStart[kk]], ri);
+                        // Rotate force vector
+                        mvmul(trans, forces[i], fi);
+                        // Compute torque on this atom
+                        cprod(ri, fi, ti);
+                        // Update total torque
+                        rvec_inc(torque[kk], ti);
+                    }
+                    if (kk == 0)
+                    {
+                        // Store data for the first molecule only.
+                        rvec_inc(inertia, inertia1);
+                        torque1.push_back(torque[kk]);
+                    }
                 }
-                gmx::RVec torque = { 0, 0, 0 };
-                std::vector<gmx::RVec> x_com;
-                for(size_t i = atomStart[0]; i < atomStart[1]; i++)
-                {
-                    gmx::RVec ri;
-                    rvec_sub(coords[i], com[0], ri);
-                    x_com.push_back(ri);
-                    gmx::RVec ti;
-                    cprod(ri, forces[i], ti);
-                    rvec_inc(torque, ti);
-                }
-                rvec   inertia1;
-                matrix trans;
-                principal_comp(index.size(), index.data(), mass.data(), 
-                               as_rvec_array(x_com.data()),
-                               trans, inertia1);
-                rvec_inc(inertia, inertia1);
-                gmx::RVec dtorque;
-                mvmul(trans, torque, dtorque);
-                torque1.push_back(dtorque);
                 gmx::RVec dcom;
                 rvec_sub(com[0], com[1], dcom);
                 double rcom = norm(dcom);
-                fprintf(logFile, " r %g Einter %g Force %g %g %g Torque %g %g %g",
-                        rcom, EE, f[0][XX], f[0][YY], f[0][ZZ], torque[XX], torque[YY], torque[ZZ]);
+                fprintf(logFile, " r %g Einter %g Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g",
+                        rcom, EE, f[0][XX], f[0][YY], f[0][ZZ],
+                        torque[0][XX], torque[0][YY], torque[0][ZZ],
+                        torque[1][XX], torque[1][YY], torque[1][ZZ]);
                 edist.add_point(rcom, EE, 0, 0);
             }
             else
