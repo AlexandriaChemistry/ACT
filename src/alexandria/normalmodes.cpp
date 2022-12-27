@@ -57,52 +57,44 @@
 namespace alexandria
 {
 
-int simulate(int argc, char *argv[])
+int nma(int argc, char *argv[])
 {
     std::vector<const char *> desc = {
-        "alexandria simulate performs a proof-of-principle MD simulation, typically using",
+        "alexandria nma performs a normal mode analysis, typically using",
         "a force field derived by the Alexandria Chemistry Toolkit.", 
-        "The program can perform energy minimization and/or do a",
-        "constant energy molecular dynamics simulation in vacuum.",
-        "In addition, a series of conformations (trajectory) may be",
-        "submitted after which the energy per conformation is printed.[PAR]",
+        "The program will perform an energy minimization and a normal mode",
+        "analysis including thermochemistry calculations.[PAR]",
         "The input is given by a coordinate file, a force field file and",
-        "command line options. During the simulation an energy file,",
-        "a trajectory file and a log file are generated. If a trajectory",
-        "of dimers is presented as input for energy calculations, the",
-        "corresponding molecule file, used for generating the topology",
-        "needs to be a molprop (xml) file and contain information about",
-        "the compounds in the dimer."
+        "command line options."
     };
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "gentop",     ffREAD  },
-        { efXML, "-mp", "molprop",    ffOPTRD },
-        { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
-        { efXVG, "-e",  "energy",     ffWRITE },
-        { efLOG, "-g",  "simulation", ffWRITE }
+        { efLOG, "-g",  "simulation", ffWRITE },
+        { efXVG, "-ir", "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
-    static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
     static char              *qqm        = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
     bool                      json       = false;
+    //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
+    double                    linewidth  = 24;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
-        { "-traj",   FALSE, etSTR,  {&trajname},
-          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
+        { "-linewidth", FALSE, etREAL, {&linewidth},
+          "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -112,9 +104,6 @@ int simulate(int argc, char *argv[])
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
-    DimerGenerator           gendimers;
-    // We do not want to see those options in simulate, just in b2.
-    // gendimers.addOptions(&pa);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -125,19 +114,6 @@ int simulate(int argc, char *argv[])
     }
     sch.check_pargs();
 
-    if (opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) > 0)
-    {
-        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option), but not both.\n");
-        status = 1;
-        return status;
-    }
-    else if (!opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) == 0)
-    {
-        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option)\n");
-        status = 1;
-        return status;
-    }
-    
     Poldata        pd;
     try
     {
@@ -165,37 +141,30 @@ int simulate(int argc, char *argv[])
     MyMol                mymol;
     {
         std::vector<MolProp> mps;
-        if (opt2bSet("-mp", fnm.size(), fnm.data()))
+        double               qtot_babel = qtot;
+        std::string          method, basis;
+        int                  maxpot = 100;
+        int                  nsymm  = 1;
+        if (!readBabel(filename, &mps, molnm, molnm, "", &method,
+                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
+                       false))
         {
-            MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
+            fprintf(logFile, "Reading %s failed.\n", filename);
+            status = 1;
         }
         else
         {
-            double               qtot_babel = qtot;
-            std::string          method, basis;
-            int                  maxpot = 100;
-            int                  nsymm  = 1;
-            if (!readBabel(filename, &mps, molnm, molnm, "", &method,
-                           &basis, maxpot, nsymm, "Opt", &qtot_babel,
-                           false))
+            std::map<std::string, std::string> g2a;
+            gaffToAlexandria("", &g2a);
+            if (!g2a.empty())
             {
-                fprintf(logFile, "Reading %s failed.\n", filename);
-                status = 1;
-            }
-            else
-            {
-                std::map<std::string, std::string> g2a;
-                gaffToAlexandria("", &g2a);
-                if (!g2a.empty())
+                if (!renameAtomTypes(&mps[0], g2a))
                 {
-                    if (!renameAtomTypes(&mps[0], g2a))
-                    {
-                        status = 1;
-                    }
+                    status = 1;
                 }
             }
-            
         }
+            
         if (status == 0)
         {
             if (mps.size() > 1)
@@ -205,7 +174,6 @@ int simulate(int argc, char *argv[])
             mymol.Merge(&mps[0]);
         }
     }
-    bool eInter = mymol.fragmentHandler()->topologies().size() > 1;
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
@@ -230,40 +198,13 @@ int simulate(int argc, char *argv[])
     }
     if (immStatus::OK == imm && status == 0)
     {
-        if (pd.polarizable())
-        {
-            // Make a copy since it maybe changed
-            auto xx    = coords;
-            auto qCalc = mymol.qTypeProps(qType::Calc);
-            qCalc->initializeMoments();
-            forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
-            auto alpha = qCalc->polarizabilityTensor();
-            std::string unit("A^3");
-            double fac = convertFromGromacs(1, unit);
-            JsonTree poltree("Polarizability");
-            
-            poltree.addValueUnit("XX", gmx_ftoa(fac*alpha[XX][XX]), unit);
-            poltree.addValueUnit("YY", gmx_ftoa(fac*alpha[YY][YY]), unit);
-            poltree.addValueUnit("ZZ", gmx_ftoa(fac*alpha[ZZ][ZZ]), unit);
-            poltree.addValueUnit("Average", gmx_ftoa(fac*qCalc->isotropicPolarizability()), unit);
-            jtree.addObject(poltree);
-        }
-
         if (debug)
         {
             mymol.topology()->dump(debug);
         }
         auto eMin = eMinimizeStatus::OK;
         /* Generate output file for debugging if requested */
-        if (strlen(trajname) > 0)
-        {
-            std::vector<double> Temperature;
-            do_rerun(logFile, &pd, &mymol, forceComp, &gendimers,
-                     trajname,
-                     nullptr, nullptr,
-                     eInter, qtot, oenv, Temperature);
-        }
-        else if (mymol.errors().empty())
+        if (mymol.errors().empty())
         {
             MolHandler molhandler;
             std::vector<gmx::RVec> coords = mymol.xOriginal();
@@ -286,6 +227,7 @@ int simulate(int argc, char *argv[])
                                             gmx_ftoa(ener.second), unit);
                     }
                     jtree.addObject(jtener);
+                    
                     auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
                     if (confout)
                     {
@@ -296,14 +238,13 @@ int simulate(int argc, char *argv[])
                                        as_rvec_array(xmin.data()), nullptr,
                                        epbcNONE, box);
                     }
+                    
+                    AtomizationEnergy        atomenergy;
+                    doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
+                                        atomenergy, nullptr, &jtree,
+                                        opt2fn_null("-ir", fnm.size(), fnm.data()),
+                                        linewidth, oenv, sch.lapack(), verbose);
                 }
-            }
-            if (eMinimizeStatus::OK == eMin)
-            {
-                molhandler.simulate(&pd, &mymol, forceComp, sch, logFile,
-                                    opt2fn("-o", fnm.size(),fnm.data()),
-                                    opt2fn("-e", fnm.size(),fnm.data()),
-                                    oenv);
             }
         }
         
@@ -327,7 +268,7 @@ int simulate(int argc, char *argv[])
     }
     if (json)
     {
-        jtree.write("simulate.json", json);
+        jtree.write("nma.json", json);
     }
     else
     {

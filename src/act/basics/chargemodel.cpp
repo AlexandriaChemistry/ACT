@@ -89,9 +89,7 @@ std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
         { ChargeGenerationAlgorithm::SQE,       "SQE"       },
         { ChargeGenerationAlgorithm::ESP,       "ESP"       },
         { ChargeGenerationAlgorithm::Custom,    "Custom"    },
-        { ChargeGenerationAlgorithm::CM5,       "CM5"       },
-        { ChargeGenerationAlgorithm::Hirshfeld, "Hirshfeld" },
-        { ChargeGenerationAlgorithm::Mulliken,  "Mulliken"  }
+        { ChargeGenerationAlgorithm::Read,      "Read"      }
     };
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;

@@ -66,7 +66,9 @@ enum class qType {
     //! Gasteiger charges
     Gasteiger,
     //! Electronic properties straight from DFT or QC calcs
-    Elec
+    Elec,
+    //! Alexandria charge model charges
+    ACM
 };
 
 /*! \brief return string corresponding to charge type

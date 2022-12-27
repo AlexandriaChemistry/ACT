@@ -15,11 +15,11 @@ def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
     eatom = 0
     for aaa in range(len(atomtypes)):
         myelem = g2a.get_elem(atomtypes[aaa])
-        ae     = ahof.get_atomization(myelem, leveloftheory[aaa], temperature, charges[aaa])
+        ae     = ahof.get_atomization(myelem, leveloftheory[aaa].upper(), temperature, charges[aaa])
         if None == ae:
             for i in range(len(atomtypes)):
-                print("atype %s charge %d lot %s" % ( atomtypes[i], charges[i], leveloftheory[i] ) )
-            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory[aaa], temperature))
+                print("atype %s charge %d lot %s" % ( atomtypes[i], charges[i], leveloftheory[i].upper() ) )
+            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory[aaa].upper(), temperature))
         eatom += ae
     return energyHF - eatom
         
@@ -38,14 +38,17 @@ def UnitToConversionFactor(unit:str):
 
 class AtomicHOF:
     def __init__(self, method, temperature, verbose=False):
-        self.method      = method
+        if None != method:
+            self.method = method.upper()
+        else:
+            self.method = None
         self.temperature = temperature
         self.verbose     = verbose
         if debug:
-            if None == method:
+            if None == self.method:
                 print("Level of theory for HOF all")
             else:
-                print("Level of theory for HOF %s" % method)
+                print("Level of theory for HOF %s" % self.method)
         self.read()
         
     def read(self):
@@ -58,12 +61,12 @@ class AtomicHOF:
             for row in rows:
                 try:
                     mytemp = float(row[4])
-                    if ((row[2] == "exp" or None == self.method or row[2] == self.method) and 
+                    if ((row[2] == "exp" or None == self.method or row[2].upper() == self.method) and 
                         (mytemp == 0 or abs(mytemp-self.temperature) <= 1e-2)):
                         akey = row[0]+"|"+row[1]
                         if not akey in self.ahof:
                             self.ahof[akey] = []
-                        self.ahof[akey].append({ "Method": row[2],
+                        self.ahof[akey].append({ "Method": row[2].upper(),
                                                  "Desc": row[3],
                                                  "Temp": float(row[4]),
                                                  "Value": float(row[5]),
@@ -80,11 +83,11 @@ class AtomicHOF:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|" + str(charge)
         if not akey in self.ahof:
-            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, method ))
+            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, method.upper() ))
             return None
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
-            if thisprop["Method"] == method and thisprop["Temp"] == temp:
+            if thisprop["Method"] == method.upper() and thisprop["Temp"] == temp:
                 return thisprop["Value"]
         return None
         
@@ -107,7 +110,7 @@ class AtomicHOF:
                       ( p, thisprop["Method"], thisprop["Desc"], thisprop["Temp"]))
             eFac = UnitToConversionFactor(thisprop["Unit"])
             if abs(temp - thisprop["Temp"]) <= 1e-2:
-                if thisprop["Method"] == "exp":
+                if thisprop["Method"] == "EXP":
                     if thisprop["Desc"] == "H(0)-H(T)":
                         HexpT = thisprop["Value"]
                         if self.verbose:
@@ -117,7 +120,7 @@ class AtomicHOF:
                         if self.verbose:
                             print("found S0 = %g" % S0)
             elif thisprop["Temp"] == 0:
-                if thisprop["Method"] == "exp":
+                if thisprop["Method"] == "EXP":
                     if thisprop["Desc"] == "DHf(T)":
                         Vdhf = thisprop["Value"]
                         if self.verbose:

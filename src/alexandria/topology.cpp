@@ -347,6 +347,16 @@ void Topology::setAtoms(const t_atoms *atoms)
     }
 }
 
+double Topology::mass() const
+{
+    double mtot = 0;
+    for(size_t i = 0; i < atoms_.size(); i++)
+    {
+        mtot += atoms_[i].mass();
+    }
+    return mtot;
+}
+
 const Bond *Topology::findBond(int ai, int aj) const
 {
     Bond b(ai, aj, 1.0);
@@ -908,6 +918,9 @@ void Topology::fillParameters(const Poldata *pd)
                 break;
             case F_MORSE:
                 fillParams(fs, topID, morseNR, morse_name, &param);
+                break;
+            case F_CUBICBONDS:
+                fillParams(fs, topID, cubicNR, cubic_name, &param);
                 break;
             case F_BONDS:
                 fillParams(fs, topID, bondNR, bond_name, &param);

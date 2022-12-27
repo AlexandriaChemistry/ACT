@@ -165,6 +165,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
                                 ChargeGenerationAlgorithm::ESP,
+                                qType::ESP,
                                 qcustom, &coords, &forces);
 
             std::vector<double> qtotValues;

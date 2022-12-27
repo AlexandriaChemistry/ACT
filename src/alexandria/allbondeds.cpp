@@ -383,6 +383,20 @@ void AllBondeds::updatePoldata(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
             }
             break;
+        case F_CUBICBONDS:
+            {
+                // Compute the numbers such that they make sense
+                fs->addParameter(bondId, cubic_name[cubicLENGTH],
+                                 ForceFieldParameter("pm", av, 0, N, av*factor_, av/factor_, Mutability::Bounded, true, true));
+                double rmax = 3*av;
+                fs->addParameter(bondId, cubic_name[cubicRMAX],
+                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*factor_, rmax/factor_, Mutability::Bounded, true, true));
+                fs->addParameter(bondId, cubic_name[cubicKB],
+                                 ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
+                fs->addParameter(bondId, cubic_name[cubicDE],
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
+            }
+            break;
         default:
             gmx_fatal(FARGS, "Don't know what to do for ftype %s", interaction_function[fType].name);
         }

@@ -54,9 +54,11 @@ target_sources(actLib
            molselect.cpp
            mymol.cpp
            mymol_low.cpp
+           normalmodes.cpp
            openmm_xml.cpp
            percentmutator.cpp
            princ.cpp
+           secondvirial.cpp
            simulate.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp

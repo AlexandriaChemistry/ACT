@@ -37,7 +37,7 @@ function(gmx_create_suffix_options)
     option(
         GMX_DEFAULT_SUFFIX
         "Use default suffixes for GROMACS binaries and libs (${_defaults}; rerun cmake after changing to see relevant options)"
-        ON)
+        OFF)
     gmx_dependent_cache_variable(
         GMX_BINARY_SUFFIX
         "Suffix for GROMACS binaries (default: ${_defaults})."

@@ -41,8 +41,10 @@ gmx_add_unit_test(
     # files with code for tests
     atomtypeTest.cpp
     allbondedsTest.cpp
+    b2Test.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
+    sphereIntegratorTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>

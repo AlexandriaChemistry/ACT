@@ -236,6 +236,10 @@ public:
      */    
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
     
+    /*! Generate fragments based on bonds
+     */    
+    void generateFragments();
+    
     //! Clear the fragment information
     void clearFragments() { fragment_.clear(); }
     
@@ -256,6 +260,12 @@ public:
      * \return the Experiment or nullptr
      */
     const Experiment *findExperimentConst(JobType job) const;
+    
+    /*! \brief Return the first calculation that matches the specification
+     * \param[in] job The JobType, typically JobType::Opt
+     * \return the Experiment or nullptr
+     */
+    Experiment *findExperiment(JobType job);
     
     //! Add an experiment
     void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
@@ -282,24 +292,6 @@ public:
         }
     }
     
-    /*! \brief Return a calculation iterator
-     *
-     * Return iterator corresponding to the level of theory
-     * as determined by method and basis or EndExperiment in
-     * case it is not found. If either method or basis are empty
-     * any calculation may be taken. The calculation should
-     * hold the requested observable of the type (can be nullptr)
-     * \param[in]  method  The QM method
-     * \param[in]  basis   The QM basis set
-     * \param[out] mylot   The level of theory found
-     * \param[in]  mpo     The observable type
-     * \param[in]  type    The observable subtype
-     */
-    ExperimentIterator getCalcPropType(const std::string &method,
-                                       const std::string &basis,
-                                       std::string       *mylot,
-                                       MolPropObservable  mpo,
-                                       const char        *type);
     /*! \brief
      * Sends this object over an MPI connection
      *

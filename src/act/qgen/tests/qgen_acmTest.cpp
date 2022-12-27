@@ -239,7 +239,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();

@@ -389,8 +389,6 @@ private:
     bool               minimize_    = false;
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
-    //! Run normal mode analysis instead of MD
-    bool               nma_         = false;
     //! Tolerance on mean square force for minimizer.
     double             forceToler_  = 1e-6;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
@@ -399,8 +397,6 @@ private:
     int                maxIter_     = 100;
     //! Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis.
     bool               lapack_      = false;
-    //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
-    double             linewidth_   = 24;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -435,9 +431,6 @@ public:
     //! \return whether or not to minimize the energy with respect to input coordinates
     bool minimize() const { return minimize_; }
     
-    //! \return whether or not to do a normal mode analysis
-    bool nma() const { return nma_; }
-    
     //! \return the minimization algorithm
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
     
@@ -455,9 +448,6 @@ public:
      */
     void setForceTolerance(double toler) { forceToler_ = toler; }
 
-    //! \return Lorentzian line width for infrared intensities.
-    double lineWidth() const { return linewidth_; }
-    
     //! \return overrelaxation factor for  minimization.
     double overRelax() const { return overRelax_; }
     

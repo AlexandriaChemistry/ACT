@@ -250,19 +250,23 @@ private:
     //! Tell us whether this interaction type needs optimizing
     std::map<InteractionType, bool> iOpt_;
     //! Whether or not to use charge symmetry
-    gmx_bool                        qsymm_      = false;
+    bool                            qsymm_      = false;
     //! GROMACS logger structure
     gmx::MDLogger                   mdlog_;
     //! GROMACS MD parameter structure
     t_inputrec                     *inputrec_   = nullptr;
     //! String for command line to harvest the options to fit
-    char                            *fitString_ = nullptr;
+    char                           *fitString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! GROMACS structure containing optional MD modules, used for electric fields
     gmx::MDModules                  mdModules_;
+    //! Which charge type to use
+    char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
     std::vector<alexandria::MyMol>  mymol_;
+    //! Whether or not to load balance the inputs
+    bool                            loadBalance_ = true;
     
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
@@ -361,6 +365,9 @@ public:
     {
         return iOpt_.find(itype) !=  iOpt_.end(); 
     }
+    
+    //! Return which chargemethod was selectod
+    const char *chargeMethod() const { return chargeMethod_; }
         
     //! Return the whole optimization map
     const std::map<InteractionType, bool> iopt() const { return iOpt_; }

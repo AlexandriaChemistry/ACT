@@ -61,6 +61,8 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("No atoms in fragment %zu with formula %s", ff, f->formula().c_str()).c_str()));
         }
+        // ID
+        ids_.push_back(f->id());
         // If polarizable we will need to add these
         std::vector<TopologyEntry *> pols;
         // Count the number of atoms

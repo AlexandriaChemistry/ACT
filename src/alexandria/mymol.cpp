@@ -975,6 +975,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         qProps_.insert({ qType::Calc, QtypeProps(qType::Calc) });
         qProps_.insert({ qType::Elec, QtypeProps(qType::Elec) });
+        qProps_.find(qType::Calc)->second.initializeMoments();
     }
     if (immStatus::OK == imm)
     {
@@ -1741,6 +1742,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  ChargeGenerationAlgorithm  algorithm,
+                                 qType                      qtype,
                                  const std::vector<double> &qcustom,
                                  std::vector<gmx::RVec>    *coords,
                                  std::vector<gmx::RVec>    *forces)
@@ -1811,30 +1813,51 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             
             return immStatus::OK;
         }
-    case ChargeGenerationAlgorithm::CM5:
-    case ChargeGenerationAlgorithm::Hirshfeld:
-    case ChargeGenerationAlgorithm::Mulliken:
+        break;
+    case ChargeGenerationAlgorithm::Read:
         {
-            std::map<ChargeGenerationAlgorithm, qType> qtmap = {
-                { ChargeGenerationAlgorithm::CM5, qType::CM5 },
-                { ChargeGenerationAlgorithm::Hirshfeld, qType::Hirshfeld },
-                { ChargeGenerationAlgorithm::Mulliken, qType::Mulliken }
-            };
+            // TODO really loop over all experiments?
+            std::vector<double> qread;
             for (auto exper : experimentConst())
             {
-                int i = 0;
                 for (auto &ca : exper.calcAtomConst())
                 {
-                    if (ca.hasCharge(qtmap[algorithm]))
+                    if (!ca.hasCharge(qtype))
                     {
-                        (*myatoms)[i].setCharge(ca.charge(qtmap[algorithm]));
-                        i++;
+                        break;
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "No charge type %s for %s",
-                                  qTypeName(qtmap[algorithm]).c_str(), getMolname().c_str());
+                        qread.push_back(ca.charge(qtype));
                     }
+                }
+                if (!qread.empty())
+                {
+                    break;
+                }
+            }
+            if (qread.empty())
+            {
+                return immStatus::NoMolpropCharges;
+            }
+            size_t j = 0;
+            for(size_t i = 0; i < myatoms->size(); i++)
+            {
+                if ((*myatoms)[i].pType() == eptAtom)
+                {
+                    (*myatoms)[i].setCharge(qread[j++]);
+                }
+                else if ((*myatoms)[i].pType() == eptShell)
+                {
+                    const auto &pId = (*myatoms)[i].ffType();
+                    if (!pd->hasParticleType(pId))
+                    {
+                        return immStatus::AtomTypes;
+                    }
+                    auto piter = pd->findParticleType(pId);
+                    auto q = piter->charge();
+                    (*myatoms)[i].setCharge(q);
+                    (*myatoms)[i-1].setCharge(qread[j-1]-q);
                 }
             }
             // TODO check this. Copy charges to topology
@@ -2305,6 +2328,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             {
                 std::string conf;
                 auto ei = findExperimentConst(JobType::OPT);
+                if (!ei)
+                {
+                    ei = findExperimentConst(JobType::TOPOLOGY);
+                }
                 if (ei)
                 {
                     for(auto &i : qTypes())

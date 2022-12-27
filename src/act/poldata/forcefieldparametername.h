@@ -57,6 +57,10 @@ namespace alexandria
     
     extern const char *bond_name[bondNR];
     
+    enum { cubicLENGTH = 0, cubicRMAX = 1, cubicKB = 2, cubicDE = 3, cubicNR = 4 };
+    
+    extern const char *cubic_name[cubicNR];
+    
     enum { angleKT = 0, angleANGLE = 1, angleNR = 2 };
     
     extern const char *angle_name[angleNR];

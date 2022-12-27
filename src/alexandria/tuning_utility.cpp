@@ -942,25 +942,24 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
             dataFileNames.push_back(ei.getDatafile());
         }
     }
-    double de2 = 0;
+    gmx_stats myepot;
     for(const auto &ff : energyMap)
     {
-        auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
-        (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
-        de2 += gmx::square(enerexp - ff.second);
+        (*lsq_epot)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+        myepot.add_point(ff.first, ff.second, 0, 0);
     }
-    double dinterE2 = 0;
+    gmx_stats myinter;
     for(const auto &ff : interactionEnergyMap)
     {
         (*lsq_eInter)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
-        dinterE2 += gmx::square(ff.first - ff.second);
+        myinter.add_point(ff.first, ff.second, 0, 0);
     }
     if (printSP_)
     {
         size_t ccc = 0;
         for(const auto &eam : energyComponentMap)
         {
-            auto enerexp = /* mol->atomizationEnergy() + */ eam.first;
+            auto enerexp = eam.first;
             std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
                                                 enerexp);
             for(const auto &terms : eam.second)
@@ -975,14 +974,29 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS energy  %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(de2/energyMap.size()), energyMap.size()));
+        real mse, mae, rmsd, R = 0, r2;
+        myepot.get_mse_mae(&mse, &mae);
+        myepot.get_rmsd(&rmsd);
+        if (myepot.get_npoints() > 2)
+        {
+            myepot.get_corr_coeff(&R);
+        }
+        r2 = 100*R*R;
+        tcout->push_back(gmx::formatString("Energy RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
+                                           rmsd, mse, r2, myepot.get_npoints()));
     }
     if (interactionEnergyMap.size() > 0)
     {
-        tcout->push_back(gmx::formatString("RMS Einteraction %g (kJ/mol) #structures = %zu",
-                                           std::sqrt(dinterE2/interactionEnergyMap.size()),
-                                           interactionEnergyMap.size()));
+        real mse, mae, rmsd, R = 0, r2;
+        myinter.get_mse_mae(&mse, &mae);
+        myinter.get_rmsd(&rmsd);
+        if (myinter.get_npoints() > 2)
+        {
+            myinter.get_corr_coeff(&R);
+        }
+        r2 = 100*R*R;
+        tcout->push_back(gmx::formatString("Einteraction RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
+                                           rmsd, mse, r2, myinter.get_npoints()));
     }
     double df2    = 0;
     size_t nforce = 0;
@@ -1071,7 +1085,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   const gmx::MDLogger            &fplog,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,
-                                  const std::vector<t_filenm>    &filenm)
+                                  const std::vector<t_filenm>    &filenm,
+                                  const char                     *chargeMethod)
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
@@ -1154,6 +1169,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
     std::map<std::string, double> molEpot;
+    auto alg   = pd->chargeGenerationAlgorithm();
+    auto qtype = qType::Calc;
+    if (nullptr != chargeMethod && strlen(chargeMethod) > 0)
+    {
+        qtype = stringToQtype(chargeMethod);
+        alg   = ChargeGenerationAlgorithm::Read;
+    }
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -1173,8 +1195,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
             mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy,
-                                 &coords, &forces);
+                                 alg, qtype, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd, &coords);
@@ -1217,17 +1238,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 if (atoms[ai].pType() == eptAtom)
                 {
                     auto llF = lll->second.find(atoms[ai].ffType());
-                    if (lll->second.end() == llF)
+                    if (lll->second.end() != llF)
                     {
-                        GMX_THROW(gmx::InternalError("Cannot find atomtype in lsqt"));
+                        auto qa = atoms[ai].charge();
+                        if (ai < atoms.size() -1 && 
+                            atoms[ai+1].pType() == eptShell)
+                        {
+                            qa += atoms[ai+1].charge();
+                        }
+                        llF->second.add_point(1, qa, 0, 0);
                     }
-                    auto qa = atoms[ai].charge();
-                    if (ai < atoms.size() -1 && 
-                        atoms[ai+1].pType() == eptShell)
-                    {
-                        qa += atoms[ai+1].charge();
-                    }
-                    llF->second.add_point(1, qa, 0, 0);
                 }
             }
             // Multipoles

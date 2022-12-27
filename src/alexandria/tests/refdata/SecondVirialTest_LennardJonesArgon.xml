@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="B2(T)">
+    <Int Name="Length">5</Int>
+    <Real>-250.7545452160266</Real>
+    <Real>-204.3518073720555</Real>
+    <Real>-170.56582753672205</Real>
+    <Real>-144.90906983394436</Real>
+    <Real>-125.14536422872135</Real>
+  </Sequence>
+</ReferenceData>

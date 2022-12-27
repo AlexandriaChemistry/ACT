@@ -213,7 +213,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                     alg = ChargeGenerationAlgorithm::Custom;
                 }
                 mymol.symmetrizeCharges(pd, qSymm, nullptr);
-                mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom, &coords, &forces);
+                mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
                 
                 std::vector<double> q;
                 auto myatoms = mymol.atomsConst();

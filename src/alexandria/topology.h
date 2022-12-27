@@ -540,6 +540,9 @@ private:
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }
     
+    //! \return the mass of the compound
+    double mass() const;
+    
     /*! \brief Find a topology entry matching the inputs/
      * \param[in] itype     The InteractionType
      * \param[in] aindex    The atom indices

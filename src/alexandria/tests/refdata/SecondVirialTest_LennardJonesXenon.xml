@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="B2(T)">
+    <Int Name="Length">6</Int>
+    <Real>-127.67012463361421</Real>
+    <Real>-94.215106708947744</Real>
+    <Real>-81.448070955390037</Real>
+    <Real>-39.461649916178843</Real>
+    <Real>-28.723870107407819</Real>
+    <Real>-24.166398448961974</Real>
+  </Sequence>
+</ReferenceData>

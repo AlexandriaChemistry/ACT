@@ -100,6 +100,8 @@ enum class immStatus {
     BondOrder,
     //! Initializing the Restrained Electrostatic Potential algorithm
     RespInit,
+    //! No charges in the input
+    NoMolpropCharges,
     //! Problem generating charges
     ChargeGeneration,
     //! Shell minimization did not converge
