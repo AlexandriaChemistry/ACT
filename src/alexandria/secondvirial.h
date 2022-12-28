@@ -48,6 +48,22 @@
 namespace alexandria
 {
 
+/*! \brief Print a force field summary
+ * \param[input] jtree JSon tree
+ * \param[in]    pd    The force field
+ */
+void forceFieldSummary(JsonTree      *jtree,
+                       const Poldata *pd);
+
+/*! \brief Compute integral over sphere section
+ * \param[in] r1   The radius to start at
+ * \param[in] r2   The radius to stop at
+ * \param[in] val1 The function value at r1
+ * \param[in] val2 The function value at r2
+ * \return The integral of 4 pi r^2 f(r) from r1 to r2
+ */
+double sphereIntegrator(double r1, double r2, double val1, double val2);
+
 class DimerGenerator
 {
 private:
@@ -81,43 +97,108 @@ public:
                   std::vector<MolProp> *mps);
 };
 
+class ReRunner
+{
+private:
+    //! The force computer
+    ForceComputer    *forceComp_ = nullptr;
+    //! The dimer generator
+    DimerGenerator   *gendimers_ = nullptr;
+    //! GROMACS output stuff
+    gmx_output_env_t *oenv_      = nullptr;
+               
+    //! Trajectory name
+    const char       *trajname_  = "";
+    //! Temperature to start
+    double            T1_        = 300;
+    //! Final temperature
+    double            T2_        = 400;
+    //! Temperature step
+    double            deltaT_    = 10;
+    //! Whether to compute interaction energies and potentially B2
+    bool              eInter_    = true;
 
-void forceFieldSummary(JsonTree      *jtree,
-                       const Poldata *pd);
+    // Generate temperature series
+    const std::vector<double> temperatures();
+    /*! \brief Generate plot with Mayer functions for all temperatures
+     * \param[in] ehisto The output file name
+     * \param[in] mayer  The curves
+     */
+    void plotMayer(const char                             *ehisto,
+                   const std::vector<std::vector<double>> &mayer);
 
-/*! \brief Compute integral over sphere section
- * \param[in] r1   The radius to start at
- * \param[in] r2   The radius to stop at
- * \param[in] val1 The function value at r1
- * \param[in] val2 The function value at r2
- * \return The integral of 4 pi r^2 f(r) from r1 to r2
- */
-double sphereIntegrator(double r1, double r2, double val1, double val2);
+    /*! \brief Generate plot with Second virial as a function of temperature
+     * \param[in] b2file The B2(T) output file name
+     * \param[in] mayer  The curves
+     */
+    void plotB2temp(const char                *b2file,
+                    const std::vector<double> &b2t);
 
-void computeB2(FILE                         *logFile,
-               const char                   *ehisto,
-               gmx_stats                     edist,
-               gmx_output_env_t             *oenv,
-               const std::vector<double>    &Temperature,
-               double                        mass,
-               const gmx::RVec              &inertia,
-               const std::vector<gmx::RVec> &force1,
-               const std::vector<gmx::RVec> &torque1,
-               std::vector<double>          *b2t);
+    /*! \brief Compute the second virial coefficient including QM corrections
+     * \param[in] logFile   Output file for printing
+     * \param[in] edist     Statistics for interaction energies
+     * \param[in] inertia   The moments of inertia of the molecules
+     * \param[in] force1    The interaction forces on molecule 1
+     * \param[in] torqueMol The torque on both molecules
+     * \param[in] fnm       The filenames
+     */
+    void computeB2(FILE                                      *logFile,
+                   gmx_stats                                  edist,
+                   double                                     mass,
+                   const gmx::RVec                            inertia[2],
+                   const std::vector<gmx::RVec>              &force1,
+                   const std::vector<std::vector<gmx::RVec>> &torqueMol,
+                   const std::vector<t_filenm>               &fnm);
 
-void do_rerun(FILE                      *logFile,
-              const Poldata             *pd,
-              const MyMol               *mymol,
-              ForceComputer             *forceComp,
-              DimerGenerator            *gendimers,
-              const char                *trajname,
-              const char                *ehisto,
-              const char                *b2file,
-              bool                       eInter,
-              double                     qtot,
-              gmx_output_env_t          *oenv,
-              const std::vector<double> &Temperature);
-              
+public:
+    ReRunner() {}
+    
+    /*! \brief Make copies of utilities
+     * \param[in] forceComp The force computer
+     * \param[in] gendimers Dimer generator
+     * \param[in] oenv      GROMACS plotting stuff
+     */
+    void setFunctions(ForceComputer    *forceComp,
+                      DimerGenerator   *gendimers,
+                      gmx_output_env_t *oenv)
+    {
+        forceComp_ = forceComp;
+        gendimers_ = gendimers;
+        oenv_      = oenv;
+    }
+    
+    /*! \brief Add command line options
+     * \param[inout] pargs  Regular flags
+     * \param[inout] filenm File options
+     */
+    void addOptions(std::vector<t_pargs>  *pargs,
+                    std::vector<t_filenm> *filenm);
+    
+    //! \return whether or not we will compute interaction energies                
+    bool eInteraction() const { return eInter_; }
+    
+    /*! \brief Set the interaction energy flag
+     * \param[in] eInter The value
+     */
+    void setEInteraction(bool eInter) { eInter_ = eInter; }
+    
+    /*! \brief Do the rerunning with different options
+     * \param[in] logFile File pointer to print info
+     * \param[in] pd      Force field structure
+     * \param[in] mymol   Structure with molecule info
+     * \param[in] qtot    The total charge for when reading from a trajectory
+     * \param[in] verbose Whether or not to print a lot
+     * \param[in] fnm     The filenames
+     */
+    void rerun(FILE                        *logFile,
+               const Poldata               *pd,
+               const MyMol                 *mymol,
+               double                       qtot,
+               bool                         verbose,
+               const std::vector<t_filenm> &fnm);
+
+};
+
 } // namespace alexandria
 
 #endif // ACT_SIMULATE_H
