@@ -82,13 +82,9 @@ LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${ACTBIN}${PATH:+:}${PATH}
 
-PYTHONADD=${ACTLIB}/site-packages/act
-PYTHON_BIT_SIZE=`python -c 'import struct;print( 8 * struct.calcsize("P"))'`
-if [[ ${PYTHON_BIT_SIZE} = 64 ]]; then
-  OBLIB=`/bin/ls -d ${ACTPREFIX}/lib64/python*/site-packages/openbabel`
-else
-  OBLIB=`/bin/ls -d ${ACTPREFIX}/lib/python*/site-packages/openbabel`
-fi
+PYTHONADD=${CMAKE_INSTALL_PYTHON_LIBDIR}/act
+OBLIB=${CMAKE_INSTALL_PYTHON_LIBDIR}/openbabel
+
 if [[ ! -z "${OBLIB}" ]]; then
   PYTHONADD=${PYTHONADD}:${OBLIB}
 fi
