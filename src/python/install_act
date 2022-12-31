@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
-import os, shutil, argparse, subprocess, sys, glob
+import os, shutil, argparse, subprocess, sys, glob, struct
 from subprocess import Popen, PIPE
 
 debug = False
 
-def get_host():
+def get_lib_suffix() -> str:
+    if 64 == struct.calcsize("P") * 8:
+        return "64"
+    else:
+        return ""
+
+def get_host() -> str:
     '''Utility to get a string describing the build system'''
     if "HOST" in os.environ:
         HOST = os.environ["HOST"]
@@ -133,9 +139,13 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     os.makedirs(bdir, exist_ok=True)
     if os.path.isdir(bdir):
         os.chdir(bdir)
+        # Get the lib_suffix flag
+        LSFLAG = ""
+        if "64" == get_lib_suffix():
+            LSFLAG = "-DLIB_SUFFIX=64"
         # Get the correct branch
         os.system("git checkout alexandria")
-        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s " % ( prefix, CXX, CC, build_type, destination ))
+        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s %s " % ( prefix, CXX, CC, build_type, destination, LSFLAG ))
         if verbose:
             print("install_openbabel cmake FLAGS: %s" % FLAGS)
         # Get rid of history, if any and run cmake and make

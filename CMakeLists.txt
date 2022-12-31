@@ -49,6 +49,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+find_package (Python3 COMPONENTS Interpreter Development)
+if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
+  set(CMAKE_INSTALL_PYTHON_LIBDIR
+    "${CMAKE_INSTALL_LIBDIR}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+endif ()
+
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git
 # repository).  Also declares a few functions that will be used for generating
@@ -444,7 +450,7 @@ endif()
 find_package(LibXml2)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
-option(GMX_LIBXML2 "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
+option(GMX_LIBXML2 "Use libxml2 to parse xml files" ${HAVE_LIBXML2})
 set(PKG_LIBXML2 "")
 mark_as_advanced(GMX_LIBXML2)
 # Crash if not found.
