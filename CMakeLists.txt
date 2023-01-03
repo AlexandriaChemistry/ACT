@@ -52,7 +52,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 find_package (Python3 COMPONENTS Interpreter Development)
 if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
   set(CMAKE_INSTALL_PYTHON_LIBDIR
-    "${CMAKE_INSTALL_LIBDIR}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+    "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
 endif ()
 
 # Set up common version variables, as well as general information about

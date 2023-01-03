@@ -3,7 +3,7 @@
 # https://github.com/dspoel/ACT
 #
 # Installation path for ACT python code. Depends from CMAKE_INSTALL_PREFIX.
-set(ACT_PYTHON_LIB_PATH ${CMAKE_INSTALL_PREFIX}/lib/site-packages/act)
+set(ACT_PYTHON_LIB_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}/act)
 
 # Configure 'sys.path' in the executable scripts, so they may find the library.
 configure_file(gauss2molprop.cmakein gauss2molprop @ONLY)
