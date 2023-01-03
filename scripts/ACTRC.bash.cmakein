@@ -57,13 +57,11 @@ ACTMAN=${ACTPREFIX}/@CMAKE_INSTALL_MANDIR@
 ACTDATA=${ACTPREFIX}/@ACT_INSTALL_ACTDATADIR@share/act
 ACTLIB=${ACTPREFIX}/lib
 ALLDIR=${ACTPREFIX}/lib/openbabel
-echo $ALLDIR
 if [[ -d "${ALLDIR}" ]]; then
     BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
 fi
 if [[ -z "${BABEL_LIBDIR}" ]]; then
     ALLDIR=${ACTPREFIX}/lib64/openbabel
-    echo $ALLDIR
     if [[ -d "${ALLDIR}" ]]; then
         BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
     fi
