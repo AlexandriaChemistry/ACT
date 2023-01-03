@@ -115,6 +115,8 @@ int simulate(int argc, char *argv[])
     DimerGenerator           gendimers;
     // We do not want to see those options in simulate, just in b2.
     // gendimers.addOptions(&pa);
+    ReRunner                 rerun;
+    rerun.addOptions(&pa, &fnm);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -205,7 +207,12 @@ int simulate(int argc, char *argv[])
             mymol.Merge(&mps[0]);
         }
     }
-    bool eInter = mymol.fragmentHandler()->topologies().size() > 1;
+    if (mymol.totalCharge() != qtot)
+    {
+        fprintf(logFile, "WARNING: detected total charge %d, command line says %g.\n",
+                mymol.totalCharge(), qtot);
+    }
+    
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
@@ -257,11 +264,9 @@ int simulate(int argc, char *argv[])
         /* Generate output file for debugging if requested */
         if (strlen(trajname) > 0)
         {
-            std::vector<double> Temperature;
-            do_rerun(logFile, &pd, &mymol, forceComp, &gendimers,
-                     trajname,
-                     nullptr, nullptr,
-                     eInter, qtot, oenv, Temperature);
+            rerun.setFunctions(forceComp, &gendimers, oenv);
+            rerun.setEInteraction(mymol.fragmentHandler()->topologies().size() > 1);
+            rerun.rerun(logFile, &pd, &mymol, qtot, verbose, fnm);
         }
         else if (mymol.errors().empty())
         {

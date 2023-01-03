@@ -37,8 +37,12 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 
 #include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/SVD> 
 
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
@@ -47,6 +51,7 @@
 
 extern "C"
 {
+#ifdef OLD
 void dgelsd_(int* m, int* n, int* nrhs, double* a, int* lda,
              const double* b, int* ldb, double* s, double* rcond, int* rank,
              double* work, int* lwork, int* iwork, int* info );
@@ -57,7 +62,7 @@ void dgels_(const char* trans, int* m, int* n, int* nrhs, double* a, int* lda,
 void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
              int* lda, double* s, double* u, int* ldu, double* vt, int* ldvt,
              double* work, int* lwork, int* info );
-
+#endif
 }
 
 /*! \brief Linear regression with many columns
@@ -67,6 +72,41 @@ void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
  * \param[out] x    The solution of the problem
  * \return 0 if all is fine, the problematic row number otherwise
  */
+static int multi_regression1(const std::vector<double>  *rhs,
+                             double                    **a, 
+                             std::vector<double>        *x)
+{
+    int nrow  = rhs->size();
+    int ncol  = x->size();
+   
+    Eigen::MatrixXd Aeigen(nrow, ncol);
+    Eigen::VectorXd Beigen(nrow);
+    for(int i = 0; i < nrow; i++)
+    {
+        Beigen(i) = (*rhs)[i];
+        for(int j = 0; j < ncol; j++)
+        {
+            Aeigen(i, j) = a[j][i];
+        }
+    }
+    
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> dec(Aeigen);
+    Eigen::VectorXd Xeigen = dec.solve(Beigen);
+    for(int i = 0; i < ncol; i++)
+    {
+        (*x)[i] = Xeigen(i);
+    }
+    return 0;
+}
+
+/*! \brief Linear regression with many columns
+ *
+ * \param[in]  rhs  The right hand side of the equation
+ * \param[in]  a    The matrix
+ * \param[out] x    The solution of the problem
+ * \return 0 if all is fine, the problematic row number otherwise
+ */
+#ifdef OLD
 static int multi_regression2(const std::vector<double>  *rhs,
                              double                    **a, 
                              std::vector<double>        *x)
@@ -135,6 +175,7 @@ static int multi_regression2(const std::vector<double>  *rhs,
     }
     return info;
 }
+#endif
 
 static void tensor2matrix(tensor c, double **a)
 {
@@ -175,6 +216,7 @@ static void columnwise2tensor(double **a, tensor c)
     c[ZZ][ZZ] = a[YY][XX];
 }
 
+#ifdef OLD
 static void SVD(int*    m,    int*     n,     double** a,
                 int*    lda,  double** s,     double** u,
                 int*    ldu,  double** vt,    int*     ldvt)
@@ -251,6 +293,7 @@ void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
     free_matrix(u);
     free_matrix(vt);
 }
+#endif
 
 MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)
 : ncol_(ncolumn), nrow_(nrow)
@@ -389,7 +432,7 @@ void MatrixWrapper::averageTriangle()
 
 int MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
 {
-    return multi_regression2(&rhs, a_, solution);
+    return multi_regression1(&rhs, a_, solution);
 }
 
 std::string MatrixWrapper::toString() const

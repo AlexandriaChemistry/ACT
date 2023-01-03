@@ -1,0 +1,22 @@
+name: ACT
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - openmpi>=4.0
+  - Python>=3.8
+  - conda>=22.11.1
+  - Matplotlib
+  - pip>=21.0
+  - NumPy
+  - cmake>=3.13
+  - fftw>=3.3.10
+  - Eigen>=3.3
+  -  LibXml2>=2.9.14
+  -  SWIG>=4.0.2
+  -  Graphviz
+  -  sqlite>=3.40.0
+  - doxygen==1.9.5
+  - pip:
+    - PubChemPy

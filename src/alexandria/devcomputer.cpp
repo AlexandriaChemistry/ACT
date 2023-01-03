@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "act/basics/identifier.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
@@ -135,6 +136,25 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
                     if (deltaZeta > 0)
                     {
                         bound += gmx::square(deltaZeta);
+                    }
+                }
+            }
+        }
+        itype = InteractionType::BONDS;
+        if (poldata->interactionPresent(itype))
+        {
+            auto &fs = poldata->findForcesConst(itype);
+            if (fs.fType() == F_CUBICBONDS)
+            {
+                for(const auto &ffp : fs.parametersConst())
+                {
+                    auto param = ffp.second;
+                    auto rmax  = param[cubic_name[cubicRMAX]].value();
+                    auto blen  = param[cubic_name[cubicLENGTH]].value();
+                    // We want the maximum in the potential to be at least 0.1 nm further away than then minimum
+                    if (rmax < blen+0.1)
+                    {
+                        bound += gmx::square(rmax-blen-0.1);
                     }
                 }
             }

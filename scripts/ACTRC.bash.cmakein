@@ -56,39 +56,25 @@ ACTLDLIB=${ACTPREFIX}/@CMAKE_INSTALL_LIBDIR@
 ACTMAN=${ACTPREFIX}/@CMAKE_INSTALL_MANDIR@
 ACTDATA=${ACTPREFIX}/@ACT_INSTALL_ACTDATADIR@share/act
 ACTLIB=${ACTPREFIX}/lib
-ALLDIR=${ACTLDLIB}/openbabel
+ALLDIR=${ACTPREFIX}/lib/openbabel
 if [[ -d "${ALLDIR}" ]]; then
-   BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
-   if [[ -z "${BABEL_LIBDIR}" ]]; then
-      ALDIR=${ACTLIB}/openbabel
-      if [[ -d "${ALDIR}" ]]; then
-         BABEL_LIBDIR=`/bin/ls -d ${ALDIR}/*`
-      fi
-   fi
-else
-   ALLDIR=${ACTLIB}/openbabel
-   if [[ -d "${ALLDIR}" ]]; then
-      BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
-      if [[ -z "${BABEL_LIBDIR}" ]]; then
-         ALDIR=${ACTLIB}/openbabel
-         if [[ -d "${ALDIR}" ]]; then
-            BABEL_LIBDIR=`/bin/ls -d ${ALDIR}/*`
-         fi
-      fi
-   fi
+    BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
 fi
+if [[ -z "${BABEL_LIBDIR}" ]]; then
+    ALLDIR=${ACTPREFIX}/lib64/openbabel
+    if [[ -d "${ALLDIR}" ]]; then
+        BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
+    fi
+fi
+ALLDIR=
 
 LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${ACTBIN}${PATH:+:}${PATH}
 
-PYTHONADD=${ACTLIB}/site-packages/act
-PYTHON_BIT_SIZE=`python -c 'import struct;print( 8 * struct.calcsize("P"))'`
-if [[ ${PYTHON_BIT_SIZE} = 64 ]]; then
-  OBLIB=`/bin/ls -d ${ACTPREFIX}/lib64/python*/site-packages/openbabel`
-else
-  OBLIB=`/bin/ls -d ${ACTPREFIX}/lib/python*/site-packages/openbabel`
-fi
+PYTHONADD=${ACTPREFIX}/@CMAKE_INSTALL_PYTHON_LIBDIR@/act
+OBLIB=${ACTPREFIX}/@CMAKE_INSTALL_PYTHON_LIBDIR@/openbabel
+
 if [[ ! -z "${OBLIB}" ]]; then
   PYTHONADD=${PYTHONADD}:${OBLIB}
 fi

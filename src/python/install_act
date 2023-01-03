@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
-import os, shutil, argparse, subprocess, sys, glob
+import os, shutil, argparse, subprocess, sys, glob, struct
 from subprocess import Popen, PIPE
 
 debug = False
 
-def get_host():
+def get_lib_suffix() -> str:
+    if 64 == struct.calcsize("P") * 8:
+        return "64"
+    else:
+        return ""
+
+def get_host() -> str:
     '''Utility to get a string describing the build system'''
     if "HOST" in os.environ:
         HOST = os.environ["HOST"]
@@ -22,11 +28,11 @@ def get_compilers(ostype: str):
         CC  = shutil.which("clang")
     else:
         CXX = None
-        for cxxtry in [ "mpicxx", "cxx", "ccc", "g++", "gcc" ]:
+        for cxxtry in [ "g++", "cxx", "ccc", "gcc" ]:
             CXX = shutil.which(cxxtry)
             if CXX:
                 break
-        for cctry in [ "mpicc", "cc", "gcc" ]:
+        for cctry in [ "gcc", "cc" ]:
             CC  = shutil.which(cctry)
             if CC:
                 break
@@ -44,6 +50,7 @@ def get_mpirun():
 def get_prefix(myprefix):
     cpp  = "CMAKE_PREFIX_PATH"
     cinc = "CPLUS_INCLUDE_PATH"
+    conda = "CONDA_PREFIX"
     prefix = []
     if cpp in os.environ:
         prefix = os.environ[cpp].split(":")
@@ -51,6 +58,8 @@ def get_prefix(myprefix):
         for inc in os.environ[cinc].split(":"):
             # Add the directory excluding the /include part
             prefix.append(inc[:-8])
+    elif conda in os.environ:
+        prefix.append(os.environ[conda])
     else:
         conda = shutil.which("conda")
         if conda and len(conda) > 10:
@@ -133,9 +142,13 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     os.makedirs(bdir, exist_ok=True)
     if os.path.isdir(bdir):
         os.chdir(bdir)
+        # Get the lib_suffix flag
+        LSFLAG = ""
+        if "64" == get_lib_suffix():
+            LSFLAG = "-DLIB_SUFFIX=64"
         # Get the correct branch
         os.system("git checkout alexandria")
-        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s " % ( prefix, CXX, CC, build_type, destination ))
+        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s %s " % ( prefix, CXX, CC, build_type, destination, LSFLAG ))
         if verbose:
             print("install_openbabel cmake FLAGS: %s" % FLAGS)
         # Get rid of history, if any and run cmake and make
@@ -169,78 +182,35 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     # Go back to where we came from
     os.chdir(pwd)
 
-def conda_prefix_provided(prefix: str):
-    if prefix is not None:
-        for path in prefix.split(';'):
-            for ele in path.split('/'):
-                if ele in ['anaconda3', 'miniconda3']:
-                    return True
-        return False
-    else:
-        return False
-
 def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
-    act = args.branch in ["main", "david", "genetic_algorithm"]
-    if act:
-        swdir = "ACT"
+    swdir = "ACT"
         
-        if args.clone_ACT:
-            if os.path.isdir(swdir):
-                print("Will not clone since directory %s exists. Will gitt pull instead" % swdir)
-                os.chdir(swdir)
-                run_command("git", "pull")
-            else:
-                if args.anonymous:
-                    os.system("git clone https://github.com/dspoel/ACT.git")
-                else:
-                    os.system("git clone git@github.com:dspoel/ACT.git")
-                if not os.path.isdir(swdir):
-                    sys.exit("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
-                os.chdir(swdir)
+    if args.clone_ACT:
+        if os.path.isdir(swdir):
+            print("Will not clone since directory %s exists. Will gitt pull instead" % swdir)
+            os.chdir(swdir)
+            run_command("git", "pull")
         else:
+            if args.anonymous:
+                os.system("git clone https://github.com/dspoel/ACT.git")
+            else:
+                os.system("git clone git@github.com:dspoel/ACT.git")
+            if not os.path.isdir(swdir):
+                sys.exit("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
             os.chdir(swdir)
     else:
-        os.makedirs(args.branch, exist_ok=True)
-        os.chdir(args.branch)
-        if args.clone_ACT:
-            if args.anonymous:
-                os.system("git clone https://gitlab.com:/gromacs/gromacs.git")
-            else:
-                os.system("git clone git@gitlab.com:gromacs/gromacs.git")
-        swdir = "gromacs"
         os.chdir(swdir)
 
-    if ((act and args.branch != "main") or 
-        (not act and args.branch != "master")):
-        os.system("git checkout --track origin/%s -b %s" % ( args.branch, args.branch ) )
-        os.system("git pull")
-    elif act and args.branch == 'genetic_algorithm':
-        os.system(f'git checkout {args.branch}')
-        os.system('git pull')
+    os.system("git pull")
 
     PPATH  = prefix + ";" + args.destination
-    LAPACK = None
-    BLAS   = None
-    if "darwin" in HOST or "mac" in HOST:
-        # MacOS machines
-        LAPACK   = find_lib(PPATH, "liblapack.dylib", args.verbose)
-        BLAS     = find_lib(PPATH, "libblas.dylib", args.verbose)
-    elif HOST.find("nsc") >= 0 or HOST.find("hpc2n") >= 0:
-        LAPACK = "" #find_lib(PPATH, "libscalapack.a", args.verbose)
-        BLAS   = "" #find_lib(PPATH, "libopenblas.so", args.verbose)
-    else:
-        print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
     # Construct cmake flags
     FLAGS = ("-DMPIEXEC=%s -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON" % ( get_mpirun(), args.destination, CXX, CC, args.build, PPATH ) )
     if args.cln:
         FLAGS += " -DGMX_CLN=ON"
-    if LAPACK:
-        FLAGS += "  -DGMX_EXTERNAL_LAPACK=ON -DGMX_LAPACK_USER=" + LAPACK
-    if BLAS:
-        FLAGS += "  -DGMX_EXTERNAL_BLAS=ON -DGMX_BLAS_USER=" + BLAS
 
     # Make correct build directory
     bdir = "build_" + args.build
@@ -276,8 +246,6 @@ def parseArguments():
     the OpenBabel software.
     '''
     parser = argparse.ArgumentParser(description=desc)
-    branch = "main"  
-    parser.add_argument("-b", "--branch", help="Branch to clone from either ACT or GROMACS depending on branch name. Default is ACT with branch "+branch,             type=str, default=branch)
     parser.add_argument("-f", "--flags",  help="Additional compilation flags",type=str, default="")
     parser.add_argument("-anon", "--anonymous",  help="If you do not have an account at gitlab.com (gromacs) or github.com (ACT, OpenBabel) select this option.", action="store_true")
     parser.add_argument("-clone_OB", "--clone_OB", help="Clone openbabel git repository", action="store_true")
