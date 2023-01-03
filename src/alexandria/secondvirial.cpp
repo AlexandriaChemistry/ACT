@@ -138,24 +138,26 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
     }
 }
 
-const std::vector<double> ReRunner::temperatures()
+const std::vector<double> &ReRunner::temperatures()
 {
-    std::vector<double> Temperature;
-    Temperature.push_back(T1_);
-    if (deltaT_ > 0)
+    if (Temperatures_.empty())
     {
-        double T = T1_+deltaT_;
-        while (T <= T2_)
+        Temperatures_.push_back(T1_);
+        if (deltaT_ > 0)
         {
-            Temperature.push_back(T);
-            T += deltaT_;
+            double T = T1_+deltaT_;
+            while (T <= T2_)
+            {
+                Temperatures_.push_back(T);
+                T += deltaT_;
+            }
+        }
+        else
+        {
+            Temperatures_.push_back(T2_);
         }
     }
-    else
-    {
-        Temperature.push_back(T2_);
-    }
-    return Temperature;
+    return Temperatures_;
 }
 
 void ReRunner::plotMayer(const char                             *ehisto,
@@ -188,20 +190,24 @@ void ReRunner::plotMayer(const char                             *ehisto,
     xvgrclose(fp);
 }
 
-void ReRunner::plotB2temp(const char                *b2file,
-                          const std::vector<double> &b2t)
+void ReRunner::plotB2temp(const char *b2file)
 {
     if (!b2file || strlen(b2file) == 0)
     {
         return;
     }
-
+    auto T = temperatures();
+    if (b2t_.empty() || b2t_.size() != T.size())
+    {
+        fprintf(stderr, "Internal inconsistency. There are %zu temperatures and %zu B2 values.\n",
+                T.size(), b2t_.size());
+        return;
+    }
     FILE *b2p = xvgropen(b2file, "Second virial coefficient",
                          "Temperature (K)", "B2(T) cm^3/mol", oenv_);
-    auto T = temperatures();
     for(size_t ii = 0; ii < T.size(); ii++)
     {
-        fprintf(b2p, "%10g  %10g\n", T[ii], b2t[ii]);
+        fprintf(b2p, "%10g  %10g\n", T[ii], b2t_[ii]);
     }
     xvgrclose(b2p);
 }
@@ -230,7 +236,6 @@ void ReRunner::computeB2(FILE                                      *logFile,
         auto Temperature = temperatures();
         std::vector<std::vector<double> > mayer(1+Temperature.size());
         // Array for total second virial as a function of T
-        std::vector<double>               b2t;
         size_t iTemp = 1;
         for(auto T : Temperature)
         {
@@ -333,7 +338,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
             // Conversion to regular units cm^3/mol.
             double fac  = AVOGADRO*1e-21;
             double Btot = (Bclass + BqmForce + BqmTorque)*fac;
-            b2t.push_back(Btot);
+            b2t_.push_back(Btot);
             if (logFile)
             {
                 fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g Total %g cm^3/mol\n", T,
@@ -341,10 +346,13 @@ void ReRunner::computeB2(FILE                                      *logFile,
             }
             iTemp += 1;
         }
-        // Store Mayer functions if requested.
-        plotMayer(opt2fn_null("-eh", fnm.size(), fnm.data()), mayer);
-        // Print B2(T) if requested
-        plotB2temp(opt2fn("-b2", fnm.size(), fnm.data()), b2t);
+        if (!fnm.empty())
+        {
+            // Store Mayer functions if requested.
+            plotMayer(opt2fn_null("-eh", fnm.size(), fnm.data()), mayer);
+            // Print B2(T) if requested
+            plotB2temp(opt2fn("-b2", fnm.size(), fnm.data()));
+        }
     }
 }
 

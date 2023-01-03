@@ -740,8 +740,11 @@ static bool readBabel(const std::string               &g09,
                         read_ok = true;
                     }
                 }
-                // TODO: remove this hack that just reads one molecule
-                //read_ok = false;
+                // TODO: check when we need to read just one molecule
+                if (*inputformat == einfGaussian)
+                {
+                    read_ok = false;
+                }
             }
             while (read_ok);
 

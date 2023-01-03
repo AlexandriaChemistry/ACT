@@ -74,13 +74,12 @@ protected:
                 double sig, double eps, double mass, 
                 const std::vector<double> &Temperature)
     {
-        FILE                         *logFile = nullptr;
-        const char                   *ehisto  = nullptr;
-        gmx_stats                     edist;
-        gmx_output_env_t             *oenv    = nullptr;
-        gmx::RVec                     inertia = { 0, 0, 0 };
-        std::vector<gmx::RVec>        force1;
-        std::vector<gmx::RVec>        torque1;
+        FILE                                *logFile = nullptr;
+        gmx_stats                            edist;
+        gmx_output_env_t                    *oenv    = nullptr;
+        gmx::RVec                            inertia[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+        std::vector<gmx::RVec>               force1;
+        std::vector<std::vector<gmx::RVec>>  torque1;
         
         output_env_init_default(&oenv);
         
@@ -94,14 +93,21 @@ protected:
                 double f = 4*eps*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
                 edist.add_point(x, y, 0, 0);
                 force1.push_back({ 0, 0, f });
-                torque1.push_back({ 0, 0, 0 });
+                std::vector<gmx::RVec> ttt;
+                // Torque is needed for two compounds
+                ttt.push_back({ 0, 0, 0 });
+                torque1.push_back(ttt);
+                torque1.push_back(ttt);
             }
         }
         if (LJ)
         {
-            std::vector<double> b2t;
-            computeB2(logFile, ehisto, edist, oenv, Temperature,
-                      mass, inertia, force1, torque1, &b2t);
+            ReRunner rerun;
+            std::vector<t_filenm> fnm;
+            rerun.setTemperatures(Temperature);
+            rerun.computeB2(logFile, edist,
+                            mass, inertia, force1, torque1, fnm);
+            auto b2t = rerun.b2Temp();
             checker_.checkSequence(b2t.begin(), b2t.end(), "B2(T)");
         }
     }

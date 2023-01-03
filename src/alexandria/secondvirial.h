@@ -101,25 +101,29 @@ class ReRunner
 {
 private:
     //! The force computer
-    ForceComputer    *forceComp_ = nullptr;
+    ForceComputer      *forceComp_ = nullptr;
     //! The dimer generator
-    DimerGenerator   *gendimers_ = nullptr;
+    DimerGenerator     *gendimers_ = nullptr;
     //! GROMACS output stuff
-    gmx_output_env_t *oenv_      = nullptr;
+    gmx_output_env_t   *oenv_      = nullptr;
                
     //! Trajectory name
-    const char       *trajname_  = "";
+    const char         *trajname_  = "";
     //! Temperature to start
-    double            T1_        = 300;
+    double              T1_        = 300;
     //! Final temperature
-    double            T2_        = 400;
+    double              T2_        = 400;
     //! Temperature step
-    double            deltaT_    = 10;
+    double              deltaT_    = 10;
     //! Whether to compute interaction energies and potentially B2
-    bool              eInter_    = true;
+    bool                eInter_    = true;
+    //! The temperature array
+    std::vector<double> Temperatures_;
+    //! Second virial as a function of T (see function temperatures)
+    std::vector<double> b2t_;
 
-    // Generate temperature series
-    const std::vector<double> temperatures();
+    //! Generate temperature series if needed and return it
+    const std::vector<double> &temperatures();
     /*! \brief Generate plot with Mayer functions for all temperatures
      * \param[in] ehisto The output file name
      * \param[in] mayer  The curves
@@ -129,26 +133,9 @@ private:
 
     /*! \brief Generate plot with Second virial as a function of temperature
      * \param[in] b2file The B2(T) output file name
-     * \param[in] mayer  The curves
      */
-    void plotB2temp(const char                *b2file,
-                    const std::vector<double> &b2t);
+    void plotB2temp(const char *b2file);
 
-    /*! \brief Compute the second virial coefficient including QM corrections
-     * \param[in] logFile   Output file for printing
-     * \param[in] edist     Statistics for interaction energies
-     * \param[in] inertia   The moments of inertia of the molecules
-     * \param[in] force1    The interaction forces on molecule 1
-     * \param[in] torqueMol The torque on both molecules
-     * \param[in] fnm       The filenames
-     */
-    void computeB2(FILE                                      *logFile,
-                   gmx_stats                                  edist,
-                   double                                     mass,
-                   const gmx::RVec                            inertia[2],
-                   const std::vector<gmx::RVec>              &force1,
-                   const std::vector<std::vector<gmx::RVec>> &torqueMol,
-                   const std::vector<t_filenm>               &fnm);
 
 public:
     ReRunner() {}
@@ -177,6 +164,15 @@ public:
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }
     
+    //! \brief Manually set the temperatures
+    void setTemperatures(double T1, double T2, double deltaT) { T1_ = T1; T2_ = T2; deltaT_ = deltaT; }
+    
+    //! \brief Manually set a temperature array
+    void setTemperatures(const std::vector<double> &T) { Temperatures_ = T; }
+    
+    //! \brief Reset temperatures
+    void resetTemperatures() { Temperatures_.clear(); }
+    
     /*! \brief Set the interaction energy flag
      * \param[in] eInter The value
      */
@@ -196,6 +192,25 @@ public:
                double                       qtot,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);
+
+    /*! \brief Compute the second virial coefficient including QM corrections
+     * \param[in] logFile   Output file for printing
+     * \param[in] edist     Statistics for interaction energies
+     * \param[in] inertia   The moments of inertia of the molecules
+     * \param[in] force1    The interaction forces on molecule 1
+     * \param[in] torqueMol The torque on both molecules
+     * \param[in] fnm       The filenames
+     */
+    void computeB2(FILE                                      *logFile,
+                   gmx_stats                                  edist,
+                   double                                     mass,
+                   const gmx::RVec                            inertia[2],
+                   const std::vector<gmx::RVec>              &force1,
+                   const std::vector<std::vector<gmx::RVec>> &torqueMol,
+                   const std::vector<t_filenm>               &fnm);
+                   
+    //! \return the second virial as a function of T.
+    const std::vector<double> &b2Temp() const { return b2t_; }
 
 };
 
