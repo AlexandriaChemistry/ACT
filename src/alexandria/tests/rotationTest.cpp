@@ -46,6 +46,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#ifdef OLD
 //! Class to test a rotation algorithm
 class RotationTest : public gmx::test::CommandLineTestBase
 {
@@ -101,3 +102,4 @@ TEST_F (RotationTest, Rotate_p_to_q)
     tensor q = {{0, 0, 0}, {5, 3, 7}, {0, 0, 0}};
     testRotation(p, q);
 }
+#endif

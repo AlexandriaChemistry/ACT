@@ -34,13 +34,13 @@
 
 file(GLOB LINEARALGEBRA_SOURCES *.cpp)
 
-if (NOT GMX_EXTERNAL_BLAS)
-    file(GLOB BLAS_SOURCES gmx_blas/*.cpp)
-endif()
+#if (NOT GMX_EXTERNAL_BLAS)
+#    file(GLOB BLAS_SOURCES gmx_blas/*.cpp)
+#endif()
 
-if (NOT GMX_EXTERNAL_LAPACK)
-    file(GLOB LAPACK_SOURCES gmx_lapack/*.cpp)
-endif()
+#if (NOT GMX_EXTERNAL_LAPACK)
+#    file(GLOB LAPACK_SOURCES gmx_lapack/*.cpp)
+#endif()
 
 set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
