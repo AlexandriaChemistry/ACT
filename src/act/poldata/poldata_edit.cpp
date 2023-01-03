@@ -131,10 +131,15 @@ static void setMinMaxMut(FILE *fp,
     }
     if (stretch)
     {
-        double range = pp->maximum()-pp->minimum();
+        double range = std::fabs(pp->maximum()-pp->minimum());
+        fprintf(stderr, "Trying to stretch parameter with unit %s range %g\n", pp->unit().c_str(), range);
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
             double newmin = pp->minimum()-0.2*range;
+            if (newmin <= 0 && pp->nonNegative())
+            {
+                newmin = 0.8*pp->minimum();
+            }
             if (pp->setMinimum(newmin))
             {
                 if (fp)
