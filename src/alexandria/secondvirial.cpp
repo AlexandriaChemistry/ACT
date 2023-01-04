@@ -292,7 +292,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
             double    Fprev     =  0;
             // Starting torque
             gmx::RVec Tprev[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            double hbarfac  = gmx::square(PLANCK*beta/(2*M_PI))/24;
+            double hbarfac      = beta*gmx::square(PLANCK*beta/(2*M_PI))/24;
             if (iTemp == 1)
             {
                 // Store distance first time around only
@@ -327,7 +327,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
                             if (inertia[kk][m] > 0)
                             {
                                 double Tnew  = exp_tau[kk][ii][m]/inertia[kk][m];
-                                BqmTorque   += hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
+                                BqmTorque   += 0.5*hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
                                 Tprev[kk][m] = Tnew;
                             }
                         }

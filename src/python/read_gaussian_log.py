@@ -69,6 +69,8 @@ class GaussianReader:
         self.oldvalue = 0
         
     def coordinates(self):
+        if len(self.coord_archive) == 0:
+            return None
         myindex = -1
         if self.coordset > 0 and self.coordset < len(self.coord_archive):
             myindex  = self.coordset
@@ -617,7 +619,7 @@ class GaussianReader:
             for atom in md.atoms:
                 self.atomtypes.append(md.atoms[atom]["atomtype"])
             g2a      = GaffToAlexandria()
-            if None != self.tcmap["E0"] and None != self.tcmap["Ezpe"]:
+            if None != self.tcmap["E0"]:# and None != self.tcmap["Ezpe"]:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
                 lots = []
@@ -666,28 +668,28 @@ class GaussianReader:
         return None
     
     def read(self, infile:str) -> Molprop:
+        mp = None
         if not os.path.exists(infile):
             print("No such file " + infile)
-            return None
-        try:
-            with gzip.open(infile, "rt") as inf:
-                mp = self.interpret_gauss(inf.readlines(), infile)
-                if None == mp:
-                    sys.exit("Could not read %s" % infile)
-                else:
-                    return mp
-        except gzip.BadGzipFile:
+        else:
             try:
-                with open(infile, "r") as inf:
-                    return self.interpret_gauss(inf.readlines(), infile)
-            except:
-                print("Something fishy with " + infile)
-        return None
+                with gzip.open(infile, "rt") as inf:
+                    mp = self.interpret_gauss(inf.readlines(), infile)
+                    if None == mp:
+                        print("Could not read %s" % infile)
+            except gzip.BadGzipFile:
+                try:
+                    with open(infile, "r") as inf:
+                        mp = self.interpret_gauss(inf.readlines(), infile)
+                except:
+                    print("Something fishy with " + infile)
+        return mp
         
 def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool, coordinate_set:int) -> Molprop:
+    if verbose:
+        debug = True
     gr = GaussianReader(molname, basisset, verbose, coordinate_set)
     mp = gr.read(infile)
     if None == mp:
-        sys.exit("Could not read %s" % infile)
-    else:
-        return mp
+        print("Could not read %s" % infile)
+    return mp
