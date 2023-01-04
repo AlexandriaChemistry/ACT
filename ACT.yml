@@ -4,7 +4,6 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - openmpi>=4.0
   - Python>=3.8
   - conda>=22.11.1
   - Matplotlib
