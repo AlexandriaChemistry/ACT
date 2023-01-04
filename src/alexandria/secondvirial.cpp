@@ -316,7 +316,8 @@ void ReRunner::computeB2(FILE                                      *logFile,
                     Bclass       -= 0.5*dB;
                     Uprev         = Unew;
                     // Weighted square force
-                    double Fnew   = exp_F2[ii]/(mass*n_U12[ii]);
+                    // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
+                    double Fnew   = 0.5*exp_F2[ii]/(mass*n_U12[ii]);
                     BqmForce     += hbarfac*sphereIntegrator(r1, r2, Fprev, Fnew);
                     Fprev         = Fnew;
                     // Contributions from torque
@@ -326,7 +327,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
                         {
                             if (inertia[kk][m] > 0)
                             {
-                                double Tnew  = exp_tau[kk][ii][m]/inertia[kk][m];
+                                double Tnew  = exp_tau[kk][ii][m]/(n_U12[ii]*inertia[kk][m]);
                                 BqmTorque   += 0.5*hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
                                 Tprev[kk][m] = Tnew;
                             }
@@ -719,7 +720,10 @@ void ReRunner::rerun(FILE                        *logFile,
                     fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
                 }
             }
-            fprintf(logFile, "\n");
+            if (verbose)
+            {
+                fprintf(logFile, "\n");
+            }
         }
         mp_index += 1;
     }
@@ -732,9 +736,11 @@ void ReRunner::rerun(FILE                        *logFile,
                 inertia[kk][m] /= edist.get_npoints();
             }
         }
-        computeB2(logFile, edist, 
-                  mymol->fragmentHandler()->topologies()[0].mass(),
-                  inertia, force1, torqueMol, fnm);
+        // Compute the relative mass
+        double m0 = mymol->fragmentHandler()->topologies()[0].mass();
+        double m1 = mymol->fragmentHandler()->topologies()[1].mass();
+        double mm = m0*m1/(m0+m1);
+        computeB2(logFile, edist, mm, inertia, force1, torqueMol, fnm);
     }
 }
 
