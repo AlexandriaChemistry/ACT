@@ -477,6 +477,9 @@ void DimerGenerator::generate(const MyMol          *mymol,
             }
         }
         // Loop over orientations
+        size_t nmp = maxdimers_*ndist_;
+        mps->resize(nmp);
+        size_t mp_index = 0;
         for(int ndim = 0; ndim < maxdimers_; ndim++)
         {
             // Copy the coordinates and rotate them
@@ -514,7 +517,7 @@ void DimerGenerator::generate(const MyMol          *mymol,
                     }
                 }
                 exper->push_back(newexp);
-                mps->push_back(mp);
+                (*mps)[mp_index++] = mp;
                 // Put the coordinates back!
                 for(size_t j = 0; j < atoms.size(); j++)
                 {
@@ -568,6 +571,14 @@ void ReRunner::rerun(FILE                        *logFile,
     std::vector<gmx::RVec> force1;
     std::vector<std::vector<gmx::RVec>> torqueMol;
     torqueMol.resize(2);
+    if (eInter_)
+    {
+        for(int kk = 0; kk < 2; kk++)
+        {
+            torqueMol[kk].resize(mps.size());
+        }
+        force1.resize(mps.size());
+    }
     gmx::RVec inertia[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
     // Loop over molecules
     for (auto mp : mps)
@@ -581,7 +592,7 @@ void ReRunner::rerun(FILE                        *logFile,
             if (expx.size() == atoms.size())
             {
                 // Assume there are shells in the input
-                    coords = expx;
+                coords = expx;
             }
             else
             {
@@ -645,7 +656,7 @@ void ReRunner::rerun(FILE                        *logFile,
                         com[kk][m] /= mtot[kk];
                     }
                 }
-                force1.push_back(f[0]);
+                copy_rvec(f[0], force1[mp_index]);
                 gmx::RVec torque[2]     = { { 0, 0, 0 }, { 0, 0, 0 } };
                 gmx::RVec torqueRot[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
                 for(int kk = 0; kk < 2; kk++)
@@ -695,7 +706,7 @@ void ReRunner::rerun(FILE                        *logFile,
                         rvec_inc(torqueRot[kk], ti);
                     }
                     rvec_inc(inertia[kk], inertia1);
-                    torqueMol[kk].push_back(torqueRot[kk]);
+                    torqueMol[kk][mp_index] = torqueRot[kk];
                 }
                 gmx::RVec dcom;
                 rvec_sub(com[0], com[1], dcom);
