@@ -90,11 +90,13 @@ public:
     int ndist() const { return ndist_; }
     
     /*! \brief Do the actual generation
-     * \param[in] mymol The description of the two fragments
-     * \param[out] mps  The generated dimers
+     * \param[in]  logFile For debugging info, may be a nullptr
+     * \param[in]  mymol   The description of the two fragments
+     * \param[out] coords  The coordinate sets
      */
-    void generate(const MyMol          *mymol,
-                  std::vector<MolProp> *mps);
+    void generate(FILE                                *logFile,
+                  const MyMol                         *mymol,
+                  std::vector<std::vector<gmx::RVec>> *coords);
 };
 
 class ReRunner

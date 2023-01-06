@@ -182,6 +182,9 @@ public:
     //! Return a complete coordinate array
     const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }
     
+    //! Copy the CalcAtom data to a separate array that can be extracted as above
+    void setCoordinates();
+    
     //! Return a complete forces array
     const std::vector<gmx::RVec> &getForces() const { return forces_; }
     

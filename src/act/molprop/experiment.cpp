@@ -199,6 +199,25 @@ int Experiment::Merge(const Experiment *src)
     return nwarn;
 }
 
+void Experiment::setCoordinates()
+{
+    if (coordinates_.empty())
+    {
+        gmx::RVec x = { 0, 0, 0 };
+        coordinates_.resize(catom_.size(), x);
+        size_t j = 0;
+        for(auto ca: catom_)
+        {
+            auto cunit      = ca.coordUnit();
+            x[XX]           = convertToGromacs(ca.getX(), cunit);
+            x[YY]           = convertToGromacs(ca.getY(), cunit);
+            x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
+            coordinates_[j] = x;
+            j++;
+        }
+    }
+}
+
 void Experiment::AddAtom(CalcAtom ca)
 {
     CalcAtomIterator cai = searchAtom(ca);

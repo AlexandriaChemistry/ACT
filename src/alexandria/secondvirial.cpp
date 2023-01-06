@@ -48,6 +48,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/poldata/poldata_xml.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "alexandria/alex_modules.h"
 #include "alexandria/atype_mapping.h"
@@ -428,8 +429,9 @@ void DimerGenerator::addOptions(std::vector<t_pargs> *pa)
     }
 }
     
-void DimerGenerator::generate(const MyMol          *mymol,
-                              std::vector<MolProp> *mps)
+void DimerGenerator::generate(FILE                                *logFile,
+                              const MyMol                         *mymol,
+                              std::vector<std::vector<gmx::RVec>> *coords)
 {
     auto fragptr = mymol->fragmentHandler();
     if (fragptr->topologies().size() == 2)
@@ -478,8 +480,21 @@ void DimerGenerator::generate(const MyMol          *mymol,
         }
         // Loop over orientations
         size_t nmp = maxdimers_*ndist_;
-        mps->resize(nmp);
-        size_t mp_index = 0;
+        // Initiate all the MolProps with a copy of the input molecule
+        MolProp tmp = *mymol;
+        auto exper  = tmp.experiment();
+        // Do some cleaning
+        exper->clear();
+        tmp.clearCategory();
+        // Then initiate the big array
+        coords->resize(nmp);
+        if (logFile)
+        {
+            print_memory_usage(logFile);
+        }
+        // Shortcut to the current molecules
+        // MolProp *mp = &((*mps)[mp_index++]);
+        // exper = mp->experiment();
         for(int ndim = 0; ndim < maxdimers_; ndim++)
         {
             // Copy the coordinates and rotate them
@@ -501,28 +516,25 @@ void DimerGenerator::generate(const MyMol          *mymol,
                 {
                     rvec_inc(xrand[1][j], trans);
                 }
-                MolProp mp = *mymol;
-                auto exper = mp.experiment();
-                exper->clear();
-                Experiment newexp("alexandria", "b2", "ff", "Spoel2023a", "unknown", "none", JobType::SP);
+                size_t idim = ndim*ndist_+idist;
+                (*coords)[idim].resize(atomStart[2]-atomStart[0]);
                 for(int m = 0; m < 2; m++)
                 {
                     for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
                     {
                         auto jindex = j - atomStart[m];
-                        CalcAtom ca(atoms[jindex].name().c_str(), atoms[jindex].ffType().c_str(), j);
-                        ca.setCoords(xrand[m][jindex][XX], xrand[m][jindex][YY], xrand[m][jindex][ZZ]);
-                        ca.AddCharge(qType::ACM, atoms[jindex].charge());
-                        newexp.AddAtom(ca);
+                        copy_rvec(xrand[m][jindex], (*coords)[idim][j]);
                     }
                 }
-                exper->push_back(newexp);
-                (*mps)[mp_index++] = mp;
                 // Put the coordinates back!
                 for(size_t j = 0; j < atoms.size(); j++)
                 {
                     rvec_dec(xrand[1][j], trans);
                 }
+            }
+            if (logFile)
+            {
+                print_memory_usage(logFile);
             }
         }
     }
@@ -535,13 +547,18 @@ void ReRunner::rerun(FILE                        *logFile,
                      bool                         verbose,
                      const std::vector<t_filenm> &fnm)
 {
-    std::vector<MolProp> mps;
+    std::vector<std::vector<gmx::RVec> > dimers;
     std::string          method, basis;
     int                  maxpot = 100;
     int                  nsymm  = 1;
     const char          *molnm  = "";
+    if (verbose)
+    {
+        print_memory_usage(logFile);
+    }
     if (trajname_ && strlen(trajname_) > 0)
     {
+        std::vector<MolProp> mps;
         // Read compounds
         if (!readBabel(trajname_, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", &qtot, false))
@@ -554,16 +571,26 @@ void ReRunner::rerun(FILE                        *logFile,
             fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
                     mps.size(), trajname_);
         }
+        dimers.resize(mps.size());
+        for(size_t i = 0; i < mps.size(); i++)
+        {
+            auto exper = mps[i].experimentConst();
+            dimers[i] = exper[0].getCoordinates();
+        }
     }
     else
     {
         // Generate compounds
-        gendimers_->generate(mymol, &mps);
+        gendimers_->generate(verbose ? logFile : nullptr, mymol, &dimers);
         if (logFile)
         {
             fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
-                    mps.size(), gendimers_->ndist());
+                    dimers.size(), gendimers_->ndist());
         }
+    }
+    if (verbose)
+    {
+        print_memory_usage(logFile);
     }
     std::map<InteractionType, double> energies;
     int mp_index = 0;
@@ -575,168 +602,170 @@ void ReRunner::rerun(FILE                        *logFile,
     {
         for(int kk = 0; kk < 2; kk++)
         {
-            torqueMol[kk].resize(mps.size());
+            torqueMol[kk].resize(dimers.size());
         }
-        force1.resize(mps.size());
+        force1.resize(dimers.size());
+    }
+    if (verbose)
+    {
+        print_memory_usage(logFile);
     }
     gmx::RVec inertia[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
     // Loop over molecules
-    for (auto mp : mps)
+    const auto &atoms = mymol->atomsConst();
+    for (size_t idim = 0; idim < dimers.size(); idim++)
     {
-        auto exper = mp.experimentConst();
-        if (exper.size() == 1)
+        std::vector<gmx::RVec> coords;
+        if (dimers[idim].size() == atoms.size())
         {
-            auto expx = exper[0].getCoordinates();
-            std::vector<gmx::RVec> coords;
-            const auto &atoms = mymol->atomsConst();
-            if (expx.size() == atoms.size())
+            // Assume there are shells in the input
+            coords = dimers[idim];
+        }
+        else
+        {
+            size_t index = 0;
+            for(size_t i = 0; i < atoms.size(); i++)
             {
-                // Assume there are shells in the input
-                coords = expx;
-            }
-            else
-            {
-                size_t index = 0;
-                for(size_t i = 0; i < atoms.size(); i++)
+                if (index < dimers[idim].size())
                 {
-                    if (index <= expx.size())
-                    {
-                        gmx::RVec xnm;
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            xnm[m] = expx[index][m];
-                        }
-                        coords.push_back(xnm);
-                    }
-                    else
-                    {
-                        GMX_THROW(gmx::InvalidInputError("Number of coordinates in trajectory does not match input file"));
-                    }
-                    if (atoms[i].pType() == eptAtom)
-                    {
-                        index++;
-                    }
+                    coords.push_back(dimers[idim][index]);
                 }
-            }
-            std::vector<gmx::RVec> forces(coords.size());
-            if (verbose)
-            {
-                fprintf(logFile, "%5d", mp_index);
-            }
-            if (eInter_)
-            {
-                auto EE         = mymol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
-                auto atomStart  = mymol->fragmentHandler()->atomStart();
-                if (atomStart.size() != 3)
+                else
                 {
-                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
+                    GMX_THROW(gmx::InvalidInputError("Number of generated coordinates in trajectory does not match molecule file"));
                 }
-                gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
-                gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-                double    mtot[2] = { 0, 0 };
-                auto      tops  = mymol->fragmentHandler()->topologies();
-                for(int kk = 0; kk < 2; kk++)
+                if (atoms[i].pType() == eptAtom)
                 {
-                    auto atoms = tops[kk].atoms();
-                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
-                    {
-                        gmx::RVec mr1;
-                        auto      mi = atoms[i-atomStart[kk]].mass();
-                        svmul(mi, coords[i], mr1);
-                        mtot[kk] += mi;
-                        // Compute center of mass of compound kk
-                        rvec_inc(com[kk], mr1);
-                        // Compute total force on compound kk
-                        rvec_inc(f[kk], forces[i]);
-                    }
-                    GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
-                    for(size_t m = 0; m < DIM; m++)
-                    {
-                        // Normalize
-                        com[kk][m] /= mtot[kk];
-                    }
+                    index++;
                 }
-                copy_rvec(f[0], force1[mp_index]);
-                gmx::RVec torque[2]     = { { 0, 0, 0 }, { 0, 0, 0 } };
-                gmx::RVec torqueRot[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-                for(int kk = 0; kk < 2; kk++)
-                {
-                    // Compute the coordinates relative to the center of mass
-                    std::vector<real>      mass;
-                    std::vector<int>       index;
-                    std::vector<gmx::RVec> x_com;
-                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
-                    {
-                        // Store atom index relative to molecule start
-                        index.push_back(i-atomStart[kk]);
-                        // Store mass
-                        mass.push_back(atoms[i].mass());
-                        // Subtract COM and store
-                        gmx::RVec ri;
-                        rvec_sub(coords[i], com[0], ri);
-                        x_com.push_back(ri);
-                    }
-                    // Compute moments of inertia and transformation matrix
-                    rvec   inertia1;
-                    matrix trans;
-                    principal_comp(index.size(), index.data(), mass.data(), 
-                                   as_rvec_array(x_com.data()),
-                                   trans, inertia1);
-                    // Move to inertial frame (only well-defined for
-                    // rigid molecules).
-                    // The trans matrix should convert that coordinate to the inertial frame,
-                    // but what about the force on the atoms? It likely has to be rotated in the
-                    // same manner. After that, the torque can be computed.
-                    // Before doing the rotations, the sum of the torque vectors is zero.
-                    // Since the rotations are different for both molecules, this does not
-                    // hold after the rotations are done.
-                    // TODO: write out the math.
-                    for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
-                    {
-                        gmx::RVec ri, fi, ti;
-                        cprod(x_com[i-atomStart[kk]], forces[i], ti);
-                        rvec_inc(torque[kk], ti);
-                        // Rotate coordinates
-                        mvmul(trans, x_com[i-atomStart[kk]], ri);
-                        // Rotate force vector
-                        mvmul(trans, forces[i], fi);
-                        // Compute torque on this atom
-                        cprod(ri, fi, ti);
-                        // Update total torque
-                        rvec_inc(torqueRot[kk], ti);
-                    }
-                    rvec_inc(inertia[kk], inertia1);
-                    torqueMol[kk][mp_index] = torqueRot[kk];
-                }
-                gmx::RVec dcom;
-                rvec_sub(com[0], com[1], dcom);
-                double rcom = norm(dcom);
-                if (verbose)
-                {
-                    fprintf(logFile, " r %g Einter %g Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
-                            rcom, EE, f[0][XX], f[0][YY], f[0][ZZ],
-                            torque[0][XX], torque[0][YY], torque[0][ZZ],
-                            torque[1][XX], torque[1][YY], torque[1][ZZ],
-                            torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
-                            torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
-                }
-                edist.add_point(rcom, EE, 0, 0);
-            }
-            else
-            {
-                forceComp_->compute(pd, mymol->topology(),
-                                    &coords, &forces, &energies);
-                for(const auto &ee : energies)
-                {
-                    fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
-                }
-            }
-            if (verbose)
-            {
-                fprintf(logFile, "\n");
             }
         }
-        mp_index += 1;
+        std::vector<gmx::RVec> forces(coords.size());
+        if (verbose)
+        {
+            fprintf(logFile, "%5d", mp_index);
+        }
+        if (eInter_)
+        {
+            auto EE         = mymol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
+            auto atomStart  = mymol->fragmentHandler()->atomStart();
+            if (atomStart.size() != 3)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
+            }
+            gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
+            gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+            double    mtot[2] = { 0, 0 };
+            auto      tops  = mymol->fragmentHandler()->topologies();
+            for(int kk = 0; kk < 2; kk++)
+            {
+                auto atoms = tops[kk].atoms();
+                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                {
+                    gmx::RVec mr1;
+                    auto      mi = atoms[i-atomStart[kk]].mass();
+                    svmul(mi, coords[i], mr1);
+                    mtot[kk] += mi;
+                    // Compute center of mass of compound kk
+                    rvec_inc(com[kk], mr1);
+                    // Compute total force on compound kk
+                    rvec_inc(f[kk], forces[i]);
+                }
+                GMX_RELEASE_ASSERT(mtot[kk] > 0, "Zero mass");
+                for(size_t m = 0; m < DIM; m++)
+                {
+                    // Normalize
+                        com[kk][m] /= mtot[kk];
+                }
+            }
+            copy_rvec(f[0], force1[mp_index]);
+            gmx::RVec torque[2]     = { { 0, 0, 0 }, { 0, 0, 0 } };
+            gmx::RVec torqueRot[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+            for(int kk = 0; kk < 2; kk++)
+            {
+                // Compute the coordinates relative to the center of mass
+                std::vector<real>      mass;
+                std::vector<int>       index;
+                std::vector<gmx::RVec> x_com;
+                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                {
+                    // Store atom index relative to molecule start
+                    index.push_back(i-atomStart[kk]);
+                    // Store mass
+                    mass.push_back(atoms[i].mass());
+                    // Subtract COM and store
+                    gmx::RVec ri;
+                    rvec_sub(coords[i], com[0], ri);
+                    x_com.push_back(ri);
+                }
+                // Compute moments of inertia and transformation matrix
+                rvec   inertia1;
+                matrix trans;
+                principal_comp(index.size(), index.data(), mass.data(), 
+                               as_rvec_array(x_com.data()),
+                               trans, inertia1);
+                // Move to inertial frame (only well-defined for
+                // rigid molecules).
+                // The trans matrix should convert that coordinate to the inertial frame,
+                // but what about the force on the atoms? It likely has to be rotated in the
+                // same manner. After that, the torque can be computed.
+                // Before doing the rotations, the sum of the torque vectors is zero.
+                // Since the rotations are different for both molecules, this does not
+                // hold after the rotations are done.
+                // TODO: write out the math.
+                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                {
+                    gmx::RVec ri, fi, ti;
+                    cprod(x_com[i-atomStart[kk]], forces[i], ti);
+                    rvec_inc(torque[kk], ti);
+                    // Rotate coordinates
+                    mvmul(trans, x_com[i-atomStart[kk]], ri);
+                    // Rotate force vector
+                    mvmul(trans, forces[i], fi);
+                    // Compute torque on this atom
+                    cprod(ri, fi, ti);
+                    // Update total torque
+                    rvec_inc(torqueRot[kk], ti);
+                }
+                rvec_inc(inertia[kk], inertia1);
+                torqueMol[kk][mp_index] = torqueRot[kk];
+            }
+            if (verbose)
+            {
+                print_memory_usage(logFile);
+            }
+            gmx::RVec dcom;
+            rvec_sub(com[0], com[1], dcom);
+            double rcom = norm(dcom);
+            if (verbose)
+            {
+                fprintf(logFile, " r %g Einter %g Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
+                        rcom, EE, f[0][XX], f[0][YY], f[0][ZZ],
+                        torque[0][XX], torque[0][YY], torque[0][ZZ],
+                        torque[1][XX], torque[1][YY], torque[1][ZZ],
+                        torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
+                        torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
+            }
+            edist.add_point(rcom, EE, 0, 0);
+        }
+        else
+        {
+            forceComp_->compute(pd, mymol->topology(),
+                                &coords, &forces, &energies);
+            for(const auto &ee : energies)
+            {
+                fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+            }
+        }
+        if (verbose)
+        {
+            fprintf(logFile, "\n");
+        }
+        mp_index++;
+    }
+    if (verbose)
+    {
+        print_memory_usage(logFile);
     }
     if (eInter_)
     {
@@ -753,6 +782,7 @@ void ReRunner::rerun(FILE                        *logFile,
         double mm = m0*m1/(m0+m1);
         computeB2(logFile, edist, mm, inertia, force1, torqueMol, fnm);
     }
+    print_memory_usage(stdout);
 }
 
 int b2(int argc, char *argv[])
