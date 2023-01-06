@@ -365,7 +365,7 @@ private:
     std::mt19937                           gen_;
     std::uniform_real_distribution<double> dis_;
 public:
-    Rotator(int seed) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, M_PI))
+    Rotator(int seed) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0))
     {
         if (seed > 0)
         {
@@ -376,9 +376,9 @@ public:
     void random(std::vector<gmx::RVec> *coords)
     {
         // Distribution is 0-M_PI, multiply by two to get to 2*M_PI
-        double alpha = dis_(gen_) * 2;
-        double beta  = dis_(gen_) * 2; 
-        double gamma = dis_(gen_);
+        double alpha = dis_(gen_) * 2 * M_PI;
+        double beta  = dis_(gen_) * 2 * M_PI; 
+        double gamma = std::acos(2*dis_(gen_)-1);
         double cosa  = std::cos(alpha);
         double sina  = std::sin(alpha);
         double cosb  = std::cos(beta);
@@ -409,7 +409,8 @@ public:
     }
 };
 
-void DimerGenerator::addOptions(std::vector<t_pargs> *pa)
+void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
+                                std::vector<t_filenm> *fnm)
 {
     std::vector<t_pargs> mypa = {
         { "-maxdimer", FALSE, etINT, {&maxdimers_},
@@ -427,11 +428,19 @@ void DimerGenerator::addOptions(std::vector<t_pargs> *pa)
     {
         pa->push_back(pp);
     }
+    std::vector<t_filenm>  myfnm = {
+        { efSTX, "-ox", "dimers",     ffOPTWR  }
+    };
+    for(auto &ff : myfnm)
+    {
+        fnm->push_back(ff);
+    }
 }
     
 void DimerGenerator::generate(FILE                                *logFile,
                               const MyMol                         *mymol,
-                              std::vector<std::vector<gmx::RVec>> *coords)
+                              std::vector<std::vector<gmx::RVec>> *coords,
+                              const char                          *outcoords)
 {
     auto fragptr = mymol->fragmentHandler();
     if (fragptr->topologies().size() == 2)
@@ -581,7 +590,7 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Generate compounds
-        gendimers_->generate(verbose ? logFile : nullptr, mymol, &dimers);
+        gendimers_->generate(verbose ? logFile : nullptr, mymol, &dimers, nullptr);
         if (logFile)
         {
             fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
@@ -826,7 +835,7 @@ int b2(int argc, char *argv[])
           "Print part of the output in json format." }
     };
     DimerGenerator gendimers;
-    gendimers.addOptions(&pa);
+    gendimers.addOptions(&pa, &fnm);
     ReRunner       rerun;
     rerun.addOptions(&pa, &fnm);
     int status = 0;

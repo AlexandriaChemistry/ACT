@@ -82,21 +82,26 @@ public:
     DimerGenerator() {}
     
     /*! \brief Add my options
-     * \param[inout] pa The command line options
+     * \param[inout] pa  The command line options
+     * \param[inout] fnm File names for the command line
      */
-    void addOptions(std::vector<t_pargs> *pa);
+    void addOptions(std::vector<t_pargs>  *pa,
+                    std::vector<t_filenm> *fnm);
     
     //! Return the number of distancea
     int ndist() const { return ndist_; }
     
     /*! \brief Do the actual generation
-     * \param[in]  logFile For debugging info, may be a nullptr
-     * \param[in]  mymol   The description of the two fragments
-     * \param[out] coords  The coordinate sets
+     * \param[in]  logFile   For debugging info, may be a nullptr
+     * \param[in]  mymol     The description of the two fragments
+     * \param[out] coords    The coordinate sets
+     * \param[in]  outcoords Output file name for the generated coordinates.
+     *                       If nullptr, they will not be written.
      */
     void generate(FILE                                *logFile,
                   const MyMol                         *mymol,
-                  std::vector<std::vector<gmx::RVec>> *coords);
+                  std::vector<std::vector<gmx::RVec>> *coords,
+                  const char                          *outcoords);
 };
 
 class ReRunner
