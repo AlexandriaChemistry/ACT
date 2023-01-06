@@ -164,12 +164,17 @@ public:
     /*! \brief Add command line options
      * \param[inout] pargs  Regular flags
      * \param[inout] filenm File options
+     * \param[in]    b2code Is this the b2 program calling?
      */
     void addOptions(std::vector<t_pargs>  *pargs,
-                    std::vector<t_filenm> *filenm);
+                    std::vector<t_filenm> *filenm,
+                    bool                   b2code = false);
     
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }
+
+    //! \return the trajectory name
+    const char *trajectoryFileName() const { return trajname_; }
     
     //! \brief Manually set the temperatures
     void setTemperatures(double T1, double T2, double deltaT) { T1_ = T1; T2_ = T2; deltaT_ = deltaT; }

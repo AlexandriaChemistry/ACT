@@ -113,7 +113,8 @@ double sphereIntegrator(double r1, double r2, double val1, double val2)
 }
 
 void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
-                          std::vector<t_filenm> *filenm)
+                          std::vector<t_filenm> *filenm,
+                          bool                   b2code)
 {
     std::vector<t_pargs> pa = {
         { "-traj",   FALSE, etSTR,  {&trajname_},
@@ -125,17 +126,22 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
         { "-dT",     FALSE, etREAL, {&deltaT_},
           "Temperature increment for calculation of second virial." }
     };
-    for(const auto &p : pa)
+    pargs->push_back(pa[0]);
+    if (b2code)
     {
-        pargs->push_back(p);
-    }
-    std::vector<t_filenm> fnm = {
-        { efXVG, "-eh", "mayer",      ffOPTWR },
-        { efXVG, "-b2", "B2T",        ffOPTWR }
-    };
-    for(const auto &fn : fnm)
-    {
-        filenm->push_back(fn);
+        for(size_t i = 1; i < pa.size(); i++)
+        {
+            pargs->push_back(pa[i]);
+        }
+    
+        std::vector<t_filenm> fnm = {
+            { efXVG, "-eh", "mayer",      ffOPTWR },
+            { efXVG, "-b2", "B2T",        ffOPTWR }
+        };
+        for(const auto &fn : fnm)
+        {
+            filenm->push_back(fn);
+        }
     }
 }
 
@@ -837,7 +843,7 @@ int b2(int argc, char *argv[])
     DimerGenerator gendimers;
     gendimers.addOptions(&pa, &fnm);
     ReRunner       rerun;
-    rerun.addOptions(&pa, &fnm);
+    rerun.addOptions(&pa, &fnm, true);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
