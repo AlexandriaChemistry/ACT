@@ -1,12 +1,36 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Sequence Name="B2(T)">
+  <Sequence Name="B2(Total)">
     <Int Name="Length">5</Int>
-    <Real>-250.7545452160266</Real>
-    <Real>-204.3518073720555</Real>
-    <Real>-170.56582753672205</Real>
-    <Real>-144.90906983394436</Real>
-    <Real>-125.14536422872135</Real>
+    <Real>-248.51378169930211</Real>
+    <Real>-202.64026085573903</Real>
+    <Real>-169.19068036721694</Real>
+    <Real>-143.76435829396067</Real>
+    <Real>-124.16506925834396</Real>
+  </Sequence>
+  <Sequence Name="B2(Classical)">
+    <Int Name="Length">5</Int>
+    <Real>-250.53402900861752</Real>
+    <Real>-204.0846237527762</Real>
+    <Real>-170.2793851773788</Real>
+    <Real>-144.61840329987251</Real>
+    <Real>-124.85888673378155</Real>
+  </Sequence>
+  <Sequence Name="B2(Force)">
+    <Int Name="Length">5</Int>
+    <Real>2.0202473093153928</Real>
+    <Real>1.4443628970371454</Real>
+    <Real>1.0887048101618382</Real>
+    <Real>0.8540450059118424</Real>
+    <Real>0.69381747543758332</Real>
+  </Sequence>
+  <Sequence Name="B2(Torque)">
+    <Int Name="Length">5</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
   </Sequence>
 </ReferenceData>

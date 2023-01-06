@@ -128,6 +128,12 @@ private:
     std::vector<double> Temperatures_;
     //! Second virial as a function of T (see function temperatures)
     std::vector<double> b2t_;
+    //! Classical component of the second virial as a function of T
+    std::vector<double> b2tClassical_;
+    //! QM component of the second virial due to force as a function of T
+    std::vector<double> b2tForce_;
+    //! QM component of the second virial due to torque as a function of T
+    std::vector<double> b2tTorque_;
 
     //! Generate temperature series if needed and return it
     const std::vector<double> &temperatures();
@@ -209,20 +215,29 @@ public:
      * \param[in] logFile   Output file for printing
      * \param[in] edist     Statistics for interaction energies
      * \param[in] inertia   The moments of inertia of the molecules
-     * \param[in] force1    The interaction forces on molecule 1
+     * \param[in] force     The interaction forces on both molecules
      * \param[in] torqueMol The torque on both molecules
      * \param[in] fnm       The filenames
      */
     void computeB2(FILE                                      *logFile,
                    gmx_stats                                  edist,
-                   double                                     mass,
-                   const gmx::RVec                            inertia[2],
-                   const std::vector<gmx::RVec>              &force1,
+                   const std::vector<double>                 &mass,
+                   const std::vector<gmx::RVec>              &inertia,
+                   const std::vector<std::vector<gmx::RVec>> &force,
                    const std::vector<std::vector<gmx::RVec>> &torqueMol,
                    const std::vector<t_filenm>               &fnm);
-                   
+
     //! \return the second virial as a function of T.
     const std::vector<double> &b2Temp() const { return b2t_; }
+
+    //! \return the second virial as a function of T.
+    const std::vector<double> &b2Classical() const { return b2tClassical_; }
+
+    //! \return the second virial as a function of T.
+    const std::vector<double> &b2Force() const { return b2tForce_; }
+
+    //! \return the second virial as a function of T.
+    const std::vector<double> &b2Torque() const { return b2tTorque_; }
 
 };
 

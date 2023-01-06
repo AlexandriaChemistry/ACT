@@ -212,18 +212,23 @@ void ReRunner::plotB2temp(const char *b2file)
     }
     FILE *b2p = xvgropen(b2file, "Second virial coefficient",
                          "Temperature (K)", "B2(T) cm^3/mol", oenv_);
+    std::vector<std::string> legend = {
+        "Total", "Classical", "Force", "Torque"
+    };
+    xvgrLegend(b2p, legend, oenv_);
     for(size_t ii = 0; ii < T.size(); ii++)
     {
-        fprintf(b2p, "%10g  %10g\n", T[ii], b2t_[ii]);
+        fprintf(b2p, "%10g  %10g  %10g  %10g  %10g\n", T[ii], b2t_[ii],
+                b2tClassical_[ii], b2tForce_[ii], b2tTorque_[ii]);
     }
     xvgrclose(b2p);
 }
 
 void ReRunner::computeB2(FILE                                      *logFile,
                          gmx_stats                                  edist,
-                         double                                     mass,
-                         const gmx::RVec                            inertia[2],
-                         const std::vector<gmx::RVec>              &force1,
+                         const std::vector<double>                 &mass,
+                         const std::vector<gmx::RVec>              &inertia,
+                         const std::vector<std::vector<gmx::RVec>> &forceMol,
                          const std::vector<std::vector<gmx::RVec>> &torqueMol,
                          const std::vector<t_filenm>               &fnm)
 {
@@ -253,10 +258,11 @@ void ReRunner::computeB2(FILE                                      *logFile,
             }
             // Temporary arrays for weighted properties.
             std::vector<double>    exp_U12(nbins, 0.0);
-            std::vector<double>    exp_F2(nbins, 0.0);
+            std::vector<double>    exp_F2[2];
             std::vector<gmx::RVec> exp_tau[2];
             for(int kk = 0; kk < 2; kk++)
             {
+                exp_F2[kk].resize(nbins, 0);
                 exp_tau[kk].resize(nbins, { 0.0, 0.0, 0.0 });
             }
             std::vector<int>       n_U12(nbins, 0);
@@ -269,13 +275,13 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 double g0_12 = std::exp(-y[ii]*beta);
                 // Gray and Gubbins Eqn. 3.272
                 exp_U12[index] += g0_12-1;
-                // Gray and Gubbins Eqn. 3.281
-                exp_F2[index]  += g0_12*iprod(force1[ii], force1[ii]);
-                for(int m = 0; m < DIM; m++)
+                for(int kk = 0; kk < 2; kk++)
                 {
-                    // Gray and Gubbins Eqn. 3.282
-                    for(int kk = 0; kk < 2; kk++)
+                    // Gray and Gubbins Eqn. 3.281
+                    exp_F2[kk][index] += g0_12*iprod(forceMol[kk][ii], forceMol[kk][ii]);
+                    for(int m = 0; m < DIM; m++)
                     {
+                        // Gray and Gubbins Eqn. 3.282
                         exp_tau[kk][index][m] += g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
                     }
                 }
@@ -296,10 +302,10 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 jj += 1;
             }
             // Starting force
-            double    Fprev     =  0;
+            double    Fprev[2] =  { 0, 0 };
             // Starting torque
-            gmx::RVec Tprev[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            double hbarfac      = beta*gmx::square(PLANCK*beta/(2*M_PI))/24;
+            gmx::RVec Tprev[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+            double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
             if (iTemp == 1)
             {
                 // Store distance first time around only
@@ -319,18 +325,18 @@ void ReRunner::computeB2(FILE                                      *logFile,
                     }
                     mayer[iTemp].push_back(Unew);
                     auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
-                    // TODO: There is factor 0.5 here, but results are off by a factor two.
+                    // TODO: There is factor 0.5 here
                     Bclass       -= 0.5*dB;
                     Uprev         = Unew;
-                    // Weighted square force
-                    // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
-                    double Fnew   = 0.5*exp_F2[ii]/(mass*n_U12[ii]);
-                    BqmForce     += hbarfac*sphereIntegrator(r1, r2, Fprev, Fnew);
-                    Fprev         = Fnew;
-                    // Contributions from torque
-                    for(int m = 0; m < DIM; m++)
+                    for(int kk = 0; kk < 2; kk++)
                     {
-                        for(int kk = 0; kk < 2; kk++)
+                        // Weighted square force
+                        // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
+                        double Fnew  = exp_F2[kk][ii]/(mass[kk]*n_U12[ii]);
+                        BqmForce    += 0.5*hbarfac*sphereIntegrator(r1, r2, Fprev[kk], Fnew);
+                        Fprev[kk]    = Fnew;
+                        // Contributions from torque
+                        for(int m = 0; m < DIM; m++)
                         {
                             if (inertia[kk][m] > 0)
                             {
@@ -346,6 +352,9 @@ void ReRunner::computeB2(FILE                                      *logFile,
             // Conversion to regular units cm^3/mol.
             double fac  = AVOGADRO*1e-21;
             double Btot = (Bclass + BqmForce + BqmTorque)*fac;
+            b2tClassical_.push_back(Bclass*fac);
+            b2tForce_.push_back(BqmForce*fac);
+            b2tTorque_.push_back(BqmTorque*fac);
             b2t_.push_back(Btot);
             if (logFile)
             {
@@ -610,22 +619,23 @@ void ReRunner::rerun(FILE                        *logFile,
     std::map<InteractionType, double> energies;
     int mp_index = 0;
     gmx_stats edist;
-    std::vector<gmx::RVec> force1;
+    std::vector<std::vector<gmx::RVec>> forceMol;
     std::vector<std::vector<gmx::RVec>> torqueMol;
+    forceMol.resize(2);
     torqueMol.resize(2);
     if (eInter_)
     {
         for(int kk = 0; kk < 2; kk++)
         {
             torqueMol[kk].resize(dimers.size());
+            forceMol[kk].resize(dimers.size());
         }
-        force1.resize(dimers.size());
     }
     if (verbose)
     {
         print_memory_usage(logFile);
     }
-    gmx::RVec inertia[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
+    std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
     // Loop over molecules
     const auto &atoms = mymol->atomsConst();
     for (size_t idim = 0; idim < dimers.size(); idim++)
@@ -690,10 +700,10 @@ void ReRunner::rerun(FILE                        *logFile,
                 for(size_t m = 0; m < DIM; m++)
                 {
                     // Normalize
-                        com[kk][m] /= mtot[kk];
+                    com[kk][m] /= mtot[kk];
                 }
+                copy_rvec(f[kk], forceMol[kk][mp_index]);
             }
-            copy_rvec(f[0], force1[mp_index]);
             gmx::RVec torque[2]     = { { 0, 0, 0 }, { 0, 0, 0 } };
             gmx::RVec torqueRot[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
             for(int kk = 0; kk < 2; kk++)
@@ -792,10 +802,11 @@ void ReRunner::rerun(FILE                        *logFile,
             }
         }
         // Compute the relative mass
-        double m0 = mymol->fragmentHandler()->topologies()[0].mass();
-        double m1 = mymol->fragmentHandler()->topologies()[1].mass();
-        double mm = m0*m1/(m0+m1);
-        computeB2(logFile, edist, mm, inertia, force1, torqueMol, fnm);
+        std::vector<double> masses = {
+            mymol->fragmentHandler()->topologies()[0].mass(),
+            mymol->fragmentHandler()->topologies()[1].mass()
+        };
+        computeB2(logFile, edist, masses, inertia, forceMol, torqueMol, fnm);
     }
     print_memory_usage(stdout);
 }

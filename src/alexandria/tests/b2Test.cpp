@@ -77,27 +77,30 @@ protected:
         FILE                                *logFile = nullptr;
         gmx_stats                            edist;
         gmx_output_env_t                    *oenv    = nullptr;
-        gmx::RVec                            inertia[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
-        std::vector<gmx::RVec>               force1;
-        std::vector<std::vector<gmx::RVec>>  torque1;
+        std::vector<gmx::RVec>               inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+        std::vector<std::vector<gmx::RVec>>  force(2);
+        std::vector<std::vector<gmx::RVec>>  torque(2);
         
         output_env_init_default(&oenv);
         
-        double x0 = 0.15;
-        for(int i = 0; i < 2581; i++)
+        double x0    = 0.1;
+        double bw    = 0.0001;
+        double rmax  = 10;
+        int    irmax = rmax/bw;
+        for(int i = 0; i < irmax; i++)
         {
             if (LJ)
             {
-                double x = x0 + 0.002*i;
+                double x = x0 + bw*i;
                 double y = 4*eps*(std::pow(sig/x, 12) - std::pow(sig/x, 6));
-                double f = 4*eps*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
+                double f = 4*(eps/sig)*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
                 edist.add_point(x, y, 0, 0);
-                force1.push_back({ 0, 0, f });
-                std::vector<gmx::RVec> ttt;
+                force[0].push_back({ 0, 0, f });
+                force[1].push_back({ 0, 0, -f });
+                gmx::RVec ttt = { 0, 0, 0 };
                 // Torque is needed for two compounds
-                ttt.push_back({ 0, 0, 0 });
-                torque1.push_back(ttt);
-                torque1.push_back(ttt);
+                torque[0].push_back(ttt);
+                torque[1].push_back(ttt);
             }
         }
         if (LJ)
@@ -105,10 +108,16 @@ protected:
             ReRunner rerun;
             std::vector<t_filenm> fnm;
             rerun.setTemperatures(Temperature);
-            rerun.computeB2(logFile, edist,
-                            mass, inertia, force1, torque1, fnm);
+            std::vector<double> m2 = { mass, mass };
+            rerun.computeB2(logFile, edist, m2, inertia, force, torque, fnm);
             auto b2t = rerun.b2Temp();
-            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(T)");
+            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Total)");
+            b2t = rerun.b2Classical();
+            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Classical)");
+            b2t = rerun.b2Force();
+            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Force)");
+            b2t = rerun.b2Torque();
+            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Torque)");
         }
     }
     
