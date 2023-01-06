@@ -100,6 +100,34 @@ TEST_F (SphereIntegratorTest, Exponential)
     test(data, expected);
 }
 
+TEST_F (SphereIntegratorTest, ShiftedHyperbole)
+{
+    std::vector<std::pair<double, double>> data;
+    for(size_t i = 0; i <= 100; i++)
+    {
+        double x = i*0.01;
+        data.push_back({ x, 1.0/(1.0+x) });
+    }
+    // Expected analytical integral (from Mathematica)
+    // 2 Pi (-1 + Log[4])
+    double expected = (std::log(4.0)-1)*2*M_PI;
+    test(data, expected);
+}
+
+TEST_F (SphereIntegratorTest, Cosine)
+{
+    std::vector<std::pair<double, double>> data;
+    for(size_t i = 0; i <= 100; i++)
+    {
+        double x = i*0.01;
+        data.push_back({ x, std::cos(x) });
+    }
+    // Expected analytical integral (from Mathematica)
+    // Pi (8 Cos[1] - 4 Sin[1])
+    double expected = (8*std::cos(1.0)-4*std::sin(1.0))*M_PI;
+    test(data, expected);
+}
+
 // #endif
 
 } // namespace
