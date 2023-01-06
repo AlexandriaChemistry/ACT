@@ -11,6 +11,7 @@ dependencies:
   - NumPy
   - cmake>=3.13
   - fftw>=3.3.10
+  - openssh
   - Eigen>=3.3
   -  LibXml2>=2.9.14
   -  SWIG>=4.0.2
