@@ -226,6 +226,7 @@ void ReRunner::plotB2temp(const char *b2file)
 
 void ReRunner::computeB2(FILE                                      *logFile,
                          gmx_stats                                  edist,
+                         int                                        ndist,
                          const std::vector<double>                 &mass,
                          const std::vector<gmx::RVec>              &inertia,
                          const std::vector<std::vector<gmx::RVec>> &forceMol,
@@ -240,10 +241,14 @@ void ReRunner::computeB2(FILE                                      *logFile,
 
     if (N > 2 && xmax > xmin)
     {
-        real   binwidth = 0.01; // nm
+        // Default bin width
+        double binWidth = 0.0005; // nm
+        if (ndist > 1)
+        {
+            binWidth = (xmax-xmin)/(ndist-1);
+        }
         // Bins start from zero for proper integration
-        size_t nbins    = 1+std::round(xmax/binwidth);
-        binwidth        = xmax/(nbins-1);
+        size_t nbins    = 1+std::round(xmax/binWidth);
         // Temp array to store distance and Mayer functions
         auto Temperature = temperatures();
         std::vector<std::vector<double> > mayer(1+Temperature.size());
@@ -269,7 +274,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
             double beta = 1.0/(BOLTZ*T);
             for(size_t ii = 0; ii < x.size(); ii++)
             {
-                double rindex = x[ii]/binwidth;
+                double rindex = x[ii]/binWidth;
                 size_t index  = rindex;
                 // Gray and Gubbins Eqn. 3.261
                 double g0_12 = std::exp(-y[ii]*beta);
@@ -295,7 +300,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
             // Starting energy, all values until first data entry
             double    Uprev     = -1;
             int jj = 0;
-            while(jj*binwidth < xmin)
+            while(jj*binWidth < xmin)
             {
                 exp_U12[jj] = -1;
                 n_U12[jj]   = 1;
@@ -314,7 +319,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
             mayer[iTemp].push_back(Uprev);
             for(size_t ii = 1; ii < nbins; ii++)
             {
-                double r2 = ii*binwidth;
+                double r2 = ii*binWidth;
                 if (n_U12[ii] > 0)
                 {
                     double Unew = exp_U12[ii]/n_U12[ii];
@@ -575,6 +580,7 @@ void ReRunner::rerun(FILE                        *logFile,
     std::string          method, basis;
     int                  maxpot = 100;
     int                  nsymm  = 1;
+    int                  ndist  = 0;
     const char          *molnm  = "";
     if (verbose)
     {
@@ -611,6 +617,7 @@ void ReRunner::rerun(FILE                        *logFile,
             fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
                     dimers.size(), gendimers_->ndist());
         }
+        ndist = gendimers_->ndist();
     }
     if (verbose)
     {
@@ -806,7 +813,8 @@ void ReRunner::rerun(FILE                        *logFile,
             mymol->fragmentHandler()->topologies()[0].mass(),
             mymol->fragmentHandler()->topologies()[1].mass()
         };
-        computeB2(logFile, edist, masses, inertia, forceMol, torqueMol, fnm);
+        computeB2(logFile, edist, ndist, masses, inertia,
+                  forceMol, torqueMol, fnm);
     }
     print_memory_usage(stdout);
 }

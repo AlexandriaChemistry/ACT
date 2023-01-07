@@ -109,7 +109,8 @@ protected:
             std::vector<t_filenm> fnm;
             rerun.setTemperatures(Temperature);
             std::vector<double> m2 = { mass, mass };
-            rerun.computeB2(logFile, edist, m2, inertia, force, torque, fnm);
+            rerun.computeB2(logFile, edist, irmax, m2,
+                            inertia, force, torque, fnm);
             auto b2t = rerun.b2Temp();
             checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Total)");
             b2t = rerun.b2Classical();

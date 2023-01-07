@@ -70,11 +70,11 @@ private:
     //! Number of dimers to generate
     int maxdimers_ = 1000;
     //! Number of distances to use
-    int ndist_      = 20;
-    //! Minimum com-com distance
-    double mindist_ = 0.2;
-    //! Maximum com-com distance
-    double maxdist_ = 2.0;
+    int ndist_      = 200;
+    //! Minimum com-com distance (nm)
+    double mindist_ = 0.1;
+    //! Maximum com-com distance (nm)
+    double maxdist_ = 4.0;
     //! Random number seed
     int    seed_    = 1993;    
 public:
@@ -214,6 +214,7 @@ public:
     /*! \brief Compute the second virial coefficient including QM corrections
      * \param[in] logFile   Output file for printing
      * \param[in] edist     Statistics for interaction energies
+     * \param[in] ndist     Number of distinct distances or 0 when unknown
      * \param[in] inertia   The moments of inertia of the molecules
      * \param[in] force     The interaction forces on both molecules
      * \param[in] torqueMol The torque on both molecules
@@ -221,6 +222,7 @@ public:
      */
     void computeB2(FILE                                      *logFile,
                    gmx_stats                                  edist,
+                   int                                        ndist,
                    const std::vector<double>                 &mass,
                    const std::vector<gmx::RVec>              &inertia,
                    const std::vector<std::vector<gmx::RVec>> &force,
