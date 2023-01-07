@@ -31,14 +31,16 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ACT_SIMULATE_H
-#define ACT_SIMULATE_H
+#ifndef ACT_SECONDVIRIAL_H
+#define ACT_SECONDVIRIAL_H
 
+#include <random>
 #include <vector>
 
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
+#include "alexandria/b2utils.h"
 #include "alexandria/mymol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -64,66 +66,28 @@ void forceFieldSummary(JsonTree      *jtree,
  */
 double sphereIntegrator(double r1, double r2, double val1, double val2);
 
-class DimerGenerator
-{
-private:
-    //! Number of dimers to generate
-    int maxdimers_ = 1000;
-    //! Number of distances to use
-    int ndist_      = 200;
-    //! Minimum com-com distance (nm)
-    double mindist_ = 0.1;
-    //! Maximum com-com distance (nm)
-    double maxdist_ = 4.0;
-    //! Random number seed
-    int    seed_    = 1993;    
-public:
-    //! Constructor
-    DimerGenerator() {}
-    
-    /*! \brief Add my options
-     * \param[inout] pa  The command line options
-     * \param[inout] fnm File names for the command line
-     */
-    void addOptions(std::vector<t_pargs>  *pa,
-                    std::vector<t_filenm> *fnm);
-    
-    //! Return the number of distancea
-    int ndist() const { return ndist_; }
-    
-    /*! \brief Do the actual generation
-     * \param[in]  logFile   For debugging info, may be a nullptr
-     * \param[in]  mymol     The description of the two fragments
-     * \param[out] coords    The coordinate sets
-     * \param[in]  outcoords Output file name for the generated coordinates.
-     *                       If nullptr, they will not be written.
-     */
-    void generate(FILE                                *logFile,
-                  const MyMol                         *mymol,
-                  std::vector<std::vector<gmx::RVec>> *coords,
-                  const char                          *outcoords);
-};
-
 class ReRunner
 {
 private:
     //! The force computer
-    ForceComputer      *forceComp_ = nullptr;
+    ForceComputer      *forceComp_  = nullptr;
     //! The dimer generator
-    DimerGenerator     *gendimers_ = nullptr;
+    DimerGenerator     *gendimers_  = nullptr;
     //! GROMACS output stuff
-    gmx_output_env_t   *oenv_      = nullptr;
+    gmx_output_env_t   *oenv_       = nullptr;
                
     //! Trajectory name
-    const char         *trajname_  = "";
+    const char         *trajname_   = "";
     //! Temperature to start
-    double              T1_        = 300;
+    double              T1_         = 300;
     //! Final temperature
-    double              T2_        = 400;
+    double              T2_         = 400;
     //! Temperature step
-    double              deltaT_    = 10;
+    double              deltaT_     = 10;
+    //! Number of bootstraps
+    int                 nbootStrap_ = 1;
     //! Whether to compute interaction energies and potentially B2
-    bool                eInter_    = true;
+    bool                eInter_     = true;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T (see function temperatures)
@@ -245,4 +209,4 @@ public:
 
 } // namespace alexandria
 
-#endif // ACT_SIMULATE_H
+#endif // ACT_SECONDVIRIAL_H

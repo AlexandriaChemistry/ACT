@@ -32,8 +32,6 @@
  */
 #include "secondvirial.h"
 
-#include <random>
-
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -124,7 +122,9 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
         { "-T2",     FALSE, etREAL, {&T2_},
           "Starting temperature for second virial calculations." },
         { "-dT",     FALSE, etREAL, {&deltaT_},
-          "Temperature increment for calculation of second virial." }
+          "Temperature increment for calculation of second virial." },
+        { "-nbootstrap", FALSE, etINT, {&nbootStrap_},
+          "Number of times to iterate B2 calculation based on the same dimer orientations and energies" }
     };
     pargs->push_back(pa[0]);
     if (b2code)
@@ -242,7 +242,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
     if (N > 2 && xmax > xmin)
     {
         // Default bin width
-        double binWidth = 0.0005; // nm
+        double binWidth = 0.0025; // nm
         if (ndist > 1)
         {
             binWidth = (xmax-xmin)/(ndist-1);
@@ -292,9 +292,9 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 }
                 n_U12[index]   += 1;
             }
-            double    Bclass    =  0;
-            double    BqmForce  =  0;
-            double    BqmTorque =  0;
+            double    Bclass       =  0;
+            double    BqmForce     =  0;
+            double    BqmTorque[2] =  { 0, 0 };
             // We start in the origin even if there is no data.
             double    r1        =  0;
             // Starting energy, all values until first data entry
@@ -345,9 +345,9 @@ void ReRunner::computeB2(FILE                                      *logFile,
                         {
                             if (inertia[kk][m] > 0)
                             {
-                                double Tnew  = exp_tau[kk][ii][m]/(n_U12[ii]*inertia[kk][m]);
-                                BqmTorque   += 0.5*hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
-                                Tprev[kk][m] = Tnew;
+                                double Tnew    = exp_tau[kk][ii][m]/(n_U12[ii]*inertia[kk][m]);
+                                BqmTorque[kk] += hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
+                                Tprev[kk][m]   = Tnew;
                             }
                         }
                     }
@@ -356,15 +356,16 @@ void ReRunner::computeB2(FILE                                      *logFile,
             }
             // Conversion to regular units cm^3/mol.
             double fac  = AVOGADRO*1e-21;
-            double Btot = (Bclass + BqmForce + BqmTorque)*fac;
+            double bqt  = (BqmTorque[0]+BqmTorque[1])*0.5;
+            double Btot = (Bclass + BqmForce + bqt)*fac;
             b2tClassical_.push_back(Bclass*fac);
             b2tForce_.push_back(BqmForce*fac);
-            b2tTorque_.push_back(BqmTorque*fac);
+            b2tTorque_.push_back(bqt*fac);
             b2t_.push_back(Btot);
             if (logFile)
             {
-                fprintf(logFile, "T = %g K. Classical second virial coefficient B2cl %g BqmForce %g BqmTorque %g Total %g cm^3/mol\n", T,
-                        Bclass*fac, BqmForce*fac, BqmTorque*fac, Btot);
+                fprintf(logFile, "T = %g K. B2cl %g BqmForce %g BqmTorque %g %g Total %g cm^3/mol\n", T,
+                        Bclass*fac, BqmForce*fac, BqmTorque[0]*fac, BqmTorque[1]*fac, Btot);
             }
             iTemp += 1;
         }
@@ -374,197 +375,6 @@ void ReRunner::computeB2(FILE                                      *logFile,
             plotMayer(opt2fn_null("-eh", fnm.size(), fnm.data()), mayer);
             // Print B2(T) if requested
             plotB2temp(opt2fn("-b2", fnm.size(), fnm.data()));
-        }
-    }
-}
-
-class Rotator
-{
-private:
-    std::random_device                     rd_;
-    std::mt19937                           gen_;
-    std::uniform_real_distribution<double> dis_;
-public:
-    Rotator(int seed) : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0))
-    {
-        if (seed > 0)
-        {
-            gen_.seed(seed);
-        }
-    }
-
-    void random(std::vector<gmx::RVec> *coords)
-    {
-        // Distribution is 0-M_PI, multiply by two to get to 2*M_PI
-        double alpha = dis_(gen_) * 2 * M_PI;
-        double beta  = dis_(gen_) * 2 * M_PI; 
-        double gamma = std::acos(2*dis_(gen_)-1);
-        double cosa  = std::cos(alpha);
-        double sina  = std::sin(alpha);
-        double cosb  = std::cos(beta);
-        double sinb  = std::sin(beta);
-        double cosg  = std::cos(gamma);
-        double sing  = std::sin(gamma);
-        
-        matrix A;
-        A[0][0] = cosb * cosg;
-        A[0][1] =-cosb * sing;
-        A[0][2] = sinb;
-        
-        A[1][0] = sina * sinb * cosg + cosa * sing;
-        A[1][1] =-sina * sinb * sing + cosa * cosg;
-        A[1][2] =-sina * cosb;
-        
-        A[2][0] =-cosa * sinb * cosg + sina * sing;
-        A[2][1] = cosa * sinb * sing + sina * cosg;
-        A[2][2] = cosa * cosb;
-        
-        auto oldX = *coords;
-        for(size_t i = 0; i < oldX.size(); i++)
-        {
-            gmx::RVec newx;
-            mvmul(A, oldX[i], newx);
-            copy_rvec(newx, (*coords)[i]);
-        }
-    }
-};
-
-void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
-                                std::vector<t_filenm> *fnm)
-{
-    std::vector<t_pargs> mypa = {
-        { "-maxdimer", FALSE, etINT, {&maxdimers_},
-          "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
-        { "-ndist", FALSE, etINT, {&ndist_},
-          "Number of distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist." },
-        { "-mindist", FALSE, etREAL, {&mindist_},
-          "Minimum com-com distance to generate dimers for." },
-        { "-maxdist", FALSE, etREAL, {&maxdist_},
-          "Maximum com-com distance to generate dimers for." },
-        { "-seed", FALSE, etINT, {&seed_},
-          "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used." }
-    };
-    for(auto &pp : mypa)
-    {
-        pa->push_back(pp);
-    }
-    std::vector<t_filenm>  myfnm = {
-        { efSTX, "-ox", "dimers",     ffOPTWR  }
-    };
-    for(auto &ff : myfnm)
-    {
-        fnm->push_back(ff);
-    }
-}
-    
-void DimerGenerator::generate(FILE                                *logFile,
-                              const MyMol                         *mymol,
-                              std::vector<std::vector<gmx::RVec>> *coords,
-                              const char                          *outcoords)
-{
-    auto fragptr = mymol->fragmentHandler();
-    if (fragptr->topologies().size() == 2)
-    {
-        // Random number generation
-        Rotator rot(seed_);
-        
-        // Copy original coordinates
-        auto xorig     = mymol->xOriginal();
-        // Split the coordinates into two fragments
-        auto atomStart = fragptr->atomStart();
-        std::vector<gmx::RVec> xmOrig[2];
-        for(int m = 0; m < 2; m++)
-        {
-            for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
-            {
-                xmOrig[m].push_back(xorig[j]);
-            } 
-        }
-        // Topologies
-        auto tops = fragptr->topologies();
-        // Move molecules to their respective COM
-        gmx::RVec com[2];
-        for(int m = 0; m < 2; m++)
-        {
-            // Compute center of mass
-            clear_rvec(com[m]);
-            auto   atoms   = tops[m].atoms();
-            double totmass = 0;
-            for(size_t j = 0; j < atoms.size(); j++)
-            {
-                gmx::RVec mx;
-                svmul(atoms[j].mass(), xmOrig[m][j], mx);
-                rvec_inc(com[m], mx);
-                totmass += atoms[j].mass();
-            }
-            for(int n = 0; n < DIM; n++)
-            {
-                com[m][n] /= totmass;
-            }
-            // Subtract center of mass
-            for(size_t j = 0; j < atoms.size(); j++)
-            {
-                rvec_sub(xmOrig[m][j], com[m], xmOrig[m][j]);
-            }
-        }
-        // Loop over orientations
-        size_t nmp = maxdimers_*ndist_;
-        // Initiate all the MolProps with a copy of the input molecule
-        MolProp tmp = *mymol;
-        auto exper  = tmp.experiment();
-        // Do some cleaning
-        exper->clear();
-        tmp.clearCategory();
-        // Then initiate the big array
-        coords->resize(nmp);
-        if (logFile)
-        {
-            print_memory_usage(logFile);
-        }
-        // Shortcut to the current molecules
-        // MolProp *mp = &((*mps)[mp_index++]);
-        // exper = mp->experiment();
-        for(int ndim = 0; ndim < maxdimers_; ndim++)
-        {
-            // Copy the coordinates and rotate them
-            std::vector<gmx::RVec> xrand[2];
-            for(int m = 0; m < 2; m++)
-            {
-                xrand[m] = xmOrig[m];
-                // Random rotation
-                rot.random(&xrand[m]);
-            }
-            // Loop over distances from mindist to maxdist
-            double range = maxdist_ - mindist_;
-            for(int idist = 0; idist < ndist_; idist++)
-            {
-                double    dist  = mindist_ + range*((1.0*idist)/(ndist_-1));
-                gmx::RVec trans = { 0, 0, dist };
-                auto      atoms = tops[1].atoms();
-                for(size_t j = 0; j < atoms.size(); j++)
-                {
-                    rvec_inc(xrand[1][j], trans);
-                }
-                size_t idim = ndim*ndist_+idist;
-                (*coords)[idim].resize(atomStart[2]-atomStart[0]);
-                for(int m = 0; m < 2; m++)
-                {
-                    for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
-                    {
-                        auto jindex = j - atomStart[m];
-                        copy_rvec(xrand[m][jindex], (*coords)[idim][j]);
-                    }
-                }
-                // Put the coordinates back!
-                for(size_t j = 0; j < atoms.size(); j++)
-                {
-                    rvec_dec(xrand[1][j], trans);
-                }
-            }
-            if (logFile)
-            {
-                print_memory_usage(logFile);
-            }
         }
     }
 }
@@ -588,8 +398,8 @@ void ReRunner::rerun(FILE                        *logFile,
     }
     if (trajname_ && strlen(trajname_) > 0)
     {
+        // Read compounds if we have a trajectory file
         std::vector<MolProp> mps;
-        // Read compounds
         if (!readBabel(trajname_, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", &qtot, false))
         {
@@ -685,17 +495,18 @@ void ReRunner::rerun(FILE                        *logFile,
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
             }
-            gmx::RVec f[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
-            gmx::RVec com[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            double    mtot[2] = { 0, 0 };
+            std::vector<gmx::RVec> f    = { { 0, 0, 0 }, { 0, 0, 0 } };
+            std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
+            std::vector<double>    mtot       = { 0, 0 };
+            std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
+            std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
             auto      tops  = mymol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto atoms = tops[kk].atoms();
                 for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
                 {
                     gmx::RVec mr1;
-                    auto      mi = atoms[i-atomStart[kk]].mass();
+                    auto      mi = atoms[i].mass();
                     svmul(mi, coords[i], mr1);
                     mtot[kk] += mi;
                     // Compute center of mass of compound kk
@@ -710,11 +521,7 @@ void ReRunner::rerun(FILE                        *logFile,
                     com[kk][m] /= mtot[kk];
                 }
                 copy_rvec(f[kk], forceMol[kk][mp_index]);
-            }
-            gmx::RVec torque[2]     = { { 0, 0, 0 }, { 0, 0, 0 } };
-            gmx::RVec torqueRot[2]  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            for(int kk = 0; kk < 2; kk++)
-            {
+
                 // Compute the coordinates relative to the center of mass
                 std::vector<real>      mass;
                 std::vector<int>       index;
@@ -727,15 +534,17 @@ void ReRunner::rerun(FILE                        *logFile,
                     mass.push_back(atoms[i].mass());
                     // Subtract COM and store
                     gmx::RVec ri;
-                    rvec_sub(coords[i], com[0], ri);
+                    rvec_sub(coords[i], com[kk], ri);
                     x_com.push_back(ri);
                 }
                 // Compute moments of inertia and transformation matrix
                 rvec   inertia1;
+                clear_rvec(inertia1);
                 matrix trans;
                 principal_comp(index.size(), index.data(), mass.data(), 
                                as_rvec_array(x_com.data()),
                                trans, inertia1);
+
                 // Move to inertial frame (only well-defined for
                 // rigid molecules).
                 // The trans matrix should convert that coordinate to the inertial frame,
@@ -871,6 +680,8 @@ int b2(int argc, char *argv[])
         status = 1;
         return status;
     }
+    gendimers.finishOptions();
+    
     Poldata        pd;
     try
     {
