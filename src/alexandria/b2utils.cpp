@@ -45,12 +45,23 @@
 namespace alexandria
 {
 
+enum class RotationAlgorithm 
+    { 
+        Cartesian, Polar
+    };
+
+std::map<std::string, RotationAlgorithm> stringToRotationAlgorithm = {
+    { "Cartesian", RotationAlgorithm::Cartesian },
+    { "Polar", RotationAlgorithm::Polar }
+};
+
 class Rotator
 {
 private:
     //! The rotation matrix
-    matrix A_;
-    
+    matrix            A_;
+    //! Rotation algorithm to use
+    RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian; 
     //! \brief Reset the matrix to a unity matrix
     void resetMatrix()
     {
@@ -74,16 +85,10 @@ private:
         return newcoords;
     }
     
-public:
-    Rotator()
-    {
-        resetMatrix();
-    }
-    
-    std::vector<gmx::RVec> random(double                        ralpha,
-                                  double                        rbeta,
-                                  double                        rgamma,
-                                  const std::vector<gmx::RVec> &coords)
+    std::vector<gmx::RVec> cartesian(double                        ralpha,
+                                     double                        rbeta,
+                                     double                        rgamma,
+                                     const std::vector<gmx::RVec> &coords)
     {
         // Distribution is 0-1, multiply by two to get to 2*M_PI
         double alpha = ralpha * 2 * M_PI;
@@ -111,10 +116,10 @@ public:
         return rotate(coords);
     }
     
-    std::vector<gmx::RVec>  random2(double                        rtheta,
-                                    double                        rphi,
-                                    double                        rgamma,
-                                    const std::vector<gmx::RVec> &coords)
+    std::vector<gmx::RVec>  polar(double                        rtheta,
+                                  double                        rphi,
+                                  double                        rgamma,
+                                  const std::vector<gmx::RVec> &coords)
     {
         // Distribution is 0-1, multiply by two to get to 2*M_PI
         double    theta = std::acos(2*rtheta-1);
@@ -147,6 +152,34 @@ public:
         copy_mat(B, A_);
         return rotate(coords);
     }
+    
+public:
+    Rotator(const std::string &rotalg)
+    {
+        resetMatrix();
+        if (stringToRotationAlgorithm.end() != stringToRotationAlgorithm.find(rotalg))
+        {
+            rotalg_ = stringToRotationAlgorithm[rotalg];
+        }
+    }
+    
+    std::vector<gmx::RVec> random(double                        rtheta,
+                                  double                        rphi,
+                                  double                        rgamma,
+                                  const std::vector<gmx::RVec> &coords)
+    {
+        std::vector<gmx::RVec> rx;
+        switch(rotalg_)
+        {
+        case RotationAlgorithm::Cartesian:
+            rx = cartesian(rtheta, rphi, rgamma, coords);
+            break;
+        case RotationAlgorithm::Polar:
+            rx = polar(rtheta, rphi, rgamma, coords);
+            break;
+        }
+        return rx;
+    }
 };
 
 void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
@@ -162,7 +195,9 @@ void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
         { "-maxdist", FALSE, etREAL, {&maxdist_},
           "Maximum com-com distance to generate dimers for." },
         { "-seed", FALSE, etINT, {&seed_},
-          "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used." }
+          "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used." },
+        { "-rotalg", FALSE, etSTR, {&rotalg_},
+          "Rotation algorithm should be either Cartesian or Polar" }
     };
     for(auto &pp : mypa)
     {
@@ -197,7 +232,7 @@ void DimerGenerator::generate(FILE                                *logFile,
                   fragptr->topologies().size());
     }
     // Random number generation
-    Rotator rot;
+    Rotator rot(rotalg_);
     
     // Copy original coordinates
     auto xorig     = mymol->xOriginal();

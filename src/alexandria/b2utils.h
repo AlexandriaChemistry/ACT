@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -53,15 +53,17 @@ class DimerGenerator
 {
 private:
     //! Number of dimers to generate
-    int maxdimers_  = 1000;
+    int maxdimers_      = 1000;
     //! Number of distances to use. See alexandria b2 -h for an explanation
-    int ndist_      =    0;
+    int ndist_          =    0;
     //! Minimum com-com distance (nm)
-    double mindist_ =  0.1;
+    double mindist_     =  0.1;
     //! Maximum com-com distance (nm)
-    double maxdist_ =  4.0;
+    double maxdist_     =  4.0;
     //! Random number seed
-    int    seed_    =    0;    
+    int    seed_        =    0;
+    //! Rotation algorithm
+    const char *rotalg_ = "";
     //! Random device
     std::random_device                     rd_;
     //! Generator
