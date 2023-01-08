@@ -30,10 +30,11 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "secondvirial.h"
+#include "b2utils.h"
 
-#include <ctype.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
 
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
@@ -52,7 +53,9 @@ enum class RotationAlgorithm
 
 std::map<std::string, RotationAlgorithm> stringToRotationAlgorithm = {
     { "Cartesian", RotationAlgorithm::Cartesian },
-    { "Polar", RotationAlgorithm::Polar }
+    { "Polar", RotationAlgorithm::Polar },
+    { "cartesian", RotationAlgorithm::Cartesian },
+    { "polar", RotationAlgorithm::Polar }
 };
 
 class Rotator
@@ -60,6 +63,10 @@ class Rotator
 private:
     //! The rotation matrix
     matrix            A_;
+    //! The average matrix after many calls to rotate
+    matrix            Average_;
+    //! The number of matrices added
+    size_t            naver_  = 0;
     //! Rotation algorithm to use
     RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian; 
     //! \brief Reset the matrix to a unity matrix
@@ -67,6 +74,7 @@ private:
     {
         clear_mat(A_);
         A_[XX][XX] = A_[YY][YY] = A_[ZZ][ZZ] = 1;
+        clear_mat(Average_);
     }
     
     /*! \brief Do the actual rotation of input coordinates
@@ -82,6 +90,8 @@ private:
             mvmul(A_, coords[i], newx);
             newcoords.push_back(newx);
         }
+        m_add(A_, Average_, Average_);
+        naver_ += 1;
         return newcoords;
     }
     
@@ -180,6 +190,31 @@ public:
         }
         return rx;
     }
+    void checkMatrix(FILE *fp)
+    {
+        fprintf(fp, "Norms of rows: %g %g %g\n",
+                norm(A_[XX]), norm(A_[YY]), norm(A_[ZZ]));
+        matrix B;
+        transpose(A_, B);
+        fprintf(fp, "Norms of columns: %g %g %g\n",
+                norm(B[XX]), norm(B[YY]), norm(B[ZZ]));
+    }
+        
+    void printAverageMatrix(FILE *fp)
+    {
+        if (fp && naver_ > 0)
+        {
+            fprintf(fp, "Average Matrix (n=%zu)\n", naver_);
+            for(int m = 0; m < DIM; m++)
+            {
+                for(int n = 0; n < DIM; n++)
+                {
+                    fprintf(fp, "  %10g", Average_[m][n]/naver_);
+                }
+                fprintf(fp, "\n");
+            }
+        }
+    }
 };
 
 void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
@@ -219,7 +254,7 @@ void DimerGenerator::finishOptions()
         gen_.seed(seed_);
     }
 }
-    
+
 void DimerGenerator::generate(FILE                                *logFile,
                               const MyMol                         *mymol,
                               std::vector<std::vector<gmx::RVec>> *coords,
@@ -277,9 +312,9 @@ void DimerGenerator::generate(FILE                                *logFile,
     size_t nmp = maxdimers_*ndist_;
     // Then initiate the big array
     coords->resize(nmp);
-    if (logFile)
+    if (debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     // Loop over the dimers
     for(int ndim = 0; ndim < maxdimers_; ndim++)
@@ -290,6 +325,10 @@ void DimerGenerator::generate(FILE                                *logFile,
         {
             // Random rotation
             xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xmOrig[m]);
+            if (ndim == 0)
+            {
+                rot.checkMatrix(logFile);
+            }
         }
         // Loop over distances from mindist to maxdist
         double range = maxdist_ - mindist_;
@@ -318,11 +357,12 @@ void DimerGenerator::generate(FILE                                *logFile,
                 rvec_dec(xrand[1][j], trans);
             }
         }
-        if (logFile)
+        if (debug)
         {
-            print_memory_usage(logFile);
+            print_memory_usage(debug);
         }
     }
+    rot.printAverageMatrix(logFile);
 }
 
 } // namespace alexandria

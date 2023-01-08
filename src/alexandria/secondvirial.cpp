@@ -421,7 +421,7 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Generate compounds
-        gendimers_->generate(verbose ? logFile : nullptr, mymol, &dimers, nullptr);
+        gendimers_->generate(logFile, mymol, &dimers, nullptr);
         if (logFile)
         {
             fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
