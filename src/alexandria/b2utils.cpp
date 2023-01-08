@@ -50,15 +50,28 @@ class Rotator
 public:
     Rotator() {}
     
-    void random(double                  ralpha,
-                double                  rbeta,
-                double                  rgamma,
-                std::vector<gmx::RVec> *coords)
+    std::vector<gmx::RVec> rotate(matrix                        A,
+                                  const std::vector<gmx::RVec> &coords)
     {
-        // Distribution is 0-M_PI, multiply by two to get to 2*M_PI
+        std::vector<gmx::RVec> newcoords;
+        for(size_t i = 0; i < coords.size(); i++)
+        {
+            gmx::RVec newx;
+            mvmul(A, coords[i], newx);
+            newcoords.push_back(newx);
+        }
+        return newcoords;
+    }
+    
+    std::vector<gmx::RVec> random(double                        ralpha,
+                                  double                        rbeta,
+                                  double                        rgamma,
+                                  const std::vector<gmx::RVec> &coords)
+    {
+        // Distribution is 0-1, multiply by two to get to 2*M_PI
         double alpha = ralpha * 2 * M_PI;
         double beta  = rbeta  * 2 * M_PI; 
-        double gamma = std::acos(2*rgamma-1);
+        double gamma = rgamma * 2 * M_PI; //std::acos(2*rgamma-1);
         double cosa  = std::cos(alpha);
         double sina  = std::sin(alpha);
         double cosb  = std::cos(beta);
@@ -79,13 +92,43 @@ public:
         A[2][1] = cosa * sinb * sing + sina * cosg;
         A[2][2] = cosa * cosb;
         
-        auto oldX = *coords;
-        for(size_t i = 0; i < oldX.size(); i++)
-        {
-            gmx::RVec newx;
-            mvmul(A, oldX[i], newx);
-            copy_rvec(newx, (*coords)[i]);
-        }
+        return rotate(A, coords);
+    }
+    
+    std::vector<gmx::RVec>  random2(double                        rtheta,
+                                    double                        rphi,
+                                    double                        rgamma,
+                                    const std::vector<gmx::RVec> &coords)
+    {
+        // Distribution is 0-1, multiply by two to get to 2*M_PI
+        double    theta = std::acos(2*rtheta-1);
+        double    phi   = rphi  * 2 * M_PI;
+        // Create random vector
+        // https://stackoverflow.com/questions/20769011/converting-3d-polar-coordinates-to-cartesian-coordinates
+        gmx::RVec u     = { 
+            std::sin(theta) * std::cos(phi),
+            std::sin(theta) * std::sin(phi),
+            std::cos(theta)
+        };
+        // Now create rotation matrix corresponding to rotation about this vector
+        // https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+        // Confusing notation with two theta angles, Wikipedia is strange
+        double gamma = rgamma * 2 * M_PI;
+        double costh  = std::cos(gamma);
+        double sinth  = std::sin(gamma);
+        
+        matrix A = {
+            { costh + u[XX]*u[XX]*(1-costh),
+              u[XX]*u[YY]*(1-costh) - u[ZZ]*sinth,
+              u[XX]*u[ZZ]*(1-costh) + u[YY]*sinth },
+            { u[YY]*u[XX]*(1-costh) + u[ZZ]*sinth,
+              costh + u[YY]*u[YY]*(1-costh),
+              u[YY]*u[ZZ]*(1-costh) - u[XX]*sinth },
+            { u[ZZ]*u[XX]*(1-costh) - u[YY]*sinth,
+              u[ZZ]*u[YY]*(1-costh) + u[XX]*sinth,
+              costh + u[ZZ]*u[ZZ]*(1-costh) }
+        };        
+        return rotate(A, coords);
     }
 };
 
@@ -131,108 +174,101 @@ void DimerGenerator::generate(FILE                                *logFile,
                               gmx_unused const char               *outcoords)
 {
     auto fragptr = mymol->fragmentHandler();
-    if (fragptr->topologies().size() == 2)
+    if (fragptr->topologies().size() != 2)
     {
-        // Random number generation
-        Rotator rot;
-        
-        // Copy original coordinates
-        auto xorig     = mymol->xOriginal();
-        // Split the coordinates into two fragments
-        auto atomStart = fragptr->atomStart();
-        std::vector<gmx::RVec> xmOrig[2];
+        gmx_fatal(FARGS, "Cannot generate dimers, numer of compounds is %lu",
+                  fragptr->topologies().size());
+    }
+    // Random number generation
+    Rotator rot;
+    
+    // Copy original coordinates
+    auto xorig     = mymol->xOriginal();
+    // Split the coordinates into two fragments
+    auto atomStart = fragptr->atomStart();
+    std::vector<gmx::RVec> xmOrig[2];
+    for(int m = 0; m < 2; m++)
+    {
+        for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+        {
+            xmOrig[m].push_back(xorig[j]);
+        } 
+    }
+    // Topologies
+    auto tops = fragptr->topologies();
+    // Move molecules to their respective COM
+    gmx::RVec com[2];
+    for(int m = 0; m < 2; m++)
+    {
+        // Compute center of mass
+        clear_rvec(com[m]);
+        auto   atoms   = tops[m].atoms();
+        double totmass = 0;
+        for(size_t j = 0; j < atoms.size(); j++)
+        {
+            gmx::RVec mx;
+            svmul(atoms[j].mass(), xmOrig[m][j], mx);
+            rvec_inc(com[m], mx);
+            totmass += atoms[j].mass();
+        }
+        for(int n = 0; n < DIM; n++)
+        {
+            com[m][n] /= totmass;
+        }
+        // Subtract center of mass
+        for(size_t j = 0; j < atoms.size(); j++)
+        {
+            rvec_sub(xmOrig[m][j], com[m], xmOrig[m][j]);
+        }
+    }
+    // Loop over orientations
+    size_t nmp = maxdimers_*ndist_;
+    // Then initiate the big array
+    coords->resize(nmp);
+    if (logFile)
+    {
+        print_memory_usage(logFile);
+    }
+    // Loop over the dimers
+    for(int ndim = 0; ndim < maxdimers_; ndim++)
+    {
+        // Copy the coordinates and rotate them
+        std::vector<gmx::RVec> xrand[2];
         for(int m = 0; m < 2; m++)
         {
-            for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
-            {
-                xmOrig[m].push_back(xorig[j]);
-            } 
+            // Random rotation
+            xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xmOrig[m]);
         }
-        // Topologies
-        auto tops = fragptr->topologies();
-        // Move molecules to their respective COM
-        gmx::RVec com[2];
-        for(int m = 0; m < 2; m++)
+        // Loop over distances from mindist to maxdist
+        double range = maxdist_ - mindist_;
+        for(int idist = 0; idist < ndist_; idist++)
         {
-            // Compute center of mass
-            clear_rvec(com[m]);
-            auto   atoms   = tops[m].atoms();
-            double totmass = 0;
+            double    dist  = mindist_ + range*((1.0*idist)/(ndist_-1));
+            gmx::RVec trans = { 0, 0, dist };
+            auto      atoms = tops[1].atoms();
             for(size_t j = 0; j < atoms.size(); j++)
             {
-                gmx::RVec mx;
-                svmul(atoms[j].mass(), xmOrig[m][j], mx);
-                rvec_inc(com[m], mx);
-                totmass += atoms[j].mass();
+                rvec_inc(xrand[1][j], trans);
             }
-            for(int n = 0; n < DIM; n++)
+            size_t idim = ndim*ndist_+idist;
+            (*coords)[idim].resize(atomStart[2]-atomStart[0]);
+            for(int m = 0; m < 2; m++)
             {
-                com[m][n] /= totmass;
+                for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+                {
+                    auto jindex = j - atomStart[m];
+                    copy_rvec(xrand[m][jindex], (*coords)[idim][j]);
+                }
             }
-            // Subtract center of mass
+            // Put the coordinates back!
             for(size_t j = 0; j < atoms.size(); j++)
             {
-                rvec_sub(xmOrig[m][j], com[m], xmOrig[m][j]);
+                rvec_dec(xrand[1][j], trans);
             }
         }
-        // Loop over orientations
-        size_t nmp = maxdimers_*ndist_;
-        // Initiate all the MolProps with a copy of the input molecule
-        MolProp tmp = *mymol;
-        auto exper  = tmp.experiment();
-        // Do some cleaning
-        exper->clear();
-        tmp.clearCategory();
-        // Then initiate the big array
-        coords->resize(nmp);
         if (logFile)
         {
             print_memory_usage(logFile);
-        }
-        // Shortcut to the current molecules
-        // MolProp *mp = &((*mps)[mp_index++]);
-        // exper = mp->experiment();
-        for(int ndim = 0; ndim < maxdimers_; ndim++)
-        {
-            // Copy the coordinates and rotate them
-            std::vector<gmx::RVec> xrand[2];
-            for(int m = 0; m < 2; m++)
-            {
-                xrand[m] = xmOrig[m];
-                // Random rotation
-                rot.random(dis_(gen_), dis_(gen_), dis_(gen_), &xrand[m]);
-            }
-            // Loop over distances from mindist to maxdist
-            double range = maxdist_ - mindist_;
-            for(int idist = 0; idist < ndist_; idist++)
-            {
-                double    dist  = mindist_ + range*((1.0*idist)/(ndist_-1));
-                gmx::RVec trans = { 0, 0, dist };
-                auto      atoms = tops[1].atoms();
-                for(size_t j = 0; j < atoms.size(); j++)
-                {
-                    rvec_inc(xrand[1][j], trans);
-                }
-                size_t idim = ndim*ndist_+idist;
-                (*coords)[idim].resize(atomStart[2]-atomStart[0]);
-                for(int m = 0; m < 2; m++)
-                {
-                    for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
-                    {
-                        auto jindex = j - atomStart[m];
-                        copy_rvec(xrand[m][jindex], (*coords)[idim][j]);
-                    }
-                }
-                // Put the coordinates back!
-                for(size_t j = 0; j < atoms.size(); j++)
-                {
-                    rvec_dec(xrand[1][j], trans);
-                }
-            }
-            if (logFile)
-            {
-                print_memory_usage(logFile);
-            }
         }
     }
 }
