@@ -316,15 +316,20 @@ void DimerGenerator::generate(FILE                                *logFile,
     {
         print_memory_usage(debug);
     }
+    // Copy the coordinates
+    std::vector<gmx::RVec> xrand[2];
+    for(int m = 0; m < 2; m++)
+    {
+        xrand[m] = xmOrig[m];
+    }
     // Loop over the dimers
     for(int ndim = 0; ndim < maxdimers_; ndim++)
     {
-        // Copy the coordinates and rotate them
-        std::vector<gmx::RVec> xrand[2];
+        // Rotate the coordinates
         for(int m = 0; m < 2; m++)
         {
             // Random rotation
-            xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xmOrig[m]);
+            xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xrand[m]);
             if (ndim == 0)
             {
                 rot.checkMatrix(logFile);
