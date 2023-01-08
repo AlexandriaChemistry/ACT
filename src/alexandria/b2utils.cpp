@@ -35,32 +35,49 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
-
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "alexandria/princ.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
 
 namespace alexandria
 {
 
 class Rotator
 {
-public:
-    Rotator() {}
+private:
+    //! The rotation matrix
+    matrix A_;
     
-    std::vector<gmx::RVec> rotate(matrix                        A,
-                                  const std::vector<gmx::RVec> &coords)
+    //! \brief Reset the matrix to a unity matrix
+    void resetMatrix()
+    {
+        clear_mat(A_);
+        A_[XX][XX] = A_[YY][YY] = A_[ZZ][ZZ] = 1;
+    }
+    
+    /*! \brief Do the actual rotation of input coordinates
+     * \param[in] coords Input coordinates
+     * \return the rotated coordinates
+     */
+    std::vector<gmx::RVec> rotate(const std::vector<gmx::RVec> &coords)
     {
         std::vector<gmx::RVec> newcoords;
         for(size_t i = 0; i < coords.size(); i++)
         {
             gmx::RVec newx;
-            mvmul(A, coords[i], newx);
+            mvmul(A_, coords[i], newx);
             newcoords.push_back(newx);
         }
         return newcoords;
+    }
+    
+public:
+    Rotator()
+    {
+        resetMatrix();
     }
     
     std::vector<gmx::RVec> random(double                        ralpha,
@@ -70,8 +87,8 @@ public:
     {
         // Distribution is 0-1, multiply by two to get to 2*M_PI
         double alpha = ralpha * 2 * M_PI;
-        double beta  = rbeta  * 2 * M_PI; 
-        double gamma = rgamma * 2 * M_PI; //std::acos(2*rgamma-1);
+        double beta  = rbeta  * 2 * M_PI;
+        double gamma = rgamma * 2 * M_PI;
         double cosa  = std::cos(alpha);
         double sina  = std::sin(alpha);
         double cosb  = std::cos(beta);
@@ -79,20 +96,19 @@ public:
         double cosg  = std::cos(gamma);
         double sing  = std::sin(gamma);
         
-        matrix A;
-        A[0][0] = cosb * cosg;
-        A[0][1] =-cosb * sing;
-        A[0][2] = sinb;
+        A_[0][0] = cosb * cosg;
+        A_[0][1] =-cosb * sing;
+        A_[0][2] = sinb;
         
-        A[1][0] = sina * sinb * cosg + cosa * sing;
-        A[1][1] =-sina * sinb * sing + cosa * cosg;
-        A[1][2] =-sina * cosb;
+        A_[1][0] = sina * sinb * cosg + cosa * sing;
+        A_[1][1] =-sina * sinb * sing + cosa * cosg;
+        A_[1][2] =-sina * cosb;
         
-        A[2][0] =-cosa * sinb * cosg + sina * sing;
-        A[2][1] = cosa * sinb * sing + sina * cosg;
-        A[2][2] = cosa * cosb;
+        A_[2][0] =-cosa * sinb * cosg + sina * sing;
+        A_[2][1] = cosa * sinb * sing + sina * cosg;
+        A_[2][2] = cosa * cosb;
         
-        return rotate(A, coords);
+        return rotate(coords);
     }
     
     std::vector<gmx::RVec>  random2(double                        rtheta,
@@ -117,7 +133,7 @@ public:
         double costh  = std::cos(gamma);
         double sinth  = std::sin(gamma);
         
-        matrix A = {
+        matrix B = {
             { costh + u[XX]*u[XX]*(1-costh),
               u[XX]*u[YY]*(1-costh) - u[ZZ]*sinth,
               u[XX]*u[ZZ]*(1-costh) + u[YY]*sinth },
@@ -127,8 +143,9 @@ public:
             { u[ZZ]*u[XX]*(1-costh) - u[YY]*sinth,
               u[ZZ]*u[YY]*(1-costh) + u[XX]*sinth,
               costh + u[ZZ]*u[ZZ]*(1-costh) }
-        };        
-        return rotate(A, coords);
+        };
+        copy_mat(B, A_);
+        return rotate(coords);
     }
 };
 
