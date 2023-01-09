@@ -60,6 +60,18 @@
 namespace alexandria
 {
 
+const std::map<b2Type, std::string> b2Type2str = {
+    { b2Type::Classical, "B2(Classical)" },
+    { b2Type::Force, "B2(Force)" },
+    { b2Type::Torque, "B2(Torque)" },
+    { b2Type::Total, "B2(Total)" }
+};                    
+
+const std::string &b2TypeToString(b2Type b2t)
+{
+    return b2Type2str.find(b2t)->second;
+}
+
 void forceFieldSummary(JsonTree      *jtree,
                        const Poldata *pd)
 {
@@ -124,7 +136,9 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
         { "-dT",     FALSE, etREAL, {&deltaT_},
           "Temperature increment for calculation of second virial." },
         { "-nbootstrap", FALSE, etINT, {&nbootStrap_},
-          "Number of times to iterate B2 calculation based on the same dimer orientations and energies" }
+          "Number of times to iterate B2 calculation based on the same dimer orientations and energies" },
+        { "-optimizedB2", FALSE, etBOOL, {&optimizedB2_},
+          "Optimize the bootstrapping by pre-calculating stuff" }
     };
     pargs->push_back(pa[0]);
     if (b2code)
@@ -204,7 +218,7 @@ void ReRunner::plotB2temp(const char *b2file)
         return;
     }
     auto T = temperatures();
-    if (b2t_.empty() || b2t_.size() != T.size())
+    if (b2t_.empty() || b2t_[b2Type::Total].size() != T.size())
     {
         fprintf(stderr, "Internal inconsistency. There are %zu temperatures and %zu B2 values.\n",
                 T.size(), b2t_.size());
@@ -218,8 +232,9 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrLegend(b2p, legend, oenv_);
     for(size_t ii = 0; ii < T.size(); ii++)
     {
-        fprintf(b2p, "%10g  %10g  %10g  %10g  %10g\n", T[ii], b2t_[ii],
-                b2tClassical_[ii], b2tForce_[ii], b2tTorque_[ii]);
+        fprintf(b2p, "%10g  %10g  %10g  %10g  %10g\n", T[ii], 
+                b2t_[b2Type::Total][ii], b2t_[b2Type::Classical][ii],
+                b2t_[b2Type::Force][ii], b2t_[b2Type::Torque][ii]);
     }
     xvgrclose(b2p);
 }
@@ -254,6 +269,11 @@ void ReRunner::computeB2(FILE                                      *logFile,
         std::vector<std::vector<double> > mayer(1+Temperature.size());
         // Array for total second virial as a function of T
         size_t iTemp = 1;
+        // Will be used to obtain a seed for the random number engine
+        std::random_device                 bsRand;  
+        //Standard mersenne_twister_engine seeded with rd()
+        std::mt19937                       bsGen(bsRand());
+        std::uniform_int_distribution<int> bsDistr(0, x.size()-1);
         for(auto T : Temperature)
         {
             if (T == 0)
@@ -261,111 +281,189 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
                 continue;
             }
-            // Temporary arrays for weighted properties.
-            std::vector<double>    exp_U12(nbins, 0.0);
-            std::vector<double>    exp_F2[2];
-            std::vector<gmx::RVec> exp_tau[2];
-            for(int kk = 0; kk < 2; kk++)
+            if (nbootStrap_ < 1)
             {
-                exp_F2[kk].resize(nbins, 0);
-                exp_tau[kk].resize(nbins, { 0.0, 0.0, 0.0 });
+                nbootStrap_ = 1;
             }
-            std::vector<int>       n_U12(nbins, 0);
-            double beta = 1.0/(BOLTZ*T);
-            for(size_t ii = 0; ii < x.size(); ii++)
+            double                      beta = 1.0/(BOLTZ*T);
+            std::map<b2Type, gmx_stats> b2BootStrap;
+            for(auto &b2b : b2Type2str)
             {
-                double rindex = x[ii]/binWidth;
-                size_t index  = rindex;
-                // Gray and Gubbins Eqn. 3.261
-                double g0_12 = std::exp(-y[ii]*beta);
-                // Gray and Gubbins Eqn. 3.272
-                exp_U12[index] += g0_12-1;
-                for(int kk = 0; kk < 2; kk++)
+                gmx_stats gs;
+                b2BootStrap.insert({ b2b.first, std::move(gs) });
+            }
+            // Store data temporarily in a structure for memory performance
+            typedef struct
+            {
+                int       index;
+                double    g0;
+                double    g0_f2[2];
+                gmx::RVec g0_tau[2];
+            } b2temp_t;
+            std::vector<b2temp_t> b2temp(x.size());
+            if (optimizedB2_)
+            {
+                for(size_t jj = 0; jj < x.size(); jj++)
                 {
-                    // Gray and Gubbins Eqn. 3.281
-                    exp_F2[kk][index] += g0_12*iprod(forceMol[kk][ii], forceMol[kk][ii]);
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        // Gray and Gubbins Eqn. 3.282
-                        exp_tau[kk][index][m] += g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
-                    }
-                }
-                n_U12[index]   += 1;
-            }
-            double    Bclass       =  0;
-            double    BqmForce     =  0;
-            double    BqmTorque[2] =  { 0, 0 };
-            // We start in the origin even if there is no data.
-            double    r1        =  0;
-            // Starting energy, all values until first data entry
-            double    Uprev     = -1;
-            int jj = 0;
-            while(jj*binWidth < xmin)
-            {
-                exp_U12[jj] = -1;
-                n_U12[jj]   = 1;
-                jj += 1;
-            }
-            // Starting force
-            double    Fprev[2] =  { 0, 0 };
-            // Starting torque
-            gmx::RVec Tprev[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
-            double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
-            if (iTemp == 1)
-            {
-                // Store distance first time around only
-                mayer[0].push_back(r1);
-            }
-            mayer[iTemp].push_back(Uprev);
-            for(size_t ii = 1; ii < nbins; ii++)
-            {
-                double r2 = ii*binWidth;
-                if (n_U12[ii] > 0)
-                {
-                    double Unew = exp_U12[ii]/n_U12[ii];
-                    if (iTemp == 1)
-                    {
-                        // Store distance first time around only
-                        mayer[0].push_back(r2);
-                    }
-                    mayer[iTemp].push_back(Unew);
-                    auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
-                    // TODO: There is factor 0.5 here
-                    Bclass       -= 0.5*dB;
-                    Uprev         = Unew;
+                    double rindex = x[jj]/binWidth;
+                    b2temp[jj].index  = rindex;
+                    b2temp[jj].g0     = std::exp(-y[jj]*beta);
                     for(int kk = 0; kk < 2; kk++)
                     {
-                        // Weighted square force
-                        // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
-                        double Fnew  = exp_F2[kk][ii]/(mass[kk]*n_U12[ii]);
-                        BqmForce    += 0.5*hbarfac*sphereIntegrator(r1, r2, Fprev[kk], Fnew);
-                        Fprev[kk]    = Fnew;
-                        // Contributions from torque
+                        b2temp[jj].g0_f2[kk] = b2temp[jj].g0*iprod(forceMol[kk][jj], forceMol[kk][jj]);
                         for(int m = 0; m < DIM; m++)
                         {
-                            if (inertia[kk][m] > 0)
+                            b2temp[jj].g0_tau[kk][m] += b2temp[jj].g0*torqueMol[kk][jj][m]*torqueMol[kk][jj][m];
+                        }
+                    }
+                }
+            }
+            
+            for(int nb = 0; nb < nbootStrap_; nb++)
+            {
+                // Temporary arrays for weighted properties.
+                std::vector<double>    exp_U12(nbins, 0.0);
+                std::vector<double>    exp_F2[2];
+                std::vector<gmx::RVec> exp_tau[2];
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    exp_F2[kk].resize(nbins, 0);
+                    exp_tau[kk].resize(nbins, { 0.0, 0.0, 0.0 });
+                }
+                std::vector<int>       n_U12(nbins, 0);
+                for(size_t jj = 0; jj < x.size(); jj++)
+                {
+                    size_t ii = jj;
+                    if (nbootStrap_ > 1)
+                    {
+                        ii = bsDistr(bsGen);
+                    }
+                    size_t index;
+                    if (optimizedB2_)
+                    {
+                        index = b2temp[ii].index;
+                        double g0_12 = b2temp[ii].g0;
+                        exp_U12[index] += g0_12-1;
+                        for(int kk = 0; kk < 2; kk++)
+                        {
+                            exp_F2[kk][index] += b2temp[ii].g0_f2[kk];
+                            for(int m = 0; m < DIM; m++)
                             {
-                                double Tnew    = exp_tau[kk][ii][m]/(n_U12[ii]*inertia[kk][m]);
-                                BqmTorque[kk] += hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
-                                Tprev[kk][m]   = Tnew;
+                                // Gray and Gubbins Eqn. 3.282
+                                exp_tau[kk][index][m] += b2temp[ii].g0_tau[kk][m];
                             }
                         }
                     }
-                    r1 = r2;
+                    else
+                    {
+                        double rindex = x[ii]/binWidth;
+                        index  = rindex;
+                        // Gray and Gubbins Eqn. 3.261
+                        double g0_12 = std::exp(-y[ii]*beta);
+                        // Gray and Gubbins Eqn. 3.272
+                        exp_U12[index] += g0_12-1;
+                        for(int kk = 0; kk < 2; kk++)
+                        {
+                            // Gray and Gubbins Eqn. 3.281
+                            exp_F2[kk][index] += g0_12*iprod(forceMol[kk][ii], forceMol[kk][ii]);
+                            for(int m = 0; m < DIM; m++)
+                            {
+                                // Gray and Gubbins Eqn. 3.282
+                                exp_tau[kk][index][m] += g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
+                            }
+                        }
+                    }
+                    n_U12[index]   += 1;
                 }
+                double    Bclass       =  0;
+                double    BqmForce     =  0;
+                double    BqmTorque[2] =  { 0, 0 };
+                // We start in the origin even if there is no data.
+                double    r1        =  0;
+                // Starting energy, all values until first data entry
+                double    Uprev     = -1;
+                int jj = 0;
+                while(jj*binWidth < xmin)
+                {
+                    exp_U12[jj] = -1;
+                    n_U12[jj]   = 1;
+                    jj += 1;
+                }
+                // Starting force
+                double    Fprev[2] =  { 0, 0 };
+                // Starting torque
+                gmx::RVec Tprev[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+                double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
+                if (iTemp == 1)
+                {
+                    // Store distance first time around only
+                    mayer[0].push_back(r1);
+                }
+                mayer[iTemp].push_back(Uprev);
+                for(size_t ii = 1; ii < nbins; ii++)
+                {
+                    double r2 = ii*binWidth;
+                    if (n_U12[ii] > 0)
+                    {
+                        double Unew = exp_U12[ii]/n_U12[ii];
+                        if (iTemp == 1)
+                        {
+                            // Store distance first time around only
+                            mayer[0].push_back(r2);
+                        }
+                        mayer[iTemp].push_back(Unew);
+                        auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
+                        // TODO: There is factor 0.5 here
+                        Bclass       -= 0.5*dB;
+                        Uprev         = Unew;
+                        for(int kk = 0; kk < 2; kk++)
+                        {
+                            // Weighted square force
+                            // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
+                            double Fnew  = exp_F2[kk][ii]/(mass[kk]*n_U12[ii]);
+                            BqmForce    += 0.5*hbarfac*sphereIntegrator(r1, r2, Fprev[kk], Fnew);
+                            Fprev[kk]    = Fnew;
+                            // Contributions from torque
+                            for(int m = 0; m < DIM; m++)
+                            {
+                                if (inertia[kk][m] > 0)
+                                {
+                                    double Tnew    = exp_tau[kk][ii][m]/(n_U12[ii]*inertia[kk][m]);
+                                    BqmTorque[kk] += hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
+                                    Tprev[kk][m]   = Tnew;
+                                }
+                            }
+                        }
+                        r1 = r2;
+                    }
+                }
+                // Conversion to regular units cm^3/mol.
+                double fac  = AVOGADRO*1e-21;
+                double bqt  = (BqmTorque[0]+BqmTorque[1])*0.5;
+                double Btot = (Bclass + BqmForce + bqt)*fac;
+                // Add to bootstrapping statistics
+                b2BootStrap[b2Type::Classical].add_point(nb, Bclass*fac, 0, 0);
+                b2BootStrap[b2Type::Force].add_point(nb, BqmForce*fac, 0, 0);
+                b2BootStrap[b2Type::Torque].add_point(nb, bqt*fac, 0, 0);
+                b2BootStrap[b2Type::Total].add_point(nb, Btot, 0, 0);
             }
-            // Conversion to regular units cm^3/mol.
-            double fac  = AVOGADRO*1e-21;
-            double bqt  = (BqmTorque[0]+BqmTorque[1])*0.5;
-            double Btot = (Bclass + BqmForce + bqt)*fac;
-            b2tClassical_.push_back(Bclass*fac);
-            b2tForce_.push_back(BqmForce*fac);
-            b2tTorque_.push_back(bqt*fac);
-            b2t_.push_back(Btot);
+            // Done bootstrapping, store the result.
+            for(const auto &b2b : b2Type2str)
+            {
+                real aver, sigma, error;
+                b2BootStrap[b2b.first].get_ase(&aver, &sigma, &error);
+                b2t_[b2b.first].push_back(aver);
+                b2tError_[b2b.first].push_back(sigma);
+            }
             if (logFile)
             {
-                fprintf(logFile, "T = %g K. B2cl %g BqmForce %g BqmTorque %g %g Total %g cm^3/mol\n", T,
-                        Bclass*fac, BqmForce*fac, BqmTorque[0]*fac, BqmTorque[1]*fac, Btot);
+                fprintf(logFile, "T = %g K. ", T);
+                for(const auto &b2b : b2Type2str)
+                {
+                    fprintf(logFile, " %s %8.1f (%5.1f)", b2b.second.c_str(),
+                            b2t_[b2b.first].back(), b2tError_[b2b.first].back());
+                }
+                fprintf(logFile, "\n");
             }
             iTemp += 1;
         }
@@ -422,11 +520,13 @@ void ReRunner::rerun(FILE                        *logFile,
     {
         // Generate compounds
         gendimers_->generate(logFile, mymol, &dimers, nullptr);
+        auto info = gmx::formatString("Doing energy calculation for %zu randomly oriented structures generated at %d distances.",
+                                      dimers.size(), gendimers_->ndist());
         if (logFile)
         {
-            fprintf(logFile, "Doing energy calculation for %zu randomly oriented structures generated at %d distances\n",
-                    dimers.size(), gendimers_->ndist());
+            fprintf(logFile, "%s\n", info.c_str());
         }
+        printf("%s\n", info.c_str());
         ndist = gendimers_->ndist();
     }
     if (verbose)
@@ -622,6 +722,12 @@ void ReRunner::rerun(FILE                        *logFile,
             mymol->fragmentHandler()->topologies()[0].mass(),
             mymol->fragmentHandler()->topologies()[1].mass()
         };
+        auto info = gmx::formatString("Done with energy calculations, now time for second virial.");
+        printf("%s\n", info.c_str());
+        if (logFile)
+        {
+            fprintf(logFile, "%s\n", info.c_str());
+        }
         computeB2(logFile, edist, ndist, masses, inertia,
                   forceMol, torqueMol, fnm);
     }

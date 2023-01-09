@@ -66,39 +66,46 @@ void forceFieldSummary(JsonTree      *jtree,
  */
 double sphereIntegrator(double r1, double r2, double val1, double val2);
 
+enum class b2Type { Classical, Force, Torque, Total };
+
+extern const std::map<b2Type, std::string> b2Type2str;
+
+/*! \brief Convert b2Type to string
+ * \param[in] b2t The b2Type
+ * \return The string
+ */
+const std::string &b2TypeToString(b2Type b2t);
+
 class ReRunner
 {
 private:
     //! The force computer
-    ForceComputer      *forceComp_  = nullptr;
+    ForceComputer      *forceComp_   = nullptr;
     //! The dimer generator
-    DimerGenerator     *gendimers_  = nullptr;
+    DimerGenerator     *gendimers_   = nullptr;
     //! GROMACS output stuff
-    gmx_output_env_t   *oenv_       = nullptr;
+    gmx_output_env_t   *oenv_        = nullptr;
                
     //! Trajectory name
-    const char         *trajname_   = "";
+    const char         *trajname_    = "";
     //! Temperature to start
-    double              T1_         = 300;
+    double              T1_          = 300;
     //! Final temperature
-    double              T2_         = 400;
+    double              T2_          = 400;
     //! Temperature step
-    double              deltaT_     = 10;
+    double              deltaT_      = 10;
     //! Number of bootstraps
-    int                 nbootStrap_ = 1;
+    int                 nbootStrap_  = 1;
     //! Whether to compute interaction energies and potentially B2
-    bool                eInter_     = true;
+    bool                eInter_      = true;
+    //! Optimize the bootstrapping by pre-calculating stuff
+    bool                optimizedB2_ = false;
     //! The temperature array
     std::vector<double> Temperatures_;
-    //! Second virial as a function of T (see function temperatures)
-    std::vector<double> b2t_;
-    //! Classical component of the second virial as a function of T
-    std::vector<double> b2tClassical_;
-    //! QM component of the second virial due to force as a function of T
-    std::vector<double> b2tForce_;
-    //! QM component of the second virial due to torque as a function of T
-    std::vector<double> b2tTorque_;
-
+    //! Second virial as a function of T for all components (see function temperatures)
+    std::map<b2Type, std::vector<double>> b2t_;
+    //! Uncertainty in the second virial as determined by bootstrapping
+    std::map<b2Type, std::vector<double>> b2tError_;
     //! Generate temperature series if needed and return it
     const std::vector<double> &temperatures();
     /*! \brief Generate plot with Mayer functions for all temperatures
@@ -194,16 +201,7 @@ public:
                    const std::vector<t_filenm>               &fnm);
 
     //! \return the second virial as a function of T.
-    const std::vector<double> &b2Temp() const { return b2t_; }
-
-    //! \return the second virial as a function of T.
-    const std::vector<double> &b2Classical() const { return b2tClassical_; }
-
-    //! \return the second virial as a function of T.
-    const std::vector<double> &b2Force() const { return b2tForce_; }
-
-    //! \return the second virial as a function of T.
-    const std::vector<double> &b2Torque() const { return b2tTorque_; }
+    const std::vector<double> &b2Temp(b2Type b2t) const { return b2t_.find(b2t)->second; }
 
 };
 

@@ -111,14 +111,12 @@ protected:
             std::vector<double> m2 = { mass, mass };
             rerun.computeB2(logFile, edist, irmax, m2,
                             inertia, force, torque, fnm);
-            auto b2t = rerun.b2Temp();
-            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Total)");
-            b2t = rerun.b2Classical();
-            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Classical)");
-            b2t = rerun.b2Force();
-            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Force)");
-            b2t = rerun.b2Torque();
-            checker_.checkSequence(b2t.begin(), b2t.end(), "B2(Torque)");
+            
+            for(const auto &b2 : b2Type2str)
+            {
+                auto b2t = rerun.b2Temp(b2.first);
+                checker_.checkSequence(b2t.begin(), b2t.end(), b2.second.c_str());
+            }
         }
     }
     

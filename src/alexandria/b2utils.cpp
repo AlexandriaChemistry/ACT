@@ -330,9 +330,9 @@ void DimerGenerator::generate(FILE                                *logFile,
         {
             // Random rotation
             xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xrand[m]);
-            if (ndim == 0)
+            if (debug && ndim == 0)
             {
-                rot.checkMatrix(logFile);
+                rot.checkMatrix(debug);
             }
         }
         // Loop over distances from mindist to maxdist
@@ -367,7 +367,10 @@ void DimerGenerator::generate(FILE                                *logFile,
             print_memory_usage(debug);
         }
     }
-    rot.printAverageMatrix(logFile);
+    if (debug)
+    {
+        rot.printAverageMatrix(debug);
+    }
 }
 
 } // namespace alexandria
