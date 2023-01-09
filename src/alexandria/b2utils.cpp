@@ -36,6 +36,7 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "act/quasirandom_sequences/sobol.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "alexandria/princ.h"
@@ -48,14 +49,16 @@ namespace alexandria
 
 enum class RotationAlgorithm 
     { 
-        Cartesian, Polar
+        Cartesian, Polar, Sobol
     };
 
 std::map<std::string, RotationAlgorithm> stringToRotationAlgorithm = {
     { "Cartesian", RotationAlgorithm::Cartesian },
     { "Polar", RotationAlgorithm::Polar },
+    { "Sobol", RotationAlgorithm::Sobol },
     { "cartesian", RotationAlgorithm::Cartesian },
-    { "polar", RotationAlgorithm::Polar }
+    { "polar", RotationAlgorithm::Polar },
+    { "sobol", RotationAlgorithm::Sobol },
 };
 
 class Rotator
@@ -67,6 +70,8 @@ private:
     matrix            Average_;
     //! The number of matrices added
     size_t            naver_  = 0;
+    //! Sobol seed
+    long long int     sobolSeed_ = 0;
     //! Rotation algorithm to use
     RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian; 
     //! \brief Reset the matrix to a unity matrix
@@ -163,6 +168,14 @@ private:
         return rotate(coords);
     }
     
+    std::vector<gmx::RVec> sobol(const std::vector<gmx::RVec> &coords)
+    {
+        std::vector<double> q(3, 0.0);
+        i8_sobol(DIM, &sobolSeed_, q.data());
+
+        return polar(q[1], q[0], q[2], coords);
+    }
+    
 public:
     Rotator(const std::string &rotalg)
     {
@@ -173,6 +186,11 @@ public:
         }
     }
     
+    //! \return the rotation algorithm selected
+    RotationAlgorithm rotalg() const { return rotalg_; }
+    
+    /*! \brief Do a (quasi) random rotation
+     */
     std::vector<gmx::RVec> random(double                        rtheta,
                                   double                        rphi,
                                   double                        rgamma,
@@ -187,9 +205,13 @@ public:
         case RotationAlgorithm::Polar:
             rx = polar(rtheta, rphi, rgamma, coords);
             break;
+        case RotationAlgorithm::Sobol:
+            rx = sobol(coords);
+            break;
         }
         return rx;
     }
+    
     void checkMatrix(FILE *fp)
     {
         fprintf(fp, "Norms of rows: %g %g %g\n",

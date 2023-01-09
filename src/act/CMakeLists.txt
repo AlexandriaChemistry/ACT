@@ -33,4 +33,4 @@ add_subdirectory(molprop)
 add_subdirectory(poldata)
 add_subdirectory(qgen)
 add_subdirectory(utility)
-
+add_subdirectory(quasirandom_sequences)
