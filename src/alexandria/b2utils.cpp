@@ -39,7 +39,6 @@
 #include "act/quasirandom_sequences/sobol.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
-#include "alexandria/princ.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
@@ -61,6 +60,18 @@ std::map<std::string, RotationAlgorithm> stringToRotationAlgorithm = {
     { "polar", RotationAlgorithm::Polar },
     { "sobol", RotationAlgorithm::Sobol },
 };
+
+static const std::string &rotalgToString(RotationAlgorithm rotalg)
+{
+    for(auto &stra : stringToRotationAlgorithm)
+    {
+        if (stra.second == rotalg)
+        {
+            return stra.first;
+        }
+    }
+    return stringToRotationAlgorithm.begin()->first;
+}
 
 class Rotator
 {
@@ -365,6 +376,28 @@ void DimerGenerator::finishOptions()
     }
 }
 
+static void dump_coords(const char                                *outcoords,
+                        const MyMol                               *mymol,
+                        const std::vector<std::vector<gmx::RVec>> &coords)
+{
+    std::string outxyz(outcoords);
+    auto pos = outxyz.rfind(".");
+    outxyz = outxyz.substr(0, pos) + ".xyz";
+    FILE *fp = gmx_ffopen(outxyz.c_str(), "w");
+    auto atoms = mymol->atomsConst();
+    for(size_t ix = 0; ix < coords.size(); ix++)
+    {
+        fprintf(fp, "%5lu\n", atoms.size());
+        fprintf(fp, "Conformation %10zu\n", ix);
+        for(size_t iy = 0; iy < atoms.size(); iy++)
+        {
+            fprintf(fp, "%5s  %10g  %10g  %10g\n", atoms[iy].name().c_str(),
+                    10*coords[ix][iy][XX], 10*coords[ix][iy][YY], 10*coords[ix][iy][ZZ]);
+        }
+    }
+    gmx_ffclose(fp);
+}
+
 void DimerGenerator::generate(FILE                                *logFile,
                               const MyMol                         *mymol,
                               std::vector<std::vector<gmx::RVec>> *coords,
@@ -378,6 +411,16 @@ void DimerGenerator::generate(FILE                                *logFile,
     }
     // Random number generation
     Rotator rot(rotalg_, debugGD_, seed_);
+    size_t nmp = maxdimers_*ndist_;
+
+    
+    auto info = gmx::formatString("Will generate %zu dimer configurations at %d distances using %s algorithm.",
+                                  nmp, ndist_, rotalgToString(rot.rotalg()).c_str());
+    if (logFile)
+    {
+        fprintf(logFile, "%s\n", info.c_str());
+    }
+    printf("%s\n", info.c_str());
     
     // Copy original coordinates
     auto xorig     = mymol->xOriginal();
@@ -419,12 +462,11 @@ void DimerGenerator::generate(FILE                                *logFile,
         }
     }
     // Loop over orientations
-    size_t nmp = maxdimers_*ndist_;
     // Then initiate the big array
     coords->resize(nmp);
-    if (debugGD_)
+    if (debugGD_ && debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     // Loop over the dimers
     for(int ndim = 0; ndim < maxdimers_; ndim++)
@@ -449,7 +491,11 @@ void DimerGenerator::generate(FILE                                *logFile,
         double range = maxdist_ - mindist_;
         for(int idist = 0; idist < ndist_; idist++)
         {
-            double    dist  = mindist_ + range*((1.0*idist)/(ndist_-1));
+            double    dist  = mindist_;
+            if (ndist_ > 1)
+            {
+                dist += range*((1.0*idist)/(ndist_-1));
+            }
             gmx::RVec trans = { 0, 0, dist };
             auto      atoms = tops[1].atoms();
             for(size_t j = 0; j < atoms.size(); j++)
@@ -472,15 +518,19 @@ void DimerGenerator::generate(FILE                                *logFile,
                 rvec_dec(xrand[1][j], trans);
             }
         }
-        if (debugGD_)
+        if (debugGD_ && debug)
         {
-            print_memory_usage(logFile);
+            print_memory_usage(debug);
         }
     }
     rot.printAngleHisto();
     if (debugGD_)
     {
         rot.printAverageMatrix(logFile);
+    }
+    if (nullptr != outcoords && strlen(outcoords) > 0)
+    {
+        dump_coords(outcoords, mymol, *coords);
     }
 }
 

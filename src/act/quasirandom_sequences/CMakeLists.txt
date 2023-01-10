@@ -27,3 +27,7 @@
 
 file(GLOB QUASIRANDOM_SOURCES sobol.cpp sobol.h)
 target_sources(actLib PRIVATE ${QUASIRANDOM_SOURCES})
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -490,9 +490,9 @@ void ReRunner::rerun(FILE                        *logFile,
     int                  nsymm  = 1;
     int                  ndist  = 0;
     const char          *molnm  = "";
-    if (verbose)
+    if (verbose && debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     if (trajname_ && strlen(trajname_) > 0)
     {
@@ -519,19 +519,12 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Generate compounds
-        gendimers_->generate(logFile, mymol, &dimers, nullptr);
-        auto info = gmx::formatString("Doing energy calculation for %zu randomly oriented structures generated at %d distances.",
-                                      dimers.size(), gendimers_->ndist());
-        if (logFile)
-        {
-            fprintf(logFile, "%s\n", info.c_str());
-        }
-        printf("%s\n", info.c_str());
+        gendimers_->generate(logFile, mymol, &dimers, opt2fn_null("-ox", fnm.size(), fnm.data()));
         ndist = gendimers_->ndist();
     }
-    if (verbose)
+    if (verbose && debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     std::map<InteractionType, double> energies;
     int mp_index = 0;
@@ -548,9 +541,9 @@ void ReRunner::rerun(FILE                        *logFile,
             forceMol[kk].resize(dimers.size());
         }
     }
-    if (verbose)
+    if (verbose && debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
     // Loop over molecules
@@ -671,9 +664,9 @@ void ReRunner::rerun(FILE                        *logFile,
                 rvec_inc(inertia[kk], inertia1);
                 torqueMol[kk][mp_index] = torqueRot[kk];
             }
-            if (verbose)
+            if (verbose && debug)
             {
-                print_memory_usage(logFile);
+                print_memory_usage(debug);
             }
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
@@ -704,9 +697,9 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         mp_index++;
     }
-    if (verbose)
+    if (verbose && debug)
     {
-        print_memory_usage(logFile);
+        print_memory_usage(debug);
     }
     if (eInter_)
     {
@@ -731,7 +724,10 @@ void ReRunner::rerun(FILE                        *logFile,
         computeB2(logFile, edist, ndist, masses, inertia,
                   forceMol, torqueMol, fnm);
     }
-    print_memory_usage(stdout);
+    if (verbose && debug)
+    {
+        print_memory_usage(debug);
+    }
 }
 
 int b2(int argc, char *argv[])
