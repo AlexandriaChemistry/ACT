@@ -130,7 +130,7 @@ public:
      * \return error code
      */
     eStats add_point_ydy(double y, double dy);
-                        
+
     /*! \brief
      * Add a point to the data set
      * \param[in] stats The data structure
@@ -142,6 +142,21 @@ public:
      */
     eStats add_point(double x, double y,
                      double dx, double dy);
+
+    /*! \brief
+     * Add a point to the data set
+     * \param[in] x   The x value
+     * \param[in] y   The y value
+     * \return error code
+     */
+    eStats add_point(double x, double y) { return add_point(x, y, 0, 0); }
+
+    /*! \brief
+     * Add a point to the data set
+     * \param[in] y   The y value
+     * \return error code
+     */
+    eStats add_point(double y) { return add_point(y_.size(), y, 0, 0); }
 
     /*! \brief
      * Add a series of datapoints at once. The arrays dx and dy may

@@ -41,6 +41,7 @@ target_sources(actLib
            babel_io.cpp
            bastat.cpp
            bayes.cpp
+           b2utils.cpp
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp

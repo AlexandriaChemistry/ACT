@@ -85,7 +85,6 @@ int simulate(int argc, char *argv[])
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
-    static char              *trajname   = (char *)"";
     static char              *molnm      = (char *)"";
     static char              *qqm        = (char *)"";
     double                    qtot       = 0;
@@ -95,8 +94,6 @@ int simulate(int argc, char *argv[])
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
-        { "-traj",   FALSE, etSTR,  {&trajname},
-          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -262,7 +259,7 @@ int simulate(int argc, char *argv[])
         }
         auto eMin = eMinimizeStatus::OK;
         /* Generate output file for debugging if requested */
-        if (strlen(trajname) > 0)
+        if (strlen(rerun.trajectoryFileName()) > 0)
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(mymol.fragmentHandler()->topologies().size() > 1);
