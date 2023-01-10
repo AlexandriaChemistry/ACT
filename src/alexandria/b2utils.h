@@ -60,8 +60,10 @@ private:
     double mindist_     =  0.1;
     //! Maximum com-com distance (nm)
     double maxdist_     =  4.0;
-    //! Random number seed
+    //! (Quasi-) random number seed
     int    seed_        =    0;
+    //! Low-level debugging
+    bool   debugGD_     = false;
     //! Rotation algorithm
     const char *rotalg_ = "";
     //! Random device
