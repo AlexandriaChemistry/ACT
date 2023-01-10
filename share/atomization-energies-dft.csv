@@ -115,7 +115,7 @@ Si|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-289.325854777323|3|Hartree|Spoel2022a||
 He|0|ccsd(t)/aug-cc-pVQZ|E0|0|-2.9025336|1|Hartree|Kriz2022||
 Ne|0|ccsd(t)/aug-cc-pVQZ|E0|0|-128.8474594|1|Hartree|Kriz2022||
 Ar|0|ccsd(t)/aug-cc-pVQZ|E0|0|-527.0750553|1|Hartree|Kriz2022||
-Kr|0|ccsd(t)/aug-cc-pVQZ|E0|0|-462.9374267|1|Hartree|Kriz2022|pseudopotential|
+Kr|0|ccsd(t)/aug-cc-pVQZ|E0|0|-462.9526257|1|Hartree|Kriz2022|pseudopotential|
 Xe|0|ccsd(t)/aug-cc-pVQZ|E0|0|-329.0846763|1|Hartree|Kriz2022|pseudopotential|
 H|0|WB97X-D3BJ/def2-QZVP|E0|0|-0.505670076197405|2|Hartree|Kriz2022||
 C|0|WB97X-D3BJ/def2-QZVP|E0|0|-37.874593889794|3|Hartree|Kriz2022||
