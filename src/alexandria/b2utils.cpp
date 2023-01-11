@@ -82,7 +82,7 @@ private:
     matrix            Average_;
     //! The number of matrices added
     size_t            naver_  = 0;
-    //! Sobol seed
+    //! Sobol seed, only use this for debugging
     long long int     sobolSeed_ = 0;
     //! Rotation algorithm to use
     RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian;
@@ -205,15 +205,15 @@ private:
      * \param[in] coords Input coordinates 
      * \returns the rotated coordinates 
      */  
-    std::vector<gmx::RVec> sobol(const std::vector<gmx::RVec> &coords)
+    std::vector<gmx::RVec> sobol(double                        rtheta,
+                                 double                        rphi,
+                                 double                        rgamma,
+                                 const std::vector<gmx::RVec> &coords)
     {
-        std::vector<double> q(DIM, 0.0);
-        i8_sobol(DIM, &sobolSeed_, q.data());
-
         // Orientation described by Euler angles
-        double alpha = 2*M_PI*q[0];
-        double beta  = std::acos(2*q[1]-1);
-        double gamma = 2*M_PI*q[2];
+        double alpha = 2*M_PI*rphi;
+        double beta  = std::acos(2*rtheta-1);
+        double gamma = 2*M_PI*rgamma;
         storeAngles(alpha, beta, gamma);
         double cosa = std::cos(alpha);
         double sina = std::sin(alpha);
@@ -297,7 +297,8 @@ public:
             rx = polar(rtheta, rphi, rgamma, coords);
             break;
         case RotationAlgorithm::Sobol:
-            rx = sobol(coords);
+            rx = cartesian(rtheta, rphi, rgamma/2, coords);
+            //rx = sobol(rtheta, rphi, rgamma, coords);
             break;
         }
         return rx;
@@ -410,7 +411,8 @@ void DimerGenerator::generate(FILE                                *logFile,
                   fragptr->topologies().size());
     }
     // Random number generation
-    Rotator rot(rotalg_, debugGD_, seed_);
+    long long int sobolSeed = seed_;
+    Rotator rot(rotalg_, debugGD_, sobolSeed);
     size_t nmp = maxdimers_*ndist_;
 
     
@@ -477,11 +479,26 @@ void DimerGenerator::generate(FILE                                *logFile,
         {
             xrand[m] = xmOrig[m];
         }
+        std::vector<double> q(2*DIM, 0.0);
+        if (RotationAlgorithm::Sobol == rot.rotalg())
+        {
+            // Quasi random numbers
+            i8_sobol(2*DIM, &sobolSeed, q.data());
+        }
+        else
+        {
+            for(size_t j = 0; j < 2*DIM; j++)
+            {
+                // "True" random numbers
+                q[j] = dis_(gen_);
+            }
+        }
         // Rotate the coordinates
         for(int m = 0; m < 2; m++)
         {
-            // Random rotation
-            xrand[m] = rot.random(dis_(gen_), dis_(gen_), dis_(gen_), xrand[m]);
+            // Random rotation, using the pre-calculated random numbers
+            size_t j0 = m*DIM;
+            xrand[m] = rot.random(q[j0], q[j0+1], q[j0+2], xrand[m]);
             if (debugGD_ && ndim == 0)
             {
                 rot.checkMatrix(logFile);
