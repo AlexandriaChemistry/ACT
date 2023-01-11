@@ -58,7 +58,8 @@
 
 #define AMU              (1.660538921e-27)                 /* kg, NIST 2010 CODATA  */
 #define BOLTZMANN        (1.3806488e-23)                   /* (J/K, NIST 2010 CODATA */
-#define AVOGADRO         (6.02214129e23)                   /* no unit, NIST 2010 CODATA */
+// #define AVOGADRO         (6.02214129e23)                   /* no unit, NIST 2010 CODATA */
+#define AVOGADRO         (6.02214076e23)                   /* no unit, NIST 2018 CODATA */
 #define RGAS             (BOLTZMANN*AVOGADRO)              /* (J/(mol K))  */
 #define BOLTZ            (RGAS/KILO)                       /* (kJ/(mol K)) */
 #define FARADAY          (E_CHARGE*AVOGADRO)               /* (C/mol)      */

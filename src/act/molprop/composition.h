@@ -350,8 +350,14 @@ public:
     //! Return the atom id of the atom
     int getAtomid() const { return atomID_; }
     
+    //! Set the atom id of the atom
+    void setAtomid(int atomId) { atomID_ = atomId; }
+    
     //! Return the name of the atom
     const std::string &getName() const { return name_; }
+    
+    //! Set the name of the atom
+    void setName(const std::string &name) { name_ = name; }
     
     //! Return the OpenBabel type of the atom
     const std::string &getObtype() const { return obType_; }

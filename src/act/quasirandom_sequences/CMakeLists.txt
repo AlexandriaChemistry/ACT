@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2021-2022
+#  Copyright (C) 2023
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -25,12 +25,9 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-add_subdirectory(basics)
-add_subdirectory(coulombintegrals)
-add_subdirectory(forces)
-add_subdirectory(ga)
-add_subdirectory(molprop)
-add_subdirectory(poldata)
-add_subdirectory(qgen)
-add_subdirectory(utility)
-add_subdirectory(quasirandom_sequences)
+file(GLOB QUASIRANDOM_SOURCES sobol.cpp sobol.h)
+target_sources(actLib PRIVATE ${QUASIRANDOM_SOURCES})
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -31,14 +31,16 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ACT_SIMULATE_H
-#define ACT_SIMULATE_H
+#ifndef ACT_SECONDVIRIAL_H
+#define ACT_SECONDVIRIAL_H
 
+#include <random>
 #include <vector>
 
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
+#include "alexandria/b2utils.h"
 #include "alexandria/mymol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -64,64 +66,46 @@ void forceFieldSummary(JsonTree      *jtree,
  */
 double sphereIntegrator(double r1, double r2, double val1, double val2);
 
-class DimerGenerator
-{
-private:
-    //! Number of dimers to generate
-    int maxdimers_ = 1000;
-    //! Number of distances to use
-    int ndist_      = 20;
-    //! Minimum com-com distance
-    double mindist_ = 0.2;
-    //! Maximum com-com distance
-    double maxdist_ = 2.0;
-    //! Random number seed
-    int    seed_    = 1993;    
-public:
-    //! Constructor
-    DimerGenerator() {}
-    
-    /*! \brief Add my options
-     * \param[inout] pa The command line options
-     */
-    void addOptions(std::vector<t_pargs> *pa);
-    
-    //! Return the number of distancea
-    int ndist() const { return ndist_; }
-    
-    /*! \brief Do the actual generation
-     * \param[in] mymol The description of the two fragments
-     * \param[out] mps  The generated dimers
-     */
-    void generate(const MyMol          *mymol,
-                  std::vector<MolProp> *mps);
-};
+enum class b2Type { Classical, Force, Torque, Total };
+
+extern const std::map<b2Type, std::string> b2Type2str;
+
+/*! \brief Convert b2Type to string
+ * \param[in] b2t The b2Type
+ * \return The string
+ */
+const std::string &b2TypeToString(b2Type b2t);
 
 class ReRunner
 {
 private:
     //! The force computer
-    ForceComputer      *forceComp_ = nullptr;
+    ForceComputer      *forceComp_   = nullptr;
     //! The dimer generator
-    DimerGenerator     *gendimers_ = nullptr;
+    DimerGenerator     *gendimers_   = nullptr;
     //! GROMACS output stuff
-    gmx_output_env_t   *oenv_      = nullptr;
+    gmx_output_env_t   *oenv_        = nullptr;
                
     //! Trajectory name
-    const char         *trajname_  = "";
+    const char         *trajname_    = "";
     //! Temperature to start
-    double              T1_        = 300;
+    double              T1_          = 300;
     //! Final temperature
-    double              T2_        = 400;
+    double              T2_          = 400;
     //! Temperature step
-    double              deltaT_    = 10;
+    double              deltaT_      = 10;
+    //! Number of bootstraps
+    int                 nbootStrap_  = 1;
     //! Whether to compute interaction energies and potentially B2
-    bool                eInter_    = true;
+    bool                eInter_      = true;
+    //! Optimize the bootstrapping by pre-calculating stuff
+    bool                optimizedB2_ = false;
     //! The temperature array
     std::vector<double> Temperatures_;
-    //! Second virial as a function of T (see function temperatures)
-    std::vector<double> b2t_;
-
+    //! Second virial as a function of T for all components (see function temperatures)
+    std::map<b2Type, std::vector<double>> b2t_;
+    //! Uncertainty in the second virial as determined by bootstrapping
+    std::map<b2Type, std::vector<double>> b2tError_;
     //! Generate temperature series if needed and return it
     const std::vector<double> &temperatures();
     /*! \brief Generate plot with Mayer functions for all temperatures
@@ -157,12 +141,17 @@ public:
     /*! \brief Add command line options
      * \param[inout] pargs  Regular flags
      * \param[inout] filenm File options
+     * \param[in]    b2code Is this the b2 program calling?
      */
     void addOptions(std::vector<t_pargs>  *pargs,
-                    std::vector<t_filenm> *filenm);
+                    std::vector<t_filenm> *filenm,
+                    bool                   b2code = false);
     
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }
+
+    //! \return the trajectory name
+    const char *trajectoryFileName() const { return trajname_; }
     
     //! \brief Manually set the temperatures
     void setTemperatures(double T1, double T2, double deltaT) { T1_ = T1; T2_ = T2; deltaT_ = deltaT; }
@@ -196,24 +185,26 @@ public:
     /*! \brief Compute the second virial coefficient including QM corrections
      * \param[in] logFile   Output file for printing
      * \param[in] edist     Statistics for interaction energies
+     * \param[in] ndist     Number of distinct distances or 0 when unknown
      * \param[in] inertia   The moments of inertia of the molecules
-     * \param[in] force1    The interaction forces on molecule 1
+     * \param[in] force     The interaction forces on both molecules
      * \param[in] torqueMol The torque on both molecules
      * \param[in] fnm       The filenames
      */
     void computeB2(FILE                                      *logFile,
                    gmx_stats                                  edist,
-                   double                                     mass,
-                   const gmx::RVec                            inertia[2],
-                   const std::vector<gmx::RVec>              &force1,
+                   int                                        ndist,
+                   const std::vector<double>                 &mass,
+                   const std::vector<gmx::RVec>              &inertia,
+                   const std::vector<std::vector<gmx::RVec>> &force,
                    const std::vector<std::vector<gmx::RVec>> &torqueMol,
                    const std::vector<t_filenm>               &fnm);
-                   
+
     //! \return the second virial as a function of T.
-    const std::vector<double> &b2Temp() const { return b2t_; }
+    const std::vector<double> &b2Temp(b2Type b2t) const { return b2t_.find(b2t)->second; }
 
 };
 
 } // namespace alexandria
 
-#endif // ACT_SIMULATE_H
+#endif // ACT_SECONDVIRIAL_H

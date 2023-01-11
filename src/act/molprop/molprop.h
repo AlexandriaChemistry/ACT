@@ -201,8 +201,12 @@ public:
     
     //! Return category array as const
     const std::vector<std::string> &categoryConst() const { return category_; }
+
     //! Return true if catname is an existing category
     bool SearchCategory(const std::string &catname) const;
+    
+    //! Clear the category vector
+    void clearCategory() { category_.clear(); }
     
     //! Return number of atoms in the compound
     int NAtom() const { return natom_; }

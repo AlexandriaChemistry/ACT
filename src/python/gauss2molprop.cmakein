@@ -29,8 +29,9 @@ if __name__ == '__main__':
 
     mp = read_gaussian_log(args.infile, args.molname,
                            args.basisset, args.verbose, args.coordinate_set)
-    if mp:
+    if None != mp:
         molprops = Molprops()
-        molprops.add_molecule(mp)
-        molprops.write(args.outfile)
+        molprops.open(args.outfile)
+        molprops.add_molecule(mp, True)
+        molprops.close()
         print("Wrote %s" % args.outfile)
