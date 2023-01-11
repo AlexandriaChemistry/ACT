@@ -131,15 +131,11 @@ private:
         }
     }
     
-    std::vector<gmx::RVec> cartesian(double                        ralpha,
-                                     double                        rbeta,
-                                     double                        rgamma,
+    std::vector<gmx::RVec> cartesian(double                        alpha,
+                                     double                        beta,
+                                     double                        gamma,
                                      const std::vector<gmx::RVec> &coords)
     {
-        // Distribution is 0-1, multiply by two to get to 2*M_PI
-        double alpha = ralpha * 2 * M_PI;
-        double beta  = rbeta  * 2 * M_PI;
-        double gamma = rgamma * 2 * M_PI;
         storeAngles(alpha, beta, gamma);
         double cosa  = std::cos(alpha);
         double sina  = std::sin(alpha);
@@ -163,14 +159,11 @@ private:
         return rotate(coords);
     }
     
-    std::vector<gmx::RVec>  polar(double                        rtheta,
-                                  double                        rphi,
-                                  double                        rgamma,
-                                  const std::vector<gmx::RVec> &coords)
+    std::vector<gmx::RVec> polar(double                        phi,
+                                 double                        theta,
+                                 double                        gamma,
+                                 const std::vector<gmx::RVec> &coords)
     {
-        // Distribution is 0-1, multiply by two to get to 2*M_PI
-        double    theta = std::acos(2*rtheta-1);
-        double    phi   = rphi  * 2 * M_PI;
         // Create random vector
         // https://stackoverflow.com/questions/20769011/converting-3d-polar-coordinates-to-cartesian-coordinates
         gmx::RVec u     = { 
@@ -181,7 +174,6 @@ private:
         // Now create rotation matrix corresponding to rotation about this vector
         // https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
         // Confusing notation with two theta angles, Wikipedia is strange
-        double gamma = rgamma * 2 * M_PI;
         double costh  = std::cos(gamma);
         double sinth  = std::sin(gamma);
         storeAngles(phi, theta, gamma);
@@ -205,15 +197,12 @@ private:
      * \param[in] coords Input coordinates 
      * \returns the rotated coordinates 
      */  
-    std::vector<gmx::RVec> sobol(double                        rtheta,
-                                 double                        rphi,
-                                 double                        rgamma,
+    std::vector<gmx::RVec> sobol(double                        alpha,
+                                 double                        beta,
+                                 double                        gamma,
                                  const std::vector<gmx::RVec> &coords)
     {
         // Orientation described by Euler angles
-        double alpha = 2*M_PI*rphi;
-        double beta  = std::acos(2*rtheta-1);
-        double gamma = 2*M_PI*rgamma;
         storeAngles(alpha, beta, gamma);
         double cosa = std::cos(alpha);
         double sina = std::sin(alpha);
@@ -282,23 +271,34 @@ public:
     
     /*! \brief Do a (quasi) random rotation
      */
-    std::vector<gmx::RVec> random(double                        rtheta,
-                                  double                        rphi,
-                                  double                        rgamma,
+    std::vector<gmx::RVec> random(double                        r1,
+                                  double                        r2,
+                                  double                        r3,
                                   const std::vector<gmx::RVec> &coords)
     {
+        // Distribution is 0-1, multiply by two to get to 2*M_PI
+        double alpha = r1 * 2 * M_PI;
+        double gamma = r2 * 2 * M_PI;
         std::vector<gmx::RVec> rx;
         switch(rotalg_)
         {
         case RotationAlgorithm::Cartesian:
-            rx = cartesian(rtheta, rphi, rgamma, coords);
+            {
+                double beta  = r3 * 2 * M_PI;
+                rx = cartesian(alpha, beta, gamma, coords);
+            }
             break;
         case RotationAlgorithm::Polar:
-            rx = polar(rtheta, rphi, rgamma, coords);
+            {
+                double beta  = std::acos(2*r3-1);
+                rx = sobol(alpha, beta, gamma, coords);
+            }
             break;
         case RotationAlgorithm::Sobol:
-            rx = cartesian(rtheta, rphi, rgamma/2, coords);
-            //rx = sobol(rtheta, rphi, rgamma, coords);
+            {
+                double beta  = std::acos(2*r3-1);
+                rx = polar(alpha, beta, gamma, coords);
+            }
             break;
         }
         return rx;
@@ -414,7 +414,6 @@ void DimerGenerator::generate(FILE                                *logFile,
     long long int sobolSeed = seed_;
     Rotator rot(rotalg_, debugGD_, sobolSeed);
     size_t nmp = maxdimers_*ndist_;
-
     
     auto info = gmx::formatString("Will generate %zu dimer configurations at %d distances using %s algorithm.",
                                   nmp, ndist_, rotalgToString(rot.rotalg()).c_str());
