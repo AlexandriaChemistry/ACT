@@ -94,11 +94,14 @@ void ACTMiddleMan::run()
     {
         fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
     }
-    // The send my initial genome and fitness to the master
+    // I.
+    // Send my initial genome and fitness to the master
     int master = cr->superior();
     ind_->genome().Send(cr, master);
     auto cont = CommunicationStatus::OK;
-    
+
+    // II.
+    // Do we need to continue?
     cont = cr->recv_data(master);
     while (CommunicationStatus::RECV_DATA == cont)
     {
@@ -106,9 +109,11 @@ void ACTMiddleMan::run()
         // FIXME: is this really necessary?
         iMolSelect ims = cr->recv_iMolSelect(master);
         
-        // Now get the parameters
+        // Now get the new bases.
         cr->recv_double_vector(master, ind_->genomePtr()->basesPtr());
         
+        // III.
+        // Receive assignment from master.  
         TuneFFMiddlemanMode mode = cr->recv_ff_middleman_mode(master);
         if (mode == TuneFFMiddlemanMode::MUTATION)
         {
@@ -117,23 +122,34 @@ void ACTMiddleMan::run()
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
                 fitComp_->compute(ind_->genomePtr(), ims);
+                // IV.
+                // Send the mutated vector
+                cr->send_double_vector(master, ind_->genomePtr()->basesPtr());
+
+                // V.
+                // Send the new train fitness
+                cr->send_double(master, ind_->genome().fitness(ims));
+                if (gach_->evaluateTestset())
+                {
+                    fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+                    cr->send_double(master, ind_->genome().fitness(iMolSelect::Test));
+                }
             }
-            
-            // Send the mutated vector
-            cr->send_double_vector(master, ind_->genomePtr()->basesPtr());
-            
-            // Send the new train fitness
-            cr->send_double(master, ind_->genome().fitness(ims));
-            if (gach_->evaluateTestset() && gach_->optimizer() != OptimizerAlg::MCMC)
+            else
             {
-                fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
-                cr->send_double(master, ind_->genome().fitness(iMolSelect::Test));
-            }
-            
-            // If we are working with MCMC, send the best found to the MASTER
-            if (gach_->optimizer() == OptimizerAlg::MCMC)
-            {
-                ind_->bestGenome().Send(cr, master);
+                // IV.
+                // If we are working with Hybrid or MCMC, send 
+                // the best genome found to the MASTER.
+                cr->send_double_vector(master, ind_->bestGenomePtr()->basesPtr());
+                //ind_->bestGenome().Send(cr, master);
+                // V.
+                // Send the new train fitness
+                cr->send_double(master, ind_->bestGenome().fitness(ims));
+                if (gach_->evaluateTestset())
+                {
+                    fitComp_->compute(ind_->bestGenomePtr(), iMolSelect::Test);
+                    cr->send_double(master, ind_->bestGenome().fitness(iMolSelect::Test));
+                }
             }
         }
         else if (mode == TuneFFMiddlemanMode::FITNESS)

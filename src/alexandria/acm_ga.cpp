@@ -231,12 +231,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         fprintf(logFile_, "\n");
     }
-    // if (gach_->evaluateTestset())
-    // {
-    //     fitnessComputer()->compute(ind->genomePtr(), imste);
-    // }
+
     pool[pold]->addGenome(ind->genome());
     pool[pnew]->addGenome(ind->genome());
+    // I. 
     // Load the initial genomes from the middlemen. 
     // This is needed since they have read their own parameters
     // from the Poldata structures.
@@ -264,7 +262,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     // Iterate and create new generation
     do
     {
-
         // Sort individuals in increasing order of fitness
         auto gp = pool[pold]->genePoolPtr();
         if (gach_->sort())
@@ -284,12 +281,14 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
                 int dest = cr->middlemen()[i-1];
+                // II.
                 // Signify the middlemen to continue
                 cr->send_data(dest);
                 // Send the data set FIXME: is this necessary? It will always be train?
                 cr->send_iMolSelect(dest, imstr);
                 // Now send the new bases
                 cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
+                // III.
                 // Tell the middleman to carry the MUTATION mode
                 cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::FITNESS);
             }
@@ -410,12 +409,14 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];
+            // II.
             // Signify the middlemen to continue
             cr->send_data(dest);
             // Send the data set FIXME: is this necessary? It will always be train?
             cr->send_iMolSelect(dest, imstr);
             // Now send the new bases
             cr->send_double_vector(dest, pool[pnew]->genomePtr(i)->basesPtr());
+            // III.
             // Tell the middleman to carry the MUTATION mode
             cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::MUTATION);
         }
@@ -427,6 +428,8 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 fprintf(debug, "Mutating the MASTER's genome...\n");
             }
             mutator()->mutate(pool[pnew]->genomePtr(0), ind->bestGenomePtr(), gach_->prMut());
+            // Store master's best genome in the pool at position 0
+            pool[pnew]->replaceGenome(0, ind->bestGenome());
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
                 fitnessComputer()->compute(pool[pnew]->genomePtr(0), imstr);
@@ -440,13 +443,18 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         {
             fprintf(debug, "Fetching mutated children and fitness from new generation...\n");
         }
-        // Receive the new children (parameters + fitness) from the middle men for the non elitist
+        // Receive the new children (parameters + fitness) from the middle men for the 
+        // non elitist.
         // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int src      = cr->middlemen()[i-1];
-            cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
-            auto fitness = cr->recv_double(src);  // Receiving the new training fitness
+            // IV.
+            // Receive the mutated parameters
+            cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());
+            // V.
+            // and the fitness.
+            auto fitness = cr->recv_double(src);
             pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
             if (gach_->evaluateTestset())
             {
