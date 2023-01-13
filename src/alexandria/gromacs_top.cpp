@@ -330,7 +330,7 @@ void print_top_header(FILE                    *fp,
             {
                 auto vdwtype = aType.interactionTypeToIdentifier(InteractionType::VDW);
                 double sigma = 0, epsilon = 0, gamma = 0;
-                if (!vdwtype.id().empty())
+                if (!vdwtype.id().empty() && vdw.parameterExists(vdwtype))
                 {
                     auto myvdw = vdw.findParametersConst(vdwtype);
                     sigma      = myvdw["sigma"].value();
