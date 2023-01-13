@@ -414,20 +414,27 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
         }    
 
-        auto fs = pd->findForcesConst(InteractionType::BONDS);
-        
-        for(const auto topentry : mymol->topology()->entry(InteractionType::BONDS))
+        auto itbonds = InteractionType::BONDS;
+        if (pd->interactionPresent(itbonds))
         {
-            int ai = topentry->atomIndex(0);
-            int aj = topentry->atomIndex(1);
-            
-            auto name_ai = atomTypeOpenMM(myatoms[ai].ffType(), ai);
-            auto name_aj = atomTypeOpenMM(myatoms[aj].ffType(), aj);
-
-            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), name_ai.c_str());
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), name_aj.c_str());  
-        }   
+            auto fs = pd->findForcesConst(itbonds);
+        
+            if (mymol->topology()->hasEntry(itbonds))
+            {
+                for(const auto topentry : mymol->topology()->entry(itbonds))
+                {
+                    int ai = topentry->atomIndex(0);
+                    int aj = topentry->atomIndex(1);
+                    
+                    auto name_ai = atomTypeOpenMM(myatoms[ai].ffType(), ai);
+                    auto name_aj = atomTypeOpenMM(myatoms[aj].ffType(), aj);
+                    
+                    auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), name_ai.c_str());
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), name_aj.c_str());  
+                }   
+            }
+        }
     } 
 
 
