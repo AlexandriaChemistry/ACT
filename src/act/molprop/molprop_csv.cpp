@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,16 +39,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/futil.h"
-
-#include "alexandria/alex_modules.h"
+#include "act/alexandria/alex_modules.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/poldata/poldata_xml.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

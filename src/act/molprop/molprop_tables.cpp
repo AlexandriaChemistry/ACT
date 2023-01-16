@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,6 +39,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "act/alexandria/alex_modules.h"
+#include "act/utility/latex_util.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"
@@ -46,9 +48,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/strconvert.h"
-
-#include "alexandria/alex_modules.h"
-#include "act/utility/latex_util.h"
 
 namespace alexandria
 {

@@ -113,5 +113,3 @@ add_subdirectory(python)
 add_library(actLib "")
 
 add_subdirectory(act)
-# This must come last (I think)
-add_subdirectory(alexandria)

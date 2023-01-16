@@ -37,10 +37,10 @@
 #include <random>
 #include <vector>
 
+#include "act/alexandria/mymol.h"
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
-#include "alexandria/mymol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"

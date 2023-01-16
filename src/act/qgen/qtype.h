@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,7 +38,7 @@
 #include <string>
 
 #include "act/molprop/molpropobservable.h"
-#include "alexandria/topology.h"
+#include "act/alexandria/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 

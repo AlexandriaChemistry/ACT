@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,20 +30,19 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
+#include <cmath>
 
 #include <map>
 
 #include <gtest/gtest.h>
 
-#include "alexandria/allbondeds.h"
+#include "act/alexandria/allbondeds.h"
+#include "act/poldata/poldata_utils.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "act/poldata/poldata_utils.h"
 
 namespace alexandria
 {

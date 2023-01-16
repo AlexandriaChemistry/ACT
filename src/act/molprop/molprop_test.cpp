@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,13 +35,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/commandline/pargs.h"
-
-#include "alexandria/alex_modules.h"
+#include "act/alexandria/alex_modules.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
-#include "alexandria/mymol.h"
+#include "act/alexandria/mymol.h"
 #include "act/poldata/poldata_xml.h"
+#include "gromacs/commandline/pargs.h"
 
 namespace alexandria
 {

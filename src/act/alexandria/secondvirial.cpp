@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,30 +32,29 @@
  */
 #include "secondvirial.h"
 
-#include <ctype.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cstdlib>
 
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
-
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/atype_mapping.h"
+#include "act/alexandria/babel_io.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/molhandler.h"
+#include "act/alexandria/mymol.h"
+#include "act/alexandria/princ.h"
+#include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/poldata/poldata_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
-#include "alexandria/alex_modules.h"
-#include "alexandria/atype_mapping.h"
-#include "alexandria/babel_io.h"
-#include "alexandria/confighandler.h"
-#include "alexandria/molhandler.h"
-#include "alexandria/mymol.h"
-#include "alexandria/princ.h"
-#include "alexandria/tuning_utility.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

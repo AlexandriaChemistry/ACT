@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,6 +42,11 @@
 #include <map>
 #include <vector>
 
+#include "act/alexandria/topology.h"
+#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/poldata/poldata.h"
+#include "act/utility/regression.h"
+#include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -52,12 +57,6 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
-
-#include "alexandria/topology.h"
-#include "act/coulombintegrals/coulombintegrals.h"
-#include "act/poldata/poldata.h"
-#include "act/utility/regression.h"
-#include "act/utility/units.h"
 
 namespace alexandria
 {

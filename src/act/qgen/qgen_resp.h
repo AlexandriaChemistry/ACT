@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,12 +39,11 @@
 
 #include <vector>
 
+#include "act/alexandria/topology.h"
+#include "act/basics/chargemodel.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
-
-#include "act/basics/chargemodel.h"
-#include "alexandria/topology.h"
 
 struct gmx_output_env_t;
 struct t_symtab;

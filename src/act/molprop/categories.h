@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,19 +31,14 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-
-
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
-
-#include <string.h>
 
 #include <string>
 #include <vector>
 
+#include "act/alexandria/molselect.h"
 #include "gromacs/utility/real.h"
-
-#include "alexandria/molselect.h"
 
 /*! \brief
  * Contains classes related to alexandria force field tools

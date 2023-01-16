@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,13 +33,13 @@
 
 #include "actpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <cstdlib>
 
 #include <gtest/gtest.h>
 
-#include "alexandria/topology.h"
+#include "act/alexandria/topology.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

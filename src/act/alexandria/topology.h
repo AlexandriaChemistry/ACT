@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,6 +39,7 @@
 #include <map>
 #include <vector>
 
+#include "act/alexandria/mymol_low.h"
 #include "act/basics/identifier.h"
 #include "act/poldata/particletype.h"
 #include "act/poldata/poldata.h"
@@ -46,7 +47,6 @@
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "alexandria/mymol_low.h"
 
 namespace alexandria
 {

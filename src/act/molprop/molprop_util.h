@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,10 +36,9 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
-#include "gromacs/utility/arrayref.h"
-
+#include "act/alexandria/molselect.h"
 #include "act/molprop/molprop.h"
-#include "alexandria/molselect.h"
+#include "gromacs/utility/arrayref.h"
 
 struct t_topology;
 

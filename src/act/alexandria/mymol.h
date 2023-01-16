@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,6 +37,10 @@
 
 #include <map>
 
+#include "act/alexandria/fragmenthandler.h"
+#include "act/alexandria/gentop_vsite.h"
+#include "act/alexandria/molselect.h"
+#include "act/alexandria/mymol_low.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/poldata/poldata.h"
@@ -45,10 +49,6 @@
 #include "act/qgen/qtype.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
-#include "alexandria/fragmenthandler.h"
-#include "alexandria/gentop_vsite.h"
-#include "alexandria/molselect.h"
-#include "alexandria/mymol_low.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"

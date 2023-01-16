@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,13 +30,33 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
+#include <cmath>
 
 #include <map>
 
 #include <gtest/gtest.h>
 
-#include "../GeneticAlgorithm.h"
+#include "act/alexandria/acm_ga.h"
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/acthelper.h"
+#include "act/alexandria/actmiddleman.h"
+#include "act/alexandria/bayes.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/molselect.h"
+#include "act/alexandria/percentmutator.h"
+#include "act/forces/forcecomputer.h"
+#include "act/ga/FitnessComputer.h"
+#include "act/ga/GeneticAlgorithm.h"
+#include "act/ga/Sorter.h"
+#include "act/ga/Terminator.h"
+#include "act/ga/npointcrossover.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
@@ -44,26 +64,6 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-#include "act/forces/forcecomputer.h"
-#include "alexandria/acm_ga.h"
-#include "alexandria/bayes.h"
-#include "alexandria/acmfitnesscomputer.h"
-#include "alexandria/acminitializer.h"
-#include "alexandria/acthelper.h"
-#include "alexandria/actmiddleman.h"
-#include "alexandria/confighandler.h"
-#include "alexandria/mcmcmutator.h"
-#include "alexandria/molgen.h"
-#include "alexandria/molselect.h"
-#include "alexandria/percentmutator.h"
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "../FitnessComputer.h"
-#include "../npointcrossover.h"
-#include "../Sorter.h"
-#include "../Terminator.h"
 
 namespace ga
 {

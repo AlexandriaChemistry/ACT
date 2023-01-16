@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2019-2022
+ * Copyright (C) 2019-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,31 +31,30 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
+#include <cmath>
 
 #include <map>
 
 #include <gtest/gtest.h>
 
+#include "act/alexandria/babel_io.h"
+#include "act/alexandria/fill_inputrec.h"
+#include "act/alexandria/mymol.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_utils.h"
+#include "act/poldata/poldata_xml.h"
+#include "act/qgen/qgen_acm.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
-#include "alexandria/babel_io.h"
-#include "alexandria/fill_inputrec.h"
-#include "alexandria/mymol.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
-#include "act/qgen/qgen_acm.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "act/poldata/poldata_utils.h"
 
 namespace alexandria
 {

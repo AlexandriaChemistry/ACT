@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,8 +30,8 @@
     
 #include <vector>
 
+#include "act/alexandria/topology.h"
 #include "act/poldata/poldata.h"
-#include "alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,11 +33,11 @@
 
 #include "actpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <gtest/gtest.h>
 
-#include "alexandria/secondvirial.h"
+#include "act/alexandria/secondvirial.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,7 +31,6 @@
 
 #include <cstdlib>
 
-#include "alexandria/topology.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,10 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/real.h"
-
+#include "act/alexandria/topology.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"
@@ -52,7 +49,9 @@
 #include "act/molprop/phase.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/communicationrecord.h"
-#include "alexandria/topology.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief
  * Contains all classes related to alexandria force field tools

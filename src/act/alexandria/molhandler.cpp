@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,22 +41,21 @@
 
 #include <numeric>
 
+#include "act/alexandria/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
-#include "alexandria/velocityhandler.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
-
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

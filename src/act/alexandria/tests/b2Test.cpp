@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,21 +30,20 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <math.h>
+#include <cmath>
 
 #include <map>
 
 #include <gtest/gtest.h>
 
-#include "alexandria/secondvirial.h"
+#include "act/alexandria/secondvirial.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "gromacs/math/units.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
