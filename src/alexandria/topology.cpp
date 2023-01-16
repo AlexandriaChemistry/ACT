@@ -703,7 +703,7 @@ void Topology::makePropers()
     }
 }
 
-void Topology::makeVsite2s(const ForceFieldParameterList &vsite2)
+void Topology::makeVsite2s(const gmx_unused ForceFieldParameterList &vsite2)
 {
     gmx_fatal(FARGS, "Vsite2 not implemented yet");
 }

@@ -291,7 +291,7 @@ void add_xcm(rvec x[], int gnx, const int* index, rvec xcm)
     }
 }
 
-void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d)
+static void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d)
 {
     int    i, m;
     rvec   xcm, prcomp;

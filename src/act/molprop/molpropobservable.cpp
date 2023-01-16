@@ -146,7 +146,7 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
 }
 
 CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
-                                               int                        root,
+                                               gmx_unused int             root,
                                                MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -630,7 +630,7 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 }
 
 CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr,
-                                                      int                        root,
+                                                      gmx_unused int             root,
                                                       MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);

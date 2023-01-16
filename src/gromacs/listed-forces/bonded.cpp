@@ -1121,7 +1121,7 @@ real linear_angles(int nbonds,
         rvec_inc(fshift[CENTRAL], f_j);
         rvec_inc(fshift[t2], f_k);
 
-#ifdef OLD
+        //#ifdef OLD
         ki   = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);                               
         dr2  = iprod(r_ik, r_ik);                                                   
         dr   = dr2*gmx::invsqrt(dr2);                                               
@@ -1148,7 +1148,7 @@ real linear_angles(int nbonds,
             fshift[ki][m]      += fik;
             fshift[CENTRAL][m] -= fik;
         }
-#endif
+        //#endif
     }                                         /* 116 TOTAL	*/
     return vtot;
 }

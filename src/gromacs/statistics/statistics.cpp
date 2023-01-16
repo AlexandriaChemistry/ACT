@@ -222,8 +222,10 @@ eStats gmx_stats::compute(int weight)
         ssxx         = N*(xx_nw - gmx::square(sx_nw));
         ssyy         = N*(yy_nw - gmx::square(sy_nw));
         ssxy         = N*(yx_nw - (sx_nw*sy_nw));
-        Rdata_       = std::sqrt(gmx::square(ssxy)/(ssxx*ssyy));
-
+        if (ssxx*ssyy != 0)
+        {
+            Rdata_       = std::sqrt(gmx::square(ssxy)/(ssxx*ssyy));
+        }
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
            and b) */
@@ -232,23 +234,26 @@ eStats gmx_stats::compute(int weight)
         sx = sx/wtot;
         sy = sy/wtot;
 
-        aa_ = (yx/xx);
-        a_  = (yx-sx*sy)/(xx-sx*sx);
-        b_  = (sy)-(a_)*(sx);
-
-        /* Compute chi2, deviation from a line y = ax+b. Also compute
-           chi2aa which returns the deviation from a line y = ax. */
-        chi2_   = 0;
-        chi2aa_ = 0;
-        for (int i = 0; (i < N); i++)
+        if (xx != 0)
         {
-            real ddy = 1;
-            if (dy_[i] > 0)
+            aa_ = (yx/xx);
+            a_  = (yx-sx*sy)/(xx-sx*sx);
+            b_  = (sy)-(a_)*(sx);
+
+            /* Compute chi2, deviation from a line y = ax+b. Also compute
+               chi2aa which returns the deviation from a line y = ax. */
+            chi2_   = 0;
+            chi2aa_ = 0;
+            for (int i = 0; (i < N); i++)
             {
-                ddy = dy_[i];
+                real ddy = 1;
+                if (dy_[i] > 0)
+                {
+                    ddy = dy_[i];
+                }
+                chi2aa_ += gmx::square((y_[i]-(aa_*x_[i]))/ddy);
+                chi2_   += gmx::square((y_[i]-(a_*x_[i]+b_))/ddy);
             }
-            chi2aa_ += gmx::square((y_[i]-(aa_*x_[i]))/ddy);
-            chi2_   += gmx::square((y_[i]-(a_*x_[i]+b_))/ddy);
         }
         if (N > 2)
         {

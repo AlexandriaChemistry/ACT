@@ -109,7 +109,7 @@ CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
 }
 
 CommunicationStatus Vsite::BroadCast(const CommunicationRecord *cr,
-                                     int                        root,
+                                     gmx_unused int             root,
                                      MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);

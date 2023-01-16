@@ -252,7 +252,6 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
 {
     int                       ntot;
     FILE                     *fp, *gp;
-    double                    T = -1;
     std::vector<double>       vec;
     const char               *iupac;
     alexandria::QmCount       qmc;
