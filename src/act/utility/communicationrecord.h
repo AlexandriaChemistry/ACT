@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -112,7 +112,8 @@ private:
     std::vector<int>  middlemen_;
     //! Check whether init has been called
     bool              initCalled_            = false;
-    
+    //! Check whether done has been called
+    bool              doneCalled_            = false;
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
@@ -134,8 +135,8 @@ private:
      * \param[in] fp The file pointer to print to
      */
     void print(FILE *fp);
-    //! Check whether init has been called and throw if not
-    void check_init() const;
+    //! Check whether init has been called and done has not been called and throw if not
+    void check_init_done() const;
     
 public:
     //! \brief Constructor
@@ -153,6 +154,14 @@ public:
      * \return Outcome of the initiation.
      */
     CommunicationStatus init(int nmiddleman);
+    
+    /*! \brief Tell the communication record that we are done.
+     * Any additional communication will cause a throw.
+     */
+    void done()
+    {
+        doneCalled_ = true;
+    }
     
     //! \return my MPI rank
     int rank() const { return rank_; }

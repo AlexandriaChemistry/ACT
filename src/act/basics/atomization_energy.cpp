@@ -151,6 +151,14 @@ AtomizationEnergy::AtomizationEnergy()
         fprintf(debug, "Read %zu terms for atomization energy\n", terms_.size());
     }
 }
+
+AtomizationEnergy::~AtomizationEnergy()
+{
+    for(auto &t : terms_)
+    {
+        delete t;
+    }
+}
         
 double AtomizationEnergy::term(const std::string &elem,
                                int                charge,

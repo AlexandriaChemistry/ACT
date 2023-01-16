@@ -50,6 +50,9 @@ namespace alexandria
         //! Constructor, reads input file and stores it
         AtomizationEnergy();
         
+        //! Destructor to clean up memory
+        ~AtomizationEnergy();
+        
         /*! \brief Return a term according to specifications
          * \param[in] elem   The element or atom
          * \param[in] charge The charge of the element/atom

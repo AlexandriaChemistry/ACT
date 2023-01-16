@@ -593,8 +593,7 @@ bool OptACM::runMaster(bool optimize,
         }
         if (logFile())
         {   
-            std::map<iMolSelect, ga::Genome>::iterator it;
-            for (it = bestGenome.begin(); it != bestGenome.end(); it++)
+            for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
                 for (const auto &ims : iMolSelectNames())
@@ -630,6 +629,8 @@ bool OptACM::runMaster(bool optimize,
 
     // Stop MASTER's helpers
     fitComp_->distributeTasks(CalcDev::Stop);
+    // Turn off further communication
+    sii_->commRecPtr()->done();
 
     // Final energy calculation for all molecules
     // TODO: parallellize this. FIXME: there is no need to do this I believe, it's done above, and parallel!

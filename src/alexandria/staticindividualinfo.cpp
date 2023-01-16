@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,7 +50,7 @@
 namespace alexandria
 {
 
-StaticIndividualInfo::StaticIndividualInfo(const CommunicationRecord *cr) : cr_(cr)
+StaticIndividualInfo::StaticIndividualInfo(CommunicationRecord *cr) : cr_(cr)
 {
     fillFittingTargets();
 }

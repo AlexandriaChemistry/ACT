@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -64,24 +64,42 @@ std::map<NodeType, const char *> ntToString = {
     { NodeType::Helper,    "Helper"    }  
 };
 
+static void check_return(const char *msg, int returnvalue)
+{
+    switch (returnvalue)
+    {
+    case MPI_SUCCESS:
+        return;
+    case MPI_ERR_COMM:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid communicator. %s.", msg).c_str()));
+        break;
+    case MPI_ERR_ARG:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid argument. %s.", msg).c_str()));
+        break;
+    }
+}
+
 CommunicationRecord::CommunicationRecord()
 {
     cr_            = init_commrec();
-    // TODO check return values
-    (void) MPI_Comm_dup(MPI_COMM_WORLD, &mpi_act_world_);
-    (void) MPI_Comm_rank(mpi_act_world_, &rank_);
-    (void) MPI_Comm_size(mpi_act_world_, &size_);
+    check_return("MPI_Comm_dup", MPI_Comm_dup(MPI_COMM_WORLD, &mpi_act_world_));
+    check_return("MPI_Comm_rank", MPI_Comm_rank(mpi_act_world_, &rank_));
+    check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_world_, &size_));
     if (rank_ == 0)
     {
         nt_ = NodeType::Master;
     }
 }
 
-void CommunicationRecord::check_init() const
+void CommunicationRecord::check_init_done() const
 {
     if (!initCalled_)
     {
         GMX_THROW(gmx::InternalError("ComunicationRecord::init has not been called"));
+    }
+    if (doneCalled_)
+    {
+        GMX_THROW(gmx::InternalError("Comunication attempted after done routine was called"));
     }
 }
 
@@ -216,11 +234,11 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     {
         int colour = rank_ / (nhelper_per_middleman_ + 1);
         int key    = rank_ % (nhelper_per_middleman_ + 1);
-        MPI_Comm_split(mpi_act_world_, colour, key, &mpi_act_helpers_);
+        check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, colour, key, &mpi_act_helpers_));
     }
     if (MPI_COMM_NULL == mpi_act_helpers_)
     {
-        MPI_Comm_dup(mpi_act_world_, &mpi_act_helpers_);
+        check_return("MPI_Comm_dup", MPI_Comm_dup(mpi_act_world_, &mpi_act_helpers_));
     }
     print(stdout);
     initCalled_ = true;
@@ -235,11 +253,11 @@ CommunicationRecord::~CommunicationRecord()
     }
     if (mpi_act_helpers_ != mpi_act_world_ && mpi_act_helpers_ != MPI_COMM_NULL)
     {
-        MPI_Comm_free(&mpi_act_helpers_);
+        check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_helpers_));
     }
     if (MPI_COMM_NULL != mpi_act_world_)
     {
-        MPI_Comm_free(&mpi_act_world_);
+        check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_world_));
     }
 }
 
@@ -258,7 +276,7 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
             }
         }
         MPI_Group world_group, mygroup;
-        MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+        check_return("MPI_Comm_group", MPI_Comm_group(MPI_COMM_WORLD, &world_group));
         std::vector<int> iranks;
         std::string      cgroup;
         for(int i : ranks)
@@ -270,13 +288,12 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
         {
             fprintf(debug, "Rank: %d cgroup %s\n", rank(), cgroup.c_str());
         }
-        MPI_Group_incl(world_group, iranks.size(), iranks.data(), &mygroup);
-        MPI_Comm_create_group(MPI_COMM_WORLD, mygroup, 0, &my_comm);
+        check_return("MPI_Group_incl", MPI_Group_incl(world_group, iranks.size(), iranks.data(), &mygroup));
+        check_return("MPI_Comm_create_group", MPI_Comm_create_group(MPI_COMM_WORLD, mygroup, 0, &my_comm));
     }
     if (my_comm == MPI_COMM_NULL)
     {
-        // Check error messages
-        (void) MPI_Comm_dup(comm_world(), &my_comm);
+        check_return("MPI_Comm_dup", MPI_Comm_dup(comm_world(), &my_comm));
     }
     return my_comm;
 }
@@ -286,28 +303,13 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
  *           LOW LEVEL ROUTINES                  *
  *************************************************/
 
-static void check_return(const char *msg, int returnvalue)
-{
-    switch (returnvalue)
-    {
-    case MPI_SUCCESS:
-        return;
-    case MPI_ERR_COMM:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid communicator. %s.", msg).c_str()));
-        break;
-    case MPI_ERR_ARG:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid argument. %s.", msg).c_str()));
-        break;
-    }
-}
-
 void CommunicationRecord::send(int dest, const void *buf, int bufsize) const
 {
     int         tag = 0;
     MPI_Status  status;
     MPI_Request req;
 
-    check_init();
+    check_init_done();
     check_return("MPI_Isend Failed",
                  MPI_Isend(buf, bufsize, MPI_BYTE, RANK(cr, dest), tag,
                            mpi_act_world_, &req));
@@ -320,7 +322,7 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     MPI_Status  status;
     MPI_Request req;
 
-    check_init();
+    check_init_done();
     check_return ("MPI_Irecv Failed",
                   MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
                             mpi_act_world_, &req));
@@ -329,54 +331,54 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
 
 void CommunicationRecord::bcast(std::string *str, MPI_Comm comm, int root) const
 {
-    check_init();
+    check_init_done();
     int ssize = str->size();
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm);
+    check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
     if (0 != rank_)
     {
         str->resize(ssize);
     }
-    MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm);
+    check_return("MPI_Bcast", MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm));
 }
     
 void CommunicationRecord::bcast(int *i, MPI_Comm comm, int root) const
 {
-    check_init();
-    MPI_Bcast((void *)i, 1, MPI_INT, root, comm);
+    check_init_done();
+    check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
 }
     
 void CommunicationRecord::bcast(bool *b, MPI_Comm comm, int root) const
 {
-    check_init();
+    check_init_done();
     int d = *b ? 1 : 0;
-    MPI_Bcast((void *)&d, 1, MPI_INT, root, comm);
+    check_return("MPI_Bcast", MPI_Bcast((void *)&d, 1, MPI_INT, root, comm));
     *b = d;
 }
     
 void CommunicationRecord::bcast(double *d, MPI_Comm comm, int root) const
 {
-    check_init();
-    MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm);
+    check_init_done();
+    check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
 }
    
 void CommunicationRecord::bcast(std::vector<double> *d,
                                 MPI_Comm             comm,
                                 int                  root) const
 {
-    check_init();
+    check_init_done();
     int ssize = d->size(); 
-    MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm);
+    check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
     if (0 != rank_)
     {
         d->resize(ssize);
     }
 
-    MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm);
+    check_return("MPI_Bcast", MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm));
 }
 
 void CommunicationRecord::send_str(int dest, const std::string *str) const
 {
-    check_init();
+    check_init_done();
     int len = str->size();
 
     if (nullptr != debug)
@@ -392,7 +394,7 @@ void CommunicationRecord::send_str(int dest, const std::string *str) const
 
 void CommunicationRecord::recv_str(int src, std::string *str) const
 {
-    check_init();
+    check_init_done();
     int   len;
 
     recv(src, &len, sizeof(len));
@@ -413,7 +415,7 @@ void CommunicationRecord::recv_str(int src, std::string *str) const
 
 void CommunicationRecord::send_double(int dest, double d) const
 {
-    check_init();
+    check_init_done();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending double '%g' to %d\n", d, dest);
@@ -423,7 +425,7 @@ void CommunicationRecord::send_double(int dest, double d) const
 
 double CommunicationRecord::recv_double(int src) const
 {
-    check_init();
+    check_init_done();
     double d;
 
     recv(src, &d, sizeof(d));
@@ -437,7 +439,7 @@ double CommunicationRecord::recv_double(int src) const
 
 void CommunicationRecord::send_int(int dest, int d) const
 {
-    check_init();
+    check_init_done();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending int '%d' to %d\n", d, dest);
@@ -447,7 +449,7 @@ void CommunicationRecord::send_int(int dest, int d) const
 
 void CommunicationRecord::send_bool(int dest, bool b) const
 {
-    check_init();
+    check_init_done();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending bool '%s' to %d\n", boolName[b], dest);
@@ -458,7 +460,7 @@ void CommunicationRecord::send_bool(int dest, bool b) const
 
 int CommunicationRecord::recv_int(int src) const
 {
-    check_init();
+    check_init_done();
     int d;
 
     recv(src, &d, sizeof(d));
@@ -472,7 +474,7 @@ int CommunicationRecord::recv_int(int src) const
 
 bool CommunicationRecord::recv_bool(int src) const
 {
-    check_init();
+    check_init_done();
     int d;
 
     recv(src, &d, sizeof(d));
@@ -487,13 +489,13 @@ bool CommunicationRecord::recv_bool(int src) const
 
 void CommunicationRecord::send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const
 {
-    check_init();
+    check_init_done();
     send_int(dest, static_cast<int>(mode));
 }
 
 TuneFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
 {
-    check_init();
+    check_init_done();
     return static_cast<TuneFFMiddlemanMode>( recv_int(src) );
 }
 
@@ -566,10 +568,11 @@ void CommunicationRecord::sumd_helpers(int    nr,
         return;
     }
     int size = 0;
-    if (MPI_SUCCESS == MPI_Comm_size(mpi_act_helpers_, &size) && size > 1)
+    check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_helpers_, &size));
+    if (size > 1)
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
-                      mpi_act_helpers_);
+        check_return("MPI_Allreduce", MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
+                                                    mpi_act_helpers_));
     }
 }
 
@@ -581,10 +584,11 @@ void CommunicationRecord::sumi_helpers(int nr,
         return;
     }
     int size = 0;
-    if (MPI_SUCCESS == MPI_Comm_size(mpi_act_helpers_, &size) && size > 1)
+    check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_helpers_, &size));
+    if (size > 1)
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
-                      mpi_act_helpers_);
+        check_return("MPI_Allreduce", MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
+                                                    mpi_act_helpers_));
     }
 }
 

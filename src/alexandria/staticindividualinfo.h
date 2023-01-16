@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -143,7 +143,7 @@ private:
     //! My identy
     int                                                  id_ = -1;
     //! Communication record
-    const CommunicationRecord                           *cr_;
+    CommunicationRecord                                 *cr_;
     //! Poldata for this individual
     Poldata                                              pd_;
     //! Base targets_ from which to make copies
@@ -190,7 +190,7 @@ public:
      * Constructor
      * \param[in] cr The communication record
      */
-    StaticIndividualInfo(const CommunicationRecord *cr);
+    StaticIndividualInfo(CommunicationRecord *cr);
 
     /*! \brief Fill the \p id_ and \p prefix_ fields
      * (to be called after the communication record structure has been initialized)
@@ -269,6 +269,9 @@ public:
 
     //! \return the communication record
     const CommunicationRecord *commRec() const { return cr_; }
+
+    //! \return mutable communication record
+    CommunicationRecord *commRecPtr() { return cr_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget stuff               *

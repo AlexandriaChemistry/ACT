@@ -103,6 +103,52 @@ Experiment::Experiment(const std::string &program,
       jobtype_(jtype)
 {}
 
+#ifdef EXPERIMENT_DESTRUCTOR
+Experiment::~Experiment()
+{
+    for(auto &mp : property_)
+    {
+        for(auto pp = mp.second.begin(); pp < mp.second.end(); ++pp)
+        {
+            if (*pp)
+            {
+                delete *pp;
+            }
+        }
+    }
+}
+
+Experiment::Experiment(const Experiment& other)// = default;
+{
+    auto oprops = other.propertiesConst();
+    for(auto &op : oprops)
+    {
+        
+        property_.insert({ op.first, {} });
+        for(auto &gp : op.second)
+        {
+            property_[op.first].push_back(gp);
+            //gp = nullptr;
+        }
+    }
+}
+
+Experiment::Experiment(Experiment &&other)
+{
+    auto oprops = other.properties();
+    for(auto &op : *oprops)
+    {
+        property_.insert({ op.first, {} });
+        for(auto &gp : op.second)
+        {
+            property_[op.first].push_back(gp);
+            gp = nullptr;
+        }
+    }
+}
+
+#endif
+
 void Experiment::Dump(FILE *fp) const
 {
     if (nullptr != fp)

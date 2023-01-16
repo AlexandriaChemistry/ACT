@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -149,7 +149,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
         int src  = cr->superior();
         ims      = static_cast<iMolSelect>(cr->recv_int(src));
     }
-    else 
+    else if (CalcDev::ComputeAll != task)
     {
         // Send ims to my helpers
         for (auto &dest : cr->helpers())

@@ -102,13 +102,13 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     auto ims  = iMolSelect::Train;
     fitComp_->distributeTasks(cd);
     auto chi2 = fitComp_->calcDeviation(cd, ims);
-    prevEval.insert({ims, chi2});  
+    prevEval[ims] = chi2;
     genome->setFitness(ims, chi2);
     if (evaluateTestSet_)
     {
         auto ims_test  = iMolSelect::Test;
         auto chi2_test = fitComp_->calcDeviation(cd, ims_test);
-        prevEval.insert({ims_test, chi2_test});
+        prevEval[ims_test] = chi2_test;
         genome->setFitness(ims_test, chi2_test);
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
@@ -200,12 +200,12 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     cd = CalcDev::Compute;
     (void) fitComp_->distributeTasks(cd);
     auto chi2 = fitComp_->calcDeviation(cd, imstr);
-    currEval.insert({ imstr, chi2 });
+    currEval[imstr] = chi2;
     double deltaEval = chi2 - prevEval->find(imstr)->second;
     // Evaluate the energy on the test set only on whole steps!
     if (evaluateTestSet_)
     {
-        currEval.insert({imste, prevEval->find(imste)->second});
+        currEval[imste] = prevEval->find(imste)->second;
         if (pp == 0)  // Recompute for test set
         {
             currEval[imste] = fitComp_->calcDeviation(cd, imste);

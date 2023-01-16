@@ -87,7 +87,7 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     pool.print(logFile_);
 
     // Update best genome
-    bestGenome->insert({imstr, pool.getBest(imstr)});
+    (*bestGenome)[imstr] = pool.getBest(imstr);
 
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
@@ -251,10 +251,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     fprintFitness(*(pool[pold]));
 
     // TODO: Check whether we need to update this at all here
-    bestGenome->insert({imstr, pool[pold]->getBest(imstr)});
+    (*bestGenome)[imstr] = pool[pold]->getBest(imstr);
     if (gach_->evaluateTestset())
     {
-        bestGenome->insert({imste, pool[pold]->getBest(imstr)});
+        (*bestGenome)[imste] = pool[pold]->getBest(imstr);
     }
     
     // When random initialization, assume a better minimum has been found no matter what

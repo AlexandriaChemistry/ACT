@@ -193,6 +193,14 @@ public:
     {
     }
 
+    //! Destructor
+    virtual ~GenericProperty() {};
+
+    GenericProperty(const GenericProperty& copyFrom) = default;
+    GenericProperty& operator=(const GenericProperty& copyFrom) = default;
+    GenericProperty(GenericProperty &&) = default;
+    GenericProperty& operator=(GenericProperty &&) = default;
+
     /*! \brief
      * Return the property type
      */
@@ -311,6 +319,14 @@ public:
                        const std::string &inputUnit,
                        double             T,
                        MolPropObservable  mpo);
+                       
+    //! Destructor
+    ~MolecularMultipole() {}
+    
+    MolecularMultipole(const MolecularMultipole& copyFrom) = default;
+    MolecularMultipole& operator=(const MolecularMultipole& copyFrom) = default;
+    MolecularMultipole(MolecularMultipole &&) = default;
+    MolecularMultipole& operator=(MolecularMultipole &&) = default;
     
     /*! \brief Check whether a certain id is present
      * \param[in] id    The name of the parameter, e.g. "xy"
@@ -393,7 +409,15 @@ public:
     Harmonics(const std::string &unit,
               double             T,
               MolPropObservable  mpo);
-    
+
+    //! Destructor    
+    ~Harmonics() {}
+
+    Harmonics(const Harmonics& copyFrom) = default;
+    Harmonics& operator=(const Harmonics& copyFrom) = default;
+    Harmonics(Harmonics &&) = default;
+    Harmonics& operator=(Harmonics &&) = default;
+
     /*! \brief Add a value and convert it to internal units.
      * \param[in] frequency The frequency
      * \param[in] intensity The intensity value
@@ -486,6 +510,13 @@ public:
                             double xy, double xz, double yz,
                             double average, double error);
     
+    ~MolecularPolarizability() {}
+    
+    MolecularPolarizability(const MolecularPolarizability& copyFrom) = default;
+    MolecularPolarizability& operator=(const MolecularPolarizability& copyFrom) = default;
+    MolecularPolarizability(MolecularPolarizability &&) = default;
+    MolecularPolarizability& operator=(MolecularPolarizability &&) = default;
+    
     //! Set all the elements of the polarizablity tensor and converts them to internal units
     void Set(double xx, double yy, double zz, double xy, double xz, double yz);
     
@@ -567,7 +598,14 @@ public:
                     ePhase ep,
                     double average,
                     double error);
+                    
+    ~MolecularEnergy() {}
     
+    MolecularEnergy(const MolecularEnergy& copyFrom) = default;
+    MolecularEnergy& operator=(const MolecularEnergy& copyFrom) = default;
+    MolecularEnergy(MolecularEnergy &&) = default;
+    MolecularEnergy& operator=(MolecularEnergy &&) = default;
+
     //! Set the average and error for the energy
     void Set(double average, double error) 
     { 
@@ -653,6 +691,13 @@ public:
                            const std::string &vInputUnit,
                            int espid, double x, double y, double z, double V)
     { set(xyzInputUnit, vInputUnit, espid, x, y, z, V); };
+    
+    ~ElectrostaticPotential() {}
+    
+    ElectrostaticPotential(const ElectrostaticPotential& copyFrom) = default;
+    ElectrostaticPotential& operator=(const ElectrostaticPotential& copyFrom) = default;
+    ElectrostaticPotential(ElectrostaticPotential &&) = default;
+    ElectrostaticPotential& operator=(ElectrostaticPotential &&) = default;
     
     /*! Fill the contents of the ESP
      * Set the units of coordinates and potential, the ESP id,
