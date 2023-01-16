@@ -1055,11 +1055,11 @@ real linear_angles(int nbonds,
                    const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                    int gmx_unused *global_atom_index)
 {
-    int  i, m, ai, aj, ak, t1, t2, type, ki;
+    int  i, m, ai, aj, ak, t1, t2, type;
     rvec f_i, f_j, f_k;
     real L1, kA, kB, aA, aB, dr, dr2, va, vtot, a, b, klin;
-    real r13A, r13B, kUBA, kUBB, vbond, fbond, fik;
-    ivec jt, dt_ij, dt_kj, dt_ik;
+    real r13A, r13B, kUBA, kUBB;
+    ivec jt, dt_ij, dt_kj;
     rvec r_ij, r_kj, r_ik, dx;
 
     L1   = 1-lambda;
@@ -1120,35 +1120,6 @@ real linear_angles(int nbonds,
         rvec_inc(fshift[t1], f_i);
         rvec_inc(fshift[CENTRAL], f_j);
         rvec_inc(fshift[t2], f_k);
-
-        //#ifdef OLD
-        ki   = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);                               
-        dr2  = iprod(r_ik, r_ik);                                                   
-        dr   = dr2*gmx::invsqrt(dr2);                                               
-        
-        *dvdlambda += harmonic(kUBA, kUBB, r13A, r13B, dr, lambda, &vbond, &fbond); 
-        
-        if (dr2 == 0.0)
-        {
-            continue;
-        }
-
-        vtot  += vbond;
-        fbond *= gmx::invsqrt(dr2);
-        if (g)
-        {
-            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), dt_ik);
-            ki = IVEC2IS(dt_ik);
-        }
-        for (m = 0; (m < DIM); m++)   
-        {
-            fik                 = fbond*r_ik[m];
-            f[ai][m]           += fik;
-            f[ak][m]           -= fik;
-            fshift[ki][m]      += fik;
-            fshift[CENTRAL][m] -= fik;
-        }
-        //#endif
     }                                         /* 116 TOTAL	*/
     return vtot;
 }
