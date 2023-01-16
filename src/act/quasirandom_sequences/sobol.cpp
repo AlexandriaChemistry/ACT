@@ -332,7 +332,7 @@ void i4_sobol ( int dim_num, int *seed, float quasi[ ] )
   int j;
   int j2;
   int k;
-  int l;
+  int l = 0;
   static int lastq[DIM_MAX2];
   int m;
   static int maxcol;
