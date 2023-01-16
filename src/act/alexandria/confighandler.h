@@ -385,6 +385,8 @@ private:
     int                nstvout_     = 0;
     //! How often to write energies
     int                nstener_     = 1;
+    //! Write shells to trajectory
+    bool               writeShells_ = false;
     //! Minmize (before MD)
     bool               minimize_    = false;
     //! Minimization algorithm
@@ -427,6 +429,9 @@ public:
     
     //! \return user provided random number seed
     int seed() const { return seed_; }
+
+    //! \return whether or not to write shells to trajectory
+    bool writeShells() const { return writeShells_; }
     
     //! \return whether or not to minimize the energy with respect to input coordinates
     bool minimize() const { return minimize_; }

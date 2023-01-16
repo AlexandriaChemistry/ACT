@@ -1083,7 +1083,19 @@ void MolHandler::simulate(const Poldata                 *pd,
     matrix      box   = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
     char        chain = ' ';
     const char *title = "ACT trajectory";
-    int         nDOF  = DIM*mol->nRealAtoms();
+    std::vector<int> trajIndex;
+    {
+        auto atoms = mol->atomsConst();
+        for(size_t ii = 0; ii < atoms.size(); ii++)
+        {
+            if (simConfig.writeShells() || eptAtom == atoms[ii].pType())
+            {
+                trajIndex.push_back(ii);
+            }
+        }
+    }
+
+    int nDOF = DIM*mol->nRealAtoms();
     fprintf(logFile, "\nWill start simulation.\n");
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
@@ -1130,9 +1142,10 @@ void MolHandler::simulate(const Poldata                 *pd,
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
-            write_pdbfile(traj, title, mol->gmxAtoms(),
-                          as_rvec_array(coordinates.data()), epbcNONE,
-                          box, chain, step+1, nullptr, false);
+            write_pdbfile_indexed(traj, title, mol->gmxAtoms(),
+                                  as_rvec_array(coordinates.data()), epbcNONE,
+                                  box, chain, step+1, trajIndex.size(), trajIndex.data(),
+                                  nullptr, false, false);
         }
         // Swap force arrays
         cur = prev;
