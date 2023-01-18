@@ -122,7 +122,18 @@ class MoleculeDict:
         atomnumber = len(elements)
         xyzstring = ("%d\nCoordinates\n" % atomnumber)
         for i in range(len(elements)):
-            xyzstring += ("%2s%22.3f%22.3f%22.3f\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2] ))
+            if len(coords[i]) != 3:
+                print("coords[%d] has $d elements" % ( i, len(coords[i])))
+                return False
+            for m in range(3):
+                if None == coords[i][m]:
+                    print("Invalid coords {}".format(coords[i]))
+                    return False
+            try:
+                xyzstring += ("%2s%22.3f%22.3f%22.3f\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2] ))
+            except ValueError:
+                print("Coordinates messed up {}".format(coords[i]))
+                return False
         obmol = ob.OBMol()
         obConversion.ReadString(obmol, xyzstring)
         success      = self.analyse_obmol(obConversion, obmol, forcefield)
