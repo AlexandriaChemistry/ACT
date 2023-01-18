@@ -917,6 +917,21 @@ void doFrequencyAnalysis(const Poldata            *pd,
     jtree->addObject(tctree);
 }
 
+static void low_print(std::vector<std::string> *tcout,
+                      gmx_stats                *stats,
+                      const char               *label)
+{
+    real mse, mae, rmsd, R = 0;
+    stats->get_mse_mae(&mse, &mae);
+    stats->get_rmsd(&rmsd);
+    if (stats->get_npoints() > 2)
+    {
+        stats->get_corr_coeff(&R);
+    }
+    tcout->push_back(gmx::formatString("%s RMSD %8.1f MSE %8.1f (kJ/mol) R %4.1f%% #points = %zu",
+                                       label, rmsd, mse, 100*R, stats->get_npoints()));
+}
+
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                 const Poldata            *pd,
                                                 const ForceComputer      *forceComp,
@@ -973,48 +988,27 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        real mse, mae, rmsd, R = 0, r2;
-        myepot.get_mse_mae(&mse, &mae);
-        myepot.get_rmsd(&rmsd);
-        if (myepot.get_npoints() > 2)
-        {
-            myepot.get_corr_coeff(&R);
-        }
-        r2 = 100*R*R;
-        tcout->push_back(gmx::formatString("Energy RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
-                                           rmsd, mse, r2, myepot.get_npoints()));
+        low_print(tcout, &myepot, "Energy");
     }
     if (interactionEnergyMap.size() > 0)
     {
-        real mse, mae, rmsd, R = 0, r2;
-        myinter.get_mse_mae(&mse, &mae);
-        myinter.get_rmsd(&rmsd);
-        if (myinter.get_npoints() > 2)
-        {
-            myinter.get_corr_coeff(&R);
-        }
-        r2 = 100*R*R;
-        tcout->push_back(gmx::formatString("Einteraction RMSD %8.1f MSE %8.1f (kJ/mol) r2 %4.1f%% #structures = %zu",
-                                           rmsd, mse, r2, myinter.get_npoints()));
+        low_print(tcout, &myinter, "Einteraction");
     }
-    double df2    = 0;
-    size_t nforce = 0;
-    auto atoms    = mol->atomsConst();
-    for(const auto &fstruct : forceMap)
+    if (!forceMap.empty())
     {
-        for(auto &ff : fstruct)
+        for(const auto &fstruct : forceMap)
         {
-            lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
-            df2    += gmx::square(ff.first - ff.second);
+            for(auto &ff : fstruct)
+            {
+                if (ff.first != 0 || ff.second != 0)
+                {
+                    lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+                }
+            }
         }
-        nforce += mol->nRealAtoms();
+        low_print(tcout, lsq_rmsf, "Force");
     }
-    // RMS force
-    if (forceMap.size() > 0 && nforce > 0)
-    {
-        tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
-                                           std::sqrt(df2/nforce), forceMap.size()));
-    }
+
     // Energy
     tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
     std::map<InteractionType, double> eBefore;
