@@ -996,6 +996,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     }
     if (!forceMap.empty())
     {
+        gmx_stats myforce;
         for(const auto &fstruct : forceMap)
         {
             for(auto &ff : fstruct)
@@ -1003,10 +1004,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                 if (ff.first != 0 || ff.second != 0)
                 {
                     lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+                    myforce.add_point(ff.first, ff.second, 0, 0);
                 }
             }
         }
-        low_print(tcout, lsq_rmsf, "Force");
+        low_print(tcout, &myforce, "Force");
     }
 
     // Energy
