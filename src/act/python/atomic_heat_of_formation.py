@@ -12,14 +12,20 @@ debug = False
 def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
                    leveloftheory:list, charges:list,
                    temperature:float) -> float:
+    if len(atomtypes) != len(leveloftheory) or len(atomtypes) != len(charges):
+        print("Inconsistent input. %d atomtypes, %d levels of theory and %d charges|" % 
+              ( len(atomtypes), len(leveloftheory), len(charges) ))
+        return 0
     eatom = 0
     for aaa in range(len(atomtypes)):
         myelem = g2a.get_elem(atomtypes[aaa])
-        ae     = ahof.get_atomization(myelem, leveloftheory[aaa].upper(), temperature, charges[aaa])
+        ae     = ahof.get_atomization(myelem, leveloftheory[aaa].upper(),
+                                      temperature, charges[aaa])
         if None == ae:
             for i in range(len(atomtypes)):
                 print("atype %s charge %d lot %s" % ( atomtypes[i], charges[i], leveloftheory[i].upper() ) )
-            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory[aaa].upper(), temperature))
+            print("Cannot find atomization energy for %s with charge %d lot %s at %f K" % ( myelem, charges[aaa], leveloftheory[aaa].upper(), temperature))
+            return 0
         eatom += ae
     return energyHF - eatom
         
