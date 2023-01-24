@@ -61,21 +61,14 @@ void GenePool::sort(iMolSelect ims)
     std::sort(genomes_.begin(), genomes_.end(), 
               [ims](const Genome &a, const Genome &b) -> bool
               { 
-                  if (a.hasFitness(ims))
+                  if (a.hasFitness(ims) && b.hasFitness(ims))
                   {
-                      if (b.hasFitness(ims))
-                      {
-                          return a.fitness(ims) < b.fitness(ims); 
-                      }
-                      else
-                      {
-                          return false;
-                      } 
+                      return a.fitness(ims) < b.fitness(ims); 
                   }
                   else
                   {
-                      return b.hasFitness(ims);
-                  }
+                      GMX_THROW(gmx::InternalError("Sorting individuals without fitness"));
+                  } 
               });
 }
 
