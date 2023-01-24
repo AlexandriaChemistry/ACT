@@ -402,13 +402,16 @@ int gentop(int argc, char *argv[])
             }
             else
             {
-                std::string cfn = gmx::formatString("%s%s", index.c_str(),
-                                                    opt2fn("-c", NFILE, fnm));
-                mymol.PrintConformation(cfn.c_str(), coords);
                 std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                     bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm));
                 mymol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
                                     &cr, coords, method, basis, bITP);
+            }
+            if (opt2bSet("-c", NFILE, fnm))
+            {
+                std::string cfn = gmx::formatString("%s%s", index.c_str(),
+                                                    opt2fn("-c", NFILE, fnm));
+                mymol.PrintConformation(cfn.c_str(), coords);
             }
         }
         else
