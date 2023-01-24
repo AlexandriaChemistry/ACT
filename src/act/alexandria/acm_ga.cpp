@@ -484,10 +484,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         const auto tmpBest     = bestGenome->find(imstr)->second;
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            tmpBest.print("A new best individual (for train) has been found!\nPrevious best:\n",
-                          logFile_);
+            fprintf(logFile_, "A new best individual (for train) has been found!\n");
+            tmpBest.print(" previous best:\n", logFile_);
             (*bestGenome)[imstr] = tmpGenome; 
-            tmpGenome.print("New best:\n", logFile_);
+            tmpGenome.print(" new best:\n", logFile_);
             bMinimum = true;
         }
         if (gach_->evaluateTestset())
