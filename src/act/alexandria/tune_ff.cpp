@@ -595,6 +595,7 @@ bool OptACM::runMaster(bool optimize,
         {   
             for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
+                it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
                 for (const auto &ims : iMolSelectNames())
                 {

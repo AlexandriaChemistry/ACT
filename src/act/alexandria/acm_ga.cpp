@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -234,7 +234,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
     pool[pold]->addGenome(ind->genome());
     pool[pnew]->addGenome(ind->genome());
-    // I. 
+    // I. Match numbers to corresponding ones in actmiddleman.cpp
     // Load the initial genomes from the middlemen. 
     // This is needed since they have read their own parameters
     // from the Poldata structures.
@@ -293,7 +293,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::FITNESS);
             }
             // Recompute my fitness
-            fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, forceComp_);
+            fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, true);
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
@@ -481,7 +481,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
-        const auto tmpBest     = bestGenome->find(imstr)->second;
+        const auto tmpBest     = (*bestGenome)[imstr];
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
             fprintf(logFile_, "A new best individual (for train) has been found!\n");
@@ -492,7 +492,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         }
         if (gach_->evaluateTestset())
         {
-            const auto tmpBestTest = bestGenome->find(imste)->second;
+            const auto tmpBestTest = (*bestGenome)[imste];
             if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
             { 
                 tmpBestTest.print("The best individual in the population has outperformed the best test loss!\nPrevious best:\n",
@@ -514,10 +514,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");
     }
-    bestGenome->find(imstr)->second.print("Best (Train): ", logFile_);
+    (*bestGenome)[imstr].print("Best (Train): ", logFile_);
     if (gach_->evaluateTestset())
     {
-        bestGenome->find(imste)->second.print("Best (Test): ", logFile_);
+        (*bestGenome)[imste].print("Best (Test): ", logFile_);
     }
 
     // Save last population

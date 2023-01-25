@@ -97,7 +97,6 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
         {
             cr->send_int(dest, static_cast<int>(task));
         }
-        // If final call, return -1
         return task;
     }
 }
@@ -217,6 +216,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             {
                 mydev->calcDeviation(forceComp_, &mymol, &coords, targets, sii_->poldata());
             }
+            if (debug)
+            {
+                fprintf(debug, "rank %d mol %s #energies %zu ndp %d\n",
+                        cr->rank(), mymol.getMolname().c_str(), mymol.experimentConst().size(),
+                        targets->find(eRMS::EPOT)->second.numberOfDatapoints());
+            }
         }
     }
     double chi2epot = targets->find(eRMS::EPOT)->second.chiSquared();
@@ -225,13 +230,14 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     sii_->sumChiSquared(task == CalcDev::Compute, ims);
 
     numberCalcDevCalled_ += 1;
-    if ((*targets).find(eRMS::TOT)->second.chiSquared() == 0 && ntrain > 0)
+    auto &etot = targets->find(eRMS::TOT)->second;
+    if (etot.chiSquared() == 0 && ntrain > 0)
     {
         printf("Zero total chi squared for %s, for epot it is %g before summation. This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d. %zu devComputers\n",
                iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal, devComputers_.size());
     }
     
-    return (*targets).find(eRMS::TOT)->second.chiSquared();
+    return etot.chiSquared();
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,

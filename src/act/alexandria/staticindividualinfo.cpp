@@ -208,15 +208,25 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         for (auto &ft : targets_[ims])
         {
             auto chi2 = ft.second.chiSquared();
+            auto ndp = ft.second.numberOfDatapoints();
+            if (ndp > 0 && debug)
+            {
+                fprintf(debug, "node %d %s before sum chi2 %g ndp %d weighted %g\n",
+                        cr_->rank(), rmsName(ft.first), chi2, ndp, ft.second.chiSquaredWeighted());
+            }
             cr_->sumd_helpers(1, &chi2);
             ft.second.setChiSquared(chi2);
-            auto ndp = ft.second.numberOfDatapoints();
             cr_->sumi_helpers(1, &ndp);
             ft.second.setNumberOfDatapoints(ndp);
+            if (ndp > 0 && debug)
+            {
+                fprintf(debug, "node %d %s after sum chi2 %g ndp %d weighted %g\n",
+                        cr_->rank(), rmsName(ft.first), chi2, ndp, ft.second.chiSquaredWeighted());
+            }
         }
     }
     auto myft = targets_.find(ims);
-    if (myft !=  targets_.end())
+    if (myft != targets_.end())
     {
         auto etot = myft->second.find(eRMS::TOT);
         GMX_RELEASE_ASSERT(etot != myft->second.end(), "Cannot find etot");
@@ -234,6 +244,10 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         }
         // Weighting is already included.
         etot->second.setNumberOfDatapoints(1);
+        if (debug)
+        {
+            fprintf(debug, "node %d %s after sum chi2 %g ndp %d\n", cr_->rank(), rmsName(eRMS::TOT), etot->second.chiSquared(), 1);
+        }
     }
 }
 
