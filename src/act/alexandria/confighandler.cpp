@@ -381,7 +381,7 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-deltat", FALSE, etREAL, {&deltat_},
           "Integration time step (ps)." },
         { "-ws",     FALSE, etBOOL, {&writeShells_},
-          "Write coordinates of shell particles to trajectory as well." },
+          "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "Initial simulation temperature (K). If larger than zero, initial velocites will be generated from a Maxwellian distribution at the given temperature." },
         { "-seed",    FALSE, etINT, {&seed_},
