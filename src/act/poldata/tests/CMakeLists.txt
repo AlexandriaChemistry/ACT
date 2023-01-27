@@ -39,6 +39,7 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    checkSumTest.cpp
     forcefieldparameterTest.cpp
     forcefieldparameterlistTest.cpp
     poldataTest.cpp
