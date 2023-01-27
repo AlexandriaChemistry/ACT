@@ -43,7 +43,7 @@
 
 static std::map<std::string, alexandria::Poldata> pdTest;
 
-alexandria::Poldata *getPoldata(std::string qdist)
+alexandria::Poldata *getPoldata(const std::string &qdist)
 {
     if (pdTest.count(qdist) == 0)
     {

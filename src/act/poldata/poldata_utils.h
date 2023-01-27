@@ -35,5 +35,5 @@
 #include "act/poldata/poldata.h"
 
 //! Return testing poldata structure
-alexandria::Poldata *getPoldata(std::string qdist);
+alexandria::Poldata *getPoldata(const std::string &qdist);
 
