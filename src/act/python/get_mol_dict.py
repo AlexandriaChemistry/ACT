@@ -2,12 +2,17 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
+import os, sys
 try:
     import openbabel as ob
+#    from pybel import *
 except:
-    print("OpenBabel not found. Check your PYTHONPATH environment variable.")
-    print("Proceed at your own risk")
-import os, sys
+    pp = "PYTHONPATH"
+    if pp in os.environ:
+        print("OpenBabel not found. Check your %s environment variable, right now it is '%s'." % ( pp, os.environ[pp] ))
+    else:
+        print("OpenBabel not found and your %s environment variable is empty." % ( pp ))
+    sys.exit("Cannot continue")
 from gaff_to_alexandria import *
 
 debug = False
@@ -147,5 +152,18 @@ class MoleculeDict:
         obConversion.SetInFormat("xyz")
         success = self.from_coords_elements_obc(elements, coords, obConversion, forcefield)
         # Help garbage collecting
+        del obConversion
+        return success
+        
+    def from_smiles(self, smiles:str, addH:bool, forcefield="alexandria"):
+        obConversion = ob.OBConversion()
+        obConversion.SetInFormat("smi")
+        obmol = ob.OBMol()
+        obConversion.ReadString(obmol, smiles)
+        if addH:
+            obmol.AddHydrogens()
+        success = self.analyse_obmol(obConversion, obmol, forcefield)
+        # Help garbage collecting
+        del obmol
         del obConversion
         return success

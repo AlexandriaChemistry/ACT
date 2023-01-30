@@ -3319,10 +3319,10 @@
 3396|0|isothiocyanatomethylbenzene|C8H7NS|0|1|149.211|622-78-6|2256|2346|InChI=1S/C8H7NS/c10-7-9-6-8-4-2-1-3-5-8/h1-5H,6H2|MDKCFLQDBWCQCV-UHFFFAOYSA-N|C_ONS_bond;rotatable_bond;aromatic;isothiocyanate||isothiocyanatomethylbenzene.sdf|C1|1|2|||maaren|2018-03-31 18:49:44
 3397|0|isothiocyanatobenzene|C7H5NS|0|1|135.184|103-72-0|7390|7673|InChI=1S/C7H5NS/c9-6-8-7-4-2-1-3-5-7/h1-5H|QKFJKGMPGYROCL-UHFFFAOYSA-N|rotatable_bond;C_ONS_bond;aromatic;isothiocyanate;conjugated_double_bond||isothiocyanatobenzene.sdf|C1|1|1|||maaren|2018-03-31 18:49:48
 3398|0|3-isothiocyanatoprop-1-ene|C4H5NS|0|1|99.151|57-06-7|21105854|5971|InChI=1S/C4H5NS/c1-2-3-5-4-6/h2H,1,3H2|ZOJBYZNEUISWFT-UHFFFAOYSA-N|alkene;rotatable_bond;isothiocyanate;C_ONS_bond||3-isothiocyanatoprop-1-ene.sdf|C1|1|2|||maaren|2018-03-31 18:49:51
-3399|0|lithium(1+)|Li+|1|1|6.94|17341-24-1|26502|28486|InChI=1S/Li/q+1|HBBGRARXTFLTSG-UHFFFAOYSA-N|charged;cation||lithium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:49:55
+3399|0|lithium(1+)|Li+|1|1|6.94|17341-24-1|26502|28486|InChI=1S/Li/q+1|HBBGRARXTFLTSG-UHFFFAOYSA-N|charged;cation|[Li+]|lithium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:49:55
 3400|0|magnesium(2+)|Mg+2|2|1|24.305||865|888|InChI=1S/Mg/q+2|JLVVSXFLKOJNIY-UHFFFAOYSA-N|charged;cation||magnesium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:49:59
-3401|0|potassium(1+)|K+|1|1|39.098|24203-36-9|791|813|InChI=1S/K/q+1|NPYPAHLBTDXSSS-UHFFFAOYSA-N|charged;cation||potassium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:03
-3402|0|sodium(1+)|Na+|1|1|22.99|17341-25-2|899|923|InChI=1S/Na/q+1|FKNQFGJONOIPTF-UHFFFAOYSA-N|charged;cation||sodium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:06
+3401|0|potassium(1+)|K+|1|1|39.098|24203-36-9|791|813|InChI=1S/K/q+1|NPYPAHLBTDXSSS-UHFFFAOYSA-N|charged;cation|[K+]|potassium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:03
+3402|0|sodium(1+)|Na+|1|1|22.99|17341-25-2|899|923|InChI=1S/Na/q+1|FKNQFGJONOIPTF-UHFFFAOYSA-N|charged;cation|[Na+]|sodium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:06
 3403|0|aluminum(3+)|Al+3|3|1|26.982|22537-23-1||104727|InChI=1S/Al/q+3|REDXJYDRNCIFBQ-UHFFFAOYSA-N|charged;cation||aluminum-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:10
 3404|0|calcium(2+)|Ca+2|2|1|40.078||266|271|InChI=1S/Ca/q+2|BHPQYMZQTOCNFJ-UHFFFAOYSA-N|charged;cation||calcium-ion.sdf|C1|1|0|||maaren|2018-03-31 18:50:14
 3405|0|trichloromethanol|CHCl3O|0|1|135.368|35911-92-3|4954447|6452003|InChI=1S/CHCl3O/c2-1(3,4)5/h5H|GYLIOGDFGLKMOL-UHFFFAOYSA-N|alcohol;alkylchloride;tertiary_alcohol;acetal_like;C_ONS_bond;halogen_acetal_like||trichloromethanol.sdf|C1|1|0|||maaren|2018-03-31 18:50:18
@@ -8000,3 +8000,9 @@
 9603|0|neon neon|Ne2|0|1|40.36|||135094815|InChI=1S/2Ne||||neon-neon.sdf|C1|1|0||||
 9604|0|argon argon|Ar2|0|1|79.8|||6432035|InChI=1S/2Ar|XMPZLAQHPIBDSO-UHFFFAOYSA-N|||argon-argon.sdf|C1|1|0||||
 9605|0|krypton krypton|Kr2|0|1|167.6||||InChI=1S/2Kr||||krypton-krypton.sdf|C1|1|0||||
+9606|0|fluoride|F-|-1|1|18.99840316|||28179|InChI=1S/FH/h1H/p-1|KRHYYFGTRYWZRS-UHFFFAOYSA-M||[F-]|fluoride.sdf|C1|1|0||||
+9607|0|chloride|Cl-|-1|1|35.45|||312|InChI=1S/ClH/h1H/p-1|VEXZGXHMUGYJMC-UHFFFAOYSA-M||[Cl-]|chloride.sdf|C1|1|0||||
+9608|0|bromide|Br-|-1|1|79.90|||259|InChI=1S/BrH/h1H/p-1|CPELXLSAUQHCOX-UHFFFAOYSA-M||[Br-]|bromide.sdf|C1|1|0||||
+9609|0|iodide|I-|-1|1|126.9045|||30165|InChI=1S/HI/h1H/p-1|XMBWDFGMSWQBCA-UHFFFAOYSA-M||[I-]|iodide.sdf|C1|1|0||||
+9611|0|rubidium(1+)|Rb+|1|1|85.468|||105153|InChI=1S/Rb/q+1|NCCSSGKUIKYAJD-UHFFFAOYSA-N||[Rb+]|rubidium-ion.sdf|C1|1|0||||
+9612|0|cesium(1+)|Cs+|1|1|132.9054520|||104967|InChI=1S/Cs/q+1|NCMHKCKGHRPLCM-UHFFFAOYSA-N||[Cs+]|cesium-ion.sdf|C1|1|0||||

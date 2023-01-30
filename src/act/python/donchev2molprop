@@ -166,11 +166,15 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
             MD      = gmd.MoleculeDict()
             if debug:
                 print("MD size %d bytes" % actualsize(MD))
-            success = MD.from_coords_elements_obc(atom_labels[atomnr_offset:atomnr_offset+natom],
-                                                  coords[atomnr_offset:atomnr_offset+natom],
-                                                  obConversion)
+            #success = MD.from_coords_elements_obc(atom_labels[atomnr_offset:atomnr_offset+natom],
+            #                                      coords[atomnr_offset:atomnr_offset+natom],
+            #                                      obConversion)
+            success = MD.from_smiles(smiles[fff], True)
             if not success:
                 print("Could not analyze coordinates for %s" % smiles[fff])
+                break
+            if len(MD.atoms) != natom:
+                print("Extracted %d atoms from smiles %s, but expected %d" % ( len(MD.atoms), smiles[fff], natom ))
                 break
             # Collect atom properties
             atom_id = []
@@ -183,6 +187,8 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
             fragnames.append(get_iupac(M, MD.inchi, smiles[fff]))
             frag = mp.Fragment(MD.inchi, charge[fff],
                                1, 1, atom_id, mass, MD.formula)
+            if smiles[fff] == "O":
+                print("Found water, iupac = {}".format(fragnames[fff]))
             # Add the fragment to the molprop and delete it
             mp1.add_fragment(frag)
             # Add bonds for this fragment
