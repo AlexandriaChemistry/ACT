@@ -847,8 +847,11 @@ int tune_ff(int argc, char *argv[])
     {
         if (opt.sii()->nParam() == 0)
         {
-            fprintf(stderr, "Nothing to optimize. Check your input.\n");
-            return 1;
+            if (opt.sii()->commRec()->isMaster())
+            {
+                fprintf(stderr, "Nothing to optimize. Check your input.\n");
+            }
+            return 0;
         }
         std::vector<std::string> paramClass;
         for(const auto &fm : opt.mg()->typesToFit())
