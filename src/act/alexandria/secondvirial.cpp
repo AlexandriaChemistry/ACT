@@ -34,6 +34,7 @@
 
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/atype_mapping.h"
