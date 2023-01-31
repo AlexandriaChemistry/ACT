@@ -76,7 +76,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Perform normal mode analysis and compute thermochemistry properties.");
     registerModule(manager, &alexandria::tune_ff, "tune_ff",
                    "Optimize force field parameters.");
-    registerModule(manager, &alexandria::bastat, "bastat",
+    registerModule(manager, &alexandria::geometry_ff, "geometry_ff",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and add those to a force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
@@ -108,7 +108,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Force field utilities");
-        group.addModule("bastat");
+        group.addModule("geometry_ff");
         group.addModule("edit_ff");
         group.addModule("merge_ff");
         group.addModule("tune_ff");

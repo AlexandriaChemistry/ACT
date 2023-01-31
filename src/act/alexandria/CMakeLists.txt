@@ -36,10 +36,8 @@ target_sources(actLib
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
-           analyze.cpp
            atype_mapping.cpp
            babel_io.cpp
-           bastat.cpp
            bayes.cpp
            b2utils.cpp
            confighandler.cpp
@@ -48,6 +46,7 @@ target_sources(actLib
            fill_inputrec.cpp
            fragmenthandler.cpp
            gentop.cpp
+           geometry_ff.cpp
            gromacs_top.cpp
            mcmcmutator.cpp
            molgen.cpp

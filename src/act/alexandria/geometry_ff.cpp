@@ -141,10 +141,10 @@ static void generate_bcc(Poldata *pd,
     printf("Have generated %zu entries for BCC\n", bcc->parameters()->size());
 }
 
-int bastat(int argc, char *argv[])
+int geometry_ff(int argc, char *argv[])
 {
     static const char               *desc[] = {
-        "bastat read a series of molecules and extracts average geometries from",
+        "geometry_ff read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
         "and dihedral angles are extracted. The results are stored in the updated force field file (bastat.xml).[PAR]",
         "The program can also generate (quite) realistic dissociation energies from",
@@ -154,9 +154,9 @@ int bastat(int argc, char *argv[])
     t_filenm                         fnm[] = {
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
-        { efXML, "-o",   "bastat",       ffWRITE },
+        { efXML, "-o",   "aff_out",      ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
-        { efLOG, "-g",   "bastat",       ffWRITE },
+        { efLOG, "-g",   "geometry",     ffWRITE },
         { efCSV, "-de",  "dissociation", ffOPTWR }
     };
 
