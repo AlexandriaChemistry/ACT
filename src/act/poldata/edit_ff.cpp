@@ -688,7 +688,7 @@ int edit_ff(int argc, char*argv[])
 {
     static const char               *desc[] =
     {
-        "ff_edit reads a force field file and can do a number of things.[PAR]",
+        "edit_ff reads a force field file and can do a number of things.[PAR]",
         "If the flag [TT]-ana[TT] is set it will analyze the file and print",
         "if parameters are close to their bounds.[PAR]",
         "It may write a new file that can be compared to the input.",

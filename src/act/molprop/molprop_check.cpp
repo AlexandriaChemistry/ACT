@@ -312,10 +312,10 @@ int molprop_check(int argc, char*argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efXML, "-ff",  "gentop",  ffREAD },
-        { efXML, "-mp",  "allmols",  ffREAD },
-        { efXML, "-mpout", "newmols", ffOPTWR },
-        { efLOG, "-g",   "molprop_check", ffWRITE }
+        { efXML, "-ff",    "aff",           ffREAD },
+        { efXML, "-mp",    "allmols",       ffREAD },
+        { efXML, "-mpout", "newmols",       ffOPTWR },
+        { efLOG, "-g",     "molprop_check", ffWRITE }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     bool compress = false;

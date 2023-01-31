@@ -70,10 +70,10 @@ int merge_mp(int argc, char *argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efXML, "-mp",  "data",      ffOPTRDMULT },
-        { efXML, "-o",   "allmols",   ffWRITE },
-        { efXML, "-ff",  "gentop",    ffOPTRD },
-        { efDAT, "-db",  "sqlite",    ffOPTRD }
+        { efXML, "-mp",  "data",    ffOPTRDMULT },
+        { efXML, "-o",   "allmols", ffWRITE },
+        { efXML, "-ff",  "aff",     ffOPTRD },
+        { efDAT, "-db",  "sqlite",  ffOPTRD }
     };
     int     NFILE       = asize(fnm);
     int     compress    = 1;

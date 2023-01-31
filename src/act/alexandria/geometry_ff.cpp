@@ -146,7 +146,7 @@ int geometry_ff(int argc, char *argv[])
     static const char               *desc[] = {
         "geometry_ff read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
-        "and dihedral angles are extracted. The results are stored in the updated force field file (bastat.xml).[PAR]",
+        "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]",
         "The program can also generate (quite) realistic dissociation energies from",
         "experimental or QM data when the [TT]-dissoc[tt] option is given." 
     };
