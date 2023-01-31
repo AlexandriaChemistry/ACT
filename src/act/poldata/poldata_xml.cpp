@@ -395,10 +395,6 @@ static void processAttr(FILE       *fp,
                 {
                     nonNegative = stringToBoolean(xbufString(xmlEntry::NONNEGATIVE));
                 }
-                if (xbufString(xmlEntry::TYPE).compare("epsilon_ij") == 0)
-                {
-                    fprintf(stderr, "reading epsilon_ij = %g\n", xbuf_atof(xbuf, xmlEntry::VALUE));
-                }
                 ForceFieldParameter ffp(xbufString(xmlEntry::UNIT),
                                         xbuf_atof(xbuf, xmlEntry::VALUE),
                                         xbuf_atof(xbuf, xmlEntry::UNCERTAINTY),
@@ -617,10 +613,6 @@ static void addOption(xmlNodePtr         parent,
 static void addParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param)
 {
-    if (type.compare("epsilon_ij") == 0)
-    {
-        fprintf(stderr, "writing epsilon_ij = %g\n", param.value());
-    }
     auto baby = add_xml_child(parent, exml_names(xmlEntry::PARAMETER));
     add_xml_char(baby, exml_names(xmlEntry::TYPE), type.c_str());
     add_xml_char(baby, exml_names(xmlEntry::UNIT), param.unit().c_str());
