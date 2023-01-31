@@ -297,7 +297,7 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol)
+static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,

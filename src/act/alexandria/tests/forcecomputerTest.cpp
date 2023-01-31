@@ -75,16 +75,11 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
     
-<<<<<<< HEAD
-    void initACTMol(const char         *molname, 
-                   const Poldata      *pd,
-=======
-    void initMyMol(const char         *molname, 
-                   const ForceField      *pd,
->>>>>>> rename
-                   ForceComputer      *fcomp,
-                   t_inputrec         *inputrec,
-                   std::vector<ACTMol> *mps)
+    void initACTMol(const char          *molname, 
+                    const ForceField    *pd,
+                    ForceComputer       *fcomp,
+                    t_inputrec          *inputrec,
+                    std::vector<ACTMol> *mps)
     {
         int           maxpot   = 100;
         int           nsymm    = 0;

@@ -131,19 +131,14 @@ public:
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
     
-    void print(FILE                           *fp,
-<<<<<<< HEAD
+    void print(FILE                            *fp,
                std::vector<alexandria::ACTMol> *actmol,
-               const Poldata                  *pd,
-=======
-               std::vector<alexandria::MyMol> *mymol,
-               const ForceField                  *pd,
->>>>>>> rename
-               const gmx::MDLogger            &fplog,
-               const gmx_output_env_t         *oenv,
-               const CommunicationRecord      *cr,
-               const std::vector<t_filenm>    &filenm,
-               const char                     *chargeMethod);
+               const ForceField                *pd,
+               const gmx::MDLogger             &fplog,
+               const gmx_output_env_t          *oenv,
+               const CommunicationRecord       *cr,
+               const std::vector<t_filenm>     &filenm,
+               const char                      *chargeMethod);
 };
 
 /*! \brief Print header and command line arguments
@@ -170,13 +165,8 @@ void print_header(FILE                       *fp,
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
-<<<<<<< HEAD
-void doFrequencyAnalysis(const Poldata            *pd,
-                         alexandria::ACTMol        *mol,
-=======
-void doFrequencyAnalysis(const ForceField            *pd,
-                         alexandria::MyMol        *mol,
->>>>>>> rename
+void doFrequencyAnalysis(const ForceField         *pd,
+                         alexandria::ACTMol       *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,
