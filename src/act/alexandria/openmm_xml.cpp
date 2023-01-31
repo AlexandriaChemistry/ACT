@@ -57,6 +57,9 @@
 #include "mymol.h"
 #include "act/utility/xml_util.h"
 
+#include <algorithm>
+#include <list>
+#include <iostream>
 
 namespace alexandria
 {
@@ -305,18 +308,31 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
     auto child = add_xml_child(parent, exml_names(xmlEntryOpenMM::ATOMTYPES));
 
-    for (const auto &aType : pd->particleTypesConst())
-    {
-        auto grandchild = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
-        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-        addXmlElemMass(grandchild, aType);
-    }
+//    for (const auto &aType : pd->particleTypesConst())
+//    {
+//        auto grandchild = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
+//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
+//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
+//        addXmlElemMass(grandchild, aType);
+//    }
 
     auto myatoms =  mymol -> atomsConst();
+    std::vector<std::string> List_used {};
+//    std::list<std::string> List_used;
+//    std::vector<std::string> List_used{};
     for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
+    {   	
+
+	    if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+{
+  ;
+}
+   else
+                                            {
+						List_used.push_back(myatoms[i].ffType());
+                                            
+
+        auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
 
         auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
         add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
@@ -329,53 +345,116 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         }
         auto aType = pd->findParticleType(ffType);
         addXmlElemMass(baby, *aType);
+						}
     }
 
     auto child2 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
 
-    std::vector<std::string> mylist{"Li+", "Na+", "K+", "Rb+", "Cs+", "F-", "Cl-", "Br-", "I-"};
+   // std::vector<std::string> mylist{"Li+", "Na+", "K+", "Rb+", "Cs+", "F-", "Cl-", "Br-", "I-"};
 
-    for (const auto &aType : pd->particleTypesConst())
-    {
-        if (strcmp(ptype_str[aType.gmxParticleType()], "Atom") == 0)
-        {
-            if (std::find(std::begin(mylist), std::end(mylist), aType.id().id().c_str()) != std::end(mylist))
-            {
-                auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-                add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-                auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-                add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), aType.id().id().c_str());
-        
-                for(const auto &opt: aType.optionsConst())
-                {
-                    addShell(grandchild, opt.first, opt.second, "poltype");
-                }   
-            }    
-
-        }   
-    }
+   // for (const auto &aType : pd->particleTypesConst())
+   // {
+   //     if (strcmp(ptype_str[aType.gmxParticleType()], "Atom") == 0)
+   //     {
+   //         if (std::find(std::begin(mylist), std::end(mylist), aType.id().id().c_str()) != std::end(mylist))
+   //         {
+   //             auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+   //             add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
+   //             auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+   //             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
+   //             add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), aType.id().id().c_str());
+   //     
+   //             for(const auto &opt: aType.optionsConst())
+   //             {
+   //                 addShell(grandchild, opt.first, opt.second, "poltype");
+   //             }   
+   //         }    
+   //
+   //     }   
+   //}
 
     if (mymol->getMolname().size() > 0)
     {
-        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
-        
+  //      auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
+        ///////////////////////////////
+	std::vector<std::string> List_used {};
+        std::string transfertype = "";
         auto myatoms =  mymol -> atomsConst();
         for (size_t i = 0; i < myatoms.size(); i++)
-        {
-            auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
+        {if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+		{
+                ;
+		}
+   		else
+                {
+                List_used.push_back(myatoms[i].ffType());
+		transfertype = myatoms[i].ffType();
+//		std::cout << myatoms[i].ffType() << std::endl;
+					    
+            auto name_ai = myatoms[i].ffType(); // atomTypeOpenMM(myatoms[i].ffType(), i);
+//	    auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
+//            auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+//	    auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+	    auto aType = pd->findParticleType(myatoms[i].ffType());
+//            auto pType = 
+            if ( myatoms[i].pType() == eptAtom)   {
+//	    if (eptAtom == aType.gmxParticleType())   {
+//	    	if ( strcmp(ptype_str[myatoms[i].gmxParticleType()], "Atom") == 0 ) {
+	    std::cout << "It is an atom" << '\n';
+             auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+	     add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
+	     auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+	     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
+	     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
+	     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
+	     std::vector<std::string> List_used2 {};
+	     for (size_t a = 0; a < myatoms.size(); a++)
+	     {
+                 if ( myatoms[a].pType() == eptShell )   {
 
-            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
+			 if (std::find(List_used2.begin(), List_used2.end(), myatoms[a].ffType()) != List_used2.end())
+			      {         
+			      ;
+			      }
+			 else 
+			 {	 List_used2.push_back(myatoms[a].ffType());
+
+					std::cout <<  myatoms[a].ffType() << '\n';	
+                                             
+			 }
+			                                 }
+             }
+
+	                                        }
+	    //  }
+	else 
+	{;	
+//						}
+//	    auto aType = pd->findParticleType(myatoms[i].ffType());
+//	    std::cout << aType << '\n';
+//	    auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+//            add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
+//            add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
+		
+//            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+//            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
             //add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), *(myatoms.atomtype[i]));
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
-            add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
-        }    
+//            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
+//            add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
+        }            
+		}
+    	}
 
         auto itbonds = InteractionType::BONDS;
         if (pd->interactionPresent(itbonds))
+        {if (std::find(List_used.begin(), List_used.end(), transfertype) != List_used.end())
         {
+          ;
+        }
+   else
+                                            {
+                                                List_used.push_back(transfertype);
             auto fs = pd->findForcesConst(itbonds);
         
             if (mymol->topology()->hasEntry(itbonds))
@@ -384,16 +463,18 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 {
                     int ai = topentry->atomIndex(0);
                     int aj = topentry->atomIndex(1);
-                    
+                   //here also myatoms[i].ffType(); but for ai aj 
                     auto name_ai = atomTypeOpenMM(myatoms[ai].ffType(), ai);
                     auto name_aj = atomTypeOpenMM(myatoms[aj].ffType(), aj);
-                    
+                    auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));             
                     auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), name_ai.c_str());
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), name_aj.c_str());  
                 }   
             }
-        }
+          }
+	 }
+					    
     } 
 
 
@@ -714,87 +795,94 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
 
 
-            for (const auto &aType : pd->particleTypesConst())
-            {
-                    auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-                    if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-                    {
-                       add_xml_double(grandchild2, "vdW", 1.0); 
-                    }
-                    if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-                    {
-                        add_xml_double(grandchild2, "vdW", 0.0);
-                    }
-                    
- 
-                    for(const auto &opt: aType.optionsConst())
-                    {
-                        if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
-                        {
-                            for (auto &params : fs.second.parametersConst())
-                            {
-                                for (const auto &param : params.second)
-                                {
-                                    if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-                                    {    
-                                        if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-                                        {
-                                            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-                                        }
-                                        if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-                                        {
-                                            if (strcmp(param.first.c_str(), "gamma") == 0)
-                                            {
-                                               add_xml_double(grandchild2, param.first.c_str(), 7.0); 
-                                            }
-                                            else 
-                                            {
-                                                add_xml_double(grandchild2, param.first.c_str(), 1.0); 
-                                            }
-                                            
-                                        }
-                                    } 
-                                }        
-                            }
-                        }
-                        if (strcmp(opt.first.c_str(), "zetatype") == 0)
-                        {
-                            for (auto &fs : pd->forcesConst())
-                            {
-                               if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
-                               {
-                                    for (auto &params : fs.second.parametersConst())
-                                    {
-                                        for (const auto &param : params.second)
-                                        {
-                                            if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-                                            {
-                                        
-                    
-                                                for(const auto &param : aType.parametersConst())
-                                                {
-                                                    addSpecParameter(grandchild2, param.first, param.second, "charge");     
-                                                } 
-                                                //add_xml_double(grandchild2, param.first.c_str(), param.second.value()); 
-                                                add_xml_double(grandchild2, "beta", param.second.value()); 
-                                            }    
-                                        }
-                                            
-                                    }    
-                               } 
-                            }
-                        }       
-                    }
-
-                    //add_xml_int(grandchild2, "charge", 0);       
-            }
+  //            for (const auto &aType : pd->particleTypesConst())
+  //            {
+  //                    auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+  //                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
+  //                    if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+  //                    {
+  //                       add_xml_double(grandchild2, "vdW", 1.0); 
+  //                    }
+  //                    if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+  //                    {
+  //                        add_xml_double(grandchild2, "vdW", 0.0);
+  //                    }
+  //                    
+  // 
+  //                  for(const auto &opt: aType.optionsConst())
+  //                  {
+  //                      if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
+  //                      {
+  //                          for (auto &params : fs.second.parametersConst())
+  //                          {
+  //                              for (const auto &param : params.second)
+  //                              {
+  //                                  if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+  //                                  {    
+  //                                      if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+  //                                      {
+  //                                          add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+  //                                      }
+  //                                      if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+  //                                      {
+  //                                          if (strcmp(param.first.c_str(), "gamma") == 0)
+  //                                          {
+  //                                               add_xml_double(grandchild2, param.first.c_str(), 7.0); 
+  //                                          }
+  //                                          else 
+  //                                          {
+  //                                              add_xml_double(grandchild2, param.first.c_str(), 1.0); 
+  //                                          }
+  //                                          
+  //                                      }
+  //                                  } 
+  //                              }        
+  //                          }
+  //                      }
+  //                      if (strcmp(opt.first.c_str(), "zetatype") == 0)
+  //                      {
+  //                          for (auto &fs : pd->forcesConst())
+  //                          {
+  //                             if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
+  //                             {
+  //                                    for (auto &params : fs.second.parametersConst())
+  //                                   {
+  //                                       for (const auto &param : params.second)
+  //                                       {
+  //                                           if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+  //                                           {
+  //                                      
+  //                  
+  //                                              for(const auto &param : aType.parametersConst())
+  //                                              {
+  //                                                  addSpecParameter(grandchild2, param.first, param.second, "charge");     
+  //                                            } 
+  //                                            //add_xml_double(grandchild2, param.first.c_str(), param.second.value()); 
+  //                                            add_xml_double(grandchild2, "beta", param.second.value()); 
+  //                                        }    
+  //                                    }
+  //                                        
+  //                                }    
+  //                           } 
+  //                        }
+  //                    }       
+  //                }
+  //
+  //                //add_xml_int(grandchild2, "charge", 0);       
+  //        }
             // add customnonbonded (WBH vdW + pg coulomb) for compound
+	    //
+	    std::vector<std::string> List_used {};
             auto myatoms =  mymol -> atomsConst();
             for (size_t i = 0; i < myatoms.size(); i++)
+            {  if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
             {
-                auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
-                
+	    ;
+            }
+   else
+                                            {
+                                                List_used.push_back(myatoms[i].ffType());
+                auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
                 auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
                 add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
                 
@@ -867,7 +955,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 } 
             }        
         }      
-
+	}
         // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
         // For the different atomtypes it would be good to add optimized sigma and epsilon values 
         // in order to calculate the vdW contribution after the cutoff
@@ -877,33 +965,39 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             add_xml_double(child5, "coulomb14scale", 1.0); 
             add_xml_double(child5, "lj14scale", 1.0); 
             
-            for (const auto &aType : pd->particleTypesConst())
-            {
-                    auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-                    for(const auto &param : aType.parametersConst())
-                    {
-                        addSpecParameter(grandchild2, param.first, param.second, "charge"); 
-                        if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-                        {
-                            add_xml_double(grandchild2, "sigma", 0.3);  
-                            add_xml_double(grandchild2, "epsilon", 0.05);  
-                        }
-                        if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-                        {
-                            add_xml_double(grandchild2, "sigma", 0.3);  
-                            add_xml_double(grandchild2, "epsilon", 0.0);  
-                        }
+           // for (const auto &aType : pd->particleTypesConst())
+           // {
+            //        auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+            //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
+                  //  for(const auto &param : aType.parametersConst())
+                  // {
+                  //      addSpecParameter(grandchild2, param.first, param.second, "charge"); 
+                  //      if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                  //      {
+                  //          add_xml_double(grandchild2, "sigma", 0.3);  
+                  //          add_xml_double(grandchild2, "epsilon", 0.05);  
+                  //      }
+                  //      if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+                  //      {
+                  //          add_xml_double(grandchild2, "sigma", 0.3);  
+                  //          add_xml_double(grandchild2, "epsilon", 0.0);  
+                  //      }
+                  //                    }
 
-                    }
-
-            } 
+          //  } 
             // adding nonbonded (LJ + point coulomb) for compound
+	    std::vector<std::string> List_used {};
             auto myatoms =  mymol -> atomsConst();
             for (size_t i = 0; i < myatoms.size(); i++)
-            {
-                auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
-
+            { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+	{
+	  ;
+        }
+   else
+                                            {
+                                                List_used.push_back(myatoms[i].ffType());
+					    
+                auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
                 auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
                 add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
                 for (const auto &aType : pd->particleTypesConst())
@@ -928,7 +1022,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                     
                 }        
                 
-            }       
+            }
+         }
         }
 
         // !!! Shell particle has to be type1, core particle has to be type2 !!!
@@ -938,35 +1033,41 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             if (pd->polarizable())    
             {
                 auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
-                for (const auto &aType : pd->particleTypesConst())
-                {
-                    if (eptAtom == aType.gmxParticleType())
-                    {
-                        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), aType.id().id().c_str());
-                        double myalpha = 0;
-                        if (aType.hasOption("poltype"))
-                        {
-                            auto shell_ai = aType.optionValue("poltype");
-                            auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
-                                                                          pol_name[polALPHA]);
-                            myalpha = alpha.internalValue();
-                            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-                        }
-                        add_xml_double(grandchild2, "polarizability", myalpha);
-                        add_xml_double(grandchild2, "thole", 0);
-                        const std::string charge("charge");
-                        addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
-                    } 
-                } 
-
+              //  for (const auto &aType : pd->particleTypesConst())
+              //  {
+              //      if (eptAtom == aType.gmxParticleType())
+              //      {
+              //          auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
+              //          add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), aType.id().id().c_str());
+              //          double myalpha = 0;
+              //          if (aType.hasOption("poltype"))
+              //          {
+              //              auto shell_ai = aType.optionValue("poltype");
+              //              auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
+              //                                                            pol_name[polALPHA]);
+              //              myalpha = alpha.internalValue();
+              //              add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
+              //          }
+              //          add_xml_double(grandchild2, "polarizability", myalpha);
+              //          add_xml_double(grandchild2, "thole", 0);
+              //          const std::string charge("charge");
+              //          addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
+              //      } 
+              //  } 
+                std::vector<std::string> List_used {};
                 auto myatoms =  mymol -> atomsConst();
                 for (size_t i = 0; i < myatoms.size(); i++)
-                {
-                    auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
+                { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+        {
+          ;
+        }
+   else
+                                            {
+                                                List_used.push_back(myatoms[i].ffType());
 
+                    auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
                     for (const auto &aType : pd->particleTypesConst())
-                    {
+                   {
                         if (aType.id().id() == myatoms[i].ffType()) 
                         {
                             if (aType.gmxParticleType() == eptAtom &&
@@ -987,13 +1088,16 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                         }
                     }
                 }    
-            }
+             }
+	    }
         }                                              
       
     }
+
+
   
-}
-   
+
+}   
 
 void writeOpenMM(const std::string &fileName,
                  const Poldata     *pd,
