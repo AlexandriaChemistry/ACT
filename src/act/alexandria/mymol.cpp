@@ -452,17 +452,29 @@ void MyMol::forceEnergyMaps(const Poldata                                       
         {
             if (myatoms[i].pType() == eptAtom)
             {
+                // Read coords from the experimental structure without shells
                 copy_rvec(xxx[j], coords[i]);
                 copy_rvec(xxx[j], state_->x[i]);
                 j += 1;
             }
-            // TODO initiate shells correctly, not assuming they are connected to the previous atom.
+        }
+        // We need to split the loop to do all the atoms first
+        // since we cannot be sure about the order of atoms and shells.
+        for(size_t i = 0; i < myatoms.size(); i++)
+        {
+            if (myatoms[i].pType() == eptAtom)
+            {
+                // Do nothing
+            }
             else if (myatoms[i].pType() == eptShell)
             {
-                if (i > 0 && myatoms[i-1].pType() == eptAtom)
-                {
-                    copy_rvec(coords[i-1], coords[i]);
-                }
+                auto core = myatoms[i].core();
+                GMX_RELEASE_ASSERT(core != -1, "Shell without core");
+                copy_rvec(coords[core], coords[i]);
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
             }
         }
         // We compute either interaction energies or normal energies for one experiment
