@@ -67,21 +67,21 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory
     registerModule(manager, &alexandria::gentop, "gentop",
-                   "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian.");
+                   "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian. Only inputs for OpenMM can be generated at this point in time.");
     registerModule(manager, &alexandria::simulate, "simulate",
                    "Perform a MD simulation and generate a trajectory.");
     registerModule(manager, &alexandria::b2, "b2",
-                   "Compute second virial coefficient.");
+                   "Compute second virial coefficient as a function of temperature.");
     registerModule(manager, &alexandria::nma, "nma",
                    "Perform normal mode analysis and compute thermochemistry properties.");
     registerModule(manager, &alexandria::tune_ff, "tune_ff",
                    "Optimize force field parameters.");
     registerModule(manager, &alexandria::bastat, "bastat",
-                   "Deduce bond/angle/dihedral distributions from a set of strucures and create a new force field file.");
+                   "Deduce bond/angle/dihedral distributions from a set of strucures and add those to a force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
-    registerModule(manager, &alexandria::edit, "edit",
-                   "Manipulate force field files in various ways and test whether reading and writing works.");
+    registerModule(manager, &alexandria::edit_ff, "edit_ff",
+                   "Manipulate and compare force field files in various ways and test whether reading and writing works.");
     registerModule(manager, &alexandria::molprop_test, "molprop_test",
                    "Test reading and writing the molecular property file.");
     registerModule(manager, &alexandria::molprop_check, "molprop_check",
@@ -90,17 +90,14 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Utility to dump a molecular property file to a spreadsheet.");
     registerModule(manager, &alexandria::merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database.");
-    registerModule(manager, &alexandria::merge_pd, "merge_pd",
+    registerModule(manager, &alexandria::merge_ff, "merge_ff",
                    "Utility to merge a number of force field files and write a new file with average parameters. Can also write a LaTeX table.");
 
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Alexandria core tools");
-        group.addModule("bastat");
-        group.addModule("tune_ff");
-        group.addModule("molprop_check");
-        group.addModule("simulate");
+            manager->addModuleGroup("Alexandria simulation tools");
         group.addModule("nma");
+        group.addModule("simulate");
         group.addModule("b2");
     }
     {
@@ -110,8 +107,11 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Poldata utilities");
-        group.addModule("merge_pd");
+            manager->addModuleGroup("Force field utilities");
+        group.addModule("bastat");
+        group.addModule("edit_ff");
+        group.addModule("merge_ff");
+        group.addModule("tune_ff");
     }
     {
         gmx::CommandLineModuleGroup group =
@@ -119,12 +119,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("analyze");
         group.addModule("merge_mp");
         group.addModule("molprop_test");
+        group.addModule("molprop_check");
         group.addModule("mp2csv");
-    }
-    {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Testing stuff and funky utilities");
-        group.addModule("edit");
-        group.addModule("molprop_test");
     }
 }

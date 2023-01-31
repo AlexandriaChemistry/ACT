@@ -178,19 +178,19 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     }
 }
 
-int merge_pd(int argc, char *argv[])
+int merge_ff(int argc, char *argv[])
 {
     const char *desc[] =
     {
-        "merge_pd reads multiple Alexandria force field files and merges them",
+        "merge_ff reads multiple Alexandria force field files and merges them",
         "into a single new force field file containing average values",
         "and standard deviation.",
     };    
     t_filenm    fnm[] =
     {
-        { efXML, "-ff",    "pdin",  ffRDMULT},
-        { efXML, "-o",    "pdout", ffWRITE },
-        { efTEX, "-latex", "pdout", ffWRITE }
+        { efXML, "-ff",    "aff_in",  ffRDMULT},
+        { efXML, "-o",     "aff_out", ffWRITE },
+        { efTEX, "-latex", "aff_out", ffWRITE }
     };
     int         NFILE       = asize(fnm);;
     
