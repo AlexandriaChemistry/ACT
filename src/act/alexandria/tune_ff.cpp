@@ -63,7 +63,7 @@
 #include "act/molprop/molprop_util.h"
 #include "actmol_low.h"
 #include "act/ga/npointcrossover.h"
-#include "act/ga/Penalizer.h"
+#include "act/ga/penalizer.h"
 #include "percentmutator.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"

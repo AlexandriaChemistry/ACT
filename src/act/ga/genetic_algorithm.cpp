@@ -30,16 +30,16 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-#include "GeneticAlgorithm.h"
+#include "genetic_algorithm.h"
 
 #include <cstdio>
 
-#include "Crossover.h"
-#include "FitnessComputer.h"
-#include "Initializer.h"
-#include "Mutator.h"
-#include "ProbabilityComputer.h"
-#include "Terminator.h"
+#include "crossover.h"
+#include "fitness_computer.h"
+#include "initializer.h"
+#include "mutator.h"
+#include "probability_computer.h"
+#include "terminator.h"
 
 #include "act/basics/dataset.h"
 #include "gromacs/fileio/gmxfio.h"

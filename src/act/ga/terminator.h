@@ -38,7 +38,7 @@
 #include <vector>
 #include <limits>
 
-#include "GenePool.h"
+#include "gene_pool.h"
 
 
 namespace ga

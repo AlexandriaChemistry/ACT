@@ -29,46 +29,38 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-#ifndef GA_INDIVIDUAL_H
-#define GA_INDIVIDUAL_H
 
-#include <cstdio>
 
-#include <map>
+#ifndef GA_FITNESSCOMPUTER_H
+#define GA_FITNESSCOMPUTER_H
 
-#include "Genome.h"
+#include "genome.h"
 
 namespace ga
 {
 
-//! \brief Abstract individual for genetic algorithms
-class Individual
+/*!
+ * \brief Abstract class for computing the fitness of an individual
+ */
+class FitnessComputer
 {
-
-protected:
-
-    //! \brief Default constructor
-    Individual() {}
 
 public:
 
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Cloning                           *
-    * * * * * * * * * * * * * * * * * * * * * */
-
     /*!
-     * \brief Copy the genome from another Individual
-     * \param[in] other pointer to another Individual
+     * \brief Compute the fitness of a genome
+     * \param[in] genome  The genome
+     * \param[in] trgtFit The target for fitness computation. Either Train or Test
+     * \param[in] verbose Whether to print the components of the fitness
      */
-    virtual void copyGenome(const Genome &other) = 0;
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Cloning                             *
-    * * * * * * * * * * * * * * * * * * * * * */
+    virtual void compute(Genome                    *genome,
+                         iMolSelect                 trgtFit,
+                         bool                       verbose = false) = 0;
+    
 };
 
 
 } //namespace ga
 
 
-#endif //GA_INDIVIDUAL_H
+#endif //GA_FITNESSCOMPUTER_H

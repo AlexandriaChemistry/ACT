@@ -37,8 +37,8 @@
 #define ALEXANDRIA_MCMCMUTATOR_H
 
 #include "act/forces/forcecomputer.h"
-#include "act/ga/Genome.h"
-#include "act/ga/Mutator.h"
+#include "act/ga/genome.h"
+#include "act/ga/mutator.h"
 #include "gromacs/utility/fileptr.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"

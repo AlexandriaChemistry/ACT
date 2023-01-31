@@ -38,7 +38,7 @@
 
 #include <vector>
 
-#include "Genome.h"
+#include "genome.h"
 
 #include "gromacs/utility/basedefinitions.h"
 

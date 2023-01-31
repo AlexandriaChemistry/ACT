@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "act/ga/Genome.h"
+#include "act/ga/genome.h"
 #include "act/utility/communicationrecord.h"
 #include "act/basics/mutability.h"
 #include "molgen.h"

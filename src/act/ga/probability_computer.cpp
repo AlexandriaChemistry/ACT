@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-#include "ProbabilityComputer.h"
+#include "probability_computer.h"
 
 #include <math.h>
 
