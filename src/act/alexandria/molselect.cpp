@@ -57,8 +57,8 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "mymol.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria

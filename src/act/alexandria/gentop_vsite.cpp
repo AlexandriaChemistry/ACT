@@ -48,7 +48,7 @@
 #include "act/basics/identifier.h"
 #include "mymol_low.h"
 #include "plistwrapper.h"
-#include "act/poldata.h"
+#include "act/forcefield.h"
 #include "units.h"
 
 namespace alexandria
@@ -568,7 +568,7 @@ static void set_linear_angle_params(const int                  atoms[],
     }
 }
 
-void GentopVsites::gen_Vsites(const Poldata             *pd,
+void GentopVsites::gen_Vsites(const ForceField             *pd,
                               t_atoms                   *atoms,
                               std::vector<PlistWrapper> *plist,
                               Topology                  *top,
@@ -895,7 +895,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
     }
 }
 
-void GentopVsites::generateSpecial(const Poldata              *pd,
+void GentopVsites::generateSpecial(const ForceField              *pd,
                                    bool                        bUseVsites,
                                    t_atoms                    *atoms,
                                    rvec                      **x,

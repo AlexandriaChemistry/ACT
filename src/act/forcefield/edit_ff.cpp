@@ -41,11 +41,11 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forces/forcecomputer.h"
-#include "act/poldata/act_checksum.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparametername.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/act_checksum.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
@@ -207,7 +207,7 @@ static void modifyParticle(const std::string &paramType,
     }
 }
 
-static void modifyInteraction(Poldata *pd,
+static void modifyInteraction(ForceField *pd,
                               InteractionType itype,
                               const std::string &paramType,
                               const Identifier &pId,
@@ -249,7 +249,7 @@ static void modifyInteraction(Poldata *pd,
     }
 }
 
-static void modifyPoldata(Poldata *pd,
+static void modifyForceField(ForceField *pd,
                           const std::string &paramType,
                           const std::string &particle,
                           bool bSetMin, double pmin,
@@ -368,7 +368,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
     }
 }
 
-static void analyzePoldata(Poldata           *pd,
+static void analyzeForceField(ForceField           *pd,
                            const std::string &analyze)
 {
     bool found;
@@ -416,7 +416,7 @@ static void analyzePoldata(Poldata           *pd,
     }
 }
 
-static void dumpPoldata(Poldata           *pd,
+static void dumpForceField(ForceField           *pd,
                         const std::string &analyze,
                         const std::string &particle,
                         const std::string &filenm)
@@ -458,7 +458,7 @@ static void dumpPoldata(Poldata           *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
-static void plotInteractions(Poldata           *pd,
+static void plotInteractions(ForceField           *pd,
                              const std::string &analyze)
 {
     bool found;
@@ -474,8 +474,8 @@ static void plotInteractions(Poldata           *pd,
     }
 }
 
-static void copy_missing(const Poldata     *pdref,
-                         Poldata           *pdout,
+static void copy_missing(const ForceField     *pdref,
+                         ForceField           *pdout,
                          const std::string &analyze,
                          bool               replace)
 {
@@ -534,8 +534,8 @@ static void copy_missing(const Poldata     *pdref,
     }
 }
 
-static void implant_values(const Poldata     *pdref,
-                           Poldata           *pdout,
+static void implant_values(const ForceField     *pdref,
+                           ForceField           *pdout,
                            const std::string &analyze)
 {
     bool found;
@@ -590,8 +590,8 @@ static void implant_values(const Poldata     *pdref,
     }
 }
 
-static void compare_pd(Poldata *pd1,
-                       Poldata *pd2,
+static void compare_pd(ForceField *pd1,
+                       ForceField *pd2,
                        const std::string   &ptype)
 {
     printf("Comparing %s and %s\n",
@@ -638,7 +638,7 @@ static void compare_pd(Poldata *pd1,
     }
 }
 
-static void copyDeToD0(Poldata *pd)
+static void copyDeToD0(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
     if (fs->fType() != F_MORSE)
@@ -659,7 +659,7 @@ static void copyDeToD0(Poldata *pd)
     }
 }
 
-static void addBondEnergy(Poldata *pd)
+static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
     if (fs->fType() != F_BONDS)
@@ -772,7 +772,7 @@ int edit_ff(int argc, char*argv[])
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
-    alexandria::Poldata pd;
+    alexandria::ForceField pd;
     
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
                            asize(desc), desc, 0, nullptr, &oenv))
@@ -785,19 +785,19 @@ int edit_ff(int argc, char*argv[])
     {
         try 
         {
-            alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
+            alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        (void) pd.verifyCheckSum(stderr, poldataCheckSum(&pd));
+        (void) pd.verifyCheckSum(stderr, forcefieldCheckSum(&pd));
         if (opt2bSet("-ff2", NFILE, fnm))
         {
-            alexandria::Poldata pd2;
+            alexandria::ForceField pd2;
             try
             {
-                alexandria::readPoldata(opt2fn("-ff2", NFILE, fnm), &pd2);
+                alexandria::readForceField(opt2fn("-ff2", NFILE, fnm), &pd2);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            (void) pd2.verifyCheckSum(stderr, poldataCheckSum(&pd2));
+            (void) pd2.verifyCheckSum(stderr, forcefieldCheckSum(&pd2));
             
             if (strlen(missing) > 0)
             {
@@ -821,7 +821,7 @@ int edit_ff(int argc, char*argv[])
             auto dumpfn = opt2fn_null("-dump", NFILE, fnm);
             if (strlen(particle) > 0 && dumpfn)
             {
-                dumpPoldata(&pd, analyze, particle, dumpfn);
+                dumpForceField(&pd, analyze, particle, dumpfn);
             }
             else if (plot)
             {
@@ -829,7 +829,7 @@ int edit_ff(int argc, char*argv[])
             }
             else
             {
-                analyzePoldata(&pd, analyze);
+                analyzeForceField(&pd, analyze);
             }
         }
         else if (De2D0)
@@ -853,7 +853,7 @@ int edit_ff(int argc, char*argv[])
             {
                 limits = 1.0/limits;
             }
-            modifyPoldata(&pd, parameter, particle,
+            modifyForceField(&pd, parameter, particle,
                           opt2parg_bSet("-min", npargs, pa), pmin,
                           opt2parg_bSet("-val", npargs, pa), pval,
                           opt2parg_bSet("-max", npargs, pa), pmax,
@@ -903,22 +903,22 @@ int edit_ff(int argc, char*argv[])
                 }
                 if (CommunicationStatus::OK == cs && cr.rank() == 2)
                 {
-                    alexandria::writePoldata(outfile, &pd, 0);
+                    alexandria::writeForceField(outfile, &pd, 0);
                 }
             }
         }
         else
         {
-            std::string checkSum = poldataCheckSum(&pd);
+            std::string checkSum = forcefieldCheckSum(&pd);
             if (checkSum == pd.checkSum() && !forceWrite)
             {
-                printf("No changes to poldata structure, not writing a new file.");
+                printf("No changes to forcefield structure, not writing a new file.");
             }
             else
             {
                 pd.updateTimeStamp();
                 pd.setCheckSum(checkSum);
-                writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+                writeForceField(opt2fn("-o", NFILE, fnm), &pd, 0);
             }
         }
     }

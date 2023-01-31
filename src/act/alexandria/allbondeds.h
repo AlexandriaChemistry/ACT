@@ -42,7 +42,7 @@
 #include "gromacs/utility/real.h"
 
 #include "mymol.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 
 namespace alexandria
 {
@@ -160,8 +160,8 @@ namespace alexandria
          * \param[in]  fp  A file to print information to
          * \param[out] pd  The force field structure to update
          */
-        void updatePoldata(FILE             *fp,
-                           Poldata          *pd);
+        void updateForceField(FILE             *fp,
+                           ForceField          *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  fp     File pointer for information
@@ -173,7 +173,7 @@ namespace alexandria
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
                                std::vector<MyMol>         *mymols,
-                               const Poldata              &pd,
+                               const ForceField              &pd,
                                const MolSelect            &gms);
 
         /*! \brief Write how many bonds etc. were found

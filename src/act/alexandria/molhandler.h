@@ -84,7 +84,7 @@ public:
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
      * \return the potential energy of the input structure
      */
-    void computeHessian(const Poldata                     *pd,
+    void computeHessian(const ForceField                     *pd,
                         const MyMol                       *mol,
                         const ForceComputer               *forceComp,
                         std::vector<gmx::RVec>            *coords,
@@ -111,7 +111,7 @@ public:
      * \param[in]  useLapack    Whether or not to use the Lapack library iso Eigen
      * \param[in]  debugNMA     Will provide excessive printing statements
      */
-    void nma(const Poldata            *pd,
+    void nma(const ForceField            *pd,
              const MyMol              *mol,
              const ForceComputer      *forceComp,
              std::vector<gmx::RVec>   *coords,
@@ -136,7 +136,7 @@ public:
      * \param[in] logFile      File to write some info to, may be a nullptr
      * \return Status flag
      */
-    eMinimizeStatus minimizeCoordinates(const Poldata                     *pd,
+    eMinimizeStatus minimizeCoordinates(const ForceField                     *pd,
                                         const MyMol                       *mol,
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
@@ -156,7 +156,7 @@ public:
      * \param[in] energyFile     Filename for writing energies
      * \param[in] oenv           GROMACS output environment
      */
-    void simulate(const Poldata                 *pd,
+    void simulate(const ForceField                 *pd,
                   MyMol                         *mol,
                   const ForceComputer           *forceComp,
                   const SimulationConfigHandler &simConfig,

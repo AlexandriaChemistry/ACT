@@ -32,8 +32,8 @@
  */
 #include <gtest/gtest.h>
 
-#include "act/poldata/act_checksum.h"
-#include "act/poldata/poldata_utils.h"
+#include "act/forcefield/act_checksum.h"
+#include "act/forcefield/forcefield_utils.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -71,11 +71,11 @@ protected:
     void TestOne(const std::string &fileName)
     {
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName+".xml");
-        auto pd      = getPoldata(fileName);
+        auto pd      = getForceField(fileName);
         auto orig    = pd->checkSum();
-        auto sumpd   = poldataCheckSum(pd);
+        auto sumpd   = forcefieldCheckSum(pd);
         EXPECT_TRUE(orig == sumpd);
-        checker_.checkString(sumpd, "Poldata checksum");
+        checker_.checkString(sumpd, "ForceField checksum");
     }
 };
 

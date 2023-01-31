@@ -61,7 +61,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "mymol.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
 

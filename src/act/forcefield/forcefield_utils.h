@@ -27,36 +27,13 @@
  */
 
 /*! \internal \brief
- * Implements test utilities for the alexandria program.
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "poldata_utils.h"
 
-#include <map>
+#include "act/forcefield/forcefield.h"
 
-#include "gromacs/utility/exceptions.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_low.h"
-#include "act/poldata/poldata_xml.h"
-
-#include "testutils/testfilemanager.h"
-
-static std::map<std::string, alexandria::Poldata> pdTest;
-
-alexandria::Poldata *getPoldata(const std::string &qdist)
-{
-    if (pdTest.count(qdist) == 0)
-    {
-        std::string baseName = gmx::formatString("%s.xml", qdist.c_str());
-        std::string dataName = gmx::test::TestFileManager::getInputFilePath(baseName);
-        try
-        {
-            alexandria::Poldata pd;
-            alexandria::readPoldata(dataName, &pd);
-            pdTest.insert(std::pair<std::string, alexandria::Poldata>(qdist, std::move(pd)));
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-    return &(pdTest[qdist]);
-}
+//! Return testing forcefield structure
+alexandria::ForceField *getForceField(const std::string &qdist);
 

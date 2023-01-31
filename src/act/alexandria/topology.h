@@ -41,9 +41,9 @@
 
 #include "act/alexandria/mymol_low.h"
 #include "act/basics/identifier.h"
-#include "act/poldata/particletype.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/forcefieldparameterlist.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefieldparameterlist.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -555,7 +555,7 @@ private:
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
-    void build(const Poldata                *pd,
+    void build(const ForceField                *pd,
                const std::vector<gmx::RVec> &x,
                double                        LinearAngleMin,
                double                        PlanarAngleMax,
@@ -672,12 +672,12 @@ private:
      * Must be called repeatedly during optimizations of energy.
      * \param[in] pd The force field structure
      */
-    void fillParameters(const Poldata *pd);
+    void fillParameters(const ForceField *pd);
          
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
      */                              
-    void setIdentifiers(const Poldata *pd);
+    void setIdentifiers(const ForceField *pd);
 };
 
 } // namespace alexandria

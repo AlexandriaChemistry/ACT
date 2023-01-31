@@ -42,8 +42,8 @@
 #include "gromacs/fileio/md5.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "forcefield.h"
+#include "forcefield_xml.h"
 
 namespace alexandria
 {
@@ -79,7 +79,7 @@ std::string computeCheckSum(const std::string &filename)
     return newVersion;
 }
 
-std::string poldataCheckSum(Poldata *pd)
+std::string forcefieldCheckSum(ForceField *pd)
 {
     // Save the old checkSum
     std::string oldCheckSum = pd->checkSum();
@@ -88,19 +88,19 @@ std::string poldataCheckSum(Poldata *pd)
     std::string timeStamp = pd->timeStamp();
     pd->setTimeStamp("");
     // Write the document to a tmp file
-    char tmpPoldata[] = "poldataTmpXXXXXX";
-    int fileDescriptor = mkstemp(tmpPoldata);
+    char tmpForceField[] = "forcefieldTmpXXXXXX";
+    int fileDescriptor = mkstemp(tmpForceField);
     if (fileDescriptor >= 0)
     {
         close(fileDescriptor);
-        writePoldata(tmpPoldata, pd, false);
+        writeForceField(tmpForceField, pd, false);
         // Now compute the md5 checksum
-        std::string checksum = computeCheckSum(tmpPoldata);
+        std::string checksum = computeCheckSum(tmpForceField);
         // Restore old chekcsum and time stamp
         pd->setCheckSum(oldCheckSum);
         pd->setTimeStamp(timeStamp);
         // Delete the tmp file
-        int errcode = std::remove(tmpPoldata);
+        int errcode = std::remove(tmpForceField);
         if (errcode != 0)
         {
             std::perror("Could not delete temporary file");

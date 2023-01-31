@@ -30,7 +30,7 @@
 #include <cmath>
 
 #include "act/basics/mutability.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/forcefield/forcefieldparametername.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
@@ -188,7 +188,7 @@ int getCombinationRule(const ForceFieldParameterList &vdw)
     return i;
 }
 
-static void generateVdwParameterPairs(Poldata *pd)
+static void generateVdwParameterPairs(ForceField *pd)
 {
     auto forcesVdw = pd->findForces(InteractionType::VDW);
     auto ftypeVdW  = forcesVdw->fType();
@@ -324,7 +324,7 @@ static void generateVdwParameterPairs(Poldata *pd)
     // Phew, we're done!
 }
 
-static void generateCoulombParameterPairs(Poldata *pd)
+static void generateCoulombParameterPairs(ForceField *pd)
 {
     auto forcesCoul = pd->findForces(InteractionType::COULOMB);
     
@@ -382,7 +382,7 @@ static void generateCoulombParameterPairs(Poldata *pd)
     // Phew, we're done!
 }
 
-static void generateShellForceConstants(Poldata *pd)
+static void generateShellForceConstants(ForceField *pd)
 {
     if (!pd->polarizable())
     {
@@ -429,7 +429,7 @@ static void generateShellForceConstants(Poldata *pd)
     }
 }
 
-void generateDependentParameter(Poldata *pd)
+void generateDependentParameter(ForceField *pd)
 {
     generateVdwParameterPairs(pd);
     generateCoulombParameterPairs(pd);

@@ -43,8 +43,8 @@
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
@@ -92,7 +92,7 @@ int merge_mp(int argc, char *argv[])
           "Force merging compounds with the same name even if not the formula matches" }
     };
     std::vector<MolProp>  mp;
-    Poldata               pd;
+    ForceField               pd;
     gmx_output_env_t     *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -103,7 +103,7 @@ int merge_mp(int argc, char *argv[])
 
     try 
     {
-        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
+        alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

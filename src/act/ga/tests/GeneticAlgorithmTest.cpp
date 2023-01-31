@@ -109,7 +109,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             alexandria::StaticIndividualInfo sii(&cr);
             std::string ffName("ACS-g.xml");
             std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
-            sii.fillPoldata(nullptr, ffDataName.c_str());
+            sii.fillForceField(nullptr, ffDataName.c_str());
             std::string selName("testAlcohol.dat");
             std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
             alexandria::MolSelect gms;
@@ -124,7 +124,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 molgen.addFitOption(fs);
             }
             // TODO check return value
-            (void) molgen.Read(nullptr, mpDataName.c_str(), sii.poldata(),
+            (void) molgen.Read(nullptr, mpDataName.c_str(), sii.forcefield(),
                                gms, sii.fittingTargetsConst(iMolSelect::Train),
                                false);
             // Continue filling the shared individual

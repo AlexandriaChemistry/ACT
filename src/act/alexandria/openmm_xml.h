@@ -35,19 +35,19 @@
 #ifndef OPENMM_XML_H
 #define OPENMM_XML_H
 
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "mymol.h"
 
 namespace alexandria
 {
-    /*! \brief Store the Poldata force field to an OpenMM XML file
+    /*! \brief Store the ForceField force field to an OpenMM XML file
      *
      * \param[in] fileName The filename to save to
-     * \param[in] pd       Pointer to a Poldata class instance
+     * \param[in] pd       Pointer to a ForceField class instance
      * \param[in] compress Whether or not to write a compressed file
      */
     void writeOpenMM(const std::string &fileName,
-                     const Poldata     *pd,
+                     const ForceField     *pd,
                      const MyMol       *mymol,
                      bool compress = true);
 

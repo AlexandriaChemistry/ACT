@@ -41,9 +41,9 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/identifier.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_tables.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_tables.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -59,10 +59,10 @@
 namespace alexandria
 {
 
-static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
+static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             alexandria::InteractionType             iType,
                             const std::string                      &parameter,
-                            alexandria::Poldata                    *pdout)
+                            alexandria::ForceField                    *pdout)
 {  
     std::vector<gmx_stats> lsq;
     std::vector<int>       ntrain;
@@ -205,8 +205,8 @@ int merge_ff(int argc, char *argv[])
         { "-merge", FALSE, etSTR, {&mergeString},
           "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." }
     };
-    std::vector<alexandria::Poldata> pds;
-    alexandria::Poldata              pdout;
+    std::vector<alexandria::ForceField> pds;
+    alexandria::ForceField              pdout;
     gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, 
@@ -238,13 +238,13 @@ int merge_ff(int argc, char *argv[])
     
     for (auto &i : filenames)
     {
-        alexandria::Poldata pd;
-        readPoldata(i.c_str(), &pd);
+        alexandria::ForceField pd;
+        readForceField(i.c_str(), &pd);
         pds.push_back(std::move(pd));
     }    
 
     // Copy the first gentop file into pdout
-    readPoldata(filenames[0].c_str(), &pdout);
+    readForceField(filenames[0].c_str(), &pdout);
     
     // We now update different parts of pdout
     for(const auto &type : gmx::splitString(mergeString))
@@ -261,7 +261,7 @@ int merge_ff(int argc, char *argv[])
         }
     }
 
-    writePoldata(opt2fn("-o", NFILE, fnm), &pdout, bcompress);
+    writeForceField(opt2fn("-o", NFILE, fnm), &pdout, bcompress);
     if (opt2bSet("-latex", NFILE, fnm))
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");

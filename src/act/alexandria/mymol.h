@@ -43,7 +43,7 @@
 #include "act/alexandria/mymol_low.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
@@ -148,7 +148,7 @@ private:
      * \param[out] atoms  The structure to update
      * \return The status
      */
-    immStatus GenerateAtoms(const Poldata     *pd,
+    immStatus GenerateAtoms(const ForceField     *pd,
                             t_atoms           *atoms);
     
     /*! \brief
@@ -159,7 +159,7 @@ private:
      * \param[out] atoms Structure to modify with new particles.
      */
     void addBondVsites(FILE          *fp,
-                       const Poldata *pd,
+                       const ForceField *pd,
                        t_atoms       *atoms);
     
     /*! \brief
@@ -170,7 +170,7 @@ private:
      * \param[out] atoms Structure to modify with new particles.
      */
     void addShells(FILE          *fp,
-                   const Poldata *pd,
+                   const ForceField *pd,
                    t_atoms       *atoms);
     
     /*! \brief
@@ -181,7 +181,7 @@ private:
      * \param[in] atoms The structure to check
      * \return status code.
      */
-    immStatus checkAtoms(const Poldata *pd,
+    immStatus checkAtoms(const ForceField *pd,
                          const t_atoms *atoms);
     
     /*! \brief
@@ -192,7 +192,7 @@ private:
      * \return true if vsite is needed
      */
     bool IsVsiteNeeded(std::string        atype,
-                       const Poldata     *pd) const;
+                       const ForceField     *pd) const;
     
     /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
@@ -316,7 +316,7 @@ public:
      * \param[out] interactionEnergyMap The interaction energies
      * \param[out] energyComponentsMap  The energy components
      */
-    void forceEnergyMaps(const Poldata                                                       *pd,
+    void forceEnergyMaps(const ForceField                                                       *pd,
                          const ForceComputer                                                 *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                          std::vector<std::pair<double, double> >                             *energyMap,
@@ -352,7 +352,7 @@ public:
      * \param[in] pd     Data structure containing atomic properties
      * \param[out] atoms Structure to fill with force field data
      */
-    immStatus zetaToAtoms(const Poldata *pd,
+    immStatus zetaToAtoms(const ForceField *pd,
                           t_atoms       *atoms);
     
     /*! \brief
@@ -401,7 +401,7 @@ public:
      * \return status
      */
     immStatus GenerateTopology(FILE              *fp,
-                               const Poldata     *pd,
+                               const ForceField     *pd,
                                missingParameters  missing,
                                bool               gromacsSupport);
     
@@ -416,7 +416,7 @@ public:
      * \param[in] pd        The force field
      * \param[in] forceComp The force computer
      */
-    void CalcPolarizability(const Poldata       *pd,
+    void CalcPolarizability(const ForceField       *pd,
                             const ForceComputer *forceComp);
     
     /*! \brief
@@ -427,14 +427,14 @@ public:
      * \param[in]  fplog     Logger
      * \param[in]  cr        Communication parameters
      * \param[in]  algorithm The algorithm for determining charges,
-     *                       if NONE it is read from the Poldata structure.
+     *                       if NONE it is read from the ForceField structure.
      * \param[in]  qtype     If algorithm is Read this type of charges will
      *                       be extracted from the molprop structure.
      * \param[in]  qcustom   Custom (user-provided) charges
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
      */
-    immStatus GenerateCharges(const Poldata             *pd,
+    immStatus GenerateCharges(const ForceField             *pd,
                               const ForceComputer       *forceComp,
                               const gmx::MDLogger       &fplog,
                               const CommunicationRecord *cr,
@@ -452,7 +452,7 @@ public:
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    The forces
      */
-    immStatus GenerateAcmCharges(const Poldata          *pd,
+    immStatus GenerateAcmCharges(const ForceField          *pd,
                                  const ForceComputer    *forceComp,
                                  std::vector<gmx::RVec> *coords,
                                  std::vector<gmx::RVec> *forces);
@@ -466,15 +466,15 @@ public:
      * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
      * \param[in] symm_string        The type of molecular symmetry
      */
-    void symmetrizeCharges(const Poldata  *pd,
+    void symmetrizeCharges(const ForceField  *pd,
                            bool            bSymmetricCharges,
                            const char     *symm_string);
     
     /*! \brief Calculate the RMSD from ESP for QM charges
-     * \param[in] pd     Poldata structure
+     * \param[in] pd     ForceField structure
      * \param[in] coords Coordinates
      */
-    void calcEspRms(const Poldata                *pd,
+    void calcEspRms(const ForceField                *pd,
                     const std::vector<gmx::RVec> *coords);
     
     /*! \brief Make a ESP correlation plot
@@ -488,7 +488,7 @@ public:
      * \param[in] oenv      Gromacs output structure
      * \param[in] forceComp Utility to compute forces
      */
-    void plotEspCorrelation(const Poldata                *pd,
+    void plotEspCorrelation(const ForceField                *pd,
                             const std::vector<gmx::RVec> &coords,
                             const char                   *espcorr,
                             const gmx_output_env_t       *oenv,
@@ -519,7 +519,7 @@ public:
      */
     void PrintTopology(const char                   *fn,
                        bool                          bVerbose,
-                       const Poldata                *pd,
+                       const ForceField                *pd,
                        const ForceComputer          *forceComp,
                        const CommunicationRecord    *cr,
                        const std::vector<gmx::RVec> &coords,
@@ -558,7 +558,7 @@ public:
      * \param[inout] coords          Atomic coordinates (shell positions can be updated)
      * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const Poldata          *pd,
+    double calculateInteractionEnergy(const ForceField          *pd,
                                       const ForceComputer    *forceComputer,
                                       std::vector<gmx::RVec> *interactionForces,
                                       std::vector<gmx::RVec> *coords) const;
@@ -570,7 +570,7 @@ public:
      * \param[in] iTypes Interaction types
      * \param[in] updateZeta Whether to update the atomic zeta as well
      */
-    void UpdateIdef(const Poldata                      *pd,
+    void UpdateIdef(const ForceField                      *pd,
                     const std::vector<InteractionType> &iTypes,
                     bool                                updateZeta);
     
@@ -599,7 +599,7 @@ public:
      * \param[in] diffhistfn
      * \param[in] oenv
      */
-    void GenerateCube(const Poldata          *pd,
+    void GenerateCube(const ForceField          *pd,
                       const std::vector<gmx::RVec> &coords,
                       real                    spacing,
                       real                    border,
@@ -653,7 +653,7 @@ public:
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    void initQgenResp(const Poldata                *pd,
+    void initQgenResp(const ForceField                *pd,
                       const std::vector<gmx::RVec> &coords,
                       real                          watoms,
                       int                           maxESP);

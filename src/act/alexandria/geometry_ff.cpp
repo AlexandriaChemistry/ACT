@@ -65,14 +65,14 @@
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "tuning_utility.h"
 
 namespace alexandria
 {
 
-static void generate_bcc(Poldata *pd,
+static void generate_bcc(ForceField *pd,
                          double   delta_eta)
 {
     // Bonds should be present, so no checking
@@ -197,7 +197,7 @@ int geometry_ff(int argc, char *argv[])
     FILE                            *fp;
     time_t                           my_t;
     gmx_output_env_t                *oenv      = nullptr;
-    Poldata                          pd;
+    ForceField                          pd;
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      method, basis;
@@ -227,10 +227,10 @@ int geometry_ff(int argc, char *argv[])
     /* Read standard atom properties */
     print_memory_usage(debug);
 
-    /* Read PolData */
+    /* Read ForceField file */
     try
     {
-        readPoldata(opt2fn_null("-ff", NFILE, fnm), &pd);
+        readForceField(opt2fn_null("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);
@@ -256,7 +256,7 @@ int geometry_ff(int argc, char *argv[])
     {
         bonds.writeHistogram(oenv);
     }
-    bonds.updatePoldata(fp, &pd);
+    bonds.updateForceField(fp, &pd);
     pd.setPolarizable(polar);
     if (genBCC)
     {
@@ -277,7 +277,7 @@ int geometry_ff(int argc, char *argv[])
     }
     pd.updateTimeStamp();
     pd.updateCheckSum();
-    writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
+    writeForceField(opt2fn("-o", NFILE, fnm), &pd, compress);
     bonds.writeSummary(fp);
     print_memory_usage(debug);
     gmx_ffclose(fp);

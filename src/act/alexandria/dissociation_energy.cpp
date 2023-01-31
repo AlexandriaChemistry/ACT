@@ -133,7 +133,7 @@ static void dump_csv(const char                      *csvFile,
  * \return true if successful.
  */
 static bool calcDissoc(FILE                              *fplog,
-                       const Poldata                     *pd,
+                       const ForceField                     *pd,
                        const std::vector<MyMol>          &molset,
                        bool                               pickRandomMolecules,
                        const std::vector<int>            &hasExpData,
@@ -319,7 +319,7 @@ static bool calcDissoc(FILE                              *fplog,
 }
                            
 double getDissociationEnergy(FILE               *fplog,
-                             Poldata            *pd,
+                             ForceField            *pd,
                              std::vector<MyMol> *molset,
                              iqmType             iqm,
                              const char         *csvFile,

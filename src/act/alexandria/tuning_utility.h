@@ -47,7 +47,7 @@
 #include "mymol.h"
 #include "molhandler.h"
 #include "act/forces/forcecomputer.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -93,7 +93,7 @@ private:
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
-                               const Poldata       *pd,
+                               const ForceField       *pd,
                                alexandria::MyMol   *mol,
                                const ForceComputer *forceComp,
                                qtStats             *lsq_isoPol,
@@ -110,7 +110,7 @@ private:
      * \return the potential energy before minimization
      */
     double printEnergyForces(std::vector<std::string> *tcout,
-                             const Poldata            *pd,
+                             const ForceField            *pd,
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
                              alexandria::MyMol        *mol,
@@ -133,7 +133,7 @@ public:
     
     void print(FILE                           *fp,
                std::vector<alexandria::MyMol> *mymol,
-               const Poldata                  *pd,
+               const ForceField                  *pd,
                const gmx::MDLogger            &fplog,
                const gmx_output_env_t         *oenv,
                const CommunicationRecord      *cr,
@@ -165,7 +165,7 @@ void print_header(FILE                       *fp,
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
-void doFrequencyAnalysis(const Poldata            *pd,
+void doFrequencyAnalysis(const ForceField            *pd,
                          alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,

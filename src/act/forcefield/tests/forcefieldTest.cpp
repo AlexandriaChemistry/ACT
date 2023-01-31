@@ -37,10 +37,10 @@
 
 #include <gtest/gtest.h>
 
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_low.h"
-#include "act/poldata/poldata_utils.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -55,14 +55,14 @@ namespace alexandria
 namespace
 {
 
-class PoldataTest : public gmx::test::CommandLineTestBase
+class ForceFieldTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
         static std::vector<std::string> atomNames;
         static std::string              atomName;
 
-        PoldataTest () : checker_(this->rootChecker())
+        ForceFieldTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -71,7 +71,7 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            Poldata *mypd     = getPoldata("ACM-g");
+            ForceField *mypd     = getForceField("ACM-g");
             for (const auto &iter : mypd->particleTypesConst())
             {
                 atomNames.push_back(iter.id().id());
@@ -82,7 +82,7 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void addAtype(alexandria::Poldata *pd)
+        void addAtype(alexandria::ForceField *pd)
         {
             std::string          atype("U");
             std::string          elem("U");
@@ -103,11 +103,11 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         }
 };
 
-std::vector<std::string> PoldataTest::atomNames;
-std::string              PoldataTest::atomName;
+std::vector<std::string> ForceFieldTest::atomNames;
+std::string              ForceFieldTest::atomName;
 
-TEST_F (PoldataTest, getAtype){
-    auto aType = getPoldata("ACM-g")->findParticleType("h");
+TEST_F (ForceFieldTest, getAtype){
+    auto aType = getForceField("ACM-g")->findParticleType("h");
 
     checker_.checkString(aType->element(), "element");
     checker_.checkString(aType->description(), "description");
@@ -121,17 +121,17 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str(), "zetatype");
 }
 
-TEST_F(PoldataTest, addingParticleTypeTwiceThrows)
+TEST_F(ForceFieldTest, addingParticleTypeTwiceThrows)
 {
-    alexandria::Poldata *pd = getPoldata("ACM-g");
+    alexandria::ForceField *pd = getForceField("ACM-g");
     addAtype(pd);
     EXPECT_THROW(addAtype(pd), gmx::InvalidInputError);
 }
 
-TEST_F(PoldataTest, addAtype){
-    alexandria::Poldata *pd = getPoldata("ACM-g");
+TEST_F(ForceFieldTest, addAtype){
+    alexandria::ForceField *pd = getForceField("ACM-g");
     std::string          atype("U");
-    // For some reason this test "inherits" the same Poldata as the previous test
+    // For some reason this test "inherits" the same ForceField as the previous test
     //addAtype(pd);
 
     if (pd->hasParticleType(atype))
@@ -146,7 +146,7 @@ TEST_F(PoldataTest, addAtype){
     }
 }
 
-TEST_F (PoldataTest, chi)
+TEST_F (ForceFieldTest, chi)
 {
     std::vector<double>      chi0s;
     std::string              atoms[]  = { "h", "f", "p2", "br" };
@@ -156,7 +156,7 @@ TEST_F (PoldataTest, chi)
     {
         for (auto model : eqd)
         {
-            auto pd       = getPoldata(model);
+            auto pd       = getForceField(model);
             auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto eep      = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto p        = eep.findParameterTypeConst(fa, "chi");
@@ -166,7 +166,7 @@ TEST_F (PoldataTest, chi)
     checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");
 }
 
-TEST_F (PoldataTest, alpha)
+TEST_F (ForceFieldTest, alpha)
 {
     std::vector<double>      alphas;
     std::string              atoms[]  = { "h", "c2", "f", "p2", "br" };
@@ -176,7 +176,7 @@ TEST_F (PoldataTest, alpha)
     {
         for (auto model : eqd)
         {
-            auto pd       = getPoldata(model);
+            auto pd       = getForceField(model);
             auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::POLARIZATION);
             auto eep      = pd->findForcesConst(InteractionType::POLARIZATION);
             auto p        = eep.findParameterTypeConst(fa, "alpha");
@@ -186,7 +186,7 @@ TEST_F (PoldataTest, alpha)
     checker_.checkSequence(alphas.begin(), alphas.end(), "alpha");
 }
 
-TEST_F (PoldataTest, row)
+TEST_F (ForceFieldTest, row)
 {
     std::vector<int> rows;
     std::string      atoms[]  = { "h", "n2", "s2", "br" };
@@ -196,7 +196,7 @@ TEST_F (PoldataTest, row)
     {
         for (auto &model : models)
         {
-            auto pd  = getPoldata(model);
+            auto pd  = getForceField(model);
             auto fa  = pd->findParticleType(atom);
             auto p   = fa->row();
             rows.push_back(p);
@@ -205,7 +205,7 @@ TEST_F (PoldataTest, row)
     checker_.checkSequence(rows.begin(), rows.end(), "row");
 }
 
-TEST_F (PoldataTest, zeta)
+TEST_F (ForceFieldTest, zeta)
 {
     std::vector<double>      zetas;
     std::string              atoms[]  = { "h", "c3", "s2", "br" };
@@ -215,7 +215,7 @@ TEST_F (PoldataTest, zeta)
     {
         for (auto &model : eqd)
         {
-            auto pd  = getPoldata(model);
+            auto pd  = getForceField(model);
             auto fa  = pd->findParticleType(atom);
             auto ztp = fa->interactionTypeToIdentifier(InteractionType::COULOMB);
             auto eep = pd->findForcesConst(InteractionType::COULOMB);

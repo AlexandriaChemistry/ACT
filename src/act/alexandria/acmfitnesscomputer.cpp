@@ -119,7 +119,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         {
             mychanged.insert(cr->recv_int(src));
         }
-        sii_->updatePoldata(mychanged, myparams);
+        sii_->updateForceField(mychanged, myparams);
     }
     else 
     {
@@ -133,7 +133,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                 cr->send_int(dest, iset);
             }
         }
-        sii_->updatePoldata(changed, *params);
+        sii_->updateForceField(changed, *params);
     }
 }
 
@@ -165,7 +165,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->poldata());
+        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->forcefield());
     }
 
     // Loop over molecules
@@ -193,11 +193,11 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             // Update the polarizabilities and other params only once before the loop
             // TODO: is this still needed if we do not use GROMACS code for force
             // calculations?
-            mymol.UpdateIdef(sii_->poldata(), itUpdate, molgen_->fit("zeta"));
+            mymol.UpdateIdef(sii_->forcefield(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(mymol.atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = mymol.xOriginal();
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &coords, &forces);
+            immStatus imm = mymol.GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
@@ -214,7 +214,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &mymol, &coords, targets, sii_->poldata());
+                mydev->calcDeviation(forceComp_, &mymol, &coords, targets, sii_->forcefield());
             }
             if (debug)
             {

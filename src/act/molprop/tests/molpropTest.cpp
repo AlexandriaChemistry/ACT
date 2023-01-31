@@ -47,7 +47,7 @@
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/multipole_names.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/units.h"
 
 #include "testutils/cmdlinetest.h"

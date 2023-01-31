@@ -37,7 +37,7 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/allbondeds.h"
-#include "act/poldata/poldata_utils.h"
+#include "act/forcefield/forcefield_utils.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -64,7 +64,7 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            //Poldata *mypd     = getPoldata("ACM-g");
+            //ForceField *mypd     = getForceField("ACM-g");
         }
 
         void runOBstats(const std::vector<double> &xx)

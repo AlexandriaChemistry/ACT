@@ -43,7 +43,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"

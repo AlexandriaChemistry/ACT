@@ -42,8 +42,8 @@
 
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparametername.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
@@ -232,13 +232,13 @@ void MyMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
 }
 
 bool MyMol::IsVsiteNeeded(std::string    atype,
-                          const Poldata *pd) const
+                          const ForceField *pd) const
 {
     auto vsite = pd->findVsite(atype);
     return vsite != pd->getVsiteEnd();
 }
 
-immStatus MyMol::GenerateAtoms(const Poldata     *pd,
+immStatus MyMol::GenerateAtoms(const ForceField     *pd,
                                t_atoms           *atoms)
 {
     double                    xx, yy, zz;
@@ -308,7 +308,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             }
             else
             {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in poldata, there are %d atomtypes.\n", 
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in forcefield, there are %d atomtypes.\n", 
                                                             cai.getObtype().c_str(), natom, pd->nParticleTypes()));
 
                 return immStatus::AtomTypes;
@@ -340,7 +340,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     return imm;
 }
 
-immStatus MyMol::checkAtoms(const Poldata *pd,
+immStatus MyMol::checkAtoms(const ForceField *pd,
                             const t_atoms *atoms)
 {
     int nmissing        = 0;
@@ -375,7 +375,7 @@ immStatus MyMol::checkAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-immStatus MyMol::zetaToAtoms(const Poldata *pd,
+immStatus MyMol::zetaToAtoms(const ForceField *pd,
                              t_atoms       *atoms)
 {
     /* The first time around we add zeta for the core and addShells will
@@ -426,7 +426,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(const Poldata                                                       *pd,
+void MyMol::forceEnergyMaps(const ForceField                                                       *pd,
                             const ForceComputer                                                 *forceComp,
                             std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                             std::vector<std::pair<double, double> >                             *energyMap,
@@ -887,7 +887,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
 }
 
 static void TopologyToMtop(Topology       *top,
-                           const Poldata  *pd,
+                           const ForceField  *pd,
                            gmx_mtop_t     *mtop)
 {
     int ffparamsSize = mtop->ffparams.numTypes();
@@ -946,7 +946,7 @@ static void TopologyToMtop(Topology       *top,
 }
                  
 immStatus MyMol::GenerateTopology(FILE              *fp,
-                                  const Poldata     *pd,
+                                  const ForceField     *pd,
                                   missingParameters  missing,
                                   bool               gromacsSupport)
 {
@@ -1105,7 +1105,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
 }
 
 void MyMol::addBondVsites(FILE          *fp,
-                          const Poldata *pd,
+                          const ForceField *pd,
                           t_atoms       *atoms)
 {
     if (!topology_->hasEntry(InteractionType::BONDS))
@@ -1212,7 +1212,7 @@ bool MyMol::linearMolecule() const
 }
 
 void MyMol::addShells(FILE          *fp,
-                      const Poldata *pd,
+                      const ForceField *pd,
                       t_atoms       *atoms)
 {
     int                    shell  = 0;
@@ -1289,7 +1289,7 @@ void MyMol::addShells(FILE          *fp,
             }
             else
             {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in poldata\n", 
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in forcefield\n", 
                                                             atomtype.c_str()));
             }
         }
@@ -1504,7 +1504,7 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateInteractionEnergy(const Poldata          *pd,
+double MyMol::calculateInteractionEnergy(const ForceField          *pd,
                                          const ForceComputer    *forceComputer,
                                          std::vector<gmx::RVec> *interactionForces,
                                          std::vector<gmx::RVec> *coords) const
@@ -1671,7 +1671,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
     return imm;
 }
 
-void MyMol::symmetrizeCharges(const Poldata  *pd,
+void MyMol::symmetrizeCharges(const ForceField  *pd,
                               bool            bSymmetricCharges,
                               const char     *symm_string)
 {
@@ -1691,7 +1691,7 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
+immStatus MyMol::GenerateAcmCharges(const ForceField          *pd,
                                     const ForceComputer    *forceComp,
                                     std::vector<gmx::RVec> *coords,
                                     std::vector<gmx::RVec> *forces)
@@ -1750,7 +1750,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
     return imm;
 }
 
-immStatus MyMol::GenerateCharges(const Poldata             *pd,
+immStatus MyMol::GenerateCharges(const ForceField             *pd,
                                  const ForceComputer       *forceComp,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
@@ -1949,7 +1949,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     return imm;
 }
 
-void MyMol::CalcPolarizability(const Poldata       *pd,
+void MyMol::CalcPolarizability(const ForceField       *pd,
                                const ForceComputer *forceComp)
 {
     auto natoms = atomsConst().size();
@@ -2002,7 +2002,7 @@ static void add_tensor(std::vector<std::string> *commercials,
 
 void MyMol::PrintTopology(const char                   *fn,
                           bool                          bVerbose,
-                          const Poldata                *pd,
+                          const ForceField                *pd,
                           const ForceComputer          *forceComp,
                           const CommunicationRecord    *cr,
                           const std::vector<gmx::RVec> &coords,
@@ -2149,7 +2149,7 @@ void MyMol::PrintTopology(const char                   *fn,
     gmx_ffclose(fp);
 }
 
-void MyMol::GenerateCube(const Poldata                *pd,
+void MyMol::GenerateCube(const ForceField                *pd,
                          const std::vector<gmx::RVec> &coords,
                          real                          spacing,
                          real                          border,
@@ -2227,7 +2227,7 @@ void MyMol::GenerateCube(const Poldata                *pd,
     }
 }
 
-void MyMol::calcEspRms(const Poldata                *pd,
+void MyMol::calcEspRms(const ForceField                *pd,
                        const std::vector<gmx::RVec> *coords)
 {
     int   natoms  = 0;
@@ -2429,7 +2429,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     return imm;
 }
 
-void MyMol::UpdateIdef(const Poldata                      *pd,
+void MyMol::UpdateIdef(const ForceField                      *pd,
                        const std::vector<InteractionType> &iTypes,
                        bool                                updateZeta)
 {
@@ -2483,7 +2483,7 @@ void MyMol::UpdateIdef(const Poldata                      *pd,
     }
 }
 
-void MyMol::initQgenResp(const Poldata                *pd,
+void MyMol::initQgenResp(const ForceField                *pd,
                          const std::vector<gmx::RVec> &coords,
                          real                          watoms,
                          int                           maxESP)
@@ -2554,7 +2554,7 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void MyMol::plotEspCorrelation(const Poldata                *pd,
+void MyMol::plotEspCorrelation(const ForceField                *pd,
                                const std::vector<gmx::RVec> &coords,
                                const char                   *espcorr,
                                const gmx_output_env_t       *oenv,

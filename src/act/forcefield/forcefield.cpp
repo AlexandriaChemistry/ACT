@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "poldata.h"
+#include "forcefield.h"
 
 #include <cmath>
 #include <cstdio>
@@ -51,13 +51,13 @@
 #include "gromacs/utility/textreader.h"
 
 #include "act_checksum.h"
-#include "poldata_xml.h"
+#include "forcefield_xml.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria
 {
 
-bool Poldata::verifyCheckSum(FILE              *fp,
+bool ForceField::verifyCheckSum(FILE              *fp,
                              const std::string &checkSum)
 {
     bool match = checkSum == checkSum_;
@@ -70,18 +70,18 @@ bool Poldata::verifyCheckSum(FILE              *fp,
     return match;
 }
 
-bool Poldata::verifyCheckSum(FILE *fp)
+bool ForceField::verifyCheckSum(FILE *fp)
 {
-    std::string checkSum = poldataCheckSum(this);
+    std::string checkSum = forcefieldCheckSum(this);
     return verifyCheckSum(fp, checkSum);
 }
 
-void Poldata::updateCheckSum()
+void ForceField::updateCheckSum()
 {
-    checkSum_ = poldataCheckSum(this);
+    checkSum_ = forcefieldCheckSum(this);
 }
 
-void Poldata::updateTimeStamp()
+void ForceField::updateTimeStamp()
 {
     auto tnow    = std::chrono::system_clock::now();
     auto ttt     = std::chrono::system_clock::to_time_t(tnow);
@@ -92,26 +92,26 @@ void Poldata::updateTimeStamp()
                                      now->tm_min, now->tm_sec);
 }
 
-void Poldata::setFilename(const std::string &fn2)
+void ForceField::setFilename(const std::string &fn2)
 {
     GMX_RELEASE_ASSERT((fn2.size() > 0),
-                       "Trying to set empty Poldata filename");
+                       "Trying to set empty ForceField filename");
     if (0 != filename_.size())
     {
-        fprintf(stderr, "Changing Poldata filename_ from %s to %s\n",
+        fprintf(stderr, "Changing ForceField filename_ from %s to %s\n",
                 filename_.c_str(), fn2.c_str());
 
     }
     filename_ = fn2;
 }
 
-bool Poldata::yang() const
+bool ForceField::yang() const
 {
     // Note that this is not a good way of doing things. Filenames may change.
     return (filename_.find("Yang.dat") != std::string::npos);
 }
 
-bool Poldata::rappe() const
+bool ForceField::rappe() const
 {
     // Note that this is not a good way of doing things. Filenames may change.
     return (filename_.find("Rappe.dat") != std::string::npos);
@@ -123,14 +123,14 @@ bool Poldata::rappe() const
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-gmx_bool Poldata::strcasestrStart(std::string needle, std::string haystack)
+gmx_bool ForceField::strcasestrStart(std::string needle, std::string haystack)
 {
     std::string ptr;
     ptr = strcasestr(haystack.c_str(), needle.c_str());
     return (ptr == haystack);
 }
 
-const std::string Poldata::ztype2elem(const std::string &ztype) const
+const std::string ForceField::ztype2elem(const std::string &ztype) const
 {
     size_t i;
     if (ztype.size() != 0)
@@ -146,7 +146,7 @@ const std::string Poldata::ztype2elem(const std::string &ztype) const
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
 
-bool Poldata::typeToInteractionType(const std::string &type, 
+bool ForceField::typeToInteractionType(const std::string &type, 
                                     InteractionType   *itype)
 {
     if (type2Itype_.empty())
@@ -184,7 +184,7 @@ bool Poldata::typeToInteractionType(const std::string &type,
     }
 }
 
-ChargeGenerationAlgorithm Poldata::chargeGenerationAlgorithm() const
+ChargeGenerationAlgorithm ForceField::chargeGenerationAlgorithm() const
 {
     if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
     {
@@ -210,7 +210,7 @@ ChargeGenerationAlgorithm Poldata::chargeGenerationAlgorithm() const
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-bool Poldata::atypeToPtype(const std::string &atype,
+bool ForceField::atypeToPtype(const std::string &atype,
                            std::string       *ptype) const
 {
     auto ai = findParticleType(atype);
@@ -228,7 +228,7 @@ bool Poldata::atypeToPtype(const std::string &atype,
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-void  Poldata::addVsite(const std::string &atype,
+void  ForceField::addVsite(const std::string &atype,
                         const std::string &type,
                         int                number,
                         double             distance,
@@ -251,18 +251,18 @@ void  Poldata::addVsite(const std::string &atype,
     }
     else
     {
-        fprintf(stderr, "vsite type %s was already added to Poldata record\n", atype.c_str());
+        fprintf(stderr, "vsite type %s was already added to ForceField record\n", atype.c_str());
     }
 }
 
-void Poldata::checkForPolarizability()
+void ForceField::checkForPolarizability()
 {
     auto f = forces_.find(InteractionType::POLARIZATION);
     
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
 
-void Poldata::addParticleType(const ParticleType &ptp)
+void ForceField::addParticleType(const ParticleType &ptp)
 {
     if (hasParticleType(ptp.id()))
     {
@@ -271,7 +271,7 @@ void Poldata::addParticleType(const ParticleType &ptp)
     alexandria_.push_back(ptp);
 }
 
-ParticleTypeConstIterator Poldata::findParticleType(InteractionType    itype,
+ParticleTypeConstIterator ForceField::findParticleType(InteractionType    itype,
                                                     const std::string &subtype) const
 {
     std::string btype("bondtype");
@@ -298,7 +298,7 @@ ParticleTypeConstIterator Poldata::findParticleType(InteractionType    itype,
 }
     
 
-void Poldata::addForces(const std::string             &interaction,
+void ForceField::addForces(const std::string             &interaction,
                         const ForceFieldParameterList &forces)
 {
     auto iType = stringToInteractionType(interaction.c_str());
@@ -310,7 +310,7 @@ void Poldata::addForces(const std::string             &interaction,
     forces_.insert({iType, forces});
 }
 
-bool Poldata::atypeToBtype(const std::string &atype,
+bool ForceField::atypeToBtype(const std::string &atype,
                            std::string       *btype) const
 {
     auto ai    = findParticleType(atype);
@@ -323,7 +323,7 @@ bool Poldata::atypeToBtype(const std::string &atype,
     return false;
 }
 
-bool Poldata::atypeToZtype(const std::string &atype,
+bool ForceField::atypeToZtype(const std::string &atype,
                            std::string       *ztype) const
 {
     auto ai = findParticleType(atype);
@@ -341,7 +341,7 @@ bool Poldata::atypeToZtype(const std::string &atype,
  *-+-+-+-+-+-+-+-+
  */
 
-void Poldata::addSymcharges(const std::string &central,
+void ForceField::addSymcharges(const std::string &central,
                             const std::string &attached,
                             int                numattach)
 {
@@ -364,7 +364,7 @@ void Poldata::addSymcharges(const std::string &central,
     }
 }
 
-CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
+CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -436,7 +436,7 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
+CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                                        int                        root,
                                        MPI_Comm                   comm)
 {
@@ -558,7 +558,7 @@ CommunicationStatus Poldata::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -652,13 +652,13 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
     return cs;
 }
 
-void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
+void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Going to update Poldata::particles on node %d\n", dest);
+            fprintf(debug, "Going to update ForceField::particles on node %d\n", dest);
         }
         for(auto &ax : alexandria_)
         {
@@ -681,7 +681,7 @@ void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 }
 
 
-void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
+void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
@@ -715,14 +715,14 @@ static std::vector<InteractionType> eemlist =
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
 
-void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
+void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
 {
     auto cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
+            fprintf(debug, "Going to update ForceField::eemprop on node %d\n", dest);
         }
         for(auto myeem : eemlist)
         {
@@ -741,7 +741,7 @@ void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
     cr->send_done(dest);
 }
 
-void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
+void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
@@ -773,7 +773,7 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
                        "Communication did not end correctly");
 }
 
-void Poldata::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
+void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
 {
     if (bcast && debug)
     {
@@ -799,7 +799,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
                 {
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                        fprintf(debug, "Going to update ForceField on node %d\n", dest);
                     }
                     Send(cr, dest);
                 }
@@ -823,14 +823,14 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
                 {
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
+                        fprintf(debug, "ForceField is updated on node %d\n", cr->rank());
                     }
                 }
                 else
                 {
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
+                        fprintf(debug, "Could not update ForceField on node %d\n", cr->rank());
                     }
                 }
             }
@@ -840,7 +840,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
     }
 }
 
-void Poldata::checkConsistency(FILE *fp) const
+void ForceField::checkConsistency(FILE *fp) const
 {
     int  nerror = 0;
     auto cga    = chargeGenerationAlgorithm();
@@ -868,7 +868,7 @@ void Poldata::checkConsistency(FILE *fp) const
         {
             if (fp)
             {
-                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", acmtype.id().c_str());
+                fprintf(fp, "ERROR: No eemprops for %s in ForceField::checkConsistency\n", acmtype.id().c_str());
             }
             nerror += 1;
         }
@@ -896,11 +896,11 @@ void Poldata::checkConsistency(FILE *fp) const
     }
     if (nerror > 0)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Poldata inconsistency. Use the -debug 1 flag to find out more").c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("ForceField inconsistency. Use the -debug 1 flag to find out more").c_str()));
     }
 }
 
-void Poldata::calcDependent()
+void ForceField::calcDependent()
 {
     auto btype = InteractionType::BONDS;
     std::vector<InteractionType> atypes = { InteractionType::LINEAR_ANGLES,

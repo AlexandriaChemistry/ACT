@@ -36,7 +36,7 @@
 #include "gromacs/fileio/xvgr.h"
 
 #include "tuning_utility.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/forcefield/forcefieldparametername.h"
 #include "act/utility/units.h"
     
 static void round_numbers(real *av, real *sig, int power10)
@@ -277,7 +277,7 @@ void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
     }
 }
     
-static real calc_r13(const Poldata    *pd,
+static real calc_r13(const ForceField    *pd,
                      const Identifier &bondId,
                      const real        angle)
 {
@@ -315,7 +315,7 @@ static real calc_r13(const Poldata    *pd,
  * \param[out] alin     The constant determining the center of the bond
  * \param[out] sigmalin The uncertainty in alin.
  */
-static void calc_linear_angle_a(const Poldata    *pd,
+static void calc_linear_angle_a(const ForceField    *pd,
                                 const Identifier &bondId,
                                 double           *alin,
                                 double           *sigmalin)
@@ -337,8 +337,8 @@ static void calc_linear_angle_a(const Poldata    *pd,
                           gmx::square(pjk.uncertainty()));
 }
 
-void AllBondeds::updatePoldata(FILE    *fp,
-                               Poldata *pd)
+void AllBondeds::updateForceField(FILE    *fp,
+                               ForceField *pd)
 {
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
@@ -535,7 +535,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
 void AllBondeds::extractGeometries(FILE                       *fp,
                                    const std::vector<MolProp> &mp,
                                    std::vector<MyMol>         *mymols,
-                                   const Poldata              &pd,
+                                   const ForceField              &pd,
                                    const MolSelect            &gms)
 {
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)

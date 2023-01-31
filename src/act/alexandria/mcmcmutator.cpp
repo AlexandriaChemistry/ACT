@@ -91,7 +91,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     }
 
     // Gather initial chi2 evaluations for training and test sets
-    // Update all parameters in poldata
+    // Update all parameters in forcefield
     std::map<iMolSelect, double> prevEval;
     std::set<int> changed;
     auto cd = CalcDev::Parameters;
@@ -263,7 +263,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
         // If the parameter change is not accepted
         // Set the old value of the parameter back
         genome->setBase(paramIndex, storeParam);
-        // poldata on helpers needs to know if we undo the change
+        // forcefield on helpers needs to know if we undo the change
         fitComp_->distributeTasks(CalcDev::Parameters);
         fitComp_->distributeParameters(genome->basesPtr(), changed);
     }
@@ -449,7 +449,7 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
         return;
     }
     std::set<int> changed;
-    sii_->updatePoldata(changed, genome->bases());
+    sii_->updateForceField(changed, genome->bases());
     auto cdc    = CalcDev::Compute;
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
@@ -469,16 +469,16 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
         std::set<int> changed;
         changed.insert(i);
         (*param)[i]     = pmin;
-        sii_->updatePoldata(changed, *param);
+        sii_->updateForceField(changed, *param);
         s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = p_0;
-        sii_->updatePoldata(changed, *param);
+        sii_->updateForceField(changed, *param);
         s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pmax;
-        sii_->updatePoldata(changed, *param);
+        sii_->updateForceField(changed, *param);
         s.add((*param)[i],  fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pstore;
-        sii_->updatePoldata(changed, *param);
+        sii_->updateForceField(changed, *param);
         s.computeForceConstants(logfile_);
         s.print(logfile_, paramNames[i]);
     }

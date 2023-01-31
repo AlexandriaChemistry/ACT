@@ -54,8 +54,8 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "act/forces/combinationrules.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefield.h"
 #include "act/qgen/qgen_acm.h"
 #include "topology.h"
 #include "act/utility/units.h"
@@ -199,7 +199,7 @@ void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-real calc_relposition(const Poldata                  *pd,
+real calc_relposition(const ForceField                  *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders)
 {
@@ -302,7 +302,7 @@ static void getBhamParams(const ForceFieldParameterList &fa,
 }
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
-                           const Poldata *pd,
+                           const ForceField *pd,
                            t_forcerec    *fr)
 {
     auto ntype  = mtop->ffparams.atnr;
@@ -420,7 +420,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
 }
 
 
-gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
+gmx_mtop_t *do_init_mtop(const ForceField                   *pd,
                          char                           **molname,
                          t_atoms                         *atoms,
                          t_inputrec                      *ir,

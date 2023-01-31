@@ -36,7 +36,7 @@
 #define DISSOCIATION_ENERGY_H
 
 #include "mymol.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 
 namespace alexandria
 {
@@ -67,7 +67,7 @@ namespace alexandria
  * \return Root mean square deviation from experimental data
  */
 double getDissociationEnergy(FILE                     *fplog,
-                             Poldata                  *pd,
+                             ForceField                  *pd,
                              std::vector<MyMol>       *molset,
                              iqmType                  iqm,
                              const char               *csvFile,

@@ -33,8 +33,8 @@
  */
  
  
-#ifndef POLDATA_XML_H
-#define POLDATA_XML_H
+#ifndef FORCEFIELD_XML_H
+#define FORCEFIELD_XML_H
 
 #include <string>
 
@@ -42,25 +42,25 @@
 
 namespace alexandria
 {
-    class Poldata;
+    class ForceField;
 
-    /*! \brief Store the Poldata class to an XML file
+    /*! \brief Store the ForceField class to an XML file
      *
      * \param[in] fileName The filename to save to
-     * \param[in] pd       Pointer to a Poldata class instance
+     * \param[in] pd       Pointer to a ForceField class instance
      * \param[in] compress Whether or not to write a compressed file
      */
-    void writePoldata(const std::string &fileName,
-                      const Poldata     *pd,
+    void writeForceField(const std::string &fileName,
+                      const ForceField     *pd,
                       bool compress = true);
 
-    /*! \brief Read a Poldata class from an XML file
+    /*! \brief Read a ForceField class from an XML file
      *
      * \param[in]  fileName The filename to read from
-     * \param[out] pd       The Poldata class instance
+     * \param[out] pd       The ForceField class instance
      */
-    void readPoldata(const std::string &fileName,
-                     Poldata           *pd);
+    void readForceField(const std::string &fileName,
+                     ForceField           *pd);
 
 } // namespace alexandria
 

@@ -40,7 +40,7 @@
 #include "act/alexandria/b2utils.h"
 #include "act/alexandria/mymol.h"
 #include "act/forces/forcecomputer.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -55,7 +55,7 @@ namespace alexandria
  * \param[in]    pd    The force field
  */
 void forceFieldSummary(JsonTree      *jtree,
-                       const Poldata *pd);
+                       const ForceField *pd);
 
 /*! \brief Compute integral over sphere section
  * \param[in] r1   The radius to start at
@@ -176,7 +176,7 @@ public:
      * \param[in] fnm     The filenames
      */
     void rerun(FILE                        *logFile,
-               const Poldata               *pd,
+               const ForceField               *pd,
                const MyMol                 *mymol,
                double                       qtot,
                bool                         verbose,

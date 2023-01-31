@@ -520,7 +520,7 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 }
 
 void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
-                                                  const Poldata       *pd,
+                                                  const ForceField       *pd,
                                                   alexandria::MyMol   *mol,
                                                   const ForceComputer *forceComp,
                                                   qtStats             *lsq_isoPol,
@@ -811,7 +811,7 @@ static void addThermo(JsonTree                  *jtree,
     jtree->addObject(jtcRT);
 }
 
-void doFrequencyAnalysis(const Poldata            *pd,
+void doFrequencyAnalysis(const ForceField            *pd,
                          alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
@@ -933,7 +933,7 @@ static void low_print(std::vector<std::string> *tcout,
 }
 
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                const Poldata            *pd,
+                                                const ForceField            *pd,
                                                 const ForceComputer      *forceComp,
                                                 const AtomizationEnergy  &atomenergy,
                                                 alexandria::MyMol        *mol,
@@ -1076,7 +1076,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
 
 void TuneForceFieldPrinter::print(FILE                           *fp,
                                   std::vector<alexandria::MyMol> *mymol,
-                                  const Poldata                  *pd,
+                                  const ForceField                  *pd,
                                   const gmx::MDLogger            &fplog,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,

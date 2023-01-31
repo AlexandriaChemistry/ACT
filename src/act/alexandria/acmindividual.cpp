@@ -37,7 +37,7 @@
 #include "acmindividual.h"
 
 #include "gromacs/fileio/xvgr.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {
@@ -64,7 +64,7 @@ void ACMIndividual::printParameters(FILE *fp) const
  * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
- * BEGIN: Poldata stuff                    *
+ * BEGIN: ForceField stuff                    *
  * * * * * * * * * * * * * * * * * * * * * */
 
 void ACMIndividual::copyGenome(const ga::Genome &genome)
@@ -73,7 +73,7 @@ void ACMIndividual::copyGenome(const ga::Genome &genome)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: Poldata stuff                       *
+* END: ForceField stuff                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
 void ACMIndividual::addParam(const real val)

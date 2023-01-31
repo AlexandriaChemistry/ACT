@@ -33,7 +33,7 @@
 #ifndef ACT_COMBINATIONRULES_H
 #define ACT_COMBINATIONRULES_H
 
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 
 namespace alexandria
 {
@@ -101,7 +101,7 @@ void CombineGBham(int     CombinationRule,
  * as well as force constants force shells.
  * \param[inout] pd The force field structure
  */
-void generateDependentParameter(Poldata *pd);
+void generateDependentParameter(ForceField *pd);
 
 } // namespace alexandria
 

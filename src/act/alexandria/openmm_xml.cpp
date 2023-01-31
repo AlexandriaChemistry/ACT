@@ -48,11 +48,11 @@
 #include "gromacs/topology/topology.h"
 
 
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparameterlist.h"
-#include "act/poldata/forcefieldparametername.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_low.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparameterlist.h"
+#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_low.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol.h"
 #include "act/utility/xml_util.h"
@@ -70,7 +70,7 @@ namespace alexandria
  *       of strings and units are done so that it is suitable for OpenMM, e.g. angles have to be in radians
  * addSpecOption adds specific option for an atomtype 
  * addShell adds shell particle for a specific core atomtype
- * addXmlPoldata creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
+ * addXmlForceField creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
  * !!! The order of the parameters is in certain forces (e.g. CustomNonBondedForce) very important; reordering might break the force field in OpenMM!!!
  * writeOpenMM
  */
@@ -297,7 +297,7 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mymol)
+static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const MyMol *mymol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -996,7 +996,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
    
 
 void writeOpenMM(const std::string &fileName,
-                 const Poldata     *pd,
+                 const ForceField     *pd,
                  const MyMol       *mymol,
                  bool               compress)
 {
@@ -1028,7 +1028,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd, mymol);
+    addXmlForceField(myroot, pd, mymol);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;

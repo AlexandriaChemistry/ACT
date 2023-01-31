@@ -41,7 +41,7 @@
 #include <string>
 
 #include "molgen.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "staticindividualinfo.h"
 
 #include "act/ga//Genome.h"

@@ -72,7 +72,7 @@ const std::string &eMinimizeStatusToString(eMinimizeStatus e)
     return eMinStat2String[e];
 }
 
-void MolHandler::computeHessian(const Poldata                     *pd,
+void MolHandler::computeHessian(const ForceField                     *pd,
                                 const MyMol                       *mol,
                                 const ForceComputer               *forceComp,
                                 std::vector<gmx::RVec>            *coords,
@@ -491,7 +491,7 @@ static void solveLapack(const MyMol                  *mol,
     }
 }
 
-void MolHandler::nma(const Poldata            *pd,
+void MolHandler::nma(const ForceField            *pd,
                      const MyMol              *mol,
                      const ForceComputer      *forceComp,
                      std::vector<gmx::RVec>   *coords,
@@ -627,7 +627,7 @@ static void updateCoords(const std::vector<int>       &theAtoms,
 
 }
 
-eMinimizeStatus MolHandler::minimizeCoordinates(const Poldata                     *pd,
+eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                     *pd,
                                                 const MyMol                       *mol,
                                                 const ForceComputer               *forceComp,
                                                 const SimulationConfigHandler     &simConfig,
@@ -1039,7 +1039,7 @@ static void initArrays(const MyMol            *mol,
     }
 }
                        
-void MolHandler::simulate(const Poldata                 *pd,
+void MolHandler::simulate(const ForceField                 *pd,
                           MyMol                         *mol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,

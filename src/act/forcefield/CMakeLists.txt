@@ -25,8 +25,8 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-file(GLOB POLDATA_SOURCES *.cpp *.h)
-target_sources(actLib PRIVATE ${POLDATA_SOURCES})
+file(GLOB FORCEFIELD_SOURCES *.cpp *.h)
+target_sources(actLib PRIVATE ${FORCEFIELD_SOURCES})
 
 if (BUILD_TESTING)
    add_subdirectory(tests)

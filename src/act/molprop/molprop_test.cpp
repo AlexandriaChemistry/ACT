@@ -39,7 +39,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/alexandria/mymol.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 
 namespace alexandria

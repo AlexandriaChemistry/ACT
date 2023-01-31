@@ -51,7 +51,7 @@ struct t_symtab;
 namespace alexandria
 {
 
-class Poldata;
+class ForceField;
 
 /*! \brief Class to store one grid point and it's potential.
  * The structure store both the reference and the calculated
@@ -139,7 +139,7 @@ class QgenResp
          *                   generating charges
          */
         void setAtomInfo(const std::vector<ActAtom>   &atoms,
-                         const Poldata                *pd,
+                         const ForceField                *pd,
                          const std::vector<gmx::RVec> &x,
                          const int                     qtotal);
 
@@ -253,7 +253,7 @@ class QgenResp
          * \param[in] pd    The force field
          */
         void updateZeta(const std::vector<ActAtom> &atoms,
-                        const Poldata              *pd);
+                        const ForceField              *pd);
                         
         //! Return the charge for one particle
         double getCharge(int atom) const { return q_[atom]; }

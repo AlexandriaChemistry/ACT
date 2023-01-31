@@ -45,7 +45,7 @@
 #include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
@@ -72,7 +72,7 @@ const std::string &b2TypeToString(b2Type b2t)
 }
 
 void forceFieldSummary(JsonTree      *jtree,
-                       const Poldata *pd)
+                       const ForceField *pd)
 {
     jtree->addObject(JsonTree("Force field file", pd->filename()));
     jtree->addObject(JsonTree("Created", pd->timeStamp()));
@@ -477,7 +477,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
 }
 
 void ReRunner::rerun(FILE                        *logFile,
-                     const Poldata               *pd,
+                     const ForceField               *pd,
                      const MyMol                 *mymol,
                      double                       qtot,
                      bool                         verbose,
@@ -805,10 +805,10 @@ int b2(int argc, char *argv[])
     }
     gendimers.finishOptions();
     
-    Poldata        pd;
+    ForceField        pd;
     try
     {
-        readPoldata(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     

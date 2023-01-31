@@ -58,7 +58,7 @@
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "tuning_utility.h"
 
 namespace alexandria
@@ -182,7 +182,7 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the filled structure is used for the optimize() method
+void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
@@ -195,7 +195,7 @@ void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the fil
 }
 
 void MolGen::checkDataSufficiency(FILE     *fp,
-                                  Poldata  *pd) // Called in read method
+                                  ForceField  *pd) // Called in read method
 {
     size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
@@ -613,7 +613,7 @@ static double computeCost(const MyMol                         *mymol,
                      
 size_t MolGen::Read(FILE                                *fp,
                     const char                          *fn,
-                    Poldata                             *pd,
+                    ForceField                             *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
                     bool                                 verbose)
@@ -626,7 +626,7 @@ size_t MolGen::Read(FILE                                *fp,
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
-    //  Now  we have read the poldata and spread it to processors
+    //  Now  we have read the forcefield and spread it to processors
     fillIopt(pd);
     /* Reading Molecules from allmols.dat */
     if (cr_->isMaster())

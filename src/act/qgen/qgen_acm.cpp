@@ -46,13 +46,13 @@
 
 #include "act/coulombintegrals/coulombintegrals.h"
 #include "act/molprop/molprop.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/regression.h"
 
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata              *pd,
+QgenAcm::QgenAcm(const ForceField              *pd,
                  const std::vector<ActAtom> &atoms,
                  int                         qtotal)
 {
@@ -133,7 +133,7 @@ QgenAcm::QgenAcm(const Poldata              *pd,
     }
 }
 
-void QgenAcm::updateParameters(const Poldata              *pd,
+void QgenAcm::updateParameters(const ForceField              *pd,
                                const std::vector<ActAtom> &atoms)
 {
     auto qt = pd->findForcesConst(InteractionType::COULOMB);
@@ -539,7 +539,7 @@ void QgenAcm::updatePositions(const std::vector<gmx::RVec> &x)
     }
 }
 
-void QgenAcm::checkSupport(const Poldata *pd)
+void QgenAcm::checkSupport(const ForceField *pd)
 {
     bool bSupport = true;
     auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
@@ -606,7 +606,7 @@ int QgenAcm::solveEEM(FILE *fp)
     return info;
 }
 
-void QgenAcm::getBccParams(const Poldata *pd,
+void QgenAcm::getBccParams(const ForceField *pd,
                            int            ai,
                            int            aj,
                            double         bondorder,
@@ -641,7 +641,7 @@ void QgenAcm::getBccParams(const Poldata *pd,
 }
 
 int QgenAcm::solveSQE(FILE                    *fp,
-                      const Poldata           *pd,
+                      const ForceField           *pd,
                       const std::vector<Bond> &bonds)
 {
     std::vector<double> myq(nonFixed_.size(), 0.0);
@@ -803,7 +803,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
 
 eQgen QgenAcm::generateCharges(FILE                         *fp,
                                const std::string            &molname,
-                               const Poldata                *pd,
+                               const ForceField                *pd,
                                std::vector<ActAtom>         *atoms,
                                const std::vector<gmx::RVec> &x,
                                const std::vector<Bond>      &bonds)
