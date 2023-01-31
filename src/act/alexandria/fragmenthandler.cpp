@@ -98,13 +98,15 @@ FragmentHandler::FragmentHandler(const Poldata                *pd,
                 auto fa = pd->findParticleType(atoms[anew].ffType());
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
-                    // TODO remove assumption that shell is next to the atom in order
-                    toAdd.push_back(anew+1-atomStart_[ff]);
-                    auto pp = new TopologyEntry();
-                    pp->addAtom(anew-atomStart_[ff]);
-                    pp->addAtom(anew-atomStart_[ff]+1);
-                    pp->addBondOrder(1.0);
-                    pols.push_back(pp);
+                    for(const auto &ss : atoms[anew].shells())
+                    {
+                        toAdd.push_back(ss-atomStart_[ff]);
+                        auto pp = new TopologyEntry();
+                        pp->addAtom(anew-atomStart_[ff]);
+                        pp->addAtom(ss-atomStart_[ff]);
+                        pp->addBondOrder(1.0);
+                        pols.push_back(pp);
+                    }
                 }
             }
         }
