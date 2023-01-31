@@ -41,7 +41,7 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
 #include "act/poldata/poldata_xml.h"
@@ -76,7 +76,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
-        alexandria::MyMol               mp_;
+        alexandria::ACTMol               mp_;
 
         //init set tolerance
         AcmTest () : checker_(this->rootChecker())

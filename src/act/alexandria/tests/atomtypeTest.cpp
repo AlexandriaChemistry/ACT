@@ -39,7 +39,7 @@
 
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
 #include "act/poldata/poldata_xml.h"

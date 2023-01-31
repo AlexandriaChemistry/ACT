@@ -182,7 +182,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 }
                 checker_.checkSequence(paramClass.begin(), paramClass.end(), "paramClass");
                 std::vector<std::string> molnames;
-                for(const auto &mm: molgen.mymols())
+                for(const auto &mm: molgen.actmols())
                 {
                     molnames.push_back(mm.getMolname());
                 }

@@ -40,7 +40,7 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/molprop/multipole_names.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
@@ -190,13 +190,13 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             int mp_index = 1;
             for(const auto &molprop : molprops)
             {
-                alexandria::MyMol mymol;
+                alexandria::ACTMol actmol;
 
-                mymol.Merge(&molprop);
+                actmol.Merge(&molprop);
                 // Generate charges and topology
-                mymol.setInputrec(inputrec);
+                actmol.setInputrec(inputrec);
 
-                auto imm = mymol.GenerateTopology(stdout, pd,
+                auto imm = actmol.GenerateTopology(stdout, pd,
                                                   missingParameters::Error, false);
                 if (immStatus::OK != imm)
                 {
@@ -205,18 +205,18 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 }
 
                 // Needed for GenerateCharges
-                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-                std::vector<gmx::RVec> coords = mymol.xOriginal();
+                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                std::vector<gmx::RVec> coords = actmol.xOriginal();
                 auto alg = ChargeGenerationAlgorithm::NONE;
                 if (!qcustom.empty())
                 {
                     alg = ChargeGenerationAlgorithm::Custom;
                 }
-                mymol.symmetrizeCharges(pd, qSymm, nullptr);
-                mymol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+                actmol.symmetrizeCharges(pd, qSymm, nullptr);
+                actmol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
                 
                 std::vector<double> q;
-                auto myatoms = mymol.atomsConst();
+                auto myatoms = actmol.atomsConst();
                 for (size_t atom = 0; atom < myatoms.size(); atom++)
                 {
                     q.push_back(myatoms[atom].charge());
@@ -233,7 +233,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 qp.setQandX(q, coords);
                 if (useCenterOfCharge)
                 {
-                    qp.setCenterOfCharge(mymol.centerOfCharge());
+                    qp.setCenterOfCharge(actmol.centerOfCharge());
                 }
                 qp.calcMoments();
                 for(auto &mpo : mpoMultiPoles)
