@@ -1006,6 +1006,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         // Now we can add the atom structures, whether or not the FF
         // is polarizable.
         topology_->setAtoms(atoms_);
+        topology_->shellsToAtoms();
         realAtoms_.clear();
         for(int i = 0; i < atoms_->nr; i++)
         {

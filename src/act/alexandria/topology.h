@@ -405,23 +405,27 @@ class ActAtom
 {
 private:
     //! My identifier
-    Identifier  id_;
+    Identifier       id_;
     //! The atom name
-    std::string name_;
+    std::string      name_;
     //! The chemical element
-    std::string elem_;
+    std::string      elem_;
     //! The atom type in the force field
-    std::string ffType_;
+    std::string      ffType_;
     //! The particle type
-    int         pType_;
+    int              pType_;
+    //! My shell particles, if any
+    std::vector<int> shells_;
+    //! My atom particle, if any,or -1
+    int              core_ = -1;
     //! The atomic number
-    int         atomicNumber_;
+    int              atomicNumber_;
     //! The mass
-    double      mass_;
+    double           mass_;
     //! The charge
-    double      charge_;
+    double           charge_;
     //! Residue number
-    int         residueNumber_ = 1;
+    int              residueNumber_ = 1;
 public:
     ActAtom(const std::string &name,
             const std::string &elem,
@@ -452,6 +456,24 @@ public:
     
     //! \return the particle type
     int pType() const { return pType_; }
+
+    //! \return the list of shells for this particle
+    const std::vector<int> &shells() const { return shells_; }
+
+    /*! \brief Add a shell particle index
+     * \param[in] index The index
+     */
+    void addShell(int index) { shells_.push_back(index); }
+    
+    /*! \brief Set the core particle index
+     * \param[in] index The index
+     */
+    void setCore(int index) { core_ = index; }
+
+    /*! \brief Return the core particle connected to this shell
+     * \return the core particle or -1 if there is none
+     */
+    int core() const { return core_; }
 
     //! \return the atomic number
     int atomicNumber() const { return atomicNumber_; }
@@ -515,6 +537,11 @@ private:
      * \param[in] atoms Gromacs atoms structure
      */
     void setAtoms(const t_atoms *atoms);
+
+    /*! \brief Copy shell info to atoms
+     * Must be called after setAtoms
+     */
+    void shellsToAtoms();
 
     //! Add an atom to the topology
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }

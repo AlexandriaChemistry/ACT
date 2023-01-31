@@ -332,6 +332,47 @@ void Topology::addBond(const Bond &bond)
     entries_[InteractionType::BONDS].push_back(new Bond(bond));
 }
 
+void Topology::shellsToAtoms()
+{
+    auto itype = InteractionType::POLARIZATION;
+    if (hasEntry(itype))
+    {
+        // Now update the atoms structure
+        for(const auto &ee : entry(itype))
+        {
+            auto ai    = ee->atomIndices();
+            if (ai.size() == 2 && 
+                ai[0] >= 0 && ai[0] < static_cast<int>(atoms_.size()) && 
+                ai[1] >= 0 && ai[1] < static_cast<int>(atoms_.size()))
+            {
+                if (eptAtom == atoms_[ai[0]].pType() && eptShell == atoms_[ai[1]].pType())
+                {
+                    atoms_[ai[0]].addShell(ai[1]);
+                    atoms_[ai[1]].setCore(ai[0]);
+                }
+                else if (eptAtom == atoms_[ai[1]].pType() && eptShell == atoms_[ai[0]].pType())
+                {
+                    atoms_[ai[1]].addShell(ai[0]);
+                    atoms_[ai[0]].setCore(ai[1]);
+                }
+                else
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Incomprehensible polarization entry: ai %d (%s), aj %d (%s)", ai[0], ptype_str[ai[0]], ai[1], ptype_str[ai[1]]).c_str()));
+                }
+            }
+            else
+            {
+                std::string err = gmx::formatString("Atoms.size %zu qtom shell pair with %zu particles:", atoms_.size(), ai.size());
+                for(auto &aa : ai)
+                {
+                    err += gmx::formatString(" %d", aa);
+                }
+                GMX_THROW(gmx::InternalError(err.c_str()));
+            }
+        }
+    }
+}
+
 void Topology::setAtoms(const t_atoms *atoms)
 {
     atoms_.clear();
