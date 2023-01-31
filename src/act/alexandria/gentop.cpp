@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -85,11 +85,6 @@ int gentop(int argc, char *argv[])
         "the hybridization from the atom name and the number of bonds.[PAR]",
         "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
         "instead of a [TT]top[tt] file.",
-        //"When [TT]-param[tt] is set, equilibrium distances and angles",
-        //"and force constants will be printed in the topology for all",
-        //"interactions. The equilibrium distances and angles are taken",
-        //"from the input coordinates, the force constant are set with",
-        //"command line options.",
         "With the [TT]-db molecule[tt] option a file is extracted from the",
         "database from the QM calculations.",
         "An alternative to the system-wide database [TT]molprops.xml[tt]",
@@ -105,25 +100,25 @@ int gentop(int argc, char *argv[])
     gmx_atomprop_t    aps;
     immStatus         imm;
 
-    t_filenm                         fnm[] = {
-        { efTOP, "-p",        "out",           ffOPTWR },
-        { efXML, "-openmm",   "out",           ffOPTWR },
-        { efITP, "-oi",       "out",           ffOPTWR },
-        { efSTO, "-c",        "out",           ffWRITE },
-        { efNDX, "-n",        "renum",         ffOPTWR },
-        { efDAT, "-q",        "qout",          ffOPTWR },
-        { efXML, "-mp",       "molprops",      ffOPTRD },
-        { efXML, "-ff",       "gentop",        ffREAD },
-        { efCUB, "-pot",      "potential",     ffOPTWR },
-        { efCUB, "-ref",      "refpot",        ffOPTRD },
-        { efCUB, "-diff",     "diffpot",       ffOPTWR },
-        { efCUB, "-rho",      "density",       ffOPTWR },
-        { efXVG, "-diffhist", "diffpot",       ffOPTWR },
-        { efXVG, "-his",      "pot-histo",     ffOPTWR },
-        { efXVG, "-pc",       "pot-comp",      ffOPTWR },
-        { efPDB, "-pdbdiff",  "pdbdiff",       ffOPTWR },
-        { efXVG, "-plot_esp", "ESPcorr",       ffOPTWR },
-        { efLOG, "-g",        "gentop_errors", ffWRITE }
+    t_filenm          fnm[] = {
+        { efXML, "-ff",       "aff",       ffREAD  },
+        { efTOP, "-p",        "out",       ffOPTWR },
+        { efXML, "-openmm",   "out",       ffOPTWR },
+        { efITP, "-oi",       "out",       ffOPTWR },
+        { efSTO, "-c",        "out",       ffWRITE },
+        { efNDX, "-n",        "renum",     ffOPTWR },
+        { efDAT, "-q",        "qout",      ffOPTWR },
+        { efXML, "-mp",       "molprops",  ffOPTRD },
+        { efCUB, "-pot",      "potential", ffOPTWR },
+        { efCUB, "-ref",      "refpot",    ffOPTRD },
+        { efCUB, "-diff",     "diffpot",   ffOPTWR },
+        { efCUB, "-rho",      "density",   ffOPTWR },
+        { efXVG, "-diffhist", "diffpot",   ffOPTWR },
+        { efXVG, "-his",      "pot-histo", ffOPTWR },
+        { efXVG, "-pc",       "pot-comp",  ffOPTWR },
+        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
+        { efXVG, "-plot_esp", "ESPcorr",   ffOPTWR },
+        { efLOG, "-g",        "errors",    ffWRITE }
     };
 
     const  int                       NFILE          = asize(fnm);

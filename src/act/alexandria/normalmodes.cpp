@@ -68,7 +68,7 @@ int nma(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "gentop",     ffREAD  },
+        { efXML, "-ff", "aff",        ffREAD  },
         { efSTO, "-c",  "confout",    ffOPTWR },
         { efLOG, "-g",  "simulation", ffWRITE },
         { efXVG, "-ir", "IRspectrum", ffOPTWR }

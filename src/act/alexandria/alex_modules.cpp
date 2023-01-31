@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,7 +91,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &alexandria::merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database.");
     registerModule(manager, &alexandria::merge_pd, "merge_pd",
-                   "Utility to merge a number of gentop files and write a new file with average parameters. Can also write a LaTeX table.");
+                   "Utility to merge a number of force field files and write a new file with average parameters. Can also write a LaTeX table.");
 
     {
         gmx::CommandLineModuleGroup group =
@@ -100,6 +100,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("tune_ff");
         group.addModule("molprop_check");
         group.addModule("simulate");
+        group.addModule("nma");
+        group.addModule("b2");
     }
     {
         gmx::CommandLineModuleGroup group =

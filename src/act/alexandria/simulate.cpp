@@ -75,7 +75,7 @@ int simulate(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "gentop",     ffREAD  },
+        { efXML, "-ff", "aff",        ffREAD  },
         { efXML, "-mp", "molprop",    ffOPTRD },
         { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
