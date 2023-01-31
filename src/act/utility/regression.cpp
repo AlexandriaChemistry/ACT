@@ -177,6 +177,7 @@ static int multi_regression2(const std::vector<double>  *rhs,
 }
 #endif
 
+#ifdef OLD
 static void tensor2matrix(tensor c, double **a)
 {
     for (int i = 0; i < DIM; i++)
@@ -215,7 +216,7 @@ static void columnwise2tensor(double **a, tensor c)
     c[ZZ][YY] = a[YY][YY];
     c[ZZ][ZZ] = a[YY][XX];
 }
-
+#endif
 #ifdef OLD
 static void SVD(int*    m,    int*     n,     double** a,
                 int*    lda,  double** s,     double** u,
