@@ -43,7 +43,8 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
-#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/coulombintegrals/gaussian_integrals.h"
+#include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"

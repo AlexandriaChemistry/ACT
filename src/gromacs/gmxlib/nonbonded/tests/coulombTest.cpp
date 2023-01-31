@@ -32,7 +32,7 @@
 
 #include <vector>
 
-#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/coulombintegrals/coulomb_gaussian.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

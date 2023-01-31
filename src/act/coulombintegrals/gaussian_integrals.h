@@ -47,7 +47,7 @@
 
 const double invsqrt_pi = 1.0/std::sqrt(M_PI);
 
-static double sqr(double x)
+static gmx_unused double sqr(double x)
 {
     return x*x;
 }
@@ -62,7 +62,7 @@ static double sqr(double x)
  * \param[in] zeta Gaussian width in 1/nm 
  * \return    Integral value
  */    
-static double Nuclear_GG(double r, double zeta)
+static gmx_unused double Nuclear_GG(double r, double zeta)
 {
     /* This routine may be called with zeta 0.
      * In that case it is a simple 1/r interaction.
@@ -99,7 +99,7 @@ static double Nuclear_GG(double r, double zeta)
  * \param[in] zj Gaussian width in 1/nm 
  * \return    Integral value
  */    
-static double Coulomb_GG(double r, double zi, double zj)
+static gmx_unused double Coulomb_GG(double r, double zi, double zj)
 {
     double zeff = 0;
 
@@ -132,7 +132,7 @@ static double Coulomb_GG(double r, double zi, double zj)
  * \param[in] zeta Gaussian width in 1/nm 
  * \return    Integral value
  */    
-static double DNuclear_GG(double r, double zeta)
+static gmx_unused double DNuclear_GG(double r, double zeta)
 {
     if (r == 0)
     {
@@ -162,7 +162,7 @@ static double DNuclear_GG(double r, double zeta)
  * \param[in] zj Gaussian width in 1/nm 
  * \return    Integral value
  */    
-static double DCoulomb_GG(double r, double zi, double zj)
+static gmx_unused double DCoulomb_GG(double r, double zi, double zj)
 {
     double zeff = 0;
 
@@ -183,13 +183,6 @@ static double DCoulomb_GG(double r, double zi, double zj)
     }
     
     return DNuclear_GG(r, zeff);
-}
-
-static void coulomb_gaussian(real qq, real izeta, real jzeta,
-                             real r, real *velec, real *felec)
-{
-    *velec =  qq*Coulomb_GG(r, izeta, jzeta);
-    *felec = -qq*DCoulomb_GG(r, izeta, jzeta);
 }
 
 #endif

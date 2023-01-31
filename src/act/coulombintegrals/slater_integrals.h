@@ -37,7 +37,7 @@
  * \ingroup module_alexandria
  */
 #ifndef SLATERINTEGRALS_H
-#define slaterINTEGRALS_H
+#define SLATERINTEGRALS_H
 
 /*! \brief 
  * Compute the Slater overlap integral between two Slater distributed charges.

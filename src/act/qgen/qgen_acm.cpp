@@ -44,7 +44,8 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
-#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/coulombintegrals/gaussian_integrals.h"
+#include "act/coulombintegrals/slater_integrals.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/regression.h"

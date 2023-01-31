@@ -38,7 +38,8 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/coulombintegrals/coulombintegrals.h"
+#include "gromacs/coulombintegrals/gaussian_integrals.h"
+#include "gromacs/coulombintegrals/slater_integrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
