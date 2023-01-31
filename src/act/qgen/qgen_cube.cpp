@@ -53,7 +53,7 @@
 #include "gromacs/utility/textreader.h"
 
 #include "act/coulombintegrals/coulombintegrals.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/units.h"
 
 namespace alexandria

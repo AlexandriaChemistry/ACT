@@ -42,9 +42,9 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_utils.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -216,8 +216,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
             
-            // Get poldata
-            auto pd  = getPoldata(model);
+            // Get forcefield
+            auto pd  = getForceField(model);
             auto imm = mp_.GenerateTopology(stdout, pd,
                                             missingParameters::Error, false);
             if (immStatus::OK != imm)

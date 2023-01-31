@@ -46,7 +46,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
-#include "act/poldata/poldata_utils.h"
+#include "act/forcefield/forcefield_utils.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/fatalerror.h"
@@ -75,8 +75,13 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
     
+<<<<<<< HEAD
     void initACTMol(const char         *molname, 
                    const Poldata      *pd,
+=======
+    void initMyMol(const char         *molname, 
+                   const ForceField      *pd,
+>>>>>>> rename
                    ForceComputer      *fcomp,
                    t_inputrec         *inputrec,
                    std::vector<ACTMol> *mps)
@@ -130,8 +135,8 @@ protected:
     void test(const char *molname, const char *forcefield, 
               bool testPolarizability, double stretch = 1)
     {
-        // Get poldata
-        auto pd  = getPoldata(forcefield);
+        // Get forcefield
+        auto pd  = getForceField(forcefield);
         
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
@@ -261,8 +266,8 @@ protected:
     
     void testSimple(const char *molname, const char *forcefield)
     {
-        // Get poldata
-        auto pd  = getPoldata(forcefield);
+        // Get forcefield
+        auto pd  = getForceField(forcefield);
         
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);

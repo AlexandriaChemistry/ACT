@@ -40,7 +40,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/mdtypes/state.h"
 
-#include "act/poldata/vsite.h"
+#include "act/forcefield/vsite.h"
 
 struct gpp_atomtype;
 struct t_symtab;
@@ -49,7 +49,7 @@ namespace alexandria
 {
 
 class PlistWrapper;
-class Poldata;
+class ForceField;
 class Topology;
 
 //! Structure for linear virtual sites
@@ -178,7 +178,7 @@ class GentopVsites
         //! The ring-planar vsites
         std::vector<gv_ringplanar> ringplanar_;
 
-        void gen_Vsites(const Poldata             *pd,
+        void gen_Vsites(const ForceField             *pd,
                         t_atoms                   *atoms,
                         std::vector<PlistWrapper> *plist,
                         Topology                  *top,
@@ -289,7 +289,7 @@ class GentopVsites
          * Generate linear angles and merges linear vsites in case
          * there are more than 1 in a row.
          */
-        void generateSpecial(const Poldata             *pd,
+        void generateSpecial(const ForceField             *pd,
                              bool                       bUseVsites,
                              t_atoms                   *atoms,
                              rvec                     **x,

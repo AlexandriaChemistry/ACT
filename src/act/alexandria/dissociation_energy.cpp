@@ -133,8 +133,8 @@ static void dump_csv(const char                      *csvFile,
  * \return true if successful.
  */
 static bool calcDissoc(FILE                              *fplog,
-                       const Poldata                     *pd,
-                       const std::vector<ACTMol>          &molset,
+                       const ForceField                  *pd,
+                       const std::vector<ACTMol>         &molset,
                        bool                               pickRandomMolecules,
                        const std::vector<int>            &hasExpData,
                        std::map<Identifier, gmx_stats>   *edissoc,
@@ -318,12 +318,12 @@ static bool calcDissoc(FILE                              *fplog,
     }
 }
                            
-double getDissociationEnergy(FILE               *fplog,
-                             Poldata            *pd,
+double getDissociationEnergy(FILE                *fplog,
+                             ForceField          *pd,
                              std::vector<ACTMol> *molset,
-                             iqmType             iqm,
-                             const char         *csvFile,
-                             int                 nBootStrap)
+                             iqmType              iqm,
+                             const char          *csvFile,
+                             int                  nBootStrap)
 {
     std::random_device               rd;
     std::mt19937                     gen(rd());  

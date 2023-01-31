@@ -32,12 +32,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef POLDATA_TABLES_H
-#define POLDATA_TABLES_H
+#ifndef FORCEFIELD_TABLES_H
+#define FORCEFIELD_TABLES_H
 
 #include <stdio.h>
 
-#include "poldata.h"
+#include "forcefield.h"
 
 namespace alexandria
 {
@@ -49,7 +49,7 @@ namespace alexandria
      * \param[in]  pd   Force field data
      */
     void alexandria_charge_table(FILE            *fp, 
-                                 const Poldata   *pd);  
+                                 const ForceField   *pd);  
                                
     /*! \brief
      * Generates a LaTeX table containing the chi and eta values 
@@ -59,7 +59,7 @@ namespace alexandria
      * \param[in]  pd   Force field data
      */
     void alexandria_eemprops_table(FILE            *fp, 
-                                   const Poldata   *pd);  
+                                   const ForceField   *pd);  
                                
     /*! \brief
      * Generates a LaTeX table containing the delta_chi and 
@@ -68,7 +68,7 @@ namespace alexandria
      * \param[out] fp   File pointer to write to
      * \param[in]  pd   Force field data
      */
-    void alexandria_eemprops_corr(const Poldata  *pd,
+    void alexandria_eemprops_corr(const ForceField  *pd,
                                   FILE           *fp);                             
     /*! \brief
      * Generates a LaTeX table containing the subtypes
@@ -78,7 +78,7 @@ namespace alexandria
      * \param[in]  pd   Force field data
      */
     void alexandria_subtype_table(FILE           *fp,
-                                  const Poldata  *pd);
+                                  const ForceField  *pd);
              
 } //namespace
 

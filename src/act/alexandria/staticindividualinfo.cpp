@@ -40,7 +40,7 @@
 #include "act/forces/combinationrules.h"
 #include "act/ga/Genome.h"
 #include "act/utility/memory_check.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 
 #include "gromacs/utility/stringutil.h"
 
@@ -80,23 +80,23 @@ void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: Poldata stuff                     *
+* BEGIN: ForceField stuff                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillPoldata(      FILE *fp,
+void StaticIndividualInfo::fillForceField(      FILE *fp,
                                        const char *pd_fn)
 {
     int root = 0;
     if (!cr_->isHelper())
     {
-        GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
+        GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a forcefield file name");
         if (debug)
         {
             fprintf(debug, "On node %d, will try to read %s\n", cr_->rank(), pd_fn);
         }
         try
         {
-            alexandria::readPoldata(pd_fn, &pd_);
+            alexandria::readForceField(pd_fn, &pd_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         print_memory_usage(debug);
@@ -118,7 +118,7 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
     }
 }
 
-void StaticIndividualInfo::updatePoldata(const std::set<int>       &changed,
+void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
                                          const std::vector<double> &bases)
 {
     if (bases.size() == 0)
@@ -127,7 +127,7 @@ void StaticIndividualInfo::updatePoldata(const std::set<int>       &changed,
     }
     if (bases.size() != optIndex().size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Number of parameters to update in poldata (%zu) does not match the known number of parameters (%zu)",
+        GMX_THROW(gmx::InternalError(gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
                                                        bases.size(),
                                                        optIndex().size()).c_str()));
     }
@@ -174,7 +174,7 @@ void StaticIndividualInfo::saveState(bool updateCheckSum)
     }
     if (!outputFile_.empty())
     {
-        writePoldata(outputFile_, &pd_, false);
+        writeForceField(outputFile_, &pd_, false);
     }
 }
 
@@ -187,12 +187,12 @@ void StaticIndividualInfo::saveState(bool updateCheckSum, const std::string &fna
     }
     if (!fname.empty())
     {
-        writePoldata(fname, &pd_, false);
+        writeForceField(fname, &pd_, false);
     }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: Poldata stuff                       *
+* END: ForceField stuff                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *

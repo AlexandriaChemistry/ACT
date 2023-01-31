@@ -54,7 +54,7 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-double ForceComputer::compute(const Poldata                     *pd,
+double ForceComputer::compute(const ForceField                     *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
@@ -121,7 +121,7 @@ double ForceComputer::compute(const Poldata                     *pd,
     return msForce/nshell;
 }
 
-void ForceComputer::computeOnce(const Poldata                     *pd,
+void ForceComputer::computeOnce(const ForceField                     *pd,
                                 const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,
@@ -189,7 +189,7 @@ void ForceComputer::computeOnce(const Poldata                     *pd,
     energies->insert({ InteractionType::EPOT, epot });
 }
 
-void ForceComputer::calcPolarizability(const Poldata          *pd,
+void ForceComputer::calcPolarizability(const ForceField          *pd,
                                        const Topology         *top,
                                        std::vector<gmx::RVec> *coordinates,
                                        QtypeProps             *qtp) const
@@ -237,7 +237,7 @@ void ForceComputer::calcPolarizability(const Poldata          *pd,
     compute(pd, top, coordinates, &forces, &energies, field);
 }
 
-int ForceComputer::ftype(const Poldata   *pd,
+int ForceComputer::ftype(const ForceField   *pd,
                          InteractionType  itype) const
 {
     int ftype = F_EPOT;
@@ -248,7 +248,7 @@ int ForceComputer::ftype(const Poldata   *pd,
     return ftype;
 }
 
-void ForceComputer::plot(const Poldata  *pd,
+void ForceComputer::plot(const ForceField  *pd,
                          InteractionType itype) const
 {
     if (!pd->interactionPresent(itype))

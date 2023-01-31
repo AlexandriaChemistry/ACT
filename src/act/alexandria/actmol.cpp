@@ -42,8 +42,8 @@
 
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparametername.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
@@ -231,15 +231,15 @@ void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-bool ACTMol::IsVsiteNeeded(std::string    atype,
-                          const Poldata *pd) const
+bool ACTMol::IsVsiteNeeded(std::string       atype,
+                           const ForceField *pd) const
 {
     auto vsite = pd->findVsite(atype);
     return vsite != pd->getVsiteEnd();
 }
 
-immStatus ACTMol::GenerateAtoms(const Poldata     *pd,
-                               t_atoms           *atoms)
+immStatus ACTMol::GenerateAtoms(const ForceField *pd,
+                                t_atoms          *atoms)
 {
     double                    xx, yy, zz;
     int                       natom = 0;
@@ -308,7 +308,7 @@ immStatus ACTMol::GenerateAtoms(const Poldata     *pd,
             }
             else
             {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in poldata, there are %d atomtypes.\n", 
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in forcefield, there are %d atomtypes.\n", 
                                                             cai.getObtype().c_str(), natom, pd->nParticleTypes()));
 
                 return immStatus::AtomTypes;
@@ -340,8 +340,8 @@ immStatus ACTMol::GenerateAtoms(const Poldata     *pd,
     return imm;
 }
 
-immStatus ACTMol::checkAtoms(const Poldata *pd,
-                            const t_atoms *atoms)
+immStatus ACTMol::checkAtoms(const ForceField *pd,
+                             const t_atoms    *atoms)
 {
     int nmissing        = 0;
     int atomnumberTotal = 0;
@@ -375,8 +375,8 @@ immStatus ACTMol::checkAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-immStatus ACTMol::zetaToAtoms(const Poldata *pd,
-                             t_atoms       *atoms)
+immStatus ACTMol::zetaToAtoms(const ForceField *pd,
+                              t_atoms          *atoms)
 {
     /* The first time around we add zeta for the core and addShells will
      * take care of the zeta for the shells.
@@ -426,12 +426,12 @@ immStatus ACTMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void ACTMol::forceEnergyMaps(const Poldata                                                       *pd,
-                            const ForceComputer                                                 *forceComp,
-                            std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                            std::vector<std::pair<double, double> >                             *energyMap,
-                            std::vector<std::pair<double, double> >                             *interactionEnergyMap,
-                            std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
+void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
+                             const ForceComputer                                                 *forceComp,
+                             std::vector<std::vector<std::pair<double, double> > >               *forceMap,
+                             std::vector<std::pair<double, double> >                             *energyMap,
+                             std::vector<std::pair<double, double> >                             *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
     t_commrec *crtmp   = init_commrec();
@@ -887,7 +887,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
 }
 
 static void TopologyToMtop(Topology       *top,
-                           const Poldata  *pd,
+                           const ForceField  *pd,
                            gmx_mtop_t     *mtop)
 {
     int ffparamsSize = mtop->ffparams.numTypes();
@@ -946,9 +946,9 @@ static void TopologyToMtop(Topology       *top,
 }
                  
 immStatus ACTMol::GenerateTopology(FILE              *fp,
-                                  const Poldata     *pd,
-                                  missingParameters  missing,
-                                  bool               gromacsSupport)
+                                   const ForceField  *pd,
+                                   missingParameters  missing,
+                                   bool               gromacsSupport)
 {
     immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
@@ -1104,9 +1104,9 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
     return imm;
 }
 
-void ACTMol::addBondVsites(FILE          *fp,
-                          const Poldata *pd,
-                          t_atoms       *atoms)
+void ACTMol::addBondVsites(FILE             *fp,
+                           const ForceField *pd,
+                           t_atoms          *atoms)
 {
     if (!topology_->hasEntry(InteractionType::BONDS))
     {
@@ -1211,9 +1211,9 @@ bool ACTMol::linearMolecule() const
     return linear;
 }
 
-void ACTMol::addShells(FILE          *fp,
-                      const Poldata *pd,
-                      t_atoms       *atoms)
+void ACTMol::addShells(FILE             *fp,
+                       const ForceField *pd,
+                       t_atoms          *atoms)
 {
     int                    shell  = 0;
     int                    nshell = 0;
@@ -1289,7 +1289,7 @@ void ACTMol::addShells(FILE          *fp,
             }
             else
             {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in poldata\n", 
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in forcefield\n", 
                                                             atomtype.c_str()));
             }
         }
@@ -1504,10 +1504,10 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double ACTMol::calculateInteractionEnergy(const Poldata          *pd,
-                                         const ForceComputer    *forceComputer,
-                                         std::vector<gmx::RVec> *interactionForces,
-                                         std::vector<gmx::RVec> *coords) const
+double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
+                                          const ForceComputer    *forceComputer,
+                                          std::vector<gmx::RVec> *interactionForces,
+                                          std::vector<gmx::RVec> *coords) const
 {
     auto &tops = fraghandler_->topologies();
     if (tops.size() <= 1)
@@ -1671,9 +1671,9 @@ immStatus ACTMol::calculateEnergyOld(const t_commrec                   *crtmp,
     return imm;
 }
 
-void ACTMol::symmetrizeCharges(const Poldata  *pd,
-                              bool            bSymmetricCharges,
-                              const char     *symm_string)
+void ACTMol::symmetrizeCharges(const ForceField  *pd,
+                               bool               bSymmetricCharges,
+                               const char        *symm_string)
 {
     if (bSymmetricCharges)
     {
@@ -1691,10 +1691,10 @@ void ACTMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus ACTMol::GenerateAcmCharges(const Poldata          *pd,
-                                    const ForceComputer    *forceComp,
-                                    std::vector<gmx::RVec> *coords,
-                                    std::vector<gmx::RVec> *forces)
+immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
+                                     const ForceComputer    *forceComp,
+                                     std::vector<gmx::RVec> *coords,
+                                     std::vector<gmx::RVec> *forces)
 {
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
@@ -1750,15 +1750,15 @@ immStatus ACTMol::GenerateAcmCharges(const Poldata          *pd,
     return imm;
 }
 
-immStatus ACTMol::GenerateCharges(const Poldata             *pd,
-                                 const ForceComputer       *forceComp,
-                                 const gmx::MDLogger       &mdlog,
-                                 const CommunicationRecord *cr,
-                                 ChargeGenerationAlgorithm  algorithm,
-                                 qType                      qtype,
-                                 const std::vector<double> &qcustom,
-                                 std::vector<gmx::RVec>    *coords,
-                                 std::vector<gmx::RVec>    *forces)
+immStatus ACTMol::GenerateCharges(const ForceField          *pd,
+                                  const ForceComputer       *forceComp,
+                                  const gmx::MDLogger       &mdlog,
+                                  const CommunicationRecord *cr,
+                                  ChargeGenerationAlgorithm  algorithm,
+                                  qType                      qtype,
+                                  const std::vector<double> &qcustom,
+                                  std::vector<gmx::RVec>    *coords,
+                                  std::vector<gmx::RVec>    *forces)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1949,8 +1949,8 @@ immStatus ACTMol::GenerateCharges(const Poldata             *pd,
     return imm;
 }
 
-void ACTMol::CalcPolarizability(const Poldata       *pd,
-                               const ForceComputer *forceComp)
+void ACTMol::CalcPolarizability(const ForceField    *pd,
+                                const ForceComputer *forceComp)
 {
     auto natoms = atomsConst().size();
     std::vector<gmx::RVec> coordinates(natoms);
@@ -2002,7 +2002,7 @@ static void add_tensor(std::vector<std::string> *commercials,
 
 void ACTMol::PrintTopology(const char                   *fn,
                           bool                          bVerbose,
-                          const Poldata                *pd,
+                          const ForceField                *pd,
                           const ForceComputer          *forceComp,
                           const CommunicationRecord    *cr,
                           const std::vector<gmx::RVec> &coords,
@@ -2149,19 +2149,19 @@ void ACTMol::PrintTopology(const char                   *fn,
     gmx_ffclose(fp);
 }
 
-void ACTMol::GenerateCube(const Poldata                *pd,
-                         const std::vector<gmx::RVec> &coords,
-                         real                          spacing,
-                         real                          border,
-                         const char                   *reffn,
-                         const char                   *pcfn,
-                         const char                   *pdbdifffn,
-                         const char                   *potfn,
-                         const char                   *rhofn,
-                         const char                   *hisfn,
-                         const char                   *difffn,
-                         const char                   *diffhistfn,
-                         const gmx_output_env_t       *oenv)
+void ACTMol::GenerateCube(const ForceField             *pd,
+                          const std::vector<gmx::RVec> &coords,
+                          real                          spacing,
+                          real                          border,
+                          const char                   *reffn,
+                          const char                   *pcfn,
+                          const char                   *pdbdifffn,
+                          const char                   *potfn,
+                          const char                   *rhofn,
+                          const char                   *hisfn,
+                          const char                   *difffn,
+                          const char                   *diffhistfn,
+                          const gmx_output_env_t       *oenv)
 {
     auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
@@ -2227,8 +2227,8 @@ void ACTMol::GenerateCube(const Poldata                *pd,
     }
 }
 
-void ACTMol::calcEspRms(const Poldata                *pd,
-                       const std::vector<gmx::RVec> *coords)
+void ACTMol::calcEspRms(const ForceField             *pd,
+                        const std::vector<gmx::RVec> *coords)
 {
     int   natoms  = 0;
     auto &myatoms = atomsConst();
@@ -2429,9 +2429,9 @@ immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     return imm;
 }
 
-void ACTMol::UpdateIdef(const Poldata                      *pd,
-                       const std::vector<InteractionType> &iTypes,
-                       bool                                updateZeta)
+void ACTMol::UpdateIdef(const ForceField                   *pd,
+                        const std::vector<InteractionType> &iTypes,
+                        bool                                updateZeta)
 {
     topology_->fillParameters(pd);
     // TODO Check whether this is sufficient for updating the particleTypes
@@ -2483,10 +2483,10 @@ void ACTMol::UpdateIdef(const Poldata                      *pd,
     }
 }
 
-void ACTMol::initQgenResp(const Poldata                *pd,
-                         const std::vector<gmx::RVec> &coords,
-                         real                          watoms,
-                         int                           maxESP)
+void ACTMol::initQgenResp(const ForceField             *pd,
+                          const std::vector<gmx::RVec> &coords,
+                          real                          watoms,
+                          int                           maxESP)
 {
     std::string        mylot;
     auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
@@ -2554,11 +2554,11 @@ const QtypeProps *ACTMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void ACTMol::plotEspCorrelation(const Poldata                *pd,
-                               const std::vector<gmx::RVec> &coords,
-                               const char                   *espcorr,
-                               const gmx_output_env_t       *oenv,
-                               const ForceComputer          *forceComp)
+void ACTMol::plotEspCorrelation(const ForceField             *pd,
+                                const std::vector<gmx::RVec> &coords,
+                                const char                   *espcorr,
+                                const gmx_output_env_t       *oenv,
+                                const ForceComputer          *forceComp)
 {
     if (espcorr && oenv)
     {

@@ -48,8 +48,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "act/poldata.h"
-#include "act/poldata_xml.h"
+#include "act/forcefield.h"
+#include "act/forcefield_xml.h"
 
 using namespace alexandria;
 
@@ -165,7 +165,7 @@ static void gmx_unused wbk(double r,   double eps, double sig,
 }
 
 
-static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
+static void gmx_unused gen_alexandria_rho(ForceField                 &pd,
                                           const char             *fn,
                                           ChargeType              iType,
                                           real                    rcut,
@@ -258,7 +258,7 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
     }
 }
 
-static void gen_alexandria_tables(Poldata                 &pd,
+static void gen_alexandria_tables(ForceField                 &pd,
                                   const char              *fn,
                                   real                     rcut,
                                   real                     spacing,
@@ -470,12 +470,12 @@ int alex_gen_table(int argc, char *argv[])
         return 0;
     }
      
-    Poldata                  pd;
+    ForceField                  pd;
     gmx_atomprop_t           aps = gmx_atomprop_init();
     const char              *aff = opt2fn_null("-ff", NFILE, fnm);
     try
     {
-        readPoldata(aff, pd, aps);
+        readForceField(aff, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     

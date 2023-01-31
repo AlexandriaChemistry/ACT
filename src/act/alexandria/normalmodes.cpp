@@ -43,7 +43,7 @@
 #include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
@@ -113,10 +113,10 @@ int nma(int argc, char *argv[])
     }
     sch.check_pargs();
 
-    Poldata        pd;
+    ForceField        pd;
     try
     {
-        readPoldata(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     

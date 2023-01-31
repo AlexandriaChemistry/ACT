@@ -56,7 +56,7 @@ namespace alexandria
 {
 
 class ActAtom;
-class Poldata;
+class ForceField;
 class QgenAcm;
 
 /*! \brief
@@ -148,21 +148,21 @@ bool is_linear(const rvec xi, const rvec xj,
 
 void copy_atoms(t_atoms *src, t_atoms *dest);
 
-real calc_relposition(const Poldata                  *pd,
+real calc_relposition(const ForceField                  *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders);
 
 std::vector<double> getDoubles(const std::string &s);
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
-                           const Poldata *pd,
+                           const ForceField *pd,
                            t_forcerec    *fr);
 
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
 
-gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
+gmx_mtop_t *do_init_mtop(const ForceField                   *pd,
                          char                           **molname,
                          t_atoms                         *atoms,
                          t_inputrec                      *ir,

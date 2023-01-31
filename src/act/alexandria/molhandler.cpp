@@ -72,8 +72,8 @@ const std::string &eMinimizeStatusToString(eMinimizeStatus e)
     return eMinStat2String[e];
 }
 
-void MolHandler::computeHessian(const Poldata                     *pd,
-                                const ACTMol                       *mol,
+void MolHandler::computeHessian(const ForceField                  *pd,
+                                const ACTMol                      *mol,
                                 const ForceComputer               *forceComp,
                                 std::vector<gmx::RVec>            *coords,
                                 const std::vector<int>            &atomIndex,
@@ -491,8 +491,8 @@ static void solveLapack(const ACTMol                  *mol,
     }
 }
 
-void MolHandler::nma(const Poldata            *pd,
-                     const ACTMol              *mol,
+void MolHandler::nma(const ForceField         *pd,
+                     const ACTMol             *mol,
                      const ForceComputer      *forceComp,
                      std::vector<gmx::RVec>   *coords,
                      std::vector<double>      *frequencies,
@@ -627,8 +627,8 @@ static void updateCoords(const std::vector<int>       &theAtoms,
 
 }
 
-eMinimizeStatus MolHandler::minimizeCoordinates(const Poldata                     *pd,
-                                                const ACTMol                       *mol,
+eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                  *pd,
+                                                const ACTMol                      *mol,
                                                 const ForceComputer               *forceComp,
                                                 const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
@@ -1039,8 +1039,8 @@ static void initArrays(const ACTMol            *mol,
     }
 }
                        
-void MolHandler::simulate(const Poldata                 *pd,
-                          ACTMol                         *mol,
+void MolHandler::simulate(const ForceField              *pd,
+                          ACTMol                        *mol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,
                           FILE                          *logFile,

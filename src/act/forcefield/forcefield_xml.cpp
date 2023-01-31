@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "poldata_xml.h"
+#include "forcefield_xml.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -47,10 +47,10 @@
 #include "gromacs/utility/futil.h"
 
 #include "act/forces/combinationrules.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparameterlist.h"
-#include "poldata.h"
-#include "poldata_low.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparameterlist.h"
+#include "forcefield.h"
+#include "forcefield_low.h"
 #include "act/utility/xml_util.h"
 
 namespace alexandria
@@ -275,7 +275,7 @@ static void processAttr(FILE       *fp,
                         xmlBuffer  *xbuf,
                         xmlEntry    elem,
                         int         indent, 
-                        Poldata    *pd)
+                        ForceField    *pd)
 {
     std::string attrname, attrval;
     char        buf[100];
@@ -498,7 +498,7 @@ static void processTree(FILE          *fp,
                         xmlBuffer     *xbuf,
                         xmlNodePtr     tree,
                         int            indent,
-                        Poldata       *pd)
+                        ForceField       *pd)
 {
     char             buf[100];
 
@@ -543,8 +543,8 @@ static void processTree(FILE          *fp,
     }
 }
 
-void readPoldata(const std::string &fileName,
-                 Poldata           *pd)
+void readForceField(const std::string &fileName,
+                 ForceField           *pd)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
@@ -597,7 +597,7 @@ void readPoldata(const std::string &fileName,
     generateDependentParameter(pd);
     if (nullptr != debug)
     {
-        writePoldata("pdout.dat", pd, false);
+        writeForceField("pdout.dat", pd, false);
     }
 }
 
@@ -626,7 +626,7 @@ static void addParameter(xmlNodePtr parent, const std::string &type,
                  param.nonNegative() ? "yes" : "no");
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
+static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -730,8 +730,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     }
 }
 
-void writePoldata(const std::string &fileName,
-                  const Poldata     *pd,
+void writeForceField(const std::string &fileName,
+                  const ForceField     *pd,
                   bool               compress)
 {
     xmlDocPtr   doc;
@@ -762,7 +762,7 @@ void writePoldata(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd);
+    addXmlForceField(myroot, pd);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;

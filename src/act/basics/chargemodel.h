@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2020,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,7 +43,7 @@ namespace alexandria
 {
 
 /*! \brief
- * Enumerated type holding the charge models used in PolData
+ * Enumerated type holding the charge models used in ForceField files
  *
  * \inpublicapi
  * \ingroup module_alexandria

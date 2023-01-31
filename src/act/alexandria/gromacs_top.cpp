@@ -11,7 +11,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
 
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "topology.h"
 
 namespace alexandria
@@ -218,7 +218,7 @@ void write_top(FILE            *out,
                const Topology  *topology,
                t_excls          excls[],
                struct gpp_atomtype *atype,
-               const Poldata   *pd)
+               const ForceField   *pd)
 {
     std::map<int, directive> toPrint = {
         { F_CONSTR,       d_constraints },
@@ -277,7 +277,7 @@ void write_top(FILE            *out,
 }
 
 void print_top_header(FILE                    *fp,
-                      const Poldata           *pd,
+                      const ForceField           *pd,
                       bool                     bPol,
                       const std::vector<std::string> &commercials,
                       bool                     bItp)

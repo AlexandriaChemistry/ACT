@@ -47,7 +47,7 @@
 #include "actmol.h"
 #include "molhandler.h"
 #include "act/forces/forcecomputer.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -93,8 +93,8 @@ private:
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
-                               const Poldata       *pd,
-                               alexandria::ACTMol   *mol,
+                               const ForceField    *pd,
+                               alexandria::ACTMol  *mol,
                                const ForceComputer *forceComp,
                                qtStats             *lsq_isoPol,
                                qtStats             *lsq_anisoPol,
@@ -110,7 +110,7 @@ private:
      * \return the potential energy before minimization
      */
     double printEnergyForces(std::vector<std::string> *tcout,
-                             const Poldata            *pd,
+                             const ForceField            *pd,
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
                              alexandria::ACTMol        *mol,
@@ -132,8 +132,13 @@ public:
     void addFileOptions(std::vector<t_filenm> *filenm);
     
     void print(FILE                           *fp,
+<<<<<<< HEAD
                std::vector<alexandria::ACTMol> *actmol,
                const Poldata                  *pd,
+=======
+               std::vector<alexandria::MyMol> *mymol,
+               const ForceField                  *pd,
+>>>>>>> rename
                const gmx::MDLogger            &fplog,
                const gmx_output_env_t         *oenv,
                const CommunicationRecord      *cr,
@@ -165,8 +170,13 @@ void print_header(FILE                       *fp,
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
+<<<<<<< HEAD
 void doFrequencyAnalysis(const Poldata            *pd,
                          alexandria::ACTMol        *mol,
+=======
+void doFrequencyAnalysis(const ForceField            *pd,
+                         alexandria::MyMol        *mol,
+>>>>>>> rename
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,

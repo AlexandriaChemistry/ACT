@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "poldata_low.h"
+#include "forcefield_low.h"
 
 #include <cmath>
 #include <cstdio>

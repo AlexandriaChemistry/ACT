@@ -52,13 +52,11 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
 
-#include "alex_modules.h"
-#include "molgen.h"
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/molgen.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
-#include "actmol.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria

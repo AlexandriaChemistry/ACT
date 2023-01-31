@@ -48,7 +48,7 @@ struct gpp_atomtype;
 namespace alexandria
 {
 
-class Poldata;
+class ForceField;
 class Topology;
 
 void print_top_mols(FILE *out,
@@ -56,7 +56,7 @@ void print_top_mols(FILE *out,
                     int nincl, char **incls, int nmol, t_mols *mols);
 
 void print_top_header(FILE                           *fp,
-                      const Poldata                  *pd,
+                      const ForceField                  *pd,
                       bool                            bPol,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
@@ -67,7 +67,7 @@ void write_top(FILE                *out,
                const Topology      *topology,
                struct t_excls      *excls,
                struct gpp_atomtype *atype,
-               const Poldata        *pd);
+               const ForceField        *pd);
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 

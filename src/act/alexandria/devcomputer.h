@@ -83,13 +83,13 @@ public:
      * @param actmol     pointer to the molecule to compute the deviation for
      * @param coords    the coordinates
      * @param targets   map between different components of chi-squared and their fitting targets
-     * @param poldata   pointer to Poldata structure, that should contain the newest parameters
+     * @param forcefield   pointer to ForceField structure, that should contain the newest parameters
      */
     virtual void calcDeviation(const ForceComputer           *forceComputer,
                                ACTMol                         *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                 *poldata) = 0;
+                               const ForceField                 *forcefield) = 0;
 
 };
 
@@ -124,7 +124,7 @@ public:
                                ACTMol                         *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                 *poldata);
+                               const ForceField                 *forcefield);
 
 };
 
@@ -156,7 +156,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 };
 
 /*!
@@ -181,7 +181,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 
 };
 
@@ -228,7 +228,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 
 };
 
@@ -254,7 +254,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 
 };
 
@@ -285,7 +285,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 
 };
 
@@ -312,7 +312,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const Poldata                       *poldata);
+                               const ForceField                       *forcefield);
 
 };
 

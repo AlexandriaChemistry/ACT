@@ -42,9 +42,9 @@
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/molprop/multipole_names.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_utils.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/units.h"
 #include "gromacs/gmxlib/network.h"
@@ -176,8 +176,8 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
             }
-            // Get poldata
-            auto pd  = getPoldata(model);
+            // Get forcefield
+            auto pd  = getForceField(model);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);

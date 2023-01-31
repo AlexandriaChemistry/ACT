@@ -31,8 +31,8 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef POLDATA_LOW_H
-#define POLDATA_LOW_H
+#ifndef FORCEFIELD_LOW_H
+#define FORCEFIELD_LOW_H
 
 #include <map>
 #include <string>

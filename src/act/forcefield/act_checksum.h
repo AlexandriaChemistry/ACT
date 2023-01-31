@@ -39,24 +39,24 @@
 namespace alexandria
 {
 
-    class Poldata;
+    class ForceField;
     
     /*! \brief Generate an MD5 checksum of a file
      * \param[in] filename The name of the file
      */
     std::string computeCheckSum(const std::string &filename);
 
-    /*! \brief Will generate an MD5 checksum of the Poldata structure.
-     * The Poldata structure will be written to a temporary file with
+    /*! \brief Will generate an MD5 checksum of the ForceField structure.
+     * The ForceField structure will be written to a temporary file with
      * empty internal checksum and timestamp fields. Then the checksum
      * will be computed using the above routine, and the original 
      * checksum and timestamp will be restored. 
      * The integrity of a force field file can then
-     * be checked by comparing pd->version() to poldataCheckSum(pd).
-     * \param[in] pd Poldata structure. Even though this is mutable it
+     * be checked by comparing pd->version() to forcefieldCheckSum(pd).
+     * \param[in] pd ForceField structure. Even though this is mutable it
      *                should be unchanged after the call to this function.
      */
-    std::string poldataCheckSum(Poldata *pd);
+    std::string forcefieldCheckSum(ForceField *pd);
 
 
 } // namespace alexandria

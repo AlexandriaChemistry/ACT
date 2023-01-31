@@ -41,7 +41,7 @@ namespace alexandria
 
 void symmetrize_charges(bool              bQsym, 
                         Topology         *topology,
-                        const Poldata    *pd,
+                        const ForceField    *pd,
                         const char       *symm_string,
                         std::vector<int> *sym_charges)
 {

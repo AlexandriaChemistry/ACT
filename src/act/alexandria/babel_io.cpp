@@ -57,11 +57,11 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "act/alexandria/actmol.h"
+#include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "actmol.h"
-#include "act/poldata/poldata.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
 

@@ -65,8 +65,8 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "molselect.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {
@@ -416,7 +416,7 @@ int analyze(int argc, char *argv[])
     FILE                            *fplog;
     int                              npa;
     int                              i;
-    alexandria::Poldata              pd;
+    alexandria::ForceField              pd;
     alexandria::MolSelect            gms;
     std::vector<alexandria::MolProp> mp;
     MolPropSortAlgorithm             mpsa;
@@ -456,7 +456,7 @@ int analyze(int argc, char *argv[])
 
     try
     {
-        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
+        alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

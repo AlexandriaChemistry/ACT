@@ -43,8 +43,8 @@
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
@@ -100,7 +100,8 @@ int edit_mp(int argc, char *argv[])
           "Processor ID to write from if in parallel." }
     };
     std::vector<MolProp>  mpt;
-    Poldata               pd;
+    ForceField            pd;
+
     gmx_output_env_t     *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,

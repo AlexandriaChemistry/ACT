@@ -143,7 +143,7 @@ void alexandria_molprop_prop_table(FILE                             *fp,
  */
 void alexandria_molprop_atomtype_table(FILE                       *fp,
                                        bool                        bPolar,
-                                       const std::vector<Poldata> &pd,
+                                       const std::vector<ForceField> &pd,
                                        const std::vector<MolProp> &mp,
                                        const char                 *lot);
 

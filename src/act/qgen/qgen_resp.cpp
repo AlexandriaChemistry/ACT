@@ -44,7 +44,7 @@
 
 #include "act/alexandria/topology.h"
 #include "act/coulombintegrals/coulombintegrals.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
@@ -94,7 +94,7 @@ void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 }
 
 void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
-                           const alexandria::Poldata    *pd,
+                           const alexandria::ForceField    *pd,
                            const std::vector<gmx::RVec> &x,
                            const int                     qtotal)
 {
@@ -565,7 +565,7 @@ void QgenResp::optimizeCharges(double epsilonr)
 }
 
 void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
-                          const Poldata              *pd)
+                          const ForceField              *pd)
 {
     auto    fs   = pd->findForcesConst(InteractionType::COULOMB);
     for (int i = 0; i < nAtom_; i++)

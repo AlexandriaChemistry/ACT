@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "act/molprop/molprop.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 
@@ -71,7 +71,7 @@ namespace alexandria
  * Split-charge equilibration (SQE)
  * Which one of the two is used is decided by the
  * presence of interaction of 
- * InteractionType::BONDCORRECTIONS in the Poldata
+ * InteractionType::BONDCORRECTIONS in the ForceField
  * file and structure.
  */
 class QgenAcm
@@ -84,7 +84,7 @@ public:
      * \param[in] atoms  Atoms data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const Poldata              *pd,
+    QgenAcm(const ForceField              *pd,
             const std::vector<ActAtom> &atoms,
             int                         qtotal);
     
@@ -99,7 +99,7 @@ public:
      */
     eQgen generateCharges(FILE                         *fp,
                           const std::string            &molname,
-                          const Poldata                *pd,
+                          const ForceField                *pd,
                           std::vector<ActAtom>         *atoms,
                           const std::vector<gmx::RVec> &x,
                           const std::vector<Bond>      &bonds);
@@ -139,7 +139,7 @@ private:
     /*! \brief Check whether the compound has support in the force field
      * \param[in] pd The force field data structure
      */
-    void checkSupport(const Poldata *pd);
+    void checkSupport(const ForceField *pd);
     
     //! Status of the algorithm
     eQgen                            eQGEN_       = eQgen::OK;
@@ -193,7 +193,7 @@ private:
      * \param[in] pd    Force field database
      * \param[in] atoms Atoms data structure
      */
-    void updateParameters(const Poldata              *pd,
+    void updateParameters(const ForceField              *pd,
                           const std::vector<ActAtom> &atoms);
     
     /*! \brief Compute Coulomb interaction
@@ -216,14 +216,14 @@ private:
     
     /*! \brief Return delta_chi and delta_eta for atom pair
      *
-     * \param[in]  pd  Poldata structure
+     * \param[in]  pd  ForceField structure
      * \param[in]  ai  Atom id i
      * \param[in]  aj  Atom id j
      * \param[in]  bondorder The bond order for this bond
      * \param[out] delta_chi the electronegativity correction
      * \param[out] delta_eta the bond hardness
      */
-    void getBccParams(const Poldata *pd,
+    void getBccParams(const ForceField *pd,
                       int            ai,
                       int            aj,
                       double         bondorder,
@@ -275,7 +275,7 @@ private:
      * \return 0 if all is OK, > 0 if not.
      */
     int solveSQE(FILE                    *fp,
-                 const Poldata           *pd,
+                 const ForceField           *pd,
                  const std::vector<Bond> &bonds);
     
     /*! \brief update the positions

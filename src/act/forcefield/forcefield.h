@@ -32,8 +32,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#ifndef POLDATA_H
-#define POLDATA_H
+#ifndef FORCEFIELD_H
+#define FORCEFIELD_H
 
 #include <algorithm>
 #include <map>
@@ -43,23 +43,23 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparameterlist.h"
-#include "act/poldata/particletype.h"
-#include "act/poldata/poldata_low.h"
-#include "act/poldata/vsite.h"
+#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefieldparameterlist.h"
+#include "act/forcefield/particletype.h"
+#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/vsite.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria
 {
 
-class Poldata
+class ForceField
 {
     public:
 
         //! Default constructor
-        Poldata() {};
+        ForceField() {};
 
         /*! \brief
          * Set the file name gentop.dat
@@ -81,7 +81,7 @@ class Poldata
         
         /*! \brief Verify the checksum and print message if required
          * \param[in] fp       A file to write messages to, may be nullptr
-         * \param[in] checkSum The checksum computed for the Poldata
+         * \param[in] checkSum The checksum computed for the ForceField
          * \return true if checkSum matches.
          */
         bool verifyCheckSum(FILE              *fp,

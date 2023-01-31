@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "poldata_tables.h"
+#include "forcefield_tables.h"
 
 #include <cinttypes>
 #include <cstdio>
@@ -46,14 +46,14 @@
 #include "gromacs/utility/cstringutil.h"
 
 #include "act/basics/chargemodel.h"
-#include "poldata_low.h"
+#include "forcefield_low.h"
 #include "act/utility/latex_util.h"
 
 namespace alexandria
 {
 
 void alexandria_subtype_table(FILE          *fp,
-                              const Poldata *pd)
+                              const ForceField *pd)
 {
     LongTable  lt(fp, false, nullptr);
 
@@ -90,7 +90,7 @@ void alexandria_subtype_table(FILE          *fp,
 }
 
 static void alexandria_itype_table(FILE           *fp,
-                                   const Poldata  *pd,
+                                   const ForceField  *pd,
                                    InteractionType itype)
 {
     LongTable  lt(fp, false, nullptr);
@@ -146,7 +146,7 @@ static void alexandria_itype_table(FILE           *fp,
 }
 
 void alexandria_eemprops_table(FILE           *fp,
-                               const Poldata  *pd)
+                               const ForceField  *pd)
 {
     std::vector<InteractionType> itypes = {
         InteractionType::ELECTRONEGATIVITYEQUALIZATION,
@@ -168,7 +168,7 @@ void alexandria_eemprops_table(FILE           *fp,
 }
 
 void alexandria_charge_table(FILE           *fp,
-                             const Poldata  *pd)
+                             const ForceField  *pd)
 {
     LongTable   lt(fp, false, nullptr);
     std::string qq("charge");

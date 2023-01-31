@@ -237,7 +237,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     // I. Match numbers to corresponding ones in actmiddleman.cpp
     // Load the initial genomes from the middlemen. 
     // This is needed since they have read their own parameters
-    // from the Poldata structures.
+    // from the ForceField structures.
     for(auto &src : cr->middlemen())
     {
         ga::Genome genome;

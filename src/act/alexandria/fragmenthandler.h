@@ -60,7 +60,7 @@ namespace alexandria
          * \param[in] shellRenumber Info on renumbering atoms because of shells
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const Poldata                *pd,
+        FragmentHandler(const ForceField                *pd,
                         const std::vector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>   &atoms,
                         const std::vector<Bond>      &bonds,
@@ -93,7 +93,7 @@ namespace alexandria
         eQgen generateCharges(FILE                         *fp,
                               const std::string            &molname,
                               const std::vector<gmx::RVec> &x,
-                              const Poldata                *pd,
+                              const ForceField                *pd,
                               std::vector<ActAtom>         *atoms);
     };
 } // namespace alexandria

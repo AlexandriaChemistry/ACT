@@ -45,7 +45,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -64,7 +64,7 @@ static bool dump_molecule(FILE                                        *fp,
                           const gmx::MDLogger                         &mdlog,
                           stringCount                                 *atomTypeCount,
                           stringCount                                 *bccTypeCount,
-                          const Poldata                               &pd,
+                          const ForceField                               &pd,
                           MolProp                                     *mp,
                           std::map<std::string, std::vector<double> > *qmap,
                           t_inputrec                                  *inputrec)
@@ -227,7 +227,7 @@ static bool dump_molecule(FILE                                        *fp,
 
 static void monomer2cluster(FILE                                              *fp,
                             std::vector<MolProp>                              *mp,
-                            const Poldata                                     &pd,
+                            const ForceField                                     &pd,
                             const std::map<std::string, std::vector<double> > &qmap,
                             t_inputrec                                        *inputrec)
 {
@@ -332,10 +332,10 @@ int molprop_check(int argc, char*argv[])
     }
     MolPropRead(opt2fn("-mp", NFILE, fnm), &mp);
     
-    alexandria::Poldata pd;
+    alexandria::ForceField pd;
     try
     {
-        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
+        alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

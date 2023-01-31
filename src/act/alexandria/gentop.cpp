@@ -58,7 +58,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "actmol.h"
 #include "openmm_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {
@@ -202,7 +202,7 @@ int gentop(int argc, char *argv[])
         return status;
     }
 
-    Poldata        pd;
+    ForceField        pd;
     t_inputrec    *inputrec = new t_inputrec();
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
@@ -231,7 +231,7 @@ int gentop(int argc, char *argv[])
     }
     try
     {
-        readPoldata(gentop_fnm, &pd);
+        readForceField(gentop_fnm, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);

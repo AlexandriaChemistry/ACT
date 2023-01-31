@@ -42,9 +42,9 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_utils.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_resp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -136,7 +136,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::string   basis("Gen");
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
-            Poldata      *pd = getPoldata(qdist);
+            ForceField      *pd = getForceField(qdist);
             auto imm = mp_.GenerateTopology(nullptr, pd,
                                             missingParameters::Error, false);
             if (immStatus::OK != imm)
