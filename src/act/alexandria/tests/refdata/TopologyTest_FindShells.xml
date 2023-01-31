@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Shells">
+    <Int Name="Length">3</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>5</Int>
+  </Sequence>
+  <Sequence Name="Cores">
+    <Int Name="Length">3</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>4</Int>
+  </Sequence>
+</ReferenceData>

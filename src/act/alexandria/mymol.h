@@ -219,8 +219,8 @@ private:
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
     Topology                      *topology_;
-    int                            nRealAtoms_    = 0;
- 
+    //! All the atoms, but not shells or vsites
+    std::vector<int>               realAtoms_; 
     // Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
@@ -275,8 +275,11 @@ public:
     void setSupport(eSupport esup) { eSupp_ = esup; }
     
     //! \return the number of real atoms, i.e. not shells or vsites
-    int nRealAtoms() const { return nRealAtoms_; }
+    int nRealAtoms() const { return realAtoms_.size(); }
     
+    //! \return the indexex of real atoms
+    const std::vector<int> &realAtoms() const { return realAtoms_; }
+
     //! \return the GROMACS energy data
     const gmx_enerdata_t *enerdata() const { return enerd_; }
     
@@ -613,11 +616,13 @@ public:
     /*! \brief
      * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
      *
-     * \param[in] fn     The filename.
-     * \param[in] coords The atomic coordinates
+     * \param[in] fn          The filename.
+     * \param[in] coords      The atomic coordinates
+     * \param[in] writeShells Whether or not to write the shell particles
      */
     void PrintConformation(const char                   *fn,
-                           const std::vector<gmx::RVec> &coords);
+                           const std::vector<gmx::RVec> &coords,
+                           bool                          writeShells);
     
     /*! \brief
      * set the inputrec of the MyMol object

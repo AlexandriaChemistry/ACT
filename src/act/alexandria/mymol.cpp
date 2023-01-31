@@ -1006,12 +1006,13 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         // Now we can add the atom structures, whether or not the FF
         // is polarizable.
         topology_->setAtoms(atoms_);
-        nRealAtoms_ = 0;
+        topology_->shellsToAtoms();
+        realAtoms_.clear();
         for(int i = 0; i < atoms_->nr; i++)
         {
             if (atoms_->atom[i].ptype == eptAtom)
             {
-                nRealAtoms_ += 1;
+                realAtoms_.push_back(i);
             }
         }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
@@ -1950,14 +1951,24 @@ void MyMol::CalcPolarizability(const Poldata       *pd,
 }
 
 void MyMol::PrintConformation(const char                   *fn,
-                              const std::vector<gmx::RVec> &coords)
+                              const std::vector<gmx::RVec> &coords,
+                              bool                          writeShells)
 {
     char title[STRLEN];
     
     sprintf(title, "%s processed by ACT - The Alexandria Chemistry Tookit",
             getMolname().c_str());
-    write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(coords.data()),
-                   nullptr, epbcNONE, state_->box);
+    if (writeShells)
+    {
+        write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(coords.data()),
+                       nullptr, epbcNONE, state_->box);
+    }
+    else
+    {
+        write_sto_conf_indexed(fn, title, gmxAtoms(), as_rvec_array(coords.data()),
+                               nullptr, epbcNONE, state_->box, realAtoms_.size(),
+                               realAtoms_.data());
+    }
 }
 
 static void add_tensor(std::vector<std::string> *commercials,

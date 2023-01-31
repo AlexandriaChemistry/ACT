@@ -595,6 +595,7 @@ bool OptACM::runMaster(bool optimize,
         {   
             for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
+                it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
                 for (const auto &ims : iMolSelectNames())
                 {
@@ -846,8 +847,11 @@ int tune_ff(int argc, char *argv[])
     {
         if (opt.sii()->nParam() == 0)
         {
-            fprintf(stderr, "Nothing to optimize. Check your input.\n");
-            return 1;
+            if (opt.sii()->commRec()->isMaster())
+            {
+                fprintf(stderr, "Nothing to optimize. Check your input.\n");
+            }
+            return 0;
         }
         std::vector<std::string> paramClass;
         for(const auto &fm : opt.mg()->typesToFit())

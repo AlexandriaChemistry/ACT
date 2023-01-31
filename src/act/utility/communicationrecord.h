@@ -178,7 +178,7 @@ public:
     //! \return my helper nodes, or empty vector if none
     const std::vector<int> &helpers() const { return helpers_; }
 
-    //! \return all the middlemen, or empty vector if none
+    //! \return all the middlemen except the master, or empty vector if none
     const std::vector<int> &middlemen() const { return middlemen_; }
     
     //! \return communicator for sending to helpers

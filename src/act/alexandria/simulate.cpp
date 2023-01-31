@@ -287,16 +287,6 @@ int simulate(int argc, char *argv[])
                                             gmx_ftoa(ener.second), unit);
                     }
                     jtree.addObject(jtener);
-                    auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-                    if (confout)
-                    {
-                        matrix box;
-                        clear_mat(box);
-                        write_sto_conf(confout, mymol.getMolname().c_str(),
-                                       mymol.gmxAtomsConst(),
-                                       as_rvec_array(xmin.data()), nullptr,
-                                       epbcNONE, box);
-                    }
                 }
             }
             if (eMinimizeStatus::OK == eMin)
@@ -305,6 +295,11 @@ int simulate(int argc, char *argv[])
                                     opt2fn("-o", fnm.size(),fnm.data()),
                                     opt2fn("-e", fnm.size(),fnm.data()),
                                     oenv);
+            }
+            auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
+            if (confout)
+            {
+                mymol.PrintConformation(confout, xmin, sch.writeShells());
             }
         }
         

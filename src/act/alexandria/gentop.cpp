@@ -142,6 +142,8 @@ int gentop(int argc, char *argv[])
     static char                     *conf           = (char *)"minimum";
     static char                     *jobtype        = (char *)"Opt";
     static char                     *filename       = (char *)"";
+    //! Write shells to trajectory and coordinates
+    bool                             writeShells    = false;
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
     static gmx_bool                  bUsePDBcharge  = false;
@@ -166,6 +168,8 @@ int gentop(int argc, char *argv[])
           "IUPAC Name of your molecule" },
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
+        { "-ws",     FALSE, etBOOL, {&writeShells},
+          "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
@@ -411,7 +415,7 @@ int gentop(int argc, char *argv[])
             {
                 std::string cfn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-c", NFILE, fnm));
-                mymol.PrintConformation(cfn.c_str(), coords);
+                mymol.PrintConformation(cfn.c_str(), coords, writeShells);
             }
         }
         else

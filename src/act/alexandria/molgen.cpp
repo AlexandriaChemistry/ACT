@@ -773,7 +773,7 @@ size_t MolGen::Read(FILE                                *fp,
             mycomms.insert({ i, cr_->create_column_comm(i) });
         }
         int  mymolIndex = 0;
-        auto cs         = CommunicationStatus::OK; 
+        auto cs         = CommunicationStatus::OK;
         int  bcint      = 1;
         std::set<int> comm_used;
         std::vector<double> totalCost;
@@ -799,7 +799,11 @@ size_t MolGen::Read(FILE                                *fp,
                 {
                     // We always need to send the molecules to the middlemen
                     int myindex = 0;
+                    // Send a 1 to signify more is coming
                     cr_->bcast(&bcint, mycomms[myindex]);
+                    // Send the index of the target group
+                    cr_->bcast(&comm_index, mycomms[myindex]);
+                    // Send the molecule
                     cs = mymol->BroadCast(cr_, root, mycomms[myindex]);
                     comm_used.insert(myindex);
                 }
@@ -807,11 +811,19 @@ size_t MolGen::Read(FILE                                *fp,
                 {
                     // We only send relevant molecules to the helpers
                     cr_->bcast(&bcint, mycomms[comm_index]);
+                    cr_->bcast(&comm_index, mycomms[comm_index]);
                     cs = mymol->BroadCast(cr_, root, mycomms[comm_index]);
                     comm_used.insert(comm_index);
                     mymol->setSupport(eSupport::Remote);
                 }
             }
+            if (fp)
+            {
+                fprintf(fp, "Computing %s on %s nexp = %zu\n", mymol->getMolname().c_str(),
+                        eSupport::Local == mymol->support() ? "master" : "helper",
+                        mymol->experimentConst().size());
+            }
+
             mymolIndex += 1;
         }
         if (CommunicationStatus::OK != cs)
@@ -844,7 +856,6 @@ size_t MolGen::Read(FILE                                *fp,
          ***********************************************/
         // Generate the correct communicator for this helper node.
         auto mycomm     = cr_->create_column_comm(cr_->rank() % (1 + cr_->nhelper_per_middleman()));
-        int  mymolIndex = 0;
         int  bcint      = 0;
         cr_->bcast(&bcint, mycomm);
         while (1 == bcint)
@@ -854,6 +865,8 @@ size_t MolGen::Read(FILE                                *fp,
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
+            int comm_index = 0;
+            cr_->bcast(&comm_index, mycomm);
             CommunicationStatus cs = mymol.BroadCast(cr_, root, mycomm);
             if (CommunicationStatus::OK != cs)
             {
@@ -887,11 +900,10 @@ size_t MolGen::Read(FILE                                *fp,
             {
                 mymol.setSupport(eSupport::Remote);
                 if (cr_->nhelper_per_middleman() == 0 ||
-                    mymolIndex % (1+cr_->nhelper_per_middleman()) == 0)
+                    comm_index % (1+cr_->nhelper_per_middleman()) == 0)
                 {
                     mymol.setSupport(eSupport::Local);
                 }
-                mymolIndex += 1;
             }
             else
             {
@@ -937,6 +949,12 @@ size_t MolGen::Read(FILE                                *fp,
                     }
                 }
                 mymol_.push_back(std::move(mymol));
+                if (cr_->isMiddleMan() && debug)
+                {
+                    int nexp = mymol_.back().experimentConst().size();
+                    fprintf(debug, "Computing %s on %s nexepriment %d\n", mymol_.back().getMolname().c_str(),
+                            eSupport::Local == mymol.support() ? "middleman" : "helper", nexp);
+                }
             }
             // See whether there is more data coming.
             cr_->bcast(&bcint, mycomm);

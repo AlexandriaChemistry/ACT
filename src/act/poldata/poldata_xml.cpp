@@ -699,11 +699,22 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         }
         for (auto &params : fs.second.parametersConst())
         {
-            auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARAMETERLIST));
-            add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), params.first.id().c_str());
+            bool dependent = true;
             for (const auto &param : params.second)
             {
-                addParameter(grandchild, param.first, param.second);
+                if (Mutability::Dependent != param.second.mutability())
+                {
+                    dependent = false;
+                }
+            }
+            if (!dependent)
+            {
+                auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARAMETERLIST));
+                add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), params.first.id().c_str());
+                for (const auto &param : params.second)
+                {
+                    addParameter(grandchild, param.first, param.second);
+                }
             }
         }
     }

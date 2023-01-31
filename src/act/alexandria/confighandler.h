@@ -385,7 +385,7 @@ private:
     int                nstvout_     = 0;
     //! How often to write energies
     int                nstener_     = 1;
-    //! Write shells to trajectory
+    //! Write shells to trajectory and coordinates
     bool               writeShells_ = false;
     //! Minmize (before MD)
     bool               minimize_    = false;

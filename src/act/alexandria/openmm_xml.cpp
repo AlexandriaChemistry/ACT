@@ -233,7 +233,7 @@ static void addSpecParameter(xmlNodePtr                 parent,
     // TODO remove explicit conversion and use ACT routines.
     double value = param.internalValue();
     std::map<std::string, std::string> gmx2OMM = {
-        { morse_name[bondLENGTH], "r0"  },
+        { morse_name[morseLENGTH], "r0"  },
         { morse_name[morseDE],    "D_e" },
         { morse_name[morseBETA],  "a"   },
         { angle_name[angleKT],    "k"   },

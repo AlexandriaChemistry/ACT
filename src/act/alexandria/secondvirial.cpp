@@ -495,24 +495,43 @@ void ReRunner::rerun(FILE                        *logFile,
     }
     if (trajname_ && strlen(trajname_) > 0)
     {
-        // Read compounds if we have a trajectory file
         std::vector<MolProp> mps;
-        if (!readBabel(trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", &qtot, false))
+        if (strnstr(trajname_, ".xml", strlen(trajname_)) != nullptr)
         {
-            fprintf(stderr, "Could not read compounds from %s\n", trajname_);
-            return;
+            // Assume this is a molprop file
+            MolPropRead(trajname_, &mps);
+        }
+        else
+        {
+            // Read compounds if we have a trajectory file
+            if (!readBabel(trajname_, &mps, molnm, molnm, "", &method,
+                           &basis, maxpot, nsymm, "Opt", &qtot, false))
+            {
+                fprintf(stderr, "Could not read compounds from %s\n", trajname_);
+                return;
+            }
+        }
+        for(size_t i = 0; i < mps.size(); i++)
+        {
+            auto exper = mps[i].experimentConst();
+            for(const auto &ep : exper)
+            {
+                std::vector<gmx::RVec> xx;
+                for(const auto &epx: ep.getCoordinates())
+                {
+                    xx.push_back(epx);
+                    if (pd->polarizable())
+                    {
+                        xx.push_back(epx);
+                    }
+                }
+                dimers.push_back(xx);
+            }
         }
         if (logFile)
         {
             fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
-                    mps.size(), trajname_);
-        }
-        dimers.resize(mps.size());
-        for(size_t i = 0; i < mps.size(); i++)
-        {
-            auto exper = mps[i].experimentConst();
-            dimers[i] = exper[0].getCoordinates();
+                    dimers.size(), trajname_);
         }
     }
     else
@@ -566,7 +585,7 @@ void ReRunner::rerun(FILE                        *logFile,
                 }
                 else
                 {
-                    GMX_THROW(gmx::InvalidInputError("Number of generated coordinates in trajectory does not match molecule file"));
+                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].size(), atoms.size()).c_str()));
                 }
                 if (atoms[i].pType() == eptAtom)
                 {
@@ -689,6 +708,7 @@ void ReRunner::rerun(FILE                        *logFile,
             {
                 fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
             }
+            fprintf(logFile, "\n");
         }
         if (verbose)
         {
