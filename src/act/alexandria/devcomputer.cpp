@@ -204,11 +204,9 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         const ForceFieldParameter &qparm = atype->parameterConst("charge");
         double qj  = myatoms[j].charge();
         double qjj = qj;
-        // TODO: only count in real shells
-        if (mymol->haveShells() && j < myatoms.size()-1 &&
-            myatoms[j+1].pType() == eptShell)
+        for(const auto &ss : myatoms[j].shells())
         {
-            qjj += myatoms[j+1].charge();
+            qjj += myatoms[ss].charge();
         }
         qtot += qjj;
         switch (qparm.mutability())
