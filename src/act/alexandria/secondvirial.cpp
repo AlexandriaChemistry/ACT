@@ -34,7 +34,6 @@
 
 #include <cctype>
 #include <cstdlib>
-#include <cstring>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/atype_mapping.h"
@@ -497,7 +496,9 @@ void ReRunner::rerun(FILE                        *logFile,
     if (trajname_ && strlen(trajname_) > 0)
     {
         std::vector<MolProp> mps;
-        if (strnstr(trajname_, ".xml", strlen(trajname_)) != nullptr)
+        std::string tname(trajname_);
+        auto pos = tname.find(".xml");
+        if (tname.size() == pos+4)
         {
             // Assume this is a molprop file
             MolPropRead(trajname_, &mps);
