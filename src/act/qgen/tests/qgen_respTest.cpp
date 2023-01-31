@@ -41,7 +41,7 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
 #include "act/poldata/poldata_xml.h"
@@ -71,7 +71,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         //! Checking data structure
         gmx::test::TestReferenceChecker checker_;
         //! Alexandria molecular properties class
-        alexandria::MyMol               mp_;
+        alexandria::ACTMol               mp_;
 
         //! Init set tolerance
         RespTest () : checker_(this->rootChecker())

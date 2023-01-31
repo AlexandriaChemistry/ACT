@@ -73,7 +73,7 @@ static double l2_regularizer(double x, double min, double max)
 * * * * * * * * * * * * * * * * * * * * * */
 
 void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                      gmx_unused MyMol                     *mymol,
+                                      gmx_unused ACTMol                     *actmol,
                                       gmx_unused std::vector<gmx::RVec>    *coords,
                                       std::map<eRMS, FittingTarget>        *targets,
                                       const Poldata                        *poldata)
@@ -172,16 +172,16 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
 * * * * * * * * * * * * * * * * * * * * * */
 
 void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         MyMol                                *mymol,
+                                         ACTMol                                *actmol,
                                          gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          const Poldata                        *poldata)
 {
     double qtot = 0;
     int i = 0;
-    const auto &myatoms = mymol->atomsConst();
+    const auto &myatoms = actmol->atomsConst();
     std::vector<double> qcm5;
-    QtypeProps *qp = mymol->qTypeProps(qType::CM5);
+    QtypeProps *qp = actmol->qTypeProps(qType::CM5);
     if (qp)
     {
         qcm5 = qp->charge();
@@ -216,7 +216,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
                                                                myatoms[j].name().c_str(),
-                                                               mymol->getMolname().c_str(), qparm.value(), qj).c_str()));
+                                                               actmol->getMolname().c_str(), qparm.value(), qj).c_str()));
             }
             break;
         case Mutability::ACM:
@@ -244,7 +244,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         }
         i += 1;
     }
-    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol->totalCharge()));
+    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - actmol->totalCharge()));
 
 }
 
@@ -257,24 +257,24 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 * * * * * * * * * * * * * * * * * * * * * */
 
 void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                   MyMol                                *mymol,
+                                   ACTMol                                *actmol,
                                    std::vector<gmx::RVec>               *coords,
                                    std::map<eRMS, FittingTarget>        *targets,
                                    const Poldata                        *poldata)
 {
     real rrms     = 0;
     real cosangle = 0;
-    QgenResp *qgr = mymol->qTypeProps(qType::Calc)->qgenResp();
-    if (mymol->haveShells())
+    QgenResp *qgr = actmol->qTypeProps(qType::Calc)->qgenResp();
+    if (actmol->haveShells())
     {
         qgr->updateAtomCoords(*coords);
     }
     if (fit_)
     {
-        qgr->updateZeta(mymol->atomsConst(), poldata);
+        qgr->updateZeta(actmol->atomsConst(), poldata);
     }
-    dumpQX(logfile_, mymol, *coords, "ESP");
-    qgr->updateAtomCharges(mymol->atomsConst());
+    dumpQX(logfile_, actmol, *coords, "ESP");
+    qgr->updateAtomCharges(actmol->atomsConst());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;
     real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
@@ -284,14 +284,14 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     if (debug)
     {
         fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                mymol->getMolname().c_str(),
+                actmol->getMolname().c_str(),
                 myRms, cosangle);
     }
 
 }
 
 void EspDevComputer::dumpQX(FILE                         *fp,
-                            const MyMol                  *mol,
+                            const ACTMol                  *mol,
                             const std::vector<gmx::RVec> &coords,
                             const std::string            &info)
 {
@@ -337,14 +337,14 @@ PolarDevComputer::PolarDevComputer(    FILE  *logfile,
 }
 
 void PolarDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
-                                     MyMol                                *mymol,
+                                     ACTMol                                *actmol,
                                      gmx_unused std::vector<gmx::RVec>    *coords,
                                      std::map<eRMS, FittingTarget>        *targets,
                                      const Poldata                        *poldata)
 {
-    mymol->CalcPolarizability(poldata, forceComputer);
-    auto aelec = mymol->qTypeProps(qType::Elec)->polarizabilityTensor();
-    auto acalc = mymol->qTypeProps(qType::Calc)->polarizabilityTensor();
+    actmol->CalcPolarizability(poldata, forceComputer);
+    auto aelec = actmol->qTypeProps(qType::Elec)->polarizabilityTensor();
+    auto acalc = actmol->qTypeProps(qType::Calc)->polarizabilityTensor();
     double diff2 = 0;
     for(int i = 0; i < DIM; i++)
     {
@@ -356,7 +356,7 @@ void PolarDevComputer::calcDeviation(const ForceComputer                  *force
     
     if (false && logfile_)
     {
-        fprintf(logfile_, "DIFF %s %g\n", mymol->getMolname().c_str(), diff2);
+        fprintf(logfile_, "DIFF %s %g\n", actmol->getMolname().c_str(), diff2);
     }
     (*targets).find(eRMS::Polar)->second.increase(1, diff2);
 }
@@ -370,18 +370,18 @@ void PolarDevComputer::calcDeviation(const ForceComputer                  *force
 * * * * * * * * * * * * * * * * * * * * * */
 
 void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         MyMol                                *mymol,
+                                         ACTMol                                *actmol,
                                          gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          gmx_unused const Poldata             *poldata)
 {
-    if (!(mymol->qTypeProps(qType::Elec)->hasMultipole(mpo_) &&
-          mymol->qTypeProps(qType::Calc)->hasMultipole(mpo_)))
+    if (!(actmol->qTypeProps(qType::Elec)->hasMultipole(mpo_) &&
+          actmol->qTypeProps(qType::Calc)->hasMultipole(mpo_)))
     {
         return;
     }
-    auto qelec = mymol->qTypeProps(qType::Elec)->getMultipole(mpo_);
-    auto qcalc = mymol->qTypeProps(qType::Calc)->getMultipole(mpo_);
+    auto qelec = actmol->qTypeProps(qType::Elec)->getMultipole(mpo_);
+    auto qcalc = actmol->qTypeProps(qType::Calc)->getMultipole(mpo_);
     double delta = 0;
     for (size_t mm = 0; mm < qelec.size(); mm++)
     {
@@ -425,17 +425,17 @@ HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
 }
 
 void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
-                                         MyMol                                *mymol,
+                                         ACTMol                                *actmol,
                                          std::vector<gmx::RVec>               *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          const Poldata                        *poldata)
 {
     // Only compute frequencies for structures that have an optimize reference
-    if (JobType::OPT != mymol->jobType())
+    if (JobType::OPT != actmol->jobType())
     {
         return;
     }
-    auto eMin = handler_.minimizeCoordinates(poldata, mymol, forceComputer, simConfig_, coords,
+    auto eMin = handler_.minimizeCoordinates(poldata, actmol, forceComputer, simConfig_, coords,
                                              nullptr, nullptr);
     if (eMinimizeStatus::OK != eMin)
     {
@@ -445,17 +445,17 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     }
     // Compute frequencies
     std::vector<double> frequencies, intensities;
-    handler_.nma(poldata, mymol, forceComputer, coords, &frequencies, &intensities);
+    handler_.nma(poldata, actmol, forceComputer, coords, &frequencies, &intensities);
 
     switch (mpo_)
     {
     case MolPropObservable::FREQUENCY:
         {
-            auto ref_freqs = mymol->referenceFrequencies();
+            auto ref_freqs = actmol->referenceFrequencies();
             if (ref_freqs.size() != frequencies.size())
             {
                 fprintf(stderr, "Reference frequencies size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
-                        ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str());
+                        ref_freqs.size(), frequencies.size(), actmol->getMolname().c_str());
             }
             else
             {
@@ -470,11 +470,11 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
         break;
     case MolPropObservable::INTENSITY:
         {
-            auto ref_intens = mymol->referenceIntensities();
+            auto ref_intens = actmol->referenceIntensities();
             if (ref_intens.size() != intensities.size())
             {
                 fprintf(stderr, "Reference intensities size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
-                        ref_intens.size(), intensities.size(), mymol->getMolname().c_str());
+                        ref_intens.size(), intensities.size(), actmol->getMolname().c_str());
             }
             else
             {
@@ -503,7 +503,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
 * * * * * * * * * * * * * * * * * * * * * */
 
 void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
-                                           MyMol                                *mymol,
+                                           ACTMol                                *actmol,
                                            gmx_unused std::vector<gmx::RVec>    *coords,
                                            std::map<eRMS, FittingTarget>        *targets,
                                            const Poldata                        *poldata)
@@ -512,7 +512,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
     std::vector<std::pair<double, double> >                 interactionEnergyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
-    mymol->forceEnergyMaps(poldata, forceComputer, &forceMap, &energyMap,
+    actmol->forceEnergyMaps(poldata, forceComputer, &forceMap, &energyMap,
                            &interactionEnergyMap, &enerComponentMap);
 
     auto tf = targets->find(eRMS::Force2);
@@ -524,7 +524,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
             {
                 if (std::isnan(ff.second))
                 {
-                    printf("Force for %s is NaN\n", mymol->getMolname().c_str());
+                    printf("Force for %s is NaN\n", actmol->getMolname().c_str());
                 }
                 tf->second.increase(1, gmx::square(ff.first-ff.second));
             }
@@ -537,17 +537,17 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
         {
             if (std::isnan(ff.second))
             {
-                printf("Energy for %s is NaN\n", mymol->getMolname().c_str());
+                printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
             }
             else
             {
                 // TODO Double check if the atomizationEnergy is needed.
-                // auto enerexp = mymol->atomizationEnergy() + ff.first;
+                // auto enerexp = actmol->atomizationEnergy() + ff.first;
                 double mydev2 = gmx::square(ff.first-ff.second);
                 if (mydev2 == 0)
                 {
                     printf("Energy difference exactly zero for %s. Ref ener %g\n",
-                           mymol->getMolname().c_str(), ff.first);
+                           actmol->getMolname().c_str(), ff.first);
                 }
                 te->second.increase(1, mydev2);
             }

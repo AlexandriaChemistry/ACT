@@ -54,7 +54,7 @@
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_low.h"
 #include "act/molprop/molprop_util.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "act/utility/xml_util.h"
 
 
@@ -297,7 +297,7 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mymol)
+static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const ACTMol *actmol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -313,7 +313,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         addXmlElemMass(grandchild, aType);
     }
 
-    auto myatoms =  mymol -> atomsConst();
+    auto myatoms =  actmol -> atomsConst();
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -356,12 +356,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         }   
     }
 
-    if (mymol->getMolname().size() > 0)
+    if (actmol->getMolname().size() > 0)
     {
         auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
+        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), actmol->getMolname().c_str());
         
-        auto myatoms =  mymol -> atomsConst();
+        auto myatoms =  actmol -> atomsConst();
         for (size_t i = 0; i < myatoms.size(); i++)
         {
             auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -378,9 +378,9 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         {
             auto fs = pd->findForcesConst(itbonds);
         
-            if (mymol->topology()->hasEntry(itbonds))
+            if (actmol->topology()->hasEntry(itbonds))
             {
-                for(const auto topentry : mymol->topology()->entry(itbonds))
+                for(const auto topentry : actmol->topology()->entry(itbonds))
                 {
                     int ai = topentry->atomIndex(0);
                     int aj = topentry->atomIndex(1);
@@ -790,7 +790,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                     //add_xml_int(grandchild2, "charge", 0);       
             }
             // add customnonbonded (WBH vdW + pg coulomb) for compound
-            auto myatoms =  mymol -> atomsConst();
+            auto myatoms =  actmol -> atomsConst();
             for (size_t i = 0; i < myatoms.size(); i++)
             {
                 auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -899,7 +899,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
             } 
             // adding nonbonded (LJ + point coulomb) for compound
-            auto myatoms =  mymol -> atomsConst();
+            auto myatoms =  actmol -> atomsConst();
             for (size_t i = 0; i < myatoms.size(); i++)
             {
                 auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -960,7 +960,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                     } 
                 } 
 
-                auto myatoms =  mymol -> atomsConst();
+                auto myatoms =  actmol -> atomsConst();
                 for (size_t i = 0; i < myatoms.size(); i++)
                 {
                     auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -997,7 +997,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
 void writeOpenMM(const std::string &fileName,
                  const Poldata     *pd,
-                 const MyMol       *mymol,
+                 const ACTMol       *actmol,
                  bool               compress)
 {
     xmlDocPtr   doc;
@@ -1028,7 +1028,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd, mymol);
+    addXmlPoldata(myroot, pd, actmol);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;

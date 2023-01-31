@@ -38,7 +38,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/poldata/poldata_xml.h"
 #include "gromacs/commandline/pargs.h"
 

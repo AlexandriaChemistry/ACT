@@ -41,7 +41,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
@@ -69,22 +69,22 @@ static bool dump_molecule(FILE                                        *fp,
                           std::map<std::string, std::vector<double> > *qmap,
                           t_inputrec                                  *inputrec)
 {
-    alexandria::MyMol mymol;
-    mymol.Merge(mp);
-    mymol.setInputrec(inputrec);
-    auto imm = mymol.GenerateTopology(fp, &pd, missingParameters::Error,
+    alexandria::ACTMol actmol;
+    actmol.Merge(mp);
+    actmol.setInputrec(inputrec);
+    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
                                       false);
     if (immStatus::OK == imm)
     {
-        std::vector<gmx::RVec> coords = mymol.xOriginal();
-        //mymol.symmetrizeCharges(pd, qsymm, nullptr);
-        mymol.initQgenResp(&pd, coords, 0.0, 100);
-        auto fhandler = mymol.fragmentHandler();
+        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        //actmol.symmetrizeCharges(pd, qsymm, nullptr);
+        actmol.initQgenResp(&pd, coords, 0.0, 100);
+        auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
             std::vector<double> dummy;
-            std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-            imm = mymol.GenerateCharges(&pd, forceComp, mdlog, cr,
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            imm = actmol.GenerateCharges(&pd, forceComp, mdlog, cr,
                                         pd.chargeGenerationAlgorithm(),
                                         qType::ACM,
                                         dummy, &coords, &forces);
@@ -99,7 +99,7 @@ static bool dump_molecule(FILE                                        *fp,
                 if (nullptr != myexp)
                 {
                     auto ca       = myexp->calcAtom();
-                    auto topatoms = mymol.topology()->atoms();
+                    auto topatoms = actmol.topology()->atoms();
                     size_t index  = 0;
                     std::vector<double> newq;
                     for(auto atom = ca->begin(); atom < ca->end(); atom++)
@@ -121,7 +121,7 @@ static bool dump_molecule(FILE                                        *fp,
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                mymol.getMolname().c_str(), immsg(imm));
+                actmol.getMolname().c_str(), immsg(imm));
         return false;
     }
     else
@@ -132,15 +132,15 @@ static bool dump_molecule(FILE                                        *fp,
             { MolPropObservable::POLARIZABILITY, iqmType::Both },
         };
        
-        fprintf(fp, "Molecule: %s\n", mymol.getMolname().c_str());
-        for(const auto &f : mymol.fragments())
+        fprintf(fp, "Molecule: %s\n", actmol.getMolname().c_str());
+        for(const auto &f : actmol.fragments())
         {
             f.dump(fp);
         }
-        mymol.getExpProps(iqm, -1);
-        mymol.Dump(fp);
+        actmol.getExpProps(iqm, -1);
+        actmol.Dump(fp);
         // Atoms!
-        auto &atoms = mymol.topology()->atoms();
+        auto &atoms = actmol.topology()->atoms();
         std::vector<Identifier> atomId;
         auto ztype = InteractionType::COULOMB;
         for (size_t i = 0; i < atoms.size(); i++)
@@ -234,17 +234,17 @@ static void monomer2cluster(FILE                                              *f
     // Premature optimization and all that
     for(auto mm = mp->begin(); mm < mp->end(); mm++)
     {
-         alexandria::MyMol mymol;
-         mymol.Merge(&(*mm));
-         mymol.setInputrec(inputrec);
-         auto imm = mymol.GenerateTopology(fp, &pd, missingParameters::Error,
+         alexandria::ACTMol actmol;
+         actmol.Merge(&(*mm));
+         actmol.setInputrec(inputrec);
+         auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
                                            false);
          if (immStatus::OK == imm)
          {
-             std::vector<gmx::RVec> coords = mymol.xOriginal();
-             //mymol.symmetrizeCharges(pd, qsymm, nullptr);
-             mymol.initQgenResp(&pd, coords, 0.0, 100);
-             auto fhandler = mymol.fragmentHandler();
+             std::vector<gmx::RVec> coords = actmol.xOriginal();
+             //actmol.symmetrizeCharges(pd, qsymm, nullptr);
+             actmol.initQgenResp(&pd, coords, 0.0, 100);
+             auto fhandler = actmol.fragmentHandler();
              if (fhandler->topologies().size() > 1)
              {
                  // Add ACM charges

@@ -41,7 +41,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
 
-#include "mymol.h"
+#include "actmol.h"
 #include "act/poldata/poldata.h"
 
 namespace alexandria
@@ -138,7 +138,7 @@ namespace alexandria
           */
         void addBonded(FILE                           *fplog, 
                        InteractionType                 iType,
-                       const MyMol                    &mmi,
+                       const ACTMol                    &mmi,
                        const Identifier               &bondId,         
                        const std::vector<int>         &atomid);
 
@@ -166,13 +166,13 @@ namespace alexandria
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  fp     File pointer for information
          * \param[in]  mp     MolProp array
-         * \param[out] mymols MyMol array will be filled here
+         * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
-                               std::vector<MyMol>         *mymols,
+                               std::vector<ACTMol>         *actmols,
                                const Poldata              &pd,
                                const MolSelect            &gms);
 

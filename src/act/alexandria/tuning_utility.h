@@ -44,7 +44,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 
-#include "mymol.h"
+#include "actmol.h"
 #include "molhandler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
@@ -94,7 +94,7 @@ private:
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
                                const Poldata       *pd,
-                               alexandria::MyMol   *mol,
+                               alexandria::ACTMol   *mol,
                                const ForceComputer *forceComp,
                                qtStats             *lsq_isoPol,
                                qtStats             *lsq_anisoPol,
@@ -102,7 +102,7 @@ private:
     
     //! \brief And the atoms.
     void printAtoms(FILE                         *fp,
-                    alexandria::MyMol            *mol,
+                    alexandria::ACTMol            *mol,
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
     
@@ -113,7 +113,7 @@ private:
                              const Poldata            *pd,
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
-                             alexandria::MyMol        *mol,
+                             alexandria::ACTMol        *mol,
                              gmx_stats                *lsq_rmsf,
                              qtStats                  *lsq_epot,
                              qtStats                  *lsq_eInter,
@@ -132,7 +132,7 @@ public:
     void addFileOptions(std::vector<t_filenm> *filenm);
     
     void print(FILE                           *fp,
-               std::vector<alexandria::MyMol> *mymol,
+               std::vector<alexandria::ACTMol> *actmol,
                const Poldata                  *pd,
                const gmx::MDLogger            &fplog,
                const gmx_output_env_t         *oenv,
@@ -166,7 +166,7 @@ void print_header(FILE                       *fp,
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
 void doFrequencyAnalysis(const Poldata            *pd,
-                         alexandria::MyMol        *mol,
+                         alexandria::ACTMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,

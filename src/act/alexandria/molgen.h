@@ -43,7 +43,7 @@
 
 #include "act/utility/communicationrecord.h"
 #include "molselect.h"
-#include "mymol.h"
+#include "actmol.h"
 
 namespace alexandria
 {
@@ -264,7 +264,7 @@ private:
     //! Which charge type to use
     char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
-    std::vector<alexandria::MyMol>  mymol_;
+    std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
     
@@ -323,10 +323,10 @@ public:
     void fillIopt(Poldata *pd);
     
     //! \brief Return the const vector of molecules
-    const std::vector<MyMol> &mymols() const { return mymol_; }
+    const std::vector<ACTMol> &actmols() const { return actmol_; }
 
     //! \brief Return the mutable vector of molecules
-    std::vector<MyMol> &mymols() { return mymol_; }
+    std::vector<ACTMol> &actmols() { return actmol_; }
 
     /*! \brief Return size of data set
      * \param[in] ims The data set 

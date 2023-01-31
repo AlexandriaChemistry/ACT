@@ -61,7 +61,7 @@
 #include "mcmcmutator.h"
 #include "molgen.h"
 #include "act/molprop/molprop_util.h"
-#include "mymol_low.h"
+#include "actmol_low.h"
 #include "act/ga/npointcrossover.h"
 #include "act/ga/Penalizer.h"
 #include "percentmutator.h"
@@ -194,18 +194,18 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     std::vector<double> vec;
-    for (MyMol &mymol : mg_.mymols())
+    for (ACTMol &actmol : mg_.actmols())
     {
-        if (mymol.datasetType() != ims)
+        if (actmol.datasetType() != ims)
         {
             continue;
         }
         // For fitting alpha we need a reference polarizability
         double T = 0;
-        auto gp = reinterpret_cast<const MolecularPolarizability*>(mymol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
+        auto gp = reinterpret_cast<const MolecularPolarizability*>(actmol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
         if (gp)
         {
-            auto qelec = mymol.qTypeProps(qType::Elec);
+            auto qelec = actmol.qTypeProps(qType::Elec);
             qelec->setPolarizabilityTensor(gp->getTensor());
         }
     }
@@ -898,7 +898,7 @@ int tune_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), &(tmpMg->mymols()),
+            printer.print(opt.logFile(), &(tmpMg->actmols()),
                           opt.sii()->poldata(), tmpMg->mdlog(),
                           oenv, opt.commRec(), filenms, tmpMg->chargeMethod());
             print_memory_usage(debug);

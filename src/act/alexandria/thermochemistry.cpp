@@ -41,7 +41,7 @@
 #include <cmath>
 #include <cstdio>
 
-#include "act/alexandria/mymol_low.h"
+#include "act/alexandria/actmol_low.h"
 #include "act/alexandria/princ.h"
 #include "act/utility/units.h"
 #include "gromacs/math/units.h"
@@ -176,12 +176,12 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
     return universalGasConstant * SR;
 }
 
-static void calcTheta(const MyMol                  *mymol,
+static void calcTheta(const ACTMol                  *actmol,
                       const std::vector<gmx::RVec> &coords,
                       rvec                          theta)
 {
     rvec       xcm;
-    const auto atoms = mymol->gmxAtomsConst();
+    const auto atoms = actmol->gmxAtomsConst();
     std::vector<int> index;
     std::vector<gmx::RVec> xx;
     for(int i = 0; i < atoms->nr; i++)
@@ -222,7 +222,7 @@ static void calcTheta(const MyMol                  *mymol,
     // c_kilo^2 10^18 / 10^24 K = 1/K
     double rot_const = gmx::square(PLANCK) / (8 * gmx::square(M_PI) * BOLTZ);
     // Rotational temperature (1/K)
-    if (mymol->linearMolecule())
+    if (actmol->linearMolecule())
     {
         // For linear molecules the first element of the inertia
         // vector is zero.
@@ -241,7 +241,7 @@ static void calcTheta(const MyMol                  *mymol,
     }
 }
 
-ThermoChemistry::ThermoChemistry(const MyMol                  *mymol,
+ThermoChemistry::ThermoChemistry(const ACTMol                  *actmol,
                                  const std::vector<gmx::RVec> &coords,
                                  const AtomizationEnergy      &atomenergy,
                                  const std::vector<double>    &frequencies,
@@ -250,19 +250,19 @@ ThermoChemistry::ThermoChemistry(const MyMol                  *mymol,
                                  double                        scale_factor)
 {
     rvec   theta;
-    calcTheta(mymol, coords, theta);
+    calcTheta(actmol, coords, theta);
     double sigma_r = 1;
-    if (mymol->fragments().size() == 1)
+    if (actmol->fragments().size() == 1)
     {
-        sigma_r = mymol->fragments()[0].symmetryNumber();
+        sigma_r = actmol->fragments()[0].symmetryNumber();
     }
     zpe_ = zeroPointEnergy(frequencies, scale_factor);
     cv_[TCComponent::Translation]  = 1.5*RGAS;
-    cv_[TCComponent::Rotation]     = mymol->linearMolecule() ? RGAS : 1.5*RGAS;
+    cv_[TCComponent::Rotation]     = actmol->linearMolecule() ? RGAS : 1.5*RGAS;
     E_[TCComponent::Translation]   = 1.5*RGAS*temperature/KILO;
-    E_[TCComponent::Rotation]      = (mymol->linearMolecule() ? RGAS : 1.5*RGAS) * temperature/KILO;
-    S0_[TCComponent::Translation]  = translationalEntropy(mymol->totalMass(), temperature, pressure);
-    S0_[TCComponent::Rotation]     = rotationalEntropy(temperature, mymol->NAtom(), mymol->linearMolecule(),
+    E_[TCComponent::Rotation]      = (actmol->linearMolecule() ? RGAS : 1.5*RGAS) * temperature/KILO;
+    S0_[TCComponent::Translation]  = translationalEntropy(actmol->totalMass(), temperature, pressure);
+    S0_[TCComponent::Rotation]     = rotationalEntropy(temperature, actmol->NAtom(), actmol->linearMolecule(),
                                                        theta, sigma_r);
     // Compute componenents of thermochemistry
     calcVibrationalProperties(frequencies, temperature, scale_factor);
@@ -278,8 +278,8 @@ ThermoChemistry::ThermoChemistry(const MyMol                  *mymol,
     }
     // Using the equations from Ochterski2000a
     double sumAtomicEps0 = 0;
-    double D0M           = sumAtomicEps0 - mymol->energyTerms()[F_EPOT] - zpe_;
-    double sumAtomicH0   = computeAtomizationEnergy(mymol->atomsConst(), atomenergy, 0);
+    double D0M           = sumAtomicEps0 - actmol->energyTerms()[F_EPOT] - zpe_;
+    double sumAtomicH0   = computeAtomizationEnergy(actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;
     if (temperature == 0)
     {
@@ -287,7 +287,7 @@ ThermoChemistry::ThermoChemistry(const MyMol                  *mymol,
     }
     else
     {
-        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(mymol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
+        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(actmol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
     }
 }
 

@@ -64,7 +64,7 @@
 #include "act/basics/identifier.h"
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "act/poldata/poldata_xml.h"
 #include "act/utility/stringutil.h"
 #include "tuning_utility.h"
@@ -248,8 +248,8 @@ int geometry_ff(int argc, char *argv[])
         printf("Too many warnings (%d). Terminating.\n", nwarn);
         return 0;
     }
-    std::vector<MyMol> mymols;
-    bonds.extractGeometries(fp, mp, &mymols, pd, gms);
+    std::vector<ACTMol> actmols;
+    bonds.extractGeometries(fp, mp, &actmols, pd, gms);
     
     print_memory_usage(debug);
     if (bHisto)
@@ -270,7 +270,7 @@ int geometry_ff(int argc, char *argv[])
         {
             iqm = iqmType::QM;
         }
-        double rmsd = getDissociationEnergy(fp, &pd, &mymols, iqm,
+        double rmsd = getDissociationEnergy(fp, &pd, &actmols, iqm,
                                             opt2fn_null("-de",  NFILE, fnm), 
                                             nBootStrap);
         fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);

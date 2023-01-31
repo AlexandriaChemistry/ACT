@@ -43,7 +43,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/thermochemistry.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
@@ -118,7 +118,7 @@ protected:
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
-        std::vector<MyMol> mps;
+        std::vector<ACTMol> mps;
         t_inputrec      inputrecInstance;
         t_inputrec     *inputrec   = &inputrecInstance;
         fill_inputrec(inputrec);
@@ -142,7 +142,7 @@ protected:
                 for(auto &molprop: molprops)
                 {
                     EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                    MyMol mm;
+                    ACTMol mm;
                     mm.Merge(&molprop);
                     // Generate charges and topology
                     mm.setInputrec(inputrec);

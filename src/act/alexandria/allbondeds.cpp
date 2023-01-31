@@ -143,7 +143,7 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
 
 void AllBondeds::addBonded(FILE                           *fplog, 
                            InteractionType                 iType,
-                           const MyMol                    &mmi,
+                           const ACTMol                    &mmi,
                            const Identifier               &bondId,
                            const std::vector<int>         &atomid)
 {
@@ -534,7 +534,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
 
 void AllBondeds::extractGeometries(FILE                       *fp,
                                    const std::vector<MolProp> &mp,
-                                   std::vector<MyMol>         *mymols,
+                                   std::vector<ACTMol>         *actmols,
                                    const Poldata              &pd,
                                    const MolSelect            &gms)
 {
@@ -544,7 +544,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
         if (gms.status(mpi->getIupac(), &imol) && 
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
-            alexandria::MyMol mmi;
+            alexandria::ACTMol mmi;
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
@@ -600,7 +600,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                     addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
-            mymols->push_back(mmi);
+            actmols->push_back(mmi);
         }
     }
 }
