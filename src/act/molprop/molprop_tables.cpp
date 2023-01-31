@@ -782,7 +782,7 @@ static void prop_header(LongTable     &lt,
     }
     lt.printHeader();
 }
-
+#ifdef OLD
 static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
 {
     real rdv, adv = fabs(vexp-vcalc);
@@ -817,7 +817,7 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
         return 0;
     }
 }
-
+#endif
 void alexandria_molprop_prop_table(FILE                 *fp,
                                    MolPropObservable     mpo,
                                    real                  rel_toler,
