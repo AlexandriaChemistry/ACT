@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "act/basics/identifier.h"
-#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"

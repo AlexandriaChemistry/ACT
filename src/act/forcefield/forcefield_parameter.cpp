@@ -31,7 +31,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefieldparameter.h"
+#include "forcefield_parameter.h"
 
 #include <map>
 

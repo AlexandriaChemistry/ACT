@@ -39,10 +39,10 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    checkSumTest.cpp
-    forcefieldparameterTest.cpp
-    forcefieldparameterlistTest.cpp
-    forcefieldTest.cpp
+    checksum_test.cpp
+    forcefield_parameter_test.cpp
+    forcefield_parameterlist_test.cpp
+    forcefield_test.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )

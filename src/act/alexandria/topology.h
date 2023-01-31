@@ -43,7 +43,7 @@
 #include "act/basics/identifier.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefieldparameterlist.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gpu_utils/hostallocator.h"

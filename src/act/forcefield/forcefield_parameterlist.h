@@ -39,7 +39,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "forcefieldparameter.h"
+#include "forcefield_parameter.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 

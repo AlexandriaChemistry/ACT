@@ -32,7 +32,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "../forcefieldparameterlist.h"
+#include "../forcefield_parameterlist.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

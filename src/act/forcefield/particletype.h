@@ -39,7 +39,7 @@
 #include <map>
 #include <string>
 
-#include "forcefieldparameter.h"
+#include "forcefield_parameter.h"
 #include "act/basics/identifier.h"
 
 namespace alexandria

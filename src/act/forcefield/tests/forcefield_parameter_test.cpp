@@ -32,7 +32,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "../forcefieldparameter.h"
+#include "../forcefield_parameter.h"
 
 #include <map>
 

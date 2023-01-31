@@ -30,7 +30,7 @@
 #include <cmath>
 
 #include "act/basics/mutability.h"
-#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"

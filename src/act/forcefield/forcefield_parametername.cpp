@@ -26,7 +26,7 @@
  * Boston, MA  02110-1301, USA.
  */
  
-#include "forcefieldparametername.h"
+#include "forcefield_parametername.h"
 
 namespace alexandria
 {

@@ -36,7 +36,7 @@
 #include "gromacs/fileio/xvgr.h"
 
 #include "tuning_utility.h"
-#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/units.h"
     
 static void round_numbers(real *av, real *sig, int power10)

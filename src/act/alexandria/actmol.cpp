@@ -42,8 +42,8 @@
 
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "act/forcefield/forcefieldparameter.h"
-#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"

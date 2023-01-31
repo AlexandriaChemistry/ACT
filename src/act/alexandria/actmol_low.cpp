@@ -54,7 +54,7 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "act/forces/combinationrules.h"
-#include "act/forcefield/forcefieldparameter.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield.h"
 #include "act/qgen/qgen_acm.h"
 #include "topology.h"

@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
-#include "act/forcefield/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 

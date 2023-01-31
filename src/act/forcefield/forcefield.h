@@ -43,8 +43,8 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
-#include "act/forcefield/forcefieldparameter.h"
-#include "act/forcefield/forcefieldparameterlist.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield_low.h"
 #include "act/forcefield/vsite.h"
