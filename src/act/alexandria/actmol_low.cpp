@@ -33,7 +33,7 @@
  */
 
 
-#include "mymol_low.h"
+#include "actmol_low.h"
 
 #include <assert.h>
 

@@ -32,15 +32,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ACT_MYMOL_H
-#define ACT_MYMOL_H
+#ifndef ACT_ACTMOL_H
+#define ACT_ACTMOL_H
 
 #include <map>
 
 #include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/gentop_vsite.h"
 #include "act/alexandria/molselect.h"
-#include "act/alexandria/mymol_low.h"
+#include "act/alexandria/actmol_low.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/poldata/poldata.h"
@@ -92,7 +92,7 @@ enum class eSupport {
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class MyMol : public MolProp
+class ACTMol : public MolProp
 {
 private:
     // GromacsStuff
@@ -248,7 +248,7 @@ public:
     /*! \brief
      * Constructor
      */
-    MyMol();
+    ACTMol();
     
     iMolSelect datasetType() const { return dataset_type_; }
     
@@ -411,7 +411,7 @@ public:
     /*! \brief
      *  Computes polarizability tensor in the presence of external
      *  electric field. The result is stored in 
-     *  mymol->qTypeProps(qType::Calc).
+     *  actmol->qTypeProps(qType::Calc).
      *
      * \param[in] pd        The force field
      * \param[in] forceComp The force computer
@@ -625,7 +625,7 @@ public:
                            bool                          writeShells);
     
     /*! \brief
-     * set the inputrec of the MyMol object
+     * set the inputrec of the ACTMol object
      *
      * \param[in] ir   GROMACS t_inputrec structure
      */
@@ -635,10 +635,10 @@ public:
     }
     
     /*! \brief
-     * Equal operator for MyMol object
+     * Equal operator for ACTMol object
      *
      */
-    bool operator==(const MyMol &mol) const
+    bool operator==(const ACTMol &mol) const
     {
         return (this->getMolname() == mol.getMolname());
     }

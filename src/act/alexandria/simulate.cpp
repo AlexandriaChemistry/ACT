@@ -38,7 +38,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/secondvirial.h"
 #include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
@@ -160,7 +160,7 @@ int simulate(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    MyMol                mymol;
+    ACTMol                actmol;
     {
         std::vector<MolProp> mps;
         if (opt2bSet("-mp", fnm.size(), fnm.data()))
@@ -200,26 +200,26 @@ int simulate(int argc, char *argv[])
             {
                 fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
             }
-            mymol.Merge(&mps[0]);
+            actmol.Merge(&mps[0]);
         }
     }
-    if (mymol.totalCharge() != qtot)
+    if (actmol.totalCharge() != qtot)
     {
         fprintf(logFile, "WARNING: detected total charge %d, command line says %g.\n",
-                mymol.totalCharge(), qtot);
+                actmol.totalCharge(), qtot);
     }
     
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
-        imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
     }
-    std::vector<gmx::RVec> coords = mymol.xOriginal();
+    std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
-        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
         std::vector<double> myq;
         auto alg   = pd.chargeGenerationAlgorithm();
@@ -229,7 +229,7 @@ int simulate(int argc, char *argv[])
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
         }
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+        imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {
@@ -237,9 +237,9 @@ int simulate(int argc, char *argv[])
         {
             // Make a copy since it maybe changed
             auto xx    = coords;
-            auto qCalc = mymol.qTypeProps(qType::Calc);
+            auto qCalc = actmol.qTypeProps(qType::Calc);
             qCalc->initializeMoments();
-            forceComp->calcPolarizability(&pd, mymol.topology(), &xx, qCalc);
+            forceComp->calcPolarizability(&pd, actmol.topology(), &xx, qCalc);
             auto alpha = qCalc->polarizabilityTensor();
             std::string unit("A^3");
             double fac = convertFromGromacs(1, unit);
@@ -254,29 +254,29 @@ int simulate(int argc, char *argv[])
 
         if (debug)
         {
-            mymol.topology()->dump(debug);
+            actmol.topology()->dump(debug);
         }
         auto eMin = eMinimizeStatus::OK;
         /* Generate output file for debugging if requested */
         if (strlen(rerun.trajectoryFileName()) > 0)
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
-            rerun.setEInteraction(mymol.fragmentHandler()->topologies().size() > 1);
-            rerun.rerun(logFile, &pd, &mymol, qtot, verbose, fnm);
+            rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
+            rerun.rerun(logFile, &pd, &actmol, qtot, verbose, fnm);
         }
-        else if (mymol.errors().empty())
+        else if (actmol.errors().empty())
         {
             MolHandler molhandler;
-            std::vector<gmx::RVec> coords = mymol.xOriginal();
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
             std::vector<gmx::RVec> xmin   = coords;
             if (sch.minimize())
             {
                 std::map<InteractionType, double> energies;
-                eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
+                eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
                                                       &xmin, &energies, logFile);
                 if (eMinimizeStatus::OK == eMin)
                 {
-                    auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
+                    auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                     fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);
                     JsonTree jtener("Energies");
@@ -291,7 +291,7 @@ int simulate(int argc, char *argv[])
             }
             if (eMinimizeStatus::OK == eMin)
             {
-                molhandler.simulate(&pd, &mymol, forceComp, sch, logFile,
+                molhandler.simulate(&pd, &actmol, forceComp, sch, logFile,
                                     opt2fn("-o", fnm.size(),fnm.data()),
                                     opt2fn("-e", fnm.size(),fnm.data()),
                                     oenv);
@@ -299,7 +299,7 @@ int simulate(int argc, char *argv[])
             auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
             if (confout)
             {
-                mymol.PrintConformation(confout, xmin, sch.writeShells());
+                actmol.PrintConformation(confout, xmin, sch.writeShells());
             }
         }
         
@@ -314,7 +314,7 @@ int simulate(int argc, char *argv[])
         {
             fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
             fprintf(logFile, "%s\n", immsg(imm));
-            for(const auto &err: mymol.errors())
+            for(const auto &err: actmol.errors())
             {
                 fprintf(logFile, "%s\n", err.c_str());
             }

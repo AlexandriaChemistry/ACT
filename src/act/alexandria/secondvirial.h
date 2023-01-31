@@ -38,7 +38,7 @@
 #include <vector>
 
 #include "act/alexandria/b2utils.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
@@ -170,14 +170,14 @@ public:
     /*! \brief Do the rerunning with different options
      * \param[in] logFile File pointer to print info
      * \param[in] pd      Force field structure
-     * \param[in] mymol   Structure with molecule info
+     * \param[in] actmol   Structure with molecule info
      * \param[in] qtot    The total charge for when reading from a trajectory
      * \param[in] verbose Whether or not to print a lot
      * \param[in] fnm     The filenames
      */
     void rerun(FILE                        *logFile,
                const Poldata               *pd,
-               const MyMol                 *mymol,
+               const ACTMol                 *actmol,
                double                       qtot,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);

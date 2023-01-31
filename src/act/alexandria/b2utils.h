@@ -37,7 +37,7 @@
 #include <random>
 #include <vector>
 
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/jsontree.h"
@@ -91,13 +91,13 @@ public:
     
     /*! \brief Do the actual generation
      * \param[in]  logFile   For debugging info, may be a nullptr
-     * \param[in]  mymol     The description of the two fragments
+     * \param[in]  actmol     The description of the two fragments
      * \param[out] coords    The coordinate sets
      * \param[in]  outcoords Output file name for the generated coordinates.
      *                       If nullptr, they will not be written.
      */
     void generate(FILE                                *logFile,
-                  const MyMol                         *mymol,
+                  const ACTMol                         *actmol,
                   std::vector<std::vector<gmx::RVec>> *coords,
                   const char                          *outcoords);
 };

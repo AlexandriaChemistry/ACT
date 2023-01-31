@@ -35,7 +35,7 @@
 #ifndef DISSOCIATION_ENERGY_H
 #define DISSOCIATION_ENERGY_H
 
-#include "mymol.h"
+#include "actmol.h"
 #include "act/poldata/poldata.h"
 
 namespace alexandria
@@ -68,7 +68,7 @@ namespace alexandria
  */
 double getDissociationEnergy(FILE                     *fplog,
                              Poldata                  *pd,
-                             std::vector<MyMol>       *molset,
+                             std::vector<ACTMol>       *molset,
                              iqmType                  iqm,
                              const char               *csvFile,
                              int                       nBootStrap);

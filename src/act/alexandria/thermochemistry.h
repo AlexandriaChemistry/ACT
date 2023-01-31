@@ -44,7 +44,7 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/basics/atomization_energy.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -135,14 +135,14 @@ private:
     
 public:
     /*! \brief Constructor that computes everything at once
-     * \param[in] mymol        Molecule info
+     * \param[in] actmol        Molecule info
      * \param[in] coords       The coordinates
      * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] temperature  Temperature (K)
      * \param[in] pressure     Pressure (bar) at which to compute
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
-    ThermoChemistry(const MyMol                  *mymol,
+    ThermoChemistry(const ACTMol                  *actmol,
                     const std::vector<gmx::RVec> &coords,
                     const AtomizationEnergy      &atomenergy,
                     const std::vector<double>    &frequencies,

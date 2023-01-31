@@ -73,7 +73,7 @@ const std::string &eMinimizeStatusToString(eMinimizeStatus e)
 }
 
 void MolHandler::computeHessian(const Poldata                     *pd,
-                                const MyMol                       *mol,
+                                const ACTMol                       *mol,
                                 const ForceComputer               *forceComp,
                                 std::vector<gmx::RVec>            *coords,
                                 const std::vector<int>            &atomIndex,
@@ -245,7 +245,7 @@ static void computeIntensities(const std::vector<double>    &eigenvalues,
     }
 }
 
-static void outputFreqInten(const MyMol               *mol,
+static void outputFreqInten(const ACTMol               *mol,
                             const std::vector<double> &frequencies,
                             const std::vector<double> &intensities,
                             std::vector<std::string>  *output)
@@ -438,7 +438,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
     computeFrequencies(eigenvalues, rot_trans, frequencies, output);
 }
 
-static void solveLapack(const MyMol                  *mol,
+static void solveLapack(const ACTMol                  *mol,
                         const MatrixWrapper          &hessian,
                         const std::vector<int>       &atomIndex,
                         const std::vector<ActAtom>   &atoms,
@@ -492,7 +492,7 @@ static void solveLapack(const MyMol                  *mol,
 }
 
 void MolHandler::nma(const Poldata            *pd,
-                     const MyMol              *mol,
+                     const ACTMol              *mol,
                      const ForceComputer      *forceComp,
                      std::vector<gmx::RVec>   *coords,
                      std::vector<double>      *frequencies,
@@ -628,7 +628,7 @@ static void updateCoords(const std::vector<int>       &theAtoms,
 }
 
 eMinimizeStatus MolHandler::minimizeCoordinates(const Poldata                     *pd,
-                                                const MyMol                       *mol,
+                                                const ACTMol                       *mol,
                                                 const ForceComputer               *forceComp,
                                                 const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
@@ -919,7 +919,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const Poldata                   
     }
 }
 
-double MolHandler::coordinateRmsd(const MyMol                  *mol,
+double MolHandler::coordinateRmsd(const ACTMol                  *mol,
                                   const std::vector<gmx::RVec> &xref,
                                   std::vector<gmx::RVec>       *xfit) const
 {
@@ -1006,7 +1006,7 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %10g %10g %10g\n", ekin, ekin+epot, temp);
 }
 
-static void initArrays(const MyMol            *mol,
+static void initArrays(const ACTMol            *mol,
                        std::vector<gmx::RVec> *coordinates, 
                        std::vector<gmx::RVec> *velocities, 
                        std::vector<gmx::RVec> *forcesCur,
@@ -1040,7 +1040,7 @@ static void initArrays(const MyMol            *mol,
 }
                        
 void MolHandler::simulate(const Poldata                 *pd,
-                          MyMol                         *mol,
+                          ACTMol                         *mol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,
                           FILE                          *logFile,

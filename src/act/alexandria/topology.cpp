@@ -43,7 +43,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "mymol_low.h"
+#include "actmol_low.h"
 
 namespace alexandria
 {

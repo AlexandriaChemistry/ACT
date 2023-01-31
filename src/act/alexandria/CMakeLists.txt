@@ -52,8 +52,8 @@ target_sources(actLib
            molgen.cpp
            molhandler.cpp
            molselect.cpp
-           mymol.cpp
-           mymol_low.cpp
+           actmol.cpp
+           actmol_low.cpp
            normalmodes.cpp
            openmm_xml.cpp
            percentmutator.cpp

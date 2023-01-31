@@ -378,14 +378,14 @@ void DimerGenerator::finishOptions()
 }
 
 static void dump_coords(const char                                *outcoords,
-                        const MyMol                               *mymol,
+                        const ACTMol                               *actmol,
                         const std::vector<std::vector<gmx::RVec>> &coords)
 {
     std::string outxyz(outcoords);
     auto pos = outxyz.rfind(".");
     outxyz = outxyz.substr(0, pos) + ".xyz";
     FILE *fp = gmx_ffopen(outxyz.c_str(), "w");
-    auto atoms = mymol->atomsConst();
+    auto atoms = actmol->atomsConst();
     for(size_t ix = 0; ix < coords.size(); ix++)
     {
         fprintf(fp, "%5lu\n", atoms.size());
@@ -400,11 +400,11 @@ static void dump_coords(const char                                *outcoords,
 }
 
 void DimerGenerator::generate(FILE                                *logFile,
-                              const MyMol                         *mymol,
+                              const ACTMol                         *actmol,
                               std::vector<std::vector<gmx::RVec>> *coords,
                               gmx_unused const char               *outcoords)
 {
-    auto fragptr = mymol->fragmentHandler();
+    auto fragptr = actmol->fragmentHandler();
     if (fragptr->topologies().size() != 2)
     {
         gmx_fatal(FARGS, "Cannot generate dimers, numer of compounds is %lu",
@@ -424,7 +424,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     printf("%s\n", info.c_str());
     
     // Copy original coordinates
-    auto xorig     = mymol->xOriginal();
+    auto xorig     = actmol->xOriginal();
     // Split the coordinates into two fragments
     auto atomStart = fragptr->atomStart();
     std::vector<gmx::RVec> xmOrig[2];
@@ -546,7 +546,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     }
     if (nullptr != outcoords && strlen(outcoords) > 0)
     {
-        dump_coords(outcoords, mymol, *coords);
+        dump_coords(outcoords, actmol, *coords);
     }
 }
 

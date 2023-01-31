@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "act/basics/identifier.h"
-#include "mymol_low.h"
+#include "actmol_low.h"
 #include "plistwrapper.h"
 #include "act/poldata.h"
 #include "units.h"

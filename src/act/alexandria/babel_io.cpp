@@ -60,7 +60,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
@@ -260,7 +260,7 @@ static bool babel2ACT(OpenBabel::OBMol    *mol,
     std::string                attr;
     std::string                value;
     const char                *reference   = "Spoel2022a";
-    const char                *mymol       = "AMM";
+    const char                *actmol       = "AMM";
     const char                *myprogram   = "ACT2022";
 
     /* Variables to read a Gaussian log file */
@@ -371,7 +371,7 @@ static bool babel2ACT(OpenBabel::OBMol    *mol,
     }
     else
     {
-        mpt->SetMolname(mymol);
+        mpt->SetMolname(actmol);
     }
 
     if (nullptr != iupac)
@@ -380,7 +380,7 @@ static bool babel2ACT(OpenBabel::OBMol    *mol,
     }
     else
     {
-        mpt->SetIupac(mymol);
+        mpt->SetIupac(actmol);
     }
     
     // Units for conversion

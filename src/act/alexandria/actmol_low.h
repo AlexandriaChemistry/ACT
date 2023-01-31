@@ -73,7 +73,7 @@ enum class missingParameters
 }; 
 
 /*! \brief
- * Class with error codes from mymol.
+ * Class with error codes from actmol.
  */
 enum class immStatus {
     //! Unknown error, this should not happen

@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "mymol.h"
+#include "actmol.h"
 
 #include <cstdio>
 
@@ -82,7 +82,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs_top.h"
-#include "mymol_low.h"
+#include "actmol_low.h"
 #include "symmetrize_charges.h"
 
 namespace alexandria
@@ -94,7 +94,7 @@ static void vsiteType_to_atomType(const std::string &vsiteType, std::string *ato
     *atomType       = vsiteType.substr (0, pos);
 }
 
-MyMol::MyMol() //: gvt_(VsiteType::ALL)
+ACTMol::ACTMol() //: gvt_(VsiteType::ALL)
 
 {
     snew(symtab_, 1);
@@ -115,7 +115,7 @@ MyMol::MyMol() //: gvt_(VsiteType::ALL)
     init_nrnb(&nrnb_);
 }
 
-bool MyMol::IsSymmetric(real toler) const
+bool ACTMol::IsSymmetric(real toler) const
 {
     real  tm;
     rvec  com, test;
@@ -170,7 +170,7 @@ bool MyMol::IsSymmetric(real toler) const
     return bSymmAll;
 }
 
-void MyMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
+void ACTMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
 {
     int bca = 0;
     /*First try to find the atom bound to the central atom (ca).*/
@@ -211,7 +211,7 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-void MyMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
+void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
 {
     for (auto &bi : bondsConst())
     {
@@ -231,14 +231,14 @@ void MyMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-bool MyMol::IsVsiteNeeded(std::string    atype,
+bool ACTMol::IsVsiteNeeded(std::string    atype,
                           const Poldata *pd) const
 {
     auto vsite = pd->findVsite(atype);
     return vsite != pd->getVsiteEnd();
 }
 
-immStatus MyMol::GenerateAtoms(const Poldata     *pd,
+immStatus ACTMol::GenerateAtoms(const Poldata     *pd,
                                t_atoms           *atoms)
 {
     double                    xx, yy, zz;
@@ -340,7 +340,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     return imm;
 }
 
-immStatus MyMol::checkAtoms(const Poldata *pd,
+immStatus ACTMol::checkAtoms(const Poldata *pd,
                             const t_atoms *atoms)
 {
     int nmissing        = 0;
@@ -375,7 +375,7 @@ immStatus MyMol::checkAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-immStatus MyMol::zetaToAtoms(const Poldata *pd,
+immStatus ACTMol::zetaToAtoms(const Poldata *pd,
                              t_atoms       *atoms)
 {
     /* The first time around we add zeta for the core and addShells will
@@ -426,7 +426,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(const Poldata                                                       *pd,
+void ACTMol::forceEnergyMaps(const Poldata                                                       *pd,
                             const ForceComputer                                                 *forceComp,
                             std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                             std::vector<std::pair<double, double> >                             *energyMap,
@@ -945,7 +945,7 @@ static void TopologyToMtop(Topology       *top,
     }
 }
                  
-immStatus MyMol::GenerateTopology(FILE              *fp,
+immStatus ACTMol::GenerateTopology(FILE              *fp,
                                   const Poldata     *pd,
                                   missingParameters  missing,
                                   bool               gromacsSupport)
@@ -1104,7 +1104,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     return imm;
 }
 
-void MyMol::addBondVsites(FILE          *fp,
+void ACTMol::addBondVsites(FILE          *fp,
                           const Poldata *pd,
                           t_atoms       *atoms)
 {
@@ -1180,7 +1180,7 @@ void MyMol::addBondVsites(FILE          *fp,
     }
 }
 
-bool MyMol::linearMolecule() const
+bool ACTMol::linearMolecule() const
 {
     const auto myatoms = topology_->atoms();
     std::vector<int> core;
@@ -1211,7 +1211,7 @@ bool MyMol::linearMolecule() const
     return linear;
 }
 
-void MyMol::addShells(FILE          *fp,
+void ACTMol::addShells(FILE          *fp,
                       const Poldata *pd,
                       t_atoms       *atoms)
 {
@@ -1405,12 +1405,12 @@ void MyMol::addShells(FILE          *fp,
     bHaveShells_ = true;
 }
 
-double MyMol::bondOrder(int ai, int aj) const
+double ACTMol::bondOrder(int ai, int aj) const
 {
     return topology_->findBond(ai, aj)->bondOrder();
 }
 
-immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
+immStatus ACTMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  const char                *tabfn,
                                  ChargeType                 ieqt)
@@ -1463,7 +1463,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     return immStatus::OK;
 }
 
-void MyMol::updateMDAtoms()
+void ACTMol::updateMDAtoms()
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto myatoms = topology_->atoms();
@@ -1504,7 +1504,7 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double MyMol::calculateInteractionEnergy(const Poldata          *pd,
+double ACTMol::calculateInteractionEnergy(const Poldata          *pd,
                                          const ForceComputer    *forceComputer,
                                          std::vector<gmx::RVec> *interactionForces,
                                          std::vector<gmx::RVec> *coords) const
@@ -1554,7 +1554,7 @@ double MyMol::calculateInteractionEnergy(const Poldata          *pd,
     return Einter;
 }
 
-immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
+immStatus ACTMol::calculateEnergyOld(const t_commrec                   *crtmp,
                                     std::vector<gmx::RVec>            *coordinates,
                                     PaddedVector<gmx::RVec>           *forces,
                                     std::map<InteractionType, double> *energies,
@@ -1671,7 +1671,7 @@ immStatus MyMol::calculateEnergyOld(const t_commrec                   *crtmp,
     return imm;
 }
 
-void MyMol::symmetrizeCharges(const Poldata  *pd,
+void ACTMol::symmetrizeCharges(const Poldata  *pd,
                               bool            bSymmetricCharges,
                               const char     *symm_string)
 {
@@ -1691,7 +1691,7 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
+immStatus ACTMol::GenerateAcmCharges(const Poldata          *pd,
                                     const ForceComputer    *forceComp,
                                     std::vector<gmx::RVec> *coords,
                                     std::vector<gmx::RVec> *forces)
@@ -1750,7 +1750,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata          *pd,
     return imm;
 }
 
-immStatus MyMol::GenerateCharges(const Poldata             *pd,
+immStatus ACTMol::GenerateCharges(const Poldata             *pd,
                                  const ForceComputer       *forceComp,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
@@ -1949,7 +1949,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     return imm;
 }
 
-void MyMol::CalcPolarizability(const Poldata       *pd,
+void ACTMol::CalcPolarizability(const Poldata       *pd,
                                const ForceComputer *forceComp)
 {
     auto natoms = atomsConst().size();
@@ -1962,7 +1962,7 @@ void MyMol::CalcPolarizability(const Poldata       *pd,
                                   qTypeProps(qType::Calc));
 }
 
-void MyMol::PrintConformation(const char                   *fn,
+void ACTMol::PrintConformation(const char                   *fn,
                               const std::vector<gmx::RVec> &coords,
                               bool                          writeShells)
 {
@@ -2000,7 +2000,7 @@ static void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
-void MyMol::PrintTopology(const char                   *fn,
+void ACTMol::PrintTopology(const char                   *fn,
                           bool                          bVerbose,
                           const Poldata                *pd,
                           const ForceComputer          *forceComp,
@@ -2149,7 +2149,7 @@ void MyMol::PrintTopology(const char                   *fn,
     gmx_ffclose(fp);
 }
 
-void MyMol::GenerateCube(const Poldata                *pd,
+void ACTMol::GenerateCube(const Poldata                *pd,
                          const std::vector<gmx::RVec> &coords,
                          real                          spacing,
                          real                          border,
@@ -2227,7 +2227,7 @@ void MyMol::GenerateCube(const Poldata                *pd,
     }
 }
 
-void MyMol::calcEspRms(const Poldata                *pd,
+void ACTMol::calcEspRms(const Poldata                *pd,
                        const std::vector<gmx::RVec> *coords)
 {
     int   natoms  = 0;
@@ -2280,7 +2280,7 @@ void MyMol::calcEspRms(const Poldata                *pd,
     }
 }
 
-void MyMol::getHarmonics()
+void ACTMol::getHarmonics()
 {
     for(auto &mpo : { MolPropObservable::FREQUENCY, 
                      MolPropObservable::INTENSITY })
@@ -2311,12 +2311,12 @@ void MyMol::getHarmonics()
     }
 }
 
-const real *MyMol::energyTerms() const
+const real *ACTMol::energyTerms() const
 {
     return enerd_->term;
 }
         
-immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
+immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              double                                      T)
 {
     int                 natom = 0;
@@ -2429,7 +2429,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     return imm;
 }
 
-void MyMol::UpdateIdef(const Poldata                      *pd,
+void ACTMol::UpdateIdef(const Poldata                      *pd,
                        const std::vector<InteractionType> &iTypes,
                        bool                                updateZeta)
 {
@@ -2483,7 +2483,7 @@ void MyMol::UpdateIdef(const Poldata                      *pd,
     }
 }
 
-void MyMol::initQgenResp(const Poldata                *pd,
+void ACTMol::initQgenResp(const Poldata                *pd,
                          const std::vector<gmx::RVec> &coords,
                          real                          watoms,
                          int                           maxESP)
@@ -2534,7 +2534,7 @@ void MyMol::initQgenResp(const Poldata                *pd,
     }
 }
 
-QtypeProps *MyMol::qTypeProps(qType qt)
+QtypeProps *ACTMol::qTypeProps(qType qt)
 {
     auto qp = qProps_.find(qt);
     if (qp != qProps_.end())
@@ -2544,7 +2544,7 @@ QtypeProps *MyMol::qTypeProps(qType qt)
     return nullptr;
 }
 
-const QtypeProps *MyMol::qTypeProps(qType qt) const
+const QtypeProps *ACTMol::qTypeProps(qType qt) const
 {
     const auto qp = qProps_.find(qt);
     if (qp != qProps_.end())
@@ -2554,7 +2554,7 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void MyMol::plotEspCorrelation(const Poldata                *pd,
+void ACTMol::plotEspCorrelation(const Poldata                *pd,
                                const std::vector<gmx::RVec> &coords,
                                const char                   *espcorr,
                                const gmx_output_env_t       *oenv,
@@ -2574,7 +2574,7 @@ void MyMol::plotEspCorrelation(const Poldata                *pd,
     }
 }
 
-CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
+CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const
 {
     auto cs = MolProp::Send(cr, dest);
     if (CommunicationStatus::OK == cs)
@@ -2584,7 +2584,7 @@ CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MyMol::BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm)
+CommunicationStatus ACTMol::BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm)
 {
     auto cs = MolProp::BroadCast(cr, root, comm);
     if (CommunicationStatus::OK == cs)
@@ -2596,7 +2596,7 @@ CommunicationStatus MyMol::BroadCast(const CommunicationRecord *cr, int root, MP
     return cs;
 }
 
-CommunicationStatus MyMol::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus ACTMol::Receive(const CommunicationRecord *cr, int src)
 {
     auto cs = MolProp::Receive(cr, src);
     if (CommunicationStatus::OK == cs)

@@ -39,7 +39,7 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/mymol_low.h"
+#include "act/alexandria/actmol_low.h"
 #include "act/basics/identifier.h"
 #include "act/poldata/particletype.h"
 #include "act/poldata/poldata.h"

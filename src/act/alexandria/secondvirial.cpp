@@ -40,7 +40,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
 #include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
@@ -478,7 +478,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
 
 void ReRunner::rerun(FILE                        *logFile,
                      const Poldata               *pd,
-                     const MyMol                 *mymol,
+                     const ACTMol                 *actmol,
                      double                       qtot,
                      bool                         verbose,
                      const std::vector<t_filenm> &fnm)
@@ -539,7 +539,7 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Generate compounds
-        gendimers_->generate(logFile, mymol, &dimers, opt2fn_null("-ox", fnm.size(), fnm.data()));
+        gendimers_->generate(logFile, actmol, &dimers, opt2fn_null("-ox", fnm.size(), fnm.data()));
         ndist = gendimers_->ndist();
     }
     if (verbose && debug)
@@ -567,7 +567,7 @@ void ReRunner::rerun(FILE                        *logFile,
     }
     std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
     // Loop over molecules
-    const auto &atoms = mymol->atomsConst();
+    const auto &atoms = actmol->atomsConst();
     for (size_t idim = 0; idim < dimers.size(); idim++)
     {
         std::vector<gmx::RVec> coords;
@@ -602,8 +602,8 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         if (eInter_)
         {
-            auto EE         = mymol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
-            auto atomStart  = mymol->fragmentHandler()->atomStart();
+            auto EE         = actmol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
+            auto atomStart  = actmol->fragmentHandler()->atomStart();
             if (atomStart.size() != 3)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
@@ -613,7 +613,7 @@ void ReRunner::rerun(FILE                        *logFile,
             std::vector<double>    mtot       = { 0, 0 };
             std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            auto      tops  = mymol->fragmentHandler()->topologies();
+            auto      tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
                 for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
@@ -704,7 +704,7 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         else
         {
-            forceComp_->compute(pd, mymol->topology(),
+            forceComp_->compute(pd, actmol->topology(),
                                 &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
@@ -733,8 +733,8 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         // Compute the relative mass
         std::vector<double> masses = {
-            mymol->fragmentHandler()->topologies()[0].mass(),
-            mymol->fragmentHandler()->topologies()[1].mass()
+            actmol->fragmentHandler()->topologies()[0].mass(),
+            actmol->fragmentHandler()->topologies()[1].mass()
         };
         auto info = gmx::formatString("Done with energy calculations, now time for second virial.");
         printf("%s\n", info.c_str());
@@ -824,7 +824,7 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    MyMol                mymol;
+    ACTMol                actmol;
     {
         std::vector<MolProp> mps;
         MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
@@ -833,19 +833,19 @@ int b2(int argc, char *argv[])
             fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), 
                     opt2fn("-mp", fnm.size(), fnm.data()));
         }
-        mymol.Merge(&mps[0]);
+        actmol.Merge(&mps[0]);
     }
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
-        imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
     }
-    std::vector<gmx::RVec> coords = mymol.xOriginal();
+    std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
-        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
         std::vector<double> myq;
         auto alg   = pd.chargeGenerationAlgorithm();
@@ -855,16 +855,16 @@ int b2(int argc, char *argv[])
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
         }
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+        imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {
         if (debug)
         {
-            mymol.topology()->dump(debug);
+            actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        rerun.rerun(logFile, &pd, &mymol, qtot, verbose, fnm);
+        rerun.rerun(logFile, &pd, &actmol, qtot, verbose, fnm);
     }
     if (json)
     {
