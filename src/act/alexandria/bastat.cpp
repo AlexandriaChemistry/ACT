@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -153,7 +153,7 @@ int bastat(int argc, char *argv[])
 
     t_filenm                         fnm[] = {
         { efXML, "-mp",  "allmols",      ffRDMULT },
-        { efXML, "-ff",  "gentop",       ffOPTRD },
+        { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "bastat",       ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
         { efLOG, "-g",   "bastat",       ffWRITE },
@@ -177,7 +177,7 @@ int bastat(int argc, char *argv[])
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
         { "-dissoc",  FALSE, etBOOL, {&bDissoc},
-          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
+          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the aff.xml file." },
         { "-qm", FALSE, etBOOL, {&bQM},
           "Usa data from quantum chemistry to determine the dissociation energies." },
         { "-bootstrap", FALSE, etINT, {&nBootStrap},

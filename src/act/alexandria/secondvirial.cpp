@@ -764,7 +764,7 @@ int b2(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "gentop",     ffREAD  },
+        { efXML, "-ff", "aff",        ffREAD  },
         { efXML, "-mp", "molprop",    ffOPTRD },
         { efLOG, "-g",  "b2",         ffWRITE } 
     };

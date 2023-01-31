@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -394,7 +394,7 @@ int alex_gen_table(int argc, char *argv[])
         "old version the second derevative of the potential was specified",
         "whereas in the new version the first derivative of the potential",
         "is used instead.[PAR]",
-        "The program can read the [TT]gentop.dat[tt] file (or otherwise as",
+        "The program can read the [TT]ff.xml[tt] file (or otherwise as",
         "specified with the [TT]-di[tt] option) and generate tables for all",
         "possible interactions for the charge model specified in the file.[PAR]",
         "Broken: For Slater interactions four parameters must be passed: the 1/Width",
@@ -406,7 +406,7 @@ int alex_gen_table(int argc, char *argv[])
 
     t_filenm                      fnm[] = {
         { efXVG, "-o", "table",  ffWRITE },
-        { efXML, "-d", "gentop", ffOPTRD }
+        { efXML, "-ff", "aff", ffOPTRD }
     };
     
     const  int                    NFILE      = asize(fnm);
@@ -472,10 +472,10 @@ int alex_gen_table(int argc, char *argv[])
      
     Poldata                  pd;
     gmx_atomprop_t           aps = gmx_atomprop_init();
-    const char              *gentop = opt2fn_null("-d", NFILE, fnm);
+    const char              *aff = opt2fn_null("-ff", NFILE, fnm);
     try
     {
-        readPoldata(gentop, pd, aps);
+        readPoldata(aff, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     

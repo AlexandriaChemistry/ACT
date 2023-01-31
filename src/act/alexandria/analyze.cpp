@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -352,7 +352,7 @@ int analyze(int argc, char *argv[])
         "output corresponding to the [TT]-prop[tt] flag."
     };
     t_filenm                         fnm[] = {
-        { efXML, "-ff",     "gentop",    ffREAD   },
+        { efXML, "-ff",     "aff",       ffREAD   },
         { efXML, "-mp",     "allmols",   ffRDMULT },
         { efTEX, "-t",      "table",     ffWRITE  },
         { efTEX, "-cat",    "category",  ffOPTWR  },

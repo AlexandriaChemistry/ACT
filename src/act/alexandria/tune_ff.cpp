@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -748,13 +748,13 @@ int tune_ff(int argc, char *argv[])
 
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-mp",        "allmols",     ffREAD   },
-        { efXML, "-ff",        "gentop",      ffRDMULT },
-        { efXML, "-o",         "tune_ff",     ffWRITE  },
-        { efDAT, "-sel",       "molselect",   ffREAD   },
-        { efLOG, "-g",         "tune_ff",     ffWRITE  },
-        { efXVG, "-conv",      "param_conv" , ffWRITE  },
-        { efXVG, "-chi2",      "chi_squared", ffWRITE  }
+        { efXML, "-mp",   "allmols",     ffREAD   },
+        { efXML, "-ff",   "aff",         ffRDMULT },
+        { efXML, "-o",    "tune_ff",     ffWRITE  },
+        { efDAT, "-sel",  "molselect",   ffREAD   },
+        { efLOG, "-g",    "tune_ff",     ffWRITE  },
+        { efXVG, "-conv", "param_conv" , ffWRITE  },
+        { efXVG, "-chi2", "chi_squared", ffWRITE  }
     };
 
     printer.addFileOptions(&filenms);
