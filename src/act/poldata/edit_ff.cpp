@@ -684,11 +684,11 @@ static void addBondEnergy(Poldata *pd)
     }
 }
 
-int edit(int argc, char*argv[])
+int edit_ff(int argc, char*argv[])
 {
     static const char               *desc[] =
     {
-        "edit reads a force field file and can do a number of things.[PAR]",
+        "ff_edit reads a force field file and can do a number of things.[PAR]",
         "If the flag [TT]-ana[TT] is set it will analyze the file and print",
         "if parameters are close to their bounds.[PAR]",
         "It may write a new file that can be compared to the input.",
@@ -704,10 +704,10 @@ int edit(int argc, char*argv[])
     };
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
-        { efXML, "-ff",   "pdin" ,       ffREAD  },
-        { efXML, "-ff2",  "pdin2",       ffOPTRD },
-        { efXML, "-o",    "pdout",       ffOPTWR },
-        { efDAT, "-dump", "params",      ffOPTWR }
+        { efXML, "-ff",   "aff_in" , ffREAD  },
+        { efXML, "-ff2",  "aff_in2", ffOPTRD },
+        { efXML, "-o",    "aff_out", ffOPTWR },
+        { efDAT, "-dump", "params",  ffOPTWR }
     };
 
     static char *parameter  = (char *)"";
