@@ -49,7 +49,6 @@ int analyze(int argc, char *argv[]);
 int merge_ff(int argc, char *argv[]);
 int edit_mp(int argc, char *argv[]);
 int mp2csv(int argc, char *argv[]);
-int molprop_check(int argc, char *argv[]);
 }
 
 namespace gmx

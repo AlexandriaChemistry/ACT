@@ -39,6 +39,9 @@
 #include <string.h>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/fill_inputrec.h"
+#include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
@@ -49,6 +52,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -231,7 +235,7 @@ static bool dump_molecule(FILE                                        *fp,
 
 static void monomer2cluster(FILE                                              *fp,
                             std::vector<MolProp>                              *mp,
-                            const ForceField                                     &pd,
+                            const ForceField                                  &pd,
                             const std::map<std::string, std::vector<double> > &qmap,
                             t_inputrec                                        *inputrec)
 {
@@ -301,10 +305,10 @@ static void monomer2cluster(FILE                                              *f
     }
 }
 
-static check_mp(const char           *ffname,
-                const char           *logname,
-                bool                  genCharges,
-                std::vector<MolProp> *mp)
+static void check_mp(const char           *ffname,
+                     const char           *logname,
+                     bool                  genCharges,
+                     std::vector<MolProp> *mp)
 {
     alexandria::ForceField pd;
     try
@@ -324,7 +328,7 @@ static check_mp(const char           *ffname,
     auto mdlog     = gmx::MDLogger {};
     std::map<std::string, std::vector<double> > qmap;
 
-    FILE *mylog = gmx_fio_fopen(logname, "w");
+    FILE *mylog = gmx_ffopen(logname, "w");
     fprintf(mylog, "Force field file %s\n", ffname);
     int numberOk = 0, numberFailed = 0;
     for (auto m = mp->begin(); m < mp->end(); ++m)
@@ -421,7 +425,7 @@ static check_mp(const char           *ffname,
         else
         {
             numberFailed++;
-            mp.erase(m);
+            mp->erase(m);
         }
     }
     fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
@@ -435,10 +439,10 @@ static check_mp(const char           *ffname,
     {
         fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
     }
-    if (opt2bSet("-mpout", NFILE, fnm))
+    if (genCharges)
     {
         // Copy charges from monomers
-        monomer2cluster(mylog, &mp, pd, qmap, inputrec);
+        monomer2cluster(mylog, mp, pd, qmap, inputrec);
     }
     fclose(mylog);
 
@@ -461,22 +465,22 @@ int edit_mp(int argc, char *argv[])
         "according to the input force field file and store them",
         "in the output molprop file as ACM (Alexandria Charge Model) charges.",
         "If there are clusters in the input molprop file they will get charges",
-        "from the monomers."
+        "from the monomers.[PAR]"
+
     };
-    t_filenm                         fnm[] =
+    std::vector<t_filenm> fnm =
     {
         { efXML, "-mp",  "data",    ffOPTRDMULT },
         { efXML, "-o",   "allmols", ffWRITE     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
-        { efLOG, "-g",   "check",   ffOPTWRITE  },
+        { efLOG, "-g",   "check",   ffOPTWR     },
         { efDAT, "-db",  "sqlite",  ffOPTRD     }
     };
-    int      NFILE       = asize(fnm);
     int      compress    = 1;
     real     temperature = 298.15;
     bool     forceMerge  = false;
     gmx_bool bcast       = false;
-    bool     charges     = false;
+    bool     genCharges  = false;
     int      maxwarn     = 0;
     int      writeNode   = 0;
     t_pargs pa[] =
@@ -493,7 +497,7 @@ int edit_mp(int argc, char *argv[])
           "Use broadcast instead of send/receive when running in parallel" },
         { "-wn", FALSE, etINT, {&writeNode},
           "Processor ID to write from if in parallel." },
-        { "-charges", FALSE, etBOOL, {&charges},
+        { "-charges", FALSE, etBOOL, {&genCharges},
           "Compute charges based on monomers and store them in the output. If there are cluster, e.g. dimers they will get the same charges." }
     };
     std::vector<MolProp>  mpt;
@@ -501,13 +505,13 @@ int edit_mp(int argc, char *argv[])
 
     gmx_output_env_t     *oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
+    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, fnm.size(), fnm.data(),
                            asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    auto fns = opt2fns("-mp", NFILE, fnm);
+    auto fns = opt2fns("-mp", fnm.size(), fnm.data());
 
     CommunicationRecord cr;
     cr.init(cr.size());
@@ -519,7 +523,7 @@ int edit_mp(int argc, char *argv[])
         int mptsize = mpt.size();
         if (nwarn <= maxwarn)
         {
-            ReadSqlite3(opt2fn_null("-db", NFILE, fnm), &mpt, temperature);
+            ReadSqlite3(opt2fn_null("-db", fnm.size(), fnm.data()), &mpt, temperature);
 
             printf("Read %d molecules\n", mptsize);
         }
@@ -573,14 +577,14 @@ int edit_mp(int argc, char *argv[])
             }
         }
     }
-    auto ffname = opt2fn_null("-ff", NFILE, fnm);
+    auto ffname = opt2fn_null("-ff", fnm.size(), fnm.data());
     if (ffname)
     {
-        check_mp(ffname, opt2fn("-g", NFILE, fnm), charge, &mpt);
+        check_mp(ffname, opt2fn("-g", fnm.size(), fnm.data()), genCharges, &mpt);
     }
     if (writeNode == cr.rank())
     {
-        MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, compress);
+        MolPropWrite(opt2fn("-o", fnm.size(), fnm.data()), mpt, compress);
     }
     return 0;
 }

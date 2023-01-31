@@ -82,12 +82,10 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
     registerModule(manager, &alexandria::edit_ff, "edit_ff",
                    "Manipulate and compare force field files in various ways and test whether reading and writing works.");
-    registerModule(manager, &alexandria::molprop_check, "molprop_check",
-                   "Check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds.");
     registerModule(manager, &alexandria::mp2csv, "mp2csv",
                    "Utility to dump a molecular property file to a spreadsheet.");
     registerModule(manager, &alexandria::edit_mp, "edit_mp",
-                   "Utility to merge a number of molecular property files and a SQLite database. Can also test reading and writing the molecular property file.");
+                   "Utility to merge a number of molecular property files and a SQLite database. Can also test reading and writing the molecular property file. It can also check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds. Finally it can generate charges for all compounds.");
 
     registerModule(manager, &alexandria::merge_ff, "merge_ff",
                    "Utility to merge a number of force field files and write a new file with average parameters. Can also write a LaTeX table.");
@@ -117,7 +115,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Molprop utilities");
         group.addModule("analyze");
         group.addModule("edit_mp");
-        group.addModule("molprop_check");
         group.addModule("mp2csv");
     }
 }
