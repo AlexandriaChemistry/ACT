@@ -25,7 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "GenePool.h"
+#include "gene_pool.h"
 
 #include <algorithm>
 #include <limits>
@@ -37,7 +37,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "Genome.h"
+#include "genome.h"
 
 namespace ga
 {

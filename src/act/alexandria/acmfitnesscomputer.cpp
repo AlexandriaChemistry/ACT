@@ -36,7 +36,7 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "act/ga/Genome.h"
+#include "act/ga/genome.h"
 
 namespace alexandria
 {

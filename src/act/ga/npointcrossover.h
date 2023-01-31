@@ -35,7 +35,7 @@
 #define GA_NPOINTCROSSOVER_H
 
 
-#include "Crossover.h"
+#include "crossover.h"
 
 
 namespace ga

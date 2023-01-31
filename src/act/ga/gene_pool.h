@@ -36,7 +36,7 @@
 
 #include "gromacs/utility/gmxassert.h"
 
-#include "Genome.h"
+#include "genome.h"
 
 namespace ga
 {

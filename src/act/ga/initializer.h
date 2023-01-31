@@ -31,36 +31,43 @@
  */
 
 
-#ifndef GA_FITNESSCOMPUTER_H
-#define GA_FITNESSCOMPUTER_H
+#ifndef GA_INITIALIZER_H
+#define GA_INITIALIZER_H
 
-#include "Genome.h"
+
+#include "individual.h"
+
+#include <time.h>
+#include <random>
+
 
 namespace ga
 {
 
+
 /*!
- * \brief Abstract class for computing the fitness of an individual
- */
-class FitnessComputer
+* \brief Abstract class for initializing and randomizing Individual/Genome instances
+*/
+class Initializer
 {
 
 public:
 
     /*!
-     * \brief Compute the fitness of a genome
-     * \param[in] genome  The genome
-     * \param[in] trgtFit The target for fitness computation. Either Train or Test
-     * \param[in] verbose Whether to print the components of the fitness
+     * \brief Initialize an Individual
+     * \return   pointer to a new individual
      */
-    virtual void compute(Genome                    *genome,
-                         iMolSelect                 trgtFit,
-                         bool                       verbose = false) = 0;
-    
+    virtual Individual *initialize() = 0;
+
+    /*!
+     * \brief Randomize a Genome object
+     * \param[in] genome the Genome to randomize
+     */
+    virtual void randomizeGenome(Genome *genome) = 0;
 };
 
 
 } //namespace ga
 
 
-#endif //GA_FITNESSCOMPUTER_H
+#endif //GA_INITIALIZER_H

@@ -29,45 +29,46 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
+#ifndef GA_INDIVIDUAL_H
+#define GA_INDIVIDUAL_H
 
+#include <cstdio>
 
-#ifndef GA_INITIALIZER_H
-#define GA_INITIALIZER_H
+#include <map>
 
-
-#include "Individual.h"
-
-#include <time.h>
-#include <random>
-
+#include "genome.h"
 
 namespace ga
 {
 
-
-/*!
-* \brief Abstract class for initializing and randomizing Individual/Genome instances
-*/
-class Initializer
+//! \brief Abstract individual for genetic algorithms
+class Individual
 {
+
+protected:
+
+    //! \brief Default constructor
+    Individual() {}
 
 public:
 
-    /*!
-     * \brief Initialize an Individual
-     * \return   pointer to a new individual
-     */
-    virtual Individual *initialize() = 0;
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Cloning                           *
+    * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * \brief Randomize a Genome object
-     * \param[in] genome the Genome to randomize
+     * \brief Copy the genome from another Individual
+     * \param[in] other pointer to another Individual
      */
-    virtual void randomizeGenome(Genome *genome) = 0;
+    virtual void copyGenome(const Genome &other) = 0;
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Cloning                             *
+    * * * * * * * * * * * * * * * * * * * * * */
 };
 
 
 } //namespace ga
 
 
-#endif //GA_INITIALIZER_H
+#endif //GA_INDIVIDUAL_H

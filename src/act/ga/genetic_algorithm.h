@@ -38,16 +38,16 @@
 
 #include <map>
 
-#include "GenePool.h"
-#include "Genome.h"
-#include "Initializer.h"
-#include "FitnessComputer.h"
-#include "ProbabilityComputer.h"
-#include "Selector.h"
-#include "Crossover.h"
-#include "Mutator.h"
-#include "Terminator.h"
-#include "Penalizer.h"
+#include "gene_pool.h"
+#include "genome.h"
+#include "initializer.h"
+#include "fitness_computer.h"
+#include "probability_computer.h"
+#include "selector.h"
+#include "crossover.h"
+#include "mutator.h"
+#include "terminator.h"
+#include "penalizer.h"
 
 struct gmx_output_env_t;
 struct t_commrec;

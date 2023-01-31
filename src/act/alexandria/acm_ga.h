@@ -38,13 +38,13 @@
 
 #include <vector>
 
-#include "act/ga/Crossover.h"
-#include "act/ga/FitnessComputer.h"
-#include "act/ga/GeneticAlgorithm.h"
-#include "act/ga/Initializer.h"
-#include "act/ga/ProbabilityComputer.h"
-#include "act/ga/Selector.h"
-#include "act/ga/Terminator.h"
+#include "act/ga/crossover.h"
+#include "act/ga/fitness_computer.h"
+#include "act/ga/genetic_algorithm.h"
+#include "act/ga/initializer.h"
+#include "act/ga/probability_computer.h"
+#include "act/ga/selector.h"
+#include "act/ga/terminator.h"
 
 #include "confighandler.h"
 #include "staticindividualinfo.h"

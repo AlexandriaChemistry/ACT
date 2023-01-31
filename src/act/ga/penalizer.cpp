@@ -33,7 +33,7 @@
 #include <limits>
 #include <cmath>
 
-#include "Penalizer.h"
+#include "penalizer.h"
 
 namespace ga
 {

@@ -34,7 +34,7 @@
 
 #include <vector>
 
-#include "Genome.h"
+#include "genome.h"
 
 namespace ga
 {

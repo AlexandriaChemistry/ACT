@@ -39,7 +39,7 @@
 
 #include <vector>
 
-#include "act/ga/FitnessComputer.h"
+#include "act/ga/fitness_computer.h"
 #include "act/forces/forcecomputer.h"
 #include "acmindividual.h"
 #include "bayes.h"

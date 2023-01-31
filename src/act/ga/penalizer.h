@@ -33,8 +33,8 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-#include "GenePool.h"
-#include "Initializer.h"
+#include "gene_pool.h"
+#include "initializer.h"
 
 #include "gromacs/fileio/xvgr.h"
 

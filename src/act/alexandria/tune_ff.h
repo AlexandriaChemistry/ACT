@@ -54,8 +54,8 @@
 #include "acminitializer.h"
 #include "act/utility/communicationrecord.h"
 #include "act/forces/forcecomputer.h"
-#include "act/ga/Mutator.h"
-#include "act/ga/GeneticAlgorithm.h"
+#include "act/ga/mutator.h"
+#include "act/ga/genetic_algorithm.h"
 
 
 namespace alexandria

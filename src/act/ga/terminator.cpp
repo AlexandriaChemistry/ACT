@@ -31,11 +31,11 @@
  */
 
 
-#include "Terminator.h"
+#include "terminator.h"
 
 #include "gromacs/utility/basedefinitions.h"
 
-#include "GenePool.h"
+#include "gene_pool.h"
 
 namespace ga
 {
