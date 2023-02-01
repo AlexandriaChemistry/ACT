@@ -141,7 +141,7 @@ AtomizationEnergy::AtomizationEnergy()
             }
             tr.close();
         }
-        catch (gmx::FileIOError)
+        catch (gmx::FileIOError const&)
         {
             fprintf(stderr, "Cannot find %s\n", infile.c_str());
         }

@@ -841,6 +841,7 @@ void Topology::generateExclusions(int nrexcl,
                     exclusions_[a[1]].push_back(a[0]);
                 }
             }
+            break;
         case InteractionType::ANGLES:
         case InteractionType::LINEAR_ANGLES:
             {

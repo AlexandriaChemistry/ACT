@@ -14287,17 +14287,17 @@ void i8_sobol ( int dim_num, long long int *seed, double quasi[ ] )
 //static long long int atmost = 4611686018427387903;
 //
   static int dim_num_save = 0;
-  long long int i;
+  long long int i  = 0;
   bool includ[LOG_MAX];
   static bool initialized = false;
-  long long int j;
-  long long int j2;
-  long long int k;
-  long long int l;
+  long long int j  = 0;
+  long long int j2 = 0;
+  long long int k  = 0;
+  long long int l  = 0;
   static long long int lastq[DIM_MAX2];
-  long long int m;
-  static long long int maxcol;
-  long long int newv;
+  long long int m  = 0;
+  static long long int maxcol = 0;
+  long long int newv = 0;
   static long long int poly[DIM_MAX2] =
   {
         1,    3,    7,   11,   13,   19,   25,   37,   59,   47,
@@ -28678,13 +28678,12 @@ void timestamp ( )
 
   static char time_buffer[TIME_SIZE];
   const struct tm *tm;
-  size_t len;
   time_t now;
 
   now = time ( NULL );
   tm = localtime ( &now );
 
-  len = strftime ( time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm );
+  (void) strftime ( time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm );
 
   cout << time_buffer << "\n";
 

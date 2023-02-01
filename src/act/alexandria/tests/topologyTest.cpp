@@ -94,7 +94,7 @@ protected:
         for(int i = 0; i < gmxAtoms_.nr; i++)
         {
             gmxAtoms_.atomname[i]        = put_symtab(&symtab_, "C");
-            strncpy(gmxAtoms_.atom[i].elem, "C", 1);
+            gmxAtoms_.atom[i].elem[0]    = 'C';
             gmxAtoms_.atom[i].ptype      = ptp[i];
             gmxAtoms_.atomtype[i]        = put_symtab(&symtab_, "c3");
             gmxAtoms_.atom[i].m          = 12;

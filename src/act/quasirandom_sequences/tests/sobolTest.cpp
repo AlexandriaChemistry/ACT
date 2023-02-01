@@ -48,8 +48,8 @@ protected:
 
             int dim_num = 3;
             long long int seed = 0;
-            long long int seed_in;
-            long long int seed_out;
+            //long long int seed_in;
+            //long long int seed_out;
             
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -61,9 +61,9 @@ protected:
             for (int i = 0; i <= 11; i++ )
             {
                 double r[DIM_MAX];
-                seed_in = seed;
+                //seed_in = seed;
                 i8_sobol ( dim_num, &seed, r );
-                seed_out = seed;
+                //seed_out = seed;
                 for(int j = 0; j < dim_num; j++)
                 {
                     values.push_back(r[j]);
@@ -101,8 +101,8 @@ protected:
 
         double r[DIM_NUM];
         long long int seed = 0;
-        long long int seed_in;
-        long long int seed_out;
+        //long long int seed_in;
+        //long long int seed_out;
         
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -111,9 +111,9 @@ protected:
         std::vector<double> values;
         for (int i = 1; i <= 11; i++ )
         {
-            seed_in = seed;
+            //seed_in = seed;
             i8_sobol ( DIM_NUM, &seed, r );
-            seed_out = seed;
+            //seed_out = seed;
             
             for (int j = 0; j < DIM_NUM; j++ )
             {
@@ -125,9 +125,9 @@ protected:
         
         for (int i = 1; i <= 5; i++ )
         {
-            seed_in = seed;
+            //seed_in = seed;
             i8_sobol ( DIM_NUM, &seed, r );
-            seed_out = seed;
+            //seed_out = seed;
             for (int j = 0; j < DIM_NUM; j++ )
             {
                 values.push_back(r[j]);
@@ -138,9 +138,9 @@ protected:
         
         for (int i = 1; i <= 11; i++ )
         {
-            seed_in = seed;
+            //seed_in = seed;
             i8_sobol ( DIM_NUM, &seed, r );
-            seed_out = seed;
+            //seed_out = seed;
             for (int j = 0; j < DIM_NUM; j++ )
             {
                 values.push_back(r[j]);
