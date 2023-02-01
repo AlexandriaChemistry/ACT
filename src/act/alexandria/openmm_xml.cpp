@@ -394,14 +394,9 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 					    
             auto name_ai = myatoms[i].ffType(); // atomTypeOpenMM(myatoms[i].ffType(), i);
 //	    auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
-//            auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-//	    auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
 	    auto aType = pd->findParticleType(myatoms[i].ffType());
-//            auto pType = 
             if ( myatoms[i].pType() == eptAtom)   {
-//	    if (eptAtom == aType.gmxParticleType())   {
-//	    	if ( strcmp(ptype_str[myatoms[i].gmxParticleType()], "Atom") == 0 ) {
-	    std::cout << "It is an atom" << '\n';
+	    
              auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
 	     add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
 	     auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
@@ -409,25 +404,20 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 	     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
 	     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
 	     std::vector<std::string> List_used2 {};
-	     for (size_t a = 0; a < myatoms.size(); a++)
-	     {
-                 if ( myatoms[a].pType() == eptShell )   {
+             for(const auto &shell: myatoms[i].shells())
+	     { 
+	     
+	     auto name_ai = myatoms[shell].ffType();  
+             auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
+             add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
+             add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge());     
 
-			 if (std::find(List_used2.begin(), List_used2.end(), myatoms[a].ffType()) != List_used2.end())
-			      {         
-			      ;
-			      }
-			 else 
-			 {	 List_used2.push_back(myatoms[a].ffType());
 
-					std::cout <<  myatoms[a].ffType() << '\n';	
-                                             
-			 }
-			                                 }
-             }
+		    }
 
 	                                        }
-	    //  }
+	    // }
 	else 
 	{;	
 //						}
