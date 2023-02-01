@@ -97,11 +97,11 @@ class ACT:
             return ( "%s -n %d -oversubscribe " % ( runit, nprocs ))
         return ""
         
-    def bastat(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
-               LogFile:str, options: dict):
+    def geometry_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
+                    LogFile:str, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
-        cmd = ( "alexandria bastat -ff %s -o %s -mp %s -sel %s -g %s" % 
+        cmd = ( "alexandria geometry_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     act = ACT(MolPropFile, SelectionFile, True)
     
     ForceFieldFileIn  = "ACS-pg.xml"
-    ACT.bastat(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", {})
+    ACT.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "geometry.log", {})
     for target in Target:
         ForceFieldFileOut = ( "tune_ff_%s.xml" % ( target.name ) )
         LogFile           = ( "tune_ff_%s.log" % ( target.name ) )

@@ -37,7 +37,7 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const Poldata                *pd,
+FragmentHandler::FragmentHandler(const ForceField                *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
@@ -217,7 +217,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
 eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
-                                       const Poldata                *pd,
+                                       const ForceField                *pd,
                                        std::vector<ActAtom>         *atoms)
 {
     auto   eqgen = eQgen::OK;

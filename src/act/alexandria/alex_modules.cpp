@@ -76,20 +76,17 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Perform normal mode analysis and compute thermochemistry properties.");
     registerModule(manager, &alexandria::tune_ff, "tune_ff",
                    "Optimize force field parameters.");
-    registerModule(manager, &alexandria::bastat, "bastat",
+    registerModule(manager, &alexandria::geometry_ff, "geometry_ff",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and add those to a force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
     registerModule(manager, &alexandria::edit_ff, "edit_ff",
                    "Manipulate and compare force field files in various ways and test whether reading and writing works.");
-    registerModule(manager, &alexandria::molprop_test, "molprop_test",
-                   "Test reading and writing the molecular property file.");
-    registerModule(manager, &alexandria::molprop_check, "molprop_check",
-                   "Check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds.");
     registerModule(manager, &alexandria::mp2csv, "mp2csv",
                    "Utility to dump a molecular property file to a spreadsheet.");
-    registerModule(manager, &alexandria::merge_mp, "merge_mp",
-                   "Utility to merge a number of molecular property files and a SQLite database.");
+    registerModule(manager, &alexandria::edit_mp, "edit_mp",
+                   "Utility to merge a number of molecular property files and a SQLite database. Can also test reading and writing the molecular property file. It can also check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds. Finally it can generate charges for all compounds.");
+
     registerModule(manager, &alexandria::merge_ff, "merge_ff",
                    "Utility to merge a number of force field files and write a new file with average parameters. Can also write a LaTeX table.");
 
@@ -108,7 +105,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Force field utilities");
-        group.addModule("bastat");
+        group.addModule("geometry_ff");
         group.addModule("edit_ff");
         group.addModule("merge_ff");
         group.addModule("tune_ff");
@@ -117,9 +114,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Molprop utilities");
         group.addModule("analyze");
-        group.addModule("merge_mp");
-        group.addModule("molprop_test");
-        group.addModule("molprop_check");
+        group.addModule("edit_mp");
         group.addModule("mp2csv");
     }
 }

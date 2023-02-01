@@ -48,13 +48,13 @@
 #include "gromacs/topology/topology.h"
 
 
-#include "act/poldata/forcefieldparameter.h"
-#include "act/poldata/forcefieldparameterlist.h"
-#include "act/poldata/forcefieldparametername.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_low.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_low.h"
 #include "act/molprop/molprop_util.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "act/utility/xml_util.h"
 
 #include <algorithm>
@@ -73,7 +73,7 @@ namespace alexandria
  *       of strings and units are done so that it is suitable for OpenMM, e.g. angles have to be in radians
  * addSpecOption adds specific option for an atomtype 
  * addShell adds shell particle for a specific core atomtype
- * addXmlPoldata creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
+ * addXmlForceField creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
  * !!! The order of the parameters is in certain forces (e.g. CustomNonBondedForce) very important; reordering might break the force field in OpenMM!!!
  * writeOpenMM
  */
@@ -300,7 +300,7 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mymol)
+static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -316,10 +316,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 //        addXmlElemMass(grandchild, aType);
 //    }
 
+<<<<<<< HEAD
     auto myatoms =  mymol -> atomsConst();
     std::vector<std::string> List_used {};
 //    std::list<std::string> List_used;
 //    std::vector<std::string> List_used{};
+=======
+    auto myatoms =  actmol -> atomsConst();
+>>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
     for (size_t i = 0; i < myatoms.size(); i++)
     {   	
 
@@ -373,14 +377,21 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
    //     }   
    //}
 
-    if (mymol->getMolname().size() > 0)
+    if (actmol->getMolname().size() > 0)
     {
+<<<<<<< HEAD
   //      auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
 //        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
         ///////////////////////////////
 	std::vector<std::string> List_used {};
         std::string transfertype = "";
         auto myatoms =  mymol -> atomsConst();
+=======
+        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), actmol->getMolname().c_str());
+        
+        auto myatoms =  actmol -> atomsConst();
+>>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
         for (size_t i = 0; i < myatoms.size(); i++)
         {if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
 		{
@@ -447,9 +458,9 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                                                 List_used.push_back(transfertype);
             auto fs = pd->findForcesConst(itbonds);
         
-            if (mymol->topology()->hasEntry(itbonds))
+            if (actmol->topology()->hasEntry(itbonds))
             {
-                for(const auto topentry : mymol->topology()->entry(itbonds))
+                for(const auto topentry : actmol->topology()->entry(itbonds))
                 {
                     int ai = topentry->atomIndex(0);
                     int aj = topentry->atomIndex(1);
@@ -861,9 +872,13 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
   //                //add_xml_int(grandchild2, "charge", 0);       
   //        }
             // add customnonbonded (WBH vdW + pg coulomb) for compound
+<<<<<<< HEAD
 	    //
 	    std::vector<std::string> List_used {};
             auto myatoms =  mymol -> atomsConst();
+=======
+            auto myatoms =  actmol -> atomsConst();
+>>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
             for (size_t i = 0; i < myatoms.size(); i++)
             {  if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
             {
@@ -976,8 +991,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
           //  } 
             // adding nonbonded (LJ + point coulomb) for compound
+<<<<<<< HEAD
 	    std::vector<std::string> List_used {};
             auto myatoms =  mymol -> atomsConst();
+=======
+            auto myatoms =  actmol -> atomsConst();
+>>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
             for (size_t i = 0; i < myatoms.size(); i++)
             { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
 	{
@@ -1023,6 +1042,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             if (pd->polarizable())    
             {
                 auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
+<<<<<<< HEAD
               //  for (const auto &aType : pd->particleTypesConst())
               //  {
               //      if (eptAtom == aType.gmxParticleType())
@@ -1046,6 +1066,31 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
               //  } 
                 std::vector<std::string> List_used {};
                 auto myatoms =  mymol -> atomsConst();
+=======
+                for (const auto &aType : pd->particleTypesConst())
+                {
+                    if (eptAtom == aType.gmxParticleType())
+                    {
+                        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), aType.id().id().c_str());
+                        double myalpha = 0;
+                        if (aType.hasOption("poltype"))
+                        {
+                            auto shell_ai = aType.optionValue("poltype");
+                            auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
+                                                                          pol_name[polALPHA]);
+                            myalpha = alpha.internalValue();
+                            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
+                        }
+                        add_xml_double(grandchild2, "polarizability", myalpha);
+                        add_xml_double(grandchild2, "thole", 0);
+                        const std::string charge("charge");
+                        addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
+                    } 
+                } 
+
+                auto myatoms =  actmol -> atomsConst();
+>>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
                 for (size_t i = 0; i < myatoms.size(); i++)
                 { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
         {
@@ -1090,8 +1135,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 }   
 
 void writeOpenMM(const std::string &fileName,
-                 const Poldata     *pd,
-                 const MyMol       *mymol,
+                 const ForceField  *pd,
+                 const ACTMol      *actmol,
                  bool               compress)
 {
     xmlDocPtr   doc;
@@ -1122,7 +1167,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd, mymol);
+    addXmlForceField(myroot, pd, actmol);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;

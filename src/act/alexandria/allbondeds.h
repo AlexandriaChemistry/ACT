@@ -41,8 +41,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
 
-#include "mymol.h"
-#include "act/poldata/poldata.h"
+#include "act/alexandria/actmol.h"
+#include "act/forcefield/forcefield.h"
 
 namespace alexandria
 {
@@ -138,7 +138,7 @@ namespace alexandria
           */
         void addBonded(FILE                           *fplog, 
                        InteractionType                 iType,
-                       const MyMol                    &mmi,
+                       const ACTMol                    &mmi,
                        const Identifier               &bondId,         
                        const std::vector<int>         &atomid);
 
@@ -160,20 +160,20 @@ namespace alexandria
          * \param[in]  fp  A file to print information to
          * \param[out] pd  The force field structure to update
          */
-        void updatePoldata(FILE             *fp,
-                           Poldata          *pd);
+        void updateForceField(FILE             *fp,
+                           ForceField          *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  fp     File pointer for information
          * \param[in]  mp     MolProp array
-         * \param[out] mymols MyMol array will be filled here
+         * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
-                               std::vector<MyMol>         *mymols,
-                               const Poldata              &pd,
+                               std::vector<ACTMol>        *actmols,
+                               const ForceField           &pd,
                                const MolSelect            &gms);
 
         /*! \brief Write how many bonds etc. were found

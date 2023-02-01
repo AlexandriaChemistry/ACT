@@ -15,8 +15,8 @@ act = ACT(xml, sel, True)
 ForceFieldFileIn  = "../ACS-pg.xml"
 
 # Generate Bonds, Angles etc.
-act.bastat(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
-           { "-klin": 36000 })
+act.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
+                { "-klin": 36000 })
 
 # Now loop over the optimization targets.
 # First, the EEM parameters will be optimized to reproduce the

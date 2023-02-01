@@ -43,11 +43,11 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/thermochemistry.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_utils.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
 #include "gromacs/linearalgebra/eigensolver.h"
@@ -64,7 +64,7 @@ namespace alexandria
 namespace
 {
 
-static void add_energies(const Poldata                           *pd,
+static void add_energies(const ForceField                           *pd,
                          gmx::test::TestReferenceChecker         *checker,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
@@ -118,12 +118,12 @@ protected:
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
-        std::vector<MyMol> mps;
+        std::vector<ACTMol> mps;
         t_inputrec      inputrecInstance;
         t_inputrec     *inputrec   = &inputrecInstance;
         fill_inputrec(inputrec);
-        // Get poldata
-        auto pd  = getPoldata(forcefield);
+        // Get forcefield
+        auto pd  = getForceField(forcefield);
         // Needed for GenerateCharges
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
@@ -142,7 +142,7 @@ protected:
                 for(auto &molprop: molprops)
                 {
                     EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                    MyMol mm;
+                    ACTMol mm;
                     mm.Merge(&molprop);
                     // Generate charges and topology
                     mm.setInputrec(inputrec);

@@ -36,7 +36,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/mdtypes/commrec.h"
 
-#include "act/ga//Mutator.h"
+#include "act/ga/mutator.h"
 
 #include "confighandler.h"
 #include "staticindividualinfo.h"

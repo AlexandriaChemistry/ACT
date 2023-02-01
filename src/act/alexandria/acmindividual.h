@@ -41,11 +41,11 @@
 #include <string>
 
 #include "molgen.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "staticindividualinfo.h"
 
-#include "act/ga//Genome.h"
-#include "act/ga//Individual.h"
+#include "act/ga/genome.h"
+#include "act/ga/individual.h"
 
 namespace alexandria
 {

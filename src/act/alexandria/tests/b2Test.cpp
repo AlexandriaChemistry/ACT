@@ -66,7 +66,7 @@ protected:
     // Static initiation, only run once every test.
     static void SetUpTestCase()
     {
-        //Poldata *mypd     = getPoldata("ACM-g");
+        //ForceField *mypd     = getForceField("ACM-g");
     }
     
     void testB2(bool LJ,

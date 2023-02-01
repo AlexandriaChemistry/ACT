@@ -56,9 +56,9 @@
 #include "fill_inputrec.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "openmm_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {
@@ -202,7 +202,7 @@ int gentop(int argc, char *argv[])
         return status;
     }
 
-    Poldata        pd;
+    ForceField        pd;
     t_inputrec    *inputrec = new t_inputrec();
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
@@ -231,7 +231,7 @@ int gentop(int argc, char *argv[])
     }
     try
     {
-        readPoldata(gentop_fnm, &pd);
+        readForceField(gentop_fnm, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);
@@ -257,7 +257,7 @@ int gentop(int argc, char *argv[])
     }
 
     fill_inputrec(inputrec);
-    std::vector<MyMol> mymols;
+    std::vector<ACTMol> actmols;
     if (strlen(dbname) > 0)
     {
         const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
@@ -284,10 +284,10 @@ int gentop(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
         }
-        MyMol mm;
+        ACTMol mm;
         mm.Merge(&(*mpi));
         mm.setInputrec(inputrec);
-        mymols.push_back(mm);
+        actmols.push_back(mm);
     }
     else
     {
@@ -311,10 +311,10 @@ int gentop(int argc, char *argv[])
                 }
                 if (mappingOK)
                 {
-                    MyMol mm;
+                    ACTMol mm;
                     mm.Merge(&mp);
                     mm.setInputrec(inputrec);
-                    mymols.push_back(mm);
+                    actmols.push_back(mm);
                 }
             }
         }
@@ -326,20 +326,20 @@ int gentop(int argc, char *argv[])
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     auto forceComp = new ForceComputer();
     int mp_index   = 1;
-    for(auto mymol : mymols)
+    for(auto actmol : actmols)
     {
-        imm = mymol.GenerateTopology(stdout, &pd,
+        imm = actmol.GenerateTopology(stdout, &pd,
                                      bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                      false);
 
-        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-        std::vector<gmx::RVec> coords = mymol.xOriginal();
+        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+        std::vector<gmx::RVec> coords = actmol.xOriginal();
         if (immStatus::OK == imm)
         {
-            mymol.symmetrizeCharges(&pd, bQsym, symm_string);
+            actmol.symmetrizeCharges(&pd, bQsym, symm_string);
             maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
             
-            mymol.initQgenResp(&pd, coords, 0.0, maxpot);
+            actmol.initQgenResp(&pd, coords, 0.0, maxpot);
             
             auto alg   = pd.chargeGenerationAlgorithm();
             auto qtype = qType::Calc;
@@ -360,19 +360,19 @@ int gentop(int argc, char *argv[])
 
             }
             printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
-            imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+            imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
         }
         /* Generate output file for debugging if requested */
         if (immStatus::OK == imm)
         {
-            mymol.plotEspCorrelation(&pd, coords,
+            actmol.plotEspCorrelation(&pd, coords,
                                      opt2fn_null("-plot_esp", NFILE, fnm),
                                      oenv, forceComp);
         }
         
         if (immStatus::OK == imm)
         {
-            mymol.GenerateCube(&pd,
+            actmol.GenerateCube(&pd,
                                coords,
                                spacing, border,
                                opt2fn_null("-ref",      NFILE, fnm),
@@ -386,10 +386,10 @@ int gentop(int argc, char *argv[])
                                oenv);
         }
         
-        if (immStatus::OK == imm && mymol.errors().size() == 0)
+        if (immStatus::OK == imm && actmol.errors().size() == 0)
         {
             std::string index;
-            if (mymols.size() > 1)
+            if (actmols.size() > 1)
             {
                 index = gmx::formatString("%d_", mp_index);
             }
@@ -397,27 +397,27 @@ int gentop(int argc, char *argv[])
             {
                 std::string ofn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-openmm", NFILE, fnm));
-                writeOpenMM(ofn, &pd, &mymol, 0);
+                writeOpenMM(ofn, &pd, &actmol, 0);
             }
             else
             {
                 std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                     bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm));
-                mymol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
+                actmol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
                                     &cr, coords, method, basis, bITP);
             }
             if (opt2bSet("-c", NFILE, fnm))
             {
                 std::string cfn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-c", NFILE, fnm));
-                mymol.PrintConformation(cfn.c_str(), coords, writeShells);
+                actmol.PrintConformation(cfn.c_str(), coords, writeShells);
             }
         }
         else
         {
             auto fn = opt2fn("-g", NFILE, fnm);
             fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
-            print_errors(fn, mymol.errors(), imm);
+            print_errors(fn, actmol.errors(), imm);
             status = 1;
         }
         mp_index++;

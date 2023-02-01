@@ -44,10 +44,10 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 
-#include "mymol.h"
+#include "actmol.h"
 #include "molhandler.h"
 #include "act/forces/forcecomputer.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -93,8 +93,8 @@ private:
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
-                               const Poldata       *pd,
-                               alexandria::MyMol   *mol,
+                               const ForceField    *pd,
+                               alexandria::ACTMol  *mol,
                                const ForceComputer *forceComp,
                                qtStats             *lsq_isoPol,
                                qtStats             *lsq_anisoPol,
@@ -102,7 +102,7 @@ private:
     
     //! \brief And the atoms.
     void printAtoms(FILE                         *fp,
-                    alexandria::MyMol            *mol,
+                    alexandria::ACTMol            *mol,
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
     
@@ -110,10 +110,10 @@ private:
      * \return the potential energy before minimization
      */
     double printEnergyForces(std::vector<std::string> *tcout,
-                             const Poldata            *pd,
+                             const ForceField            *pd,
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
-                             alexandria::MyMol        *mol,
+                             alexandria::ACTMol        *mol,
                              gmx_stats                *lsq_rmsf,
                              qtStats                  *lsq_epot,
                              qtStats                  *lsq_eInter,
@@ -131,14 +131,14 @@ public:
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
     
-    void print(FILE                           *fp,
-               std::vector<alexandria::MyMol> *mymol,
-               const Poldata                  *pd,
-               const gmx::MDLogger            &fplog,
-               const gmx_output_env_t         *oenv,
-               const CommunicationRecord      *cr,
-               const std::vector<t_filenm>    &filenm,
-               const char                     *chargeMethod);
+    void print(FILE                            *fp,
+               std::vector<alexandria::ACTMol> *actmol,
+               const ForceField                *pd,
+               const gmx::MDLogger             &fplog,
+               const gmx_output_env_t          *oenv,
+               const CommunicationRecord       *cr,
+               const std::vector<t_filenm>     &filenm,
+               const char                      *chargeMethod);
 };
 
 /*! \brief Print header and command line arguments
@@ -165,8 +165,8 @@ void print_header(FILE                       *fp,
  * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
-void doFrequencyAnalysis(const Poldata            *pd,
-                         alexandria::MyMol        *mol,
+void doFrequencyAnalysis(const ForceField         *pd,
+                         alexandria::ACTMol       *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,

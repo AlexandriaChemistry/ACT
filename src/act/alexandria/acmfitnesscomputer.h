@@ -39,7 +39,7 @@
 
 #include <vector>
 
-#include "act/ga/FitnessComputer.h"
+#include "act/ga/fitness_computer.h"
 #include "act/forces/forcecomputer.h"
 #include "acmindividual.h"
 #include "bayes.h"
@@ -76,11 +76,11 @@ private:
 
     /*! \brief Compute multipole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
+     * @param actmol     the molecule
      * @param coords    The coordinates to use
      */
     void computeMultipoles(std::map<eRMS, FittingTarget> *targets,
-                           MyMol                         *mymol,
+                           ACTMol                         *actmol,
                            const std::vector<gmx::RVec>  &coords);
 
     /*!
@@ -123,7 +123,7 @@ public:
     /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] params   The force field parameters
      * \param[in] changed  Indication of which parameters have changed and for which
-     *                     the poldata should be updated. If empty, all parameters will
+     *                     the forcefield should be updated. If empty, all parameters will
      *                     be updated.
      */
     void distributeParameters(const std::vector<double> *params,

@@ -37,7 +37,7 @@
 #ifndef ALEXANDRIA_ACMINITIALIZER_H
 #define ALEXANDRIA_ACMINITIALIZER_H
 
-#include "act/ga//Initializer.h"
+#include "act/ga//initializer.h"
 #include "staticindividualinfo.h"
 
 #include <time.h>

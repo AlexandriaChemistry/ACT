@@ -47,7 +47,7 @@
 #include "act/molprop/fragment.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/phase.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atomprop.h"

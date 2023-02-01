@@ -62,7 +62,7 @@ namespace alexandria
 static void dump_csv(const char                      *csvFile,
                      const std::map<int, int>        &used,
                      const std::map<Identifier, int> &bondIdToIndex,
-                     const std::vector<MyMol>        &mm,
+                     const std::vector<ACTMol>        &mm,
                      const MatrixWrapper             &a,
                      const std::vector<double>       &edissoc,
                      const std::map<Identifier, int> *ntrain)
@@ -82,16 +82,16 @@ static void dump_csv(const char                      *csvFile,
     int row = 0;
     for (const auto &j : used)
     {
-        auto mymol = &(mm[j.first]);
-        fprintf(csv, "%s,", mymol->getMolname().c_str());
+        auto actmol = &(mm[j.first]);
+        fprintf(csv, "%s,", actmol->getMolname().c_str());
         for (size_t i = 0; i < edissoc.size(); i++)
         {
             fprintf(csv, "%g,", a.get(i, row));
         }
         double deltaE0;
-        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
+        GMX_RELEASE_ASSERT(actmol->energy(MolPropObservable::DELTAE0, &deltaE0),
                            gmx::formatString("No DeltaE0 for %s",
-                                             mymol->getMolname().c_str()).c_str());
+                                             actmol->getMolname().c_str()).c_str());
         fprintf(csv, "%.3f\n", -deltaE0*j.second);
         row++;
     }
@@ -133,8 +133,8 @@ static void dump_csv(const char                      *csvFile,
  * \return true if successful.
  */
 static bool calcDissoc(FILE                              *fplog,
-                       const Poldata                     *pd,
-                       const std::vector<MyMol>          &molset,
+                       const ForceField                  *pd,
+                       const std::vector<ACTMol>         &molset,
                        bool                               pickRandomMolecules,
                        const std::vector<int>            &hasExpData,
                        std::map<Identifier, gmx_stats>   *edissoc,
@@ -173,9 +173,9 @@ static bool calcDissoc(FILE                              *fplog,
     int                       nColumn = 0;
     for (const auto &uu : used)
     {
-        auto mymol   = &(molset[uu.first]);
-        auto myatoms = mymol->topology()->atoms();
-        for (auto &b : mymol->bondsConst())
+        auto actmol   = &(molset[uu.first]);
+        auto myatoms = actmol->topology()->atoms();
+        for (auto &b : actmol->bondsConst())
         {
             const auto &atypeI = myatoms[b.aI()].ffType();
             const auto &atypeJ = myatoms[b.aJ()].ffType();
@@ -193,7 +193,7 @@ static bool calcDissoc(FILE                              *fplog,
             {
                 gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
                           atypeI.c_str(), atypeJ.c_str(),
-                          mymol->getIupac().c_str());
+                          actmol->getIupac().c_str());
             }
         }
     }
@@ -218,9 +218,9 @@ static bool calcDissoc(FILE                              *fplog,
     // Now it is time to fill the matrices
     for (const auto &uu : used)
     {
-        auto mymol = &(molset[uu.first]);
-        auto myatoms = mymol->topology()->atoms();
-        for (auto &b : mymol->bondsConst())
+        auto actmol = &(molset[uu.first]);
+        auto myatoms = actmol->topology()->atoms();
+        for (auto &b : actmol->bondsConst())
         {
             const auto &atypeI = myatoms[b.aI()].ffType();
             const auto &atypeJ = myatoms[b.aJ()].ffType();
@@ -247,9 +247,9 @@ static bool calcDissoc(FILE                              *fplog,
             }
         }
         double deltaE0;
-        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
+        GMX_RELEASE_ASSERT(actmol->energy(MolPropObservable::DELTAE0, &deltaE0),
                            gmx::formatString("No molecular energy for %s",
-                                             mymol->getMolname().c_str()).c_str());
+                                             actmol->getMolname().c_str()).c_str());
         rhs.push_back(-deltaE0 * uu.second);
         row += 1;
     }
@@ -318,12 +318,12 @@ static bool calcDissoc(FILE                              *fplog,
     }
 }
                            
-double getDissociationEnergy(FILE               *fplog,
-                             Poldata            *pd,
-                             std::vector<MyMol> *molset,
-                             iqmType             iqm,
-                             const char         *csvFile,
-                             int                 nBootStrap)
+double getDissociationEnergy(FILE                *fplog,
+                             ForceField          *pd,
+                             std::vector<ACTMol> *molset,
+                             iqmType              iqm,
+                             const char          *csvFile,
+                             int                  nBootStrap)
 {
     std::random_device               rd;
     std::mt19937                     gen(rd());  
@@ -339,11 +339,11 @@ double getDissociationEnergy(FILE               *fplog,
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
-        auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(myprops, tmap[iqm]))
+        auto actmol = &((*molset)[i]);
+        if (immStatus::OK == actmol->getExpProps(myprops, tmap[iqm]))
         {
             double deltaE0;
-            if (mymol->energy(MolPropObservable::DELTAE0, &deltaE0))
+            if (actmol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
                 hasExpData.push_back(i);
             }

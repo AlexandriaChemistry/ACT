@@ -36,7 +36,7 @@
 
 #include "acminitializer.h"
 
-#include "act/ga//Individual.h"
+#include "act/ga/individual.h"
 #include "acmindividual.h"
 
 

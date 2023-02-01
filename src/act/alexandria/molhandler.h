@@ -40,7 +40,7 @@
 
 #include "act/forces/forcecomputer.h"
 #include "act/utility/regression.h"
-#include "mymol.h"
+#include "actmol.h"
 #include "confighandler.h"
 
 namespace alexandria
@@ -54,7 +54,7 @@ const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
- * This class can access private members of MyMol as it is a friend class
+ * This class can access private members of ACTMol as it is a friend class
  */
 class MolHandler
 {
@@ -84,8 +84,8 @@ public:
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
      * \return the potential energy of the input structure
      */
-    void computeHessian(const Poldata                     *pd,
-                        const MyMol                       *mol,
+    void computeHessian(const ForceField                  *pd,
+                        const ACTMol                      *mol,
                         const ForceComputer               *forceComp,
                         std::vector<gmx::RVec>            *coords,
                         const std::vector<int>            &atomIndex,
@@ -111,8 +111,8 @@ public:
      * \param[in]  useLapack    Whether or not to use the Lapack library iso Eigen
      * \param[in]  debugNMA     Will provide excessive printing statements
      */
-    void nma(const Poldata            *pd,
-             const MyMol              *mol,
+    void nma(const ForceField         *pd,
+             const ACTMol             *mol,
              const ForceComputer      *forceComp,
              std::vector<gmx::RVec>   *coords,
              std::vector<double>      *frequencies,
@@ -124,7 +124,7 @@ public:
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
      * relaxing the shells. The minimized coordinates will be stored in the 
-     * mymol object. If the msForceToler = 0, the value will be derived from the
+     * actmol object. If the msForceToler = 0, the value will be derived from the
      * tolerance inside the forceComp, accoring to:
      * toler = 10*forceComp->rmsForce()^2
      *
@@ -136,8 +136,8 @@ public:
      * \param[in] logFile      File to write some info to, may be a nullptr
      * \return Status flag
      */
-    eMinimizeStatus minimizeCoordinates(const Poldata                     *pd,
-                                        const MyMol                       *mol,
+    eMinimizeStatus minimizeCoordinates(const ForceField                  *pd,
+                                        const ACTMol                      *mol,
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
@@ -156,8 +156,8 @@ public:
      * \param[in] energyFile     Filename for writing energies
      * \param[in] oenv           GROMACS output environment
      */
-    void simulate(const Poldata                 *pd,
-                  MyMol                         *mol,
+    void simulate(const ForceField              *pd,
+                  ACTMol                        *mol,
                   const ForceComputer           *forceComp,
                   const SimulationConfigHandler &simConfig,
                   FILE                          *logFile,
@@ -167,7 +167,7 @@ public:
 
     /*! \brief
      * The routine will compute the RMSD between two sets of coordinates
-     * for a given mymol object.
+     * for a given actmol object.
      *
      * \param[in]    mol  The molecule object
      * \param[in]    xref The reference coordinate set.
@@ -176,7 +176,7 @@ public:
      * \return Root mean square atomic deviation of atomic
      *         coordinates after superposition.
      */
-    double coordinateRmsd(const MyMol                  *mol,
+    double coordinateRmsd(const ACTMol                  *mol,
                           const std::vector<gmx::RVec> &xref,
                           std::vector<gmx::RVec>       *xfit) const;
 

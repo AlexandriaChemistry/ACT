@@ -43,7 +43,7 @@
 
 #include "act/utility/communicationrecord.h"
 #include "molselect.h"
-#include "mymol.h"
+#include "actmol.h"
 
 namespace alexandria
 {
@@ -264,7 +264,7 @@ private:
     //! Which charge type to use
     char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
-    std::vector<alexandria::MyMol>  mymol_;
+    std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
     
@@ -272,10 +272,10 @@ private:
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
      * \param[in] fp File to print logging information to. May be nullptr.
-     * \param[in] pd Pointer to poldata object
+     * \param[in] pd Pointer to forcefield object
      */
     void checkDataSufficiency(FILE     *fp,
-                              Poldata  *pd);
+                              ForceField  *pd);
     
     //! Compute amount of compounds in each group
     void countTargetSize();
@@ -318,15 +318,15 @@ public:
     void addFitOption(const std::string &opt) { fit_.insert({ opt, true }); }
 
     /*! \brief Fill the  iOpt_ map
-     * \param[in] pd Pointer to poldata
+     * \param[in] pd Pointer to forcefield
      */
-    void fillIopt(Poldata *pd);
+    void fillIopt(ForceField *pd);
     
     //! \brief Return the const vector of molecules
-    const std::vector<MyMol> &mymols() const { return mymol_; }
+    const std::vector<ACTMol> &actmols() const { return actmol_; }
 
     //! \brief Return the mutable vector of molecules
-    std::vector<MyMol> &mymols() { return mymol_; }
+    std::vector<ACTMol> &actmols() { return actmol_; }
 
     /*! \brief Return size of data set
      * \param[in] ims The data set 
@@ -381,14 +381,14 @@ public:
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information, may be nullptr
      * \param[in] fn      Filename for to read molecules from
-     * \param[in] pd      Pointer to Poldata object
+     * \param[in] pd      Pointer to ForceField object
      * \param[in] gms     The molecule selection
      * \param[in] verbose Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
     size_t Read(FILE                                *fp,
                 const char                          *fn,
-                Poldata                             *pd,
+                ForceField                             *pd,
                 const MolSelect                     &gms,
                 const std::map<eRMS, FittingTarget> &targets,
                 bool                                 verbose);

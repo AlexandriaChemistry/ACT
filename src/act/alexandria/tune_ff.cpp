@@ -61,13 +61,13 @@
 #include "mcmcmutator.h"
 #include "molgen.h"
 #include "act/molprop/molprop_util.h"
-#include "mymol_low.h"
+#include "actmol_low.h"
 #include "act/ga/npointcrossover.h"
-#include "act/ga/Penalizer.h"
+#include "act/ga/penalizer.h"
 #include "percentmutator.h"
-#include "act/poldata/poldata.h"
-#include "act/poldata/poldata_tables.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_tables.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "tuning_utility.h"
 #include "act/utility/units.h"
 
@@ -194,18 +194,18 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     std::vector<double> vec;
-    for (MyMol &mymol : mg_.mymols())
+    for (ACTMol &actmol : mg_.actmols())
     {
-        if (mymol.datasetType() != ims)
+        if (actmol.datasetType() != ims)
         {
             continue;
         }
         // For fitting alpha we need a reference polarizability
         double T = 0;
-        auto gp = reinterpret_cast<const MolecularPolarizability*>(mymol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
+        auto gp = reinterpret_cast<const MolecularPolarizability*>(actmol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
         if (gp)
         {
-            auto qelec = mymol.qTypeProps(qType::Elec);
+            auto qelec = actmol.qTypeProps(qType::Elec);
             qelec->setPolarizabilityTensor(gp->getTensor());
         }
     }
@@ -609,7 +609,7 @@ bool OptACM::runMaster(bool optimize,
         for (const auto &pair : bestGenome)
         {
             std::set<int> changed;
-            sii_->updatePoldata(changed, pair.second.bases());
+            sii_->updateForceField(changed, pair.second.bases());
             // sii_->setFinalOutputFile(baseOutputFileName_);
             sii_->saveState(
                 true,
@@ -618,7 +618,7 @@ bool OptACM::runMaster(bool optimize,
         }
         // FIXME: resetting the train parameters for the TuneFFPrinter. We may have to work on that if we want to show the best test parameters too
         std::set<int> changed;
-        sii_->updatePoldata(changed, bestGenome.find(iMolSelect::Train)->second.bases());
+        sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
     }
     else if (optimize)
     {
@@ -642,7 +642,7 @@ bool OptACM::runMaster(bool optimize,
         auto bbb = bestGenome.find(ims);
         if (bestGenome.end() != bbb)
         {
-            sii_->updatePoldata(changed, bbb->second.bases());
+            sii_->updateForceField(changed, bbb->second.bases());
             fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
         }
         // Now compute the test compounds, with the best Train parameters.
@@ -805,7 +805,7 @@ int tune_ff(int argc, char *argv[])
     // Figure out a logfile to pass down :)
     FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
 
-    // Read poldata in StaticIndividualInfo sii_
+    // Read forcefield in StaticIndividualInfo sii_
     {
         auto fns = opt2fns("-ff", filenms.size(), filenms.data());
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
@@ -816,19 +816,19 @@ int tune_ff(int argc, char *argv[])
         {
             fnIndex = opt.commRec()->middleManOrdinal();
         }
-        opt.sii()->fillPoldata(fp, fns[fnIndex].c_str());
+        opt.sii()->fillForceField(fp, fns[fnIndex].c_str());
         if (fp)
         {
             fprintf(fp, "On proc %d, found %d particle types\n",
                     opt.sii()->commRec()->rank(),
-                    opt.sii()->poldata()->nParticleTypes());
+                    opt.sii()->forcefield()->nParticleTypes());
         }
     }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(fp,
                             opt2fn("-mp", filenms.size(), filenms.data()),
-                            opt.sii()->poldata(),
+                            opt.sii()->forcefield(),
                             gms,
                             opt.sii()->fittingTargetsConst(iMolSelect::Train),
                             opt.verbose()))
@@ -898,8 +898,8 @@ int tune_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), &(tmpMg->mymols()),
-                          opt.sii()->poldata(), tmpMg->mdlog(),
+            printer.print(opt.logFile(), &(tmpMg->actmols()),
+                          opt.sii()->forcefield(), tmpMg->mdlog(),
                           oenv, opt.commRec(), filenms, tmpMg->chargeMethod());
             print_memory_usage(debug);
         }

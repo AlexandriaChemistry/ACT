@@ -39,11 +39,11 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "mymol_low.h"
+#include "actmol_low.h"
 
 namespace alexandria
 {
@@ -760,7 +760,7 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::build(const Poldata                *pd,
+void Topology::build(const ForceField                *pd,
                      const std::vector<gmx::RVec> &x,
                      double                        LinearAngleMin,
                      double                        PlanarAngleMax,
@@ -933,7 +933,7 @@ static void fillParams(const ForceFieldParameterList &fs,
     }
 }
 
-void Topology::fillParameters(const Poldata *pd)
+void Topology::fillParameters(const ForceField *pd)
 {
     for(auto &entry : entries_)
     {
@@ -995,7 +995,7 @@ void Topology::fillParameters(const Poldata *pd)
     }
 }
 
-void Topology::setIdentifiers(const Poldata *pd)
+void Topology::setIdentifiers(const ForceField *pd)
 {
     for(auto &entry : entries_)
     {

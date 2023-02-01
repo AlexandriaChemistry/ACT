@@ -38,12 +38,12 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/secondvirial.h"
 #include "act/alexandria/tuning_utility.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
@@ -113,10 +113,10 @@ int nma(int argc, char *argv[])
     }
     sch.check_pargs();
 
-    Poldata        pd;
+    ForceField        pd;
     try
     {
-        readPoldata(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
@@ -137,7 +137,7 @@ int nma(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    MyMol                mymol;
+    ACTMol                actmol;
     {
         std::vector<MolProp> mps;
         double               qtot_babel = qtot;
@@ -170,20 +170,20 @@ int nma(int argc, char *argv[])
             {
                 fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
             }
-            mymol.Merge(&mps[0]);
+            actmol.Merge(&mps[0]);
         }
     }
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
-        imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
     }
-    std::vector<gmx::RVec> coords = mymol.xOriginal();
+    std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
-        std::vector<gmx::RVec> forces(mymol.atomsConst().size());
+        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
         std::vector<double> myq;
         auto alg   = pd.chargeGenerationAlgorithm();
@@ -193,29 +193,29 @@ int nma(int argc, char *argv[])
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
         }
-        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+        imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {
         if (debug)
         {
-            mymol.topology()->dump(debug);
+            actmol.topology()->dump(debug);
         }
         auto eMin = eMinimizeStatus::OK;
         /* Generate output file for debugging if requested */
-        if (mymol.errors().empty())
+        if (actmol.errors().empty())
         {
             MolHandler molhandler;
-            std::vector<gmx::RVec> coords = mymol.xOriginal();
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
             std::vector<gmx::RVec> xmin   = coords;
             if (sch.minimize())
             {
                 std::map<InteractionType, double> energies;
-                eMin = molhandler.minimizeCoordinates(&pd, &mymol, forceComp, sch,
+                eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
                                                       &xmin, &energies, logFile);
                 if (eMinimizeStatus::OK == eMin)
                 {
-                    auto rmsd = molhandler.coordinateRmsd(&mymol, coords, &xmin);
+                    auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                     fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);
                     JsonTree jtener("Energies");
@@ -232,14 +232,14 @@ int nma(int argc, char *argv[])
                     {
                         matrix box;
                         clear_mat(box);
-                        write_sto_conf(confout, mymol.getMolname().c_str(),
-                                       mymol.gmxAtomsConst(),
+                        write_sto_conf(confout, actmol.getMolname().c_str(),
+                                       actmol.gmxAtomsConst(),
                                        as_rvec_array(xmin.data()), nullptr,
                                        epbcNONE, box);
                     }
                     
                     AtomizationEnergy        atomenergy;
-                    doFrequencyAnalysis(&pd, &mymol, molhandler, forceComp, &coords,
+                    doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &coords,
                                         atomenergy, nullptr, &jtree,
                                         opt2fn_null("-ir", fnm.size(), fnm.data()),
                                         linewidth, oenv, sch.lapack(), verbose);
@@ -258,7 +258,7 @@ int nma(int argc, char *argv[])
         {
             fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
             fprintf(logFile, "%s\n", immsg(imm));
-            for(const auto &err: mymol.errors())
+            for(const auto &err: actmol.errors())
             {
                 fprintf(logFile, "%s\n", err.c_str());
             }

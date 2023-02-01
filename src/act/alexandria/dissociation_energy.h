@@ -35,8 +35,8 @@
 #ifndef DISSOCIATION_ENERGY_H
 #define DISSOCIATION_ENERGY_H
 
-#include "mymol.h"
-#include "act/poldata/poldata.h"
+#include "act/alexandria/actmol.h"
+#include "act/forcefield/forcefield.h"
 
 namespace alexandria
 {
@@ -66,13 +66,12 @@ namespace alexandria
  * \param[in]    nBootStrap Number of times a bootstrap is repeated
  * \return Root mean square deviation from experimental data
  */
-double getDissociationEnergy(FILE                     *fplog,
-                             Poldata                  *pd,
-                             std::vector<MyMol>       *molset,
-                             iqmType                  iqm,
-                             const char               *csvFile,
-                             int                       nBootStrap);
-
+double getDissociationEnergy(FILE                *fplog,
+                             ForceField          *pd,
+                             std::vector<ACTMol> *molset,
+                             iqmType              iqm,
+                             const char          *csvFile,
+                             int                  nBootStrap);
 }
 
 #endif

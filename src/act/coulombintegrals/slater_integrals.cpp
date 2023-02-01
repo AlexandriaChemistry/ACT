@@ -35,7 +35,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-#include "coulombintegrals.h"
+#include "slater_integrals.h"
 #include "slater_low.h"
 
 #if HAVE_LIBCLN

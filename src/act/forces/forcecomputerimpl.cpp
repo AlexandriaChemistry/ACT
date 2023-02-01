@@ -29,8 +29,8 @@
 
 #include "forcecomputerimpl.h"
 
-#include "act/coulombintegrals/coulombintegrals.h"
-#include "act/poldata/forcefieldparametername.h"
+#include "act/coulombintegrals/coulomb_gaussian.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
 
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"

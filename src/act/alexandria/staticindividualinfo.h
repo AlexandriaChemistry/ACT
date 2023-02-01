@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "act/ga/Genome.h"
+#include "act/ga/genome.h"
 #include "act/utility/communicationrecord.h"
 #include "act/basics/mutability.h"
 #include "molgen.h"
@@ -57,7 +57,7 @@ class OptimizationIndex
     std::string     particleType_;
     //! The interaction type
     InteractionType iType_ = InteractionType::CHARGE;
-    //! The name of the parameter matching poldata
+    //! The name of the parameter matching forcefield
     Identifier      parameterId_;
     //! The type of parameter, eg. sigma, epsilon
     std::string     parameterType_;
@@ -144,8 +144,8 @@ private:
     int                                                  id_ = -1;
     //! Communication record
     CommunicationRecord                                 *cr_;
-    //! Poldata for this individual
-    Poldata                                              pd_;
+    //! ForceField for this individual
+    ForceField                                              pd_;
     //! Base targets_ from which to make copies
     std::map<iMolSelect, std::map<eRMS, FittingTarget>>  targets_;
     //! Default parameter values as specified by input file
@@ -225,19 +225,19 @@ public:
                        iMolSelect       ims);
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Poldata stuff                     *
+    * BEGIN: ForceField stuff                     *
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * \brief Fill the Poldata attribute by reading from a file
+     * \brief Fill the ForceField attribute by reading from a file
      * \param[in] fp        File pointer for printing information
      * \param[in] pd_fn     name of the gentop (Force Field) file
      */
-    void fillPoldata(      FILE *fp,
+    void fillForceField(      FILE *fp,
                      const char *pd_fn);
 
     /*!
-     * \brief Copy the Force Field parameters to the Poldata structure
+     * \brief Copy the Force Field parameters to the ForceField structure
      * \param[in] changed List over the parameters that have changed. If empty,
      *                    all parameters will be updated. The numbers are indices
      *                    in the internal optIndex structure.
@@ -245,7 +245,7 @@ public:
      *                    the routine will do nothing and return.
      * \throws if length of bases > 0 and the length does not match the known number of parameters.
      */
-    void updatePoldata(const std::set<int>       &changed,
+    void updateForceField(const std::set<int>       &changed,
                        const std::vector<double> &bases);
     
     /*! \brief Save the current state of the Force Field to the output file
@@ -264,7 +264,7 @@ public:
     void saveState(bool updateCheckSum, const std::string &fname);
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Poldata stuff                       *
+    * END: ForceField stuff                       *
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the communication record
@@ -507,14 +507,14 @@ public:
     //! \return a pointer to the fitting targets data structure
     std::map<iMolSelect, std::map<eRMS, FittingTarget>> *targetsPtr() { return &targets_; }
     
-    //! \return a pointer to the const Poldata structure (for const objects)
-    const Poldata *poldata() const { return &pd_; }
+    //! \return a pointer to the const ForceField structure (for const objects)
+    const ForceField *forcefield() const { return &pd_; }
 
-    //! \return the Poldata structure as a const reference
-    const Poldata &poldataConst() const { return pd_; }
+    //! \return the ForceField structure as a const reference
+    const ForceField &forcefieldConst() const { return pd_; }
     
-    //! \return a pointer to the Poldata structure
-    Poldata *poldata() { return &pd_; }
+    //! \return a pointer to the ForceField structure
+    ForceField *forcefield() { return &pd_; }
 
     /*!
      * \brief Compute the (hypervolume) of the parameter space

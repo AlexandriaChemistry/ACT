@@ -58,7 +58,7 @@
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/poldata/poldata_xml.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "tuning_utility.h"
 
 namespace alexandria
@@ -182,7 +182,7 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the filled structure is used for the optimize() method
+void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
@@ -195,7 +195,7 @@ void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the fil
 }
 
 void MolGen::checkDataSufficiency(FILE     *fp,
-                                  Poldata  *pd) // Called in read method
+                                  ForceField  *pd) // Called in read method
 {
     size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
@@ -274,7 +274,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         }
         
         // Now loop over molecules and add interactions
-        for(auto &mol : mymol_)
+        for(auto &mol : actmol_)
         {
             // We can only consider molecules in the training set here
             // since it is only for those that we will update the
@@ -422,7 +422,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         }
         // Now loop over molecules and remove those without sufficient support
         std::vector<std::string> removeMol;
-        for(auto &mol : mymol_)
+        for(auto &mol : actmol_)
         {
             // Now we check all molecules, including the Test and Ignore
             // set.
@@ -506,12 +506,12 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         }
         for(auto &rmol : removeMol)
         {
-            auto moliter = std::find_if(mymol_.begin(), mymol_.end(),
-                                        [rmol](MyMol const &f)
+            auto moliter = std::find_if(actmol_.begin(), actmol_.end(),
+                                        [rmol](ACTMol const &f)
                                         { return (rmol == f.getIupac()); });
-            if (moliter == mymol_.end())
+            if (moliter == actmol_.end())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in mymol", rmol.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in actmol", rmol.c_str()).c_str()));
             }
             if (fp)
             {
@@ -519,10 +519,10 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                         rmol.c_str(),
                         iMolSelectName(moliter->datasetType()));
             }
-            mymol_.erase(moliter);
+            actmol_.erase(moliter);
         }
     }
-    while (mymol_.size() > 0 && mymol_.size() < nmol);
+    while (actmol_.size() > 0 && actmol_.size() < nmol);
     if (fp)
     {
         fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
@@ -544,7 +544,7 @@ static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm) // C
 void MolGen::countTargetSize() // Called in read method
 {
     targetSize_.clear();
-    for(auto &m : mymol_)
+    for(auto &m : actmol_)
     {
         auto ims = m.datasetType();
         auto ts  = targetSize_.find(ims);
@@ -559,7 +559,7 @@ void MolGen::countTargetSize() // Called in read method
     }
 }
 
-static double computeCost(const MyMol                         *mymol,
+static double computeCost(const ACTMol                         *actmol,
                           const std::map<eRMS, FittingTarget> &targets)
 {
     // Estimate the cost of computing the chi squared for this compound.
@@ -567,7 +567,7 @@ static double computeCost(const MyMol                         *mymol,
     // so can the cost. We take the cost to be proportional to the number
     // coulomb calculations.
     double w = 1;
-    for(auto &myexp : mymol->experimentConst())
+    for(auto &myexp : actmol->experimentConst())
     {
         for(const auto &tg: targets)
         {
@@ -613,7 +613,7 @@ static double computeCost(const MyMol                         *mymol,
                      
 size_t MolGen::Read(FILE                                *fp,
                     const char                          *fn,
-                    Poldata                             *pd,
+                    ForceField                             *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
                     bool                                 verbose)
@@ -626,7 +626,7 @@ size_t MolGen::Read(FILE                                *fp,
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
-    //  Now  we have read the poldata and spread it to processors
+    //  Now  we have read the forcefield and spread it to processors
     fillIopt(pd);
     /* Reading Molecules from allmols.dat */
     if (cr_->isMaster())
@@ -695,31 +695,31 @@ size_t MolGen::Read(FILE                                *fp,
             iMolSelect ims;
             if (gms.status(mpi->getIupac(), &ims))
             {
-                alexandria::MyMol mymol;
+                alexandria::ACTMol actmol;
                 if (fp && debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
-                mymol.Merge(&(*mpi));
-                mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(fp, pd,
+                actmol.Merge(&(*mpi));
+                actmol.setInputrec(inputrec_);
+                imm = actmol.GenerateTopology(fp, pd,
                                              missingParameters::Error, false);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
                     {
                         fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
-                                mymol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), immsg(imm));
                     }
                     continue;
                 }
 
-                std::vector<gmx::RVec> coords = mymol.xOriginal();
-                mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, coords, 0.0, 100);
+                std::vector<gmx::RVec> coords = actmol.xOriginal();
+                actmol.symmetrizeCharges(pd, qsymm_, nullptr);
+                actmol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<double> dummy;
-                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-                imm = mymol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
                                             qtype, dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
@@ -727,26 +727,26 @@ size_t MolGen::Read(FILE                                *fp,
                     if (verbose && fp)
                     {
                         fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
-                                mymol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), immsg(imm));
                     }
                     continue;
                 }
-                imm = mymol.getExpProps(iqmMap, 0);
+                imm = actmol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
                     {
                         fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
-                                mymol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), immsg(imm));
                     }
                 }
                 else
                 {
                     // Only include the compound if we have all data.
-                    mymol.set_datasetType(ims);
+                    actmol.set_datasetType(ims);
 
-                    // mymol_ contains all molecules
-                    mymol_.push_back(std::move(mymol));
+                    // actmol_ contains all molecules
+                    actmol_.push_back(std::move(actmol));
                 }
                 incrementImmCount(&imm_count, imm);
             }
@@ -772,16 +772,16 @@ size_t MolGen::Read(FILE                                *fp,
         {
             mycomms.insert({ i, cr_->create_column_comm(i) });
         }
-        int  mymolIndex = 0;
+        int  actmolIndex = 0;
         auto cs         = CommunicationStatus::OK;
         int  bcint      = 1;
         std::set<int> comm_used;
         std::vector<double> totalCost;
         totalCost.resize(1+cr_->nhelper_per_middleman(), 0);
-        for(auto mymol = mymol_.begin(); mymol < mymol_.end() && CommunicationStatus::OK == cs; ++mymol)
+        for(auto actmol = actmol_.begin(); actmol < actmol_.end() && CommunicationStatus::OK == cs; ++actmol)
         {
             // Local compounds are computed locally
-            mymol->setSupport(eSupport::Local);
+            actmol->setSupport(eSupport::Local);
             // See if we need to send stuff around
             if (mycomms.size() > 0)
             {
@@ -792,9 +792,9 @@ size_t MolGen::Read(FILE                                *fp,
                 }
                 else
                 {
-                    comm_index = mymolIndex % (1+cr_->nhelper_per_middleman());
+                    comm_index = actmolIndex % (1+cr_->nhelper_per_middleman());
                 }
-                totalCost[comm_index] += computeCost(&(*mymol), targets);
+                totalCost[comm_index] += computeCost(&(*actmol), targets);
                 if (cr_->nmiddlemen() > 1)
                 {
                     // We always need to send the molecules to the middlemen
@@ -804,7 +804,7 @@ size_t MolGen::Read(FILE                                *fp,
                     // Send the index of the target group
                     cr_->bcast(&comm_index, mycomms[myindex]);
                     // Send the molecule
-                    cs = mymol->BroadCast(cr_, root, mycomms[myindex]);
+                    cs = actmol->BroadCast(cr_, root, mycomms[myindex]);
                     comm_used.insert(myindex);
                 }
                 if (comm_index > 0)
@@ -812,19 +812,19 @@ size_t MolGen::Read(FILE                                *fp,
                     // We only send relevant molecules to the helpers
                     cr_->bcast(&bcint, mycomms[comm_index]);
                     cr_->bcast(&comm_index, mycomms[comm_index]);
-                    cs = mymol->BroadCast(cr_, root, mycomms[comm_index]);
+                    cs = actmol->BroadCast(cr_, root, mycomms[comm_index]);
                     comm_used.insert(comm_index);
-                    mymol->setSupport(eSupport::Remote);
+                    actmol->setSupport(eSupport::Remote);
                 }
             }
             if (fp)
             {
-                fprintf(fp, "Computing %s on %s nexp = %zu\n", mymol->getMolname().c_str(),
-                        eSupport::Local == mymol->support() ? "master" : "helper",
-                        mymol->experimentConst().size());
+                fprintf(fp, "Computing %s on %s nexp = %zu\n", actmol->getMolname().c_str(),
+                        eSupport::Local == actmol->support() ? "master" : "helper",
+                        actmol->experimentConst().size());
             }
 
-            mymolIndex += 1;
+            actmolIndex += 1;
         }
         if (CommunicationStatus::OK != cs)
         {
@@ -860,100 +860,100 @@ size_t MolGen::Read(FILE                                *fp,
         cr_->bcast(&bcint, mycomm);
         while (1 == bcint)
         {
-            alexandria::MyMol mymol;
+            alexandria::ACTMol actmol;
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
             int comm_index = 0;
             cr_->bcast(&comm_index, mycomm);
-            CommunicationStatus cs = mymol.BroadCast(cr_, root, mycomm);
+            CommunicationStatus cs = actmol.BroadCast(cr_, root, mycomm);
             if (CommunicationStatus::OK != cs)
             {
                 imm = immStatus::CommProblem;
             }
             else if (nullptr != debug)
             {
-                fprintf(debug, "Succesfully retrieved %s\n", mymol.getMolname().c_str());
+                fprintf(debug, "Succesfully retrieved %s\n", actmol.getMolname().c_str());
                 fflush(debug);
             }
-            mymol.setInputrec(inputrec_);
+            actmol.setInputrec(inputrec_);
 
-            imm = mymol.GenerateTopology(debug, pd,
+            imm = actmol.GenerateTopology(debug, pd,
                                          missingParameters::Error, false);
 
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
-                std::vector<gmx::RVec> coords = mymol.xOriginal();
-                mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, coords, 0.0, 100);
-                std::vector<gmx::RVec> forces(mymol.atomsConst().size());
-                imm = mymol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                std::vector<gmx::RVec> coords = actmol.xOriginal();
+                actmol.symmetrizeCharges(pd, qsymm_, nullptr);
+                actmol.initQgenResp(pd, coords, 0.0, 100);
+                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
                                             qtype, dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, 0);
+                imm = actmol.getExpProps(iqmMap, 0);
             }
             if (cr_->isMiddleMan())
             {
-                mymol.setSupport(eSupport::Remote);
+                actmol.setSupport(eSupport::Remote);
                 if (cr_->nhelper_per_middleman() == 0 ||
                     comm_index % (1+cr_->nhelper_per_middleman()) == 0)
                 {
-                    mymol.setSupport(eSupport::Local);
+                    actmol.setSupport(eSupport::Local);
                 }
             }
             else
             {
-                mymol.setSupport(eSupport::Local);
+                actmol.setSupport(eSupport::Local);
             }
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                if (mymol.support() == eSupport::Local)
+                if (actmol.support() == eSupport::Local)
                 {
-                    nLocal.find(mymol.datasetType())->second += 1;
+                    nLocal.find(actmol.datasetType())->second += 1;
                 }
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
                     double deltaE0;
-                    if (!mymol.energy(MolPropObservable::DELTAE0, &deltaE0))
+                    if (!actmol.energy(MolPropObservable::DELTAE0, &deltaE0))
                     {
                         if (nullptr != debug)
                         {
                             fprintf(debug, "No DeltaE0 for %s",
-                                    mymol.getMolname().c_str());
+                                    actmol.getMolname().c_str());
                         }
                         imm = immStatus::NoData;
                     }
                     if (immStatus::OK == imm)
                     {
                         double hform;
-                        if (!mymol.energy(MolPropObservable::DHFORM, &hform))
+                        if (!actmol.energy(MolPropObservable::DHFORM, &hform))
                         {
                             if (nullptr != debug)
                             {
                                 fprintf(debug, "No DeltaHform for %s",
-                                        mymol.getMolname().c_str());
+                                        actmol.getMolname().c_str());
                             }
                             imm = immStatus::NoData;
                         }
                         else if (nullptr != debug)
                         {
                             fprintf(debug, "Added molecule %s. Hform = %g DeltaE0 = %g\n",
-                                    mymol.getMolname().c_str(), hform, deltaE0);
+                                    actmol.getMolname().c_str(), hform, deltaE0);
                         }
                     }
                 }
-                mymol_.push_back(std::move(mymol));
+                actmol_.push_back(std::move(actmol));
                 if (cr_->isMiddleMan() && debug)
                 {
-                    int nexp = mymol_.back().experimentConst().size();
-                    fprintf(debug, "Computing %s on %s nexepriment %d\n", mymol_.back().getMolname().c_str(),
-                            eSupport::Local == mymol.support() ? "middleman" : "helper", nexp);
+                    int nexp = actmol_.back().experimentConst().size();
+                    fprintf(debug, "Computing %s on %s nexepriment %d\n", actmol_.back().getMolname().c_str(),
+                            eSupport::Local == actmol.support() ? "middleman" : "helper", nexp);
                 }
             }
             // See whether there is more data coming.
@@ -972,7 +972,7 @@ size_t MolGen::Read(FILE                                *fp,
         std::map<iMolSelect, int> nCount;
         nCount.insert({iMolSelect::Train, 0});
         nCount.insert({iMolSelect::Test, 0});
-        for(const auto &m : mymol_)
+        for(const auto &m : actmol_)
         {
             if (m.support() == eSupport::Remote)
             {
@@ -981,7 +981,7 @@ size_t MolGen::Read(FILE                                *fp,
             }
         }
         fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
-                nCount[iMolSelect::Test], mymol_.size());
+                nCount[iMolSelect::Test], actmol_.size());
     }
     if (fp)
     {
@@ -1004,7 +1004,7 @@ size_t MolGen::Read(FILE                                *fp,
             }
         }
     }
-    return mymol_.size();
+    return actmol_.size();
 }
 
 } // namespace alexandria

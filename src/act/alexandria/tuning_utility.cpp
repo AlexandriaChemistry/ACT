@@ -39,7 +39,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "act/alexandria/mymol.h"
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/thermochemistry.h"
 #include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
@@ -186,7 +186,7 @@ static void print_one_alpha(FILE *fp, const std::string &label,
  }
 
 static void print_polarizability(FILE              *fp,
-                                 const MyMol       *mol,
+                                 const ACTMol       *mol,
                                  const std::string &calc_name,
                                  real               alpha_toler,
                                  real               isopol_toler)
@@ -254,7 +254,7 @@ static void print_polarizability(FILE              *fp,
 }
 
 static void analyse_multipoles(FILE                                                        *fp,
-                               const std::vector<alexandria::MyMol>::iterator              &mol,
+                               const std::vector<alexandria::ACTMol>::iterator              &mol,
                                std::map<MolPropObservable, double>                          toler,
                                std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
 {
@@ -520,8 +520,8 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 }
 
 void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
-                                                  const Poldata       *pd,
-                                                  alexandria::MyMol   *mol,
+                                                  const ForceField    *pd,
+                                                  alexandria::ACTMol  *mol,
                                                   const ForceComputer *forceComp,
                                                   qtStats             *lsq_isoPol,
                                                   qtStats             *lsq_anisoPol,
@@ -551,7 +551,7 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
 }
 
 void TuneForceFieldPrinter::printAtoms(FILE                         *fp,
-                                       alexandria::MyMol            *mol,
+                                       alexandria::ACTMol            *mol,
                                        const std::vector<gmx::RVec> &coords,
                                        const std::vector<gmx::RVec> &forces)
 {
@@ -750,7 +750,7 @@ static void plot_spectrum(const char                *filenm,
 }
 
 static void addThermo(JsonTree                  *jtree, 
-                      alexandria::MyMol         *mol,
+                      alexandria::ACTMol         *mol,
                       std::vector<gmx::RVec>    *coords,
                       const AtomizationEnergy   &atomenergy,
                       const std::vector<double> &freq)
@@ -811,8 +811,8 @@ static void addThermo(JsonTree                  *jtree,
     jtree->addObject(jtcRT);
 }
 
-void doFrequencyAnalysis(const Poldata            *pd,
-                         alexandria::MyMol        *mol,
+void doFrequencyAnalysis(const ForceField         *pd,
+                         alexandria::ACTMol       *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,
@@ -933,10 +933,10 @@ static void low_print(std::vector<std::string> *tcout,
 }
 
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                const Poldata            *pd,
+                                                const ForceField            *pd,
                                                 const ForceComputer      *forceComp,
                                                 const AtomizationEnergy  &atomenergy,
-                                                alexandria::MyMol        *mol,
+                                                alexandria::ACTMol        *mol,
                                                 gmx_stats                *lsq_rmsf,
                                                 qtStats                  *lsq_epot,
                                                 qtStats                  *lsq_eInter,
@@ -1074,14 +1074,14 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     return eBefore[InteractionType::EPOT];
 }
 
-void TuneForceFieldPrinter::print(FILE                           *fp,
-                                  std::vector<alexandria::MyMol> *mymol,
-                                  const Poldata                  *pd,
-                                  const gmx::MDLogger            &fplog,
-                                  const gmx_output_env_t         *oenv,
-                                  const CommunicationRecord      *cr,
-                                  const std::vector<t_filenm>    &filenm,
-                                  const char                     *chargeMethod)
+void TuneForceFieldPrinter::print(FILE                            *fp,
+                                  std::vector<alexandria::ACTMol> *actmol,
+                                  const ForceField                *pd,
+                                  const gmx::MDLogger              &fplog,
+                                  const gmx_output_env_t           *oenv,
+                                  const CommunicationRecord        *cr,
+                                  const std::vector<t_filenm>      &filenm,
+                                  const char                       *chargeMethod)
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
@@ -1171,7 +1171,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         qtype = stringToQtype(chargeMethod);
         alg   = ChargeGenerationAlgorithm::Read;
     }
-    for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
+    for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
         {
@@ -1376,7 +1376,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         fprintf(fp, "----------------------------------\n");
         fprintf(fp, "%-40s  %12s  %12s\n", "Name",
                 qTypeName(qType::Calc).c_str(), qTypeName(qType::ESP).c_str());
-        for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
+        for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
         {
             real rms, rrms, cosesp, mae, mse;
             auto qcalc = mol->qTypeProps(qType::Calc);
@@ -1419,7 +1419,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         fprintf(fp, "----------------------------------\n");
         fprintf(fp, "%-40s  %12s  %12s\n", "Name",
                 qTypeName(qType::Calc).c_str(), "QM/DFT");
-        for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
+        for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
         {
             double deltaE0;
             if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))

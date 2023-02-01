@@ -31,7 +31,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
-#include "act/poldata/poldata.h"
+#include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
@@ -60,7 +60,7 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      */
-    void computeOnce(const Poldata                     *pd,
+    void computeOnce(const ForceField                     *pd,
                      const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
@@ -87,7 +87,7 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const Poldata                     *pd,
+    double compute(const ForceField                     *pd,
                    const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
@@ -101,7 +101,7 @@ private:
      * \param[in] itype The interaction type
      * \return the force type
      */
-    int ftype(const Poldata  *pd,
+    int ftype(const ForceField  *pd,
               InteractionType itype) const;
     
     //! \return the force tolerance
@@ -118,7 +118,7 @@ private:
      * \param[in] pd    Pointer to force field structure
      * \param[in] itype The interaction type
      */
-    void plot(const Poldata   *pd,
+    void plot(const ForceField   *pd,
               InteractionType  itype) const;
 
     /*! \brief Compute the polarizability tensor
@@ -127,7 +127,7 @@ private:
      * \param[in]  coordinates The coordinates
      * \param[out] qtp         The charge type properties
      */
-    void calcPolarizability(const Poldata          *pd,
+    void calcPolarizability(const ForceField          *pd,
                             const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
                             QtypeProps             *qtp) const;

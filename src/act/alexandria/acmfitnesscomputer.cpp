@@ -36,7 +36,7 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "act/ga/Genome.h"
+#include "act/ga/genome.h"
 
 namespace alexandria
 {
@@ -119,7 +119,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         {
             mychanged.insert(cr->recv_int(src));
         }
-        sii_->updatePoldata(mychanged, myparams);
+        sii_->updateForceField(mychanged, myparams);
     }
     else 
     {
@@ -133,7 +133,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                 cr->send_int(dest, iset);
             }
         }
-        sii_->updatePoldata(changed, *params);
+        sii_->updateForceField(changed, *params);
     }
 }
 
@@ -165,21 +165,21 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->poldata());
+        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->forcefield());
     }
 
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;
-    for (MyMol &mymol : molgen_->mymols())
+    for (ACTMol &actmol : molgen_->actmols())
     {
-        if (ims != mymol.datasetType())
+        if (ims != actmol.datasetType())
         {
             continue;
         }
         ntrain++;
-        if ((mymol.support() == eSupport::Local) ||
-            (task == CalcDev::ComputeAll && mymol.support() == eSupport::Remote))
+        if ((actmol.support() == eSupport::Local) ||
+            (task == CalcDev::ComputeAll && actmol.support() == eSupport::Remote))
         {
             nlocal++;
             std::vector<InteractionType> itUpdate;
@@ -193,20 +193,20 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             // Update the polarizabilities and other params only once before the loop
             // TODO: is this still needed if we do not use GROMACS code for force
             // calculations?
-            mymol.UpdateIdef(sii_->poldata(), itUpdate, molgen_->fit("zeta"));
+            actmol.UpdateIdef(sii_->forcefield(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
-            std::vector<gmx::RVec> forces(mymol.atomsConst().size(), { 0, 0, 0 });
-            std::vector<gmx::RVec> coords = mymol.xOriginal();
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_, &coords, &forces);
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size(), { 0, 0, 0 });
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            immStatus imm = actmol.GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
             {
-                mymol.setSupport(eSupport::No);
+                actmol.setSupport(eSupport::No);
                 continue;
             }
 
-            computeMultipoles(targets, &mymol, coords);
+            computeMultipoles(targets, &actmol, coords);
 
             if (devComputers_.size() == 0)
             {
@@ -214,12 +214,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &mymol, &coords, targets, sii_->poldata());
+                mydev->calcDeviation(forceComp_, &actmol, &coords, targets, sii_->forcefield());
             }
             if (debug)
             {
                 fprintf(debug, "rank %d mol %s #energies %zu ndp %d\n",
-                        cr->rank(), mymol.getMolname().c_str(), mymol.experimentConst().size(),
+                        cr->rank(), actmol.getMolname().c_str(), actmol.experimentConst().size(),
                         targets->find(eRMS::EPOT)->second.numberOfDatapoints());
             }
         }
@@ -241,16 +241,16 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,
-                                           MyMol                         *mymol,
+                                           ACTMol                         *actmol,
                                            const std::vector<gmx::RVec>  &coords)
 {
-    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
+    QtypeProps *qcalc = actmol->qTypeProps(qType::Calc);
     if (targets->find(eRMS::MU)->second.weight() > 0   ||
         targets->find(eRMS::QUAD)->second.weight() > 0 ||
         targets->find(eRMS::OCT)->second.weight() > 0  ||
         targets->find(eRMS::HEXADEC)->second.weight() > 0)
     {
-        qcalc->setQ(mymol->atomsConst());
+        qcalc->setQ(actmol->atomsConst());
         qcalc->setX(coords);
         qcalc->calcMoments();
     }

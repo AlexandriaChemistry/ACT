@@ -44,13 +44,11 @@ int b2(int argc, char *argv[]);
 int nma(int argc, char *argv[]);
 int tune_ff(int argc, char *argv[]);
 int edit_ff(int argc, char *argv[]);
-int bastat(int argc, char *argv[]);
+int geometry_ff(int argc, char *argv[]);
 int analyze(int argc, char *argv[]);
-int merge_mp(int argc, char *argv[]);
 int merge_ff(int argc, char *argv[]);
+int edit_mp(int argc, char *argv[]);
 int mp2csv(int argc, char *argv[]);
-int molprop_test(int argc, char *argv[]);
-int molprop_check(int argc, char *argv[]);
 }
 
 namespace gmx

@@ -541,7 +541,7 @@ static void atomtype_tab_header(LongTable &lt)
 }
 
 static void alexandria_molprop_atomtype_polar_table(FILE                       *fp,
-                                                    const Poldata              *pd,
+                                                    const ForceField              *pd,
                                                     std::vector<MolProp>        mp,
                                                     const char                 *lot)
 {
@@ -628,7 +628,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
 }
 
 static void alexandria_molprop_atomtype_dip_table(FILE                       *fp,
-                                                  const std::vector<Poldata> &pd)
+                                                  const std::vector<ForceField> &pd)
 {
     int         cur        = 0;
     std::string gt_type[2] = { "", "" };
@@ -684,7 +684,7 @@ static void alexandria_molprop_atomtype_dip_table(FILE                       *fp
 
 void alexandria_molprop_atomtype_table(FILE                       *fp,
                                        bool                        bPolar,
-                                       const std::vector<Poldata> &pd,
+                                       const std::vector<ForceField> &pd,
                                        const std::vector<MolProp> &mp,
                                        const char                 *lot)
 {
@@ -782,7 +782,7 @@ static void prop_header(LongTable     &lt,
     }
     lt.printHeader();
 }
-
+#ifdef OLD
 static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
 {
     real rdv, adv = fabs(vexp-vcalc);
@@ -817,7 +817,7 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
         return 0;
     }
 }
-
+#endif
 void alexandria_molprop_prop_table(FILE                 *fp,
                                    MolPropObservable     mpo,
                                    real                  rel_toler,
