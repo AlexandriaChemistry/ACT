@@ -316,14 +316,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 //        addXmlElemMass(grandchild, aType);
 //    }
 
-<<<<<<< HEAD
-    auto myatoms =  mymol -> atomsConst();
-    std::vector<std::string> List_used {};
-//    std::list<std::string> List_used;
-//    std::vector<std::string> List_used{};
-=======
     auto myatoms =  actmol -> atomsConst();
->>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
+    std::vector<std::string> List_used = {};
     for (size_t i = 0; i < myatoms.size(); i++)
     {   	
 
@@ -379,19 +373,12 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 
     if (actmol->getMolname().size() > 0)
     {
-<<<<<<< HEAD
-  //      auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
-        ///////////////////////////////
-	std::vector<std::string> List_used {};
-        std::string transfertype = "";
-        auto myatoms =  mymol -> atomsConst();
-=======
-        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), actmol->getMolname().c_str());
-        
+//        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), actmol->getMolname().c_str());
+
+	std::vector<std::string> List_used = {};
+        std::string transfertype = "";       
         auto myatoms =  actmol -> atomsConst();
->>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
         for (size_t i = 0; i < myatoms.size(); i++)
         {if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
 		{
@@ -414,7 +401,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 	     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
 	     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
 	     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
-	     std::vector<std::string> List_used2 {};
+	     std::vector<std::string> List_used2 = {};
              for(const auto &shell: myatoms[i].shells())
 	     { 
 	     
@@ -872,13 +859,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
   //                //add_xml_int(grandchild2, "charge", 0);       
   //        }
             // add customnonbonded (WBH vdW + pg coulomb) for compound
-<<<<<<< HEAD
-	    //
-	    std::vector<std::string> List_used {};
-            auto myatoms =  mymol -> atomsConst();
-=======
+            std::vector<std::string> List_used = {};	
             auto myatoms =  actmol -> atomsConst();
->>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
             for (size_t i = 0; i < myatoms.size(); i++)
             {  if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
             {
@@ -991,12 +973,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 
           //  } 
             // adding nonbonded (LJ + point coulomb) for compound
-<<<<<<< HEAD
-	    std::vector<std::string> List_used {};
-            auto myatoms =  mymol -> atomsConst();
-=======
+            std::vector<std::string> List_used = {};	
             auto myatoms =  actmol -> atomsConst();
->>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
             for (size_t i = 0; i < myatoms.size(); i++)
             { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
 	{
@@ -1042,7 +1020,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             if (pd->polarizable())    
             {
                 auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
-<<<<<<< HEAD
               //  for (const auto &aType : pd->particleTypesConst())
               //  {
               //      if (eptAtom == aType.gmxParticleType())
@@ -1064,33 +1041,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
               //          addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
               //      } 
               //  } 
-                std::vector<std::string> List_used {};
-                auto myatoms =  mymol -> atomsConst();
-=======
-                for (const auto &aType : pd->particleTypesConst())
-                {
-                    if (eptAtom == aType.gmxParticleType())
-                    {
-                        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), aType.id().id().c_str());
-                        double myalpha = 0;
-                        if (aType.hasOption("poltype"))
-                        {
-                            auto shell_ai = aType.optionValue("poltype");
-                            auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
-                                                                          pol_name[polALPHA]);
-                            myalpha = alpha.internalValue();
-                            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-                        }
-                        add_xml_double(grandchild2, "polarizability", myalpha);
-                        add_xml_double(grandchild2, "thole", 0);
-                        const std::string charge("charge");
-                        addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
-                    } 
-                } 
-
-                auto myatoms =  actmol -> atomsConst();
->>>>>>> aebbb0334af0e47f91e9206fc31384be6de8afa7
+                std::vector<std::string> List_used = {};
+		auto myatoms =  actmol -> atomsConst();
                 for (size_t i = 0; i < myatoms.size(); i++)
                 { if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
         {
