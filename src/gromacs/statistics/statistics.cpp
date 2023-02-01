@@ -137,7 +137,7 @@ eStats gmx_stats::compute(int weight)
 {
     double yy, yx, xx, sx, sy, d2;
     double ssxx, ssyy, ssxy;
-    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
+    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2; //, dy2;
 
     int    N = x_.size();
 
@@ -262,7 +262,7 @@ eStats gmx_stats::compute(int weight)
 
             /* Look up equations! */
             dx2            = (xx-sx*sx);
-            dy2            = (yy-sy*sy);
+            // dy2            = (yy-sy*sy);
             sigma_a_ = std::sqrt(chi2_/((N-2)*dx2));
             sigma_b_ = sigma_a_*std::sqrt(xx);
             Rfit_    = std::abs(ssxy)/std::sqrt(ssxx*ssyy);

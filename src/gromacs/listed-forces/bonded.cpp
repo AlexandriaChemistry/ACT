@@ -1058,7 +1058,7 @@ real linear_angles(int nbonds,
     int  i, m, ai, aj, ak, t1, t2, type;
     rvec f_i, f_j, f_k;
     real L1, kA, kB, aA, aB, dr, dr2, va, vtot, a, b, klin;
-    real r13A, r13B, kUBA, kUBB;
+    //real r13A, r13B, kUBA, kUBB;
     ivec jt, dt_ij, dt_kj;
     rvec r_ij, r_kj, r_ik, dx;
 
@@ -1080,11 +1080,11 @@ real linear_angles(int nbonds,
         a    = L1*aA+lambda*aB;
         b    = 1-a;
 
-        r13A = forceparams[type].linangle.r13A;
-        r13B = forceparams[type].linangle.r13B;
+        //r13A = forceparams[type].linangle.r13A;
+        //r13B = forceparams[type].linangle.r13B;
         
-        kUBA = forceparams[type].linangle.kUBA;
-        kUBB = forceparams[type].linangle.kUBB;
+        //kUBA = forceparams[type].linangle.kUBA;
+        //kUBB = forceparams[type].linangle.kUBB;
 
         t1 = pbc_rvec_sub(pbc, x[ai], x[aj], r_ij);
         t2 = pbc_rvec_sub(pbc, x[ak], x[aj], r_kj);

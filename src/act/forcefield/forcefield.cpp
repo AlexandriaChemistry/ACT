@@ -717,7 +717,6 @@ static std::vector<InteractionType> eemlist =
 
 void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
 {
-    auto cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
@@ -730,7 +729,8 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
             if (fs != forces_.end())
             {
                 cr->send_int(dest, 1);
-                cs = fs->second.Send(cr, dest);
+                // TODO do not ignore return value
+                (void) fs->second.Send(cr, dest);
             }
             else
             {

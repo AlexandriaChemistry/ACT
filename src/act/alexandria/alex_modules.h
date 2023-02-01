@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -48,7 +48,6 @@ int geometry_ff(int argc, char *argv[]);
 int analyze(int argc, char *argv[]);
 int merge_ff(int argc, char *argv[]);
 int edit_mp(int argc, char *argv[]);
-int mp2csv(int argc, char *argv[]);
 }
 
 namespace gmx
