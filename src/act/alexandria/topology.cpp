@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -376,15 +376,35 @@ void Topology::shellsToAtoms()
 void Topology::setAtoms(const t_atoms *atoms)
 {
     atoms_.clear();
+    if (atoms->nres < 1)
+    {
+        GMX_THROW(gmx::InternalError("Number of residues incorrect in t_atoms"));
+    }
+    residueNames_.resize(atoms->nres);
+    int minres = atoms->nres;
     for(int i = 0; i < atoms->nr; i++)
     {
-        atoms_.push_back(ActAtom(*atoms->atomname[i],
-                                 atoms->atom[i].elem,
-                                 *atoms->atomtype[i],
-                                 atoms->atom[i].ptype,
-                                 atoms->atom[i].atomnumber,
-                                 atoms->atom[i].m,
-                                 atoms->atom[i].q));
+        minres = std::min(minres, atoms->atom[i].resind);
+    }
+    for(int i = 0; i < atoms->nr; i++)
+    {
+        ActAtom anew(*atoms->atomname[i], atoms->atom[i].elem,
+                     *atoms->atomtype[i], atoms->atom[i].ptype,
+                     atoms->atom[i].atomnumber,
+                     atoms->atom[i].m, atoms->atom[i].q);
+        // TODO this is not the real residue number, but an index
+        int resind = atoms->atom[i].resind-minres;
+        anew.setResidueNumber(resind);
+        if (atoms->resinfo != nullptr)
+        {
+            if (resind < 0 && resind >= atoms->nres)
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Residue index %d out of range. Should be within %d-%d",
+                                                               resind, 0, atoms->nres).c_str()));
+            }
+            residueNames_[resind].assign(*(atoms->resinfo[minres+resind].name));
+        }
+        atoms_.push_back(anew);
     }
 }
 
@@ -929,8 +949,17 @@ static void fillParams(const ForceFieldParameterList &fs,
                        std::vector<double>           *param)
 {
     for (int i = 0; i < nr; i++)
-    { 
-        param->push_back(fs.findParameterTypeConst(btype, param_names[i]).internalValue());
+    {
+        if (!fs.parameterExists(btype))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameters for %s and topid %s", fs.function().c_str(),
+                                                           btype.id().c_str()).c_str()));
+        }
+        else
+        {
+            auto fp = fs.findParameterTypeConst(btype, param_names[i]);
+            param->push_back(fp.internalValue());
+        }
     }
 }
 
@@ -1003,15 +1032,21 @@ void Topology::setIdentifiers(const ForceField *pd)
         auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry : entry.second)
         {
+            std::string              atypes;
             std::vector<std::string> btype;
             for(auto &jj : topentry->atomIndices())
             {
-                // Check whether we do nog e.g. have a shell here
+                // Check whether we do not e.g. have a shell here
                 if (!pd->hasParticleType(atoms_[jj].ffType()))
                 {
                     continue;
                 }
                 auto atype = pd->findParticleType(atoms_[jj].ffType());
+                if (!atypes.empty())
+                {
+                    atypes += " ";
+                }
+                atypes += atype->id().id();
                 switch (entry.first)
                 {
                 case InteractionType::VDW:
@@ -1067,6 +1102,10 @@ void Topology::setIdentifiers(const ForceField *pd)
                         fprintf(stderr, "Found a funny one: %s\n", topentry->id().id().c_str());
                     }
                 }
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Could not find identifier for %s for %s", interactionTypeToString(entry.first).c_str(), atypes.c_str()).c_str()));
             }
         }
     }

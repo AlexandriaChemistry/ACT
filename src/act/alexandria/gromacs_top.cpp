@@ -166,9 +166,9 @@ void print_top_mols(FILE *out,
     }
 }
 
-static void print_atoms(FILE                       *out,
-                        const std::vector<ActAtom> &atoms,
-                        const std::string          &residueName)
+static void print_atoms(FILE                           *out,
+                        const std::vector<ActAtom>     &atoms,
+                        const std::vector<std::string> &residueNames)
 {
     fprintf(out, "[ %s ]\n", dir2str(d_atoms));
     fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
@@ -183,7 +183,7 @@ static void print_atoms(FILE                       *out,
                 atomnr,
                 atoms[i].ffType().c_str(),
                 atoms[i].residueNumber(), ' ',
-                residueName.c_str(),
+                residueNames[atoms[i].residueNumber()].c_str(),
                 atoms[i].name().c_str(),
                 atomnr,
                 atoms[i].charge(), 
@@ -246,7 +246,7 @@ void write_top(FILE            *out,
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", pd->getNexcl());
-        print_atoms(out, myAtoms, topology->name());
+        print_atoms(out, myAtoms, topology->residueNames());
         for (auto &fs : pd->forcesConst())
         {
             auto iType = fs.first;

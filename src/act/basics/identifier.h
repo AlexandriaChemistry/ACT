@@ -101,8 +101,10 @@ class Identifier
      */
     Identifier(const std::string &atom);
 
-    //! \brief Return standard identifier string
-    const std::string &id() const { return ids_[0]; }
+    /*! \brief Return standard identifier string
+     * \throws if there are no ids
+     */
+    const std::string &id() const;
 
     //! \brief Return the bond orders
     const std::vector<double> &bondOrders() const { return bondOrders_; }

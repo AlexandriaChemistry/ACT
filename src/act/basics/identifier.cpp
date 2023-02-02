@@ -96,6 +96,18 @@ static void createReverseBondOrderDelimeter()
     }
 }
 
+const std::string &Identifier::id() const
+{
+    if (ids_.empty())
+    {
+        GMX_THROW(gmx::InternalError("Identifier without ids"));
+    }
+    else
+    {
+        return ids_[0];
+    }
+}
+
 void Identifier::orderAtoms()
 {
     if (canSwap_ == CanSwap::Yes && atoms_.size() > 0)

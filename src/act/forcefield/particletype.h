@@ -121,7 +121,7 @@ class ParticleType
     /*! \brief Get identifier corresponding to interactiontype
      * 
      * \param[in] itype The interaction type to look for
-     * \return value will be empty if option does not exist.
+     * \throws if option does not exist for this particle.
      */
     Identifier interactionTypeToIdentifier(InteractionType itype) const;
     

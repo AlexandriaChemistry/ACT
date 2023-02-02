@@ -39,6 +39,7 @@
 #include <cmath>
 
 #include <map>
+#include <set>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -217,11 +218,6 @@ static const char *exml_names(xmlEntryOpenMM xmlOpenMM)
     return rmapyyyOpenMM[xmlOpenMM].c_str();
 }
 
-static std::string atomTypeOpenMM(const std::string &ffType, size_t index)
-{
-    return gmx::formatString("%s_%lu", ffType.c_str(), index);
-}
-
 std::vector<xmlEntryOpenMM> class_vec = {xmlEntryOpenMM::CLASS1, xmlEntryOpenMM::CLASS2, xmlEntryOpenMM::CLASS3, xmlEntryOpenMM::CLASS4};
 std::vector<xmlEntryOpenMM> type_vec  = {xmlEntryOpenMM::TYPE1, xmlEntryOpenMM::TYPE2, xmlEntryOpenMM::TYPE3, xmlEntryOpenMM::TYPE4}; 
 
@@ -243,6 +239,7 @@ static void addSpecParameter(xmlNodePtr                 parent,
     };
     if (type == specparam)
     {
+        // TODO make this a parameter
         // mass for Langevin, subtract shell mass = 0.1
         if (type == "mass")
         {
@@ -300,6 +297,42 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
+static std::string nameIndex(const std::string &name, int index)
+{
+    std::string ni = name + gmx::formatString("%d", index+1);
+    return ni;
+}
+
+static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, const ACTMol *actmol, 
+                               const std::set<int> &Atoms_used)
+{
+    auto itbonds = InteractionType::BONDS;
+    if (pd->interactionPresent(itbonds))
+    {
+        auto fs = pd->findForcesConst(itbonds);
+        
+        if (actmol->topology()->hasEntry(itbonds))
+        {
+            auto myatoms = actmol->atomsConst();
+           for(const auto topentry : actmol->topology()->entry(itbonds))
+            {
+                int ai = topentry->atomIndex(0);
+                int aj = topentry->atomIndex(1);
+                if (Atoms_used.find(ai) != Atoms_used.end() &&
+                    Atoms_used.find(aj) != Atoms_used.end())
+                {
+                    //here also myatoms[i].ffType(); but for ai aj
+                    auto name_ai = myatoms[ai].name();
+                    auto name_aj = myatoms[aj].name();
+                    auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::BOND_RES));
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), nameIndex(name_ai, ai).c_str());
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), nameIndex(name_aj, aj).c_str());  
+                }
+            }
+        }
+    }
+}
+
 static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol)
 {
     std::string  geometry, name,
@@ -317,154 +350,93 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 //    }
 
     auto myatoms =  actmol -> atomsConst();
-    std::vector<std::string> List_used = {};
+    std::set<std::string> List_used;
     for (size_t i = 0; i < myatoms.size(); i++)
-    {   	
-
-	    if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
-{
-  ;
-}
-   else
-                                            {
-						List_used.push_back(myatoms[i].ffType());
-                                            
-
-        auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
-
-        auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
-        add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
+    {
         auto ffType = myatoms[i].ffType();
-        add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
-
-        if (!pd->hasParticleType(ffType))
+        if (List_used.find(ffType) == List_used.end())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s", ffType.c_str(), pd->filename().c_str()).c_str()));
+            List_used.insert(ffType);
+
+            auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), ffType.c_str()); 
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
+            
+            if (!pd->hasParticleType(ffType))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s", ffType.c_str(), pd->filename().c_str()).c_str()));
+            }
+            auto aType = pd->findParticleType(ffType);
+            addXmlElemMass(baby, *aType);
         }
-        auto aType = pd->findParticleType(ffType);
-        addXmlElemMass(baby, *aType);
-						}
     }
 
-    auto child2 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
+    auto child2  = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
 
-   // std::vector<std::string> mylist{"Li+", "Na+", "K+", "Rb+", "Cs+", "F-", "Cl-", "Br-", "I-"};
-
-   // for (const auto &aType : pd->particleTypesConst())
-   // {
-   //     if (strcmp(ptype_str[aType.gmxParticleType()], "Atom") == 0)
-   //     {
-   //         if (std::find(std::begin(mylist), std::end(mylist), aType.id().id().c_str()) != std::end(mylist))
-   //         {
-   //             auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-   //             add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-   //             auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-   //             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-   //             add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), aType.id().id().c_str());
-   //     
-   //             for(const auto &opt: aType.optionsConst())
-   //             {
-   //                 addShell(grandchild, opt.first, opt.second, "poltype");
-   //             }   
-   //         }    
-   //
-   //     }   
-   //}
-
-    if (actmol->getMolname().size() > 0)
+    if (myatoms.size() > 0)
     {
-//        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), actmol->getMolname().c_str());
-
-	std::vector<std::string> List_used = {};
-        std::string transfertype = "";       
-        auto myatoms =  actmol -> atomsConst();
+        // First residue will be defined below. 
+        xmlNodePtr residuePtr    = nullptr;
+        int        residueNumber = -1;
+        auto       resnames      = actmol->topology()->residueNames();
+        std::set<std::string> List_used;
+        std::set<int>         Atoms_used;
+        bool       skipAtoms     = false;
         for (size_t i = 0; i < myatoms.size(); i++)
-        {if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
-		{
-                ;
-		}
-   		else
-                {
-                List_used.push_back(myatoms[i].ffType());
-		transfertype = myatoms[i].ffType();
-//		std::cout << myatoms[i].ffType() << std::endl;
-					    
-            auto name_ai = myatoms[i].ffType(); // atomTypeOpenMM(myatoms[i].ffType(), i);
-//	    auto name_ai = atomTypeOpenMM(myatoms[i].ffType(), i);
-	    auto aType = pd->findParticleType(myatoms[i].ffType());
-            if ( myatoms[i].pType() == eptAtom)   {
-	    
-             auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-	     add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
-	     auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-	     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
-	     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
-	     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
-	     std::vector<std::string> List_used2 = {};
-             for(const auto &shell: myatoms[i].shells())
-	     { 
-	     
-	     auto name_ai = myatoms[shell].ffType();  
-             auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
-             add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());
-             add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge());     
-
-
-		    }
-
-	                                        }
-	    // }
-	else 
-	{;	
-//						}
-//	    auto aType = pd->findParticleType(myatoms[i].ffType());
-//	    std::cout << aType << '\n';
-//	    auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
-//            add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
-//            add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str());
-		
-//            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
-//            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
-            //add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), *(myatoms.atomtype[i]));
-//            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
-//            add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
-        }            
-		}
-    	}
-
-        auto itbonds = InteractionType::BONDS;
-        if (pd->interactionPresent(itbonds))
-        {if (std::find(List_used.begin(), List_used.end(), transfertype) != List_used.end())
         {
-          ;
-        }
-   else
-                                            {
-                                                List_used.push_back(transfertype);
-            auto fs = pd->findForcesConst(itbonds);
-        
-            if (actmol->topology()->hasEntry(itbonds))
+            if (myatoms[i].residueNumber() != residueNumber)
             {
-                for(const auto topentry : actmol->topology()->entry(itbonds))
+                // Time for a new residue, but prevent that we repeat them.
+                // We have rely on residue names to mean identical chemical moieties,
+                // that is if we for instance have an N-terminal amino acid, it should
+                // be a different residue from a mid-chain amino acid.
+                residueNumber = myatoms[i].residueNumber();
+            
+                if (List_used.find(resnames[residueNumber]) == List_used.end())
                 {
-                    int ai = topentry->atomIndex(0);
-                    int aj = topentry->atomIndex(1);
-                   //here also myatoms[i].ffType(); but for ai aj 
-                    auto name_ai = atomTypeOpenMM(myatoms[ai].ffType(), ai);
-                    auto name_aj = atomTypeOpenMM(myatoms[aj].ffType(), aj);
-                    auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));             
-                    auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
-                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), name_ai.c_str());
-                    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), name_aj.c_str());  
-                }   
+                    // Check whether we have to terminate the residue by defining bonds
+                    if (nullptr != residuePtr)
+                    {
+                        addXmlResidueBonds(residuePtr, pd, actmol, Atoms_used);
+                        Atoms_used.clear();
+                    }
+                    residuePtr = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+                    add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), resnames[residueNumber].c_str());
+                    List_used.insert(resnames[residueNumber]);
+                    Atoms_used.insert(i);
+                    skipAtoms = false;
+                }
+                else
+                {
+                    skipAtoms = true;
+                }
             }
-          }
-	 }
-					    
-    } 
-
+            if (!skipAtoms)
+            {
+                if (myatoms[i].pType() == eptAtom)
+                {
+                    auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), nameIndex(myatoms[i].name(), i).c_str());
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), myatoms[i].ffType().c_str());
+                    add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
+                    for(const auto &shell: myatoms[i].shells())
+                    {
+                        auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+                        add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), nameIndex(myatoms[shell].name(), shell).c_str());
+                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), myatoms[shell].ffType().c_str());
+                        add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge());     
+                    }
+                    Atoms_used.insert(i);
+                }
+            }
+        }
+        // Check whether we have to terminate the residue by defining bonds
+        if (nullptr != residuePtr)
+        {
+            addXmlResidueBonds(residuePtr, pd, actmol, Atoms_used);
+            Atoms_used.clear();
+        }
+    }
 
     for (auto &fs : pd->forcesConst())
     {
@@ -774,7 +746,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
             auto grandchild4 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
-
 
             auto grandchild5 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");

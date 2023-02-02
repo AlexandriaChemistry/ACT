@@ -424,8 +424,8 @@ private:
     double           mass_;
     //! The charge
     double           charge_;
-    //! Residue number
-    int              residueNumber_ = 1;
+    //! Residue number. If at -1 it means it has not been set.
+    int              residueNumber_ = -1;
 public:
     ActAtom(const std::string &name,
             const std::string &elem,
@@ -491,6 +491,11 @@ public:
 
     //! return the residue number
     int residueNumber() const { return residueNumber_; }
+    
+    /*! set the residue number
+     * \param[in] resnr the new number
+     */
+    void setResidueNumber(int resnr) { residueNumber_ = resnr; }
 };
 
 class Topology
@@ -502,12 +507,13 @@ private:
     std::vector<std::vector<int> >                            exclusions_;
     //! List of atoms
     std::vector<ActAtom>                                      atoms_;
-    //! The (residue) name
-    std::string                                               name_;
+    //! The molecule (compound) name
+    std::string                                               moleculeName_;
+    //! The residue names. If just one, this will likely be the same as the moleculeName_
+    std::vector<std::string>                                  residueNames_;
  public:
     Topology()
     {
-        name_.assign("MOL");
     }
 
     /*! Constructor
@@ -517,7 +523,7 @@ private:
     Topology(const std::vector<Bond> &bonds);
 
     //! Return the name
-    const std::string &name() const { return name_; }
+    const std::string &moleculeName() const { return moleculeName_; }
 
     /*! Find a bond between two atoms
      * \param[in] ai The first atom
@@ -563,6 +569,9 @@ private:
 
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
+
+    //! \return the residue names
+    const std::vector<std::string> residueNames() const { return residueNames_; }
     
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }

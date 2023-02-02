@@ -100,7 +100,11 @@ protected:
             gmxAtoms_.atom[i].m          = 12;
             gmxAtoms_.atom[i].q          = 0;
             gmxAtoms_.atom[i].atomnumber = 6;
+            gmxAtoms_.atom[i].resind     = 0;
         }
+        gmxAtoms_.nres = 1;
+        snew(gmxAtoms_.resinfo, 1);
+        gmxAtoms_.resinfo[0].name = put_symtab(&symtab_, "Benzene");
         close_symtab(&symtab_);
     }
 
