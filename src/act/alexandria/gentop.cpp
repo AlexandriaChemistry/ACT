@@ -129,6 +129,7 @@ int gentop(int argc, char *argv[])
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
     static real                      border         = 0.2;
+    static real                      mDrude         = 0.1;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
     static char                     *dbname         = (char *)"";
@@ -165,6 +166,8 @@ int gentop(int argc, char *argv[])
           "Conformation of the molecule" },
         { "-ws",     FALSE, etBOOL, {&writeShells},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
+        { "-mDrude", FALSE, etREAL, {&mDrude},
+          "Mass to use for the drude particle if any" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
@@ -397,7 +400,7 @@ int gentop(int argc, char *argv[])
             {
                 std::string ofn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-openmm", NFILE, fnm));
-                writeOpenMM(ofn, &pd, &actmol, 0);
+                writeOpenMM(ofn, &pd, &actmol, mDrude, 0);
             }
             else
             {

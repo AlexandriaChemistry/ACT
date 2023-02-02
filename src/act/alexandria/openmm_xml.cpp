@@ -264,9 +264,9 @@ static void addSpecParameter(xmlNodePtr                 parent,
 }
 
 static void addShell(xmlNodePtr         parent,
-                      const std::string &key,
-                      const std::string &value,
-                      const std::string &specopt)
+                     const std::string &key,
+                     const std::string &value,
+                     const std::string &specopt)
 {
     if (strcmp(key.c_str(), specopt.c_str()) == 0)
     {    
@@ -276,22 +276,20 @@ static void addShell(xmlNodePtr         parent,
     }
 }
 
-static void addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
+static void addXmlElemMass(xmlNodePtr parent, const ParticleType *aType, double mDrude)
 {
-    double mDrude = 0.1;
-
-    if (eptAtom == aType.gmxParticleType())
+    if (eptAtom == aType->gmxParticleType())
     {
         add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
-                     aType.element().c_str());
-        double mAtom = aType.mass();
-        if (aType.hasOption("poltype"))
+                     aType->element().c_str());
+        double mAtom = aType->mass();
+        if (aType->hasOption("poltype"))
         {
             mAtom -= mDrude;
         }
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mAtom);
     }
-    else if (eptShell == aType.gmxParticleType())
+    else if (eptShell == aType->gmxParticleType())
     {
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude);
     }
@@ -335,44 +333,32 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
     }
 }
 
-static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol)
+static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol, double mDrude)
 {
-    std::string  geometry, name,
-        acentral, attached, tau_unit, ahp_unit,
-        epref, desc, params, tmp;
-
+    //    std::string name, acentral, attached, tau_unit, ahp_unit, epref, desc, params, tmp;
     auto child = add_xml_child(parent, exml_names(xmlEntryOpenMM::ATOMTYPES));
-
-//    for (const auto &aType : pd->particleTypesConst())
-//    {
-//        auto grandchild = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
-//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), aType.id().id().c_str());
-//        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-//        addXmlElemMass(grandchild, aType);
-//    }
-
     auto myatoms =  actmol -> atomsConst();
-    std::set<std::string> List_used;
+    std::set<std::string> ClassUsed;
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         auto ffType = myatoms[i].ffType();
-        if (List_used.find(ffType) == List_used.end())
+        if (ClassUsed.find(ffType) == ClassUsed.end())
         {
-            List_used.insert(ffType);
+            ClassUsed.insert(ffType);
 
             auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), ffType.c_str()); 
             add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
+            ClassUsed.insert(ffType);
             
             if (!pd->hasParticleType(ffType))
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s", ffType.c_str(), pd->filename().c_str()).c_str()));
             }
             auto aType = pd->findParticleType(ffType);
-            addXmlElemMass(baby, *aType);
+            addXmlElemMass(baby, &(*aType), mDrude);
         }
     }
-
     auto child2  = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
 
     if (myatoms.size() > 0)
@@ -381,7 +367,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         xmlNodePtr residuePtr    = nullptr;
         int        residueNumber = -1;
         auto       resnames      = actmol->topology()->residueNames();
-        std::set<std::string> List_used;
+        std::set<std::string> ResidueUsed;
         std::set<int>         Atoms_used;
         bool       skipAtoms     = false;
         // Let each residue start with atom number 1 within the residue definition, to do this
@@ -397,7 +383,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                 // be a different residue from a mid-chain amino acid.
                 residueNumber = myatoms[i].residueNumber();
             
-                if (List_used.find(resnames[residueNumber]) == List_used.end())
+                if (ResidueUsed.find(resnames[residueNumber]) == ResidueUsed.end())
                 {
                     // Check whether we have to terminate the residue by defining bonds
                     if (nullptr != residuePtr)
@@ -407,7 +393,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                     }
                     residuePtr = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
                     add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), resnames[residueNumber].c_str());
-                    List_used.insert(resnames[residueNumber]);
+                    ResidueUsed.insert(resnames[residueNumber]);
                     Atoms_used.insert(i);
                     residueStart = i;
                     skipAtoms    = false;
@@ -469,26 +455,38 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             // Add all bonds
             for (auto &params : fs.second.parametersConst())
             {
-                auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-                
-                int i = 0;
+                // To filter out bonds, we should not look for the ffType but for the correspondng bond type
+                bool inClass = true;
                 for (auto &a:params.first.atoms())
                 {
-                    std::string s = a.c_str();
- 
-                    if (!s.empty()) 
+                    if (ClassUsed.find(a) == ClassUsed.end())
                     {
-                        s.resize(s.size() - 2);
+                        inClass = false;
                     }
-                    add_xml_char(grandchild3, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
+                }
+                if (true || inClass)
                 {
-                    addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE]);
-                    addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA]);
-                    addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH]);  
+                    auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+                
+                    int i = 0;
+                    for (auto &a:params.first.atoms())
+                    {
+                        std::string s = a.c_str();
+                        
+                        if (!s.empty()) 
+                        {
+                            s.resize(s.size() - 2);
+                        }
+                        add_xml_char(grandchild3, exml_names(class_vec[i]), s.c_str());
+                        i++;
+                    } 
+                    
+                    for (const auto &param : params.second)
+                    {
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE]);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA]);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH]);  
+                    }
                 }
             }
         }
@@ -663,7 +661,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         //    }
         //}
 
-
                         case InteractionType::PROPER_DIHEDRALS:
         {
             auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
@@ -736,22 +733,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             auto grandchild0 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
             
-            //int i=0;
-            //for (auto &params : fs.second.parametersConst())
-            //{            
-            //    for (const auto &param : params.second)
-            //    {
-            //        auto grandchild1 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            //        add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
-            //    } 
-            //    i++;
-            //    if (i == 1) 
-            //        {
-            //        break;
-            //        }
-            //}
- 
-            // !!!   This order is important !!! Do not change the order of these parameters, otherwise the force field is not working !!!
+            // This order is important !!! Do not change the order of these parameters,
+            // otherwise the force field is not working !!!
             auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
             auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -764,86 +747,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             auto grandchild6 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "beta");
 
-
-
-  //            for (const auto &aType : pd->particleTypesConst())
-  //            {
-  //                    auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-  //                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-  //                    if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-  //                    {
-  //                       add_xml_double(grandchild2, "vdW", 1.0); 
-  //                    }
-  //                    if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-  //                    {
-  //                        add_xml_double(grandchild2, "vdW", 0.0);
-  //                    }
-  //                    
-  // 
-  //                  for(const auto &opt: aType.optionsConst())
-  //                  {
-  //                      if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
-  //                      {
-  //                          for (auto &params : fs.second.parametersConst())
-  //                          {
-  //                              for (const auto &param : params.second)
-  //                              {
-  //                                  if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-  //                                  {    
-  //                                      if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-  //                                      {
-  //                                          add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-  //                                      }
-  //                                      if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-  //                                      {
-  //                                          if (strcmp(param.first.c_str(), "gamma") == 0)
-  //                                          {
-  //                                               add_xml_double(grandchild2, param.first.c_str(), 7.0); 
-  //                                          }
-  //                                          else 
-  //                                          {
-  //                                              add_xml_double(grandchild2, param.first.c_str(), 1.0); 
-  //                                          }
-  //                                          
-  //                                      }
-  //                                  } 
-  //                              }        
-  //                          }
-  //                      }
-  //                      if (strcmp(opt.first.c_str(), "zetatype") == 0)
-  //                      {
-  //                          for (auto &fs : pd->forcesConst())
-  //                          {
-  //                             if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
-  //                             {
-  //                                    for (auto &params : fs.second.parametersConst())
-  //                                   {
-  //                                       for (const auto &param : params.second)
-  //                                       {
-  //                                           if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-  //                                           {
-  //                                      
-  //                  
-  //                                              for(const auto &param : aType.parametersConst())
-  //                                              {
-  //                                                  addSpecParameter(grandchild2, param.first, param.second, "charge");     
-  //                                            } 
-  //                                            //add_xml_double(grandchild2, param.first.c_str(), param.second.value()); 
-  //                                            add_xml_double(grandchild2, "beta", param.second.value()); 
-  //                                        }    
-  //                                    }
-  //                                        
-  //                                }    
-  //                           } 
-  //                        }
-  //                    }       
-  //                }
-  //
-  //                //add_xml_int(grandchild2, "charge", 0);       
-  //        }
             // add customnonbonded (WBH vdW + pg coulomb) for compound
-            std::vector<std::string> List_used = {};	
-            auto myatoms =  actmol -> atomsConst();
+            std::vector<std::string> List_used;
             for (size_t i = 0; i < myatoms.size(); i++)
             {  
                 if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
@@ -861,15 +766,14 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                     {
                         if (aType.id().id() == myatoms[i].ffType())
                         {
-                            if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                            if (eptAtom == aType.gmxParticleType()) 
                             {
                                 add_xml_double(grandchild3, "vdW", 1.0); 
                             }
-                            if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0)
+                            if (eptShell == aType.gmxParticleType())
                             {
                                 add_xml_double(grandchild3, "vdW", 0.0);
                             }   
-                            
                             
                             for(const auto &opt: aType.optionsConst())
                             { 
@@ -881,11 +785,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                                         {
                                             if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
                                             {    
-                                                if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                                                if (eptAtom == aType.gmxParticleType()) 
                                                 {
                                                     add_xml_double(grandchild3, param.first.c_str(), param.second.value());
                                                 }
-                                                if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+                                                if (eptShell == aType.gmxParticleType()) 
                                                 {
                                                     if (strcmp(param.first.c_str(), "gamma") == 0)
                                                     {
@@ -905,7 +809,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                                 {
                                     for (auto &fs : pd->forcesConst())
                                     {
-                                        if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
+                                        if (InteractionType::COULOMB == fs.first)
                                         {
                                             for (auto &params : fs.second.parametersConst())
                                             {
@@ -956,17 +860,13 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                 
                 //  }
                 // adding nonbonded (LJ + point coulomb) for compound
-                std::vector<std::string> List_used = {};	
+                std::set<std::string> List_used;	
                 auto myatoms =  actmol -> atomsConst();
                 for (size_t i = 0; i < myatoms.size(); i++)
                 { 
-                    if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+                    if (List_used.find(myatoms[i].ffType()) == List_used.end())
                     {
-                        ;
-                    }
-                    else
-                    {
-                        List_used.push_back(myatoms[i].ffType());
+                        List_used.insert(myatoms[i].ffType());
                         
                         auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
                         auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
@@ -993,66 +893,37 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             }
         }
         break;
-        // !!! Shell particle has to be type1, core particle has to be type2 !!!
-        // 
         case InteractionType::POLARIZATION:
         {  
+            // !!! Shell particle has to be type1, core particle has to be type2 !!!
+            // 
             if (pd->polarizable())    
             {
                 auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
-              //  for (const auto &aType : pd->particleTypesConst())
-              //  {
-              //      if (eptAtom == aType.gmxParticleType())
-              //      {
-              //          auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-              //          add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), aType.id().id().c_str());
-              //          double myalpha = 0;
-              //          if (aType.hasOption("poltype"))
-              //          {
-              //              auto shell_ai = aType.optionValue("poltype");
-              //              auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
-              //                                                            pol_name[polALPHA]);
-              //              myalpha = alpha.internalValue();
-              //              add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-              //          }
-              //          add_xml_double(grandchild2, "polarizability", myalpha);
-              //          add_xml_double(grandchild2, "thole", 0);
-              //          const std::string charge("charge");
-              //          addSpecParameter(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), aType.parameterConst(charge), charge);
-              //      } 
-              //  } 
-                std::vector<std::string> List_used = {};
+                std::set<std::string> List_used;
                 auto myatoms =  actmol -> atomsConst();
                 for (size_t i = 0; i < myatoms.size(); i++)
                 { 
-                    if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
+                    auto ffType = myatoms[i].ffType();
+                    if (List_used.find(ffType) == List_used.end())
                     {
-                        ;
-                    }
-                    else
-                    {
-                        List_used.push_back(myatoms[i].ffType());
-                        
-                        auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
-                        for (const auto &aType : pd->particleTypesConst())
+                        List_used.insert(ffType);
+                        if (eptAtom == myatoms[i].pType())
                         {
-                            if (aType.id().id() == myatoms[i].ffType()) 
+                            auto ptp     = pd->findParticleType(ffType);
+                            if (ptp->hasOption("poltype"))
                             {
-                                if (aType.gmxParticleType() == eptAtom &&
-                                    aType.hasOption("poltype"))
-                                {
-                                    auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), name_ai.c_str()); 
-                                    auto shell_ai = aType.optionValue("poltype");
-                                    auto alpha = fs.second.findParameterTypeConst(Identifier({shell_ai}),
-                                                                                  pol_name[polALPHA]);
+                                auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
+                                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), ffType.c_str()); 
+                                auto shell_ai = ptp->optionValue("poltype");
+                                auto alpha    = fs.second.findParameterTypeConst(Identifier({shell_ai}),
+                                                                                 pol_name[polALPHA]);
                                     
-                                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-                                    add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                                    // TODO: Fix atom number for shell
-                                    add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i+1].charge());
-                                    add_xml_double(grandchild2, "thole", 0);
-                                }
+                                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
+                                add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+                                auto stp = pd->findParticleType(shell_ai);
+                                add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
+                                add_xml_double(grandchild2, "thole", 0);
                             }
                         }
                     }    
@@ -1060,6 +931,9 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             }
         }
         break;
+        case InteractionType::COULOMB:
+            // Coulomb taken into account with other non-bonded interactions
+        case InteractionType::BONDCORRECTIONS:
         case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
             break;
         default:
@@ -1072,6 +946,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 void writeOpenMM(const std::string &fileName,
                  const ForceField  *pd,
                  const ACTMol      *actmol,
+                 double             mDrude,
                  bool               compress)
 {
     xmlDocPtr   doc;
@@ -1102,7 +977,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlForceField(myroot, pd, actmol);
+    addXmlForceField(myroot, pd, actmol,mDrude);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;
