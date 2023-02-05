@@ -157,10 +157,11 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
         // Force field parameter list
         auto &ffpl = pd->findForcesConst(entry.first);
         // The function we need to do the math
-        auto bfc   = getBondForceComputer(ffpl.fType());
+        auto bfc   = getBondForceComputer(ffpl.gromacsType());
         if (nullptr == bfc)
         {
-            fprintf(stderr, "Please implement a force function for type %s\n", interaction_function[ffpl.fType()].name);
+            fprintf(stderr, "Please implement a force function for type %s\n",
+                    interaction_function[ffpl.gromacsType()].name);
         }
         else
         {
@@ -243,7 +244,7 @@ int ForceComputer::ftype(const ForceField   *pd,
     int ftype = F_EPOT;
     if (pd->interactionPresent(itype))
     {
-        ftype = pd->findForcesConst(itype).fType();
+        ftype = pd->findForcesConst(itype).gromacsType();
     }
     return ftype;
 }
@@ -259,11 +260,11 @@ void ForceComputer::plot(const ForceField  *pd,
     }
     auto &fs = pd->findForcesConst(itype);
     // The function we need to do the math
-    auto bfc = getBondForceComputer(fs.fType());
+    auto bfc = getBondForceComputer(fs.gromacsType());
     if (nullptr == bfc)
     {
         fprintf(stderr, "Please implement a force function for type %s\n",
-                interaction_function[fs.fType()].name);
+                interaction_function[fs.gromacsType()].name);
     }
     else
     {

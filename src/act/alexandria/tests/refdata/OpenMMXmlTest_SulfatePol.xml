@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="s3" class="s3" element="S" mass="31.965"/>
+    <Type name="s3_s" class="s3_s" mass="0.1"/>
+    <Type name="o2" class="o2" element="O" mass="15.8994"/>
+    <Type name="o2_s" class="o2_s" mass="0.1"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="UNL">
+      <Atom name="S1" type="s3" charge="0.808235"/>
+      <Atom name="s32" type="s3_s" charge="-1.2"/>
+      <Atom name="O3" type="o2" charge="0.797942"/>
+      <Atom name="o24" type="o2_s" charge="-1.2"/>
+      <Atom name="O5" type="o2" charge="0.797943"/>
+      <Atom name="o26" type="o2_s" charge="-1.2"/>
+      <Atom name="O7" type="o2" charge="0.797938"/>
+      <Atom name="o28" type="o2_s" charge="-1.2"/>
+      <Atom name="O9" type="o2" charge="0.797941"/>
+      <Atom name="o210" type="o2_s" charge="-1.2"/>
+      <Bond atomName1="S1" atomName2="O7"/>
+      <Bond atomName1="S1" atomName2="O5"/>
+      <Bond atomName1="O3" atomName2="S1"/>
+      <Bond atomName1="O9" atomName2="S1"/>
+    </Residue>
+  </Residues>
+  <CustomBondForce energy="0">
+    <PerBondParameter name="D_e"/>
+    <PerBondParameter name="a"/>
+    <PerBondParameter name="r0"/>
+    <Bond class1="o2_b" class2="s3_b" D_e="400" a="20" r0="0.1496"/>
+    <Bond class1="o2_b" class2="o2_b" D_e="400" a="20" r0="0.1205"/>
+    <Bond class1="o2_b" class2="s3_b" D_e="400" a="20" r0="0.1457"/>
+    <Bond class1="o2_b" class2="s3_b" D_e="400" a="20" r0="0.1711"/>
+    <Bond class1="s3_b" class2="s3_b" D_e="400" a="20" r0="0.2091"/>
+  </CustomBondForce>
+  <HarmonicAngleForce>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="1.96175" k="300"/>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="1.75406" k="300"/>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="2.10836" k="300"/>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="1.87797" k="300"/>
+    <Angle class1="o2_b" class2="s3_b" class3="s3_b" angle="1.92161" k="300"/>
+    <Angle class1="s3_b" class2="s3_b" class3="s3_b" angle="1.77849" k="300"/>
+  </HarmonicAngleForce>
+  <CustomAngleForce/>
+  <RBTorsionForce/>
+  <PeriodicTorsionForce>
+    <Improper class1="o2_b" class2="o2_b" class3="o2_b" class4="s3_b" kimp="1" phi="0"/>
+  </PeriodicTorsionForce>
+  <CustomNonbondedForce energy="0" bondCutoff="3">
+    <PerParticleParameter name="vdW"/>
+    <PerParticleParameter name="sigma"/>
+    <PerParticleParameter name="epsilon"/>
+    <PerParticleParameter name="gamma"/>
+    <PerParticleParameter name="charge"/>
+    <PerParticleParameter name="beta"/>
+    <Atom type="s3" vdW="1" epsilon="1.05" gamma="15" sigma="0.29" charge="0.808235" beta="6"/>
+    <Atom type="s3_s" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="o2" vdW="1" epsilon="0.75" gamma="15" sigma="0.12" charge="0.797942" beta="6"/>
+    <Atom type="o2_s" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+  </CustomNonbondedForce>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <Atom type="s3" charge="0.808235" sigma="0.3" epsilon="0.05"/>
+    <Atom type="s3_s" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="o2" charge="0.797942" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_s" charge="-1.2" sigma="0.3" epsilon="0"/>
+  </NonbondedForce>
+  <DrudeForce>
+    <Particle type2="s3" type1="s3_s" polarizability="0.002" charge="-1.2" thole="0"/>
+    <Particle type2="o2" type1="o2_s" polarizability="0.00145" charge="-1.2" thole="0"/>
+  </DrudeForce>
+</ForceField>
+]]></String>
+</ReferenceData>

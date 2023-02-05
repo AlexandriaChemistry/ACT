@@ -343,7 +343,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
     fs->eraseParameter();
-    auto fType = fs->fType();
+    auto fType = fs->gromacsType();
     for(auto &i : bondeds_[bType])
     {
         size_t N = 0;
@@ -409,7 +409,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     {
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
-        fType      = fs->fType();
+        fType      = fs->gromacsType();
         if (iType != bType &&
             iType != InteractionType::VDW &&
             iType != InteractionType::COULOMB)

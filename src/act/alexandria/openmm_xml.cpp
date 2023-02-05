@@ -333,23 +333,455 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
     }
 }
 
+static bool atomsInClass(const std::vector<std::string> &atoms,
+                         const std::set<std::string>    &myClass)
+{
+    bool inClass = true;
+    for (auto &a: atoms)
+    {
+        if (myClass.find(a) == myClass.end())
+        {
+            inClass = false;
+        }
+    }
+    return inClass;
+}
+
+static void addBondAtoms(xmlNodePtr                      parent,
+                         const std::vector<std::string> &atoms)
+{
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        add_xml_char(parent, exml_names(class_vec[i]), atoms[i].c_str());
+    }
+}
+
+static void addXmlBonds(xmlNodePtr                     parent,
+                        const std::set<std::string>   &BondClassUsed,
+                        const ForceFieldParameterList &fs)
+{
+    switch(fs.gromacsType())
+    {
+    case F_MORSE:
+        {
+            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+            // The Morse potential could be written as a string here,
+            // or it can be added in the openmm python script
+            add_xml_double(child3, "energy", 0.0);
+            
+            // Specify the per bond parameters
+            auto grandchild0 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "D_e");
+            auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), "a");
+            auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "r0");
+            
+            // Add all bonds
+            for (auto &params : fs.parametersConst())
+            {
+                // To filter out bonds, we should not look for the ffType but for the correspondng bond type
+                if (atomsInClass(params.first.atoms(), BondClassUsed))
+                {
+                    auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+                    
+                    addBondAtoms(grandchild3, params.first.atoms());
+                    
+                    for (const auto &param : params.second)
+                    {
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE]);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA]);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH]);
+                    }
+                }
+            }
+            break;
+        }
+    case F_BONDS:
+        {
+            // TODO Check for correctness
+            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));
+            // The Morse potential could be written as a string here,
+            // or it can be added in the openmm python script
+            add_xml_double(child3, "energy", 0.0);
+            
+            // Add all bonds
+            for (auto &params : fs.parametersConst())
+            {
+                if (atomsInClass(params.first.atoms(), BondClassUsed))
+                {
+                    auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+                    
+                    addBondAtoms(grandchild2, params.first.atoms());
+                    
+                    for (const auto &param : params.second)
+                    {
+                        // TODO check names and order of parameters. 
+                        addSpecParameter(grandchild2, param.first, param.second, "length"); //bond_name[bondLENGTH]);
+                        addSpecParameter(grandchild2, param.first, param.second, "k"); // bond_name[bondKB]); 
+                    }
+                }    
+            }
+            break;
+        }
+    default:
+        {
+            gmx_fatal(FARGS, "Do not know how to treat %s in addXmlBonds", fs.function().c_str());
+        }
+    }
+}
+
+static void addXmlAngles(xmlNodePtr                     parent,
+                         const std::set<std::string>   &BondClassUsed,
+                         const ForceFieldParameterList &fs)
+{
+    switch(fs.gromacsType())
+    {
+    case F_ANGLES:
+        {
+            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
+            
+            for (auto &params : fs.parametersConst())
+            {
+                if (atomsInClass(params.first.atoms(), BondClassUsed))
+                {
+                    auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
+                    
+                    addBondAtoms(grandchild2, params.first.atoms());
+                    
+                    for (const auto &param : params.second)
+                    {
+                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleANGLE]); 
+                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleKT]); 
+                    }
+                }    
+            }
+        }
+        break;
+    case F_UREY_BRADLEY:
+        {
+            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::AMOEBA_UB_FORCE));
+            for (auto &params : fs.parametersConst())
+            {
+                auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
+                addBondAtoms(grandchild2, params.first.atoms());
+                            
+                for (const auto &param : params.second)
+                {
+                    addSpecParameter(grandchild2, param.first, param.second, "kub"); 
+                    addSpecParameter(grandchild2, param.first, param.second, "r13"); 
+                    //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+                }
+            }
+        }
+        break;
+    default:
+        gmx_fatal(FARGS, "Do not know how to treat %s", fs.function().c_str());
+    }
+}
+
+static void addXmlLinearAngles(xmlNodePtr                     parent,
+                               const std::set<std::string>   &BondClassUsed,
+                               const ForceFieldParameterList &fs)
+{
+    auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+    
+    for (auto &params : fs.parametersConst())
+    {            
+        for (const auto &param : params.second)
+        {
+            if (atomsInClass(params.first.atoms(), BondClassUsed))
+            {
+                auto grandchild1 = add_xml_child(child4, exml_names(xmlEntryOpenMM::PERANGLEPARAMETER));
+                addBondAtoms(grandchild1, params.first.atoms());
+                add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
+            }
+        }
+    }
+#ifdef OLD       
+    for (auto &params : fs.parametersConst())
+    {
+        auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
+        addBondAtoms(grandchild2, params.first.atoms());
+        
+        for (const auto &param : params.second)
+        {
+            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+        }
+    }
+#endif
+}
+
+static void addXmlPropers(xmlNodePtr                     parent,
+                          const std::set<std::string>   &BondClassUsed,
+                          const ForceFieldParameterList &fs)
+{
+    auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
+    
+    for (auto &params : fs.parametersConst())
+    {
+        if (atomsInClass(params.first.atoms(), BondClassUsed))
+        {
+            auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PROPER));
+            addBondAtoms(grandchild2, params.first.atoms());
+            
+            for (const auto &param : params.second)
+            {
+                add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+            }
+            // OpenMM expects 7 parameters for RBTorsion force
+            // TODO: Do we also need more parameters for the RBTorsion force in ACT? Currently c0, c1, c2, c3 in ACT.
+            add_xml_double(grandchild2, "c4", 0);
+            add_xml_double(grandchild2, "c5", 0);
+            add_xml_double(grandchild2, "c6", 0);
+        }
+    }
+}
+
+static void addXmlImpropers(xmlNodePtr                     parent,
+                            const std::set<std::string>   &BondClassUsed,
+                            const ForceFieldParameterList &fs)
+{
+    auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
+    
+    for (auto &params : fs.parametersConst())
+    {
+        if (atomsInClass(params.first.atoms(), BondClassUsed))
+        {
+            auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
+            addBondAtoms(grandchild2, params.first.atoms());
+            
+            for (const auto &param : params.second)
+            {
+                add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+            }
+        }
+    }    
+}
+
+static void addXmlNonbonded(xmlNodePtr                     parent,
+                            const ForceField              *pd,
+                            const ForceFieldParameterList &fs,
+                            const std::vector<ActAtom>    &myatoms)
+{
+    auto child5 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
+    add_xml_double(child5, "energy", 0.0);
+    // TODO Make this a parameter? See https://github.com/dspoel/ACT/issues/26
+    // Question whether 0 will work.
+    add_xml_int(child5, "bondCutoff", 3);
+    
+    auto grandchild0 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
+    
+    // This order is important !!! Do not change the order of these parameters,
+    // otherwise the force field is not working !!!
+    auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
+    auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
+    auto grandchild4 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
+    
+    auto grandchild5 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
+    auto grandchild6 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+    add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "beta");
+    
+    // add customnonbonded (WBH vdW + pg coulomb) for compound
+    std::set<std::string> List_used;
+    for (size_t i = 0; i < myatoms.size(); i++)
+    {  
+        if (List_used.find(myatoms[i].ffType()) == List_used.end())
+        {
+            List_used.insert(myatoms[i].ffType());
+            auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
+            auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
+            
+            for (const auto &aType : pd->particleTypesConst())
+            {
+                if (aType.id().id() == myatoms[i].ffType())
+                {
+                    if (eptAtom == aType.gmxParticleType()) 
+                    {
+                        add_xml_double(grandchild3, "vdW", 1.0); 
+                    }
+                    if (eptShell == aType.gmxParticleType())
+                    {
+                        add_xml_double(grandchild3, "vdW", 0.0);
+                    }   
+                    
+                    for(const auto &opt: aType.optionsConst())
+                    { 
+                        if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
+                        {
+                            for (auto &params : fs.parametersConst())
+                            {
+                                for (const auto &param : params.second)
+                                {
+                                    if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+                                    {    
+                                        if (eptAtom == aType.gmxParticleType()) 
+                                        {
+                                            add_xml_double(grandchild3, param.first.c_str(), param.second.value());
+                                        }
+                                        if (eptShell == aType.gmxParticleType()) 
+                                        {
+                                            if (strcmp(param.first.c_str(), "gamma") == 0)
+                                            {
+                                                add_xml_double(grandchild3, param.first.c_str(), 7.0); 
+                                            }
+                                            else 
+                                            {
+                                                add_xml_double(grandchild3, param.first.c_str(), 1.0); 
+                                            }
+                                        }
+                                    } 
+                                }        
+                            }
+                        }
+                        if (strcmp(opt.first.c_str(), "zetatype") == 0)
+                        {
+                            for (auto &fs : pd->forcesConst())
+                            {
+                                if (InteractionType::COULOMB == fs.first)
+                                {
+                                    for (auto &params : fs.second.parametersConst())
+                                    {
+                                        for (const auto &param : params.second)
+                                        {
+                                            if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+                                            {
+                                                add_xml_double(grandchild3, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge()); 
+                                                add_xml_double(grandchild3, "beta", param.second.value()); 
+                                            }    
+                                        }  
+                                    }    
+                                } 
+                            }
+                        }
+                    }        
+                } 
+            }
+        }
+    }
+        
+    // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
+    // For the different atomtypes it would be good to add optimized sigma and epsilon values
+    // in order to calculate the vdW contribution after the cutoff
+    child5 = add_xml_child(parent, exml_names(xmlEntryOpenMM::NONBONDEDFORCE));
+    add_xml_double(child5, "coulomb14scale", 1.0); 
+    add_xml_double(child5, "lj14scale", 1.0); 
+    
+    // for (const auto &aType : pd->particleTypesConst())
+    // {
+    //        auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+    //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
+    //  for(const auto &param : aType.parametersConst())
+    // {
+    //      addSpecParameter(grandchild2, param.first, param.second, "charge"); 
+    //      if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0)
+    //      {
+    //          add_xml_double(grandchild2, "sigma", 0.3);  
+    //          add_xml_double(grandchild2, "epsilon", 0.05);  
+    //      }
+    //      if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0)
+    //      {
+    //          add_xml_double(grandchild2, "sigma", 0.3);  
+    //          add_xml_double(grandchild2, "epsilon", 0.0);  
+    //      }
+    //                    }
+    
+    //  }
+    // adding nonbonded (LJ + point coulomb) for compound
+    // Clear the set
+    List_used.clear();	
+    for (size_t i = 0; i < myatoms.size(); i++)
+    { 
+        if (List_used.find(myatoms[i].ffType()) == List_used.end())
+        {
+            List_used.insert(myatoms[i].ffType());
+            
+            auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
+            auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
+            for (const auto &aType : pd->particleTypesConst())
+            {
+                if (aType.id().id() == myatoms[i].ffType())
+                {
+                    add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
+                    if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                    {
+                        add_xml_double(baby, "sigma", 0.3);  
+                        add_xml_double(baby, "epsilon", 0.05);  
+                    }
+                    if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+                    {
+                        add_xml_double(baby, "sigma", 0.3);  
+                        add_xml_double(baby, "epsilon", 0.0);  
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void addXmlPolarization(xmlNodePtr                     parent,
+                               const ForceField              *pd,
+                               const ForceFieldParameterList &fs,
+                               const std::vector<ActAtom>    &myatoms)
+{
+    // !!! Shell particle has to be type1, core particle has to be type2 !!!
+    // 
+    if (pd->polarizable())    
+    {
+        auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
+        std::set<std::string> List_used;
+        for (size_t i = 0; i < myatoms.size(); i++)
+        { 
+            auto ffType = myatoms[i].ffType();
+            if (List_used.find(ffType) == List_used.end())
+            {
+                List_used.insert(ffType);
+                if (eptAtom == myatoms[i].pType())
+                {
+                    auto ptp     = pd->findParticleType(ffType);
+                    if (ptp->hasOption("poltype"))
+                    {
+                        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), ffType.c_str()); 
+                        auto shell_ai = ptp->optionValue("poltype");
+                        auto alpha    = fs.findParameterTypeConst(Identifier({shell_ai}),
+                                                                  pol_name[polALPHA]);
+                        
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
+                        add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+                        auto stp = pd->findParticleType(shell_ai);
+                        add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
+                        add_xml_double(grandchild2, "thole", 0);
+                    }
+                }
+            }    
+        }
+    }
+}
+
 static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol, double mDrude)
 {
     //    std::string name, acentral, attached, tau_unit, ahp_unit, epref, desc, params, tmp;
     auto child = add_xml_child(parent, exml_names(xmlEntryOpenMM::ATOMTYPES));
     auto myatoms =  actmol -> atomsConst();
-    std::set<std::string> ClassUsed;
+    std::set<std::string> FfTypeUsed, BondClassUsed;
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         auto ffType = myatoms[i].ffType();
-        if (ClassUsed.find(ffType) == ClassUsed.end())
+        if (FfTypeUsed.find(ffType) == FfTypeUsed.end())
         {
-            ClassUsed.insert(ffType);
+            FfTypeUsed.insert(ffType);
 
             auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), ffType.c_str()); 
             add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
-            ClassUsed.insert(ffType);
             
             if (!pd->hasParticleType(ffType))
             {
@@ -357,6 +789,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             }
             auto aType = pd->findParticleType(ffType);
             addXmlElemMass(baby, &(*aType), mDrude);
+            std::string btype("bondtype");
+            if (aType->hasOption(btype))
+            {
+                BondClassUsed.insert(aType->optionValue(btype));
+            }
         }
     }
     auto child2  = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
@@ -431,506 +868,39 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             Atoms_used.clear();
         }
     }
-
+    
     for (auto &fs : pd->forcesConst())
     {
         switch(fs.first)
         {
-        // This adds the Morse potential;
-        // TODO: link the bondorder information to the paramter assignment that happens via atomtypes
         case InteractionType::BONDS:
-        {
-            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-            // The Morse potential could be written as a string here, or it can be added in the openmm python script
-            add_xml_double(child3, "energy", 0.0); 
- 
-            // Specify the per bond parameters
-            auto grandchild0 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-            add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "D_e");
-            auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), "a");
-            auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "r0");
+            // This adds the Morse potential
+            // TODO: link the bondorder information to the parameter assignment that happens via atomtypes
+            addXmlBonds(parent, BondClassUsed, fs.second);
+            break;
             
-            // Add all bonds
-            for (auto &params : fs.second.parametersConst())
-            {
-                // To filter out bonds, we should not look for the ffType but for the correspondng bond type
-                bool inClass = true;
-                for (auto &a:params.first.atoms())
-                {
-                    if (ClassUsed.find(a) == ClassUsed.end())
-                    {
-                        inClass = false;
-                    }
-                }
-                if (true || inClass)
-                {
-                    auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-                
-                    int i = 0;
-                    for (auto &a:params.first.atoms())
-                    {
-                        std::string s = a.c_str();
-                        
-                        if (!s.empty()) 
-                        {
-                            s.resize(s.size() - 2);
-                        }
-                        add_xml_char(grandchild3, exml_names(class_vec[i]), s.c_str());
-                        i++;
-                    } 
-                    
-                    for (const auto &param : params.second)
-                    {
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE]);
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA]);
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH]);  
-                    }
-                }
-            }
-        }
-        break;
-        //    
-        //    int i=0;
-        //    for (auto &params : fs.second.parametersConst())
-        //    {            
-        //        for (const auto &param : params.second)
-        //        {
-        //            auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-        //            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
-        //        }
-        //        i++;
-        //        if (i == 1) 
-        //            {
-        //            break;
-        //            }
-        //    }
-        //    auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-        //    add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME),exml_names(xmlEntryOpenMM::BONDORDER));
-
-        //    for (auto &params : fs.second.parametersConst())
-        //    {
-                
-        //        auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-        //        int i = 0;
-        //        for (auto &a:params.first.atoms())
-        //        {
-        //            add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
-        //            i++;
-        //        } 
-
-        //        for (auto &b:params.first.bondOrders())
-        //        {
-        //            add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::BONDORDER), b);
-        //        }
-        //        
-        //        for (const auto &param : params.second)
-        //        {
-        //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-        //        }
-        //    }
-
-        //}
-
-        // This part is to add a harmonic bond, currently removed as we use Morse potential for bonds
-        //if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
-        //{
-        //    auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));  
-        //    for (auto &params : fs.second.parametersConst())
-        //    {
-        //        auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-        //        
-        //        int i = 0;
-        //        for (auto &a:params.first.atoms())
-        //        {
-        //            std::string s = a.c_str();
-        //            if (!s.empty()) 
-        //            {
-        //                s.resize(s.size() - 2);
-        //            }
-        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-        //            i++;
-        //        } 
-        //        for (const auto &param : params.second)
-        //        {
-        //            addSpecParameter(grandchild2, param.first, param.second, "bondlength");
-        //        }
-        //        // hardcoded force constant, should be changed if we'd like to use harmonic bond
-        //        add_xml_double(grandchild2, "k", 458148 );
-        //   }
-        //}
-    
         case InteractionType::ANGLES:
-        {
-            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
-
-            for (auto &params : fs.second.parametersConst())
-            {
-
-                auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
-                
-                int i=0;
-                for (auto &a:params.first.atoms())
-                {
-                    std::string s = a.c_str();
-                    if (!s.empty()) 
-                    {
-                        s.resize(s.size() - 2);
-                    }
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
-                {
-                    addSpecParameter(grandchild2, param.first, param.second, angle_name[angleANGLE]); 
-                    addSpecParameter(grandchild2, param.first, param.second, angle_name[angleKT]); 
-                }
-            }    
-        }
-        break;
-        // Currently removed, as we decided to use harmonic angles
-        //if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
-        //{
-        //    auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::AMOEBA_UB_FORCE));
-        //
-        //    for (auto &params : fs.second.parametersConst())
-        //    {
-        //        auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
-        //         
-        //        int i = 0;
-        //        for (auto &a:params.first.atoms())
-        //        {
-        //            std::string s = a.c_str();
-        //            if (!s.empty()) 
-        //            {
-        //                s.resize(s.size() - 2);
-        //            }
-        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-        //            i++;
-        //        } 
-        //        for (const auto &param : params.second)
-        //        {
-        //            addSpecParameter(grandchild2, param.first, param.second, "kub"); 
-        //            addSpecParameter(grandchild2, param.first, param.second, "r13"); 
-        //            //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-        //        }
-        //    }    
-        //}
-
-        //if (strcmp(interactionTypeToString(fs.first).c_str(), "LINEAR_ANGLES") == 0) 
-        //{
-        //    auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+            addXmlAngles(parent, BondClassUsed, fs.second);
+            break;
             
-        //    int i=0;
-        //    for (auto &params : fs.second.parametersConst())
-        //    {            
-        //        for (const auto &param : params.second)
-        //        {
-        //            auto grandchild1 = add_xml_child(child4, exml_names(xmlEntryOpenMM::PERANGLEPARAMETER));
-        //            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
-        //        } 
-        //        i++;
-        //        if (i == 1) 
-        //            {
-        //            break;
-        //            }
-        //    }
-
-        //    for (auto &params : fs.second.parametersConst())
-        //    {
-
-        //        auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
-        //        int i = 0;
-        //        for (auto &a:params.first.atoms())
-        //        {
-                      //std::string s = a.c_str();
-                      //if (!s.empty()) 
-                      //{
-                      //     s.resize(s.size() - 2);
-                      //}
-        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-        //            i++;
-        //        }
-
-        //        for (const auto &param : params.second)
-        //        {
-        //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-        //        }
-        //    }
-        //}
-
-                        case InteractionType::PROPER_DIHEDRALS:
-        {
-            auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
-
-            for (auto &params : fs.second.parametersConst())
-            {
-               
-                auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PROPER));
-                int i=0;
-                for (auto &a:params.first.atoms())
-                {
-                    std::string s = a.c_str();
-                    if (!s.empty()) 
-                    {
-                        s.resize(s.size() - 2);
-                    }
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
-                {
-                    add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-                }
-                // OpenMM expects 7 parameters for RBTorsion force
-                // TODO: Do we also need more parameters for the RBTorsion force in ACT? Currently c0, c1, c2, c3 in ACT.
-                add_xml_double(grandchild2, "c4", 0);
-                add_xml_double(grandchild2, "c5", 0);
-                add_xml_double(grandchild2, "c6", 0);
-            }    
-        }
-        break;
+        case InteractionType::LINEAR_ANGLES:
+            addXmlLinearAngles(parent, BondClassUsed, fs.second);
+            break;
+            
+        case InteractionType::PROPER_DIHEDRALS:
+            addXmlPropers(parent, BondClassUsed, fs.second);
+            break;
 
         case InteractionType::IMPROPER_DIHEDRALS:
-        {
-            auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
-            
-            for (auto &params : fs.second.parametersConst())
-            {
-               
-                auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
-                int i=0;
-                for (auto &a:params.first.atoms())
-                {
-                    std::string s = a.c_str();
-                    if (!s.empty()) 
-                    {
-                        s.resize(s.size() - 2);
-                    }
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
-                {
-                    add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-                }
-            }    
-        }
-        break;
+            addXmlImpropers(parent, BondClassUsed, fs.second);
+            break;
         
         case InteractionType::VDW:
-        {
-            auto child5 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
-            add_xml_double(child5, "energy", 0.0);
-            // TODO Make this a parameter? See https://github.com/dspoel/ACT/issues/26
-            // Question whether 0 will work.
-            add_xml_int(child5, "bondCutoff", 3);
-
-            auto grandchild0 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
-            
-            // This order is important !!! Do not change the order of these parameters,
-            // otherwise the force field is not working !!!
-            auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
-            auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
-            auto grandchild4 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
-
-            auto grandchild5 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
-            auto grandchild6 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "beta");
-
-            // add customnonbonded (WBH vdW + pg coulomb) for compound
-            std::vector<std::string> List_used;
-            for (size_t i = 0; i < myatoms.size(); i++)
-            {  
-                if (std::find(List_used.begin(), List_used.end(), myatoms[i].ffType()) != List_used.end())
-                {
-                    ;
-                }
-                else
-                {
-                    List_used.push_back(myatoms[i].ffType());
-                    auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
-                    auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
-                
-                    for (const auto &aType : pd->particleTypesConst())
-                    {
-                        if (aType.id().id() == myatoms[i].ffType())
-                        {
-                            if (eptAtom == aType.gmxParticleType()) 
-                            {
-                                add_xml_double(grandchild3, "vdW", 1.0); 
-                            }
-                            if (eptShell == aType.gmxParticleType())
-                            {
-                                add_xml_double(grandchild3, "vdW", 0.0);
-                            }   
-                            
-                            for(const auto &opt: aType.optionsConst())
-                            { 
-                                if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
-                                {
-                                    for (auto &params : fs.second.parametersConst())
-                                    {
-                                        for (const auto &param : params.second)
-                                        {
-                                            if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-                                            {    
-                                                if (eptAtom == aType.gmxParticleType()) 
-                                                {
-                                                    add_xml_double(grandchild3, param.first.c_str(), param.second.value());
-                                                }
-                                                if (eptShell == aType.gmxParticleType()) 
-                                                {
-                                                    if (strcmp(param.first.c_str(), "gamma") == 0)
-                                                    {
-                                                        add_xml_double(grandchild3, param.first.c_str(), 7.0); 
-                                                    }
-                                                    else 
-                                                    {
-                                                        add_xml_double(grandchild3, param.first.c_str(), 1.0); 
-                                                    }
-                                                    
-                                                }
-                                            } 
-                                        }        
-                                    }
-                                }
-                                if (strcmp(opt.first.c_str(), "zetatype") == 0)
-                                {
-                                    for (auto &fs : pd->forcesConst())
-                                    {
-                                        if (InteractionType::COULOMB == fs.first)
-                                        {
-                                            for (auto &params : fs.second.parametersConst())
-                                            {
-                                                for (const auto &param : params.second)
-                                                {
-                                                    if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
-                                                    {
-                                                        add_xml_double(grandchild3, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge()); 
-                                                        add_xml_double(grandchild3, "beta", param.second.value()); 
-                                                    }    
-                                                }  
-                                            }    
-                                        } 
-                                    }
-                                }
-                            }        
-                        } 
-                    }
-                }
-            }
-        
-            {
-                // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
-                // For the different atomtypes it would be good to add optimized sigma and epsilon values
-                // in order to calculate the vdW contribution after the cutoff
-                auto child5 = add_xml_child(parent, exml_names(xmlEntryOpenMM::NONBONDEDFORCE));
-                add_xml_double(child5, "coulomb14scale", 1.0); 
-                add_xml_double(child5, "lj14scale", 1.0); 
-                
-                // for (const auto &aType : pd->particleTypesConst())
-                // {
-                //        auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-                //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS), aType.id().id().c_str());
-                //  for(const auto &param : aType.parametersConst())
-                // {
-                //      addSpecParameter(grandchild2, param.first, param.second, "charge"); 
-                //      if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0)
-                //      {
-                //          add_xml_double(grandchild2, "sigma", 0.3);  
-                //          add_xml_double(grandchild2, "epsilon", 0.05);  
-                //      }
-                //      if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-                            //      {
-                            //          add_xml_double(grandchild2, "sigma", 0.3);  
-                //          add_xml_double(grandchild2, "epsilon", 0.0);  
-                //      }
-                //                    }
-                
-                //  }
-                // adding nonbonded (LJ + point coulomb) for compound
-                std::set<std::string> List_used;	
-                auto myatoms =  actmol -> atomsConst();
-                for (size_t i = 0; i < myatoms.size(); i++)
-                { 
-                    if (List_used.find(myatoms[i].ffType()) == List_used.end())
-                    {
-                        List_used.insert(myatoms[i].ffType());
-                        
-                        auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
-                        auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
-                        for (const auto &aType : pd->particleTypesConst())
-                        {
-                            if (aType.id().id() == myatoms[i].ffType())
-                            {
-                                add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
-                                if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
-                                {
-                                    add_xml_double(baby, "sigma", 0.3);  
-                                    add_xml_double(baby, "epsilon", 0.05);  
-                                }
-                                if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
-                                {
-                                    add_xml_double(baby, "sigma", 0.3);  
-                                    add_xml_double(baby, "epsilon", 0.0);  
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        break;
+            addXmlNonbonded(parent, pd, fs.second, myatoms);
+            break;
         case InteractionType::POLARIZATION:
-        {  
-            // !!! Shell particle has to be type1, core particle has to be type2 !!!
-            // 
-            if (pd->polarizable())    
-            {
-                auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
-                std::set<std::string> List_used;
-                auto myatoms =  actmol -> atomsConst();
-                for (size_t i = 0; i < myatoms.size(); i++)
-                { 
-                    auto ffType = myatoms[i].ffType();
-                    if (List_used.find(ffType) == List_used.end())
-                    {
-                        List_used.insert(ffType);
-                        if (eptAtom == myatoms[i].pType())
-                        {
-                            auto ptp     = pd->findParticleType(ffType);
-                            if (ptp->hasOption("poltype"))
-                            {
-                                auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), ffType.c_str()); 
-                                auto shell_ai = ptp->optionValue("poltype");
-                                auto alpha    = fs.second.findParameterTypeConst(Identifier({shell_ai}),
-                                                                                 pol_name[polALPHA]);
-                                    
-                                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-                                add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                                auto stp = pd->findParticleType(shell_ai);
-                                add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
-                                add_xml_double(grandchild2, "thole", 0);
-                            }
-                        }
-                    }    
-                }
-            }
-        }
-        break;
+            addXmlPolarization(parent, pd, fs.second, myatoms);
+            break;
         case InteractionType::COULOMB:
             // Coulomb taken into account with other non-bonded interactions
         case InteractionType::BONDCORRECTIONS:

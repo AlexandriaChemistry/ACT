@@ -316,7 +316,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
         mtop->ffparams.iparams.resize(ntype2, {});
     }
     auto &forcesVdw = pd->findForcesConst(InteractionType::VDW);
-    auto ftypeVdW   = forcesVdw.fType();
+    auto ftypeVdW   = forcesVdw.gromacsType();
     typedef struct
     {
         std::string name;

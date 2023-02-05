@@ -973,7 +973,7 @@ void Topology::fillParameters(const ForceField *pd)
             const auto &topID = topentry->id();
 
             std::vector<double> param;
-            switch (fs.fType())
+            switch (fs.gromacsType())
             {
             case F_LJ:
                 fillParams(fs, topID, ljNR, lj_name, &param);
@@ -1018,7 +1018,7 @@ void Topology::fillParameters(const ForceField *pd)
                 fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
             default:
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.fType()].name).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.gromacsType()].name).c_str()));
             }
             topentry->setParams(param);
         }

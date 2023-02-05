@@ -191,7 +191,7 @@ int getCombinationRule(const ForceFieldParameterList &vdw)
 static void generateVdwParameterPairs(ForceField *pd)
 {
     auto forcesVdw = pd->findForces(InteractionType::VDW);
-    auto ftypeVdW  = forcesVdw->fType();
+    auto ftypeVdW  = forcesVdw->gromacsType();
     int  comb_rule = getCombinationRule(*forcesVdw);
     
     // We temporarily store the new parameters here
