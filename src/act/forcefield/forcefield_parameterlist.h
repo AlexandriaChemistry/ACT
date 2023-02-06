@@ -79,7 +79,8 @@ class ForceFieldParameterList
     /* \brief
      * Return the GROMACS function type
      */
-    const unsigned int &fType() const { return fType_; }
+
+    unsigned int gromacsType() const { return fType_; }
 
     /*! \brief Add function specific options
      *

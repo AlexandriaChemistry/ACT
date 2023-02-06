@@ -595,7 +595,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                             gmx_localtop_t                *ltop)
 {
     double myval = 0;
-    switch (fs.fType())
+    switch (fs.gromacsType())
     {
     case F_MORSE:
         {
@@ -881,7 +881,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     default:
         GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
-                                                        interaction_function[fs.fType()].longname).c_str()));
+                                                        interaction_function[fs.gromacsType()].longname).c_str()));
         break;
     }
 }
@@ -909,7 +909,7 @@ static void TopologyToMtop(Topology       *top,
             }
             else
             {
-                mtop->ffparams.functype.push_back(fs.fType());
+                mtop->ffparams.functype.push_back(fs.gromacsType());
                 t_iparams ip = { { 0 } };
                 mtop->ffparams.iparams.push_back(ip);
                 gromacsType = mtop->ffparams.numTypes()-1;
@@ -926,20 +926,20 @@ static void TopologyToMtop(Topology       *top,
                 GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
             }
             // One more consistency check
-            if (interaction_function[fs.fType()].nratoms > 0 &&
-                interaction_function[fs.fType()].nratoms !=
+            if (interaction_function[fs.gromacsType()].nratoms > 0 &&
+                interaction_function[fs.gromacsType()].nratoms !=
                 static_cast<int>(topentry->atomIndices().size()))
             {
                 GMX_THROW(gmx::InternalError(
                            gmx::formatString("Inconsistency in number of atoms. Expected %d, got %d for %s",
-                           interaction_function[fs.fType()].nratoms, static_cast<int>(topentry->atomIndices().size()),
-                           interaction_function[fs.fType()].name).c_str()));
+                           interaction_function[fs.gromacsType()].nratoms, static_cast<int>(topentry->atomIndices().size()),
+                           interaction_function[fs.gromacsType()].name).c_str()));
             }
             // Now fill the gromacs structure
-            mtop->moltype[0].ilist[fs.fType()].iatoms.push_back(gromacsType);
+            mtop->moltype[0].ilist[fs.gromacsType()].iatoms.push_back(gromacsType);
             for (auto &i : topentry->atomIndices())
             {
-                mtop->moltype[0].ilist[fs.fType()].iatoms.push_back(i);
+                mtop->moltype[0].ilist[fs.gromacsType()].iatoms.push_back(i);
             }
         }
     }
@@ -2131,7 +2131,7 @@ void ACTMol::PrintTopology(const char                   *fn,
         for (auto &entry : *(topology_->entries()))
         {
             auto &fs = pd->findForcesConst(entry.first);
-            int ftype = fs.fType();
+            int ftype = fs.gromacsType();
             if (entry.second.size() > 0)
             {
                 printf("There are %4d %s interactions\n", static_cast<int>(entry.second.size()),

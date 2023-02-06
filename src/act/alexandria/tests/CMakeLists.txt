@@ -39,11 +39,13 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    actmol_util.cpp
     atomtypeTest.cpp
     allbondedsTest.cpp
     b2Test.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
+    openmmTest.cpp
     sphereIntegratorTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria

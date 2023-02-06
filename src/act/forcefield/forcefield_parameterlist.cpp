@@ -105,7 +105,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter %s for %s",
                                                        identifier.id().c_str(), 
-                                                       interaction_function[fType()].name).c_str()));
+                                                       interaction_function[gromacsType()].name).c_str()));
     }
     auto ffp = p->second.find("unit");
     if (ffp != p->second.end())
@@ -116,7 +116,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Empty parameter list for %s in %s",
                                                        identifier.id().c_str(), 
-                                                       interaction_function[fType()].name).c_str()));
+                                                       interaction_function[gromacsType()].name).c_str()));
     }
 }
 

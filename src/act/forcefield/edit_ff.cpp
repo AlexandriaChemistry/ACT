@@ -641,7 +641,7 @@ static void compare_pd(ForceField *pd1,
 static void copyDeToD0(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->fType() != F_MORSE)
+    if (fs->gromacsType() != F_MORSE)
     {
         printf("Not using Morse in force field file %s\n", pd->filename().c_str());
         return;
@@ -662,7 +662,7 @@ static void copyDeToD0(ForceField *pd)
 static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->fType() != F_BONDS)
+    if (fs->gromacsType() != F_BONDS)
     {
         printf("Not using Bonds in force field file %s\n",
                pd->filename().c_str());

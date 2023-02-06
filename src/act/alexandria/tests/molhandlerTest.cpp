@@ -86,7 +86,7 @@ static void add_energies(const ForceField                           *pd,
         {
             auto i = fsc.find(imf.first);
             EXPECT_TRUE(fsc.end() != i);
-            ftype = i->second.fType();
+            ftype = i->second.gromacsType();
         }
         std::string mylabel = gmx::formatString("%s %s",
                                                 interaction_function[ftype].longname, label);

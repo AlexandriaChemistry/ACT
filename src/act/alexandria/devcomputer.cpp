@@ -144,7 +144,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
         if (forcefield->interactionPresent(itype))
         {
             auto &fs = forcefield->findForcesConst(itype);
-            if (fs.fType() == F_CUBICBONDS)
+            if (fs.gromacsType() == F_CUBICBONDS)
             {
                 for(const auto &ffp : fs.parametersConst())
                 {

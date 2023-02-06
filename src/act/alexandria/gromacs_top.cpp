@@ -254,7 +254,7 @@ void write_top(FILE            *out,
             {
                 continue;
             }
-            auto fType = fs.second.fType();
+            auto fType = fs.second.gromacsType();
             if (InteractionType::BONDS == fs.first)
             {
                 print_bondeds(out, d_bonds, fType, topology->entry(iType));
@@ -298,7 +298,7 @@ void print_top_header(FILE                    *fp,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        auto ftype = pd->findForcesConst(InteractionType::VDW).fType();
+        auto ftype = pd->findForcesConst(InteractionType::VDW).gromacsType();
         std::string ff;
         if (ftype == F_LJ)
         {
