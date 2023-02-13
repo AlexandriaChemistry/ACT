@@ -181,7 +181,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
                     os.chdir("..")
     # Go back to where we came from
     os.chdir(pwd)
-
+    
 def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
@@ -228,10 +228,14 @@ def install_act(args, CXX, CC, HOST, prefix):
     if os.path.exists(cmc):
         os.unlink(cmc)
     # Run cmake and make!
+    for ff in [ "make.err", "make.out", "cmake.out", "cmake.err" ]:
+        if os.path.exists(ff):
+            os.unlink(ff)
+    alex = ("%s/bin/alexandria" % args.destination)
+    if os.path.exists(alex):
+        os.unlink(alex)
     run_command("cmake", FLAGS + " ..")
     run_command("make", (" -j %d install tests" % args.ncores))
-    # Check the result
-    alex = ("%s/bin/alexandria" % args.destination)
     if not os.path.exists(alex):
         sys.exit("Could not build '%s', check cmake.* and make.* in %s" % ( alex, os.getcwd() ) )
     else:
