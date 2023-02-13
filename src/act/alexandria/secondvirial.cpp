@@ -498,7 +498,7 @@ void ReRunner::rerun(FILE                        *logFile,
         std::vector<MolProp> mps;
         std::string tname(trajname_);
         auto pos = tname.find(".xml");
-        if (tname.size() == pos+4)
+        if (pos != std::string::npos && tname.size() == pos+4)
         {
             // Assume this is a molprop file
             MolPropRead(trajname_, &mps);
