@@ -235,7 +235,13 @@ static void addSpecParameter(xmlNodePtr                 parent,
         { angle_name[angleKT],    "k"   },
         { angle_name[angleANGLE], "angle" },
         { ub_name[ubKUB],         "k" },
-        { ub_name[ubR13],         "d" }
+        { ub_name[ubR13],         "d" },
+	{ cubic_name[cubicKB],         "kb" },
+	{ cubic_name[cubicRMAX],         "rmax" },
+        { cubic_name[cubicDE],         "D_e" },
+        { cubic_name[cubicLENGTH],         "r0" },	
+	//const char *cubic_name[cubicNR] = { "bondlength", "rmax", "kb", "De" };
+	//const char *morse_name[morseNR] = { "beta", "De", "D0", "bondlength" };
     };
     if (type == specparam)
     {
@@ -273,6 +279,7 @@ static void addShell(xmlNodePtr         parent,
         auto baby = add_xml_child(parent, exml_names(xmlEntryOpenMM::ATOM_RES));    
         add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), value.c_str());
         add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), value.c_str());
+	////std::cout << exml_names(xmlEntryOpenMM::NAME) << "asdf \n";
     }
 }
 
@@ -326,7 +333,8 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), 
                                  nameIndex(name_ai, ai - residueStart).c_str());
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES),
-                                 nameIndex(name_aj, aj - residueStart).c_str());  
+                                 nameIndex(name_aj, aj - residueStart).c_str()); 
+////		    std::cout << exml_names(xmlEntryOpenMM::ATOMNAME1_RES) << "asdf \n";
                 }
             }
         }
@@ -362,6 +370,7 @@ static void addXmlBonds(xmlNodePtr                     parent,
 {
     switch(fs.gromacsType())
     {
+	    ///////////////////////////////////////////////////////////////////////////////////
     case F_MORSE:
         {
             auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
@@ -397,6 +406,50 @@ static void addXmlBonds(xmlNodePtr                     parent,
             }
             break;
         }
+///////////////////////////////////////////////////////////////////////////////////////
+
+    case F_CUBICBONDS:
+        {
+            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+            // The Morse potential could be written as a string here,
+            // or it can be added in the openmm python script
+            add_xml_double(child3, "energy", 0.0);
+
+            // Specify the per bond parameters
+            auto grandchild0 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "D_e");
+            auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), "kb");
+            auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "r0");
+            auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "rmax");
+
+            // Add all bonds
+            for (auto &params : fs.parametersConst())
+            {
+                // To filter out bonds, we should not look for the ffType but for the correspondng bond type
+                if (atomsInClass(params.first.atoms(), BondClassUsed))
+                {
+                    auto grandchild4 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+
+                    addBondAtoms(grandchild4, params.first.atoms());
+
+                    for (const auto &param : params.second)
+                    {
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicDE]);
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicKB]);
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicLENGTH]);
+			addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicRMAX]);
+                    }
+                }
+            }
+            break;
+        }
+
+
+
+
     case F_BONDS:
         {
             // TODO Check for correctness
@@ -485,7 +538,7 @@ static void addXmlLinearAngles(xmlNodePtr                     parent,
                                const ForceFieldParameterList &fs)
 {
     auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
-    
+    add_xml_double(child4, "energy", 0.0);
     for (auto &params : fs.parametersConst())
     {            
         for (const auto &param : params.second)
