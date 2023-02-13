@@ -767,7 +767,7 @@ int b2(int argc, char *argv[])
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "aff",        ffREAD  },
-        { efXML, "-mp", "molprop",    ffOPTRD },
+        { efXML, "-mp", "molprop",    ffREAD  },
         { efLOG, "-g",  "b2",         ffWRITE } 
     };
     gmx_output_env_t         *oenv;
