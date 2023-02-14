@@ -68,6 +68,7 @@ function(GMX_TEST_LIBXML2 VARIABLE)
     if(_do_libxml2_recompile)
         unset(LIBXML2_LINKS_OK CACHE)
     endif()
+    set(CMAKE_REQUIRED_LIBRARIES pthread)
     check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
     if(LIBXML2_LINKS_OK)
         #check that xml headers can be included
