@@ -382,10 +382,14 @@ static void computeCubic(const std::vector<TopologyEntry *>    &bonds,
 
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto r2  = iprod(dx, dx);
-        auto r_1 = gmx::invsqrt(r2);
-        auto r1  = r2*r_1;
-
+        double rhi     = (2*rmax+bondlength)/3; 
+        double r_1, r1 = rhi;
+        {
+            // Do not allow the potential to go to -infinity
+            auto r2 = std::min(rhi*rhi, iprod(dx, dx));
+            r_1     = gmx::invsqrt(r2);
+            r1      = r2*r_1;
+        }
         real vB, fbond;
         vB    = kb*gmx::square(r1-bondlength)*(rmax-r1) - De;
         fbond = r_1*kb*(bondlength+2*rmax-3*r1)*(bondlength-r1);
