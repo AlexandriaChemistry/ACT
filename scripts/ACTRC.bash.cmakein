@@ -10,16 +10,16 @@ old_IFS="$IFS"
 IFS=":"
 
 # First remove ACT part of ld_library_path
-tmppath=""
-for i in $LD_LIBRARY_PATH; do
-  if test "$i" != "$ACTLDLIB"; then
-    tmppath="${tmppath}${tmppath:+:}${i}"
-  fi
-done
-LD_LIBRARY_PATH=$tmppath
-if [[ ! -z "${CONDA_PREFIX}" ]]; then
-  LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
-fi
+#tmppath=""
+#for i in $LD_LIBRARY_PATH; do
+#  if test "$i" != "$ACTLDLIB"; then
+#    tmppath="${tmppath}${tmppath:+:}${i}"
+#  fi
+#done
+#LD_LIBRARY_PATH=$tmppath
+#if [[ ! -z "${CONDA_PREFIX}" ]]; then
+#  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib
+#fi
 
 # remove ACT part of PKG_CONFIG_PATH
 tmppath=""
@@ -71,7 +71,7 @@ if [[ -z "${BABEL_LIBDIR}" ]]; then
 fi
 ALLDIR=
 
-LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
+#LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${ACTBIN}${PATH:+:}${PATH}
 
@@ -90,7 +90,7 @@ fi
 MANPATH=${ACTMAN}:${MANPATH}
 
 # export should be separate, so /bin/sh understands it
-export ACTBIN ACTLDLIB ACTMAN ACTDATA LD_LIBRARY_PATH PATH MANPATH
+export ACTBIN ACTLDLIB ACTMAN ACTDATA #LD_LIBRARY_PATH PATH MANPATH
 export PKG_CONFIG_PATH BABEL_LIBDIR
 
 IFS="$old_IFS"

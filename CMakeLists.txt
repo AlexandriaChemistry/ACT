@@ -282,7 +282,7 @@ gmx_add_cache_dependency(GMX_COMPILER_WARNINGS BOOL "NOT GMX_DEVELOPER_BUILD" ON
 
 option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
-    OFF)
+    ON)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
 option(GMX_PHYSICAL_VALIDATION
@@ -390,6 +390,9 @@ check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
 
+find_library(HAVE_LIBDL dl)
+mark_as_advanced(HAVE_LIBDL)
+
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
 
@@ -448,15 +451,15 @@ if(DEFINED LIBXML2_LIBRARIES)
   set(LibXml2_FIND_QUIETLY TRUE)
 endif()
 find_package(LibXml2)
-#include(gmxTestLibXml2)
-#gmx_test_libxml2(HAVE_LIBXML2)
-#option(GMX_LIBXML2 "Use libxml2 to parse xml files" ${HAVE_LIBXML2})
+include(gmxTestLibXml2)
+gmx_test_libxml2(HAVE_LIBXML2)
+option(GMX_LIBXML2 "Use libxml2 to parse xml files" ${HAVE_LIBXML2})
 set(PKG_LIBXML2 "")
-#mark_as_advanced(GMX_LIBXML2)
+mark_as_advanced(GMX_LIBXML2)
 # Crash if not found.
-#if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
-#    message(FATAL_ERROR "libxml2 not found.")
-#endif()
+if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
+    message(FATAL_ERROR "libxml2 not found.")
+endif()
 
 if(LibXml2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
