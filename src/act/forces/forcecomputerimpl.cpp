@@ -847,10 +847,11 @@ static void computePropers(const std::vector<TopologyEntry *>    &propers,
         auto ddphi  = -kphi*mult*sdphi;
         auto v      = kphi*(1.0 + std::cos(mdphi));
         energy     += v;
-#ifdef DEBUG
-        printf("ai %d aj %d ak %d al %d phi %g phi0 %g kphi %g, mult %g, mdphi %g, v %g ddphi %g\n",
-               ai, aj, ak, al, phi, phi0, kphi, mult, mdphi, v, ddphi);
-#endif
+        if (debug)
+        {
+            fprintf(debug, "ai %d aj %d ak %d al %d phi %g phi0 %g kphi %g, mult %g, mdphi %g, v %g ddphi %g\n",
+                    ai, aj, ak, al, phi, phi0, kphi, mult, mdphi, v, ddphi);
+        }
         do_dih_fup_noshiftf(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                             forces);
     }

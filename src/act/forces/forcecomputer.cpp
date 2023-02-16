@@ -310,7 +310,9 @@ void ForceComputer::plot(const ForceField  *pd,
                 auto p = pd->findParticleType(itype, atomname);
                 if (p != pd->particleTypesConst().end())
                 {
-                    top.addAtom(ActAtom(*p));
+                    ActAtom a(*p);
+                    a.setCharge(1);
+                    top.addAtom(a);
                 }
             }
             if (top.nAtoms() < 2)
@@ -328,20 +330,27 @@ void ForceComputer::plot(const ForceField  *pd,
             {
             case InteractionType::BONDS:
             case InteractionType::VDW:
+            case InteractionType::COULOMB:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
                     top.setIdentifiers(pd);
                     top.fillParameters(pd);
                     
+                    std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
-                    double r0 = 0.05, r1 = 1.0, delta = 0.01;
+                    double r0 = 0.05, r1 = 1.0, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
                     {
                         double x = r0+i*delta;
                         coordinates[1][0] = x;
+                        rr.push_back(x);
                         energies.clear();
+                        for(size_t k = 0; k < top.nAtoms(); k++)
+                        {
+                            copy_rvec(rvnul, forces[k]);
+                        }
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         auto ener = energies[itype];
                         if (ener == 0 && InteractionType::VDW == itype)
@@ -355,6 +364,27 @@ void ForceComputer::plot(const ForceField  *pd,
                             }
                         }
                         fprintf(fp, "%10g  %10g\n", x, ener);
+                        vv.push_back(ener);
+                        ff.push_back(forces[0][0]);
+                    }
+                    // Check whether force is derivative of energy
+                    if (debug)
+                    {
+                        for(size_t i = 1; i < vv.size()-1; i++)
+                        {
+                            if (std::abs(ff[i]) > 1e-6)
+                            {
+                                double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
+                                double relerror = (fnumeric-ff[i])/ff[i];
+                                if (std::abs(relerror) > 1e-1)
+                                {
+                                    fprintf(debug, "%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
+                                            filename.c_str(),
+                                            ff[i], fnumeric, relerror, rr[i],
+                                            vv[i+1], vv[i-1], 2*delta);
+                                }
+                            }
+                        }
                     }
                 }
                 break;

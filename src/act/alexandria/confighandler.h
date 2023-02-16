@@ -392,7 +392,7 @@ private:
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
     //! Tolerance on mean square force for minimizer.
-    double             forceToler_  = 1e-6;
+    double             forceToler_  = 1e-4;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
     double             overRelax_   = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.

@@ -337,6 +337,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
 {
     static std::set<InteractionType> bonds = {
         InteractionType::VDW,
+        InteractionType::COULOMB,
         InteractionType::BONDS,
         InteractionType::ANGLES,
         InteractionType::LINEAR_ANGLES,

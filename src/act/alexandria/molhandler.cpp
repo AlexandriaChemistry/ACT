@@ -624,7 +624,6 @@ static void updateCoords(const std::vector<int>       &theAtoms,
             (*xnew)[atomI][m] = xold[atomI][m] + factor*deltaX[i++];
         }
     }
-
 }
 
 eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                  *pd,
@@ -672,13 +671,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 mol->getMolname().c_str(),
                 eMinimizeAlgorithmToString(simConfig.minAlg()).c_str());
     }
-    std::vector<double> deltaX[2], deltaDeltaX;
+    std::vector<double> deltaX[2];
     deltaX[0].resize(DIM*theAtoms.size(), 0.0);
     deltaX[1].resize(DIM*theAtoms.size(), 0.0);
-    // Set a maximum displacement to prevent exploding molecules
-    // double              maxDeltaXToler  = 0.01; // nm
-    // double              deltaXTolerance = maxDeltaXToler;
-    double              epotMin = 0;
+    double              epotMin = 1e8;
+    double              msfMin  = 1e16;
     // Two sets of coordinates
     std::vector<gmx::RVec> newCoords[2];
     newCoords[0] = *coords;
@@ -761,6 +758,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             break;
         case eMinimizeAlgorithm::Steep:
             {
+                // https://en.wikipedia.org/wiki/Gradient_descent
                 msShellForce = forceComp->compute(pd, mol->topology(), &newCoords[current],
                                                   &forces[current], &newEnergies[current]);
                 if (!firstStep)
@@ -802,14 +800,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             {
                 *energies = newEnergies[current];
             }
-            epotMin   = newEnergies[current][InteractionType::EPOT];
+            epotMin = newEnergies[current][InteractionType::EPOT];
+            msfMin  = msForce(theAtoms, forces[current]);
             // Write stuff
-            double msf = 0;
-            for (size_t jj = 0; jj < theAtoms.size(); jj++)
-            {
-                msf += iprod(forces[current][jj], forces[current][jj]);
-            }
-            printEnergies(logFile, myIter, (msf/theAtoms.size()), 0, 0, newEnergies[current], gamma);
+            printEnergies(logFile, myIter, msfMin, 0, 0, newEnergies[current], gamma);
             firstStep = false;
         }
         if (eMinimizeStatus::OK != eMin)
@@ -818,11 +812,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         }
         bool acceptStep  = false;
         // Update coordinates and check energy
-        double maxDeltaX = std::abs(deltaX[current][0]);
-        for(const auto &dx : deltaX[current])
-        {
-            maxDeltaX = std::max(maxDeltaX, std::abs(dx));
-        }
         do
         {
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
@@ -830,12 +819,23 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             // Do an energy and force calculation with the new coordinates
             msShellForce   = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
-            acceptStep     = (epotNew <= epotMin);
+            double msfNew  = msForce(theAtoms, forces[next]);
+            acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
             double gmin    = gamma;
             if (!acceptStep)
             {
+                if (logFile)
+                {
+                    fprintf(logFile, "Trying line minimization, step 1.\n");
+                    printEnergies(logFile, myIter, msfNew, 0, 0, newEnergies[next], gamma);
+                }
                 updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
                 msShellForce    = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+                if (logFile)
+                {
+                    fprintf(logFile, "Trying line minimization, step 2.\n");
+                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
+                }
                 double epotHalf = newEnergies[next][InteractionType::EPOT];
                 // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
                 // We solve M abc = yyy using abc = Minverse yyy
@@ -855,12 +855,20 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 {
                     fprintf(logFile, "Line minimization parameters a = %g b = %g c = %g\n",
                             abc[0], abc[1], abc[2]);
+                    fprintf(logFile, "EpotMin = %g, EpotHalf = %g, EpotNew = %g\n",
+                            epotMin, epotHalf, epotNew);
                 }
             }
             if (acceptStep)
             {
-                // deltaXTolerance = maxDeltaXToler;
-                epotMin = newEnergies[next][InteractionType::EPOT];
+                if (epotNew < epotMin)
+                {
+                    epotMin = epotNew;
+                }
+                if (msfNew < msfMin)
+                {
+                    msfMin = msfNew;
+                }
                 gamma   = gmin;
                 current = next;
             }
@@ -872,7 +880,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         } while (!acceptStep && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
         
         // Now check force convergencs
-        double msAtomForce  = msForce(theAtoms, forces[current]);
+        double msAtomForce = msForce(theAtoms, forces[current]);
         converged = msAtomForce <= msForceToler;
         double fcurprev = 0;
         for(size_t ii = 0; ii < theAtoms.size(); ii++)
