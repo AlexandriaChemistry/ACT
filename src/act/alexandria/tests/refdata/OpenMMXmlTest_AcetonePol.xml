@@ -114,7 +114,7 @@
     <Angle class1="o2_b" class2="c2_b" class3="o2_b" angle="1.91637" k="300"/>
     <Angle class1="o2_b" class2="c3_b" class3="o2_b" angle="1.85179" k="300"/>
   </HarmonicAngleForce>
-  <CustomAngleForce>
+  <CustomAngleForce energy="0">
     <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="a"/>
     <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="klin"/>
     <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="kublin"/>
