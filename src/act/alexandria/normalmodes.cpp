@@ -240,6 +240,10 @@ int nma(int argc, char *argv[])
                     }
                 }
             }
+            else
+            {
+                fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
+            }
             if (eMinimizeStatus::OK == eMin)
             {
                 AtomizationEnergy        atomenergy;
