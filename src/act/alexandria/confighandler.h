@@ -403,8 +403,15 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param MDoptions Whether or not to add MD specific options
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
+    void add_pargs(std::vector<t_pargs> *pargs, bool MDoptions);
+
+    /*!
+     * \brief Add command-line arguments to a vector
+     * @param pargs     pointer to arguments vector
+     */
+    virtual void add_pargs(std::vector<t_pargs> *pargs) { add_pargs(pargs, false); }
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -436,6 +443,9 @@ public:
     //! \return whether or not to minimize the energy with respect to input coordinates
     bool minimize() const { return minimize_; }
     
+    //! Set the minimize option
+    void setMinimize(bool minimize) { minimize_ = minimize; }
+
     //! \return the minimization algorithm
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
     

@@ -70,7 +70,7 @@ int nma(int argc, char *argv[])
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "aff",        ffREAD  },
         { efSTO, "-c",  "confout",    ffOPTWR },
-        { efLOG, "-g",  "simulation", ffWRITE },
+        { efLOG, "-g",  "nma",        ffWRITE },
         { efXVG, "-ir", "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
@@ -102,7 +102,8 @@ int nma(int argc, char *argv[])
           "Print part of the output in json format" }
     };
     SimulationConfigHandler  sch;
-    sch.add_pargs(&pa);
+    sch.setMinimize(true);
+    sch.add_pargs(&pa, false);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -237,13 +238,15 @@ int nma(int argc, char *argv[])
                                        as_rvec_array(xmin.data()), nullptr,
                                        epbcNONE, box);
                     }
-                    
-                    AtomizationEnergy        atomenergy;
-                    doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &coords,
-                                        atomenergy, nullptr, &jtree,
-                                        opt2fn_null("-ir", fnm.size(), fnm.data()),
-                                        linewidth, oenv, sch.lapack(), verbose);
                 }
+            }
+            if (eMinimizeStatus::OK == eMin)
+            {
+                AtomizationEnergy        atomenergy;
+                doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &coords,
+                                    atomenergy, nullptr, &jtree,
+                                    opt2fn_null("-ir", fnm.size(), fnm.data()),
+                                    linewidth, oenv, sch.lapack(), verbose);
             }
         }
         
@@ -254,16 +257,16 @@ int nma(int argc, char *argv[])
                     logFileName);
             status = 1;
         }
-        else if (immStatus::OK != imm)
+    }
+    else if (immStatus::OK != imm)
+    {
+        fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
+        fprintf(logFile, "%s\n", immsg(imm));
+        for(const auto &err: actmol.errors())
         {
-            fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
-            fprintf(logFile, "%s\n", immsg(imm));
-            for(const auto &err: actmol.errors())
-            {
-                fprintf(logFile, "%s\n", err.c_str());
-            }
-            status = 1;
+            fprintf(logFile, "%s\n", err.c_str());
         }
+            status = 1;
     }
     if (json)
     {

@@ -373,9 +373,9 @@ eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
     return eMinA;
 }
 
-void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
+void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs, bool MDoptions)
 {
-    std::vector<t_pargs> extra = {
+    std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
           "Number of integration steps." },
         { "-deltat", FALSE, etREAL, {&deltat_},
@@ -391,7 +391,9 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-nstvout", FALSE, etINT, {&nstvout_},
           "Number of steps between writing velocities." },
         { "-nstener", FALSE, etINT, {&nstener_},
-          "Number of steps between writing energies." },
+          "Number of steps between writing energies." }
+    };
+    std::vector<t_pargs> extra = {
         { "-minimize", FALSE, etBOOL, {&minimize_},
           "Minimize the energy with respect to input coordinates." },
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
@@ -405,6 +407,13 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-lapack", FALSE, etBOOL, {&lapack_},
           "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
     };
+    if (MDoptions)
+    {
+        for(auto &i : MDextra)
+        {
+            pargs->push_back(i);
+        }
+    }
     for(auto &i : extra)
     {
         pargs->push_back(i);

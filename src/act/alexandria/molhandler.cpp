@@ -727,12 +727,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                             forces[current][ii][m] = f0[jj++];
                         }
                     }
-                    if (logFile && firstStep)
+                    if (debug && firstStep)
                     {
-                        fprintf(logFile, "Sum of forces: %g sum of displacement: %g\n",
+                        fprintf(debug, "Sum of forces: %g sum of displacement: %g\n",
                                 std::accumulate(f0.begin(), f0.end(), 0.0),
                                 std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0));
-                        fprintf(logFile, "H deltaX\n");
+                        fprintf(debug, "H deltaX\n");
                         for(size_t ii = 0; ii < DIM*theAtoms.size(); ii++)
                         {
                             double f1 = 0;
@@ -740,7 +740,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                             {
                                 f1 += H2.get(ii, jj) * deltaX[current][jj];
                             }
-                            fprintf(logFile, "f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
+                            fprintf(debug, "f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
                                     ii, f0[ii], deltaX[current][ii], f0[ii]-f1);
                         }
                     }
