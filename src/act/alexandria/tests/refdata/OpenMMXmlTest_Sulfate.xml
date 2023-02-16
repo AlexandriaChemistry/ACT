@@ -34,7 +34,7 @@
     <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="2.10836" k="300"/>
     <Angle class1="o2_b" class2="s3_b" class3="s3_b" angle="2.01062" k="300"/>
   </HarmonicAngleForce>
-  <CustomAngleForce/>
+  <CustomAngleForce energy="0"/>
   <RBTorsionForce/>
   <PeriodicTorsionForce>
     <Improper class1="o2_b" class2="o2_b" class3="o2_b" class4="s3_b" kimp="1" phi="0"/>
