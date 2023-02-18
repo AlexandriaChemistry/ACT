@@ -13,7 +13,7 @@ except:
     else:
         print("OpenBabel not found and your %s environment variable is empty." % ( pp ))
     sys.exit("Cannot continue")
-from gaff_to_alexandria import *
+from .gaff_to_alexandria import *
 
 debug = False
 

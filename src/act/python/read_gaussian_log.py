@@ -3,12 +3,12 @@
 # https://github.com/dspoel/ACT
 #
 import gzip, math, os
-from get_mol_dict import *
-from molprops import *
-from gaff_to_alexandria import *
-from get_csv_rows import *
-from elements import AtomNumberToAtomName
-from dofit import *
+from .get_mol_dict import *
+from .molprops import *
+from .gaff_to_alexandria import *
+from .get_csv_rows import *
+from .elements import AtomNumberToAtomName
+from .dofit import *
 
 debug = False
 

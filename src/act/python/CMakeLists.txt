@@ -14,6 +14,7 @@ configure_file(molselect.cmakein molselect @ONLY)
 configure_file(reshuffle_selection.cmakein reshuffle_selection @ONLY)
 
 # Library scripts
+install(FILES __init__.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES act.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES act_gct.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES act_openmm.py DESTINATION ${ACT_PYTHON_LIB_PATH})

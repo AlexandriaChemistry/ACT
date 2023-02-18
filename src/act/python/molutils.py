@@ -4,7 +4,7 @@
 import os, sys, re #, csv
 from collections import namedtuple
 #from enum import Enum
-from elements import *
+from .elements import *
 
 def parse_formula(formula):
   form = dict()
