@@ -3,8 +3,8 @@
 # https://github.com/dspoel/ACT
 #
 import os, sys
-from actutils     import *
-from get_csv_rows import *
+from .actutils     import *
+from .get_csv_rows import *
 
 numberToName = {}
 nameToNumber = {}

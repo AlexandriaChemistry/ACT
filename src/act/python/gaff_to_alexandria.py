@@ -3,8 +3,8 @@
 # https://github.com/dspoel/ACT
 #
 import os
-from actutils     import *
-from get_csv_rows import *
+from .actutils     import *
+from .get_csv_rows import *
 
 class GaffToAlexandria:
     '''Class to facilitate translation from GAFF names

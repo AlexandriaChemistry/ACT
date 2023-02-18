@@ -11,7 +11,7 @@ except ImportError:
 
 import gc
 from xml.dom import minidom
-from atomic_heat_of_formation import *
+from .atomic_heat_of_formation import *
 
 debug = False
 
