@@ -1,5 +1,5 @@
 import math, numpy as np
-from jacobi import *
+from .jacobi import *
 
 def calc_fit_R(natoms:int, xp, x):
     ndim  = 3

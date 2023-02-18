@@ -3,9 +3,9 @@
 # https://github.com/dspoel/ACT
 #
 import math, os, sys
-from actutils     import *
-from elements     import *
-from get_csv_rows import *
+from .actutils     import *
+from .elements     import *
+from .get_csv_rows import *
 
 debug = False
 

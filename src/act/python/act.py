@@ -2,7 +2,7 @@
         
 import os, shutil, sys
 from enum import Enum
-from get_csv_rows import *
+from .get_csv_rows import *
 
 class Alg(Enum):
     GA     = 1
@@ -166,7 +166,12 @@ class ACT:
         if not self.debug:
             os.system(cmd)
 
-if __name__ == '__main__':
+
+def sample_act():
+    """
+    Perform a sample run of ACT
+    FIXME: not sure if this will work
+    """
     MolPropFile       = "molprop.xml"
     SelectionFile     = "sel.dat"
     act = ACT(MolPropFile, SelectionFile, True)
@@ -179,4 +184,8 @@ if __name__ == '__main__':
         act.tune_ff(ForceFieldFileIn, ForceFieldFileOut,
                     LogFile, target, { "-max_generations": 5 })
         ForceFieldFileIn  = ForceFieldFileOut
+
+
+if __name__ == '__main__':
+    sample_act()
     
