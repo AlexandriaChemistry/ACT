@@ -4,15 +4,15 @@
   <Int Name="cyclobutene.sdf">10</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">10</Int>
-    <String>cv</String>
-    <String>cv</String>
-    <String>cy</String>
-    <String>cy</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>ha</String>
-    <String>ha</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

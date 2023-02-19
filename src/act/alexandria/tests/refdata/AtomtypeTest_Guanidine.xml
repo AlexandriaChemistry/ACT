@@ -5,13 +5,13 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">9</Int>
     <String>c2</String>
-    <String>n</String>
-    <String>n</String>
     <String>n2</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
+    <String>n2</String>
+    <String>n2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

@@ -67,125 +67,101 @@ namespace
  */
 class RespTest : public gmx::test::CommandLineTestBase
 {
-    protected:
-        //! Checking data structure
-        gmx::test::TestReferenceChecker checker_;
-        //! Alexandria molecular properties class
-        alexandria::ACTMol               mp_;
-
-        //! Init set tolerance
-        RespTest () : checker_(this->rootChecker())
-        {
-            std::vector<alexandria::MolProp> molprops;
-
-            // needed for ReadGauss
-            const char *molnm    = (char *)"XXX";
-            const char *iupac    = (char *)"";
-            const char *conf     = (char *)"minimum";
-            std::string basis, method;
-            const char *jobtype  = (char *)"Opt";
-            int         maxpot   = 100;
-            int         nsymm    = 0;
-
-            //Read input file for molprop
-            auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
-            double qtot = 0;
-            if (readBabel(dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                          maxpot, nsymm, jobtype, &qtot, false))
-            {
-                std::map<std::string, std::string> g2a;
-                gaffToAlexandria("", &g2a);
-                if (!g2a.empty())
-                {
-                    for(auto &molprop: molprops)
-                    {
-                        EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                    }
-                }
-                else
-                {
-                    GMX_THROW(gmx::InternalError("Cannot find atomtype mapping file"));
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Could not read file %s using OpenBabel\n",
-                        dataName.c_str());
-                return;
-            }
-            EXPECT_TRUE(qtot == 0.0);
-            mp_.Merge(&molprops[0]);
-
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
-            checker_.setDefaultTolerance(tolerance);
-        }
-
-        //! Static initiation, only run once every test.
-        static void SetUpTestCase()
-        {
-        }
-
-        /*! \brief Actual testing routine
-         * \param[in] qdist The charge distribution type
-         * \param[in] qSymm Whether or not to use charge symmetry
-         */
-        void testResp(const std::string &qdist, bool qSymm)
-        {
-            //Generate charges and topology
-            std::string   method("B3LYP");
-            std::string   basis("Gen");
-            t_inputrec    inputrec;
-            fill_inputrec(&inputrec);
-            ForceField      *pd = getForceField(qdist);
-            auto imm = mp_.GenerateTopology(nullptr, pd,
-                                            missingParameters::Error, false);
-            if (immStatus::OK != imm)
-            {
-                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
-                return;
-            }
-
-            //Needed for GenerateCharges
-            CommunicationRecord cr;
-            auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            gmx::MDLogger  mdlog {};
-            auto forceComp = new ForceComputer();
-            auto qt = pd->findForcesConst(InteractionType::COULOMB);
-            auto ct = name2ChargeType(qt.optionValue("chargetype"));
-            
-            if (ChargeType::Slater  == ct)
-            {
-                GMX_THROW(gmx::InternalError("No support for tables anymore"));
-            }
-            mp_.setInputrec(&inputrec);
-            mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            std::vector<gmx::RVec> coords = mp_.xOriginal();
-            mp_.initQgenResp(pd, coords, 0.0, 100);
-            std::vector<double> qcustom;
-            std::vector<gmx::RVec> forces(mp_.atomsConst().size());
-            mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
-                                ChargeGenerationAlgorithm::ESP,
-                                qType::ESP,
-                                qcustom, &coords, &forces);
-
-            std::vector<double> qtotValues;
-            auto atoms = mp_.atomsConst();
-            for (size_t atom = 0; atom < atoms.size(); atom++)
-            {
-                qtotValues.push_back(atoms[atom].charge());
-            }
-            char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                     chargeTypeName(ct).c_str());
-            checker_.checkSequence(qtotValues.begin(),
-                                   qtotValues.end(), buf);
-        }
+protected:
+    //! Checking data structure
+    gmx::test::TestReferenceChecker checker_;
+    
+    //! Init set tolerance
+    RespTest () : checker_(this->rootChecker())
+    {
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        checker_.setDefaultTolerance(tolerance);
+    }
         
-        //! Cleanup
-        static void TearDownTestCase()
-        {
-        }
+    ACTMol readMolecule(ForceField *pd)
+    {
+        std::vector<alexandria::MolProp> molprops;
 
+        // needed for ReadGauss
+        const char *molnm    = (char *)"XXX";
+        const char *iupac    = (char *)"";
+        const char *conf     = (char *)"minimum";
+        std::string basis, method;
+        const char *jobtype  = (char *)"Opt";
+        int         maxpot   = 100;
+        int         nsymm    = 0;
+
+        //Read input file for molprop
+        auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+        double qtot = 0;
+        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
+                              maxpot, nsymm, jobtype, &qtot, false));
+                    
+        EXPECT_TRUE(qtot == 0.0);
+        ACTMol mp;
+        mp.Merge(&molprops[0]);
+        return mp;
+    }
+
+    //! Static initiation, only run once every test.
+    static void SetUpTestCase()
+    {
+    }
+    
+    /*! \brief Actual testing routine
+     * \param[in] qdist The charge distribution type
+     * \param[in] qSymm Whether or not to use charge symmetry
+     */
+    void testResp(const std::string &qdist, bool qSymm)
+    {
+        //Generate charges and topology
+        std::string   method("B3LYP");
+        std::string   basis("Gen");
+        t_inputrec    inputrec;
+        fill_inputrec(&inputrec);
+        ForceField   *pd = getForceField(qdist);
+        auto mp = readMolecule(pd);
+        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Error, false);
+        EXPECT_TRUE(immStatus::OK == imm);
+        
+        //Needed for GenerateCharges
+        CommunicationRecord cr;
+        auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+        gmx::MDLogger  mdlog {};
+        auto forceComp = new ForceComputer();
+        auto qt = pd->findForcesConst(InteractionType::COULOMB);
+        auto ct = name2ChargeType(qt.optionValue("chargetype"));
+        
+        EXPECT_FALSE(ChargeType::Slater  == ct);
+
+        mp.setInputrec(&inputrec);
+        mp.symmetrizeCharges(pd, qSymm, nullptr);
+        std::vector<gmx::RVec> coords = mp.xOriginal();
+        mp.initQgenResp(pd, coords, 0.0, 100);
+        std::vector<double> qcustom;
+        std::vector<gmx::RVec> forces(mp.atomsConst().size());
+        mp.GenerateCharges(pd, forceComp, mdlog, &cr,
+                           ChargeGenerationAlgorithm::ESP,
+                           qType::ESP,
+                           qcustom, &coords, &forces);
+        
+        std::vector<double> qtotValues;
+        auto atoms = mp.atomsConst();
+        for (size_t atom = 0; atom < atoms.size(); atom++)
+        {
+            qtotValues.push_back(atoms[atom].charge());
+        }
+        char buf[256];
+        snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
+                 chargeTypeName(ct).c_str());
+        checker_.checkSequence(qtotValues.begin(),
+                               qtotValues.end(), buf);
+    }
+        
+    //! Cleanup
+    static void TearDownTestCase()
+    {
+    }
 };
 
 TEST_F (RespTest, AXpValues)

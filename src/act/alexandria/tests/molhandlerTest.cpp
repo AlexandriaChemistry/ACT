@@ -64,7 +64,7 @@ namespace alexandria
 namespace
 {
 
-static void add_energies(const ForceField                           *pd,
+static void add_energies(const ForceField                        *pd,
                          gmx::test::TestReferenceChecker         *checker,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
@@ -112,9 +112,11 @@ protected:
         std::string                      dataName;
         std::vector<alexandria::MolProp> molprops;
         
+        // Get forcefield
+        auto pd  = getForceField(forcefield);
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
-        bool readOK = readBabel(dataName.c_str(), &molprops, molname, molname,
+        bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
@@ -122,8 +124,6 @@ protected:
         t_inputrec      inputrecInstance;
         t_inputrec     *inputrec   = &inputrecInstance;
         fill_inputrec(inputrec);
-        // Get forcefield
-        auto pd  = getForceField(forcefield);
         // Needed for GenerateCharges
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
@@ -135,32 +135,26 @@ protected:
         bool                   qSymm = false;
         if (readOK)
         {
-            std::map<std::string, std::string> g2a;
-            gaffToAlexandria("", &g2a);
-            if (!g2a.empty())
+            for(auto &molprop: molprops)
             {
-                for(auto &molprop: molprops)
+                ACTMol mm;
+                mm.Merge(&molprop);
+                // Generate charges and topology
+                mm.setInputrec(inputrec);
+                auto imm = mm.GenerateTopology(stdout, pd,
+                                               missingParameters::Error, false);
+                EXPECT_TRUE(immStatus::OK == imm);
+                if (immStatus::OK != imm)
                 {
-                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                    ACTMol mm;
-                    mm.Merge(&molprop);
-                    // Generate charges and topology
-                    mm.setInputrec(inputrec);
-                    auto imm = mm.GenerateTopology(stdout, pd,
-                                                   missingParameters::Error, false);
-                    EXPECT_TRUE(immStatus::OK == imm);
-                    if (immStatus::OK != imm)
-                    {
-                        fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                                immsg(imm), basis.c_str(), method.c_str());
-                        return;
-                    }
-                    std::vector<gmx::RVec> forces(mm.atomsConst().size());
-                    std::vector<gmx::RVec> coords = mm.xOriginal();
-                    mm.symmetrizeCharges(pd, qSymm, nullptr);
-                    mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
-                    mps.push_back(mm);
+                    fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
+                            immsg(imm), basis.c_str(), method.c_str());
+                    return;
                 }
+                std::vector<gmx::RVec> forces(mm.atomsConst().size());
+                std::vector<gmx::RVec> coords = mm.xOriginal();
+                mm.symmetrizeCharges(pd, qSymm, nullptr);
+                mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+                mps.push_back(mm);
             }
         }
         

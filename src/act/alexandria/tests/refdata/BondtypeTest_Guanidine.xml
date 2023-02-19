@@ -4,13 +4,13 @@
   <Int Name="guanidine.pdb">8</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">8</Int>
-    <String>c2-0 n-1: 1</String>
-    <String>c2-0 n-2: 1</String>
+    <String>c2-0 n2-1: 1</String>
+    <String>c2-0 n2-2: 1</String>
     <String>c2-0 n2-3: 2</String>
-    <String>n-1 hn-6: 1</String>
-    <String>n-1 hn-7: 1</String>
-    <String>n-2 hn-4: 1</String>
-    <String>n-2 hn-5: 1</String>
-    <String>n2-3 hn-8: 1</String>
+    <String>n2-1 h-6: 1</String>
+    <String>n2-1 h-7: 1</String>
+    <String>n2-2 h-4: 1</String>
+    <String>n2-2 h-5: 1</String>
+    <String>n2-3 h-8: 1</String>
   </Sequence>
 </ReferenceData>

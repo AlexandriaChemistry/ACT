@@ -4,24 +4,24 @@
   <Int Name="123-trimethyl-imidazolium.sdf">19</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">19</Int>
-    <String>ca-0 ca-1: 1.5</String>
-    <String>ca-1 h4-8: 1</String>
-    <String>nb-2 ca-3: 1.5</String>
-    <String>nb-2 ca-1: 1.5</String>
-    <String>nb-2 c3-5: 1</String>
-    <String>ca-3 c3-15: 1</String>
-    <String>nb-4 ca-3: 1.5</String>
-    <String>nb-4 ca-0: 1.5</String>
-    <String>nb-4 c3-6: 1</String>
-    <String>c3-5 h1-13: 1</String>
-    <String>c3-6 h1-11: 1</String>
-    <String>h4-7 ca-0: 1</String>
-    <String>h1-9 c3-6: 1</String>
-    <String>h1-10 c3-6: 1</String>
-    <String>h1-12 c3-5: 1</String>
-    <String>h1-14 c3-5: 1</String>
-    <String>c3-15 hc-16: 1</String>
-    <String>c3-15 hc-18: 1</String>
-    <String>hc-17 c3-15: 1</String>
+    <String>c2-0 c2-1: 1.5</String>
+    <String>c2-1 h-8: 1</String>
+    <String>n2-2 c2-3: 1.5</String>
+    <String>n2-2 c2-1: 1.5</String>
+    <String>n2-2 c3-5: 1</String>
+    <String>c2-3 c3-15: 1</String>
+    <String>n2-4 c2-3: 1.5</String>
+    <String>n2-4 c2-0: 1.5</String>
+    <String>n2-4 c3-6: 1</String>
+    <String>c3-5 h-13: 1</String>
+    <String>c3-6 h-11: 1</String>
+    <String>h-7 c2-0: 1</String>
+    <String>h-9 c3-6: 1</String>
+    <String>h-10 c3-6: 1</String>
+    <String>h-12 c3-5: 1</String>
+    <String>h-14 c3-5: 1</String>
+    <String>c3-15 h-16: 1</String>
+    <String>c3-15 h-18: 1</String>
+    <String>h-17 c3-15: 1</String>
   </Sequence>
 </ReferenceData>

@@ -116,6 +116,11 @@ class Fragment
     
     //! Return the charge
     int charge() const { return charge_; }
+
+    /*! \brief Set the charge of the fragment
+     * \param[in] charge The new charge
+     */
+    void setCharge(int charge) { charge_ = charge; }
     
     //! Return the multiplicity
     int multiplicity() const { return multiplicity_; }

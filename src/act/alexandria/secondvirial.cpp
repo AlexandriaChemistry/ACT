@@ -506,7 +506,7 @@ void ReRunner::rerun(FILE                        *logFile,
         else
         {
             // Read compounds if we have a trajectory file
-            if (!readBabel(trajname_, &mps, molnm, molnm, "", &method,
+            if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
                            &basis, maxpot, nsymm, "Opt", &qtot, false))
             {
                 fprintf(stderr, "Could not read compounds from %s\n", trajname_);

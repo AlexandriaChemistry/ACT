@@ -4,12 +4,12 @@
   <Int Name="dihydrogen-phosphate.sdf">7</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
-    <String>p6</String>
-    <String>oh</String>
-    <String>om</String>
-    <String>oh</String>
-    <String>om</String>
-    <String>ho</String>
-    <String>ho</String>
+    <String>p3</String>
+    <String>o3</String>
+    <String>o2</String>
+    <String>o3</String>
+    <String>o2</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

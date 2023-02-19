@@ -369,7 +369,7 @@ public:
      * \return atoms data for editing
      */
     std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
-    
+
     /*! \brief Return the fragment handler
      */
     const FragmentHandler *fragmentHandler() const { return fraghandler_; }

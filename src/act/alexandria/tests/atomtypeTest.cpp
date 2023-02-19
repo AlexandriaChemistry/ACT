@@ -64,7 +64,16 @@ namespace
 
 class AtomtypeTest : public gmx::test::CommandLineTestBase
 {
-    protected:
+private:
+    ForceField *pd;
+
+public:   
+    AtomtypeTest()
+    {
+        pd = getForceField("ACS-g");
+    }
+    
+protected:
     void testAtype(const char *molname, bool bondTest=false)
         {
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
@@ -79,39 +88,36 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
 
             dataName    = gmx::test::TestFileManager::getInputFilePath(molname);
             double qtot = 0.0;
-            bool readOK = readBabel(dataName.c_str(), &molprops, molname, molname,
-                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false);
+            bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
+                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false, true);
             EXPECT_TRUE(readOK);
-            if (readOK)
+            for(auto &molprop: molprops)
             {
-                for(auto &molprop: molprops)
+                std::vector<std::string> atypes;
+                auto                     exper = molprop.experimentConst().begin();
+                for (auto &ca : exper->calcAtomConst())
                 {
-                    std::vector<std::string> atypes;
-                    auto                     exper = molprop.experimentConst().begin();
-                    for (auto &ca : exper->calcAtomConst())
+                    atypes.push_back(ca.getObtype());
+                }
+                if (!bondTest)
+                {
+                    checker_.checkInteger(static_cast<int>(atypes.size()), molname);
+                    checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
+                }
+                else
+                {
+                    std::vector<std::string> bondorder;
+                    for (auto &bond : molprop.bondsConst())
                     {
-                        atypes.push_back(ca.getObtype());
+                        auto ai = bond.aI();
+                        auto aj = bond.aJ();
+                        bondorder.push_back(gmx::formatString("%s-%d %s-%d: %g",
+                                                              atypes[ai].c_str(), ai,
+                                                              atypes[aj].c_str(), aj,
+                                                              bond.bondOrder()));
                     }
-                    if (!bondTest)
-                    {
-                        checker_.checkInteger(static_cast<int>(atypes.size()), molname);
-                        checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
-                    }
-                    else
-                    {
-                        std::vector<std::string> bondorder;
-                        for (auto &bond : molprop.bondsConst())
-                        {
-                            auto ai = bond.aI();
-                            auto aj = bond.aJ();
-                            bondorder.push_back(gmx::formatString("%s-%d %s-%d: %g",
-                                                                  atypes[ai].c_str(), ai,
-                                                                  atypes[aj].c_str(), aj,
-                                                                  bond.bondOrder()));
-                        }
-                        checker_.checkInteger(static_cast<int>(bondorder.size()), molname);
-                        checker_.checkSequence(bondorder.begin(), bondorder.end(), "bondorder");
-                    }
+                    checker_.checkInteger(static_cast<int>(bondorder.size()), molname);
+                    checker_.checkSequence(bondorder.begin(), bondorder.end(), "bondorder");
                 }
             }
         }

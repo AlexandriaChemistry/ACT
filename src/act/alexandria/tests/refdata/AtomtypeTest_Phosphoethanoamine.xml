@@ -4,17 +4,17 @@
   <Int Name="phosphoethanoamine.sdf">12</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
-    <String>p4</String>
-    <String>o</String>
-    <String>o</String>
+    <String>p2</String>
+    <String>o2</String>
+    <String>o2</String>
     <String>n3</String>
     <String>c3</String>
     <String>c3</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>hn</String>
-    <String>hn</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

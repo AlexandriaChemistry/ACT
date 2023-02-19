@@ -4,8 +4,8 @@
   <Int Name="carbon-dioxide.sdf">3</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
-    <String>o</String>
+    <String>o2</String>
     <String>c1</String>
-    <String>o</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

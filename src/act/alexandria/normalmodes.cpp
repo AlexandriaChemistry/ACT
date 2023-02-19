@@ -145,7 +145,7 @@ int nma(int argc, char *argv[])
         std::string          method, basis;
         int                  maxpot = 100;
         int                  nsymm  = 1;
-        if (!readBabel(filename, &mps, molnm, molnm, "", &method,
+        if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", &qtot_babel,
                        false))
         {

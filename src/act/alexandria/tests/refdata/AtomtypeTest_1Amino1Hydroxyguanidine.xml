@@ -4,17 +4,17 @@
   <Int Name="1-amino-1-hydroxyguanidine-3-oep.log.pdb">12</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
-    <String>oh</String>
-    <String>n</String>
+    <String>o3</String>
+    <String>n2</String>
     <String>n3</String>
-    <String>n</String>
+    <String>n2</String>
     <String>n2</String>
     <String>c2</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>ho</String>
-    <String>hn</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

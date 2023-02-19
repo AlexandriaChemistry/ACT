@@ -140,44 +140,20 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 }
                 break;
             }
+            // Get forcefield
+            auto pd  = getForceField(model);
+
             auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
- 
             double qtot_babel = qtotal;
-            if (readBabel(dataName.c_str(),
-                          &molprops,
-                          molname.c_str(),
-                          molname.c_str(),
-                          conf,
-                          &method,
-                          &basis,
-                          maxpot,
-                          nsymm,
-                          jobtype,
-                          &qtot_babel,
-                          false))
-            {
-                std::map<std::string, std::string> g2a;
-                gaffToAlexandria("", &g2a);
-                if (!g2a.empty())
-                {
-                    for(auto &molprop: molprops)
-                    {
-                        EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                    }
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Error reading file %s using OpenBabel.\n",
-                        dataName.c_str());
-                return;
-            }
+            EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+                                  molname.c_str(), molname.c_str(),
+                                  conf, &method, &basis, maxpot,
+                                  nsymm, jobtype, &qtot_babel, false));
+
             if (trustObCharge)
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
             }
-            // Get forcefield
-            auto pd  = getForceField(model);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);

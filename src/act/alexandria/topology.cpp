@@ -1037,10 +1037,10 @@ void Topology::setIdentifiers(const ForceField *pd)
             for(auto &jj : topentry->atomIndices())
             {
                 // Check whether we do not e.g. have a shell here
-                if (!pd->hasParticleType(atoms_[jj].ffType()))
-                {
-                    continue;
-                }
+                //if (!pd->hasParticleType(atoms_[jj].ffType()))
+                //{
+                //  continue;
+                //}
                 auto atype = pd->findParticleType(atoms_[jj].ffType());
                 if (!atypes.empty())
                 {
@@ -1105,7 +1105,7 @@ void Topology::setIdentifiers(const ForceField *pd)
             }
             else
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Could not find identifier for %s for %s", interactionTypeToString(entry.first).c_str(), atypes.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Could not find identifier for %s for atomtype '%s'", interactionTypeToString(entry.first).c_str(), atypes.c_str()).c_str()));
             }
         }
     }

@@ -5,16 +5,16 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
     <String>c3</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
     <String>o2</String>
-    <String>c</String>
-    <String>o</String>
+    <String>c2</String>
+    <String>o2</String>
     <String>o2</String>
     <String>c3</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

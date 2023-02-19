@@ -4,30 +4,30 @@
   <Int Name="1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb">25</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">25</Int>
-    <String>p5</String>
-    <String>os</String>
-    <String>os</String>
-    <String>o</String>
+    <String>p3</String>
+    <String>o3</String>
+    <String>o3</String>
+    <String>o2</String>
     <String>c3</String>
     <String>c3</String>
     <String>c3</String>
     <String>c3</String>
     <String>c3</String>
     <String>c3</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

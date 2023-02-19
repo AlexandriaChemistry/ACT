@@ -232,7 +232,10 @@ public:
     const std::vector<Fragment> &fragments() const { return fragment_; }
     
     //! Return the fragments of this molecule
-    const std::vector<Fragment> *fragmentPtr() const { return &fragment_; }
+    const std::vector<Fragment> *fragmentPtrConst() const { return &fragment_; }
+    
+    //! Return editable fragments of this molecule
+    std::vector<Fragment> *fragmentPtr() { return &fragment_; }
     
     /*! Add a new fragment
      * \param[in] f The new fragment
@@ -240,8 +243,11 @@ public:
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
     
     /*! Generate fragments based on bonds
+     * \param[in] pd     The force field needed for looking up atom props
+     * \param[in] qtotal The total charge of the molecule
      */    
-    void generateFragments();
+    void generateFragments(const ForceField *pd,
+                           double            qtotal);
     
     //! Clear the fragment information
     void clearFragments() { fragment_.clear(); }

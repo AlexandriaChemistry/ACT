@@ -300,25 +300,17 @@ int gentop(int argc, char *argv[])
         }
         std::vector<MolProp>  mps;
         double qtot_babel = qtot;
-        if (readBabel(filename, &mps, molnm, iupac, conf, &method, &basis,
+        if (readBabel(&pd, filename, &mps, molnm, iupac, conf, &method, &basis,
                       maxpot, nsymm, jobtype, &qtot_babel, addHydrogens))
         {
             std::map<std::string, std::string> g2a;
             gaffToAlexandria("", &g2a);
             for(auto &mp : mps)
             {
-                bool mappingOK = true;
-                if (!g2a.empty())
-                {
-                    mappingOK = renameAtomTypes(&mp, g2a);
-                }
-                if (mappingOK)
-                {
-                    ACTMol mm;
-                    mm.Merge(&mp);
-                    mm.setInputrec(inputrec);
-                    actmols.push_back(mm);
-                }
+                ACTMol mm;
+                mm.Merge(&mp);
+                mm.setInputrec(inputrec);
+                actmols.push_back(mm);
             }
         }
         else

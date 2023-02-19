@@ -5,12 +5,12 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">8</Int>
     <String>o2</String>
-    <String>nb</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>h4</String>
-    <String>ha</String>
-    <String>h4</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>
