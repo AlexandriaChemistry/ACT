@@ -1,0 +1,56 @@
+{% set name = "act" %}
+{% set version = "0.97" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  path: ../../builds/act_osx-64.tar.gz
+  # Ultimately we could fetch the code an compile it during the conda-build process
+  # git_url: https://github.com/dspoel/ACT.git
+  # git_tag: 
+
+build:
+  number: 0
+
+requirements:
+  # build:
+  #   - {{ compiler('cxx') }}
+  #   - {{ compiler('c') }}
+  #   - make
+  #   - openmpi
+  #   - git
+  #   - graphviz
+  #   - cmake
+  #   - cairo
+  #   - fftw
+  #   - eigen
+  #   - libxml2
+  #   - swig
+  #   - sqlite
+  #   - doxygen
+  # host:
+  #   - python
+  run:
+    - openmpi
+    - matplotlib
+    - pubchempy
+    - numpy
+    - cairo
+    - graphviz
+    # - cmake
+    - fftw
+    - eigen
+    - libxml2
+    - swig
+    - sqlite
+    - doxygen
+  run_constrained:
+    - python>=3.8
+
+about:
+  home: https://github.com/dspoel/ACT
+  license: MIT
+  summary: 'Global optimization of force fields for molecular simulation'
+  doc_url: https://github.com/dspoel/ACT/wiki
