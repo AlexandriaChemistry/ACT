@@ -8,9 +8,7 @@ from enum    import Enum
 
 # ACT python code
 sys.path.insert(1, "/home/icm/tools/lib/site-packages/act")
-from actutils     import *
-from get_csv_rows import *
-from elements     import AtomNumberToAtomName
+from act import *
 
 BohrInverse2nmInverse = 18.897268
 
