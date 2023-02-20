@@ -6,6 +6,8 @@ Python interface for the Alexandria Chemistry Toolkit
 
 from .act import (
 	ACT,
+	Target,
+	Alg,
 )
 
 from .actutils import (
