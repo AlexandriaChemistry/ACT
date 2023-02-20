@@ -12,13 +12,13 @@ seldimer    = "../SELECTIONS/alcoholdimer.dat"
 xmlesp      = "../XML/alcohol-esp.xml"
 xmlepot     = "../XML/alcohol-epot.xml"
 xmldimer    = "../XML/alcohol-dimer.xml"
-act         = ACT(xml, sel, True)
+act_run     = ACT(xml, sel, True)
 
 # The force field file we start with
 ForceFieldFileIn  = "../ACS-pg.xml"
 
 # Generate Bonds, Angles etc.
-act.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
+act_run.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
                 { "-klin": 36000 })
 
 # What bonded parameters to fit determines on what we used to generate the initial force field
@@ -75,6 +75,6 @@ for target in [ Target.ACM, Target.Epot, Target.Inter ]:
     else:
         options["-random_init"] = ""
         options["-nocalc_frequencies"] = ""
-    act.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
-                LogFile, target, False, options)
+    act_run.train_ff(ForceFieldFileIn, ForceFieldFileOut, 
+                     LogFile, target, False, options)
     ForceFieldFileIn  = "Train-" + ForceFieldFileOut
