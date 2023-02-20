@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse, random, os, sys
-from get_csv_rows import *
+from act import *
 
 def parse_args():
     desc = "Randomly assign Train status to a selection file"

@@ -7,8 +7,10 @@ import argparse, sys
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
-from molprops import *
-from read_gaussian_log import *
+from act import (
+    read_gaussian_log,
+    Molprops,
+)
 
 def parseArguments():
     desc = '''This script will read a Gaussian output file from the Alexandria library

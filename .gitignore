@@ -35,12 +35,17 @@ cmake-build-debug
 src/ga/test
 
 # Examples
-examples/TUNE_EEM/*.xvg
-examples/TUNE_EEM/*.log
-examples/TUNE_EEM/viewxvg.py
-examples/TUNE_EEM/#*
-examples/TUNE_EEM/*.dat
-examples/TUNE_EEM/run_alcohol_v2.py
+examples/*.xml
+examples/*.log
+
+examples/TUNE_FF/*.xvg
+examples/TUNE_FF/*.log
+examples/TUNE_FF/viewxvg.py
+examples/TUNE_FF/#*
+examples/TUNE_FF/*.dat
+examples/TUNE_FF/run_alcohol_v2.py
+examples/TUNE_FF/*.txt
+examples/TUNE_FF/inds
 
 # VS Code
 .vscode

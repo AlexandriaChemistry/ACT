@@ -97,7 +97,9 @@ class ACT:
         runit = shutil.which("mpirun")
         if None != runit:
             nprocs = self.node_count
-            if self.popsize > nprocs:
+            print(nprocs)
+            print(self.pop_size)
+            if self.popsize > nprocs or not nprocs % self.pop_size:
                 nprocs = self.popsize
             return ( "%s -n %d -oversubscribe " % ( runit, nprocs ))
         return ""
@@ -144,8 +146,10 @@ class ACT:
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.chargesfile,
                   self.selectionfile, LogFile ) )
-        for opt in options:
-            cmd += ( " %s %s " % ( opt, options[opt] ))
+        for opt, val in options.items():
+            cmd += ( " %s %s " % ( opt, val ))
+            if opt == "-pop_size":
+                self.popsize = val
         ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "phi0", "c1", "c2", "c3", "bondenergy" ]
         if OptimizeGeometry:
             ener_params.append("bondlength")

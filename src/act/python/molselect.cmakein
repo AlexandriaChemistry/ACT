@@ -9,9 +9,8 @@ from pathlib     import Path
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
-from actutils    import *
+from act         import *
 from mol_csv_api import *
-from molutils    import *
 from datetime    import datetime
 try:
   import numpy as np

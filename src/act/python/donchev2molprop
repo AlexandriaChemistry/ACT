@@ -8,10 +8,12 @@ except:
 
 import argparse, csv, gc, os, sys
 # ACT stuff
-from get_csv_rows import get_csv_rows
+from act import (
+    get_csv_rows,
+    get_mol_dict as gmd,
+    molprops as mp,
+)
 from mol_csv_api  import Molecules
-import get_mol_dict as gmd
-import molprops     as mp
 
 debug = False
 
