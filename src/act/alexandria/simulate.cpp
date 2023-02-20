@@ -34,7 +34,6 @@
 #include <cstdlib>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
@@ -180,19 +179,6 @@ int simulate(int argc, char *argv[])
                 fprintf(logFile, "Reading %s failed.\n", filename);
                 status = 1;
             }
-            else
-            {
-                std::map<std::string, std::string> g2a;
-                gaffToAlexandria("", &g2a);
-                if (!g2a.empty())
-                {
-                    if (!renameAtomTypes(&mps[0], g2a))
-                    {
-                        status = 1;
-                    }
-                }
-            }
-            
         }
         if (status == 0)
         {
