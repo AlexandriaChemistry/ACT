@@ -9,13 +9,13 @@ from act import *
 # All these files should be in place or alexandria will crash.
 sel    = "../SELECTIONS/alcohol.dat"
 xml    = "../XML/alcohol.xml"
-act = ACT(xml, sel, True)
+act_run = ACT(xml, sel, True)
 
 # The force field file we start with
 ForceFieldFileIn  = "../ACS-pg.xml"
 
 # Generate Bonds, Angles etc.
-act.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
+act_run.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
                 { "-klin": 36000 })
 
 # Now loop over the optimization targets.
@@ -48,6 +48,6 @@ for target in Target:
     else:
         options["-random_init"] = ""
         options["-nocalc_frequencies"] = ""
-    act.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
+    act_run.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
                 LogFile, target, False, options)
     ForceFieldFileIn  = "Train-" + ForceFieldFileOut
