@@ -4,9 +4,9 @@
   <Int Name="ammonia.sdf">4</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">4</Int>
-    <String>hn</String>
+    <String>h</String>
     <String>n3</String>
-    <String>hn</String>
-    <String>hn</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

@@ -4,11 +4,11 @@
   <Int Name="methanethiol.sdf">6</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">6</Int>
-    <String>sh</String>
-    <String>hs</String>
+    <String>s3</String>
+    <String>h</String>
     <String>c3</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

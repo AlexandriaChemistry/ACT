@@ -6,15 +6,15 @@
     <Int Name="Length">12</Int>
     <String>c3</String>
     <String>c3</String>
-    <String>os</String>
-    <String>s6</String>
-    <String>om</String>
-    <String>om</String>
-    <String>om</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>o3</String>
+    <String>s3</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

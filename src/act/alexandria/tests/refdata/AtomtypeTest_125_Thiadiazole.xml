@@ -4,12 +4,12 @@
   <Int Name="125-thiadiazole.sdf">7</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
-    <String>st</String>
-    <String>nb</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>nb</String>
-    <String>h4</String>
-    <String>h4</String>
+    <String>s2</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>n2</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

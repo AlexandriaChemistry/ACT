@@ -4,12 +4,12 @@
   <Int Name="cyclopropene.sdf">7</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
-    <String>cu</String>
-    <String>cu</String>
-    <String>cx</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>ha</String>
-    <String>ha</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c3</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

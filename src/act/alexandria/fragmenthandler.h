@@ -48,6 +48,8 @@ namespace alexandria
         std::vector<std::string>           ids_;
         //! Array denoting where the atoms start in the global
         std::vector<size_t>                atomStart_;
+        //! Pointer to copy of the fragments
+        const std::vector<Fragment>       *fragments_;
         //! Total number of atoms
         size_t                             natoms_ = 0;
     public:
@@ -60,7 +62,7 @@ namespace alexandria
          * \param[in] shellRenumber Info on renumbering atoms because of shells
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const ForceField                *pd,
+        FragmentHandler(const ForceField             *pd,
                         const std::vector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>   &atoms,
                         const std::vector<Bond>      &bonds,
@@ -93,7 +95,7 @@ namespace alexandria
         eQgen generateCharges(FILE                         *fp,
                               const std::string            &molname,
                               const std::vector<gmx::RVec> &x,
-                              const ForceField                *pd,
+                              const ForceField             *pd,
                               std::vector<ActAtom>         *atoms);
     };
 } // namespace alexandria

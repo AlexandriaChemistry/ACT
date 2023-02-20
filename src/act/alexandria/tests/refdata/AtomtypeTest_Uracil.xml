@@ -4,17 +4,17 @@
   <Int Name="uracil.sdf">12</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
-    <String>n</String>
-    <String>hn</String>
-    <String>ca</String>
-    <String>o</String>
-    <String>ca</String>
-    <String>hn</String>
-    <String>ca</String>
-    <String>h4</String>
-    <String>n</String>
-    <String>ha</String>
-    <String>ca</String>
-    <String>o</String>
+    <String>n2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>o2</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>n2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

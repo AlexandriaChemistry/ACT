@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,6 +37,7 @@
 #include <cmath>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -184,14 +185,63 @@ int MolProp::symmetryNumber() const
     return symm;
 }
 
-void MolProp::generateFragments()
+static std::string strNum2aa(const std::string &elem, int n)
 {
-    gmx_fatal(FARGS, "Implement complete function");
-    std::vector<int> fragIndex;
-    for(int i = 0; i < natom_; i++)
+    if (n > 1)
     {
-        fragIndex[i] = -1;
+        return gmx::formatString("%s%d", elem.c_str(), n);
     }
+    else
+    {
+        return elem;
+    }
+}
+
+static std::string comp2formula(std::map<std::string, int> &comp)
+{
+    std::string form;
+    std::string C("C");
+    std::string H("H");
+    if (comp.end() != comp.find(C))
+    {
+        // Treat any compound with C as organic
+        form += strNum2aa(C, comp[C]);
+        if (comp.end() != comp.find(H))
+        {
+            form += strNum2aa(H, comp[H]);
+        }
+        // Other elements
+        for(const auto &cc : comp)
+        {
+            if (cc.first != C && cc.first != H)
+            {
+                form += strNum2aa(cc.first, cc.second);
+            }
+        }
+    }
+    else
+    {
+        for(const auto &cc : comp)
+        {
+            form += strNum2aa(cc.first, cc.second);
+        }
+    }
+    return form;
+}
+
+static bool fragCompare(const Fragment &a, const Fragment &b)
+{
+    int amin = *std::min_element(a.atoms().begin(), a.atoms().end());
+    int bmin = *std::min_element(b.atoms().begin(), b.atoms().end());
+    return amin < bmin;
+}
+
+void MolProp::generateFragments(const ForceField *pd,
+                                double            qtotal)
+{
+    auto catom = LastExperiment()->calcAtomConst();
+    int  natom = catom.size();
+    std::vector<int> fragIndex(natom, -1);
     int maxBond = 0;
     for(auto b : bond_)
     {
@@ -217,7 +267,7 @@ void MolProp::generateFragments()
             if (fragIndex[ai] < fragIndex[aj])
             {
                 int faj = fragIndex[aj];
-                for(int i = 0; i < natom_; i++)
+                for(int i = 0; i < natom; i++)
                 {
                     if (faj == fragIndex[i])
                     {
@@ -228,7 +278,7 @@ void MolProp::generateFragments()
             else
             {
                 int fai = fragIndex[ai];
-                for(int i = 0; i < natom_; i++)
+                for(int i = 0; i < natom; i++)
                 {
                     if (fai == fragIndex[i])
                     {
@@ -239,15 +289,61 @@ void MolProp::generateFragments()
         }
     }
     clearFragments();
-    int fragI = fragIndex[0];
-    for(int i = 1; i < natom_; i++)
+    std::map<int, std::set<int>> fragMols;
+    for(int i = 0; i < natom; i++)
     {
-        if (fragIndex[i] != fragI)
+        int  fragI = fragIndex[i];
+        auto fm    = fragMols.find(fragI);
+        if (fragMols.end() == fm)
         {
-            // New Fragment
-            Fragment f;
+            // Add empty set
+            fragMols.insert({ fragI, { }});
         }
+        // Add atom to set
+        fragMols[fragI].insert(i);
     }
+    if (debug)
+    {
+        fprintf(debug, "There are %zu distinct compounds in %d atoms and %zu bonds.\n", fragMols.size(),
+                natom, bond_.size());
+    }
+    int  fi    = 0;
+    for(auto &fm : fragMols)
+    {
+        std::vector<int> atomIndices;
+        double           mass = 0;
+        std::map<std::string, int> comp;
+        for(auto &i : fm.second)
+        {
+            atomIndices.push_back(i);
+            // Extract element and mass from force field data
+            auto atype = catom[i].getObtype();
+            if (pd->hasParticleType(atype))
+            {
+                auto ptype = pd->findParticleType(atype);
+                mass += ptype->mass();
+                auto elem  = ptype->element();
+                if (comp.find(elem) == comp.end())
+                {
+                    comp.insert({elem, 0});
+                }
+                comp[elem] += 1;
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No particle type %s in force field %s\n",
+                                                                   atype.c_str(), pd->filename().c_str()).c_str()));;
+            }
+        }
+        auto formula  = comp2formula(comp);
+        auto fragName = gmx::formatString("%d", fi++);
+        int  spin     = 1;
+        addFragment(Fragment(fragName, mass, qtotal, spin,1, formula, atomIndices));
+        // TODO we need proper charges for each fragment
+        // Now setting this to zero for subsequent fragments.
+        qtotal        = 0;
+    }
+    std::sort(fragment_.begin(), fragment_.end(), fragCompare);
 }
 
 int MolProp::Merge(const MolProp *src)

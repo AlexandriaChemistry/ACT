@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -86,9 +86,9 @@ class BabelFiles
 };
 
 /*! \brief
- * Read a Gaussian log file either using home grown methods or using OpenBabel
+ * Read a Gaussian log file or other file supported by OpenBabel
  *
- *
+ * \param[in]  pd          Alexandria force field
  * \param[in]  g98         The gaussian log file, or in case OpenBabel is used anything
  *                         that can be read by OpenBabel
  * \param[out] mp          Pointer to a MolProp vector
@@ -105,10 +105,12 @@ class BabelFiles
  * \param[out] qtot        Total charge as deduced by OB from the input. If initialized to a non-zero 
  *                         value, that will be used instead of what is read from the input file.
  * \param[in]  addHydrogen If true, hydrogens will be added
+ * \param[in]  renameAtoms If true, openbabel type will be converted to Alexandria
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria
  */
-bool readBabel(const char          *g98,
+bool readBabel(const alexandria::ForceField     *pd,
+               const char                       *g98,
                std::vector<alexandria::MolProp> *mp,
                const char          *molnm,
                const char          *iupac,
@@ -119,7 +121,8 @@ bool readBabel(const char          *g98,
                int                  nsymm,
                const char          *jobtype,
                double              *qtot,
-               bool                 addHydrogen);
+               bool                 addHydrogen,
+               bool                 renameAtoms = true);
 
 /*! \brief Add atomtype to a Molprop object
  *

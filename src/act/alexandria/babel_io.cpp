@@ -58,6 +58,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/atype_mapping.h"
 #include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
@@ -241,7 +242,9 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     }
 }
 
-static bool babel2ACT(OpenBabel::OBMol    *mol,
+static bool babel2ACT(const ForceField    *pd,
+                      const std::map<std::string, std::string> &g2a,
+                      OpenBabel::OBMol    *mol,
                       alexandria::MolProp *mpt,
                       const char          *molnm,
                       const char          *iupac,
@@ -584,14 +587,19 @@ static bool babel2ACT(OpenBabel::OBMol    *mol,
                 forcefield.c_str());
         return false;
     }
-    // Fragment information
-    // TODO: extract correct symmetry number
-    Fragment f("1", mol->GetMolWt(), *qtot, mol->GetTotalSpinMultiplicity(), 
-               1, mol->GetFormula(), atomIndices);
-    mpt->addFragment(f);
-
     // Bonds
     getBondsFromOpenBabel(mol, mpt, g09, forcefield.compare("alexandria") == 0);
+
+    // Convert atom types to Alexandria
+    if (!g2a.empty())
+    {
+        if (!renameAtomTypes(mpt, g2a))
+        {
+            return false;
+        }
+    }
+    // Fragment information
+    mpt->generateFragments(pd, *qtot);
 
     // Dipole
     auto my_dipole = mol->GetData("Dipole Moment");
@@ -767,7 +775,8 @@ static bool readBabel(const std::string               &g09,
     return read_ok;
 }
 
-bool readBabel(const char          *g09,
+bool readBabel(const ForceField    *pd,
+               const char          *g09,
                std::vector<alexandria::MolProp> *mpt,
                const char          *molnm,
                const char          *iupac,
@@ -778,7 +787,8 @@ bool readBabel(const char          *g09,
                int                  nsymm,
                const char          *jobType,
                double              *qtot,
-               bool                 addHydrogen)
+               bool                 addHydrogen,
+               bool                 renameAtoms)
 {
     std::vector<OpenBabel::OBMol *> mols;
     einformat                       inputformat = einfNotGaussian;
@@ -788,10 +798,15 @@ bool readBabel(const char          *g09,
         fprintf(stderr, "Failed reading %s\n", g09);
         return false;
     }
-    for(auto mol : mols)
+    std::map<std::string, std::string> g2a;
+    if (renameAtoms)
+    {
+        gaffToAlexandria("", &g2a);
+    }
+    for(auto &mol : mols)
     {
         alexandria::MolProp mp;
-        if (babel2ACT(mol, &mp, molnm, iupac, conformation, method, basisset, 
+        if (babel2ACT(pd, g2a, mol, &mp, molnm, iupac, conformation, method, basisset, 
                       maxPotential, nsymm, jobType, qtot, addHydrogen, g09,
                       inputformat))
         {

@@ -34,7 +34,6 @@
 #include <cstdlib>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
@@ -107,7 +106,7 @@ int simulate(int argc, char *argv[])
           "Print part of the output in json format" }
     };
     SimulationConfigHandler  sch;
-    sch.add_pargs(&pa);
+    sch.add_pargs(&pa, true);
     DimerGenerator           gendimers;
     // We do not want to see those options in simulate, just in b2.
     // gendimers.addOptions(&pa);
@@ -173,26 +172,13 @@ int simulate(int argc, char *argv[])
             std::string          method, basis;
             int                  maxpot = 100;
             int                  nsymm  = 1;
-            if (!readBabel(filename, &mps, molnm, molnm, "", &method,
+            if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                            &basis, maxpot, nsymm, "Opt", &qtot_babel,
                            false))
             {
                 fprintf(logFile, "Reading %s failed.\n", filename);
                 status = 1;
             }
-            else
-            {
-                std::map<std::string, std::string> g2a;
-                gaffToAlexandria("", &g2a);
-                if (!g2a.empty())
-                {
-                    if (!renameAtomTypes(&mps[0], g2a))
-                    {
-                        status = 1;
-                    }
-                }
-            }
-            
         }
         if (status == 0)
         {

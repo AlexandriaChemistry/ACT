@@ -4,16 +4,16 @@
   <Int Name="1-methylsulfinylethene.sdf">11</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">11</Int>
-    <String>sx</String>
-    <String>o</String>
+    <String>s3</String>
+    <String>o2</String>
     <String>c3</String>
-    <String>ce</String>
     <String>c2</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>ha</String>
-    <String>ha</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

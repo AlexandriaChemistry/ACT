@@ -4,16 +4,16 @@
   <Int Name="pyridine.sdf">11</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">11</Int>
-    <String>nb</String>
-    <String>ca</String>
-    <String>h4</String>
-    <String>ca</String>
-    <String>ha</String>
-    <String>ca</String>
-    <String>ha</String>
-    <String>ca</String>
-    <String>ha</String>
-    <String>ca</String>
-    <String>h4</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>c2</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

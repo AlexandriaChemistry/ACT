@@ -37,13 +37,14 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const ForceField                *pd,
+FragmentHandler::FragmentHandler(const ForceField             *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
                                  const std::vector<Fragment>  *fragments,
                                  const std::vector<int>       &shellRenumber,
-                                 missingParameters            missing)
+                                 missingParameters             missing) : fragments_(fragments)
+
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
@@ -53,7 +54,15 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
     bonds_.resize(fragments->size());
     natoms_           = 0;
     size_t  ff        = 0;
-    atomStart_.push_back(0);
+    for(auto f = fragments->begin(); f < fragments->end(); ++f)
+    {
+        int minatom = atoms.size();
+        for(auto &i : f->atoms())
+        {
+            minatom = std::min(minatom, i);
+        }
+        atomStart_.push_back(minatom);
+    }
     std::vector<bool> atomFound(atoms.size(), false);
     for(auto f = fragments->begin(); f < fragments->end(); ++f)
     {
@@ -65,6 +74,13 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
         ids_.push_back(f->id());
         // If polarizable we will need to add these
         std::vector<TopologyEntry *> pols;
+        int offset     = atomStart_[ff];
+        int pol_offset = offset;
+        if (!shellRenumber.empty())
+        {
+            pol_offset = shellRenumber[offset];
+            atomStart_[ff] = pol_offset;
+        }
         // Count the number of atoms
         std::vector<int> toAdd;
         for(auto &a : f->atoms())
@@ -74,7 +90,7 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
             if (anew >= atoms.size()) 
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom number %zu in fragment %zu too large (max %zu)",
-                                                              anew, fragments->size(), atoms.size()).c_str()));
+                                                                   anew, fragments->size(), atoms.size()).c_str()));
             }
             else if (atomFound[anew])
             {
@@ -86,13 +102,13 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
             }
             if (!shellRenumber.empty())
             {
-                GMX_RELEASE_ASSERT(a < static_cast<int>(shellRenumber.size()), "Atom number out of range");
-                anew = shellRenumber[a];
+                GMX_RELEASE_ASSERT(anew < shellRenumber.size(), "Atom number out of range");
+                anew   = shellRenumber[anew];
             }
             
             // We add the new atom index, but relative to the first atom
             // in the compound.
-            toAdd.push_back(anew-atomStart_[ff]);
+            toAdd.push_back(anew-pol_offset);
             if (pd->polarizable())
             {
                 auto fa = pd->findParticleType(atoms[anew].ffType());
@@ -100,10 +116,10 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
                 {
                     for(const auto &ss : atoms[anew].shells())
                     {
-                        toAdd.push_back(ss-atomStart_[ff]);
+                        toAdd.push_back(ss-pol_offset);
                         auto pp = new TopologyEntry();
-                        pp->addAtom(anew-atomStart_[ff]);
-                        pp->addAtom(ss-atomStart_[ff]);
+                        pp->addAtom(anew-pol_offset);
+                        pp->addAtom(ss-pol_offset);
                         pp->addBondOrder(1.0);
                         pols.push_back(pp);
                     }
@@ -114,38 +130,23 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
         {
             topologies_[ff].addEntry(InteractionType::POLARIZATION, pols);
         }
-        // The next fragment, if there is one, starts after this one!
-        atomStart_.push_back(atomStart_[ff]+toAdd.size());
 
         int j = 0;
         for(auto &i : toAdd)
         {
-            auto fa      = pd->findParticleType(atoms[i+atomStart_[ff]].ffType());
+            auto fa      = pd->findParticleType(atoms[i+pol_offset].ffType());
             int  anumber = my_atoi(fa->optionValue("atomnumber").c_str(), "atomic number");
-            ActAtom newat(atoms[i+atomStart_[ff]].name(),
+            ActAtom newat(atoms[i+pol_offset].name(),
                           fa->optionValue("element"),
-                          atoms[i+atomStart_[ff]].ffType(),
-                          atoms[i+atomStart_[ff]].pType(),
+                          atoms[i+pol_offset].ffType(),
+                          atoms[i+pol_offset].pType(),
                           anumber,
-                          atoms[i+atomStart_[ff]].mass(),
-                          atoms[i+atomStart_[ff]].charge());
+                          atoms[i+pol_offset].mass(),
+                          atoms[i+pol_offset].charge());
             topologies_[ff].addAtom(newat);
             j++;
         }
         QgenAcm_.push_back(QgenAcm(pd, topologies_[ff].atoms(), f->charge()));
-        // We need to compute the molecule offset, that is
-        // the atom number where fragment ff starts.
-        int offset = 0;
-        for(int k = 0; k < static_cast<int>(ff); k++)
-        {
-            offset += (*fragments)[k].atoms().size();
-        }
-        // In case we have shells the offset may be different
-        int pol_offset = offset;
-        if (!shellRenumber.empty())
-        {
-            pol_offset = shellRenumber[offset];
-        }
         for(const auto &b : bonds)
         {
             int ai = b.aI();
@@ -160,15 +161,20 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
                 // the ACM code will do it.
                 Bond bb(ai - offset, aj - offset, b.bondOrder());
                 bonds_[ff].push_back(bb);
-                // For the internal topologies however, the atoms are renumbered
-                // already, and the bonds should be too.
-                if (!shellRenumber.empty())
+                if (shellRenumber.empty())
                 {
-                    ai     = shellRenumber[ai];
-                    aj     = shellRenumber[aj];
+                    topologies_[ff].addBond(bb);
                 }
-                Bond bb2(ai-pol_offset, aj-pol_offset, b.bondOrder());
-                topologies_[ff].addBond(bb2);
+                else
+                {
+                    // For the internal topologies however, the atoms are renumbered
+                    // already if there are shell, and the bonds should be too.
+                    ai = shellRenumber[ai] - pol_offset;
+                    aj = shellRenumber[aj] - pol_offset;
+                
+                    Bond bb2(ai, aj, b.bondOrder());
+                    topologies_[ff].addBond(bb2);
+                }
             }
         }
         natoms_ += toAdd.size();
@@ -176,19 +182,15 @@ FragmentHandler::FragmentHandler(const ForceField                *pd,
     }
     for(size_t ff = 0; ff < topologies_.size(); ff++)
     {
-        int natom = atomStart_[ff+1]-atomStart_[ff];
+        int natom = topologies_[ff].atoms().size();
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
-        for (size_t i = atomStart_[ff]; i < atomStart_[ff+1]; i++)
+        for (size_t i = atomStart_[ff]; i < atomStart_[ff]+natom; i++)
         {
             copy_rvec(coordinates[i], myx[j++]);
         }
 
         topologies_[ff].build(pd, myx, 175.0, 5.0, missingParameters::Error);
-        if (pd->polarizable())
-        {
-            //topologies_[ff].addShellPairs();
-        }
         topologies_[ff].setIdentifiers(pd);
         if (missing != missingParameters::Generate)
         {
@@ -209,6 +211,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     {
         for (size_t a = 0; a < topologies_[ff].atoms().size(); a++)
         {
+            // TODO: Check whether this works for polarizable models
             (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
         }
     }
@@ -217,7 +220,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
 eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
-                                       const ForceField                *pd,
+                                       const ForceField             *pd,
                                        std::vector<ActAtom>         *atoms)
 {
     auto   eqgen = eQgen::OK;
@@ -230,6 +233,7 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
         {
             copy_rvec(x[atomStart_[ff]+a], xx[a]);
         }
+        QgenAcm_[ff].setQtotal((*fragments_)[ff].charge());
         eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
                                              topologies_[ff].atomsPtr(),
                                              xx, bonds_[ff]);

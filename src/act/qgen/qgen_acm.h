@@ -99,7 +99,7 @@ public:
      */
     eQgen generateCharges(FILE                         *fp,
                           const std::string            &molname,
-                          const ForceField                *pd,
+                          const ForceField             *pd,
                           std::vector<ActAtom>         *atoms,
                           const std::vector<gmx::RVec> &x,
                           const std::vector<Bond>      &bonds);
@@ -108,7 +108,11 @@ public:
      * \return A string
      */
     const char *status() const;
-        
+    /*! \brief Set the total charge
+     * \param[in] qtotal The new total charge
+     */
+    void setQtotal(int qtotal) { qtotal_ = qtotal; }
+    
     /*! \brief Return the charge corresponding to the atom
      * \param[in] atom index of the atom in the compound
      * \return the charge

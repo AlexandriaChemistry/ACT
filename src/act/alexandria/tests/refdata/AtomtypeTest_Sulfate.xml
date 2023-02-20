@@ -4,10 +4,10 @@
   <Int Name="sulfate.sdf">5</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">5</Int>
-    <String>s6</String>
-    <String>om</String>
-    <String>om</String>
-    <String>om</String>
-    <String>om</String>
+    <String>s3</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

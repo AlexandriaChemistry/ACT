@@ -1528,7 +1528,7 @@ double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
         std::vector<gmx::RVec> forces(natom, fzero);
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
-        for (size_t i = astart[ff]; i < astart[ff+1]; i++)
+        for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
             copy_rvec((*coords)[i], myx[j]);
             j++;
@@ -1537,7 +1537,7 @@ double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
         (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
         Einter -= energies[InteractionType::EPOT];
         j = 0;
-        for (size_t i = astart[ff]; i < astart[ff+1]; i++)
+        for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
             for(int m = 0; m < DIM; m++)
             {

@@ -4,21 +4,21 @@
   <Int Name="1-1-dimethylguanidinium.sdf">16</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">16</Int>
-    <String>n</String>
-    <String>n</String>
-    <String>n</String>
+    <String>n2</String>
+    <String>n2</String>
+    <String>n2</String>
     <String>c3</String>
     <String>c3</String>
-    <String>cz</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
-    <String>hn</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

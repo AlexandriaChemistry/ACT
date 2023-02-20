@@ -4,12 +4,12 @@
   <Int Name="acetaldehyde.sdf">7</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
-    <String>c</String>
+    <String>c2</String>
     <String>c3</String>
-    <String>o</String>
-    <String>h1</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
+    <String>o2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

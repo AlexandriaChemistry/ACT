@@ -5,19 +5,19 @@
   <Sequence Name="bondorder">
     <Int Name="Length">15</Int>
     <String>c2-0 c2-1: 2</String>
-    <String>c2-1 h1-7: 1</String>
-    <String>n-2 cc-3: 1</String>
-    <String>n-2 c2-1: 1</String>
-    <String>n-2 c3-5: 1</String>
-    <String>cc-3 c3-11: 1</String>
-    <String>nc-4 cc-3: 2</String>
-    <String>nc-4 c2-0: 1</String>
-    <String>c3-5 h1-9: 1</String>
-    <String>h1-6 c2-0: 1</String>
-    <String>h1-8 c3-5: 1</String>
-    <String>h1-10 c3-5: 1</String>
-    <String>c3-11 hc-12: 1</String>
-    <String>c3-11 hc-14: 1</String>
-    <String>hc-13 c3-11: 1</String>
+    <String>c2-1 h-7: 1</String>
+    <String>n2-2 c2-3: 1</String>
+    <String>n2-2 c2-1: 1</String>
+    <String>n2-2 c3-5: 1</String>
+    <String>c2-3 c3-11: 1</String>
+    <String>n2-4 c2-3: 2</String>
+    <String>n2-4 c2-0: 1</String>
+    <String>c3-5 h-9: 1</String>
+    <String>h-6 c2-0: 1</String>
+    <String>h-8 c3-5: 1</String>
+    <String>h-10 c3-5: 1</String>
+    <String>c3-11 h-12: 1</String>
+    <String>c3-11 h-14: 1</String>
+    <String>h-13 c3-11: 1</String>
   </Sequence>
 </ReferenceData>

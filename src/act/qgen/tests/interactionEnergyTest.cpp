@@ -96,8 +96,6 @@ protected:
                  bool                             qSymm,
                  std::vector<double>              qtotal,
                  const std::vector<double>       &qcustom,
-                 std::vector<int>                 moleculeStart,
-                 const std::vector<const char *>  formula,
                  bool                             useHF)
     {
         int                   maxpot    = 100;
@@ -148,67 +146,29 @@ protected:
         {
             myqtot += qtotal[i];
         }
-        
+        // Get forcefield
+        auto pd = getForceField(model);
+
         double qtot_babel = myqtot;
-        if (readBabel(dataName.c_str(),
-                      &molprops,
-                      molname.c_str(),
-                      molname.c_str(),
-                      conf,
-                      &method,
-                      &basis,
-                      maxpot,
-                      nsymm,
-                      jobtype,
-                      &qtot_babel,
-                      false))
-        {
-            std::map<std::string, std::string> g2a;
-            gaffToAlexandria("", &g2a);
-            if (!g2a.empty())
-            {
-                for(auto &molprop: molprops)
-                {
-                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
-                }
-            }
-        }
-        else
-        {
-            fprintf(stderr, "Error reading file %s using OpenBabel.\n",
-                    dataName.c_str());
-            return;
-        }
+        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+                              molname.c_str(), molname.c_str(),
+                              conf, &method, &basis, maxpot, nsymm,
+                              jobtype, &qtot_babel, false));
+
         if (trustObCharge)
         {
             EXPECT_TRUE(myqtot == qtot_babel);
         }
-        if (qtotal.size() != moleculeStart.size())
-        {
-            GMX_THROW(gmx::InternalError("Different numbers of qtotal and moleculeStart"));
-        }
         for(auto &molprop: molprops)
         {
-            molprop.clearFragments();
-            molprop.generateComposition();
             double qtot_sum = 0;
+            auto fptr = molprop.fragmentPtr();
+            EXPECT_TRUE(fptr->size() == qtotal.size());
             for(size_t i = 0; i < qtotal.size(); i++)
             {
-                std::vector<int> atomIndices;
-                size_t           moleculeEnd = molprop.NAtom();
-                if (i < qtotal.size()-1)
-                {
-                    moleculeEnd = moleculeStart[i+1];
-                }
-                for(size_t k = moleculeStart[i]; k < moleculeEnd; k++)
-                {
-                    atomIndices.push_back(k);
-                }
-                molprop.addFragment(Fragment(std::to_string(i), 0, qtotal[i], 1, 1, 
-                                             formula[i], atomIndices));
                 qtot_sum += qtotal[i];
+                (*fptr)[i].setCharge(qtotal[i]);
             }
-            
             mp_.Merge(&molprop);
             // Generate charges and topology
             t_inputrec      inputrecInstance;
@@ -216,8 +176,6 @@ protected:
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
             
-            // Get forcefield
-            auto pd  = getForceField(model);
             auto imm = mp_.GenerateTopology(stdout, pd,
                                             missingParameters::Error, false);
             if (immStatus::OK != imm)
@@ -259,12 +217,13 @@ protected:
             if (fh)
             {
                 auto atomStart = fh->atomStart();
-                if (atomStart.size() > 2)
+                if (atomStart.size() >= 2)
                 {
-                    for(size_t f = 0; f < atomStart.size()-1; f++)
+                    for(size_t f = 0; f < atomStart.size(); f++)
                     {
-                        double qt = 0;
-                        for(size_t atom = atomStart[f]; atom < atomStart[f+1]; atom++)
+                        double qt    = 0;
+                        auto   natom = fh->topologies()[f].atoms().size();
+                        for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {
                             qt += myatoms[atom].charge();
                         }
@@ -296,49 +255,49 @@ protected:
 TEST_F (InteractionEnergyTest, WaterDimerACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, {0,3}, { "H2O", "H2O" },  false);
+    testAcm("ACS-g", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, false);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::LOG, "water_I", true, {0,-1}, qcustom, {0,3}, { "H2O", "I-" }, true);
+    testAcm("ACS-g", inputFormat::LOG, "water_I", true, {0,-1}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, WaterDimerACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, {0,3}, { "H2O", "H2O" }, false);
+    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, false);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, {0, -1}, qcustom, {0,3}, { "H2O", "I-" }, true);
+    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, {0, -1}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, {0,6}, { "CH4O", "H2O" }, true);
+    testAcm("ACS-g", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, {0,6}, { "CH4O", "H2O" }, true);
+    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, {0,7}, { "C2H3O2", "H2O" }, true);
+    testAcm("ACS-g", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, {0,7}, { "C2H3O2", "H2O" }, true);
+    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, true);
 }
 
 }

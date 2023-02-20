@@ -5,11 +5,11 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
     <String>c3</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
     <String>n3</String>
-    <String>o</String>
-    <String>o</String>
+    <String>o2</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

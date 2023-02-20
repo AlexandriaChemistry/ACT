@@ -4,16 +4,16 @@
   <Int Name="phosphinine.sdf">11</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">11</Int>
-    <String>pb</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>ca</String>
-    <String>ha</String>
-    <String>ha</String>
-    <String>ha</String>
-    <String>ha</String>
-    <String>ha</String>
+    <String>p2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

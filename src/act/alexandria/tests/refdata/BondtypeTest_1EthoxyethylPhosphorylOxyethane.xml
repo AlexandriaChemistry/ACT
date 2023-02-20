@@ -4,29 +4,29 @@
   <Int Name="1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb">24</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">24</Int>
-    <String>p5-0 c3-4: 1</String>
-    <String>p5-0 os-2: 1</String>
-    <String>p5-0 os-1: 1</String>
-    <String>p5-0 o-3: 2</String>
-    <String>os-1 c3-6: 1</String>
-    <String>os-2 c3-7: 1</String>
-    <String>c3-4 hc-10: 1</String>
-    <String>c3-4 hc-11: 1</String>
+    <String>p3-0 c3-4: 1</String>
+    <String>p3-0 o3-2: 1</String>
+    <String>p3-0 o3-1: 1</String>
+    <String>p3-0 o2-3: 2</String>
+    <String>o3-1 c3-6: 1</String>
+    <String>o3-2 c3-7: 1</String>
+    <String>c3-4 h-10: 1</String>
+    <String>c3-4 h-11: 1</String>
     <String>c3-4 c3-5: 1</String>
-    <String>c3-5 hc-12: 1</String>
-    <String>c3-5 hc-13: 1</String>
-    <String>c3-5 hc-14: 1</String>
+    <String>c3-5 h-12: 1</String>
+    <String>c3-5 h-13: 1</String>
+    <String>c3-5 h-14: 1</String>
     <String>c3-6 c3-8: 1</String>
-    <String>c3-6 h1-15: 1</String>
-    <String>c3-6 h1-16: 1</String>
+    <String>c3-6 h-15: 1</String>
+    <String>c3-6 h-16: 1</String>
     <String>c3-7 c3-9: 1</String>
-    <String>c3-7 h1-18: 1</String>
-    <String>c3-7 h1-17: 1</String>
-    <String>c3-8 hc-21: 1</String>
-    <String>c3-8 hc-20: 1</String>
-    <String>c3-8 hc-19: 1</String>
-    <String>c3-9 hc-24: 1</String>
-    <String>c3-9 hc-23: 1</String>
-    <String>c3-9 hc-22: 1</String>
+    <String>c3-7 h-18: 1</String>
+    <String>c3-7 h-17: 1</String>
+    <String>c3-8 h-21: 1</String>
+    <String>c3-8 h-20: 1</String>
+    <String>c3-8 h-19: 1</String>
+    <String>c3-9 h-24: 1</String>
+    <String>c3-9 h-23: 1</String>
+    <String>c3-9 h-22: 1</String>
   </Sequence>
 </ReferenceData>

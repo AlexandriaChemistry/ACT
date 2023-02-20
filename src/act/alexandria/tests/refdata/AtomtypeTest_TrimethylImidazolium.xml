@@ -4,24 +4,24 @@
   <Int Name="123-trimethyl-imidazolium.sdf">19</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">19</Int>
-    <String>ca</String>
-    <String>ca</String>
-    <String>nb</String>
-    <String>ca</String>
-    <String>nb</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>n2</String>
     <String>c3</String>
     <String>c3</String>
-    <String>h4</String>
-    <String>h4</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
-    <String>h1</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
     <String>c3</String>
-    <String>hc</String>
-    <String>hc</String>
-    <String>hc</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>
