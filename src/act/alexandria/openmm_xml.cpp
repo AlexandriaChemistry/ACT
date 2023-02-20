@@ -304,14 +304,34 @@ static void addXmlElemMass(xmlNodePtr parent, const ParticleType *aType, double 
 
 static std::string nameIndex(const std::string &name, int index)
 {
-    std::string ni = name + gmx::formatString("%d", index+1);
+    std::string ni = name + gmx::formatString("_%d", index);
     return ni;
 }
-
+/////// adding+
+static int tellme_RealAtom(int index, const ACTMol *actmol)
+{      auto myatoms = actmol->atomsConst();
+	int        realAtoms     = 0;
+	for (size_t i = 0; i < myatoms.size(); i++)
+        	{
+/////		std::cout << i << "aaa\n";	
+		
+		if (myatoms[i].pType() == eptAtom) 
+		{
+			realAtoms = realAtoms + 1;
+		}
+		if (i == index)
+			{ 
+				return realAtoms;
+			}
+		}
+}
+///////
 static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, const ACTMol *actmol, 
                                const std::set<int> &Atoms_used, int residueStart)
 {
     auto itbonds = InteractionType::BONDS;
+    int        reali     = 0;
+    int        realj     = 0;
     if (pd->interactionPresent(itbonds))
     {
         auto fs = pd->findForcesConst(itbonds);
@@ -320,9 +340,15 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
         {
             auto myatoms = actmol->atomsConst();
            for(const auto topentry : actmol->topology()->entry(itbonds))
-            {
-                int ai = topentry->atomIndex(0);
+	       {
+		int ai = topentry->atomIndex(0);
                 int aj = topentry->atomIndex(1);
+	////-	std::cout << ai << "AI\n";
+/////-		std::cout << tellme_RealAtom(ai, actmol) << "REALi\n";
+/////-		std::cout << tellme_RealAtom(aj, actmol) << "REALj\n";
+
+		int reali = tellme_RealAtom(ai, actmol);
+		int realj = tellme_RealAtom(aj, actmol);
                 if (Atoms_used.find(ai) != Atoms_used.end() &&
                     Atoms_used.find(aj) != Atoms_used.end())
                 {
@@ -331,9 +357,9 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
                     auto name_aj = myatoms[aj].name();
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::BOND_RES));
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), 
-                                 nameIndex(name_ai, ai - residueStart).c_str());
+                                 nameIndex(name_ai, reali - residueStart).c_str());
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES),
-                                 nameIndex(name_aj, aj - residueStart).c_str()); 
+                                 nameIndex(name_aj, realj - residueStart).c_str()); 
 ////		    std::cout << exml_names(xmlEntryOpenMM::ATOMNAME1_RES) << "asdf \n";
                 }
             }
@@ -615,7 +641,8 @@ static void addXmlImpropers(xmlNodePtr                     parent,
 static void addXmlNonbonded(xmlNodePtr                     parent,
                             const ForceField              *pd,
                             const ForceFieldParameterList &fs,
-                            const std::vector<ActAtom>    &myatoms)
+                            const std::vector<ActAtom>    &myatoms,
+			    const ACTMol *actmol)
 {
     auto child5 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
     add_xml_double(child5, "energy", 0.0);
@@ -643,14 +670,16 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
     // add customnonbonded (WBH vdW + pg coulomb) for compound
     std::set<std::string> List_used;
     for (size_t i = 0; i < myatoms.size(); i++)
-    {  
+    { int reali = tellme_RealAtom(i, actmol); 
         if (List_used.find(myatoms[i].ffType()) == List_used.end())
         {
-            List_used.insert(myatoms[i].ffType());
-            auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
+      //      List_used.insert(myatoms[i].ffType()); remove the check //+
+            auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i); DELETE THIS VAR
             auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
-            
+   //         auto ffType = myatoms[i].ffType();   // for the class definition
+//	    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());  //for the class definition instead of type
+	    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali).c_str());  
+//            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
             for (const auto &aType : pd->particleTypesConst())
             {
                 if (aType.id().id() == myatoms[i].ffType())
@@ -750,14 +779,17 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
     // Clear the set
     List_used.clear();	
     for (size_t i = 0; i < myatoms.size(); i++)
-    { 
+    {  int reali = tellme_RealAtom(i, actmol);
         if (List_used.find(myatoms[i].ffType()) == List_used.end())
         {
-            List_used.insert(myatoms[i].ffType());
+       //     List_used.insert(myatoms[i].ffType()); //+ remove check
             
             auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
             auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
+          
+	    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali).c_str()); 
+	 //   add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
+	  
             for (const auto &aType : pd->particleTypesConst())
             {
                 if (aType.id().id() == myatoms[i].ffType())
@@ -782,7 +814,8 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
 static void addXmlPolarization(xmlNodePtr                     parent,
                                const ForceField              *pd,
                                const ForceFieldParameterList &fs,
-                               const std::vector<ActAtom>    &myatoms)
+                               const std::vector<ActAtom>    &myatoms,
+			       const ACTMol *actmol)
 {
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
     // 
@@ -791,27 +824,44 @@ static void addXmlPolarization(xmlNodePtr                     parent,
         auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
         std::set<std::string> List_used;
         for (size_t i = 0; i < myatoms.size(); i++)
-        { 
+        { int reali = tellme_RealAtom(i, actmol);
+
             auto ffType = myatoms[i].ffType();
             if (List_used.find(ffType) == List_used.end())
             {
-                List_used.insert(ffType);
+             //   List_used.insert(ffType); //+remove check
                 if (eptAtom == myatoms[i].pType())
                 {
                     auto ptp     = pd->findParticleType(ffType);
                     if (ptp->hasOption("poltype"))
                     {
                         auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), ffType.c_str()); 
+
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), nameIndex(myatoms[i].ffType(), reali).c_str()); 
+                    //    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), ffType.c_str()); 
                         auto shell_ai = ptp->optionValue("poltype");
                         auto alpha    = fs.findParameterTypeConst(Identifier({shell_ai}),
                                                                   pol_name[polALPHA]);
-                        
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), shell_ai.c_str());
-                        add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                        auto stp = pd->findParticleType(shell_ai);
-                        add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
-                        add_xml_double(grandchild2, "thole", 0);
+	//		auto shell = myatoms[i].shells();
+		//	auto shelli = 
+//			std::cout << myatoms[i] << "ai \n";
+
+                     //  std::cout << myatoms[i].shells() << "ai \n";
+		    //    const auto shell = myatoms[i].shells();
+                    for(const auto &shell: myatoms[i].shells())
+
+		    	{ 
+			//	std::cout << typeid(myatoms[i]).name() << typeid(myatoms[i].shells()).name() << "si \n";
+			//	if (myatoms[i] == shell)
+			//	{
+                        	add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), nameIndex(myatoms[shell].ffType(), reali).c_str());
+
+                        	add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+                        	auto stp = pd->findParticleType(shell_ai);
+                        	add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
+                        	add_xml_double(grandchild2, "thole", 0);
+				}
+		//	}	
                     }
                 }
             }    
@@ -830,10 +880,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         auto ffType = myatoms[i].ffType();
         if (FfTypeUsed.find(ffType) == FfTypeUsed.end())
         {
-            FfTypeUsed.insert(ffType);
-
+//+        //    FfTypeUsed.insert(ffType); REMOVE THIS CHECK ALTOGETHER
+            int reali = tellme_RealAtom(i, actmol);
             auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), ffType.c_str()); 
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), nameIndex(myatoms[i].ffType(), reali).c_str());
+//	    add_xml_char(baby, "TEST", ffType.c_str());
             add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
             
             if (!pd->hasParticleType(ffType))
@@ -860,11 +911,13 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         std::set<std::string> ResidueUsed;
         std::set<int>         Atoms_used;
         bool       skipAtoms     = false;
+	//+
+//	int        realAtoms     = 0;
         // Let each residue start with atom number 1 within the residue definition, to do this
         // we store the number of the first atom of each residue.
         int        residueStart  = 0;
         for (size_t i = 0; i < myatoms.size(); i++)
-        {
+        {   
             if (myatoms[i].residueNumber() != residueNumber)
             {
                 // Time for a new residue, but prevent that we repeat them.
@@ -895,19 +948,27 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             }
             if (!skipAtoms)
             {
+		//    std::cout << realAtoms << "core \n";
+		//    std::cout << i << "I \n";
+                int reali = tellme_RealAtom(i, actmol);
+
                 if (myatoms[i].pType() == eptAtom)
                 {
+			//realAtoms = realAtoms + 1;   
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME),
-                                 nameIndex(myatoms[i].name(), i - residueStart).c_str());
-                    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), myatoms[i].ffType().c_str());
+                                 nameIndex(myatoms[i].name(), reali - residueStart).c_str());
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali - residueStart).c_str());
                     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge());
+
                     for(const auto &shell: myatoms[i].shells())
                     {
                         auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                         add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME),
-                                     nameIndex(myatoms[shell].name(), shell - residueStart).c_str());
-                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), myatoms[shell].ffType().c_str());
+                                     nameIndex(myatoms[shell].name(), reali - residueStart).c_str());
+                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[shell].ffType(), reali - residueStart).c_str());
+		//	std::cout << shell << "myshell \n";
+			//add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), myatoms[shell].ffType().c_str());
                         add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge());     
                     }
                     Atoms_used.insert(i);
@@ -949,10 +1010,10 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             break;
         
         case InteractionType::VDW:
-            addXmlNonbonded(parent, pd, fs.second, myatoms);
+            addXmlNonbonded(parent, pd, fs.second, myatoms, actmol);
             break;
         case InteractionType::POLARIZATION:
-            addXmlPolarization(parent, pd, fs.second, myatoms);
+            addXmlPolarization(parent, pd, fs.second, myatoms, actmol);
             break;
         case InteractionType::COULOMB:
             // Coulomb taken into account with other non-bonded interactions
