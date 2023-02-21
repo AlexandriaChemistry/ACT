@@ -307,10 +307,12 @@ static std::string nameIndex(const std::string &name, int index)
     std::string ni = name + gmx::formatString("_%d", index);
     return ni;
 }
-/////// adding+
+/////// adding+, real atoms are from 1 to 3 for water for cores and shells alike
 static int tellme_RealAtom(int index, const ACTMol *actmol)
-{      auto myatoms = actmol->atomsConst();
+{       auto myatoms = actmol->atomsConst();
 	int        realAtoms     = 0;
+	size_t key_index = index;
+
 	for (size_t i = 0; i < myatoms.size(); i++)
         	{
 /////		std::cout << i << "aaa\n";	
@@ -319,19 +321,81 @@ static int tellme_RealAtom(int index, const ACTMol *actmol)
 		{
 			realAtoms = realAtoms + 1;
 		}
-		if (i == index)
+		if (i == key_index)
 			{ 
 				return realAtoms;
 			}
 		}
+}
+
+static std::set<int> get_unique_residues(const ForceField *pd, const ACTMol *actmol)
+{
+	auto myatoms =  actmol -> atomsConst();
+	std::set<std::string> FfTypeUsed, BondClassUsed;
+	std::set<int> Residuelist_for_which_loop_atoms {};
+
+
+        // First residue will be defined below. 
+        xmlNodePtr residuePtr    = nullptr;
+        int        residueNumber = -1;
+        auto       resnames      = actmol->topology()->residueNames();
+        std::set<std::string> ResidueUsed;
+        std::set<int>         Atoms_used;
+        bool       skipAtoms     = false;
+        //+
+//      int        realAtoms     = 0;
+        // Let each residue start with atom number 1 within the residue definition, to do this
+        // we store the number of the first atom of each residue.
+        int        residueStart  = 0;
+        for (size_t i = 0; i < myatoms.size(); i++)
+        {
+            if (myatoms[i].residueNumber() != residueNumber)
+            {
+                // Time for a new residue, but prevent that we repeat them.
+                // We have rely on residue names to mean identical chemical moieties,
+                // that is if we for instance have an N-terminal amino acid, it should
+                // be a different residue from a mid-chain amino acid.
+                residueNumber = myatoms[i].residueNumber();
+
+                if (ResidueUsed.find(resnames[residueNumber]) == ResidueUsed.end())
+                {
+                    // Check whether we have to terminate the residue by defining bonds
+                    if (nullptr != residuePtr)
+                    {
+                      //  addXmlResidueBonds(residuePtr, pd, actmol, Atoms_used, residueStart);
+                        Atoms_used.clear();
+                    }
+                 //   residuePtr = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+                  //  add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), resnames[residueNumber].c_str());
+                    ResidueUsed.insert(resnames[residueNumber]);
+                    Atoms_used.insert(i);
+                    residueStart = i;
+                  //  skipAtoms    = false;
+
+                    Residuelist_for_which_loop_atoms.insert(residueNumber);
+                  //  Residuelist_for_which_loop_atoms.push_back(residueNumber);
+
+                }
+              //  else
+              //  {
+             //       skipAtoms = true;
+              //  }
+            }
+
+	}
+
+	return Residuelist_for_which_loop_atoms; 
+
+
+
+
+
 }
 ///////
 static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, const ACTMol *actmol, 
                                const std::set<int> &Atoms_used, int residueStart)
 {
     auto itbonds = InteractionType::BONDS;
-    int        reali     = 0;
-    int        realj     = 0;
     if (pd->interactionPresent(itbonds))
     {
         auto fs = pd->findForcesConst(itbonds);
@@ -666,17 +730,19 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
     add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
     auto grandchild6 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
     add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "beta");
-    
+    std::set<int> Residuelist_for_which_loop_atoms {};
+    Residuelist_for_which_loop_atoms = get_unique_residues(pd, actmol);
     // add customnonbonded (WBH vdW + pg coulomb) for compound
     std::set<std::string> List_used;
     for (size_t i = 0; i < myatoms.size(); i++)
     { int reali = tellme_RealAtom(i, actmol); 
         if (List_used.find(myatoms[i].ffType()) == List_used.end())
-        {
-      //      List_used.insert(myatoms[i].ffType()); remove the check //+
+        {if (Residuelist_for_which_loop_atoms.find(myatoms[i].residueNumber()) != Residuelist_for_which_loop_atoms.end())
+                {
+         //   List_used.insert(myatoms[i].ffType());
             auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i); DELETE THIS VAR
             auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-   //         auto ffType = myatoms[i].ffType();   // for the class definition
+      //      auto ffType = myatoms[i].ffType();   // for the class definition
 //	    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());  //for the class definition instead of type
 	    add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali).c_str());  
 //            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
@@ -745,7 +811,8 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
                     }        
                 } 
             }
-        }
+	 }//  
+        } 
     }
         
     // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
@@ -781,12 +848,17 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
     for (size_t i = 0; i < myatoms.size(); i++)
     {  int reali = tellme_RealAtom(i, actmol);
         if (List_used.find(myatoms[i].ffType()) == List_used.end())
-        {
-       //     List_used.insert(myatoms[i].ffType()); //+ remove check
+        {if (Residuelist_for_which_loop_atoms.find(myatoms[i].residueNumber()) != Residuelist_for_which_loop_atoms.end())
+                {
+
+	       
+		//std::cout << myatoms[i].ffType() << "TYPEEEEEEEEEEEE \n";
+         //   List_used.insert(myatoms[i].ffType()); 
             
             auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
             auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
-          
+            auto ffType = myatoms[i].ffType();   // for the class definition
+//	    add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());  //for the class definition instead of type
 	    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali).c_str()); 
 	 //   add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
 	  
@@ -807,6 +879,7 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
                     }
                 }
             }
+	  }  
         }
     }
 }
@@ -829,7 +902,7 @@ static void addXmlPolarization(xmlNodePtr                     parent,
             auto ffType = myatoms[i].ffType();
             if (List_used.find(ffType) == List_used.end())
             {
-             //   List_used.insert(ffType); //+remove check
+                List_used.insert(ffType); 
                 if (eptAtom == myatoms[i].pType())
                 {
                     auto ptp     = pd->findParticleType(ffType);
@@ -871,15 +944,24 @@ static void addXmlPolarization(xmlNodePtr                     parent,
 
 static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTMol *actmol, double mDrude)
 {
-    //    std::string name, acentral, attached, tau_unit, ahp_unit, epref, desc, params, tmp;
     auto child = add_xml_child(parent, exml_names(xmlEntryOpenMM::ATOMTYPES));
     auto myatoms =  actmol -> atomsConst();
     std::set<std::string> FfTypeUsed, BondClassUsed;
+    std::set<int> Residuelist_for_which_loop_atoms {};
+    Residuelist_for_which_loop_atoms = get_unique_residues(pd, actmol);
     for (size_t i = 0; i < myatoms.size(); i++)
     {
+	for (auto i = Residuelist_for_which_loop_atoms.begin(); i != Residuelist_for_which_loop_atoms.end(); i++)
+                                {  // std::cout << *i << "this is the number of residues in list";
+                                       }
         auto ffType = myatoms[i].ffType();
         if (FfTypeUsed.find(ffType) == FfTypeUsed.end())
         {
+		if (Residuelist_for_which_loop_atoms.find(myatoms[i].residueNumber()) != Residuelist_for_which_loop_atoms.end())
+		{ 
+				
+                
+
 //+        //    FfTypeUsed.insert(ffType); REMOVE THIS CHECK ALTOGETHER
             int reali = tellme_RealAtom(i, actmol);
             auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
@@ -900,6 +982,8 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
             }
         }
     }
+   //  }	
+    }
     auto child2  = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
 
     if (myatoms.size() > 0)
@@ -919,7 +1003,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         for (size_t i = 0; i < myatoms.size(); i++)
         {   
             if (myatoms[i].residueNumber() != residueNumber)
-            {
+            {    
                 // Time for a new residue, but prevent that we repeat them.
                 // We have rely on residue names to mean identical chemical moieties,
                 // that is if we for instance have an N-terminal amino acid, it should
@@ -940,6 +1024,13 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                     Atoms_used.insert(i);
                     residueStart = i;
                     skipAtoms    = false;
+		   // std::cout << "resolves" << " ";
+
+		    Residuelist_for_which_loop_atoms.insert(residueNumber);
+	//	    for (auto i = Residuelist_for_which_loop_atoms.begin(); i != Residuelist_for_which_loop_atoms.end(); i++)
+	//	    {   std::cout << *i << "this is the number ";
+	//			}
+
                 }
                 else
                 {
