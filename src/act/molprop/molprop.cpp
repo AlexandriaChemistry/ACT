@@ -288,6 +288,13 @@ void MolProp::generateFragments(const ForceField *pd,
             }
         }
     }
+    for(int i = 0; i < natom; i++)
+    {
+        if (fragIndex[i] == -1)
+        {
+            fragIndex[i] = maxBond++;
+        }
+    }
     clearFragments();
     std::map<int, std::set<int>> fragMols;
     for(int i = 0; i < natom; i++)
