@@ -1049,7 +1049,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 			//realAtoms = realAtoms + 1;   
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME),
-                                 nameIndex(myatoms[i].ffType(), reali).c_str());
+                                 nameIndex(myatoms[i].name(), reali).c_str());
 
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali).c_str());
                    // add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(myatoms[i].ffType(), reali - residueStart).c_str());  // this messes up numbering of different residues
