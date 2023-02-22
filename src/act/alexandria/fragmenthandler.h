@@ -49,7 +49,7 @@ namespace alexandria
         //! Array denoting where the atoms start in the global
         std::vector<size_t>                atomStart_;
         //! Pointer to copy of the fragments
-        const std::vector<Fragment>       *fragments_;
+        std::vector<double>                qtotal_;
         //! Total number of atoms
         size_t                             natoms_ = 0;
     public:
