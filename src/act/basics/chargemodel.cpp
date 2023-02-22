@@ -53,6 +53,16 @@ std::map<ChargeType, const std::string> ct2Name =
 
 std::map<const std::string, ChargeType> name2CT;
 
+std::vector<std::string> qdnames()
+{
+    std::vector<std::string> qdn = {
+        ct2Name[ChargeType::Point],
+        ct2Name[ChargeType::Gaussian],
+        ct2Name[ChargeType::Slater]
+    };
+    return qdn;
+}
+
 ChargeType name2ChargeType(const std::string &name)
 {
     if (name2CT.empty())

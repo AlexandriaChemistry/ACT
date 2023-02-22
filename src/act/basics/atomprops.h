@@ -1,10 +1,10 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020,2023
+ * Copyright (C) 2023
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
  *             Paul J. van Maaren, 
@@ -28,43 +28,44 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
-#ifndef GMX_ALEXMODULES_H
-#define GMX_ALEXMODULES_H
+#ifndef ACT_BASIC_ATOMPROPS_H
+#define ACT_BASIC_ATOMPROPS_H
+
+#include <map>
+#include <string>
 
 namespace alexandria
 {
 
-int gentop(int argc, char *argv[]);
-int simulate(int argc, char *argv[]);
-int b2(int argc, char *argv[]);
-int nma(int argc, char *argv[]);
-int tune_ff(int argc, char *argv[]);
-int edit_ff(int argc, char *argv[]);
-int gen_ff(int argc, char *argv[]);
-int geometry_ff(int argc, char *argv[]);
-int analyze(int argc, char *argv[]);
-int merge_ff(int argc, char *argv[]);
-int edit_mp(int argc, char *argv[]);
-}
-
-namespace gmx
+class AtomProp
 {
-class CommandLineModuleManager;
-} // namespace gmx
+private:
+    // Element name in full
+    std::string name_;
+    // Atomic number
+    int         atomnumber_;
+    // Atomic mass
+    double      mass_;
+public:
+    // Constructor
+    AtomProp(std::string name, int atomnumber, double mass) : name_(name), atomnumber_(atomnumber), mass_(mass) {};
+    
+    // \return full name
+    const std::string &name() const { return name_; }
+    
+    // \return the atomic number
+    int atomnumber() const { return atomnumber_; }
+    
+    // \return the atomic mass
+    double mass() const { return mass_; }
+};
 
-/*! \internal \brief
- * Registers all alex command-line modules.
- *
- * \param[in] manager  Command-line module manager to receive the modules.
- * \throws    std::bad_alloc if out of memory.
- *
- * Registers all modules corresponding to pre-5.0 binaries such that
- * they can be run through \p manager.
- */
-void registerAlexandriaModules(gmx::CommandLineModuleManager *manager);
+/*! \brief Return a table of atom properties with the element as the key.
+ */ 
+std::map<std::string, AtomProp> readAtomProps();
+
+} // namespace alexandria
 
 #endif

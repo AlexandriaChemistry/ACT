@@ -34,17 +34,19 @@
 
 install(FILES 
          alexandria.csv
-         atomtype_mapping.csv
-         bondvsites.csv
          atomization-energies-dft.csv
+         atomization-energies.csv
+         atomprops.csv
+         atomprops.csv
+         atomtype_mapping.csv
          atomtypes.csv
+         atomtypes_nonpol.csv
+         atomtypes_same_zeta.csv
+         bondvsites.csv
          elements.csv
          excluded_molecules.csv
-         atomization-energies.csv
-         atomtypes_nonpol.csv
          ffnames.csv
-         atomprops.csv
-         atomtypes_same_zeta.csv
          residuetypes.dat 
+         symmetric_charges.csv
     DESTINATION ${GMX_INSTALL_GMXDATADIR}
     COMPONENT data)
