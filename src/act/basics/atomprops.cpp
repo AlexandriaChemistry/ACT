@@ -53,13 +53,16 @@ std::map<std::string, AtomProp> readAtomProps()
     std::string              tmp;
     while (tr.readLine(&tmp))
     {
-        auto ptr = split(tmp, '|');
-        if (ptr.size() == 4)
+        if (tmp.find("#") == std::string::npos)
         {
-            AtomProp ap(ptr[1], 
-                        my_atoi(ptr[2].c_str(), "atomnumber"),
-                        my_atof(ptr[3].c_str(), "mass"));
-            table.insert({ ptr[0], ap });
+            auto ptr = split(tmp, ',');
+            if (ptr.size() == 4)
+            {
+                AtomProp ap(ptr[1], 
+                            my_atoi(ptr[2].c_str(), "atomnumber"),
+                            my_atof(ptr[3].c_str(), "mass"));
+                table.insert({ ptr[0], ap });
+            }
         }
     }
     return table;
