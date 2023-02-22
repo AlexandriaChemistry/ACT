@@ -492,6 +492,7 @@ static void addXmlBonds(xmlNodePtr                     parent,
                         addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE], mDrude);
                         addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA], mDrude);
                         addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH], mDrude);
+
                     }
                 }
             }
@@ -515,17 +516,14 @@ static void addXmlBonds(xmlNodePtr                     parent,
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "r0");
             auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
             add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "rmax");
-
             // Add all bonds
             for (auto &params : fs.parametersConst())
-            {
+            { 
                 // To filter out bonds, we should not look for the ffType but for the correspondng bond type
                 if (atomsInClass(params.first.atoms(), BondClassUsed))
                 {
                     auto grandchild4 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-
                     addBondAtoms(grandchild4, params.first.atoms());
-
                     for (const auto &param : params.second)
                     {
                         addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicDE], mDrude);
@@ -892,7 +890,8 @@ static void addXmlPolarization(xmlNodePtr                     parent,
 			       const ACTMol *actmol)
 {
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
-    // 
+    std::set<int> Residuelist_for_which_loop_atoms {};
+    Residuelist_for_which_loop_atoms = get_unique_residues(actmol);
     if (pd->polarizable())    
     {
         auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
@@ -903,6 +902,9 @@ static void addXmlPolarization(xmlNodePtr                     parent,
             auto ffType = myatoms[i].ffType();
             if (List_used.find(ffType) == List_used.end())
             {
+              if (Residuelist_for_which_loop_atoms.find(myatoms[i].residueNumber()) != Residuelist_for_which_loop_atoms.end())
+                {
+
                // List_used.insert(ffType); 
                 if (eptAtom == myatoms[i].pType())
                 {
@@ -938,6 +940,7 @@ static void addXmlPolarization(xmlNodePtr                     parent,
 		//	}	
                     }
                 }
+	       }
             }    
         }
     }
@@ -965,10 +968,16 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
 
 //+        //    FfTypeUsed.insert(ffType); REMOVE THIS CHECK ALTOGETHER
             int reali = tellme_RealAtom(i, actmol);
+	    std::string typ = ffType;
+	    std::string suffix = "_b";
+	    
+	    std::string clas = typ + suffix;
+	    const char* clas2 = clas.c_str();
             auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
             add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), nameIndex(myatoms[i].ffType(), reali).c_str());
-            add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), ffType.c_str());
-            
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), clas2);
+	//    std::cout << ffType.c_str() << "FFTYPE\n";
+	 
             if (!pd->hasParticleType(ffType))
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s", ffType.c_str(), pd->filename().c_str()).c_str()));

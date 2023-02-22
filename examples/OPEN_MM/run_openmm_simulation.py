@@ -22,6 +22,11 @@ parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file",
 parser.add_argument("-pol", "--polarizable", help="Turn on support for polarization", action="store_true")
 defout = "output"
 parser.add_argument("-odir", "--outputdir", help="Directory to write output to, default: "+defout, type=str, default=defout)
+defbonded = "morse"
+parser.add_argument("-bonds", "--bonded_potential", help="Either morse, or cubic"+defbonded, type=str, default=defbonded)
+defmDrude = "0.1"
+parser.add_argument("-mDrude", "--Drude_mass", help="The mass of drude particles. Make sure it is consistent with the mass in your forcefield"+defmDrude, type=float, default=defmDrude)
+
 
 args = parser.parse_args()
 
@@ -133,9 +138,15 @@ modeller  = Modeller(topology, positions)
 modeller.addExtraParticles(forcefield)
 topology  = modeller.topology
 positions = modeller.positions
-system    = forcefield.createSystem(topology, nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,ewaldErrorTolerance=ewaldErrorTolerance, rigidWater=rigidWater)
+if args.polarizable:
+  ##  system    = forcefield.createSystem(topology, nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,ewaldErrorTolerance=ewaldErrorTolerance, rigidWater=rigidWater, drudeMass=args.Drude_mass*unit.amu)
+    system    = forcefield.createSystem(topology, nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,ewaldErrorTolerance=ewaldErrorTolerance, rigidWater=False, drudeMass=args.Drude_mass*unit.amu)
+    print(f"The force field is polarizable and the druhe mass is {args.Drude_mass}. Make sure it is consistent with your force field file.")
+else:
+    system    = forcefield.createSystem(topology, nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,ewaldErrorTolerance=ewaldErrorTolerance, rigidWater=rigidWater, drudeMass=0.1*unit.amu)
 
-
+#system    = forcefield.createSystem(topology, nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,ewaldErrorTolerance=ewaldErrorTolerance, rigidWater=False)
+print(f"We are working with {args.bonded_potential} form of bonded potential. If the corresponding parameters are not found in force field file, the code will crash.")
 # SETTINGS FOR FORCES
 ################################################
 
@@ -166,6 +177,8 @@ def add_direct_space_force(system, group_cnb, group_cb):
     reference_nb_force  = forces['NonbondedForce']
     reference_cnb_force = forces['CustomNonbondedForce']
     reference_cb_force  = forces['CustomBondForce']
+#    print("***************************")
+#    print(f"number of particles (incl. drudes):  {system.getNumParticles()}")
     if args.polarizable:
         reference_pol_force = forces['DrudeForce']
         cores = []
@@ -176,6 +189,38 @@ def add_direct_space_force(system, group_cnb, group_cb):
             shells.append(particle) # particle  = shell
             cores.append(particle1) # particle1 = core
             core_shell.append((particle,particle1))
+#            print("########################")  #checking correct atom/shell pairing
+#            print(f"cores {cores}")
+#            print(f"shells {shells}")
+#            print(f"coreshells {core_shell}")
+#            print(index)
+#            print(f"particle: {particle}")
+#            print(f"particle1: {particle1}")
+#            print(core_shell)
+
+
+################### not longer needed, we are using openmm default particle pairing, which now works with unique types
+#        print(f"charge: {charge}")
+#        print(system.getParticleMass(particle))
+#        print(f"core {system.getParticleMass(particle1)}")
+#        print(system.getParticleCharge(index))
+##        for ATOM in openmm.app.topology.Topology.atoms(topology):
+#          print(ATOM)
+#        for ATOM in range(openmm.app.topology.Topology.getNumAtoms(topology)):
+#          print(ATOM)
+
+#        for index2 in range(system.getNumParticles()):
+#          print(index2)
+#          if index2 not in shells:
+#            print("core")
+#            cores.append(index2)
+#        print(cores)
+#        print(shells)
+#        for a, b in zip(cores, shells):
+#            print(f"something {a}, something else {b}")
+#        core_shell = list(zip(cores, shells))
+#        print(core_shell)
+#####################
 
     ONE_4PI_EPS0 = 138.935456
     [alpha_ewald, nx, ny, nz] = reference_nb_force.getPMEParameters()
@@ -206,13 +251,13 @@ def add_direct_space_force(system, group_cnb, group_cb):
 
     for index in range(reference_nb_force.getNumParticles()):
         [vdW, sigma, epsilon, gamma, charge, beta] = reference_cnb_force.getParticleParameters(index)
+   #     print(f"nonbonded vdw sigma, epsilon, gamma, charge, beta {reference_cnb_force.getParticleParameters(index)}")
         force.addParticle([charge,beta])
     for index in range(reference_nb_force.getNumExceptions()):
         [iatom, jatom, chargeprod, sigma, epsilon] = reference_nb_force.getExceptionParameters(index)
         force.addExclusion(iatom, jatom)
     force.setForceGroup(group_cnb)
     system.addForce(force)
-
     # vdW
     expression = 'U_WKB- U_LJ;' 
 
@@ -269,6 +314,7 @@ def add_direct_space_force(system, group_cnb, group_cb):
     for index in range(reference_nb_force.getNumExceptions()):
         [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = reference_nb_force.getExceptionParameters(index)
         [vdW1, sigma1, epsilon1, gamma1, charge1, beta1] = reference_cnb_force.getParticleParameters(iatom)
+   #     print(f" custom bond force i {reference_cnb_force.getParticleParameters(iatom)}")
         [vdW2, sigma2, epsilon2, gamma2, charge2, beta2] = reference_cnb_force.getParticleParameters(jatom)
         chargeprod=charge1*charge2
         beta = ((beta1 * beta2)/(np.sqrt(beta1**2 + beta2**2)))
@@ -283,21 +329,37 @@ def add_direct_space_force(system, group_cnb, group_cb):
     system.addForce(bond_force)
     
      
-
+    if args.bonded_potential == "morse":
     ### Morse potential ###
-    Morse_expression = "(D_e*(1 - exp(-a*(r-r0)))^2)-D_e;"
-    Morse_force = openmm.CustomBondForce(Morse_expression)
-    Morse_force.addPerBondParameter("D_e")
-    Morse_force.addPerBondParameter("a")
-    Morse_force.addPerBondParameter("r0")
-    
-    for bond_index in range(reference_cb_force.getNumBonds()):
-        # Retrieve parameters.
-        [iatom, jatom, (D_e, a, r0)] = reference_cb_force.getBondParameters(bond_index)  
-        Morse_force.addBond(iatom, jatom, [D_e, a, r0])
-    Morse_force.setForceGroup(group_cb)
-    system.addForce(Morse_force)
-    
+      Morse_expression = "(D_e*(1 - exp(-a*(r-r0)))^2)-D_e;"
+      Morse_force = openmm.CustomBondForce(Morse_expression)
+      Morse_force.addPerBondParameter("D_e")
+      Morse_force.addPerBondParameter("a")
+      Morse_force.addPerBondParameter("r0")
+      for bond_index in range(reference_cb_force.getNumBonds()):
+          # Retrieve parameters.
+          [iatom, jatom, (D_e, a, r0)] = reference_cb_force.getBondParameters(bond_index)
+          Morse_force.addBond(iatom, jatom, [D_e, a, r0])
+      Morse_force.setForceGroup(group_cb)
+      system.addForce(Morse_force)
+###################################################    
+    if args.bonded_potential == "cubic":
+    ### Morse potential ###
+      Cubic_expression = "kb*(r-r0)*(r-r0) * (rmax-r) - D_e;" 
+##      #"(D_e*(1 - exp(-a*(r-r0)))^2)-D_e;"
+      Cubic_force = openmm.CustomBondForce(Cubic_expression)
+      Cubic_force.addPerBondParameter("D_e")
+      Cubic_force.addPerBondParameter("kb")
+      Cubic_force.addPerBondParameter("r0")
+      Cubic_force.addPerBondParameter("rmax")
+      for bond_index in range(reference_cb_force.getNumBonds()):
+          # Retrieve parameters.
+          [iatom, jatom, (D_e, kb, r0, rmax)] = reference_cb_force.getBondParameters(bond_index)
+          Cubic_force.addBond(iatom, jatom, [D_e, kb, r0, rmax])
+      Cubic_force.setForceGroup(group_cb)
+      system.addForce(Cubic_force)
+
+###################################################
 
 
 ## Print energy components
@@ -336,13 +398,25 @@ if args.polarizable:
     polforce = forces['DrudeForce']
     cores = []
     shells = []
-    core_shell=[]
+    core_shell = []
     for index in range(polforce.getNumParticles()):
         [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = polforce.getParticleParameters(index)
         shells.append(particle) # particle  = shell
         cores.append(particle1) # particle1 = core
         core_shell.append([particle,particle1])
-  
+"""#not needed
+    for index2 in range(system.getNumParticles()):
+      print(f"the number of running index{index2}")
+      if index2 not in shells:
+        print("core")
+        cores.append(index2)
+    print(cores)
+    print(shells)
+    for a, b in zip(cores, shells):
+      print(f"something {a}, something else {b}")
+      core_shell = list(zip(cores, shells))
+    print(f"core shells {core_shell}")
+"""
 
 print("----------------------------")
 print("----------------------------")
@@ -378,6 +452,13 @@ if nonbondedMethod != NoCutoff:
 #### Integrator ####
 if args.polarizable:
     integrator = DrudeLangevinIntegrator(temperature_c, friction_c, temperature_s, friction_s, dt)
+#    print(DrudeLangevinIntegrator.getTemperature(integrator))
+#    DrudeLangevinIntegrator.setMaxDrudeDistance(integrator,1)
+##    integrator = DrudeNoseHooverIntegrator(temperature_c, 0.1, temperature_s, 0.001, dt)
+###    integrator = DrudeSCFIntegrator(dt)
+###    DrudeSCFIntegrator.setDrudeTemperature(integrator, temperature_c)
+###    print(DrudeLangevinIntegrator.getTemperature(integrator))
+###    print(DrudeSCFIntegrator.getStepSize(integrator))
 else:
     integrator = NoseHooverIntegrator(temperature_c, friction_c, dt)
 
@@ -386,7 +467,7 @@ simulation = Simulation(topology, system, integrator, platform)
 
 simulation.context.setPositions(positions)
 
-#### Set positions of shell particles (so that r_ij is not zero) ####
+#### Set positions of shell systemot zero) ####
 #### the shell displacement is necessary for the LJPME to work, otherwise an error is thrown:
 #### simtk.openmm.OpenMMException: Particle coordinate is nan
 positions = simulation.context.getState(getPositions=True).getPositions()
@@ -401,6 +482,8 @@ for index in range(system.getNumParticles()):
     new_pos_y = positions[index][1]+0.01*nanometer
     new_pos_z = positions[index][2]+0.01*nanometer
     new_pos.append((new_pos_x,new_pos_y,new_pos_z)) 
+#print(f"number of particles (incl. drudes):  {system.getNumParticles()}")
+#print(positions)
 simulation.context.setPositions(new_pos)
 Cnbforce.updateParametersInContext(simulation.context)
 
@@ -436,12 +519,13 @@ simulation.reporters.append(dataReporter)
 simulation.reporters.append(pdbReporter)
 simulation.reporters.append(chkReporter)
 simulation.currentStep = 0
+#print(index)
 simulation.step(steps)
 
 
 for group in group_range:
     print('%8d : %64s : %16.4f kJ/mol' % (group, force_group_names[group], simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole))
 potE = simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole 
-print('potential energy = {0:.2f} kJ/mol\n'.format(potE/Numb_particles)) 
+#print('potential energy = {0:.2f} kJ/mol\n'.format(potE/Numb_particles)) 
 
 del simulation.context, integrator
