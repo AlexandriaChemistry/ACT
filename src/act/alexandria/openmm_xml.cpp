@@ -224,7 +224,8 @@ std::vector<xmlEntryOpenMM> type_vec  = {xmlEntryOpenMM::TYPE1, xmlEntryOpenMM::
 static void addSpecParameter(xmlNodePtr                 parent,
                              const std::string         &type,
                              const ForceFieldParameter &param,
-                             const std::string         &specparam)
+                             const std::string         &specparam,
+			     double mDrude)
 {
     // TODO remove explicit conversion and use ACT routines.
     double value = param.internalValue();
@@ -246,10 +247,10 @@ static void addSpecParameter(xmlNodePtr                 parent,
     if (type == specparam)
     {
         // TODO make this a parameter
-        // mass for Langevin, subtract shell mass = 0.1
+        // mass for Langevin, subtract shell mass = 0.1 // now changed to mDrude +
         if (type == "mass")
         {
-            add_xml_double(parent, specparam.c_str(), value-0.1); 
+            add_xml_double(parent, specparam.c_str(), value - mDrude);
         }
         else if (type == "charge")
         {
@@ -409,9 +410,6 @@ static void addXmlResidueBonds(xmlNodePtr residuePtr, const ForceField *pd, cons
 	       {
 		int ai = topentry->atomIndex(0);
                 int aj = topentry->atomIndex(1);
-	////-	std::cout << ai << "AI\n";
-/////-		std::cout << tellme_RealAtom(ai, actmol) << "REALi\n";
-/////-		std::cout << tellme_RealAtom(aj, actmol) << "REALj\n";
 
 		int reali = tellme_RealAtom(ai, actmol);
 		int realj = tellme_RealAtom(aj, actmol);
@@ -458,7 +456,8 @@ static void addBondAtoms(xmlNodePtr                      parent,
 
 static void addXmlBonds(xmlNodePtr                     parent,
                         const std::set<std::string>   &BondClassUsed,
-                        const ForceFieldParameterList &fs)
+                        const ForceFieldParameterList &fs,
+			double mDrude)
 {
     switch(fs.gromacsType())
     {
@@ -490,9 +489,9 @@ static void addXmlBonds(xmlNodePtr                     parent,
                     
                     for (const auto &param : params.second)
                     {
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE]);
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA]);
-                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH]);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseDE], mDrude);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseBETA], mDrude);
+                        addSpecParameter(grandchild3, param.first, param.second, morse_name[morseLENGTH], mDrude);
                     }
                 }
             }
@@ -529,10 +528,10 @@ static void addXmlBonds(xmlNodePtr                     parent,
 
                     for (const auto &param : params.second)
                     {
-                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicDE]);
-                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicKB]);
-                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicLENGTH]);
-			addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicRMAX]);
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicDE], mDrude);
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicKB], mDrude);
+                        addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicLENGTH], mDrude);
+			addSpecParameter(grandchild4, param.first, param.second, cubic_name[cubicRMAX], mDrude);
                     }
                 }
             }
@@ -562,8 +561,8 @@ static void addXmlBonds(xmlNodePtr                     parent,
                     for (const auto &param : params.second)
                     {
                         // TODO check names and order of parameters. 
-                        addSpecParameter(grandchild2, param.first, param.second, "length"); //bond_name[bondLENGTH]);
-                        addSpecParameter(grandchild2, param.first, param.second, "k"); // bond_name[bondKB]); 
+                        addSpecParameter(grandchild2, param.first, param.second, "length", mDrude); //bond_name[bondLENGTH]);
+                        addSpecParameter(grandchild2, param.first, param.second, "k", mDrude); // bond_name[bondKB]); 
                     }
                 }    
             }
@@ -578,7 +577,8 @@ static void addXmlBonds(xmlNodePtr                     parent,
 
 static void addXmlAngles(xmlNodePtr                     parent,
                          const std::set<std::string>   &BondClassUsed,
-                         const ForceFieldParameterList &fs)
+                         const ForceFieldParameterList &fs,
+			 double mDrude)
 {
     switch(fs.gromacsType())
     {
@@ -596,8 +596,8 @@ static void addXmlAngles(xmlNodePtr                     parent,
                     
                     for (const auto &param : params.second)
                     {
-                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleANGLE]); 
-                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleKT]); 
+                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleANGLE], mDrude); 
+                        addSpecParameter(grandchild2, param.first, param.second, angle_name[angleKT], mDrude); 
                     }
                 }    
             }
@@ -613,8 +613,8 @@ static void addXmlAngles(xmlNodePtr                     parent,
                             
                 for (const auto &param : params.second)
                 {
-                    addSpecParameter(grandchild2, param.first, param.second, "kub"); 
-                    addSpecParameter(grandchild2, param.first, param.second, "r13"); 
+                    addSpecParameter(grandchild2, param.first, param.second, "kub", mDrude); 
+                    addSpecParameter(grandchild2, param.first, param.second, "r13", mDrude); 
                     //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
                 }
             }
@@ -854,7 +854,6 @@ static void addXmlNonbonded(xmlNodePtr                     parent,
                 {
 
 	       
-		//std::cout << myatoms[i].ffType() << "TYPEEEEEEEEEEEE \n";
          //   List_used.insert(myatoms[i].ffType()); 
             
             auto name_ai = myatoms[i].ffType(); //atomTypeOpenMM(myatoms[i].ffType(), i);
@@ -904,7 +903,7 @@ static void addXmlPolarization(xmlNodePtr                     parent,
             auto ffType = myatoms[i].ffType();
             if (List_used.find(ffType) == List_used.end())
             {
-                List_used.insert(ffType); 
+               // List_used.insert(ffType); 
                 if (eptAtom == myatoms[i].pType())
                 {
                     auto ptp     = pd->findParticleType(ffType);
@@ -1025,7 +1024,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
                     Atoms_used.insert(i);
                     residueStart = i;
                     skipAtoms    = false;
-		   // std::cout << "resolves" << " ";
 
 		    Residuelist_for_which_loop_atoms.insert(residueNumber);
 	//	    for (auto i = Residuelist_for_which_loop_atoms.begin(); i != Residuelist_for_which_loop_atoms.end(); i++)
@@ -1084,11 +1082,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd, const ACTM
         case InteractionType::BONDS:
             // This adds the Morse potential
             // TODO: link the bondorder information to the parameter assignment that happens via atomtypes
-            addXmlBonds(parent, BondClassUsed, fs.second);
+            addXmlBonds(parent, BondClassUsed, fs.second, mDrude);
             break;
             
         case InteractionType::ANGLES:
-            addXmlAngles(parent, BondClassUsed, fs.second);
+            addXmlAngles(parent, BondClassUsed, fs.second, mDrude);
             break;
             
         case InteractionType::LINEAR_ANGLES:

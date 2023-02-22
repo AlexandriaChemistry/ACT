@@ -166,7 +166,7 @@ int gentop(int argc, char *argv[])
         { "-ws",     FALSE, etBOOL, {&writeShells},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-mDrude", FALSE, etREAL, {&mDrude},
-          "Mass to use for the drude particle if any" },
+          "Mass to use for the drude particle if any. Default is 0.1 Da" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
