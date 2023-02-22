@@ -150,7 +150,7 @@ int gen_ff(int argc, char*argv[])
     
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "HARMONIC", "MORSE", nullptr };
-    const char *anglefn[] = { nullptr, "HARMONIC", "UREYBRADLEY", nullptr };
+    const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     const char *vdwfn[]   = { nullptr, "BHAM", "LJ_SR", nullptr };
     std::vector<const char *> combrules = { nullptr };
@@ -299,7 +299,7 @@ int gen_ff(int argc, char*argv[])
             {
                 if (minmaxmut(entry.first, myatype, vl.first, &vmin, &vmax, &vmut))
                 {
-                    eem.addParameter(entry.first, vl.first,
+                    eem.addParameter(myatype["zetatype"], vl.first,
                                      ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 1, vmin, vmax, vmut, true, true));
                 }
             }
@@ -319,6 +319,8 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(interactionTypeToString(InteractionType::PROPER_DIHEDRALS), pdihs);
     pd.addForces(interactionTypeToString(InteractionType::VDW), vdw);
     pd.addForces(interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION), eem);
+    ForceFieldParameterList vsite2("vsite2", CanSwap::No);
+    pd.addForces(interactionTypeToString(InteractionType::VSITE2), vsite2);
     add_symm_charges(&pd);
     pd.updateTimeStamp();
     pd.updateCheckSum();
