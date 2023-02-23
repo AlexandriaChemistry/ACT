@@ -24,8 +24,8 @@ cp -R ${SRC_DIR}/lib64/* ${PREFIX}/lib64
 
 # lib
 mkdir -p ${PREFIX}/lib
-rsync -a --exclude python3.11 ${SRC_DIR}/lib/ ${PREFIX}/lib/
+rsync -a --exclude python* ${SRC_DIR}/lib/ ${PREFIX}/lib/
 
 # Python wrappers/interfaces
 mkdir -p ${SP_DIR}
-cp -R ${SRC_DIR}/lib/python3.11/site-packages/* ${SP_DIR}
+cp -R ${SRC_DIR}/lib/python*/site-packages/* ${SP_DIR}
