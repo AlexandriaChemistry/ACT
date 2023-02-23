@@ -47,7 +47,7 @@ requirements:
     - sqlite
     - doxygen
   run_constrained:
-    - python>=3.8
+    - python>=3.10
 
 about:
   home: https://github.com/dspoel/ACT

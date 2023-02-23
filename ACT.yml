@@ -4,7 +4,7 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - Python>=3.8
+  - Python>=3.10
   - conda>=22.11.1
   - Matplotlib
   - pip>=21.0
