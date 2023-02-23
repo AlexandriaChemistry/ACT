@@ -43,7 +43,7 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
                                  const std::vector<Bond>      &bonds,
                                  const std::vector<Fragment>  *fragments,
                                  const std::vector<int>       &shellRenumber,
-                                 missingParameters             missing) : fragments_(fragments)
+                                 missingParameters             missing)
 
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
@@ -62,6 +62,7 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
             minatom = std::min(minatom, i);
         }
         atomStart_.push_back(minatom);
+        qtotal_.push_back(f->charge());
     }
     std::vector<bool> atomFound(atoms.size(), false);
     for(auto f = fragments->begin(); f < fragments->end(); ++f)
@@ -233,7 +234,7 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
         {
             copy_rvec(x[atomStart_[ff]+a], xx[a]);
         }
-        QgenAcm_[ff].setQtotal((*fragments_)[ff].charge());
+        QgenAcm_[ff].setQtotal(qtotal_[ff]);
         eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
                                              topologies_[ff].atomsPtr(),
                                              xx, bonds_[ff]);

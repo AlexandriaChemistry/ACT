@@ -1,0 +1,555 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of atomprops">110</Int>
+  <element Name="Ac">
+    <Real Name="mass">227</Real>
+    <String Name="name">Actinium</String>
+    <Int Name="atomnumber">89</Int>
+  </element>
+  <element Name="Ag">
+    <Real Name="mass">107.86799999999999</Real>
+    <String Name="name">Silver</String>
+    <Int Name="atomnumber">47</Int>
+  </element>
+  <element Name="Al">
+    <Real Name="mass">26.9815</Real>
+    <String Name="name">Aluminum</String>
+    <Int Name="atomnumber">13</Int>
+  </element>
+  <element Name="Am">
+    <Real Name="mass">243</Real>
+    <String Name="name">Americium</String>
+    <Int Name="atomnumber">95</Int>
+  </element>
+  <element Name="Ar">
+    <Real Name="mass">39.948</Real>
+    <String Name="name">Argon</String>
+    <Int Name="atomnumber">18</Int>
+  </element>
+  <element Name="As">
+    <Real Name="mass">74.921599999999998</Real>
+    <String Name="name">Arsenic</String>
+    <Int Name="atomnumber">33</Int>
+  </element>
+  <element Name="At">
+    <Real Name="mass">210</Real>
+    <String Name="name">Astatine</String>
+    <Int Name="atomnumber">85</Int>
+  </element>
+  <element Name="Au">
+    <Real Name="mass">196.96600000000001</Real>
+    <String Name="name">Gold</String>
+    <Int Name="atomnumber">79</Int>
+  </element>
+  <element Name="B">
+    <Real Name="mass">10.811</Real>
+    <String Name="name">Boron</String>
+    <Int Name="atomnumber">5</Int>
+  </element>
+  <element Name="Ba">
+    <Real Name="mass">137.327</Real>
+    <String Name="name">Barium</String>
+    <Int Name="atomnumber">56</Int>
+  </element>
+  <element Name="Be">
+    <Real Name="mass">9.0122</Real>
+    <String Name="name">Beryllium</String>
+    <Int Name="atomnumber">4</Int>
+  </element>
+  <element Name="Bh">
+    <Real Name="mass">264</Real>
+    <String Name="name">Bohrium</String>
+    <Int Name="atomnumber">107</Int>
+  </element>
+  <element Name="Bi">
+    <Real Name="mass">208.97999999999999</Real>
+    <String Name="name">Bismuth</String>
+    <Int Name="atomnumber">83</Int>
+  </element>
+  <element Name="Bk">
+    <Real Name="mass">247</Real>
+    <String Name="name">Berkelium</String>
+    <Int Name="atomnumber">97</Int>
+  </element>
+  <element Name="Br">
+    <Real Name="mass">79.903999999999996</Real>
+    <String Name="name">Bromine</String>
+    <Int Name="atomnumber">35</Int>
+  </element>
+  <element Name="C">
+    <Real Name="mass">12.0107</Real>
+    <String Name="name">Carbon</String>
+    <Int Name="atomnumber">6</Int>
+  </element>
+  <element Name="Ca">
+    <Real Name="mass">40.078000000000003</Real>
+    <String Name="name">Calcium</String>
+    <Int Name="atomnumber">20</Int>
+  </element>
+  <element Name="Cd">
+    <Real Name="mass">112.411</Real>
+    <String Name="name">Cadmium</String>
+    <Int Name="atomnumber">48</Int>
+  </element>
+  <element Name="Ce">
+    <Real Name="mass">140.11600000000001</Real>
+    <String Name="name">Cerium</String>
+    <Int Name="atomnumber">58</Int>
+  </element>
+  <element Name="Cf">
+    <Real Name="mass">251</Real>
+    <String Name="name">Californium</String>
+    <Int Name="atomnumber">98</Int>
+  </element>
+  <element Name="Cl">
+    <Real Name="mass">35.453000000000003</Real>
+    <String Name="name">Chlorine</String>
+    <Int Name="atomnumber">17</Int>
+  </element>
+  <element Name="Cm">
+    <Real Name="mass">247</Real>
+    <String Name="name">Curium</String>
+    <Int Name="atomnumber">96</Int>
+  </element>
+  <element Name="Co">
+    <Real Name="mass">58.933199999999999</Real>
+    <String Name="name">Cobalt</String>
+    <Int Name="atomnumber">27</Int>
+  </element>
+  <element Name="Cr">
+    <Real Name="mass">51.996099999999998</Real>
+    <String Name="name">Chromium</String>
+    <Int Name="atomnumber">24</Int>
+  </element>
+  <element Name="Cs">
+    <Real Name="mass">132.905</Real>
+    <String Name="name">Cesium</String>
+    <Int Name="atomnumber">55</Int>
+  </element>
+  <element Name="Cu">
+    <Real Name="mass">63.545999999999999</Real>
+    <String Name="name">Copper</String>
+    <Int Name="atomnumber">29</Int>
+  </element>
+  <element Name="Db">
+    <Real Name="mass">262</Real>
+    <String Name="name">Dubnium</String>
+    <Int Name="atomnumber">105</Int>
+  </element>
+  <element Name="Dy">
+    <Real Name="mass">162.5</Real>
+    <String Name="name">Dysprosium</String>
+    <Int Name="atomnumber">66</Int>
+  </element>
+  <element Name="Er">
+    <Real Name="mass">167.25899999999999</Real>
+    <String Name="name">Erbium</String>
+    <Int Name="atomnumber">68</Int>
+  </element>
+  <element Name="Es">
+    <Real Name="mass">252</Real>
+    <String Name="name">Einsteinium</String>
+    <Int Name="atomnumber">99</Int>
+  </element>
+  <element Name="Eu">
+    <Real Name="mass">151.964</Real>
+    <String Name="name">Europium</String>
+    <Int Name="atomnumber">63</Int>
+  </element>
+  <element Name="F">
+    <Real Name="mass">18.9984</Real>
+    <String Name="name">Fluorine</String>
+    <Int Name="atomnumber">9</Int>
+  </element>
+  <element Name="Fe">
+    <Real Name="mass">55.844999999999999</Real>
+    <String Name="name">Iron</String>
+    <Int Name="atomnumber">26</Int>
+  </element>
+  <element Name="Fm">
+    <Real Name="mass">257</Real>
+    <String Name="name">Fermium</String>
+    <Int Name="atomnumber">100</Int>
+  </element>
+  <element Name="Fr">
+    <Real Name="mass">223</Real>
+    <String Name="name">Francium</String>
+    <Int Name="atomnumber">87</Int>
+  </element>
+  <element Name="Ga">
+    <Real Name="mass">69.722999999999999</Real>
+    <String Name="name">Gallium</String>
+    <Int Name="atomnumber">31</Int>
+  </element>
+  <element Name="Gd">
+    <Real Name="mass">157.25</Real>
+    <String Name="name">Gadolinium</String>
+    <Int Name="atomnumber">64</Int>
+  </element>
+  <element Name="Ge">
+    <Real Name="mass">72.640000000000001</Real>
+    <String Name="name">Germanium</String>
+    <Int Name="atomnumber">32</Int>
+  </element>
+  <element Name="H">
+    <Real Name="mass">1.0079</Real>
+    <String Name="name">Hydrogen</String>
+    <Int Name="atomnumber">1</Int>
+  </element>
+  <element Name="He">
+    <Real Name="mass">4.0026000000000002</Real>
+    <String Name="name">Helium</String>
+    <Int Name="atomnumber">2</Int>
+  </element>
+  <element Name="Hf">
+    <Real Name="mass">178.49000000000001</Real>
+    <String Name="name">Hafnium</String>
+    <Int Name="atomnumber">72</Int>
+  </element>
+  <element Name="Hg">
+    <Real Name="mass">200.59</Real>
+    <String Name="name">Mercury</String>
+    <Int Name="atomnumber">80</Int>
+  </element>
+  <element Name="Ho">
+    <Real Name="mass">164.93000000000001</Real>
+    <String Name="name">Holmium</String>
+    <Int Name="atomnumber">67</Int>
+  </element>
+  <element Name="Hs">
+    <Real Name="mass">277</Real>
+    <String Name="name">Hassium</String>
+    <Int Name="atomnumber">108</Int>
+  </element>
+  <element Name="I">
+    <Real Name="mass">126.904</Real>
+    <String Name="name">Iodine</String>
+    <Int Name="atomnumber">53</Int>
+  </element>
+  <element Name="In">
+    <Real Name="mass">114.818</Real>
+    <String Name="name">Indium</String>
+    <Int Name="atomnumber">49</Int>
+  </element>
+  <element Name="Ir">
+    <Real Name="mass">192.21700000000001</Real>
+    <String Name="name">Iridium</String>
+    <Int Name="atomnumber">77</Int>
+  </element>
+  <element Name="K">
+    <Real Name="mass">39.098300000000002</Real>
+    <String Name="name">Potassium</String>
+    <Int Name="atomnumber">19</Int>
+  </element>
+  <element Name="Kr">
+    <Real Name="mass">83.799999999999997</Real>
+    <String Name="name">Krypton</String>
+    <Int Name="atomnumber">36</Int>
+  </element>
+  <element Name="La">
+    <Real Name="mass">138.905</Real>
+    <String Name="name">Lanthanum</String>
+    <Int Name="atomnumber">57</Int>
+  </element>
+  <element Name="Li">
+    <Real Name="mass">6.9409999999999998</Real>
+    <String Name="name">Lithium</String>
+    <Int Name="atomnumber">3</Int>
+  </element>
+  <element Name="Lr">
+    <Real Name="mass">262</Real>
+    <String Name="name">Lawrencium</String>
+    <Int Name="atomnumber">103</Int>
+  </element>
+  <element Name="Lu">
+    <Real Name="mass">174.96700000000001</Real>
+    <String Name="name">Lutetium</String>
+    <Int Name="atomnumber">71</Int>
+  </element>
+  <element Name="Md">
+    <Real Name="mass">258</Real>
+    <String Name="name">Mendelevium</String>
+    <Int Name="atomnumber">101</Int>
+  </element>
+  <element Name="Mg">
+    <Real Name="mass">24.305</Real>
+    <String Name="name">Magnesium</String>
+    <Int Name="atomnumber">12</Int>
+  </element>
+  <element Name="Mn">
+    <Real Name="mass">54.938000000000002</Real>
+    <String Name="name">Manganese</String>
+    <Int Name="atomnumber">25</Int>
+  </element>
+  <element Name="Mo">
+    <Real Name="mass">95.939999999999998</Real>
+    <String Name="name">Molybdenum</String>
+    <Int Name="atomnumber">42</Int>
+  </element>
+  <element Name="Mt">
+    <Real Name="mass">268</Real>
+    <String Name="name">Meitnerium</String>
+    <Int Name="atomnumber">109</Int>
+  </element>
+  <element Name="N">
+    <Real Name="mass">14.0067</Real>
+    <String Name="name">Nitrogen</String>
+    <Int Name="atomnumber">7</Int>
+  </element>
+  <element Name="Na">
+    <Real Name="mass">22.989699999999999</Real>
+    <String Name="name">Sodium</String>
+    <Int Name="atomnumber">11</Int>
+  </element>
+  <element Name="Nb">
+    <Real Name="mass">92.906400000000005</Real>
+    <String Name="name">Niobium</String>
+    <Int Name="atomnumber">41</Int>
+  </element>
+  <element Name="Nd">
+    <Real Name="mass">144.24000000000001</Real>
+    <String Name="name">Neodymium</String>
+    <Int Name="atomnumber">60</Int>
+  </element>
+  <element Name="Ne">
+    <Real Name="mass">20.1797</Real>
+    <String Name="name">Neon</String>
+    <Int Name="atomnumber">10</Int>
+  </element>
+  <element Name="Ni">
+    <Real Name="mass">58.693399999999997</Real>
+    <String Name="name">Nickel</String>
+    <Int Name="atomnumber">28</Int>
+  </element>
+  <element Name="No">
+    <Real Name="mass">259</Real>
+    <String Name="name">Nobelium</String>
+    <Int Name="atomnumber">102</Int>
+  </element>
+  <element Name="Np">
+    <Real Name="mass">237</Real>
+    <String Name="name">Neptunium</String>
+    <Int Name="atomnumber">93</Int>
+  </element>
+  <element Name="O">
+    <Real Name="mass">15.9994</Real>
+    <String Name="name">Oxygen</String>
+    <Int Name="atomnumber">8</Int>
+  </element>
+  <element Name="Os">
+    <Real Name="mass">190.22999999999999</Real>
+    <String Name="name">Osmium</String>
+    <Int Name="atomnumber">76</Int>
+  </element>
+  <element Name="P">
+    <Real Name="mass">30.973800000000001</Real>
+    <String Name="name">Phosphorus</String>
+    <Int Name="atomnumber">15</Int>
+  </element>
+  <element Name="Pa">
+    <Real Name="mass">231.036</Real>
+    <String Name="name">Protactinium</String>
+    <Int Name="atomnumber">91</Int>
+  </element>
+  <element Name="Pb">
+    <Real Name="mass">207.19999999999999</Real>
+    <String Name="name">Lead</String>
+    <Int Name="atomnumber">82</Int>
+  </element>
+  <element Name="Pd">
+    <Real Name="mass">106.42</Real>
+    <String Name="name">Palladium</String>
+    <Int Name="atomnumber">46</Int>
+  </element>
+  <element Name="Pm">
+    <Real Name="mass">145</Real>
+    <String Name="name">Promethium</String>
+    <Int Name="atomnumber">61</Int>
+  </element>
+  <element Name="Po">
+    <Real Name="mass">209</Real>
+    <String Name="name">Polonium</String>
+    <Int Name="atomnumber">84</Int>
+  </element>
+  <element Name="Pr">
+    <Real Name="mass">140.90799999999999</Real>
+    <String Name="name">Praseodymium</String>
+    <Int Name="atomnumber">59</Int>
+  </element>
+  <element Name="Pt">
+    <Real Name="mass">195.078</Real>
+    <String Name="name">Platinum</String>
+    <Int Name="atomnumber">78</Int>
+  </element>
+  <element Name="Pu">
+    <Real Name="mass">244</Real>
+    <String Name="name">Plutonium</String>
+    <Int Name="atomnumber">94</Int>
+  </element>
+  <element Name="Ra">
+    <Real Name="mass">226</Real>
+    <String Name="name">Radium</String>
+    <Int Name="atomnumber">88</Int>
+  </element>
+  <element Name="Rb">
+    <Real Name="mass">85.467799999999997</Real>
+    <String Name="name">Rubidium</String>
+    <Int Name="atomnumber">37</Int>
+  </element>
+  <element Name="Re">
+    <Real Name="mass">186.20699999999999</Real>
+    <String Name="name">Rhenium</String>
+    <Int Name="atomnumber">75</Int>
+  </element>
+  <element Name="Rf">
+    <Real Name="mass">261</Real>
+    <String Name="name">Rutherfordium</String>
+    <Int Name="atomnumber">104</Int>
+  </element>
+  <element Name="Rh">
+    <Real Name="mass">102.90600000000001</Real>
+    <String Name="name">Rhodium</String>
+    <Int Name="atomnumber">45</Int>
+  </element>
+  <element Name="Rn">
+    <Real Name="mass">222</Real>
+    <String Name="name">Radon</String>
+    <Int Name="atomnumber">86</Int>
+  </element>
+  <element Name="Ru">
+    <Real Name="mass">101.06999999999999</Real>
+    <String Name="name">Ruthenium</String>
+    <Int Name="atomnumber">44</Int>
+  </element>
+  <element Name="S">
+    <Real Name="mass">32.064999999999998</Real>
+    <String Name="name">Sulfur</String>
+    <Int Name="atomnumber">16</Int>
+  </element>
+  <element Name="Sb">
+    <Real Name="mass">121.76000000000001</Real>
+    <String Name="name">Antimony</String>
+    <Int Name="atomnumber">51</Int>
+  </element>
+  <element Name="Sc">
+    <Real Name="mass">44.9559</Real>
+    <String Name="name">Scandium</String>
+    <Int Name="atomnumber">21</Int>
+  </element>
+  <element Name="Se">
+    <Real Name="mass">78.959999999999994</Real>
+    <String Name="name">Selenium</String>
+    <Int Name="atomnumber">34</Int>
+  </element>
+  <element Name="Sg">
+    <Real Name="mass">266</Real>
+    <String Name="name">Seaborgium</String>
+    <Int Name="atomnumber">106</Int>
+  </element>
+  <element Name="Si">
+    <Real Name="mass">28.0855</Real>
+    <String Name="name">Silicon</String>
+    <Int Name="atomnumber">14</Int>
+  </element>
+  <element Name="Sm">
+    <Real Name="mass">150.36000000000001</Real>
+    <String Name="name">Samarium</String>
+    <Int Name="atomnumber">62</Int>
+  </element>
+  <element Name="Sn">
+    <Real Name="mass">118.70999999999999</Real>
+    <String Name="name">Tin</String>
+    <Int Name="atomnumber">50</Int>
+  </element>
+  <element Name="Sr">
+    <Real Name="mass">87.620000000000005</Real>
+    <String Name="name">Strontium</String>
+    <Int Name="atomnumber">38</Int>
+  </element>
+  <element Name="Ta">
+    <Real Name="mass">180.94800000000001</Real>
+    <String Name="name">Tantalum</String>
+    <Int Name="atomnumber">73</Int>
+  </element>
+  <element Name="Tb">
+    <Real Name="mass">158.92500000000001</Real>
+    <String Name="name">Terbium</String>
+    <Int Name="atomnumber">65</Int>
+  </element>
+  <element Name="Tc">
+    <Real Name="mass">98</Real>
+    <String Name="name">Technetium</String>
+    <Int Name="atomnumber">43</Int>
+  </element>
+  <element Name="Te">
+    <Real Name="mass">127.59999999999999</Real>
+    <String Name="name">Tellurium</String>
+    <Int Name="atomnumber">52</Int>
+  </element>
+  <element Name="Th">
+    <Real Name="mass">232.03800000000001</Real>
+    <String Name="name">Thorium</String>
+    <Int Name="atomnumber">90</Int>
+  </element>
+  <element Name="Ti">
+    <Real Name="mass">47.866999999999997</Real>
+    <String Name="name">Titanium</String>
+    <Int Name="atomnumber">22</Int>
+  </element>
+  <element Name="Tl">
+    <Real Name="mass">204.38300000000001</Real>
+    <String Name="name">Thallium</String>
+    <Int Name="atomnumber">81</Int>
+  </element>
+  <element Name="Tm">
+    <Real Name="mass">168.934</Real>
+    <String Name="name">Thulium</String>
+    <Int Name="atomnumber">69</Int>
+  </element>
+  <element Name="U">
+    <Real Name="mass">238.029</Real>
+    <String Name="name">Uranium</String>
+    <Int Name="atomnumber">92</Int>
+  </element>
+  <element Name="V">
+    <Real Name="mass">50.941499999999998</Real>
+    <String Name="name">Vanadium</String>
+    <Int Name="atomnumber">23</Int>
+  </element>
+  <element Name="W">
+    <Real Name="mass">183.84</Real>
+    <String Name="name">Tungsten</String>
+    <Int Name="atomnumber">74</Int>
+  </element>
+  <element Name="X">
+    <Real Name="mass">0</Real>
+    <String Name="name">Vsite</String>
+    <Int Name="atomnumber">0</Int>
+  </element>
+  <element Name="Xe">
+    <Real Name="mass">131.29300000000001</Real>
+    <String Name="name">Xenon</String>
+    <Int Name="atomnumber">54</Int>
+  </element>
+  <element Name="Y">
+    <Real Name="mass">88.905900000000003</Real>
+    <String Name="name">Yttrium</String>
+    <Int Name="atomnumber">39</Int>
+  </element>
+  <element Name="Yb">
+    <Real Name="mass">173.03999999999999</Real>
+    <String Name="name">Ytterbium</String>
+    <Int Name="atomnumber">70</Int>
+  </element>
+  <element Name="Zn">
+    <Real Name="mass">65.390000000000001</Real>
+    <String Name="name">Zinc</String>
+    <Int Name="atomnumber">30</Int>
+  </element>
+  <element Name="Zr">
+    <Real Name="mass">91.224000000000004</Real>
+    <String Name="name">Zirconium</String>
+    <Int Name="atomnumber">40</Int>
+  </element>
+</ReferenceData>

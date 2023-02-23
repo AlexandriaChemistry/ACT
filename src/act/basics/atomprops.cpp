@@ -1,10 +1,10 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020,2023
+ * Copyright (C) 2023
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
  *             Paul J. van Maaren, 
@@ -28,43 +28,44 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
-#ifndef GMX_ALEXMODULES_H
-#define GMX_ALEXMODULES_H
+#include "atomprops.h"
+
+#include "act/utility/stringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 
 namespace alexandria
 {
 
-int gentop(int argc, char *argv[]);
-int simulate(int argc, char *argv[]);
-int b2(int argc, char *argv[]);
-int nma(int argc, char *argv[]);
-int tune_ff(int argc, char *argv[]);
-int edit_ff(int argc, char *argv[]);
-int gen_ff(int argc, char *argv[]);
-int geometry_ff(int argc, char *argv[]);
-int analyze(int argc, char *argv[]);
-int merge_ff(int argc, char *argv[]);
-int edit_mp(int argc, char *argv[]);
+std::map<std::string, AtomProp> readAtomProps()
+{
+    const char *actdata = getenv("ACTDATA");
+    if (nullptr == actdata)
+    {
+        GMX_THROW(gmx::InvalidInputError("Environment variable ACTDATA is not set"));
+    }
+    std::string     props = gmx::formatString("%s/atomprops.csv", actdata);
+    gmx::TextReader tr(props);
+    std::map<std::string, AtomProp> table;
+    std::string              tmp;
+    while (tr.readLine(&tmp))
+    {
+        if (tmp.find("#") == std::string::npos)
+        {
+            auto ptr = split(tmp, ',');
+            if (ptr.size() == 4)
+            {
+                AtomProp ap(ptr[1], 
+                            my_atoi(ptr[2].c_str(), "atomnumber"),
+                            my_atof(ptr[3].c_str(), "mass"));
+                table.insert({ ptr[0], ap });
+            }
+        }
+    }
+    return table;
 }
 
-namespace gmx
-{
-class CommandLineModuleManager;
-} // namespace gmx
-
-/*! \internal \brief
- * Registers all alex command-line modules.
- *
- * \param[in] manager  Command-line module manager to receive the modules.
- * \throws    std::bad_alloc if out of memory.
- *
- * Registers all modules corresponding to pre-5.0 binaries such that
- * they can be run through \p manager.
- */
-void registerAlexandriaModules(gmx::CommandLineModuleManager *manager);
-
-#endif
+} // namespace

@@ -36,6 +36,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -56,6 +57,9 @@ enum class ChargeType {
     //! Slater-distributed charges
     Slater
 };
+
+//! \return the list of charge types
+std::vector<std::string> qdnames();
 
 //! \brief Return the string corresping to ct
 const std::string &chargeTypeName(ChargeType ct);

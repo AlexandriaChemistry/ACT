@@ -6,42 +6,54 @@
 <!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
 <ForceField>
   <AtomTypes>
-    <Type name="c2" class="c2" element="C" mass="11.9107"/>
-    <Type name="c2_s" class="c2_s" mass="0.1"/>
-    <Type name="h" class="h" element="H" mass="0.9079"/>
-    <Type name="h_s" class="h_s" mass="0.1"/>
-    <Type name="o2" class="o2" element="O" mass="15.8994"/>
-    <Type name="o2_s" class="o2_s" mass="0.1"/>
+    <Type name="c2_1" class="c2_b" element="C" mass="11.9107"/>
+    <Type name="c2_s_1" class="c2_s_b" mass="0.1"/>
+    <Type name="h_2" class="h_b" element="H" mass="0.9079"/>
+    <Type name="h_s_2" class="h_s_b" mass="0.1"/>
+    <Type name="c2_3" class="c2_b" element="C" mass="11.9107"/>
+    <Type name="c2_s_3" class="c2_s_b" mass="0.1"/>
+    <Type name="h_4" class="h_b" element="H" mass="0.9079"/>
+    <Type name="h_s_4" class="h_s_b" mass="0.1"/>
+    <Type name="c2_5" class="c2_b" element="C" mass="11.9107"/>
+    <Type name="c2_s_5" class="c2_s_b" mass="0.1"/>
+    <Type name="h_6" class="h_b" element="H" mass="0.9079"/>
+    <Type name="h_s_6" class="h_s_b" mass="0.1"/>
+    <Type name="c2_7" class="c2_b" element="C" mass="11.9107"/>
+    <Type name="c2_s_7" class="c2_s_b" mass="0.1"/>
+    <Type name="h_8" class="h_b" element="H" mass="0.9079"/>
+    <Type name="h_s_8" class="h_s_b" mass="0.1"/>
+    <Type name="o2_9" class="o2_b" element="O" mass="15.8994"/>
+    <Type name="o2_s_9" class="o2_s_b" mass="0.1"/>
   </AtomTypes>
   <Residues>
     <Residue name="UNL">
-      <Atom name="C1" type="c2" charge="0.96522"/>
-      <Atom name="c22" type="c2_s" charge="-1.2"/>
-      <Atom name="H3" type="h" charge="1.10783"/>
-      <Atom name="h4" type="h_s" charge="-0.8"/>
-      <Atom name="C5" type="c2" charge="0.955913"/>
-      <Atom name="c26" type="c2_s" charge="-1.2"/>
-      <Atom name="H7" type="h" charge="1.10062"/>
-      <Atom name="h8" type="h_s" charge="-0.8"/>
-      <Atom name="C9" type="c2" charge="0.955912"/>
-      <Atom name="c210" type="c2_s" charge="-1.2"/>
-      <Atom name="H11" type="h" charge="1.10062"/>
-      <Atom name="h12" type="h_s" charge="-0.8"/>
-      <Atom name="C13" type="c2" charge="0.96522"/>
-      <Atom name="c214" type="c2_s" charge="-1.2"/>
-      <Atom name="H15" type="h" charge="1.10783"/>
-      <Atom name="h16" type="h_s" charge="-0.8"/>
-      <Atom name="O17" type="o2" charge="0.940826"/>
-      <Atom name="o218" type="o2_s" charge="-1.2"/>
-      <Bond atomName1="C1" atomName2="H3"/>
-      <Bond atomName1="C1" atomName2="C5"/>
-      <Bond atomName1="C1" atomName2="O17"/>
-      <Bond atomName1="C5" atomName2="H7"/>
-      <Bond atomName1="C5" atomName2="C9"/>
-      <Bond atomName1="C9" atomName2="H11"/>
-      <Bond atomName1="C9" atomName2="C13"/>
-      <Bond atomName1="C13" atomName2="H15"/>
-      <Bond atomName1="C13" atomName2="O17"/>
+      <Atom name="C_1" type="c2_1" charge="0.96522"/>
+      <Atom name="c2_s_1" type="c2_s_1" charge="-1.2"/>
+      <Atom name="H_2" type="h_2" charge="1.10783"/>
+      <Atom name="h_s_2" type="h_s_2" charge="-0.8"/>
+      <Atom name="C_3" type="c2_3" charge="0.955913"/>
+      <Atom name="c2_s_3" type="c2_s_3" charge="-1.2"/>
+      <Atom name="H_4" type="h_4" charge="1.10062"/>
+      <Atom name="h_s_4" type="h_s_4" charge="-0.8"/>
+      <Atom name="C_5" type="c2_5" charge="0.955912"/>
+      <Atom name="c2_s_5" type="c2_s_5" charge="-1.2"/>
+      <Atom name="H_6" type="h_6" charge="1.10062"/>
+      <Atom name="h_s_6" type="h_s_6" charge="-0.8"/>
+      <Atom name="C_7" type="c2_7" charge="0.96522"/>
+      <Atom name="c2_s_7" type="c2_s_7" charge="-1.2"/>
+      <Atom name="H_8" type="h_8" charge="1.10783"/>
+      <Atom name="h_s_8" type="h_s_8" charge="-0.8"/>
+      <Atom name="O_9" type="o2_9" charge="0.940826"/>
+      <Atom name="o2_s_9" type="o2_s_9" charge="-1.2"/>
+      <Bond atomName1="C_1" atomName2="H_2"/>
+      <Bond atomName1="C_1" atomName2="C_3"/>
+      <Bond atomName1="C_1" atomName2="O_9"/>
+      <Bond atomName1="C_3" atomName2="H_4"/>
+      <Bond atomName1="C_3" atomName2="C_5"/>
+      <Bond atomName1="C_5" atomName2="H_6"/>
+      <Bond atomName1="C_5" atomName2="C_7"/>
+      <Bond atomName1="C_7" atomName2="H_8"/>
+      <Bond atomName1="C_7" atomName2="O_9"/>
     </Residue>
   </Residues>
   <CustomBondForce energy="0">
@@ -163,25 +175,55 @@
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="beta"/>
-    <Atom type="c2" vdW="1" epsilon="0.55" gamma="15" sigma="0.12" charge="0.96522" beta="6"/>
-    <Atom type="c2_s" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
-    <Atom type="h" vdW="1" epsilon="0.265" gamma="15" sigma="0.23" charge="1.10783" beta="6"/>
-    <Atom type="h_s" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-0.8" beta="6"/>
-    <Atom type="o2" vdW="1" epsilon="0.75" gamma="15" sigma="0.12" charge="0.940826" beta="6"/>
-    <Atom type="o2_s" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="c2_1" vdW="1" epsilon="0.55" gamma="15" sigma="0.12" charge="0.96522" beta="6"/>
+    <Atom type="c2_s_1" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="h_2" vdW="1" epsilon="0.265" gamma="15" sigma="0.23" charge="1.10783" beta="6"/>
+    <Atom type="h_s_2" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-0.8" beta="6"/>
+    <Atom type="c2_3" vdW="1" epsilon="0.55" gamma="15" sigma="0.12" charge="0.955913" beta="6"/>
+    <Atom type="c2_s_3" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="h_4" vdW="1" epsilon="0.265" gamma="15" sigma="0.23" charge="1.10062" beta="6"/>
+    <Atom type="h_s_4" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-0.8" beta="6"/>
+    <Atom type="c2_5" vdW="1" epsilon="0.55" gamma="15" sigma="0.12" charge="0.955912" beta="6"/>
+    <Atom type="c2_s_5" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="h_6" vdW="1" epsilon="0.265" gamma="15" sigma="0.23" charge="1.10062" beta="6"/>
+    <Atom type="h_s_6" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-0.8" beta="6"/>
+    <Atom type="c2_7" vdW="1" epsilon="0.55" gamma="15" sigma="0.12" charge="0.96522" beta="6"/>
+    <Atom type="c2_s_7" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
+    <Atom type="h_8" vdW="1" epsilon="0.265" gamma="15" sigma="0.23" charge="1.10783" beta="6"/>
+    <Atom type="h_s_8" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-0.8" beta="6"/>
+    <Atom type="o2_9" vdW="1" epsilon="0.75" gamma="15" sigma="0.12" charge="0.940826" beta="6"/>
+    <Atom type="o2_s_9" vdW="0" epsilon="1" gamma="7" sigma="1" charge="-1.2" beta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
-    <Atom type="c2" charge="0.96522" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c2_s" charge="-1.2" sigma="0.3" epsilon="0"/>
-    <Atom type="h" charge="1.10783" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_s" charge="-0.8" sigma="0.3" epsilon="0"/>
-    <Atom type="o2" charge="0.940826" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_s" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="c2_1" charge="0.96522" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_1" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="h_2" charge="1.10783" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_2" charge="-0.8" sigma="0.3" epsilon="0"/>
+    <Atom type="c2_3" charge="0.955913" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_3" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="h_4" charge="1.10062" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_4" charge="-0.8" sigma="0.3" epsilon="0"/>
+    <Atom type="c2_5" charge="0.955912" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_5" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="h_6" charge="1.10062" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_6" charge="-0.8" sigma="0.3" epsilon="0"/>
+    <Atom type="c2_7" charge="0.96522" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_7" charge="-1.2" sigma="0.3" epsilon="0"/>
+    <Atom type="h_8" charge="1.10783" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_8" charge="-0.8" sigma="0.3" epsilon="0"/>
+    <Atom type="o2_9" charge="0.940826" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_s_9" charge="-1.2" sigma="0.3" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
-    <Particle type2="c2" type1="c2_s" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="h" type1="h_s" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="o2" type1="o2_s" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type2="c2_1" type1="c2_s_1" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type2="h_2" type1="h_s_2" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type2="c2_3" type1="c2_s_3" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type2="h_4" type1="h_s_4" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type2="c2_5" type1="c2_s_5" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type2="h_6" type1="h_s_6" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type2="c2_7" type1="c2_s_7" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type2="h_8" type1="h_s_8" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type2="o2_9" type1="o2_s_9" polarizability="0.00145" charge="-1.2" thole="0"/>
   </DrudeForce>
 </ForceField>
 ]]></String>
