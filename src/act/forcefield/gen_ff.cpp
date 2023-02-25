@@ -47,6 +47,7 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
 namespace alexandria
@@ -152,7 +153,7 @@ int gen_ff(int argc, char*argv[])
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "HARMONIC", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    const char *vdwfn[]   = { nullptr, "BHAM", "LJ_SR", nullptr };
+    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", nullptr };
     std::vector<const char *> combrules = { nullptr };
     int i = 0;
     while(ecomb_names[i])
@@ -275,16 +276,33 @@ int gen_ff(int argc, char*argv[])
         }
         // Van der Waals
         {
-            std::map<std::string, std::string> vdwlist = {
-                { "sigma", "nm" },
-                { "epsilon", "kJ/mol" },
-                { "gamma", "" },
-                { "delta", "" } };
+            std::map<std::string, std::string> vdwlist;
+            std::map<std::string, std::string> rename;
+            switch (vdw.gromacsType())
+            {
+            case F_LJ:
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
+                break;
+            case F_BHAM:
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
+                break;
+            case F_GBHAM:
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
+                rename.insert({"sigma", "rmin"});
+                break;
+            default:
+                GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));
+            }
             for(const auto &vl : vdwlist)
             {
                 if (minmaxmut(entry.first, myatype, vl.first, &vmin, &vmax, &vmut))
                 {
-                    vdw.addParameter(entry.first, vl.first,
+                    std::string key = vl.first;
+                    if (rename.find(key) != rename.end())
+                    {
+                        key = rename[key];
+                    }
+                    vdw.addParameter(entry.first, key,
                                      ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
                 }
             }

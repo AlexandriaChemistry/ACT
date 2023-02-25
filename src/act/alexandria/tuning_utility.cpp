@@ -984,6 +984,17 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
             tcout->push_back(ttt);
             ccc++;
         }
+        for(const auto &ff : forceMap)
+        {
+            for(const auto &fxyz : ff)
+            {
+                if (fxyz.first != 0 || fxyz.second != 0)
+                {
+                    tcout->push_back(gmx::formatString("Force ref: %8.2f  act: %8.2f", fxyz.first, fxyz.second));
+                    ccc++;
+                }
+            }
+        }
     }
     // RMS energy
     if (energyMap.size() > 0)
