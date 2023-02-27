@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -176,7 +176,7 @@ static void printCause(FILE         *out,
         "Collapse of the Thwaites glacier in Antarctica leads to flooding globally\nkilling %g percent of the population. New life forms will repopulate.\n",
         "Melting of the Greenland ice cap released so much fresh water that the\nNorth Atlantic Current stopped and Europe became uninhabitable.\n%g percent of the population will be replaced.",
         "Deforestation leading to catastrophic loss of biodiversity reduced fitness.\n%g percent new species will be created.\n",
-        "Alien invaders exterminate %g percent of the population and replaced them\nwith tenage Mutant Ninja turtles.\n",
+        "Alien invaders exterminate %g percent of the population and replaced them\nwith teenage Mutant Ninja turtles.\n",
         "An asteroid hits earth and kills %g%% of all living organism.\nEvolution starts anew.\n",
         "A tsunami hits the western pacific rim wiping out %g%% of the population.\nRebuilding will commence.\n",
         "Strict reproduction laws in patriarchic countries lead to an inbreeding depression.\nTo address the reduced fitness of the population %g%% will be replaced.\n",
