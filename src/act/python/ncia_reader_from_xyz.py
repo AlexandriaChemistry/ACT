@@ -78,12 +78,20 @@ for line in listofxyz:
             else:
             #    SEL_A_1 = header.partition("selection_a=")[2].partition("selection_b")[0]
                 SEL_A_1 = header.partition("selection_a")[2].partition("selection_b")[0].split("=")[1]
+<<<<<<< HEAD
             #    print("A1, no - CCCCCCCCCCCCCCCCCCCCCCCCC")
+=======
+                print("A1, no - CCCCCCCCCCCCCCCCCCCCCCCCC")
+>>>>>>> a9dfbda3e14233624958f76ae03b796c4c7fff4c
             if "-" in header.partition("selection_a=")[2].partition("selection_b")[0]:
                 SEL_A_2 = header.partition("selection_a=")[2].partition("selection_b")[0].split("-")[1]
             else:
                 SEL_A_2 = header.partition("selection_a")[2].partition("selection_b")[0].split("=")[1]
+<<<<<<< HEAD
             #    print("A1, no - DDDDDDDDDDDDDDDDDDDDDDDDDD")
+=======
+                print("A1, no - DDDDDDDDDDDDDDDDDDDDDDDDDD")
+>>>>>>> a9dfbda3e14233624958f76ae03b796c4c7fff4c
          #   if "-" in  
            # if "-" in header.partition("selection_b=")[2]
             if args.format == "S66": ## no monoatomics in S66
@@ -94,7 +102,11 @@ for line in listofxyz:
                     SEL_B_1 = header.partition("selection_b=")[2].partition("scaling")[0].split("-")[0]
                 else: 
                     SEL_B_1 = header.partition("selection_b")[2].partition("scaling")[0].split("=")[1]
+<<<<<<< HEAD
             #        print("B1, no - AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+=======
+                    print("B1, no - AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+>>>>>>> a9dfbda3e14233624958f76ae03b796c4c7fff4c
 
             CHAR_A = header.partition("charge_a=")[2].partition("charge_b")[0]
             CHAR_B= header.partition("charge_b=")[2].partition("selection_a")[0]
@@ -176,7 +188,11 @@ for line in listofxyz:
                 listinchi.append(Binchi_read)
 ###
         ##    try:
+<<<<<<< HEAD
             subprocess.run("./ncia2molprop -i {}/{}.xyz -o {}.xml -n {} -int {} -charge_a {} -charge_b {} -sel_a_end {} -sel_b_end {} -MIN {} -ID {} -FRAGA SEL_A.xyz -FRAGB SEL_B.xyz -ref {}".format(args.directory,name, name,name,benchmark,CHAR_A,CHAR_B,SEL_A_2,SEL_B_2, MIN, name, args.directory).split())
+=======
+            subprocess.run("./ncia2molprop.py -i {}/{}.xyz -o {}.xml -n {} -int {} -charge_a {} -charge_b {} -sel_a_end {} -sel_b_end {} -MIN {} -ID {} -FRAGA SEL_A.xyz -FRAGB SEL_B.xyz -ref {}".format(args.directory,name, name,name,benchmark,CHAR_A,CHAR_B,SEL_A_2,SEL_B_2, MIN, name, args.directory).split())
+>>>>>>> a9dfbda3e14233624958f76ae03b796c4c7fff4c
           ##  except:
             #    print("error occoured in the molprop convertor")
 
