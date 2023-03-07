@@ -270,7 +270,7 @@ immStatus ACTMol::GenerateAtoms(const ForceField *pd,
         {
             auto myunit = cai.coordUnit();
             cai.coords(&xx, &yy, &zz);
-            int resnr = cai.ResidueNumber();
+            int resnr = cai.residueNumber();
             if (resnr != res0)
             {
                 res0  = resnr;
@@ -285,7 +285,7 @@ immStatus ACTMol::GenerateAtoms(const ForceField *pd,
             atoms->atom[natom].q      =
                 atoms->atom[natom].qB = 0;
             atoms->atom[natom].resind = resnr;
-            t_atoms_set_resinfo(atoms, natom, symtab_, cai.ResidueName().c_str(),
+            t_atoms_set_resinfo(atoms, natom, symtab_, cai.residueName().c_str(),
                                 atoms->atom[natom].resind, ' ', 
                                 cai.chainId(), cai.chain());
             atoms->atomname[natom]    = put_symtab(symtab_, cai.getName().c_str());
@@ -1095,8 +1095,9 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
     }
     if (immStatus::OK == imm)
     {
-        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(), 
-                                           bondsConst(), 
+        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, 
+                                           topology_->residueNames(), 
+                                           topology_->atoms(), bondsConst(), 
                                            fragmentPtr(), shellRenumber_, missing);
         // Finally, extract frequencies etc.
         getHarmonics();

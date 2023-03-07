@@ -372,10 +372,10 @@ public:
     const std::string &forceUnit() const { return force_unit_; }
     
     //! Return the name of residue
-    const std::string &ResidueName() const { return residueName_; }
+    const std::string &residueName() const { return residueName_; }
     
     //! Return the residue number
-    int ResidueNumber() const { return residueNumber_; }
+    int residueNumber() const { return residueNumber_; }
 
     //! Set the unit of the coordinates of the atom
     void setCoordUnit(const std::string &unit);
@@ -384,7 +384,7 @@ public:
     void setForceUnit(const std::string &unit);
     
     //! Set the residue name for the atom
-    void SetResidue(const std::string &residueName, int residueNumber)
+    void setResidue(const std::string &residueName, int residueNumber)
     {
         residueName_   = residueName;
         residueNumber_ = residueNumber;

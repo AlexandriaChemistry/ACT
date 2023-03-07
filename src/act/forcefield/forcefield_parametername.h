@@ -37,15 +37,15 @@
 namespace alexandria
 {
 
-    enum { ljC6_IJ = 0, ljC12_IJ = 1, ljNR = 2 };
+    enum { ljSIGMA = 0, ljEPSILON = 1, ljC6_IJ = 2, ljC12_IJ = 3, ljNR = 4 };
     
     extern const char *lj_name[ljNR];
     
-    enum { wbhSIGMA_IJ = 0, wbhEPSILON_IJ = 1, wbhGAMMA_IJ = 2, wbhNR = 3 };
+    enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
     
     extern const char *wbh_name[wbhNR];
     
-    enum { gbhRMIN_IJ = 0, gbhEPSILON_IJ = 1, gbhGAMMA_IJ = 2, gbhDELTA_IJ = 3, gbhNR = 4 };
+    enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
     
     extern const char *gbh_name[gbhNR];
     
@@ -89,7 +89,7 @@ namespace alexandria
     
     extern const char *idih_name[idihNR];
     
-    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihNR = 4 };
+    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihC6 = 6, fdihNR = 7 };
     
     extern const char *fdih_name[fdihNR];
     

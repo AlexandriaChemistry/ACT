@@ -201,7 +201,7 @@ static void generateVdwParameterPairs(ForceField *pd)
     std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
-    auto mut = Mutability::Dependent;
+    auto mutd = Mutability::Dependent;
 
     // Now do the double loop
     for (auto &ivdw : *forcesVdw->parameters())
@@ -228,29 +228,41 @@ static void generateVdwParameterPairs(ForceField *pd)
             {
             case F_LJ:
                 {
-                    double isigma   = ivdw.second["sigma"].internalValue();
-                    double iepsilon = ivdw.second["epsilon"].internalValue();
-                    double jsigma   = jvdw.second["sigma"].internalValue();
-                    double jepsilon = jvdw.second["epsilon"].internalValue();
+                    auto csigma     = lj_name[ljSIGMA];
+                    auto cepsilon   = lj_name[ljEPSILON];
+                    double isigma   = ivdw.second[csigma].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double jsigma   = jvdw.second[csigma].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
                     double c6 = 0, c12 = 0;
                     CombineLJ(comb_rule, isigma, jsigma,
                               iepsilon, jepsilon, &c6, &c12);
                     ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6, 
-                                               mut, true, true);
+                                               mutd, true, true);
                     ForceFieldParameter c12parm(unit, c12, 0, 1, c12, c12, 
-                                                mut, true, true);
+                                                mutd, true, true);
                     newParams.addParameter(pairID, lj_name[ljC6_IJ], c6parm);
                     newParams.addParameter(pairID, lj_name[ljC12_IJ], c12parm);
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, csigma,
+                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true));
                 }
                 break;
             case F_BHAM:
                 {
-                    double isigma   = ivdw.second["sigma"].internalValue();
-                    double iepsilon = ivdw.second["epsilon"].internalValue();
-                    double igamma   = ivdw.second["gamma"].internalValue();
-                    double jsigma   = jvdw.second["sigma"].internalValue();
-                    double jepsilon = jvdw.second["epsilon"].internalValue();
-                    double jgamma   = jvdw.second["gamma"].internalValue();
+                    auto csigma     = wbh_name[wbhSIGMA];
+                    auto cepsilon   = wbh_name[wbhEPSILON];
+                    auto cgamma     = wbh_name[wbhGAMMA];
+                    double isigma   = ivdw.second[csigma].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double igamma   = ivdw.second[cgamma].internalValue();
+                    double jsigma   = jvdw.second[csigma].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
+                    double jgamma   = jvdw.second[cgamma].internalValue();
                     double sigmaij = 0, epsilonij = 0, gammaij = 0;
                     CombineBham(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon, 
@@ -258,48 +270,75 @@ static void generateVdwParameterPairs(ForceField *pd)
                                 &epsilonij, &gammaij);
                     ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
                                                 sigmaij, sigmaij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
                                                 epsilonij, epsilonij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     ForceFieldParameter gamparm(unit, gammaij, 0, 1,
                                                 gammaij, gammaij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     newParams.addParameter(pairID, wbh_name[wbhSIGMA_IJ], sigparm);
                     newParams.addParameter(pairID, wbh_name[wbhEPSILON_IJ], epsparm);
                     newParams.addParameter(pairID, wbh_name[wbhGAMMA_IJ], gamparm);
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, csigma,
+                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cgamma, 
+                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                               mutd, true, true));
                 }
                 break;
             case F_GBHAM:
                 {
-                    double irmin    = ivdw.second["rmin"].internalValue();
-                    double iepsilon = ivdw.second["epsilon"].internalValue();
-                    double igamma   = ivdw.second["gamma"].internalValue();
-                    double idelta   = ivdw.second["delta"].internalValue();
-                    double jrmin    = jvdw.second["rmin"].internalValue();
-                    double jepsilon = jvdw.second["epsilon"].internalValue();
-                    double jgamma   = jvdw.second["gamma"].internalValue();
-                    double jdelta   = jvdw.second["delta"].internalValue();
+                    auto crmin      = gbh_name[gbhRMIN];
+                    auto cepsilon   = gbh_name[gbhEPSILON];
+                    auto cgamma     = gbh_name[gbhGAMMA];
+                    auto cdelta     = gbh_name[gbhDELTA];
+                    double irmin    = ivdw.second[crmin].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double igamma   = ivdw.second[cgamma].internalValue();
+                    double idelta   = ivdw.second[cdelta].internalValue();
+                    double jrmin    = jvdw.second[crmin].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
+                    double jgamma   = jvdw.second[cgamma].internalValue();
+                    double jdelta   = jvdw.second[cdelta].internalValue();
                     double rminij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
                     CombineGBham(comb_rule, irmin, jrmin, iepsilon, jepsilon, 
                                  igamma, jgamma, idelta, jdelta, &rminij,
                                  &epsilonij, &gammaij, &deltaij);
                     ForceFieldParameter sigparm(unit, rminij, 0, 1,
                                                 rminij, rminij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
                                                 epsilonij, epsilonij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     ForceFieldParameter gamparm(unit, gammaij, 0, 1,
                                                 gammaij, gammaij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     ForceFieldParameter delparm(unit, deltaij, 0, 1,
                                                 deltaij, deltaij,
-                                                mut, true, true);
+                                                mutd, true, true);
                     newParams.addParameter(pairID, gbh_name[gbhRMIN_IJ], sigparm);
                     newParams.addParameter(pairID, gbh_name[gbhEPSILON_IJ], epsparm);
                     newParams.addParameter(pairID, gbh_name[gbhGAMMA_IJ], gamparm);
                     newParams.addParameter(pairID, gbh_name[gbhDELTA_IJ], delparm);
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, crmin,
+                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cgamma, 
+                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cdelta, 
+                                           ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
+                                                               mutd, true, true));
                 }
                 break;
             default:
@@ -335,7 +374,7 @@ static void generateCoulombParameterPairs(ForceField *pd)
     std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
-    auto mut = Mutability::Dependent;
+    auto mutd = Mutability::Dependent;
 
     // Now do the double loop
     for (auto &icoul : *forcesCoul->parameters())
@@ -360,8 +399,8 @@ static void generateCoulombParameterPairs(ForceField *pd)
             auto jparam = jcoul.second;
             double jzeta  = jcoul.second["zeta"].internalValue();
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
-            ForceFieldParameter pi(unit, izeta, 0, 1, izeta, izeta, mut, true, true);
-            ForceFieldParameter pj(unit, jzeta, 0, 1, jzeta, jzeta, mut, true, true);
+            ForceFieldParameter pi(unit, izeta, 0, 1, izeta, izeta, mutd, true, true);
+            ForceFieldParameter pj(unit, jzeta, 0, 1, jzeta, jzeta, mutd, true, true);
             newParams.addParameter(pairID, coul_name[coulZETAI], pi);
             newParams.addParameter(pairID, coul_name[coulZETAJ], pj);
         }

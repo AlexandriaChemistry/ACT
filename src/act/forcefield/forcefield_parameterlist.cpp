@@ -147,7 +147,7 @@ const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const
     auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type '%s' in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
     }
     return ffparam->second;
 }

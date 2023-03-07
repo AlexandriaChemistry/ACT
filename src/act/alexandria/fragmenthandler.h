@@ -56,19 +56,21 @@ namespace alexandria
         /*! Constructor
          * \param[in] pd            Force field data
          * \param[in] coordinates   The atomic coordinates
+         * \param[in] residueNames  The residue names
          * \param[in] atoms         The atoms
          * \param[in] bonds         The bonds
          * \param[in] fragments     The fragmentation information
          * \param[in] shellRenumber Info on renumbering atoms because of shells
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const ForceField             *pd,
-                        const std::vector<gmx::RVec> &coordinates,
-                        const std::vector<ActAtom>   &atoms,
-                        const std::vector<Bond>      &bonds,
-                        const std::vector<Fragment>  *fragments,
-                        const std::vector<int>       &shellRenumber,
-                        missingParameters             missing);
+        FragmentHandler(const ForceField               *pd,
+                        const std::vector<gmx::RVec>   &coordinates,
+                        const std::vector<std::string> &residueNames,
+                        const std::vector<ActAtom>     &atoms,
+                        const std::vector<Bond>        &bonds,
+                        const std::vector<Fragment>    *fragments,
+                        const std::vector<int>         &shellRenumber,
+                        missingParameters               missing);
 
         /*! \brief Fetch charges for all atoms
          * \param[out] qq Vector that will be reinitialized at correct length

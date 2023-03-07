@@ -85,6 +85,9 @@ private:
     std::vector<Fragment>             fragment_;
     std::vector<Experiment>           exper_;
     std::vector<Bond>                 bond_;
+
+    void renumberResidues();
+
 public:
     //! Constructor for a MolProp object
     MolProp() {}
