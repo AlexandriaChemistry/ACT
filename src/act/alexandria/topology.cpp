@@ -380,7 +380,6 @@ void Topology::setAtoms(const t_atoms *atoms)
     {
         GMX_THROW(gmx::InternalError("Number of residues incorrect in t_atoms"));
     }
-    residueNames_.resize(atoms->nres);
     int minres = atoms->nres;
     for(int i = 0; i < atoms->nr; i++)
     {
@@ -402,7 +401,7 @@ void Topology::setAtoms(const t_atoms *atoms)
                 GMX_THROW(gmx::InternalError(gmx::formatString("Residue index %d out of range. Should be within %d-%d",
                                                                resind, 0, atoms->nres).c_str()));
             }
-            residueNames_[resind].assign(*(atoms->resinfo[minres+resind].name));
+            addResidue(resind, *(atoms->resinfo[minres+resind].name));
         }
         atoms_.push_back(anew);
     }
