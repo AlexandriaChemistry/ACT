@@ -242,19 +242,19 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     }
 }
 
-static bool addInchiToFragments(OpenBabel::OBMol       *mol,
-                                std::vector<Fragment>  *fragptr)
+static bool addInchiToFragments(OpenBabel::OBConversion *conv,
+                                OpenBabel::OBMol        *mol,
+                                std::vector<Fragment>   *fragptr)
 {
-    auto conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
     conv->SetOutFormat("inchi");
+    std::string alanine("ALA");
     size_t fff = 0;
     for(auto fptr = fragptr->begin(); fptr < fragptr->end(); fptr++)
     {
         // Copy input molecule
-        auto               fmol   = new OpenBabel::OBMol;
+        OpenBabel::OBMol      fmol;
         // Atoms in the fragment
         auto                  fatoms = fptr->atoms();
-        OpenBabel::OBAtom    *atom;
         std::map<int, int>    renumber;
         int                   count = 1;
         FOR_ATOMS_OF_MOL (atom, *mol)
@@ -264,11 +264,11 @@ static bool addInchiToFragments(OpenBabel::OBMol       *mol,
             {
                 OpenBabel::OBAtom newatom(*atom);
                 // Make a copy of the residue information
-                auto residue = *atom->GetResidue();
+                OpenBabel::OBResidue residue = *(atom->GetResidue());
                 residue.SetNum(fff+1);
                 newatom.SetIdx(count++);
                 newatom.SetResidue(&residue);
-                if (!fmol->AddAtom(newatom))
+                if (!fmol.AddAtom(newatom))
                 {
                     fprintf(stderr, "Could not add atom %d to fmol\n", atom->GetIdx());
                 }
@@ -287,18 +287,17 @@ static bool addInchiToFragments(OpenBabel::OBMol       *mol,
                 if (std::find(fatoms.begin(), fatoms.end(), ai-1) != fatoms.end() &&
                     std::find(fatoms.begin(), fatoms.end(), aj-1) != fatoms.end())
                 {
-                    if (!fmol->AddBond(renumber[ai], renumber[aj], bo))
+                    if (!fmol.AddBond(renumber[ai], renumber[aj], bo))
                     {
                         fprintf(stderr, "Could not add bond to fmol\n");
                     }
                 }
             }
         }
-        auto inchi = conv->WriteString(fmol, true);
+        auto inchi = conv->WriteString(&fmol, true);
         fptr->setId(inchi);
-        delete fmol;
     }
-    delete conv;
+    return true;
 }
 
 static bool babel2ACT(const ForceField    *pd,
@@ -665,7 +664,7 @@ static bool babel2ACT(const ForceField    *pd,
     }
     // Fragment information will be generated
     mpt->generateFragments(pd, *qtot);
-    addInchiToFragments(mol, mpt->fragmentPtr());
+    addInchiToFragments(conv, mol, mpt->fragmentPtr());
     
     // Dipole
     auto my_dipole = mol->GetData("Dipole Moment");

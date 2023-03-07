@@ -14,15 +14,15 @@
   </AtomTypes>
   <Residues>
     <Residue name="InChI=1S/H2O4S/c1-5(2,3)4/h(H2,1,2,3,4)/p-2">
-      <Bond atomName1="S_1" atomName2="O_4"/>
-      <Bond atomName1="S_1" atomName2="O_3"/>
-      <Bond atomName1="O_2" atomName2="S_1"/>
-      <Bond atomName1="O_5" atomName2="S_1"/>
       <Atom name="S_1" type="s3_1" charge="-0.252747"/>
       <Atom name="O_2" type="o2_1" charge="-0.436811"/>
       <Atom name="O_3" type="o2_2" charge="-0.436808"/>
       <Atom name="O_4" type="o2_3" charge="-0.43682"/>
       <Atom name="O_5" type="o2_4" charge="-0.436814"/>
+      <Bond atomName1="S_1" atomName2="O_4"/>
+      <Bond atomName1="S_1" atomName2="O_3"/>
+      <Bond atomName1="O_2" atomName2="S_1"/>
+      <Bond atomName1="O_5" atomName2="S_1"/>
     </Residue>
   </Residues>
   <HarmonicBondForce energy="0">
