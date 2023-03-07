@@ -780,7 +780,7 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::build(const ForceField                *pd,
+void Topology::build(const ForceField             *pd,
                      const std::vector<gmx::RVec> &x,
                      double                        LinearAngleMin,
                      double                        PlanarAngleMax,
@@ -816,6 +816,22 @@ const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
     return entries_.find(itype)->second;
 }
 
+void Topology::addResidue(int                residueNumber, 
+                          const std::string &residueName)
+{
+    if (residueNumber >= static_cast<int>(residueNames_.size()))
+    {
+        residueNames_.resize(residueNumber+1);
+        residueNames_[residueNumber] = residueName;
+    }
+    else if (residueNames_[residueNumber] != residueName)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Residue name mismatch. Have residues %d = %s, but new name %s",
+                                                       residueNumber, residueNames_[residueNumber].c_str(),
+                                                       residueName.c_str()).c_str()));
+    }
+}
+    
 void Topology::addEntry(InteractionType                     itype,
                         const std::vector<TopologyEntry *> &entry)
 {

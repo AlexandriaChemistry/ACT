@@ -151,7 +151,7 @@ static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
         auto rmin       = params[gbhRMIN_IJ];
         auto epsilon    = params[gbhEPSILON_IJ];
         auto gamma      = params[gbhGAMMA_IJ];
-        auto delta      = params[gbhGAMMA_IJ];
+        auto delta      = params[gbhDELTA_IJ];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices

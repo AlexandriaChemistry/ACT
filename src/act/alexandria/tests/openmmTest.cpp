@@ -75,13 +75,10 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         std::vector<ACTMol> mps;
         initACTMol(fileName.c_str(), ff, fcomp, &inputrecInstance, &mps);
 
-        for(auto &actmol : mps)
-        {
-            auto tmpFile  = tfm.getTemporaryFilePath("xml");
-            bool compress = false;
-            writeOpenMM(tmpFile, ff, &actmol, mDrude, compress);
-            ifm->checkFile(tmpFile, &checker);
-        }
+        auto tmpFile  = tfm.getTemporaryFilePath("xml");
+        bool compress = false;
+        writeOpenMM(tmpFile, ff, mps, mDrude, compress);
+        ifm->checkFile(tmpFile, &checker);
     }
 };
 

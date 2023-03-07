@@ -37,18 +37,23 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const ForceField             *pd,
-                                 const std::vector<gmx::RVec> &coordinates,
-                                 const std::vector<ActAtom>   &atoms,
-                                 const std::vector<Bond>      &bonds,
-                                 const std::vector<Fragment>  *fragments,
-                                 const std::vector<int>       &shellRenumber,
-                                 missingParameters             missing)
+FragmentHandler::FragmentHandler(const ForceField               *pd,
+                                 const std::vector<gmx::RVec>   &coordinates,
+                                 const std::vector<std::string> &residueNames,
+                                 const std::vector<ActAtom>     &atoms,
+                                 const std::vector<Bond>        &bonds,
+                                 const std::vector<Fragment>    *fragments,
+                                 const std::vector<int>         &shellRenumber,
+                                 missingParameters               missing)
 
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
+    if (fragments->size() != residueNames.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Number of fragments (%zu) should match number of residue names (%zu)", fragments->size(), residueNames.size()).c_str()));
+    }
     topologies_.resize(fragments->size());
 
     bonds_.resize(fragments->size());
@@ -144,9 +149,16 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
                           anumber,
                           atoms[i+pol_offset].mass(),
                           atoms[i+pol_offset].charge());
+            int resnr = std::max(0, atoms[i+pol_offset].residueNumber()-1);
+            newat.setResidueNumber(resnr);
+            topologies_[ff].addResidue(resnr, residueNames[resnr+1]);
             topologies_[ff].addAtom(newat);
             j++;
         }
+        // Make sure the residue names and numbers are consistent
+        std::vector<Fragment> copyFragment;
+        copyFragment.push_back((*fragments)[ff]);
+        topologies_[ff].shellsToAtoms();
         QgenAcm_.push_back(QgenAcm(pd, topologies_[ff].atoms(), f->charge()));
         for(const auto &b : bonds)
         {

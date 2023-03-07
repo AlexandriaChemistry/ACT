@@ -242,6 +242,65 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     }
 }
 
+static bool addInchiToFragments(OpenBabel::OBMol       *mol,
+                                std::vector<Fragment>  *fragptr)
+{
+    auto conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
+    conv->SetOutFormat("inchi");
+    size_t fff = 0;
+    for(auto fptr = fragptr->begin(); fptr < fragptr->end(); fptr++)
+    {
+        // Copy input molecule
+        auto               fmol   = new OpenBabel::OBMol;
+        // Atoms in the fragment
+        auto                  fatoms = fptr->atoms();
+        OpenBabel::OBAtom    *atom;
+        std::map<int, int>    renumber;
+        int                   count = 1;
+        FOR_ATOMS_OF_MOL (atom, *mol)
+        {
+            int idx = atom->GetIdx();
+            if (std::find(fatoms.begin(), fatoms.end(), idx-1) != fatoms.end())
+            {
+                OpenBabel::OBAtom newatom(*atom);
+                // Make a copy of the residue information
+                auto residue = *atom->GetResidue();
+                residue.SetNum(fff+1);
+                newatom.SetIdx(count++);
+                newatom.SetResidue(&residue);
+                if (!fmol->AddAtom(newatom))
+                {
+                    fprintf(stderr, "Could not add atom %d to fmol\n", atom->GetIdx());
+                }
+                renumber.insert({idx, newatom.GetIdx()});
+            }
+        }
+        fff += 1;
+        auto OBbi = mol->BeginBonds();
+        if (OBbi != mol->EndBonds())
+        {
+            for (auto OBb = mol->BeginBond(OBbi); (nullptr != OBb); OBb = mol->NextBond(OBbi))
+            {
+                int ai = OBb->GetBeginAtom()->GetIdx();
+                int aj = OBb->GetEndAtom()->GetIdx();
+                int bo = OBb->GetBondOrder();
+                if (std::find(fatoms.begin(), fatoms.end(), ai-1) != fatoms.end() &&
+                    std::find(fatoms.begin(), fatoms.end(), aj-1) != fatoms.end())
+                {
+                    if (!fmol->AddBond(renumber[ai], renumber[aj], bo))
+                    {
+                        fprintf(stderr, "Could not add bond to fmol\n");
+                    }
+                }
+            }
+        }
+        auto inchi = conv->WriteString(fmol, true);
+        fptr->setId(inchi);
+        delete fmol;
+    }
+    delete conv;
+}
+
 static bool babel2ACT(const ForceField    *pd,
                       const std::map<std::string, std::string> &g2a,
                       OpenBabel::OBMol    *mol,
@@ -269,7 +328,6 @@ static bool babel2ACT(const ForceField    *pd,
     /* Variables to read a Gaussian log file */
     char                      *g09ptr;
     alexandria::JobType jobtype = alexandria::string2jobType(jobType);
-
     auto conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
 
     // Chemical Categories
@@ -521,6 +579,7 @@ static bool babel2ACT(const ForceField    *pd,
     const std::string forcefield("alexandria");
     auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     std::vector<int> atomIndices;
+    int oldresnum = -1;
     if (ff && (ff->Setup(*mol)))
     {
         ff->GetAtomTypes(*mol);
@@ -546,7 +605,13 @@ static bool babel2ACT(const ForceField    *pd,
             ca.setCoordUnit("Angstrom");
             ca.setCoords(atom->x(), atom->y(), atom->z());
             auto myres = atom->GetResidue();
-            ca.SetResidue(myres->GetName(), myres->GetNum());
+            // Workaround for incorrect residue numbers coming from babel.
+            // For instance for OHH one typically gets 1 0 0 as residue numbers. 
+            if (myres->GetNum() > oldresnum)
+            {
+                oldresnum = myres->GetNum();
+            }
+            ca.setResidue(myres->GetName(), oldresnum);
             ca.SetChain(myres->GetChainNum(), myres->GetChain());
             if (inputformat == einfGaussian)
             {
@@ -598,9 +663,10 @@ static bool babel2ACT(const ForceField    *pd,
             return false;
         }
     }
-    // Fragment information
+    // Fragment information will be generated
     mpt->generateFragments(pd, *qtot);
-
+    addInchiToFragments(mol, mpt->fragmentPtr());
+    
     // Dipole
     auto my_dipole = mol->GetData("Dipole Moment");
     if (nullptr != my_dipole)
@@ -812,7 +878,7 @@ bool readBabel(const ForceField    *pd,
         {
             mpt->push_back(mp);
         }
-        delete mol;
+        //delete mol;
     }
     return true;
 }
