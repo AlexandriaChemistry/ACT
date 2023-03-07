@@ -60,5 +60,5 @@ constraintTolerance  = 0.000001
 # OPTIONS FOR COMPUTING PLATFORM AND PRECISION
 ################################################
 # Platform CUDA or OpenCL (single/double)
-usePlatform         = OpenCL
+usePlatform         = CPU
 usePrecisionCuda    = single
