@@ -731,7 +731,6 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            addXmlResidueBonds(residuePtr, pd, topologies[fff]);
             add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), fragIds[fff].c_str());
             InchiUsed.insert(fragIds[fff]);
             // If we need to add numbers to types to distinguish types within a compound,
@@ -841,6 +840,9 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     }
                 }
             }
+            // Add bonds
+            addXmlResidueBonds(residuePtr, pd, topologies[fff]);
+            // Add bond types.
             addTopologyEntries(pd, &BondClassUsed, actmol.topology());
         }
     }

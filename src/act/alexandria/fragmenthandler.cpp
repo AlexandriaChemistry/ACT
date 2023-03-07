@@ -149,9 +149,13 @@ FragmentHandler::FragmentHandler(const ForceField               *pd,
                           anumber,
                           atoms[i+pol_offset].mass(),
                           atoms[i+pol_offset].charge());
-            int resnr = std::max(0, atoms[i+pol_offset].residueNumber()-1);
+            size_t resnr = atoms[i+pol_offset].residueNumber();
+            if (resnr >= residueNames.size())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("resnr = %zu, should be < %zu", resnr, residueNames.size()).c_str()));
+            }
             newat.setResidueNumber(resnr);
-            topologies_[ff].addResidue(resnr, residueNames[resnr+1]);
+            topologies_[ff].addResidue(resnr, residueNames[resnr]);
             topologies_[ff].addAtom(newat);
             j++;
         }
