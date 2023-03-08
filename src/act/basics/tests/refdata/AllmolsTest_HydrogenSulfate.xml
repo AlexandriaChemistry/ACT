@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="IUPAC">hydrogen sulfate</String>
+  <String Name="Formula">HO4S-</String>
+  <Int Name="Charge">-1</Int>
+  <Real Name="Mass">97.070499999999996</Real>
+  <Int Name="Multiplicity">1</Int>
+  <String Name="CAS"></String>
+  <Int Name="ChemSpiderID">55666</Int>
+  <Int Name="PubChemID">61778</Int>
+  <String Name="InChiKey">QAOWNCQODCNURD-UHFFFAOYSA-M</String>
+</ReferenceData>
