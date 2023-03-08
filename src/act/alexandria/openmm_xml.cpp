@@ -431,8 +431,13 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         {
             auto param = fs.findParametersConst(Identifier(fft.first));
             
+            std::string type1 = fft.first;
+            if (addNumbersToAtomTypes_)
+            {
+                type1 = nameIndex(type1, i);
+            }
             auto grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(fft.first, i).c_str());  
+            add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
             if (eptAtom == aType->gmxParticleType()) 
             {
                 add_xml_double(grandchild3, "vdW", 1.0); 
@@ -492,7 +497,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             // Normal Lennard Jones
             {
                 auto grandchild3 = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), nameIndex(fft.first, i).c_str());  
+                add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
                 std::vector<double> se_param = { 0.3, 0.05 };
                 const char *se_name[] = { "sigma", "epsilon" };
                 if (eptShell == aType->gmxParticleType())
@@ -531,16 +536,22 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                       parent,
                 if (aType->hasOption("poltype"))
                 {
                     auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE)); 
-                            
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), nameIndex(fft.first, i).c_str()); 
-                    auto shell_ai = aType->optionValue("poltype");
-                    auto param = fs.findParametersConst(Identifier(shell_ai));
-            
-                    auto alpha    = fs.findParameterTypeConst(Identifier({shell_ai}), pol_name[polALPHA]);
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), nameIndex(shell_ai, i).c_str());
+
+                    std::string type1 = aType->optionValue("poltype");
+                    auto param        = fs.findParametersConst(Identifier(type1));
+                    auto alpha        = fs.findParameterTypeConst(Identifier({type1}), pol_name[polALPHA]);
+                    auto stp          = pd->findParticleType(type1);
+                    
+                    std::string type2 = fft.first;                    
+                    if (addNumbersToAtomTypes_)
+                    {
+                        type1 = nameIndex(type1, i);
+                        type2 = nameIndex(type2, i);
+                    }
+                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str()); 
+                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
                         
                     add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                    auto stp = pd->findParticleType(shell_ai);
                     add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge());
                     add_xml_double(grandchild2, "thole", 0);
                 }
@@ -771,7 +782,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 // First check whether this type is in the global map
                 auto ffGlobalPtr = fftypeGlobalMap.find(ffType);
                 if (fftypeGlobalMap.end() == ffGlobalPtr || 
-                    localIndex > ffGlobalPtr->second)
+                    (addNumbersToAtomTypes_ && localIndex >= ffGlobalPtr->second))
                 {
                     // Check whether this type exist in the force field
                     if (!pd->hasParticleType(ffType))
@@ -792,9 +803,12 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     // Make openMM type
                     if (addNumbersToAtomTypes_)
                     {
-                        ffGlobalPtr->second++;
-                        openMMtype += gmx::formatString("_%d", ffGlobalPtr->second);
+                        openMMtype += gmx::formatString("_%d", ++ffGlobalPtr->second);
                         // printf("openMMtype %s counter %d\n", openMMtype.c_str(), ffGlobalPtr->second);
+                    }
+                    else
+                    {
+                        ffGlobalPtr->second++;   
                     }
                     std::string openMMclass = ffType;
                     std::string btype("bondtype");
