@@ -28,7 +28,7 @@
     <Type name="h_s_6" class="h_s" mass="0.1"/>
   </AtomTypes>
   <Residues>
-    <Residue name="InChI=1S/C3H6O/c1-3(2)4/h1-2H3">
+    <Residue name="propan-2-one">
       <Atom name="O_1" type="o2_1" charge="0.887359"/>
       <Atom name="o2_s_1" type="o2_s_1" charge="-1.2"/>
       <Atom name="C_2" type="c2_1" charge="0.896678"/>

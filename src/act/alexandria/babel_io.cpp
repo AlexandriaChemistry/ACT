@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -59,6 +59,7 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/atype_mapping.h"
+#include "act/basics/allmols.h"
 #include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
@@ -242,7 +243,8 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     }
 }
 
-static bool addInchiToFragments(OpenBabel::OBConversion *conv,
+static bool addInchiToFragments(const AlexandriaMols    &amols,
+                                OpenBabel::OBConversion *conv,
                                 OpenBabel::OBMol        *mol,
                                 std::vector<Fragment>   *fragptr)
 {
@@ -295,27 +297,39 @@ static bool addInchiToFragments(OpenBabel::OBConversion *conv,
             }
         }
         auto inchi = conv->WriteString(&fmol, true);
-        fptr->setId(inchi);
+        auto amol  = amols.find(inchi);
+        if (nullptr != amol)
+        {
+            fptr->setId(amol->iupac);
+            fptr->setCharge(amol->charge);
+            fptr->setMass(amol->mass);
+            fptr->setFormula(amol->formula);
+        }
+        else
+        {
+            fptr->setId(inchi);
+        }
     }
     return true;
 }
 
-static bool babel2ACT(const ForceField    *pd,
+static bool babel2ACT(const ForceField     *pd,
                       const std::map<std::string, std::string> &g2a,
-                      OpenBabel::OBMol    *mol,
-                      alexandria::MolProp *mpt,
-                      const char          *molnm,
-                      const char          *iupac,
-                      const char          *conformation,
-                      std::string         *method,
-                      std::string         *basisset,
-                      int                  maxPotential,
-                      int                  nsymm,
-                      const char          *jobType,
-                      double              *qtot,
-                      bool                 addHydrogen,
-                      const char          *g09,
-                      einformat            inputformat)
+                      const AlexandriaMols &amols,
+                      OpenBabel::OBMol     *mol,
+                      alexandria::MolProp  *mpt,
+                      const char           *molnm,
+                      const char           *iupac,
+                      const char           *conformation,
+                      std::string          *method,
+                      std::string          *basisset,
+                      int                   maxPotential,
+                      int                   nsymm,
+                      const char           *jobType,
+                      double               *qtot,
+                      bool                  addHydrogen,
+                      const char           *g09,
+                      einformat             inputformat)
 {
     std::string                formula;
     std::string                attr;
@@ -664,7 +678,7 @@ static bool babel2ACT(const ForceField    *pd,
     }
     // Fragment information will be generated
     mpt->generateFragments(pd, *qtot);
-    addInchiToFragments(conv, mol, mpt->fragmentPtr());
+    addInchiToFragments(amols, conv, mol, mpt->fragmentPtr());
     
     // Dipole
     auto my_dipole = mol->GetData("Dipole Moment");
@@ -868,10 +882,12 @@ bool readBabel(const ForceField    *pd,
     {
         gaffToAlexandria("", &g2a);
     }
+    AlexandriaMols amols;
+    
     for(auto &mol : mols)
     {
         alexandria::MolProp mp;
-        if (babel2ACT(pd, g2a, mol, &mp, molnm, iupac, conformation, method, basisset, 
+        if (babel2ACT(pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
                       maxPotential, nsymm, jobType, qtot, addHydrogen, g09,
                       inputformat))
         {

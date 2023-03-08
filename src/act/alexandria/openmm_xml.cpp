@@ -461,8 +461,20 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;
+            case F_LJ:
+#ifdef USELJ
+                for(size_t j = 0; j < param.size(); j++)
+                {
+                    if (Mutability::Dependent != param[lj_name[j]].mutability())
+                    {
+                        add_xml_double(grandchild3, lj_name[j], param[lj_name[j]].internalValue());
+                    }
+                }
+#endif
+                break;
             default:
-                fprintf(stderr, "Unknown non-bonded force type %d\n", fs.gromacsType());
+                fprintf(stderr, "Unknown non-bonded force type %d %s\n", fs.gromacsType(),
+                        interaction_function[fs.gromacsType()].longname);
             }
             auto ztype = "zetatype";
             if (aType->hasOption(ztype))

@@ -13,7 +13,7 @@
     <Type name="o2_4" class="o2_b" element="O" mass="15.9994"/>
   </AtomTypes>
   <Residues>
-    <Residue name="InChI=1S/H2O4S/c1-5(2,3)4/h(H2,1,2,3,4)/p-2">
+    <Residue name="sulfate">
       <Atom name="S_1" type="s3_1" charge="-0.252747"/>
       <Atom name="O_2" type="o2_1" charge="-0.436811"/>
       <Atom name="O_3" type="o2_2" charge="-0.436808"/>
