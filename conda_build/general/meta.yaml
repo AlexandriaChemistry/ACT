@@ -15,21 +15,23 @@ build:
   number: 0
 
 requirements:
-  # build:
-  #   - {{ compiler('cxx') }}
-  #   - make
-  #   - openmpi
-  #   - graphviz
-  #   - cmake
-  #   - cairo
-  #   - fftw
-  #   - eigen
-  #   - libxml2
-  #   - swig
-  #   - sqlite
-  #   - doxygen
-  # host:
-  #   - python
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - git
+    - make
+    - openmpi
+    - graphviz
+    - cmake
+    - cairo
+    - fftw
+    - eigen
+    - libxml2
+    - swig
+    - sqlite
+    - doxygen
+  host:
+    - python
   run:
     - openmpi
     - matplotlib
