@@ -7,28 +7,28 @@
 <ForceField>
   <AtomTypes>
     <Type name="o2_1" class="o2_b" element="O" mass="15.9994"/>
-    <Type name="c2_2" class="c2_b" element="C" mass="12.0107"/>
-    <Type name="c3_3" class="c3_b" element="C" mass="12.0107"/>
-    <Type name="c3_4" class="c3_b" element="C" mass="12.0107"/>
+    <Type name="c2_1" class="c2_b" element="C" mass="12.0107"/>
+    <Type name="c3_1" class="c3_b" element="C" mass="12.0107"/>
+    <Type name="c3_2" class="c3_b" element="C" mass="12.0107"/>
+    <Type name="h_1" class="h_b" element="H" mass="1.0079"/>
+    <Type name="h_2" class="h_b" element="H" mass="1.0079"/>
+    <Type name="h_3" class="h_b" element="H" mass="1.0079"/>
+    <Type name="h_4" class="h_b" element="H" mass="1.0079"/>
     <Type name="h_5" class="h_b" element="H" mass="1.0079"/>
     <Type name="h_6" class="h_b" element="H" mass="1.0079"/>
-    <Type name="h_7" class="h_b" element="H" mass="1.0079"/>
-    <Type name="h_8" class="h_b" element="H" mass="1.0079"/>
-    <Type name="h_9" class="h_b" element="H" mass="1.0079"/>
-    <Type name="h_10" class="h_b" element="H" mass="1.0079"/>
   </AtomTypes>
   <Residues>
-    <Residue name="UNL">
+    <Residue name="propan-2-one">
       <Atom name="O_1" type="o2_1" charge="-0.0636015"/>
-      <Atom name="C_2" type="c2_2" charge="-0.0916527"/>
-      <Atom name="C_3" type="c3_3" charge="-0.193205"/>
-      <Atom name="C_4" type="c3_4" charge="-0.198185"/>
-      <Atom name="H_5" type="h_5" charge="0.0933683"/>
-      <Atom name="H_6" type="h_6" charge="0.0868769"/>
-      <Atom name="H_7" type="h_7" charge="0.0895003"/>
-      <Atom name="H_8" type="h_8" charge="0.0994146"/>
-      <Atom name="H_9" type="h_9" charge="0.0899749"/>
-      <Atom name="H_10" type="h_10" charge="0.0875093"/>
+      <Atom name="C_2" type="c2_1" charge="-0.0916527"/>
+      <Atom name="C_3" type="c3_1" charge="-0.193205"/>
+      <Atom name="C_4" type="c3_2" charge="-0.198185"/>
+      <Atom name="H_5" type="h_1" charge="0.0933683"/>
+      <Atom name="H_6" type="h_2" charge="0.0868769"/>
+      <Atom name="H_7" type="h_3" charge="0.0895003"/>
+      <Atom name="H_8" type="h_4" charge="0.0994146"/>
+      <Atom name="H_9" type="h_5" charge="0.0899749"/>
+      <Atom name="H_10" type="h_6" charge="0.0875093"/>
       <Bond atomName1="C_2" atomName2="O_1"/>
       <Bond atomName1="C_3" atomName2="H_5"/>
       <Bond atomName1="C_3" atomName2="C_2"/>
@@ -41,187 +41,53 @@
     </Residue>
   </Residues>
   <HarmonicBondForce energy="0">
-    <Bond class1="c2_b" class2="c2_b"/>
-    <Bond class1="c2_b" class2="o2_b"/>
-    <Bond class1="c2_b" class2="c2_b"/>
-    <Bond class1="c2_b" class2="o2_b"/>
-    <Bond class1="c2_b" class2="c2_b"/>
-    <Bond class1="c2_b" class2="c3_b"/>
-    <Bond class1="c2_b" class2="h_b"/>
-    <Bond class1="c2_b" class2="o2_b"/>
-    <Bond class1="c3_b" class2="c3_b"/>
-    <Bond class1="c3_b" class2="h_b"/>
-    <Bond class1="c3_b" class2="o2_b"/>
-    <Bond class1="h_b" class2="h_b"/>
-    <Bond class1="o2_b" class2="o2_b"/>
+    <Bond class1="c2_b" class2="o2_b" k="300000" length="0.1205" De="0"/>
+    <Bond class1="c3_b" class2="h_b" k="230000" length="0.1091" De="0"/>
+    <Bond class1="c2_b" class2="c3_b" k="300000" length="0.1509" De="0"/>
   </HarmonicBondForce>
   <HarmonicAngleForce>
-    <Angle class1="c2_b" class2="c2_b" class3="c2_b" angle="2.0909" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.03505" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.13279" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c2_b" angle="2.09789" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c3_b" angle="2.11708" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="h_b" angle="2.09789" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.08043" k="300"/>
-    <Angle class1="c2_b" class2="o2_b" class3="c2_b" angle="1.85528" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c2_b" angle="2.10661" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c3_b" angle="2.11883" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="h_b" angle="2.11359" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.14152" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.06298" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="2.17468" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c2_b" angle="1.95651" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="c3_b" angle="1.97397" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="h_b" angle="2.05076" k="300"/>
-    <Angle class1="c2_b" class2="c2_b" class3="o2_b" angle="1.95651" k="300"/>
-    <Angle class1="c2_b" class2="c3_b" class3="c2_b" angle="1.77151" k="300"/>
-    <Angle class1="c2_b" class2="c3_b" class3="c3_b" angle="1.92335" k="300"/>
-    <Angle class1="c2_b" class2="c3_b" class3="h_b" angle="1.92684" k="300"/>
-    <Angle class1="c2_b" class2="c3_b" class3="o2_b" angle="1.8867" k="300"/>
-    <Angle class1="c2_b" class2="o2_b" class3="c2_b" angle="2.00887" k="300"/>
-    <Angle class1="c2_b" class2="o2_b" class3="c3_b" angle="2.02109" k="300"/>
-    <Angle class1="c3_b" class2="c2_b" class3="o2_b" angle="2.04204" k="300"/>
-    <Angle class1="c3_b" class2="c2_b" class3="o2_b" angle="2.17293" k="300"/>
-    <Angle class1="c3_b" class2="c2_b" class3="c3_b" angle="2.01062" k="300"/>
-    <Angle class1="c3_b" class2="c2_b" class3="h_b" angle="2.056" k="300"/>
-    <Angle class1="c3_b" class2="c2_b" class3="o2_b" angle="1.93557" k="300"/>
-    <Angle class1="c3_b" class2="c3_b" class3="c3_b" angle="1.9251" k="300"/>
-    <Angle class1="c3_b" class2="c3_b" class3="h_b" angle="1.92335" k="300"/>
-    <Angle class1="c3_b" class2="c3_b" class3="o2_b" angle="1.87099" k="300"/>
-    <Angle class1="h_b" class2="c2_b" class3="o2_b" angle="2.01935" k="300"/>
-    <Angle class1="h_b" class2="c2_b" class3="o2_b" angle="2.11883" k="300"/>
-    <Angle class1="h_b" class2="c2_b" class3="h_b" angle="2.04378" k="300"/>
-    <Angle class1="h_b" class2="c2_b" class3="o2_b" angle="1.96" k="300"/>
-    <Angle class1="h_b" class2="c3_b" class3="h_b" angle="1.87972" k="300"/>
-    <Angle class1="h_b" class2="c3_b" class3="o2_b" angle="1.89717" k="300"/>
-    <Angle class1="o2_b" class2="c2_b" class3="o2_b" angle="2.1485" k="300"/>
-    <Angle class1="o2_b" class2="c2_b" class3="o2_b" angle="1.91114" k="300"/>
+    <Angle class1="c3_b" class2="c2_b" class3="o2_b" k="300" angle="2.17293"/>
+    <Angle class1="c2_b" class2="c3_b" class3="h_b" k="300" angle="1.92684"/>
+    <Angle class1="h_b" class2="c3_b" class3="h_b" k="300" angle="1.87972"/>
+    <Angle class1="c3_b" class2="c2_b" class3="c3_b" k="300" angle="2.01062"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0">
-    <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="a"/>
-    <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="klin"/>
-    <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="kublin"/>
-    <PerAngleParameter class1="c2_b" class2="c2_b" class3="c2_b" name="r13lin"/>
-  </CustomAngleForce>
+  <CustomAngleForce/>
   <RBTorsionForce>
-    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" kp="5" mult="3" phi0="0" c4="0" c5="0" c6="0"/>
-    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" kp="5" mult="3" phi0="0" c4="0" c5="0" c6="0"/>
-    <Proper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" kp="5" mult="3" phi0="0" c4="0" c5="0" c6="0"/>
-    <Proper class1="h_b" class2="c2_b" class3="c2_b" class4="o2_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="h_b" class2="c2_b" class3="c2_b" class4="o2_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="h_b" class2="c2_b" class3="c2_b" class4="h_b" kp="5" mult="3" phi0="180" c4="0" c5="0" c6="0"/>
-    <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" kp="5" mult="3" phi0="120" c4="0" c5="0" c6="0"/>
+    <Proper class1="h_b" class2="c3_b" class3="c2_b" class4="o2_b" c0="2.0944" c1="5" c2="3"/>
+    <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" c0="0" c1="5" c2="3"/>
   </RBTorsionForce>
   <PeriodicTorsionForce>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="h_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="h_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="c3_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c2_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="o2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="o2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="c3_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="h_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="o2_b" class4="c2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="o2_b" class4="c3_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="o2_b" class4="h_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c2_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="h_b" class4="o2_b" kimp="1" phi="0"/>
-    <Improper class1="c2_b" class2="o2_b" class3="o2_b" class4="o2_b" kimp="1" phi="0"/>
+    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce bondCutoff="3">
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="beta"/>
-    <Atom type="o2_1" vdW="1" epsilon="0.75" sigma="0.2" charge="-0.0636015" beta="13"/>
-    <Atom type="c2_2" vdW="1" epsilon="0.55" sigma="0.2" charge="-0.0916527" beta="12"/>
-    <Atom type="c3_3" vdW="1" epsilon="0.55" sigma="0.2" charge="-0.193205" beta="12"/>
-    <Atom type="c3_4" vdW="1" epsilon="0.55" sigma="0.2" charge="-0.198185" beta="12"/>
-    <Atom type="h_5" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0933683" beta="13"/>
-    <Atom type="h_6" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0868769" beta="13"/>
-    <Atom type="h_7" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0895003" beta="13"/>
-    <Atom type="h_8" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0994146" beta="13"/>
-    <Atom type="h_9" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0899749" beta="13"/>
-    <Atom type="h_10" vdW="1" epsilon="0.065" sigma="0.005" charge="0.0875093" beta="13"/>
+    <Atom type="c2_1" vdW="1" charge="0" zeta="12"/>
+    <Atom type="c3_1" vdW="1" charge="0" zeta="12"/>
+    <Atom type="c3_2" vdW="1" charge="0" zeta="12"/>
+    <Atom type="h_1" vdW="1" charge="0" zeta="13"/>
+    <Atom type="h_2" vdW="1" charge="0" zeta="13"/>
+    <Atom type="h_3" vdW="1" charge="0" zeta="13"/>
+    <Atom type="h_4" vdW="1" charge="0" zeta="13"/>
+    <Atom type="h_5" vdW="1" charge="0" zeta="13"/>
+    <Atom type="h_6" vdW="1" charge="0" zeta="13"/>
+    <Atom type="o2_1" vdW="1" charge="0" zeta="13"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
-    <Atom type="o2_1" charge="-0.0636015" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c2_2" charge="-0.0916527" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c3_3" charge="-0.193205" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c3_4" charge="-0.198185" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_5" charge="0.0933683" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_6" charge="0.0868769" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_7" charge="0.0895003" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_8" charge="0.0994146" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_9" charge="0.0899749" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_10" charge="0.0875093" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c3_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c3_2" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_2" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_3" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_4" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_5" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_6" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_1" sigma="0.3" epsilon="0.05"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>

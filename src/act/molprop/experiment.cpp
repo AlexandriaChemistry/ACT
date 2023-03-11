@@ -225,7 +225,7 @@ int Experiment::Merge(const Experiment *src)
         cai.forces(&x, &y, &z);
         caa.setForceUnit(cai.forceUnit());
         caa.setForces(x, y, z);
-        caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
+        caa.setResidue(cai.residueName(), cai.residueNumber());
         for (const auto &aci : cai.chargesConst())
         {
             caa.AddCharge(aci.first, aci.second);

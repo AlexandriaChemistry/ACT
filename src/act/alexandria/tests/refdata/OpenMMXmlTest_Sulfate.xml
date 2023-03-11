@@ -7,18 +7,18 @@
 <ForceField>
   <AtomTypes>
     <Type name="s3_1" class="s3_b" element="S" mass="32.065"/>
+    <Type name="o2_1" class="o2_b" element="O" mass="15.9994"/>
     <Type name="o2_2" class="o2_b" element="O" mass="15.9994"/>
     <Type name="o2_3" class="o2_b" element="O" mass="15.9994"/>
     <Type name="o2_4" class="o2_b" element="O" mass="15.9994"/>
-    <Type name="o2_5" class="o2_b" element="O" mass="15.9994"/>
   </AtomTypes>
   <Residues>
-    <Residue name="UNL">
+    <Residue name="sulfate">
       <Atom name="S_1" type="s3_1" charge="-0.252747"/>
-      <Atom name="O_2" type="o2_2" charge="-0.436811"/>
-      <Atom name="O_3" type="o2_3" charge="-0.436808"/>
-      <Atom name="O_4" type="o2_4" charge="-0.43682"/>
-      <Atom name="O_5" type="o2_5" charge="-0.436814"/>
+      <Atom name="O_2" type="o2_1" charge="-0.436811"/>
+      <Atom name="O_3" type="o2_2" charge="-0.436808"/>
+      <Atom name="O_4" type="o2_3" charge="-0.43682"/>
+      <Atom name="O_5" type="o2_4" charge="-0.436814"/>
       <Bond atomName1="S_1" atomName2="O_4"/>
       <Bond atomName1="S_1" atomName2="O_3"/>
       <Bond atomName1="O_2" atomName2="S_1"/>
@@ -26,41 +26,33 @@
     </Residue>
   </Residues>
   <HarmonicBondForce energy="0">
-    <Bond class1="o2_b" class2="s3_b"/>
-    <Bond class1="o2_b" class2="o2_b"/>
-    <Bond class1="o2_b" class2="s3_b"/>
-    <Bond class1="o2_b" class2="s3_b"/>
-    <Bond class1="s3_b" class2="s3_b"/>
+    <Bond class1="o2_b" class2="s3_b" k="300000" length="0.1399" De="0"/>
   </HarmonicBondForce>
   <HarmonicAngleForce>
-    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="1.99491" k="300"/>
-    <Angle class1="o2_b" class2="s3_b" class3="o2_b" angle="2.10836" k="300"/>
-    <Angle class1="o2_b" class2="s3_b" class3="s3_b" angle="2.01062" k="300"/>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.99491"/>
   </HarmonicAngleForce>
-  <CustomAngleForce energy="0"/>
+  <CustomAngleForce/>
   <RBTorsionForce/>
-  <PeriodicTorsionForce>
-    <Improper class1="o2_b" class2="o2_b" class3="o2_b" class4="s3_b" kimp="1" phi="0"/>
-  </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <PeriodicTorsionForce/>
+  <CustomNonbondedForce bondCutoff="3">
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="beta"/>
-    <Atom type="s3_1" vdW="1" epsilon="1.05" sigma="0.375" charge="-0.252747" beta="13"/>
-    <Atom type="o2_2" vdW="1" epsilon="0.75" sigma="0.2" charge="-0.436811" beta="13"/>
-    <Atom type="o2_3" vdW="1" epsilon="0.75" sigma="0.2" charge="-0.436808" beta="13"/>
-    <Atom type="o2_4" vdW="1" epsilon="0.75" sigma="0.2" charge="-0.43682" beta="13"/>
-    <Atom type="o2_5" vdW="1" epsilon="0.75" sigma="0.2" charge="-0.436814" beta="13"/>
+    <Atom type="o2_1" vdW="1" charge="0" zeta="13"/>
+    <Atom type="o2_2" vdW="1" charge="0" zeta="13"/>
+    <Atom type="o2_3" vdW="1" charge="0" zeta="13"/>
+    <Atom type="o2_4" vdW="1" charge="0" zeta="13"/>
+    <Atom type="s3_1" vdW="1" charge="0" zeta="13"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
-    <Atom type="s3_1" charge="-0.252747" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_2" charge="-0.436811" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_3" charge="-0.436808" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_4" charge="-0.43682" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_5" charge="-0.436814" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_2" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_3" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_4" sigma="0.3" epsilon="0.05"/>
+    <Atom type="s3_1" sigma="0.3" epsilon="0.05"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>

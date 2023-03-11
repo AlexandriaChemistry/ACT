@@ -8,7 +8,7 @@ Be|2|B3LYP/aug-cc-pvtz|E0|0|-13.653492|1|Hartree|Unknown2023a||
 Br|0|B3LYP/aug-cc-pvtz|E0|0|-2574.187957|2|Hartree|Unknown2023a||
 Br|-1|B3LYP/aug-cc-pvtz|E0|0|-2574.318357|1|Hartree|Unknown2023a||
 C|0|B3LYP/aug-cc-pvtz|E0|0|-37.859062|3|Hartree|Unknown2023a||
-Ca|0|B3LYP/def2-TZVPP|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|0|B3LYP/aug-cc-pvtz|E0|0|-677.576217|1|Hartree|Unknown2023a||
 Ca|2|B3LYP/def2-TZVPP|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP/aug-cc-pvtz|E0|0|-460.175331|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP/aug-cc-pvtz|E0|0|-460.310517|1|Hartree|Unknown2023a||
@@ -22,7 +22,6 @@ I|0|B3LYP/aug-cc-pvtz-pp|E0|0|-295.781756|2|Hartree|Unknown2023a||
 I|-1|B3LYP/aug-cc-pvtz-pp|E0|0|-295.904037|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-TZVPP|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-TZVPP|E0|0|-599.760267|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/aug-cc-pvtz|E0|0|-2753.837029|1|Hartree|Unknown2023a||
 Li|1|B3LYP/aug-cc-pvtz|E0|0|-7.285405|1|Hartree|Unknown2023a||
 Li|0|B3LYP/aug-cc-pvtz|E0|0|-7.492058|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/aug-cc-pvtz|E0|0|-200.097753|1|Hartree|Unknown2023a||
@@ -60,7 +59,6 @@ I|0|B3LYP/aug-cc-pvtz-pp-fc|E0|0|-295.781756|2|Hartree|Unknown2023a||
 I|-1|B3LYP/aug-cc-pvtz-pp-fc|E0|0|-295.904037|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-TZVPP-fc|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-TZVPP-fc|E0|0|-599.760267|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/aug-cc-pvtz-fc|E0|0|-2753.837029|1|Hartree|Unknown2023a||
 Li|1|B3LYP/aug-cc-pvtz-fc|E0|0|-7.285405|1|Hartree|Unknown2023a||
 Li|0|B3LYP/aug-cc-pvtz-fc|E0|0|-7.492058|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/aug-cc-pvtz-fc|E0|0|-200.097753|1|Hartree|Unknown2023a||
@@ -86,7 +84,7 @@ Be|2|B3LYP/aug-cc-pvqz|E0|0|-13.653786|1|Hartree|Unknown2023a||
 Br|0|B3LYP/aug-cc-pvqz|E0|0|-2574.190677|2|Hartree|Unknown2023a||
 Br|-1|B3LYP/aug-cc-pvqz|E0|0|-2574.320864|1|Hartree|Unknown2023a||
 C|0|B3LYP/aug-cc-pvqz|E0|0|-37.860786|3|Hartree|Unknown2023a||
-Ca|0|B3LYP/def2-QZVPP|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|0|B3LYP/aug-cc-pvqz|E0|0|-677.590197|1|Hartree|Unknown2023a||
 Ca|2|B3LYP/def2-QZVPP|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP/aug-cc-pvqz|E0|0|-460.178688|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP/aug-cc-pvqz|E0|0|-460.313696|1|Hartree|Unknown2023a||
@@ -100,7 +98,7 @@ I|0|B3LYP/aug-cc-pvqz-pp|E0|0|-295.782842|2|Hartree|Unknown2023a||
 I|-1|B3LYP/aug-cc-pvqz-pp|E0|0|-295.905265|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-QZVPP|E0|0|-599.938721|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-QZVPP|E0|0|-599.773339|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/aug-cc-pvqz|E0|0|-2753.839758|1|Hartree|Unknown2023a||
+Kr|0|B3LYP/aug-cc-pvqz|E0|0|-463.650883|1|Hartree|Unknown2023a||
 Li|1|B3LYP/aug-cc-pvqz|E0|0|-7.285521|1|Hartree|Unknown2023a||
 Li|0|B3LYP/aug-cc-pvqz|E0|0|-7.492239|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/aug-cc-pvqz|E0|0|-200.098941|1|Hartree|Unknown2023a||
@@ -117,6 +115,7 @@ Rb|1|B3LYP/def2-QZVPP|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP/aug-cc-pvqz|E0|0|-398.142275|3|Hartree|Unknown2023a||
 S|-2|B3LYP/aug-cc-pvqz|E0|0|-398.082148|1|Hartree|Unknown2023a||
 Si|0|B3LYP/aug-cc-pvqz|E0|0|-289.399184|3|Hartree|Unknown2023a||
+Xe|0|B3LYP/aug-cc-pvqz|E0|0|-329.467558|1|Hartree|Unknown2023a||
 Al|0|B3LYP/aug-cc-pvqz-fc|E0|0|-242.393323|2|Hartree|Unknown2023a||
 Al|3|B3LYP/aug-cc-pvqz-fc|E0|0|-240.409736|1|Hartree|Unknown2023a||
 Ar|0|B3LYP/aug-cc-pvqz-fc|E0|0|-527.563687|1|Hartree|Unknown2023a||
@@ -138,7 +137,6 @@ I|0|B3LYP/aug-cc-pvqz-pp-fc|E0|0|-295.782842|2|Hartree|Unknown2023a||
 I|-1|B3LYP/aug-cc-pvqz-pp-fc|E0|0|-295.905265|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-QZVPP-fc|E0|0|-599.938721|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-QZVPP-fc|E0|0|-599.773339|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/aug-cc-pvqz-fc|E0|0|-2753.839758|1|Hartree|Unknown2023a||
 Li|1|B3LYP/aug-cc-pvqz-fc|E0|0|-7.285521|1|Hartree|Unknown2023a||
 Li|0|B3LYP/aug-cc-pvqz-fc|E0|0|-7.492239|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/aug-cc-pvqz-fc|E0|0|-200.098941|1|Hartree|Unknown2023a||
@@ -164,6 +162,8 @@ Be|2|B3LYP/def2-TZVPP|E0|0|-13.653538|1|Hartree|Unknown2023a||
 Br|0|B3LYP/def2-TZVPP|E0|0|-2574.140976|2|Hartree|Unknown2023a||
 Br|-1|B3LYP/def2-TZVPP|E0|0|-2574.264312|1|Hartree|Unknown2023a||
 C|0|B3LYP/def2-TZVPP|E0|0|-37.859482|3|Hartree|Unknown2023a||
+Ca|0|B3LYP/def2-TZVPP|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|2|B3LYP/def2-TZVPP|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP/def2-TZVPP|E0|0|-460.167025|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP/def2-TZVPP|E0|0|-460.288912|1|Hartree|Unknown2023a||
 Cs|0|B3LYP/def2-TZVPP|E0|0|-20.149585|2|Hartree|Unknown2023a||
@@ -193,6 +193,7 @@ Rb|1|B3LYP/def2-TZVPP|E0|0|-23.939627|1|Hartree|Unknown2023a||
 S|0|B3LYP/def2-TZVPP|E0|0|-398.132439|3|Hartree|Unknown2023a||
 S|-2|B3LYP/def2-TZVPP|E0|0|-397.983749|1|Hartree|Unknown2023a||
 Si|0|B3LYP/def2-TZVPP|E0|0|-289.392105|3|Hartree|Unknown2023a||
+Xe|0|B3LYP/def2-TZVPP|E0|0|-329.466565|1|Hartree|Unknown2023a||
 Al|0|B3LYP/def2-TZVPP-fc|E0|0|-242.387616|2|Hartree|Unknown2023a||
 Al|3|B3LYP/def2-TZVPP-fc|E0|0|-240.406080|1|Hartree|Unknown2023a||
 Ar|0|B3LYP/def2-TZVPP-fc|E0|0|-527.549983|1|Hartree|Unknown2023a||
@@ -214,7 +215,6 @@ I|0|B3LYP/def2-TZVPP-fc|E0|0|-297.778464|2|Hartree|Unknown2023a||
 I|-1|B3LYP/def2-TZVPP-fc|E0|0|-297.897049|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-TZVPP-fc|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-TZVPP-fc|E0|0|-599.760267|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/def2-TZVPP-fc|E0|0|-2753.787744|1|Hartree|Unknown2023a||
 Li|1|B3LYP/def2-TZVPP-fc|E0|0|-7.286052|1|Hartree|Unknown2023a||
 Li|0|B3LYP/def2-TZVPP-fc|E0|0|-7.492806|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/def2-TZVPP-fc|E0|0|-200.091546|1|Hartree|Unknown2023a||
@@ -240,6 +240,8 @@ Be|2|B3LYP/def2-QZVPP|E0|0|-13.654236|1|Hartree|Unknown2023a||
 Br|0|B3LYP/def2-QZVPP|E0|0|-2574.194924|2|Hartree|Unknown2023a||
 Br|-1|B3LYP/def2-QZVPP|E0|0|-2574.322056|1|Hartree|Unknown2023a||
 C|0|B3LYP/def2-QZVPP|E0|0|-37.861538|3|Hartree|Unknown2023a||
+Ca|0|B3LYP/def2-QZVPP|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|2|B3LYP/def2-QZVPP|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP/def2-QZVPP|E0|0|-460.182019|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP/def2-QZVPP|E0|0|-460.313421|1|Hartree|Unknown2023a||
 Cs|0|B3LYP/def2-QZVPP|E0|0|-20.149945|2|Hartree|Unknown2023a||
@@ -269,6 +271,7 @@ Rb|1|B3LYP/def2-QZVPP|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP/def2-QZVPP|E0|0|-398.145856|3|Hartree|Unknown2023a||
 S|-2|B3LYP/def2-QZVPP|E0|0|-398.040095|1|Hartree|Unknown2023a||
 Si|0|B3LYP/def2-QZVPP|E0|0|-289.402380|3|Hartree|Unknown2023a||
+Xe|0|B3LYP/def2-QZVPP|E0|0|-329.467515|1|Hartree|Unknown2023a||
 Al|0|B3LYP/def2-QZVPP-fc|E0|0|-242.394820|2|Hartree|Unknown2023a||
 Al|3|B3LYP/def2-QZVPP-fc|E0|0|-240.412084|1|Hartree|Unknown2023a||
 Ar|0|B3LYP/def2-QZVPP-fc|E0|0|-527.566803|1|Hartree|Unknown2023a||
@@ -290,7 +293,6 @@ I|0|B3LYP/def2-QZVPP-fc|E0|0|-297.779502|2|Hartree|Unknown2023a||
 I|-1|B3LYP/def2-QZVPP-fc|E0|0|-297.899715|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-QZVPP-fc|E0|0|-599.938721|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-QZVPP-fc|E0|0|-599.773339|1|Hartree|Unknown2023a||
-Kr|0|B3LYP/def2-QZVPP-fc|E0|0|-2753.843887|1|Hartree|Unknown2023a||
 Li|1|B3LYP/def2-QZVPP-fc|E0|0|-7.286112|1|Hartree|Unknown2023a||
 Li|0|B3LYP/def2-QZVPP-fc|E0|0|-7.492905|2|Hartree|Unknown2023a||
 Mg|0|B3LYP/def2-QZVPP-fc|E0|0|-200.099924|1|Hartree|Unknown2023a||
@@ -316,7 +318,7 @@ Be|2|WB97X/aug-cc-pvtz|E0|0|-13.677496|1|Hartree|Unknown2023a||
 Br|0|WB97X/aug-cc-pvtz|E0|0|-2574.186555|2|Hartree|Unknown2023a||
 Br|-1|WB97X/aug-cc-pvtz|E0|0|-2574.312897|1|Hartree|Unknown2023a||
 C|0|WB97X/aug-cc-pvtz|E0|0|-37.845533|3|Hartree|Unknown2023a||
-Ca|0|WB97X/def2-TZVPP|E0|0|-677.556152|1|Hartree|Unknown2023a||
+Ca|0|WB97X/aug-cc-pvtz|E0|0|-677.556152|1|Hartree|Unknown2023a||
 Ca|2|WB97X/def2-TZVPP|E0|0|-676.910398|1|Hartree|Unknown2023a||
 Cl|0|WB97X/aug-cc-pvtz|E0|0|-460.154843|2|Hartree|Unknown2023a||
 Cl|-1|WB97X/aug-cc-pvtz|E0|0|-460.288026|1|Hartree|Unknown2023a||
@@ -330,7 +332,6 @@ I|0|WB97X/aug-cc-pvtz-pp|E0|0|-295.727211|2|Hartree|Unknown2023a||
 I|-1|WB97X/aug-cc-pvtz-pp|E0|0|-295.845293|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-TZVPP|E0|0|-599.901965|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-TZVPP|E0|0|-599.754196|1|Hartree|Unknown2023a||
-Kr|0|WB97X/aug-cc-pvtz|E0|0|-2753.838133|1|Hartree|Unknown2023a||
 Li|1|WB97X/aug-cc-pvtz|E0|0|-7.286471|1|Hartree|Unknown2023a||
 Li|0|WB97X/aug-cc-pvtz|E0|0|-7.481318|2|Hartree|Unknown2023a||
 Mg|0|WB97X/aug-cc-pvtz|E0|0|-200.062355|1|Hartree|Unknown2023a||
@@ -368,7 +369,6 @@ I|0|WB97X/aug-cc-pvtz-pp-fc|E0|0|-295.727211|2|Hartree|Unknown2023a||
 I|-1|WB97X/aug-cc-pvtz-pp-fc|E0|0|-295.845293|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-TZVPP-fc|E0|0|-599.901965|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-TZVPP-fc|E0|0|-599.754196|1|Hartree|Unknown2023a||
-Kr|0|WB97X/aug-cc-pvtz-fc|E0|0|-2753.838133|1|Hartree|Unknown2023a||
 Li|1|WB97X/aug-cc-pvtz-fc|E0|0|-7.286471|1|Hartree|Unknown2023a||
 Li|0|WB97X/aug-cc-pvtz-fc|E0|0|-7.481318|2|Hartree|Unknown2023a||
 Mg|0|WB97X/aug-cc-pvtz-fc|E0|0|-200.062355|1|Hartree|Unknown2023a||
@@ -394,7 +394,7 @@ Be|2|WB97X/aug-cc-pvqz|E0|0|-13.677776|1|Hartree|Unknown2023a||
 Br|0|WB97X/aug-cc-pvqz|E0|0|-2574.189228|2|Hartree|Unknown2023a||
 Br|-1|WB97X/aug-cc-pvqz|E0|0|-2574.315352|1|Hartree|Unknown2023a||
 C|0|WB97X/aug-cc-pvqz|E0|0|-37.847431|3|Hartree|Unknown2023a||
-Ca|0|WB97X/def2-QZVPP|E0|0|-677.569717|1|Hartree|Unknown2023a||
+Ca|0|WB97X/aug-cc-pvqz|E0|0|-677.569717|1|Hartree|Unknown2023a||
 Ca|2|WB97X/def2-QZVPP|E0|0|-676.923702|1|Hartree|Unknown2023a||
 Cl|0|WB97X/aug-cc-pvqz|E0|0|-460.158220|2|Hartree|Unknown2023a||
 Cl|-1|WB97X/aug-cc-pvqz|E0|0|-460.291287|1|Hartree|Unknown2023a||
@@ -408,7 +408,7 @@ I|0|WB97X/aug-cc-pvqz-pp|E0|0|-295.728396|2|Hartree|Unknown2023a||
 I|-1|WB97X/aug-cc-pvqz-pp|E0|0|-295.846651|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-QZVPP|E0|0|-599.914604|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-QZVPP|E0|0|-599.766900|1|Hartree|Unknown2023a||
-Kr|0|WB97X/aug-cc-pvqz|E0|0|-2753.840707|1|Hartree|Unknown2023a||
+Kr|0|WB97X/aug-cc-pvqz|E0|0|-463.635990|1|Hartree|Unknown2023a||
 Li|1|WB97X/aug-cc-pvqz|E0|0|-7.286512|1|Hartree|Unknown2023a||
 Li|0|WB97X/aug-cc-pvqz|E0|0|-7.481398|2|Hartree|Unknown2023a||
 Mg|0|WB97X/aug-cc-pvqz|E0|0|-200.063585|1|Hartree|Unknown2023a||
@@ -425,6 +425,7 @@ Rb|1|WB97X/def2-QZVPP|E0|0|-23.935383|1|Hartree|Unknown2023a||
 S|0|WB97X/aug-cc-pvqz|E0|0|-398.117908|3|Hartree|Unknown2023a||
 S|-2|WB97X/aug-cc-pvqz|E0|0|-398.047205|1|Hartree|Unknown2023a||
 Si|0|WB97X/aug-cc-pvqz|E0|0|-289.366628|3|Hartree|Unknown2023a||
+Xe|0|WB97X/aug-cc-pvqz|E0|0|-329.412413|1|Hartree|Unknown2023a||
 Al|0|WB97X/aug-cc-pvqz-fc|E0|0|-242.357372|2|Hartree|Unknown2023a||
 Al|3|WB97X/aug-cc-pvqz-fc|E0|0|-240.428267|1|Hartree|Unknown2023a||
 Ar|0|WB97X/aug-cc-pvqz-fc|E0|0|-527.548586|1|Hartree|Unknown2023a||
@@ -446,7 +447,6 @@ I|0|WB97X/aug-cc-pvqz-pp-fc|E0|0|-295.728396|2|Hartree|Unknown2023a||
 I|-1|WB97X/aug-cc-pvqz-pp-fc|E0|0|-295.846651|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-QZVPP-fc|E0|0|-599.914604|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-QZVPP-fc|E0|0|-599.766900|1|Hartree|Unknown2023a||
-Kr|0|WB97X/aug-cc-pvqz-fc|E0|0|-2753.840707|1|Hartree|Unknown2023a||
 Li|1|WB97X/aug-cc-pvqz-fc|E0|0|-7.286512|1|Hartree|Unknown2023a||
 Li|0|WB97X/aug-cc-pvqz-fc|E0|0|-7.481398|2|Hartree|Unknown2023a||
 Mg|0|WB97X/aug-cc-pvqz-fc|E0|0|-200.063585|1|Hartree|Unknown2023a||
@@ -472,6 +472,8 @@ Be|2|WB97X/def2-TZVPP|E0|0|-13.677516|1|Hartree|Unknown2023a||
 Br|0|WB97X/def2-TZVPP|E0|0|-2574.140117|2|Hartree|Unknown2023a||
 Br|-1|WB97X/def2-TZVPP|E0|0|-2574.260188|1|Hartree|Unknown2023a||
 C|0|WB97X/def2-TZVPP|E0|0|-37.845984|3|Hartree|Unknown2023a||
+Ca|0|WB97X/def2-TZVPP|E0|0|-677.556152|1|Hartree|Unknown2023a||
+Ca|2|WB97X/def2-TZVPP|E0|0|-676.910398|1|Hartree|Unknown2023a||
 Cl|0|WB97X/def2-TZVPP|E0|0|-460.146668|2|Hartree|Unknown2023a||
 Cl|-1|WB97X/def2-TZVPP|E0|0|-460.268107|1|Hartree|Unknown2023a||
 Cs|0|WB97X/def2-TZVPP|E0|0|-20.131775|2|Hartree|Unknown2023a||
@@ -501,6 +503,7 @@ Rb|1|WB97X/def2-TZVPP|E0|0|-23.935357|1|Hartree|Unknown2023a||
 S|0|WB97X/def2-TZVPP|E0|0|-398.107854|3|Hartree|Unknown2023a||
 S|-2|WB97X/def2-TZVPP|E0|0|-397.955153|1|Hartree|Unknown2023a||
 Si|0|WB97X/def2-TZVPP|E0|0|-289.359203|3|Hartree|Unknown2023a||
+Xe|0|WB97X/def2-TZVPP|E0|0|-329.411389|1|Hartree|Unknown2023a||
 Al|0|WB97X/def2-TZVPP-fc|E0|0|-242.351273|2|Hartree|Unknown2023a||
 Al|3|WB97X/def2-TZVPP-fc|E0|0|-240.423881|1|Hartree|Unknown2023a||
 Ar|0|WB97X/def2-TZVPP-fc|E0|0|-527.535029|1|Hartree|Unknown2023a||
@@ -522,7 +525,6 @@ I|0|WB97X/def2-TZVPP-fc|E0|0|-297.721173|2|Hartree|Unknown2023a||
 I|-1|WB97X/def2-TZVPP-fc|E0|0|-297.836853|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-TZVPP-fc|E0|0|-599.901965|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-TZVPP-fc|E0|0|-599.754196|1|Hartree|Unknown2023a||
-Kr|0|WB97X/def2-TZVPP-fc|E0|0|-2753.789643|1|Hartree|Unknown2023a||
 Li|1|WB97X/def2-TZVPP-fc|E0|0|-7.286690|1|Hartree|Unknown2023a||
 Li|0|WB97X/def2-TZVPP-fc|E0|0|-7.411344|2|Hartree|Unknown2023a||
 Mg|0|WB97X/def2-TZVPP-fc|E0|0|-200.056380|1|Hartree|Unknown2023a||
@@ -548,6 +550,8 @@ Be|2|WB97X/def2-QZVPP|E0|0|-13.678062|1|Hartree|Unknown2023a||
 Br|0|WB97X/def2-QZVPP|E0|0|-2574.193034|2|Hartree|Unknown2023a||
 Br|-1|WB97X/def2-QZVPP|E0|0|-2574.316901|1|Hartree|Unknown2023a||
 C|0|WB97X/def2-QZVPP|E0|0|-37.847988|3|Hartree|Unknown2023a||
+Ca|0|WB97X/def2-QZVPP|E0|0|-677.569717|1|Hartree|Unknown2023a||
+Ca|2|WB97X/def2-QZVPP|E0|0|-676.923702|1|Hartree|Unknown2023a||
 Cl|0|WB97X/def2-QZVPP|E0|0|-460.160583|2|Hartree|Unknown2023a||
 Cl|-1|WB97X/def2-QZVPP|E0|0|-460.290959|1|Hartree|Unknown2023a||
 Cs|0|WB97X/def2-QZVPP|E0|0|-20.132167|2|Hartree|Unknown2023a||
@@ -577,6 +581,7 @@ Rb|1|WB97X/def2-QZVPP|E0|0|-23.935383|1|Hartree|Unknown2023a||
 S|0|WB97X/def2-QZVPP|E0|0|-398.120341|3|Hartree|Unknown2023a||
 S|-2|WB97X/def2-QZVPP|E0|0|-398.009593|1|Hartree|Unknown2023a||
 Si|0|WB97X/def2-QZVPP|E0|0|-289.369168|3|Hartree|Unknown2023a||
+Xe|0|WB97X/def2-QZVPP|E0|0|-329.412447|1|Hartree|Unknown2023a||
 Al|0|WB97X/def2-QZVPP-fc|E0|0|-242.358835|2|Hartree|Unknown2023a||
 Al|3|WB97X/def2-QZVPP-fc|E0|0|-240.429694|1|Hartree|Unknown2023a||
 Ar|0|WB97X/def2-QZVPP-fc|E0|0|-527.550753|1|Hartree|Unknown2023a||
@@ -598,7 +603,6 @@ I|0|WB97X/def2-QZVPP-fc|E0|0|-297.722330|2|Hartree|Unknown2023a||
 I|-1|WB97X/def2-QZVPP-fc|E0|0|-297.839653|1|Hartree|Unknown2023a||
 K|0|WB97X/def2-QZVPP-fc|E0|0|-599.914604|2|Hartree|Unknown2023a||
 K|1|WB97X/def2-QZVPP-fc|E0|0|-599.766900|1|Hartree|Unknown2023a||
-Kr|0|WB97X/def2-QZVPP-fc|E0|0|-2753.844392|1|Hartree|Unknown2023a||
 Li|1|WB97X/def2-QZVPP-fc|E0|0|-7.286640|1|Hartree|Unknown2023a||
 Li|0|WB97X/def2-QZVPP-fc|E0|0|-7.481829|2|Hartree|Unknown2023a||
 Mg|0|WB97X/def2-QZVPP-fc|E0|0|-200.064549|1|Hartree|Unknown2023a||
@@ -624,7 +628,7 @@ Be|2|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-13.653492|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-2574.187957|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-2574.318357|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-37.859062|3|Hartree|Unknown2023a||
-Ca|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-677.576217|1|Hartree|Unknown2023a||
 Ca|2|B3LYP-D3BJ/def2-TZVPP|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-460.175331|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-460.310517|1|Hartree|Unknown2023a||
@@ -638,7 +642,6 @@ I|0|B3LYP-D3BJ/aug-cc-pvtz-pp|E0|0|-295.781756|2|Hartree|Unknown2023a||
 I|-1|B3LYP-D3BJ/aug-cc-pvtz-pp|E0|0|-295.904037|1|Hartree|Unknown2023a||
 K|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP-D3BJ/def2-TZVPP|E0|0|-599.760267|1|Hartree|Unknown2023a||
-Kr|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-2753.837029|1|Hartree|Unknown2023a||
 Li|1|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-7.285405|1|Hartree|Unknown2023a||
 Li|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-7.492058|2|Hartree|Unknown2023a||
 Mg|0|B3LYP-D3BJ/aug-cc-pvtz|E0|0|-200.097753|1|Hartree|Unknown2023a||
@@ -664,6 +667,8 @@ Be|2|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-13.653492|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-2574.187957|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-2574.318357|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-37.859062|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-460.175331|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-460.310517|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-20.149585|2|Hartree|Unknown2023a||
@@ -676,7 +681,6 @@ I|0|B3LYP-D3BJ/aug-cc-pvtz-pp-fc|E0|0|-295.781756|2|Hartree|Unknown2023a||
 I|-1|B3LYP-D3BJ/aug-cc-pvtz-pp-fc|E0|0|-295.904037|1|Hartree|Unknown2023a||
 K|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-599.760267|1|Hartree|Unknown2023a||
-Kr|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-2753.837029|1|Hartree|Unknown2023a||
 Li|1|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-7.285405|1|Hartree|Unknown2023a||
 Li|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-7.492058|2|Hartree|Unknown2023a||
 Mg|0|B3LYP-D3BJ/aug-cc-pvtz-fc|E0|0|-200.097753|1|Hartree|Unknown2023a||
@@ -702,7 +706,7 @@ Be|2|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-13.653786|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-2574.190677|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-2574.320864|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-37.860786|3|Hartree|Unknown2023a||
-Ca|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-677.590197|1|Hartree|Unknown2023a||
 Ca|2|B3LYP-D3BJ/def2-QZVPP|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-460.178688|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-460.313696|1|Hartree|Unknown2023a||
@@ -716,7 +720,7 @@ I|0|B3LYP-D3BJ/aug-cc-pvqz-pp|E0|0|-295.782842|2|Hartree|Unknown2023a||
 I|-1|B3LYP-D3BJ/aug-cc-pvqz-pp|E0|0|-295.905265|1|Hartree|Unknown2023a||
 K|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-599.938721|2|Hartree|Unknown2023a||
 K|1|B3LYP-D3BJ/def2-QZVPP|E0|0|-599.773339|1|Hartree|Unknown2023a||
-Kr|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-2753.839758|1|Hartree|Unknown2023a||
+Kr|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-463.650883|1|Hartree|Unknown2023a||
 Li|1|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-7.285521|1|Hartree|Unknown2023a||
 Li|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-7.492239|2|Hartree|Unknown2023a||
 Mg|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-200.098941|1|Hartree|Unknown2023a||
@@ -733,6 +737,7 @@ Rb|1|B3LYP-D3BJ/def2-QZVPP|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-398.142275|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-398.082148|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-289.399184|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/aug-cc-pvqz|E0|0|-329.467558|1|Hartree|Unknown2023a||
 Al|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-242.393323|2|Hartree|Unknown2023a||
 Al|3|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-240.409736|1|Hartree|Unknown2023a||
 Ar|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-527.563687|1|Hartree|Unknown2023a||
@@ -742,6 +747,8 @@ Be|2|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-13.653786|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-2574.190677|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-2574.320864|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-37.860786|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-460.178688|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-460.313696|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-20.149945|2|Hartree|Unknown2023a||
@@ -754,7 +761,7 @@ I|0|B3LYP-D3BJ/aug-cc-pvqz-pp-fc|E0|0|-295.782842|2|Hartree|Unknown2023a||
 I|-1|B3LYP-D3BJ/aug-cc-pvqz-pp-fc|E0|0|-295.905265|1|Hartree|Unknown2023a||
 K|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-599.938721|2|Hartree|Unknown2023a||
 K|1|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-599.773339|1|Hartree|Unknown2023a||
-Kr|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-2753.839758|1|Hartree|Unknown2023a||
+Kr|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-463.650883|1|Hartree|Unknown2023a||
 Li|1|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-7.285521|1|Hartree|Unknown2023a||
 Li|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-7.492239|2|Hartree|Unknown2023a||
 Mg|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-200.098941|1|Hartree|Unknown2023a||
@@ -771,6 +778,7 @@ Rb|1|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-398.142275|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-398.082148|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-289.399184|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/aug-cc-pvqz-fc|E0|0|-329.467558|1|Hartree|Unknown2023a||
 Al|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-242.387616|2|Hartree|Unknown2023a||
 Al|3|B3LYP-D3BJ/def2-TZVPP|E0|0|-240.406080|1|Hartree|Unknown2023a||
 Ar|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-527.549983|1|Hartree|Unknown2023a||
@@ -780,6 +788,8 @@ Be|2|B3LYP-D3BJ/def2-TZVPP|E0|0|-13.653538|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-2574.140976|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/def2-TZVPP|E0|0|-2574.264312|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-37.859482|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/def2-TZVPP|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-460.167025|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/def2-TZVPP|E0|0|-460.288912|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-20.149585|2|Hartree|Unknown2023a||
@@ -809,6 +819,7 @@ Rb|1|B3LYP-D3BJ/def2-TZVPP|E0|0|-23.939627|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-398.132439|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/def2-TZVPP|E0|0|-397.983749|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-289.392105|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/def2-TZVPP|E0|0|-329.466565|1|Hartree|Unknown2023a||
 Al|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-242.387616|2|Hartree|Unknown2023a||
 Al|3|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-240.406080|1|Hartree|Unknown2023a||
 Ar|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-527.549983|1|Hartree|Unknown2023a||
@@ -818,6 +829,8 @@ Be|2|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-13.653538|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-2574.140976|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-2574.264312|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-37.859482|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-677.576217|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-676.906412|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-460.167025|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-460.288912|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-20.149585|2|Hartree|Unknown2023a||
@@ -847,6 +860,7 @@ Rb|1|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-23.939627|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-398.132439|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-397.983749|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-289.392105|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/def2-TZVPP-fc|E0|0|-329.466565|1|Hartree|Unknown2023a||
 Al|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-242.394820|2|Hartree|Unknown2023a||
 Al|3|B3LYP-D3BJ/def2-QZVPP|E0|0|-240.412084|1|Hartree|Unknown2023a||
 Ar|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-527.566803|1|Hartree|Unknown2023a||
@@ -856,6 +870,8 @@ Be|2|B3LYP-D3BJ/def2-QZVPP|E0|0|-13.654236|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-2574.194924|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/def2-QZVPP|E0|0|-2574.322056|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-37.861538|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/def2-QZVPP|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-460.182019|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/def2-QZVPP|E0|0|-460.313421|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-20.149945|2|Hartree|Unknown2023a||
@@ -885,6 +901,7 @@ Rb|1|B3LYP-D3BJ/def2-QZVPP|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-398.145856|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/def2-QZVPP|E0|0|-398.040095|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-289.402380|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/def2-QZVPP|E0|0|-329.467515|1|Hartree|Unknown2023a||
 Al|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-242.394820|2|Hartree|Unknown2023a||
 Al|3|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-240.412084|1|Hartree|Unknown2023a||
 Ar|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-527.566803|1|Hartree|Unknown2023a||
@@ -894,6 +911,8 @@ Be|2|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-13.654236|1|Hartree|Unknown2023a||
 Br|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-2574.194924|2|Hartree|Unknown2023a||
 Br|-1|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-2574.322056|1|Hartree|Unknown2023a||
 C|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-37.861538|3|Hartree|Unknown2023a||
+Ca|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-677.590197|1|Hartree|Unknown2023a||
+Ca|2|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-676.919969|1|Hartree|Unknown2023a||
 Cl|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-460.182019|2|Hartree|Unknown2023a||
 Cl|-1|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-460.313421|1|Hartree|Unknown2023a||
 Cs|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-20.149945|2|Hartree|Unknown2023a||
@@ -923,6 +942,7 @@ Rb|1|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-23.939781|1|Hartree|Unknown2023a||
 S|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-398.145856|3|Hartree|Unknown2023a||
 S|-2|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-398.040095|1|Hartree|Unknown2023a||
 Si|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-289.402380|3|Hartree|Unknown2023a||
+Xe|0|B3LYP-D3BJ/def2-QZVPP-fc|E0|0|-329.467515|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-242.376775|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/aug-cc-pvtz|E0|0|-240.417690|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-527.546092|1|Hartree|Unknown2023a||
@@ -932,7 +952,7 @@ Be|2|WB97X-D3BJ/aug-cc-pvtz|E0|0|-13.666394|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-2574.068934|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/aug-cc-pvtz|E0|0|-2574.198720|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-37.872189|3|Hartree|Unknown2023a||
-Ca|0|WB97X-D3BJ/def2-TZVPP|E0|0|-677.543393|1|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-677.543393|1|Hartree|Unknown2023a||
 Ca|2|WB97X-D3BJ/def2-TZVPP|E0|0|-676.891856|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-460.160573|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/aug-cc-pvtz|E0|0|-460.296193|1|Hartree|Unknown2023a||
@@ -946,7 +966,6 @@ I|0|WB97X-D3BJ/aug-cc-pvtz-pp|E0|0|-295.768656|2|Hartree|Unknown2023a||
 I|-1|WB97X-D3BJ/aug-cc-pvtz-pp|E0|0|-295.889493|1|Hartree|Unknown2023a||
 K|0|WB97X-D3BJ/def2-TZVPP|E0|0|-599.902955|2|Hartree|Unknown2023a||
 K|1|WB97X-D3BJ/def2-TZVPP|E0|0|-599.746469|1|Hartree|Unknown2023a||
-Kr|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-2753.715916|1|Hartree|Unknown2023a||
 Li|1|WB97X-D3BJ/aug-cc-pvtz|E0|0|-7.287425|1|Hartree|Unknown2023a||
 Li|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-7.491807|2|Hartree|Unknown2023a||
 Mg|0|WB97X-D3BJ/aug-cc-pvtz|E0|0|-200.086157|1|Hartree|Unknown2023a||
@@ -972,6 +991,8 @@ Be|2|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-13.666394|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-2574.068934|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-2574.198720|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-37.872189|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-677.543393|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-676.891856|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-460.160573|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-460.296193|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-20.158372|2|Hartree|Unknown2023a||
@@ -984,7 +1005,6 @@ I|0|WB97X-D3BJ/aug-cc-pvtz-pp-fc|E0|0|-295.768656|2|Hartree|Unknown2023a||
 I|-1|WB97X-D3BJ/aug-cc-pvtz-pp-fc|E0|0|-295.889493|1|Hartree|Unknown2023a||
 K|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-599.902955|2|Hartree|Unknown2023a||
 K|1|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-599.746469|1|Hartree|Unknown2023a||
-Kr|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-2753.715916|1|Hartree|Unknown2023a||
 Li|1|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-7.287425|1|Hartree|Unknown2023a||
 Li|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-7.491807|2|Hartree|Unknown2023a||
 Mg|0|WB97X-D3BJ/aug-cc-pvtz-fc|E0|0|-200.086157|1|Hartree|Unknown2023a||
@@ -1010,7 +1030,7 @@ Be|2|WB97X-D3BJ/aug-cc-pvqz|E0|0|-13.666768|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-2574.071663|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/aug-cc-pvqz|E0|0|-2574.201207|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-37.874038|3|Hartree|Unknown2023a||
-Ca|0|WB97X-D3BJ/def2-QZVPP|E0|0|-677.556973|1|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-677.556973|1|Hartree|Unknown2023a||
 Ca|2|WB97X-D3BJ/def2-QZVPP|E0|0|-676.905300|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-460.163700|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/aug-cc-pvqz|E0|0|-460.299101|1|Hartree|Unknown2023a||
@@ -1024,7 +1044,7 @@ I|0|WB97X-D3BJ/aug-cc-pvqz-pp|E0|0|-295.769705|2|Hartree|Unknown2023a||
 I|-1|WB97X-D3BJ/aug-cc-pvqz-pp|E0|0|-295.890597|1|Hartree|Unknown2023a||
 K|0|WB97X-D3BJ/def2-QZVPP|E0|0|-599.915795|2|Hartree|Unknown2023a||
 K|1|WB97X-D3BJ/def2-QZVPP|E0|0|-599.759194|1|Hartree|Unknown2023a||
-Kr|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-2753.718622|1|Hartree|Unknown2023a||
+Kr|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-463.665112|1|Hartree|Unknown2023a||
 Li|1|WB97X-D3BJ/aug-cc-pvqz|E0|0|-7.287529|1|Hartree|Unknown2023a||
 Li|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-7.491938|2|Hartree|Unknown2023a||
 Mg|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-200.087260|1|Hartree|Unknown2023a||
@@ -1041,6 +1061,7 @@ Rb|1|WB97X-D3BJ/def2-QZVPP|E0|0|-23.956991|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-398.126648|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/aug-cc-pvqz|E0|0|-398.056508|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-289.384825|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/aug-cc-pvqz|E0|0|-329.455945|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-242.379132|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-240.418772|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-527.549482|1|Hartree|Unknown2023a||
@@ -1050,6 +1071,8 @@ Be|2|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-13.666768|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-2574.071663|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-2574.201207|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-37.874038|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-677.556973|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-676.905300|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-460.163700|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-460.299101|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-20.158529|2|Hartree|Unknown2023a||
@@ -1062,7 +1085,7 @@ I|0|WB97X-D3BJ/aug-cc-pvqz-pp-fc|E0|0|-295.769705|2|Hartree|Unknown2023a||
 I|-1|WB97X-D3BJ/aug-cc-pvqz-pp-fc|E0|0|-295.890597|1|Hartree|Unknown2023a||
 K|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-599.915795|2|Hartree|Unknown2023a||
 K|1|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-599.759194|1|Hartree|Unknown2023a||
-Kr|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-2753.718622|1|Hartree|Unknown2023a||
+Kr|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-463.665112|1|Hartree|Unknown2023a||
 Li|1|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-7.287529|1|Hartree|Unknown2023a||
 Li|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-7.491938|2|Hartree|Unknown2023a||
 Mg|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-200.087260|1|Hartree|Unknown2023a||
@@ -1079,6 +1102,7 @@ Rb|1|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-23.956991|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-398.126648|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-398.056508|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-289.384825|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/aug-cc-pvqz-fc|E0|0|-329.455945|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/def2-TZVPP|E0|0|-242.373409|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/def2-TZVPP|E0|0|-240.414556|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/def2-TZVPP|E0|0|-527.535925|1|Hartree|Unknown2023a||
@@ -1088,6 +1112,8 @@ Be|2|WB97X-D3BJ/def2-TZVPP|E0|0|-13.666578|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/def2-TZVPP|E0|0|-2574.022232|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/def2-TZVPP|E0|0|-2574.145329|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/def2-TZVPP|E0|0|-37.872809|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/def2-TZVPP|E0|0|-677.543393|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/def2-TZVPP|E0|0|-676.891856|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/def2-TZVPP|E0|0|-460.152205|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/def2-TZVPP|E0|0|-460.275898|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-TZVPP|E0|0|-20.158372|2|Hartree|Unknown2023a||
@@ -1117,6 +1143,7 @@ Rb|1|WB97X-D3BJ/def2-TZVPP|E0|0|-23.956912|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/def2-TZVPP|E0|0|-398.116821|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/def2-TZVPP|E0|0|-397.970796|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/def2-TZVPP|E0|0|-289.377900|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/def2-TZVPP|E0|0|-329.455044|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-242.373409|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-240.414556|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-527.535925|1|Hartree|Unknown2023a||
@@ -1126,6 +1153,8 @@ Be|2|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-13.666578|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-2574.022232|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-2574.145329|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-37.872809|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-677.543393|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-676.891856|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-460.152205|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-460.275898|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-20.158372|2|Hartree|Unknown2023a||
@@ -1155,6 +1184,7 @@ Rb|1|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-23.956912|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-398.116821|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-397.970796|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-289.377900|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/def2-TZVPP-fc|E0|0|-329.455044|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/def2-QZVPP|E0|0|-242.380528|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/def2-QZVPP|E0|0|-240.420615|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/def2-QZVPP|E0|0|-527.551225|1|Hartree|Unknown2023a||
@@ -1164,6 +1194,8 @@ Be|2|WB97X-D3BJ/def2-QZVPP|E0|0|-13.667090|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/def2-QZVPP|E0|0|-2574.075446|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/def2-QZVPP|E0|0|-2574.202145|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/def2-QZVPP|E0|0|-37.874594|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/def2-QZVPP|E0|0|-677.556973|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/def2-QZVPP|E0|0|-676.905300|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/def2-QZVPP|E0|0|-460.165663|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/def2-QZVPP|E0|0|-460.297754|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-QZVPP|E0|0|-20.158529|2|Hartree|Unknown2023a||
@@ -1193,6 +1225,7 @@ Rb|1|WB97X-D3BJ/def2-QZVPP|E0|0|-23.956991|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/def2-QZVPP|E0|0|-398.128685|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/def2-QZVPP|E0|0|-398.020844|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/def2-QZVPP|E0|0|-289.387040|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/def2-QZVPP|E0|0|-329.455902|1|Hartree|Unknown2023a||
 Al|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-242.380528|2|Hartree|Unknown2023a||
 Al|3|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-240.420615|1|Hartree|Unknown2023a||
 Ar|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-527.551225|1|Hartree|Unknown2023a||
@@ -1202,6 +1235,8 @@ Be|2|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-13.667090|1|Hartree|Unknown2023a||
 Br|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-2574.075446|2|Hartree|Unknown2023a||
 Br|-1|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-2574.202145|1|Hartree|Unknown2023a||
 C|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-37.874594|3|Hartree|Unknown2023a||
+Ca|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-677.556973|1|Hartree|Unknown2023a||
+Ca|2|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-676.905300|1|Hartree|Unknown2023a||
 Cl|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-460.165663|2|Hartree|Unknown2023a||
 Cl|-1|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-460.297754|1|Hartree|Unknown2023a||
 Cs|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-20.158529|2|Hartree|Unknown2023a||
@@ -1231,6 +1266,7 @@ Rb|1|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-23.956991|1|Hartree|Unknown2023a||
 S|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-398.128685|3|Hartree|Unknown2023a||
 S|-2|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-398.020844|1|Hartree|Unknown2023a||
 Si|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-289.387040|3|Hartree|Unknown2023a||
+Xe|0|WB97X-D3BJ/def2-QZVPP-fc|E0|0|-329.455902|1|Hartree|Unknown2023a||
 Al|0|MP2/aug-cc-pvtz|E0|0|-241.978748|2|Hartree|Unknown2023a||
 Al|3|MP2/aug-cc-pvtz|E0|0|-240.057966|1|Hartree|Unknown2023a||
 Ar|0|MP2/aug-cc-pvtz|E0|0|-527.057323|1|Hartree|Unknown2023a||
@@ -1240,7 +1276,6 @@ Be|2|MP2/aug-cc-pvtz|E0|0|-13.615989|1|Hartree|Unknown2023a||
 Br|0|MP2/aug-cc-pvtz|E0|0|-2572.693149|2|Hartree|Unknown2023a||
 Br|-1|MP2/aug-cc-pvtz|E0|0|-2572.821218|1|Hartree|Unknown2023a||
 C|0|MP2/aug-cc-pvtz|E0|0|-37.768749|3|Hartree|Unknown2023a||
-Ca|0|MP2/def2-TZVPP|E0|0|-676.965255|1|Hartree|Unknown2023a||
 Ca|2|MP2/def2-TZVPP|E0|0|-676.319133|1|Hartree|Unknown2023a||
 Cl|0|MP2/aug-cc-pvtz|E0|0|-459.680754|2|Hartree|Unknown2023a||
 Cl|-1|MP2/aug-cc-pvtz|E0|0|-459.814338|1|Hartree|Unknown2023a||
@@ -1254,7 +1289,6 @@ I|0|MP2/aug-cc-pvtz-pp|E0|0|-294.874468|2|Hartree|Unknown2023a||
 I|-1|MP2/aug-cc-pvtz-pp|E0|0|-294.995009|1|Hartree|Unknown2023a||
 K|0|MP2/def2-TZVPP|E0|0|-599.318130|2|Hartree|Unknown2023a||
 K|1|MP2/def2-TZVPP|E0|0|-599.162361|1|Hartree|Unknown2023a||
-Kr|0|MP2/aug-cc-pvtz|E0|0|-2752.338703|1|Hartree|Unknown2023a||
 Li|1|MP2/aug-cc-pvtz|E0|0|-7.247324|1|Hartree|Unknown2023a||
 Li|0|MP2/aug-cc-pvtz|E0|0|-7.443970|2|Hartree|Unknown2023a||
 Mg|0|MP2/aug-cc-pvtz|E0|0|-199.656536|1|Hartree|Unknown2023a||
@@ -1280,8 +1314,11 @@ Be|2|MP2/aug-cc-pvtz-fc|E0|0|-13.615989|1|Hartree|Unknown2023a||
 Br|0|MP2/aug-cc-pvtz-fc|E0|0|-2572.646650|2|Hartree|Unknown2023a||
 Br|-1|MP2/aug-cc-pvtz-fc|E0|0|-2572.774789|1|Hartree|Unknown2023a||
 C|0|MP2/aug-cc-pvtz-fc|E0|0|-37.759547|3|Hartree|Unknown2023a||
+Ca|0|MP2/aug-cc-pvtz-fc|E0|0|-676.965255|1|Hartree|Unknown2023a||
+Ca|2|MP2/aug-cc-pvtz-fc|E0|0|-676.319133|1|Hartree|Unknown2023a||
 Cl|0|MP2/aug-cc-pvtz-fc|E0|0|-459.647299|2|Hartree|Unknown2023a||
 Cl|-1|MP2/aug-cc-pvtz-fc|E0|0|-459.780752|1|Hartree|Unknown2023a||
+Cs|0|MP2/aug-cc-pvtz-fc|E0|0|-19.995504|2|Hartree|Unknown2023a||
 Cs|1|MP2/def2-TZVPP-fc|E0|0|-19.855828|1|Hartree|Unknown2023a||
 F|0|MP2/aug-cc-pvtz-fc|E0|0|-99.612052|2|Hartree|Unknown2023a||
 F|-1|MP2/aug-cc-pvtz-fc|E0|0|-99.745817|1|Hartree|Unknown2023a||
@@ -1289,17 +1326,20 @@ H|0|MP2/aug-cc-pvtz-fc|E0|0|-0.499821|2|Hartree|Unknown2023a||
 He|0|MP2/aug-cc-pvtz-fc|E0|0|-2.894815|1|Hartree|Unknown2023a||
 I|0|MP2/aug-cc-pvtz-pp-fc|E0|0|-294.845855|2|Hartree|Unknown2023a||
 I|-1|MP2/aug-cc-pvtz-pp-fc|E0|0|-294.966424|1|Hartree|Unknown2023a||
+K|0|MP2/aug-cc-pvtz-fc|E0|0|-599.318130|2|Hartree|Unknown2023a||
 K|1|MP2/def2-TZVPP-fc|E0|0|-599.156630|1|Hartree|Unknown2023a||
-Kr|0|MP2/aug-cc-pvtz-fc|E0|0|-2752.294077|1|Hartree|Unknown2023a||
 Li|1|MP2/aug-cc-pvtz-fc|E0|0|-7.247324|1|Hartree|Unknown2023a||
+Li|0|MP2/aug-cc-pvtz-fc|E0|0|-7.443970|2|Hartree|Unknown2023a||
 Mg|0|MP2/aug-cc-pvtz-fc|E0|0|-199.636999|1|Hartree|Unknown2023a||
 Mg|2|MP2/aug-cc-pvtz-fc|E0|0|-198.843782|1|Hartree|Unknown2023a||
 N|0|MP2/aug-cc-pvtz-fc|E0|0|-54.498625|4|Hartree|Unknown2023a||
 Na|1|MP2/aug-cc-pvtz-fc|E0|0|-161.685605|1|Hartree|Unknown2023a||
+Na|0|MP2/aug-cc-pvtz-fc|E0|0|-161.869257|2|Hartree|Unknown2023a||
 Ne|0|MP2/aug-cc-pvtz-fc|E0|0|-128.805705|1|Hartree|Unknown2023a||
 O|0|MP2/aug-cc-pvtz-fc|E0|0|-74.959258|3|Hartree|Unknown2023a||
 O|-2|MP2/aug-cc-pvtz-fc|E0|0|-74.813261|1|Hartree|Unknown2023a||
 P|0|MP2/aug-cc-pvtz-fc|E0|0|-340.800748|4|Hartree|Unknown2023a||
+Rb|0|MP2/aug-cc-pvtz-fc|E0|0|-23.897679|2|Hartree|Unknown2023a||
 Rb|1|MP2/def2-TZVPP-fc|E0|0|-23.748224|1|Hartree|Unknown2023a||
 S|0|MP2/aug-cc-pvtz-fc|E0|0|-397.628306|3|Hartree|Unknown2023a||
 S|-2|MP2/aug-cc-pvtz-fc|E0|0|-397.558557|1|Hartree|Unknown2023a||
@@ -1313,7 +1353,6 @@ Be|2|MP2/aug-cc-pvqz|E0|0|-13.628466|1|Hartree|Unknown2023a||
 Br|0|MP2/aug-cc-pvqz|E0|0|-2572.799062|2|Hartree|Unknown2023a||
 Br|-1|MP2/aug-cc-pvqz|E0|0|-2572.930607|1|Hartree|Unknown2023a||
 C|0|MP2/aug-cc-pvqz|E0|0|-37.790359|3|Hartree|Unknown2023a||
-Ca|0|MP2/def2-QZVPP|E0|0|-677.047743|1|Hartree|Unknown2023a||
 Ca|2|MP2/def2-QZVPP|E0|0|-676.396607|1|Hartree|Unknown2023a||
 Cl|0|MP2/aug-cc-pvqz|E0|0|-459.727887|2|Hartree|Unknown2023a||
 Cl|-1|MP2/aug-cc-pvqz|E0|0|-459.864805|1|Hartree|Unknown2023a||
@@ -1327,7 +1366,6 @@ I|0|MP2/aug-cc-pvqz-pp|E0|0|-294.984288|2|Hartree|Unknown2023a||
 I|-1|MP2/aug-cc-pvqz-pp|E0|0|-295.108819|1|Hartree|Unknown2023a||
 K|0|MP2/def2-QZVPP|E0|0|-599.410525|2|Hartree|Unknown2023a||
 K|1|MP2/def2-QZVPP|E0|0|-599.253200|1|Hartree|Unknown2023a||
-Kr|0|MP2/aug-cc-pvqz|E0|0|-2752.449554|1|Hartree|Unknown2023a||
 Li|1|MP2/aug-cc-pvqz|E0|0|-7.250319|1|Hartree|Unknown2023a||
 Li|0|MP2/aug-cc-pvqz|E0|0|-7.379937|2|Hartree|Unknown2023a||
 Mg|0|MP2/aug-cc-pvqz|E0|0|-199.669049|1|Hartree|Unknown2023a||
@@ -1353,8 +1391,11 @@ Be|2|MP2/aug-cc-pvqz-fc|E0|0|-13.628466|1|Hartree|Unknown2023a||
 Br|0|MP2/aug-cc-pvqz-fc|E0|0|-2572.718008|2|Hartree|Unknown2023a||
 Br|-1|MP2/aug-cc-pvqz-fc|E0|0|-2572.849688|1|Hartree|Unknown2023a||
 C|0|MP2/aug-cc-pvqz-fc|E0|0|-37.765867|3|Hartree|Unknown2023a||
+Ca|0|MP2/aug-cc-pvqz-fc|E0|0|-677.047743|1|Hartree|Unknown2023a||
+Ca|2|MP2/aug-cc-pvqz-fc|E0|0|-676.396607|1|Hartree|Unknown2023a||
 Cl|0|MP2/aug-cc-pvqz-fc|E0|0|-459.665613|2|Hartree|Unknown2023a||
 Cl|-1|MP2/aug-cc-pvqz-fc|E0|0|-459.802346|1|Hartree|Unknown2023a||
+Cs|0|MP2/aug-cc-pvqz-fc|E0|0|-20.021196|2|Hartree|Unknown2023a||
 Cs|1|MP2/def2-QZVPP-fc|E0|0|-19.880224|1|Hartree|Unknown2023a||
 F|0|MP2/aug-cc-pvqz-fc|E0|0|-99.637961|2|Hartree|Unknown2023a||
 F|-1|MP2/aug-cc-pvqz-fc|E0|0|-99.774392|1|Hartree|Unknown2023a||
@@ -1362,21 +1403,26 @@ H|0|MP2/aug-cc-pvqz-fc|E0|0|-0.499948|2|Hartree|Unknown2023a||
 He|0|MP2/aug-cc-pvqz-fc|E0|0|-2.897256|1|Hartree|Unknown2023a||
 I|0|MP2/aug-cc-pvqz-pp-fc|E0|0|-294.922325|2|Hartree|Unknown2023a||
 I|-1|MP2/aug-cc-pvqz-pp-fc|E0|0|-295.046917|1|Hartree|Unknown2023a||
+K|0|MP2/aug-cc-pvqz-fc|E0|0|-599.410525|2|Hartree|Unknown2023a||
 K|1|MP2/def2-QZVPP-fc|E0|0|-599.215202|1|Hartree|Unknown2023a||
-Kr|0|MP2/aug-cc-pvqz-fc|E0|0|-2752.370791|1|Hartree|Unknown2023a||
+Kr|0|MP2/aug-cc-pvqz-fc|E0|0|-462.593790|1|Hartree|Unknown2023a||
 Li|1|MP2/aug-cc-pvqz-fc|E0|0|-7.250319|1|Hartree|Unknown2023a||
+Li|0|MP2/aug-cc-pvqz-fc|E0|0|-7.379937|2|Hartree|Unknown2023a||
 Mg|0|MP2/aug-cc-pvqz-fc|E0|0|-199.638427|1|Hartree|Unknown2023a||
 Mg|2|MP2/aug-cc-pvqz-fc|E0|0|-198.853445|1|Hartree|Unknown2023a||
 N|0|MP2/aug-cc-pvqz-fc|E0|0|-54.508437|4|Hartree|Unknown2023a||
 Na|1|MP2/aug-cc-pvqz-fc|E0|0|-161.686478|1|Hartree|Unknown2023a||
+Na|0|MP2/aug-cc-pvqz-fc|E0|0|-161.870867|2|Hartree|Unknown2023a||
 Ne|0|MP2/aug-cc-pvqz-fc|E0|0|-128.840971|1|Hartree|Unknown2023a||
 O|0|MP2/aug-cc-pvqz-fc|E0|0|-74.976700|3|Hartree|Unknown2023a||
 O|-2|MP2/aug-cc-pvqz-fc|E0|0|-74.848158|1|Hartree|Unknown2023a||
 P|0|MP2/aug-cc-pvqz-fc|E0|0|-340.808106|4|Hartree|Unknown2023a||
+Rb|0|MP2/aug-cc-pvqz-fc|E0|0|-23.963759|2|Hartree|Unknown2023a||
 Rb|1|MP2/def2-QZVPP-fc|E0|0|-23.812982|1|Hartree|Unknown2023a||
 S|0|MP2/aug-cc-pvqz-fc|E0|0|-397.640911|3|Hartree|Unknown2023a||
 S|-2|MP2/aug-cc-pvqz-fc|E0|0|-397.580828|1|Hartree|Unknown2023a||
 Si|0|MP2/aug-cc-pvqz-fc|E0|0|-288.918491|3|Hartree|Unknown2023a||
+Xe|0|MP2/aug-cc-pvqz-fc|E0|0|-328.661600|1|Hartree|Unknown2023a||
 Al|0|MP2/def2-TZVPP|E0|0|-242.064742|2|Hartree|Unknown2023a||
 Al|3|MP2/def2-TZVPP|E0|0|-240.134954|1|Hartree|Unknown2023a||
 Ar|0|MP2/def2-TZVPP|E0|0|-527.178498|1|Hartree|Unknown2023a||
@@ -1386,6 +1432,8 @@ Be|2|MP2/def2-TZVPP|E0|0|-13.637758|1|Hartree|Unknown2023a||
 Br|0|MP2/def2-TZVPP|E0|0|-2572.714065|2|Hartree|Unknown2023a||
 Br|-1|MP2/def2-TZVPP|E0|0|-2572.832987|1|Hartree|Unknown2023a||
 C|0|MP2/def2-TZVPP|E0|0|-37.774714|3|Hartree|Unknown2023a||
+Ca|0|MP2/def2-TZVPP|E0|0|-676.965255|1|Hartree|Unknown2023a||
+Ca|2|MP2/def2-TZVPP|E0|0|-676.319133|1|Hartree|Unknown2023a||
 Cl|0|MP2/def2-TZVPP|E0|0|-459.798957|2|Hartree|Unknown2023a||
 Cl|-1|MP2/def2-TZVPP|E0|0|-459.917442|1|Hartree|Unknown2023a||
 Cs|0|MP2/def2-TZVPP|E0|0|-19.995504|2|Hartree|Unknown2023a||
@@ -1415,6 +1463,7 @@ Rb|1|MP2/def2-TZVPP|E0|0|-23.748224|1|Hartree|Unknown2023a||
 S|0|MP2/def2-TZVPP|E0|0|-397.777358|3|Hartree|Unknown2023a||
 S|-2|MP2/def2-TZVPP|E0|0|-397.610914|1|Hartree|Unknown2023a||
 Si|0|MP2/def2-TZVPP|E0|0|-289.057186|3|Hartree|Unknown2023a||
+Xe|0|MP2/def2-TZVPP|E0|0|-328.913482|1|Hartree|Unknown2023a||
 Al|0|MP2/def2-TZVPP-fc|E0|0|-241.909989|2|Hartree|Unknown2023a||
 Al|3|MP2/def2-TZVPP-fc|E0|0|-240.130866|1|Hartree|Unknown2023a||
 Ar|0|MP2/def2-TZVPP-fc|E0|0|-527.010008|1|Hartree|Unknown2023a||
@@ -1424,8 +1473,11 @@ Be|2|MP2/def2-TZVPP-fc|E0|0|-13.637758|1|Hartree|Unknown2023a||
 Br|0|MP2/def2-TZVPP-fc|E0|0|-2572.643306|2|Hartree|Unknown2023a||
 Br|-1|MP2/def2-TZVPP-fc|E0|0|-2572.762475|1|Hartree|Unknown2023a||
 C|0|MP2/def2-TZVPP-fc|E0|0|-37.758578|3|Hartree|Unknown2023a||
+Ca|0|MP2/def2-TZVPP-fc|E0|0|-676.965255|1|Hartree|Unknown2023a||
+Ca|2|MP2/def2-TZVPP-fc|E0|0|-676.319133|1|Hartree|Unknown2023a||
 Cl|0|MP2/def2-TZVPP-fc|E0|0|-459.635287|2|Hartree|Unknown2023a||
 Cl|-1|MP2/def2-TZVPP-fc|E0|0|-459.753516|1|Hartree|Unknown2023a||
+Cs|0|MP2/def2-TZVPP-fc|E0|0|-19.995504|2|Hartree|Unknown2023a||
 Cs|1|MP2/def2-TZVPP-fc|E0|0|-19.855828|1|Hartree|Unknown2023a||
 F|0|MP2/def2-TZVPP-fc|E0|0|-99.609544|2|Hartree|Unknown2023a||
 F|-1|MP2/def2-TZVPP-fc|E0|0|-99.715817|1|Hartree|Unknown2023a||
@@ -1433,21 +1485,26 @@ H|0|MP2/def2-TZVPP-fc|E0|0|-0.499810|2|Hartree|Unknown2023a||
 He|0|MP2/def2-TZVPP-fc|E0|0|-2.893095|1|Hartree|Unknown2023a||
 I|0|MP2/def2-TZVPP-fc|E0|0|-297.125592|2|Hartree|Unknown2023a||
 I|-1|MP2/def2-TZVPP-fc|E0|0|-297.241216|1|Hartree|Unknown2023a||
+K|0|MP2/def2-TZVPP-fc|E0|0|-599.318130|2|Hartree|Unknown2023a||
 K|1|MP2/def2-TZVPP-fc|E0|0|-599.156630|1|Hartree|Unknown2023a||
-Kr|0|MP2/def2-TZVPP-fc|E0|0|-2752.283690|1|Hartree|Unknown2023a||
+Kr|0|MP2/def2-TZVPP-fc|E0|0|-2752.351354|1|Hartree|Unknown2023a||
 Li|1|MP2/def2-TZVPP-fc|E0|0|-7.266268|1|Hartree|Unknown2023a||
+Li|0|MP2/def2-TZVPP-fc|E0|0|-7.388112|2|Hartree|Unknown2023a||
 Mg|0|MP2/def2-TZVPP-fc|E0|0|-199.628341|1|Hartree|Unknown2023a||
 Mg|2|MP2/def2-TZVPP-fc|E0|0|-198.977928|1|Hartree|Unknown2023a||
 N|0|MP2/def2-TZVPP-fc|E0|0|-54.497609|4|Hartree|Unknown2023a||
 Na|1|MP2/def2-TZVPP-fc|E0|0|-161.829237|1|Hartree|Unknown2023a||
+Na|0|MP2/def2-TZVPP-fc|E0|0|-162.017046|2|Hartree|Unknown2023a||
 Ne|0|MP2/def2-TZVPP-fc|E0|0|-128.803046|1|Hartree|Unknown2023a||
 O|0|MP2/def2-TZVPP-fc|E0|0|-74.957265|3|Hartree|Unknown2023a||
 O|-2|MP2/def2-TZVPP-fc|E0|0|-74.628749|1|Hartree|Unknown2023a||
 P|0|MP2/def2-TZVPP-fc|E0|0|-340.793043|4|Hartree|Unknown2023a||
+Rb|0|MP2/def2-TZVPP-fc|E0|0|-23.897679|2|Hartree|Unknown2023a||
 Rb|1|MP2/def2-TZVPP-fc|E0|0|-23.748224|1|Hartree|Unknown2023a||
 S|0|MP2/def2-TZVPP-fc|E0|0|-397.618543|3|Hartree|Unknown2023a||
 S|-2|MP2/def2-TZVPP-fc|E0|0|-397.452157|1|Hartree|Unknown2023a||
 Si|0|MP2/def2-TZVPP-fc|E0|0|-288.906879|3|Hartree|Unknown2023a||
+Xe|0|MP2/def2-TZVPP-fc|E0|0|-328.913482|1|Hartree|Unknown2023a||
 Al|0|MP2/def2-QZVPP|E0|0|-242.104961|2|Hartree|Unknown2023a||
 Al|3|MP2/def2-QZVPP|E0|0|-240.169290|1|Hartree|Unknown2023a||
 Ar|0|MP2/def2-QZVPP|E0|0|-527.263331|1|Hartree|Unknown2023a||
@@ -1457,6 +1514,8 @@ Be|2|MP2/def2-QZVPP|E0|0|-13.642776|1|Hartree|Unknown2023a||
 Br|0|MP2/def2-QZVPP|E0|0|-2573.304776|2|Hartree|Unknown2023a||
 Br|-1|MP2/def2-QZVPP|E0|0|-2573.431563|1|Hartree|Unknown2023a||
 C|0|MP2/def2-QZVPP|E0|0|-37.785797|3|Hartree|Unknown2023a||
+Ca|0|MP2/def2-QZVPP|E0|0|-677.047743|1|Hartree|Unknown2023a||
+Ca|2|MP2/def2-QZVPP|E0|0|-676.396607|1|Hartree|Unknown2023a||
 Cl|0|MP2/def2-QZVPP|E0|0|-459.877918|2|Hartree|Unknown2023a||
 Cl|-1|MP2/def2-QZVPP|E0|0|-460.010151|1|Hartree|Unknown2023a||
 Cs|0|MP2/def2-QZVPP|E0|0|-20.021196|2|Hartree|Unknown2023a||
@@ -1486,6 +1545,7 @@ Rb|1|MP2/def2-QZVPP|E0|0|-23.812982|1|Hartree|Unknown2023a||
 S|0|MP2/def2-QZVPP|E0|0|-397.853552|3|Hartree|Unknown2023a||
 S|-2|MP2/def2-QZVPP|E0|0|-397.739920|1|Hartree|Unknown2023a||
 Si|0|MP2/def2-QZVPP|E0|0|-289.117951|3|Hartree|Unknown2023a||
+Xe|0|MP2/def2-QZVPP|E0|0|-329.165171|1|Hartree|Unknown2023a||
 Al|0|MP2/def2-QZVPP-fc|E0|0|-241.918995|2|Hartree|Unknown2023a||
 Al|3|MP2/def2-QZVPP-fc|E0|0|-240.151266|1|Hartree|Unknown2023a||
 Ar|0|MP2/def2-QZVPP-fc|E0|0|-527.048480|1|Hartree|Unknown2023a||
@@ -1495,8 +1555,11 @@ Be|2|MP2/def2-QZVPP-fc|E0|0|-13.642776|1|Hartree|Unknown2023a||
 Br|0|MP2/def2-QZVPP-fc|E0|0|-2573.007995|2|Hartree|Unknown2023a||
 Br|-1|MP2/def2-QZVPP-fc|E0|0|-2573.134915|1|Hartree|Unknown2023a||
 C|0|MP2/def2-QZVPP-fc|E0|0|-37.765233|3|Hartree|Unknown2023a||
+Ca|0|MP2/def2-QZVPP-fc|E0|0|-677.047743|1|Hartree|Unknown2023a||
+Ca|2|MP2/def2-QZVPP-fc|E0|0|-676.396607|1|Hartree|Unknown2023a||
 Cl|0|MP2/def2-QZVPP-fc|E0|0|-459.665489|2|Hartree|Unknown2023a||
 Cl|-1|MP2/def2-QZVPP-fc|E0|0|-459.797483|1|Hartree|Unknown2023a||
+Cs|0|MP2/def2-QZVPP-fc|E0|0|-20.021196|2|Hartree|Unknown2023a||
 Cs|1|MP2/def2-QZVPP-fc|E0|0|-19.880224|1|Hartree|Unknown2023a||
 F|0|MP2/def2-QZVPP-fc|E0|0|-99.636010|2|Hartree|Unknown2023a||
 F|-1|MP2/def2-QZVPP-fc|E0|0|-99.760837|1|Hartree|Unknown2023a||
@@ -1504,21 +1567,26 @@ H|0|MP2/def2-QZVPP-fc|E0|0|-0.499983|2|Hartree|Unknown2023a||
 He|0|MP2/def2-QZVPP-fc|E0|0|-2.897056|1|Hartree|Unknown2023a||
 I|0|MP2/def2-QZVPP-fc|E0|0|-297.294755|2|Hartree|Unknown2023a||
 I|-1|MP2/def2-QZVPP-fc|E0|0|-297.416719|1|Hartree|Unknown2023a||
+K|0|MP2/def2-QZVPP-fc|E0|0|-599.410525|2|Hartree|Unknown2023a||
 K|1|MP2/def2-QZVPP-fc|E0|0|-599.215202|1|Hartree|Unknown2023a||
-Kr|0|MP2/def2-QZVPP-fc|E0|0|-2752.669445|1|Hartree|Unknown2023a||
+Kr|0|MP2/def2-QZVPP-fc|E0|0|-2752.963117|1|Hartree|Unknown2023a||
 Li|1|MP2/def2-QZVPP-fc|E0|0|-7.266117|1|Hartree|Unknown2023a||
+Li|0|MP2/def2-QZVPP-fc|E0|0|-7.463319|2|Hartree|Unknown2023a||
 Mg|0|MP2/def2-QZVPP-fc|E0|0|-199.638081|1|Hartree|Unknown2023a||
 Mg|2|MP2/def2-QZVPP-fc|E0|0|-199.016181|1|Hartree|Unknown2023a||
 N|0|MP2/def2-QZVPP-fc|E0|0|-54.507713|4|Hartree|Unknown2023a||
 Na|1|MP2/def2-QZVPP-fc|E0|0|-161.858401|1|Hartree|Unknown2023a||
+Na|0|MP2/def2-QZVPP-fc|E0|0|-162.059765|2|Hartree|Unknown2023a||
 Ne|0|MP2/def2-QZVPP-fc|E0|0|-128.836306|1|Hartree|Unknown2023a||
 O|0|MP2/def2-QZVPP-fc|E0|0|-74.975276|3|Hartree|Unknown2023a||
 O|-2|MP2/def2-QZVPP-fc|E0|0|-74.726231|1|Hartree|Unknown2023a||
 P|0|MP2/def2-QZVPP-fc|E0|0|-340.808697|4|Hartree|Unknown2023a||
+Rb|0|MP2/def2-QZVPP-fc|E0|0|-23.963759|2|Hartree|Unknown2023a||
 Rb|1|MP2/def2-QZVPP-fc|E0|0|-23.812982|1|Hartree|Unknown2023a||
 S|0|MP2/def2-QZVPP-fc|E0|0|-397.641162|3|Hartree|Unknown2023a||
 S|-2|MP2/def2-QZVPP-fc|E0|0|-397.527600|1|Hartree|Unknown2023a||
 Si|0|MP2/def2-QZVPP-fc|E0|0|-288.918979|3|Hartree|Unknown2023a||
+Xe|0|MP2/def2-QZVPP-fc|E0|0|-329.165171|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/aug-cc-pvtz|E0|0|-241.996628|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/aug-cc-pvtz|E0|0|-240.060116|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/aug-cc-pvtz|E0|0|-527.080283|1|Hartree|Unknown2023a||
@@ -1528,7 +1596,7 @@ Be|2|ccsd(t)/aug-cc-pvtz|E0|0|-13.616250|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvtz|E0|0|-2572.711672|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvtz|E0|0|-2572.836233|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvtz|E0|0|-37.791070|3|Hartree|Unknown2023a||
-Ca|0|ccsd(t)/def2-TZVPP|E0|0|-676.987385|1|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/aug-cc-pvtz|E0|0|-676.987385|1|Hartree|Unknown2023a||
 Ca|2|ccsd(t)/def2-TZVPP|E0|0|-676.335861|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvtz|E0|0|-459.708617|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvtz|E0|0|-459.837402|1|Hartree|Unknown2023a||
@@ -1542,7 +1610,6 @@ I|0|ccsd(t)/aug-cc-pvtz-pp|E0|0|-294.893468|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvtz-pp|E0|0|-295.010226|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-TZVPP|E0|0|-599.330965|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-TZVPP|E0|0|-599.174870|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pvtz|E0|0|-2752.353146|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvtz|E0|0|-7.249419|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvtz|E0|0|-7.446155|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvtz|E0|0|-199.667403|1|Hartree|Unknown2023a||
@@ -1568,6 +1635,8 @@ Be|2|ccsd(t)/aug-cc-pvtz-fc|E0|0|-13.616250|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-2572.668458|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvtz-fc|E0|0|-2572.793175|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-37.781825|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-676.987385|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/aug-cc-pvtz-fc|E0|0|-676.335861|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-459.676216|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvtz-fc|E0|0|-459.805042|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-TZVPP-fc|E0|0|-19.855196|2|Hartree|Unknown2023a||
@@ -1580,7 +1649,6 @@ I|0|ccsd(t)/aug-cc-pvtz-pp-fc|E0|0|-294.865413|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvtz-pp-fc|E0|0|-294.982287|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-TZVPP-fc|E0|0|-599.153350|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-TZVPP-fc|E0|0|-599.169870|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-2752.311680|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvtz-fc|E0|0|-7.249419|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-7.432705|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-199.647102|1|Hartree|Unknown2023a||
@@ -1606,7 +1674,7 @@ Be|2|ccsd(t)/aug-cc-pvqz|E0|0|-13.630409|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvqz|E0|0|-2572.811593|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvqz|E0|0|-2572.940044|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvqz|E0|0|-37.812496|3|Hartree|Unknown2023a||
-Ca|0|ccsd(t)/def2-QZVPP|E0|0|-677.078739|1|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/aug-cc-pvqz|E0|0|-677.078739|1|Hartree|Unknown2023a||
 Ca|2|ccsd(t)/def2-QZVPP|E0|0|-676.422819|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvqz|E0|0|-459.756063|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvqz|E0|0|-459.888545|1|Hartree|Unknown2023a||
@@ -1620,7 +1688,7 @@ I|0|ccsd(t)/aug-cc-pvqz-pp|E0|0|-295.001450|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvqz-pp|E0|0|-295.122563|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP|E0|0|-599.434855|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP|E0|0|-599.276868|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pvqz|E0|0|-2752.459687|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pvqz|E0|0|-462.605189|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvqz|E0|0|-7.252572|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvqz|E0|0|-7.382469|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvqz|E0|0|-199.680351|1|Hartree|Unknown2023a||
@@ -1637,6 +1705,7 @@ Rb|1|ccsd(t)/def2-QZVPP|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/aug-cc-pvqz|E0|0|-397.726271|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/aug-cc-pvqz|E0|0|-397.658188|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/aug-cc-pvqz|E0|0|-288.981307|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/aug-cc-pvqz|E0|0|-328.675718|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-241.933748|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/aug-cc-pvqz-fc|E0|0|-240.022123|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-527.075055|1|Hartree|Unknown2023a||
@@ -1646,6 +1715,8 @@ Be|2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-13.630409|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2572.737062|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2572.865719|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-37.786875|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-677.078739|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-676.422819|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-459.694743|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-459.827254|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-QZVPP-fc|E0|0|-19.855219|2|Hartree|Unknown2023a||
@@ -1658,7 +1729,7 @@ I|0|ccsd(t)/aug-cc-pvqz-pp-fc|E0|0|-294.939975|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvqz-pp-fc|E0|0|-295.061242|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP-fc|E0|0|-599.164594|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP-fc|E0|0|-599.239998|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2752.386983|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-462.605189|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.252572|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.365044|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-199.648163|1|Hartree|Unknown2023a||
@@ -1675,6 +1746,7 @@ Rb|1|ccsd(t)/def2-QZVPP-fc|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-397.667984|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-397.599968|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-288.937789|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-328.675718|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/def2-TZVPP|E0|0|-242.082667|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/def2-TZVPP|E0|0|-240.137954|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/def2-TZVPP|E0|0|-527.200549|1|Hartree|Unknown2023a||
@@ -1684,6 +1756,8 @@ Be|2|ccsd(t)/def2-TZVPP|E0|0|-13.641115|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/def2-TZVPP|E0|0|-2572.725562|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/def2-TZVPP|E0|0|-2572.840592|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/def2-TZVPP|E0|0|-37.798023|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/def2-TZVPP|E0|0|-676.987385|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/def2-TZVPP|E0|0|-676.335861|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/def2-TZVPP|E0|0|-459.826503|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/def2-TZVPP|E0|0|-459.939603|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-TZVPP|E0|0|-20.012719|2|Hartree|Unknown2023a||
@@ -1713,6 +1787,7 @@ Rb|1|ccsd(t)/def2-TZVPP|E0|0|-23.759841|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/def2-TZVPP|E0|0|-397.804798|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/def2-TZVPP|E0|0|-397.632481|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/def2-TZVPP|E0|0|-289.079131|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/def2-TZVPP|E0|0|-328.888155|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/def2-TZVPP-fc|E0|0|-241.926298|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/def2-TZVPP-fc|E0|0|-240.134027|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/def2-TZVPP-fc|E0|0|-527.035128|1|Hartree|Unknown2023a||
@@ -1722,6 +1797,8 @@ Be|2|ccsd(t)/def2-TZVPP-fc|E0|0|-13.641115|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/def2-TZVPP-fc|E0|0|-2572.661645|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/def2-TZVPP-fc|E0|0|-2572.776981|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/def2-TZVPP-fc|E0|0|-37.781030|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/def2-TZVPP-fc|E0|0|-676.987385|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/def2-TZVPP-fc|E0|0|-676.335861|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/def2-TZVPP-fc|E0|0|-459.664646|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/def2-TZVPP-fc|E0|0|-459.777708|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-TZVPP-fc|E0|0|-19.855196|2|Hartree|Unknown2023a||
@@ -1734,7 +1811,7 @@ I|0|ccsd(t)/def2-TZVPP-fc|E0|0|-297.111695|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/def2-TZVPP-fc|E0|0|-297.222932|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-TZVPP-fc|E0|0|-599.153350|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-TZVPP-fc|E0|0|-599.169870|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/def2-TZVPP-fc|E0|0|-2752.298414|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/def2-TZVPP-fc|E0|0|-2752.359761|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/def2-TZVPP-fc|E0|0|-7.270568|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/def2-TZVPP-fc|E0|0|-7.357349|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/def2-TZVPP-fc|E0|0|-199.639347|1|Hartree|Unknown2023a||
@@ -1751,6 +1828,7 @@ Rb|1|ccsd(t)/def2-TZVPP-fc|E0|0|-23.759841|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/def2-TZVPP-fc|E0|0|-397.646740|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/def2-TZVPP-fc|E0|0|-397.474545|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/def2-TZVPP-fc|E0|0|-288.927702|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/def2-TZVPP-fc|E0|0|-328.888155|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/def2-QZVPP|E0|0|-242.122819|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/def2-QZVPP|E0|0|-240.173369|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/def2-QZVPP|E0|0|-527.287590|1|Hartree|Unknown2023a||
@@ -1760,6 +1838,8 @@ Be|2|ccsd(t)/def2-QZVPP|E0|0|-13.646280|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/def2-QZVPP|E0|0|-2573.288128|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/def2-QZVPP|E0|0|-2573.411411|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/def2-QZVPP|E0|0|-37.808001|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/def2-QZVPP|E0|0|-677.078739|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/def2-QZVPP|E0|0|-676.422819|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/def2-QZVPP|E0|0|-459.906104|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/def2-QZVPP|E0|0|-460.033719|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-QZVPP|E0|0|-20.041473|2|Hartree|Unknown2023a||
@@ -1789,6 +1869,7 @@ Rb|1|ccsd(t)/def2-QZVPP|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/def2-QZVPP|E0|0|-397.880269|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/def2-QZVPP|E0|0|-397.759855|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/def2-QZVPP|E0|0|-289.138795|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/def2-QZVPP|E0|0|-329.129163|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/def2-QZVPP-fc|E0|0|-241.934220|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/def2-QZVPP-fc|E0|0|-240.155177|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/def2-QZVPP-fc|E0|0|-527.075502|1|Hartree|Unknown2023a||
@@ -1798,6 +1879,8 @@ Be|2|ccsd(t)/def2-QZVPP-fc|E0|0|-13.646280|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/def2-QZVPP-fc|E0|0|-2573.008472|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/def2-QZVPP-fc|E0|0|-2573.131964|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/def2-QZVPP-fc|E0|0|-37.786508|3|Hartree|Unknown2023a||
+Ca|0|ccsd(t)/def2-QZVPP-fc|E0|0|-677.078739|1|Hartree|Unknown2023a||
+Ca|2|ccsd(t)/def2-QZVPP-fc|E0|0|-676.422819|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/def2-QZVPP-fc|E0|0|-459.695345|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/def2-QZVPP-fc|E0|0|-459.822958|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-QZVPP-fc|E0|0|-19.855219|2|Hartree|Unknown2023a||
@@ -1810,7 +1893,7 @@ I|0|ccsd(t)/def2-QZVPP-fc|E0|0|-297.266253|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/def2-QZVPP-fc|E0|0|-297.384493|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP-fc|E0|0|-599.164594|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP-fc|E0|0|-599.239998|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/def2-QZVPP-fc|E0|0|-2752.665927|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/def2-QZVPP-fc|E0|0|-2752.943644|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/def2-QZVPP-fc|E0|0|-7.270590|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/def2-QZVPP-fc|E0|0|-7.432739|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/def2-QZVPP-fc|E0|0|-199.648287|1|Hartree|Unknown2023a||
@@ -1827,3 +1910,4 @@ Rb|1|ccsd(t)/def2-QZVPP-fc|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/def2-QZVPP-fc|E0|0|-397.668694|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/def2-QZVPP-fc|E0|0|-397.548465|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/def2-QZVPP-fc|E0|0|-288.938389|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/def2-QZVPP-fc|E0|0|-329.129163|1|Hartree|Unknown2023a||

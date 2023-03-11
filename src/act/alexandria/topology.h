@@ -44,6 +44,7 @@
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/molprop/fragment.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -561,7 +562,7 @@ private:
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
-    void build(const ForceField                *pd,
+    void build(const ForceField             *pd,
                const std::vector<gmx::RVec> &x,
                double                        LinearAngleMin,
                double                        PlanarAngleMax,
@@ -572,6 +573,13 @@ private:
 
     //! \return the residue names
     const std::vector<std::string> residueNames() const { return residueNames_; }
+    
+    /*! \brief Add residue information
+     * \param[in] residueNumber The original number
+     * \param[in] residueName   The new number
+     */
+    void addResidue(int                residueNumber, 
+                    const std::string &residueName);
     
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }

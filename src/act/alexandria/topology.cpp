@@ -380,7 +380,6 @@ void Topology::setAtoms(const t_atoms *atoms)
     {
         GMX_THROW(gmx::InternalError("Number of residues incorrect in t_atoms"));
     }
-    residueNames_.resize(atoms->nres);
     int minres = atoms->nres;
     for(int i = 0; i < atoms->nr; i++)
     {
@@ -393,16 +392,20 @@ void Topology::setAtoms(const t_atoms *atoms)
                      atoms->atom[i].atomnumber,
                      atoms->atom[i].m, atoms->atom[i].q);
         // TODO this is not the real residue number, but an index
-        int resind = atoms->atom[i].resind-minres;
-        anew.setResidueNumber(resind);
+        int resind = atoms->atom[i].resind;
+        anew.setResidueNumber(resind-minres);
         if (atoms->resinfo != nullptr)
         {
-            if (resind < 0 && resind >= atoms->nres)
+            if (resind < 0 || resind >= atoms->nres)
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Residue index %d out of range. Should be within %d-%d",
                                                                resind, 0, atoms->nres).c_str()));
             }
-            residueNames_[resind].assign(*(atoms->resinfo[minres+resind].name));
+            if (nullptr == atoms->resinfo[minres+resind].name)
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Invalid residue name for residue %d", resind).c_str()));
+            }
+            addResidue(resind, *(atoms->resinfo[resind].name));
         }
         atoms_.push_back(anew);
     }
@@ -780,7 +783,7 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::build(const ForceField                *pd,
+void Topology::build(const ForceField             *pd,
                      const std::vector<gmx::RVec> &x,
                      double                        LinearAngleMin,
                      double                        PlanarAngleMax,
@@ -816,6 +819,22 @@ const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
     return entries_.find(itype)->second;
 }
 
+void Topology::addResidue(int                residueNumber, 
+                          const std::string &residueName)
+{
+    if (residueNumber >= static_cast<int>(residueNames_.size()))
+    {
+        residueNames_.resize(residueNumber+1);
+        residueNames_[residueNumber] = residueName;
+    }
+    else if (residueNames_[residueNumber] != residueName)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Residue name mismatch. Have residues %d = %s, but new name %s",
+                                                       residueNumber, residueNames_[residueNumber].c_str(),
+                                                       residueName.c_str()).c_str()));
+    }
+}
+    
 void Topology::addEntry(InteractionType                     itype,
                         const std::vector<TopologyEntry *> &entry)
 {

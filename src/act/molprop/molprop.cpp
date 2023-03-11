@@ -236,6 +236,31 @@ static bool fragCompare(const Fragment &a, const Fragment &b)
     return amin < bmin;
 }
 
+void MolProp::renumberResidues()
+{
+    Experiment *myexp = findExperiment(JobType::OPT);
+    if (nullptr == myexp)
+    {
+        myexp = findExperiment(JobType::TOPOLOGY);
+    }
+    if (nullptr == myexp)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No experiment with JobType::Opt or JobType::Topology").c_str()));
+    }
+    auto calcAtom = myexp->calcAtom();
+    for(size_t j = 0; j < fragment_.size(); j++)
+    {
+        // TODO: This ignore the possibility that there could be
+        // more than one residue in a fragment, e.g. a protein.
+        auto atoms_j = fragment_[j].atoms();
+        auto res_j   = (*calcAtom)[atoms_j[0]].residueName();
+        for(int k : atoms_j)
+        {
+            (*calcAtom)[k].setResidue(res_j, j);
+        }
+    }
+}
+
 void MolProp::generateFragments(const ForceField *pd,
                                 double            qtotal)
 {
@@ -351,6 +376,8 @@ void MolProp::generateFragments(const ForceField *pd,
         qtotal        = 0;
     }
     std::sort(fragment_.begin(), fragment_.end(), fragCompare);
+    
+    renumberResidues();
 }
 
 int MolProp::Merge(const MolProp *src)

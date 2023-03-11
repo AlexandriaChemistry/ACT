@@ -1,14 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Sequence Name="B2(Total)">
-    <Int Name="Length">5</Int>
-    <Real>-248.51378169930211</Real>
-    <Real>-202.64026085573903</Real>
-    <Real>-169.19068036721694</Real>
-    <Real>-143.76435829396067</Real>
-    <Real>-124.16506925834396</Real>
-  </Sequence>
   <Sequence Name="B2(Classical)">
     <Int Name="Length">5</Int>
     <Real>-250.53402900861752</Real>
@@ -32,5 +24,13 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
+  </Sequence>
+  <Sequence Name="B2(Total)">
+    <Int Name="Length">5</Int>
+    <Real>-248.51378169930211</Real>
+    <Real>-202.64026085573903</Real>
+    <Real>-169.19068036721694</Real>
+    <Real>-143.76435829396067</Real>
+    <Real>-124.16506925834396</Real>
   </Sequence>
 </ReferenceData>

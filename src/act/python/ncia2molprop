@@ -123,7 +123,7 @@ def read_xyz(infile:str) -> Molprop:
 #    SELB = Molprop("selection_b")
     interaction_energy = f'{args.int_e:.10f}'
 #    chargeA = args.charge_a
-    exper.add_energy("DeltaE0", "kJ/mol", 0.0, "gas", interaction_energy)
+    exper.add_energy("InteractionEnergy", "kJ/mol", 0.0, "gas", interaction_energy)
 
     rangeA=[*range(1,args.sel_a_end + 1)]
     rangeB=[*range(args.sel_a_end + 1,args.sel_b_end + 1)]
