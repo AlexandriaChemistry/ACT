@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Shell script for macOS and Linux
-# Can use variables such as ARCH (architecture) and PREFIX (build environment prefix)
+# Can use variables such as ARCH (architecture) and PREFIX (future environment prefix)
 
 # uncompress build
 tar -xf ${SRC_DIR}/act_osx-64.tar.gz -C ${SRC_DIR}
