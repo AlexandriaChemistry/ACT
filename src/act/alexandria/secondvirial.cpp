@@ -248,6 +248,10 @@ void ReRunner::computeB2(FILE                                      *logFile,
                          const std::vector<t_filenm>               &fnm)
 {
     auto                      N = edist.get_npoints();
+    if (N <= 0)
+    {
+        return;
+    }
     const std::vector<double> x = edist.getX();
     const std::vector<double> y = edist.getY();
     double xmin                 = *std::min_element(x.begin(), x.end());
@@ -604,10 +608,6 @@ void ReRunner::rerun(FILE                        *logFile,
         {
             auto EE         = actmol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
-            if (atomStart.size() != 3)
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("This is not a dimer, there are %zu fragments instead of 2", atomStart.size()-1).c_str()));
-            }
             std::vector<gmx::RVec> f    = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
@@ -616,7 +616,8 @@ void ReRunner::rerun(FILE                        *logFile,
             auto      tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                auto natom = tops[kk].atoms().size();
+                for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
                     auto      mi = atoms[i].mass();
@@ -639,7 +640,7 @@ void ReRunner::rerun(FILE                        *logFile,
                 std::vector<real>      mass;
                 std::vector<int>       index;
                 std::vector<gmx::RVec> x_com;
-                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     // Store atom index relative to molecule start
                     index.push_back(i-atomStart[kk]);
@@ -667,7 +668,7 @@ void ReRunner::rerun(FILE                        *logFile,
                 // Since the rotations are different for both molecules, this does not
                 // hold after the rotations are done.
                 // TODO: write out the math.
-                for(size_t i = atomStart[kk]; i < atomStart[kk+1]; i++)
+                for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec ri, fi, ti;
                     cprod(x_com[i-atomStart[kk]], forces[i], ti);
