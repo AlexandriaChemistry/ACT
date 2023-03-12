@@ -86,8 +86,6 @@ private:
     std::vector<Experiment>           exper_;
     std::vector<Bond>                 bond_;
 
-    void renumberResidues();
-
 public:
     //! Constructor for a MolProp object
     MolProp() {}
@@ -244,7 +242,11 @@ public:
      * \param[in] f The new fragment
      */    
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
-    
+
+    /*! \brief Renumber the residues to one residue per fragment.
+     */    
+    void renumberResidues();
+
     /*! Generate fragments based on bonds
      * \param[in] pd     The force field needed for looking up atom props
      * \param[in] qtotal The total charge of the molecule
