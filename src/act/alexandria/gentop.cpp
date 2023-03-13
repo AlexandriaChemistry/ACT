@@ -104,7 +104,7 @@ int gentop(int argc, char *argv[])
         { efTOP, "-p",        "out",       ffOPTWR },
         { efXML, "-openmm",   "out",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
-        { efSTO, "-c",        "out",       ffWRITE },
+        { efPDB, "-c",        "out",       ffWRITE },
         { efNDX, "-n",        "renum",     ffOPTWR },
         { efDAT, "-q",        "qout",      ffOPTWR },
         { efXML, "-mp",       "molprops",  ffOPTRD },
@@ -394,12 +394,12 @@ int gentop(int argc, char *argv[])
                                                     bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm));
                 actmol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
                                      &cr, coords, method, basis, bITP);
-                if (opt2bSet("-c", NFILE, fnm))
-                {
-                    std::string cfn = gmx::formatString("%s%s", index.c_str(),
-                                                        opt2fn("-c", NFILE, fnm));
-                    actmol.PrintConformation(cfn.c_str(), coords, writeShells);
-                }
+            }
+            if (opt2bSet("-c", NFILE, fnm))
+            {
+                std::string cfn = gmx::formatString("%s%s", index.c_str(),
+                                                    opt2fn("-c", NFILE, fnm));
+                actmol.PrintConformation(cfn.c_str(), coords, writeShells);
             }
         }
         else

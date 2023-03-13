@@ -244,7 +244,7 @@ public:
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
 
     /*! \brief Renumber the residues to one residue per fragment.
-     */    
+     */
     void renumberResidues();
 
     /*! Generate fragments based on bonds
