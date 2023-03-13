@@ -28,26 +28,28 @@
   <HarmonicBondForce energy="0">
     <Bond class1="o2_b" class2="s3_b" k="300000" length="0.1399" De="0"/>
   </HarmonicBondForce>
-  <HarmonicAngleForce>
+  <HarmonicAngleForce energy="0">
     <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.99491"/>
   </HarmonicAngleForce>
-  <CustomAngleForce/>
-  <RBTorsionForce/>
-  <PeriodicTorsionForce/>
-  <CustomNonbondedForce bondCutoff="3">
+  <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <CustomNonbondedForce energy="0" bondCutoff="3">
+    <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
-    <PerParticleParameter name="beta"/>
-    <Atom type="o2_1" vdW="1" charge="0" zeta="13"/>
-    <Atom type="o2_2" vdW="1" charge="0" zeta="13"/>
-    <Atom type="o2_3" vdW="1" charge="0" zeta="13"/>
-    <Atom type="o2_4" vdW="1" charge="0" zeta="13"/>
-    <Atom type="s3_1" vdW="1" charge="0" zeta="13"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="o2_1" vdW="1" zeta="13"/>
+    <Atom type="o2_2" vdW="1" zeta="13"/>
+    <Atom type="o2_3" vdW="1" zeta="13"/>
+    <Atom type="o2_4" vdW="1" zeta="13"/>
+    <Atom type="s3_1" vdW="1" zeta="13"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
+    <UseAttributeFromResidue name="charge"/>
     <Atom type="o2_1" sigma="0.3" epsilon="0.05"/>
     <Atom type="o2_2" sigma="0.3" epsilon="0.05"/>
     <Atom type="o2_3" sigma="0.3" epsilon="0.05"/>
