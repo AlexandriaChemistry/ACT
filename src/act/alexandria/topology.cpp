@@ -976,8 +976,19 @@ static void fillParams(const ForceFieldParameterList &fs,
         }
         else
         {
-            auto fp = fs.findParameterTypeConst(btype, param_names[i]);
-            param->push_back(fp.internalValue());
+            // If a particular parameter is missing, we set it to zero.
+            // This is needed in particular to deal with combination rules, where
+            // some force fields have the atomic sigma, epsilon, etc. while others
+            // store the combined values, but not atomic ones (because that would
+            // not make sense).
+            auto ff      = fs.findParametersConst(btype);
+            auto fp      = ff.find(param_names[i]);
+            double value = 0;
+            if (ff.end() != fp)
+            {
+                value = fp->second.internalValue();
+            }
+            param->push_back(value);
         }
     }
 }

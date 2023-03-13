@@ -768,17 +768,20 @@ int b2(int argc, char *argv[])
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "aff",        ffREAD  },
-        { efXML, "-mp", "molprop",    ffREAD  },
+        { efXML, "-mp", "molprop",    ffOPTRD },
         { efLOG, "-g",  "b2",         ffWRITE } 
     };
     gmx_output_env_t         *oenv;
     static char              *molnm      = (char *)"";
     static char              *qqm        = (char *)"";
+    static char              *filename   = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
+        { "-f",      FALSE, etSTR,  {&filename},
+           "Input file name" },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
         { "-qtot",   FALSE, etREAL, {&qtot},
@@ -826,6 +829,7 @@ int b2(int argc, char *argv[])
     }
 
     ACTMol                actmol;
+    if (opt2bSet("-mp", fnm.size(), fnm.data()))
     {
         std::vector<MolProp> mps;
         MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
@@ -836,6 +840,34 @@ int b2(int argc, char *argv[])
         }
         actmol.Merge(&mps[0]);
     }
+    else
+    {
+        if (strlen(molnm) == 0)
+        {
+            molnm = (char *)"MOL";
+        }
+        std::vector<MolProp>  mps;
+        double qtot_babel = qtot;
+        int maxpot = 100;
+        int nsymm  = 1;
+        std::string method, basis;
+        const char *conf = "";
+        const char *jobtype = (char *)"Opt";
+        if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
+                      maxpot, nsymm, jobtype, &qtot_babel, false))
+        {
+            if (mps.size() > 1)
+            {
+                fprintf(stderr, "Warning: will only use the first dimer in %s\n", filename);
+            }
+            actmol.Merge(&mps[0]);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "No input file has been specified.");
+        }
+    }
+    
     immStatus imm = immStatus::OK;
     if (status == 0)
     {

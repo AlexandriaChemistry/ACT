@@ -153,7 +153,7 @@ int gentop(int argc, char *argv[])
     t_pargs                          pa[]     = 
     {
         { "-f",      FALSE, etSTR,  {&filename},
-           "Input file name to be turned into GROMACS input" },
+           "Input file name" },
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-db",     FALSE, etSTR,  {&dbname},
