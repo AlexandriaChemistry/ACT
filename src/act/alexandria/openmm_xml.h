@@ -44,15 +44,17 @@ namespace alexandria
      *
      * \param[in] fileName The filename to save to
      * \param[in] pd       Pointer to a ForceField class instance
-     * \param[in] actmol   The ACT molecule structure
+     * \param[in] actmols  The ACT molecule structures
      * \param[in] mDrude   Mass to use for the drude particle if any
      * \param[in] compress Whether or not to write a compressed file
+     * \param[in] addNumbersToAtoms Will add integer index to all atom types
      */
-    void writeOpenMM(const std::string &fileName,
-                     const ForceField  *pd,
-                     const ACTMol      *actmol,
-                     double             mDrude,
-                     bool               compress = true);
+    void writeOpenMM(const std::string         &fileName,
+                     const ForceField          *pd,
+                     const std::vector<ACTMol> &actmols,
+                     double                     mDrude,
+                     bool                       compress = true,
+                     bool                       addNumbersToAtoms = true);
 
 } // namespace alexandria
 

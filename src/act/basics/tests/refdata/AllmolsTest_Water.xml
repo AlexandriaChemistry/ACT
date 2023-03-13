@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="IUPAC">oxidane</String>
+  <String Name="Formula">H2O</String>
+  <Int Name="Charge">0</Int>
+  <Real Name="Mass">18.0152</Real>
+  <Int Name="Multiplicity">1</Int>
+  <String Name="CAS">7732-18-5</String>
+  <Int Name="ChemSpiderID">94856</Int>
+  <Int Name="PubChemID">962</Int>
+  <String Name="InChiKey">XLYOFNOQVPJJNP-UHFFFAOYSA-N</String>
+</ReferenceData>

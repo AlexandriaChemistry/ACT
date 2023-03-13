@@ -62,6 +62,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
     protected:
     void testOpenMM(const std::string &forceField,
                     const std::string &fileName,
+                    bool               numberAtypes,
                     double             mDrude = 0.1)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
@@ -75,44 +76,51 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         std::vector<ACTMol> mps;
         initACTMol(fileName.c_str(), ff, fcomp, &inputrecInstance, &mps);
 
-        for(auto &actmol : mps)
-        {
-            auto tmpFile  = tfm.getTemporaryFilePath("xml");
-            bool compress = false;
-            writeOpenMM(tmpFile, ff, &actmol, mDrude, compress);
-            ifm->checkFile(tmpFile, &checker);
-        }
+        auto tmpFile  = tfm.getTemporaryFilePath("xml");
+        bool compress = false;
+        writeOpenMM(tmpFile, ff, mps, mDrude, compress, numberAtypes);
+        ifm->checkFile(tmpFile, &checker);
     }
 };
 
 TEST_F(OpenMMXmlTest, Sulfate)
 {
-    testOpenMM("ACS-g", "sulfate.sdf");
+    testOpenMM("ACS-g", "sulfate.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, Furan)
 {
-    testOpenMM("ACS-g", "furan.sdf");
+    testOpenMM("ACS-g", "furan.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, Acetone)
 {
-    testOpenMM("ACS-g", "acetone.sdf");
+    testOpenMM("ACS-g", "acetone.sdf", true);
+}
+
+TEST_F(OpenMMXmlTest, AcetonePolMDrude)
+{
+    testOpenMM("ACS-pg", "acetone.sdf", true, 0.2);
 }
 
 TEST_F(OpenMMXmlTest, SulfatePol)
 {
-    testOpenMM("ACS-pg", "sulfate.sdf");
+    testOpenMM("ACS-pg", "sulfate.sdf", true);
 }
 
 TEST_F(OpenMMXmlTest, FuranPol)
 {
-    testOpenMM("ACS-pg", "furan.sdf");
+    testOpenMM("ACS-pg", "furan.sdf", true);
+}
+
+TEST_F(OpenMMXmlTest, FuranPolNoNum)
+{
+    testOpenMM("ACS-pg", "furan.sdf", false);
 }
 
 TEST_F(OpenMMXmlTest, AcetonePol)
 {
-    testOpenMM("ACS-pg", "acetone.sdf");
+    testOpenMM("ACS-pg", "acetone.sdf", true);
 }
 
 
