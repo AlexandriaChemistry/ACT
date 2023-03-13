@@ -18,6 +18,8 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - llvm    # [osx]
+    - boost
     - git
     - make
     - openmpi
@@ -26,6 +28,8 @@ requirements:
     - cairo
     - fftw
     - eigen
+    - bzip2
+    - zlib
     - libxml2
     - swig
     - sqlite
@@ -33,6 +37,8 @@ requirements:
   host:
     - python
   run:
+    - libgcc-ng  # [linux]
+    - boost
     - openmpi
     - matplotlib
     - pubchempy
@@ -42,6 +48,7 @@ requirements:
     # - cmake
     - fftw
     - eigen
+    - zlib
     - libxml2
     - swig
     - sqlite
