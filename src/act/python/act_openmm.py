@@ -479,8 +479,8 @@ class ActOpenMMSim:
             self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
         elif "DrudeLangevinIntegrator" == integrator:
             self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, self.sim_params.getFloat('friction_s'), self.dt)
-            print(DrudeLangevinIntegrator.getTemperature(integrator))
-            DrudeLangevinIntegrator.setMaxDrudeDistance(integrator,1)
+            print(DrudeLangevinIntegrator.getTemperature(self.integrator))
+            DrudeLangevinIntegrator.setMaxDrudeDistance(self.integrator,1)
         elif "DrudeNoseHooverIntegrator" == integrator:
             self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, 0.1, temperature_s, 0.001, self.dt)
         elif "DrudeSCFIntegrator" == integrator:

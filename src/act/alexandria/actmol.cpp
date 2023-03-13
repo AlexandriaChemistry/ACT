@@ -1964,8 +1964,9 @@ void ACTMol::CalcPolarizability(const ForceField    *pd,
 }
 
 void ACTMol::PrintConformation(const char                   *fn,
-                              const std::vector<gmx::RVec> &coords,
-                              bool                          writeShells)
+                               const std::vector<gmx::RVec> &coords,
+                               bool                          writeShells,
+                               const matrix                  box)
 {
     char title[STRLEN];
     
@@ -1995,14 +1996,14 @@ void ACTMol::PrintConformation(const char                   *fn,
     if (writeShells)
     {
         write_pdbfile(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
-                      epbc, state_->box, chain, model_nr, conect, bTerSepChains);
+                      epbc, box, chain, model_nr, conect, bTerSepChains);
     }
     else
     {
         bool usePqrFormat = false;
         write_pdbfile_indexed(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
-                              epbc, state_->box, chain, model_nr, realAtoms_.size(),
-                              realAtoms_.data(), conect, bTerSepChains, usePqrFormat);
+                              epbc, box, chain, model_nr, realAtoms_.size(),
+                              realAtoms_.data(), conect, bTerSepChains, usePqrFormat, true);
     }
     gmx_ffclose(fp);
     gmx_conect_done(conect);

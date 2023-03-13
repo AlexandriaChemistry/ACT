@@ -263,6 +263,8 @@ int gentop(int argc, char *argv[])
 
     fill_inputrec(inputrec);
     std::vector<ACTMol> actmols;
+    matrix box;
+    clear_mat(box);
     if (strlen(dbname) > 0)
     {
         const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
@@ -303,7 +305,7 @@ int gentop(int argc, char *argv[])
         std::vector<MolProp>  mps;
         double qtot_babel = qtot;
         if (readBabel(&pd, filename, &mps, molnm, iupac, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, &qtot_babel, addHydrogens))
+                      maxpot, nsymm, jobtype, &qtot_babel, addHydrogens, box))
         {
             for(auto &mp : mps)
             {
@@ -399,7 +401,7 @@ int gentop(int argc, char *argv[])
             {
                 std::string cfn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-c", NFILE, fnm));
-                actmol.PrintConformation(cfn.c_str(), coords, writeShells);
+                actmol.PrintConformation(cfn.c_str(), coords, writeShells, box);
             }
         }
         else

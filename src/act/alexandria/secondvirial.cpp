@@ -510,8 +510,9 @@ void ReRunner::rerun(FILE                        *logFile,
         else
         {
             // Read compounds if we have a trajectory file
+            matrix box;
             if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                           &basis, maxpot, nsymm, "Opt", &qtot, false))
+                           &basis, maxpot, nsymm, "Opt", &qtot, false, box))
             {
                 fprintf(stderr, "Could not read compounds from %s\n", trajname_);
                 return;
@@ -853,8 +854,9 @@ int b2(int argc, char *argv[])
         std::string method, basis;
         const char *conf = "";
         const char *jobtype = (char *)"Opt";
+        matrix box;
         if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, &qtot_babel, false))
+                      maxpot, nsymm, jobtype, &qtot_babel, false, box))
         {
             if (mps.size() > 1)
             {

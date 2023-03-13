@@ -92,7 +92,7 @@ void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains,
-                           bool usePqrFormat);
+                           bool usePqrFormat, bool renumberAtoms=false);
 /* REALLY low level */
 
 void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,

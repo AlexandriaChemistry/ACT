@@ -145,10 +145,11 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
             auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
             double qtot_babel = qtotal;
+            matrix box;
             EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                                   molname.c_str(), molname.c_str(),
                                   conf, &method, &basis, maxpot,
-                                  nsymm, jobtype, &qtot_babel, false));
+                                  nsymm, jobtype, &qtot_babel, false, box));
 
             if (trustObCharge)
             {
