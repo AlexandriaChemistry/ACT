@@ -33,9 +33,10 @@ void initACTMol(const char          *molname,
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
         bool qSymm = false;
+        matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
-                                maxpot, nsymm, jobtype, &qtot, false);
+                                maxpot, nsymm, jobtype, &qtot, false, box);
         EXPECT_TRUE(readOK);
         if (readOK)
         {

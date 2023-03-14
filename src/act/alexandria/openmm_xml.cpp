@@ -134,6 +134,7 @@ enum class xmlEntryOpenMM {
     CUSTOMNONBONDEDFORCE,
     PERPARTICLEPARAMETER,
     CUSTOMMANYPARTICLEFORCE,
+    USEATTRIBUTEFROMRESIDUE,
     DRUDEFORCE,
     PARTICLE
 };
@@ -196,6 +197,7 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "NonbondedForce",            xmlEntryOpenMM::NONBONDEDFORCE },
     { "PerParticleParameter",      xmlEntryOpenMM::PERPARTICLEPARAMETER },
     { "CustomManyParticleForce",   xmlEntryOpenMM::CUSTOMMANYPARTICLEFORCE },
+    { "UseAttributeFromResidue",   xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE },
     { "DrudeForce",                xmlEntryOpenMM::DRUDEFORCE              },
     { "Particle",                  xmlEntryOpenMM::PARTICLE                } 
 };
@@ -397,7 +399,10 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto fsCoul = pd->findForcesConst(InteractionType::COULOMB);
     // Custom non-bonded force
     auto fsPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
+    add_xml_double(fsPtr, "energy", 0.0);
     add_xml_int(fsPtr, "bondCutoff", nrexcl_);
+    auto uafr = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
+    add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
     
     // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
     // For the different atomtypes it would be good to add optimized sigma and epsilon values
@@ -405,7 +410,10 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto ljPtr        = add_xml_child(parent, exml_names(xmlEntryOpenMM::NONBONDEDFORCE));
     add_xml_double(ljPtr, "coulomb14scale", 1.0); 
     add_xml_double(ljPtr, "lj14scale", 1.0); 
-    
+    add_xml_double(ljPtr, "energy", 0.0);
+    uafr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
+    add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
+
     auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
     add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
     
@@ -421,7 +429,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto grandchild5 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
     add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
     auto grandchild6 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-    add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "beta");
+    add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "zeta");
 
     // add customnonbonded (WBH vdW + pg coulomb) for compound
     for(const auto &fft: ffTypeMap)
@@ -467,15 +475,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 }
                 break;
             case F_LJ:
-#ifdef USELJ
-                for(size_t j = 0; j < param.size(); j++)
-                {
-                    if (Mutability::Dependent != param[lj_name[j]].mutability())
-                    {
-                        add_xml_double(grandchild3, lj_name[j], param[lj_name[j]].internalValue());
-                    }
-                }
-#endif
+                // Treated below
                 break;
             default:
                 fprintf(stderr, "Unknown non-bonded force type %d %s\n", fs.gromacsType(),
@@ -490,24 +490,20 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 {
                     zeta = fsCoul.findParameterTypeConst(ztp, "zeta").internalValue();
                 }
-                add_xml_double(grandchild3, exml_names(xmlEntryOpenMM::CHARGE_RES), aType->charge()); 
+                //add_xml_double(grandchild3, exml_names(xmlEntryOpenMM::CHARGE_RES), aType->charge()); 
                 add_xml_double(grandchild3, "zeta", zeta); 
             }
-            
-            // Normal Lennard Jones
+            // Normal Lennard Jones is always needed
             {
-                auto grandchild3 = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
+                auto grandchild4 = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+                add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
                 std::vector<double> se_param = { 0.3, 0.05 };
                 const char *se_name[] = { "sigma", "epsilon" };
-                if (eptShell == aType->gmxParticleType())
-                {
-                    se_param[1] = 0;
-                }
-
+                
+                //add_xml_double(grandchild4, exml_names(xmlEntryOpenMM::CHARGE_RES), aType->charge());
                 for(size_t j = 0; j < se_param.size(); j++)
                 {
-                    add_xml_double(grandchild3, se_name[j], se_param[j]);
+                    add_xml_double(grandchild4, se_name[j], se_param[j]);
                 }
             }
         }  
@@ -571,13 +567,11 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case F_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));
-                add_xml_double(fsPtr, "energy", 0.0);
             }
             break;
         case F_MORSE:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-                add_xml_double(fsPtr, "energy", 0.0);
                 // Specify the per bond parameters
                 for(int i = 0; i < morseNR; i++)
                 {
@@ -591,7 +585,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 // The cubic bonds potential could be written as a string here,
                 // or it can be added in the openmm python script
-                add_xml_double(fsPtr, "energy", 0.0);
                 
                 // Specify the per bond parameters
                 for(int i = 0; i < cubicNR; i++)
@@ -625,6 +618,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         }
         if (fsPtr)
         {
+            add_xml_double(fsPtr, "energy", 0.0);
             xmlMap_.insert({fs.first, fsPtr});
         }
     }
@@ -761,14 +755,14 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             // to a number index. It restarts from 1 for every molecule, then if we add a
             // new copy of the same force field type we increase the number.
             std::map<std::string, int> fftypeLocalMap;
+            // Do we have copies of this atom type in the local map already?
+            int  localIndex = 0;
             
             for (size_t i = 0; i < myatoms.size(); i++)
             {
                 // First do atom type stuff
                 auto ffType            = myatoms[i].ffType();
                 std::string openMMtype = ffType;
-                // Do we have copies of this atom type in the local map already?
-                int  localIndex = 0;
                 auto ffLocalPtr = fftypeLocalMap.find(ffType);
                 if (fftypeLocalMap.end() != ffLocalPtr)
                 {

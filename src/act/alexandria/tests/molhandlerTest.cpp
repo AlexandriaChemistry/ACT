@@ -116,9 +116,10 @@ protected:
         auto pd  = getForceField(forcefield);
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
+        matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
-                                maxpot, nsymm, jobtype, &qtot, false);
+                                maxpot, nsymm, jobtype, &qtot, false, box);
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
         t_inputrec      inputrecInstance;

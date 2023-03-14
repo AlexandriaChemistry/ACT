@@ -146,7 +146,7 @@ void CombineBham(int     CombinationRule,
             *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
             break;
         case eCOMB_NONE:
-	    break;
+            break;
         case eCOMB_NR:
             gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
     }
@@ -193,7 +193,7 @@ static void generateVdwParameterPairs(ForceField *pd)
     auto forcesVdw = pd->findForces(InteractionType::VDW);
     auto ftypeVdW  = forcesVdw->gromacsType();
     int  comb_rule = getCombinationRule(*forcesVdw);
-    
+
     // We temporarily store the new parameters here
     ForceFieldParameterList newParams;
     

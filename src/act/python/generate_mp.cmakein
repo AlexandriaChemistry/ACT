@@ -152,7 +152,7 @@ def make_index_list(mols, block_length):
   index_list.append(len(mols))
   return index_list
 
-def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:str,
+def run_merge(mols, block_length, methods:str, edit_mp:str, xmldir:str, gentop:str,
               database:str, maxpot, output:str, sdf_ok=False):
 
   index_list = make_index_list(mols, block_length)
@@ -173,13 +173,13 @@ def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:
     
     if len(files.strip().split()):
       new_temp = ( "temp_%s_%s " % ( block_index, output ) )
-      command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, new_temp, files))
+      command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (edit_mp, gentop, new_temp, files))
       temp_files += " " + new_temp
       print(command)
       os.system(command)
 
   if len(temp_files.strip().split()) > 0:
-    command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, temp_files))
+    command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (edit_mp, gentop, output, temp_files))
     if len(database) > 0:
       command += " -db " + database
     print(command)
@@ -208,8 +208,8 @@ if __name__ == "__main__":
   selext = ".dat"
   if myselection[-4:] != selext:
     myselection += selext
-  gentop        = args.force_field
-  merge_mp      = alexandria + " merge_mp"
+  gentop  = args.force_field
+  edit_mp = alexandria + " edit_mp"
 
   M = Molecules()
   M.read(args.alexandria, 3, False)
@@ -224,5 +224,5 @@ if __name__ == "__main__":
     parallel_build(M, mols, args.methods, args.xmldir, maxpot, False)
   
   block_length = 2000  
-  run_merge(mols, block_length, args.methods, merge_mp, args.xmldir,
+  run_merge(mols, block_length, args.methods, edit_mp, args.xmldir,
             gentop, args.database, maxpot, args.output)

@@ -427,16 +427,17 @@ void DimerGenerator::generate(FILE                                *logFile,
     auto xorig     = actmol->xOriginal();
     // Split the coordinates into two fragments
     auto atomStart = fragptr->atomStart();
+    // Topologies
+    auto tops = fragptr->topologies();
     std::vector<gmx::RVec> xmOrig[2];
     for(int m = 0; m < 2; m++)
     {
-        for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+        auto   atoms   = tops[m].atoms();
+        for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
         {
             xmOrig[m].push_back(xorig[j]);
         } 
     }
-    // Topologies
-    auto tops = fragptr->topologies();
     // Move molecules to their respective COM
     gmx::RVec com[2];
     for(int m = 0; m < 2; m++)
@@ -519,10 +520,11 @@ void DimerGenerator::generate(FILE                                *logFile,
                 rvec_inc(xrand[1][j], trans);
             }
             size_t idim = ndim*ndist_+idist;
-            (*coords)[idim].resize(atomStart[2]-atomStart[0]);
+            (*coords)[idim].resize(xorig.size());
             for(int m = 0; m < 2; m++)
             {
-                for(size_t j = atomStart[m]; j < atomStart[m+1]; j++)
+                auto   atoms   = tops[m].atoms();
+                for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
                 {
                     auto jindex = j - atomStart[m];
                     copy_rvec(xrand[m][jindex], (*coords)[idim][j]);

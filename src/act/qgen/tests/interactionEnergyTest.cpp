@@ -150,10 +150,11 @@ protected:
         auto pd = getForceField(model);
 
         double qtot_babel = myqtot;
+        matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
-                              jobtype, &qtot_babel, false));
+                              jobtype, &qtot_babel, false, box));
 
         if (trustObCharge)
         {

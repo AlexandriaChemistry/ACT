@@ -47,7 +47,7 @@
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -286,7 +286,7 @@ immStatus ACTMol::GenerateAtoms(const ForceField *pd,
                 atoms->atom[natom].qB = 0;
             atoms->atom[natom].resind = resnr;
             t_atoms_set_resinfo(atoms, natom, symtab_, cai.residueName().c_str(),
-                                atoms->atom[natom].resind, ' ', 
+                                atoms->atom[natom].resind+1, ' ', 
                                 cai.chainId(), cai.chain());
             atoms->atomname[natom]    = put_symtab(symtab_, cai.getName().c_str());
 
@@ -1964,24 +1964,49 @@ void ACTMol::CalcPolarizability(const ForceField    *pd,
 }
 
 void ACTMol::PrintConformation(const char                   *fn,
-                              const std::vector<gmx::RVec> &coords,
-                              bool                          writeShells)
+                               const std::vector<gmx::RVec> &coords,
+                               bool                          writeShells,
+                               const matrix                  box)
 {
     char title[STRLEN];
     
     sprintf(title, "%s processed by ACT - The Alexandria Chemistry Tookit",
             getMolname().c_str());
+    int        model_nr      = 1;
+    char       chain         = ' ';
+    gmx_bool   bTerSepChains = FALSE;
+    gmx_conect conect        = gmx_conect_init();
+    auto       itype         = InteractionType::BONDS;
+    auto       top           = topology();
+    if (top->hasEntry(itype))
+    {
+        auto bonds = top->entry(itype);
+        for(const auto &b: bonds)
+        {
+            auto bb = static_cast<Bond *>(b);
+            gmx_conect_add(conect, bb->aI(), bb->aJ());
+        }
+    }
+    auto       epbc          = epbcNONE;
+    if (det(state_->box) > 0)
+    {
+        epbc = epbcXYZ;
+    }
+    FILE *fp = gmx_ffopen(fn, "w");
     if (writeShells)
     {
-        write_sto_conf(fn, title, gmxAtoms(), as_rvec_array(coords.data()),
-                       nullptr, epbcNONE, state_->box);
+        write_pdbfile(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
+                      epbc, box, chain, model_nr, conect, bTerSepChains);
     }
     else
     {
-        write_sto_conf_indexed(fn, title, gmxAtoms(), as_rvec_array(coords.data()),
-                               nullptr, epbcNONE, state_->box, realAtoms_.size(),
-                               realAtoms_.data());
+        bool usePqrFormat = false;
+        write_pdbfile_indexed(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
+                              epbc, box, chain, model_nr, realAtoms_.size(),
+                              realAtoms_.data(), conect, bTerSepChains, usePqrFormat, true);
     }
+    gmx_ffclose(fp);
+    gmx_conect_done(conect);
 }
 
 static void add_tensor(std::vector<std::string> *commercials,

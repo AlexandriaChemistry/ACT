@@ -94,8 +94,9 @@ protected:
         //Read input file for molprop
         auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
         double qtot = 0;
+        matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, &qtot, false));
+                              maxpot, nsymm, jobtype, &qtot, false, box));
                     
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;

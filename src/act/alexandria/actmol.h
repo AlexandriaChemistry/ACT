@@ -619,10 +619,12 @@ public:
      * \param[in] fn          The filename.
      * \param[in] coords      The atomic coordinates
      * \param[in] writeShells Whether or not to write the shell particles
+     * \param[in] box         The simulation box / unitcell
      */
     void PrintConformation(const char                   *fn,
                            const std::vector<gmx::RVec> &coords,
-                           bool                          writeShells);
+                           bool                          writeShells,
+                           const matrix                  box);
     
     /*! \brief
      * set the inputrec of the ACTMol object

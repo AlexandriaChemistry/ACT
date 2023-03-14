@@ -159,7 +159,9 @@ int simulate(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    ACTMol                actmol;
+    ACTMol actmol;
+    matrix box;
+    clear_mat(box);
     {
         std::vector<MolProp> mps;
         if (opt2bSet("-mp", fnm.size(), fnm.data()))
@@ -174,7 +176,7 @@ int simulate(int argc, char *argv[])
             int                  nsymm  = 1;
             if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                            &basis, maxpot, nsymm, "Opt", &qtot_babel,
-                           false))
+                           false, box))
             {
                 fprintf(logFile, "Reading %s failed.\n", filename);
                 status = 1;
@@ -285,7 +287,7 @@ int simulate(int argc, char *argv[])
             auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
             if (confout)
             {
-                actmol.PrintConformation(confout, xmin, sch.writeShells());
+                actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
             }
         }
         

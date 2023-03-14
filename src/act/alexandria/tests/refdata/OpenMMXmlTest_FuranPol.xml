@@ -65,64 +65,66 @@
     <Bond class1="c2_b" class2="c2_b" beta="20" De="400" D0="-400" bondlength="0.1393"/>
     <Bond class1="c2_b" class2="o2_b" beta="20" De="400" D0="-400" bondlength="0.1343"/>
   </CustomBondForce>
-  <HarmonicAngleForce>
+  <HarmonicAngleForce energy="0">
     <Angle class1="c2_b" class2="c2_b" class3="h_b" k="300" angle="2.1101"/>
     <Angle class1="h_b" class2="c2_b" class3="o2_b" k="300" angle="2.02284"/>
     <Angle class1="c2_b" class2="c2_b" class3="o2_b" k="300" angle="1.98444"/>
     <Angle class1="c2_b" class2="c2_b" class3="c2_b" k="300" angle="2.08218"/>
     <Angle class1="c2_b" class2="o2_b" class3="c2_b" k="300" angle="1.86227"/>
   </HarmonicAngleForce>
-  <CustomAngleForce/>
-  <PeriodicTorsionForce>
+  <CustomAngleForce energy="0"/>
+  <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="o2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="3">
+    <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
-    <PerParticleParameter name="beta"/>
-    <Atom type="c2_1" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" charge="0" zeta="6"/>
-    <Atom type="c2_2" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" charge="0" zeta="6"/>
-    <Atom type="c2_3" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" charge="0" zeta="6"/>
-    <Atom type="c2_4" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" charge="0" zeta="6"/>
-    <Atom type="c2_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-1.2" zeta="6"/>
-    <Atom type="c2_s_2" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-1.2" zeta="6"/>
-    <Atom type="c2_s_3" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-1.2" zeta="6"/>
-    <Atom type="c2_s_4" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-1.2" zeta="6"/>
-    <Atom type="h_1" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" charge="0.25" zeta="6"/>
-    <Atom type="h_2" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" charge="0.25" zeta="6"/>
-    <Atom type="h_3" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" charge="0.25" zeta="6"/>
-    <Atom type="h_4" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" charge="0.25" zeta="6"/>
-    <Atom type="h_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-0.8" zeta="6"/>
-    <Atom type="h_s_2" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-0.8" zeta="6"/>
-    <Atom type="h_s_3" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-0.8" zeta="6"/>
-    <Atom type="h_s_4" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-0.8" zeta="6"/>
-    <Atom type="o2_1" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" charge="0" zeta="6"/>
-    <Atom type="o2_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" charge="-1.2" zeta="6"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="c2_1" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+    <Atom type="c2_2" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+    <Atom type="c2_3" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+    <Atom type="c2_4" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+    <Atom type="c2_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="c2_s_2" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="c2_s_3" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="c2_s_4" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="h_1" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_2" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_3" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_4" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="h_s_2" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="h_s_3" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="h_s_4" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="o2_1" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
+    <Atom type="o2_s_1" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
+    <UseAttributeFromResidue name="charge"/>
     <Atom type="c2_1" sigma="0.3" epsilon="0.05"/>
     <Atom type="c2_2" sigma="0.3" epsilon="0.05"/>
     <Atom type="c2_3" sigma="0.3" epsilon="0.05"/>
     <Atom type="c2_4" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c2_s_1" sigma="0.3" epsilon="0"/>
-    <Atom type="c2_s_2" sigma="0.3" epsilon="0"/>
-    <Atom type="c2_s_3" sigma="0.3" epsilon="0"/>
-    <Atom type="c2_s_4" sigma="0.3" epsilon="0"/>
+    <Atom type="c2_s_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_2" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_3" sigma="0.3" epsilon="0.05"/>
+    <Atom type="c2_s_4" sigma="0.3" epsilon="0.05"/>
     <Atom type="h_1" sigma="0.3" epsilon="0.05"/>
     <Atom type="h_2" sigma="0.3" epsilon="0.05"/>
     <Atom type="h_3" sigma="0.3" epsilon="0.05"/>
     <Atom type="h_4" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_s_1" sigma="0.3" epsilon="0"/>
-    <Atom type="h_s_2" sigma="0.3" epsilon="0"/>
-    <Atom type="h_s_3" sigma="0.3" epsilon="0"/>
-    <Atom type="h_s_4" sigma="0.3" epsilon="0"/>
+    <Atom type="h_s_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_2" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_3" sigma="0.3" epsilon="0.05"/>
+    <Atom type="h_s_4" sigma="0.3" epsilon="0.05"/>
     <Atom type="o2_1" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_s_1" sigma="0.3" epsilon="0"/>
+    <Atom type="o2_s_1" sigma="0.3" epsilon="0.05"/>
   </NonbondedForce>
   <DrudeForce>
     <Particle type2="c2_1" type1="c2_s_1" polarizability="0.00145" charge="-1.2" thole="0"/>

@@ -43,6 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <map>
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -307,7 +308,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            int ePBC, const matrix box, char chainid,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains,
-                           bool usePqrFormat)
+                           bool usePqrFormat, bool renumberAtoms)
 {
     gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
     int               i, ii;
@@ -351,6 +352,14 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     lastchainnum      = -1;
     p_restype         = nullptr;
 
+    std::map<int, int> reverseIndex;
+    if (renumberAtoms)
+    {
+        for (ii = 0; ii < nindex; ii++)
+        {
+            reverseIndex.insert({index[ii], ii});
+        }
+    }
     for (ii = 0; ii < nindex; ii++)
     {
         i             = index[ii];
@@ -413,9 +422,14 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         bfac  = pdbinfo.bfac;
         if (!usePqrFormat)
         {
+            int atomnr = i+1;
+            if (renumberAtoms)
+            {
+                atomnr = ii+1;
+            }
             gmx_fprintf_pdb_atomline(out,
                                      type,
-                                     i+1,
+                                     atomnr,
                                      nm.c_str(),
                                      altloc,
                                      resnm.c_str(),
@@ -460,7 +474,14 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         /* Write conect records */
         for (i = 0; (i < gc->nconect); i++)
         {
-            fprintf(out, "CONECT%5d%5d\n", gc->conect[i].ai+1, gc->conect[i].aj+1);
+            int ai = gc->conect[i].ai;
+            int aj = gc->conect[i].aj;
+            if (renumberAtoms)
+            {
+                ai = reverseIndex.find(ai)->second;
+                aj = reverseIndex.find(aj)->second;
+            }
+            fprintf(out, "CONECT%5d%5d\n", ai+1, aj+1);
         }
     }
 
