@@ -157,6 +157,8 @@ private:
     ChargeType                       ChargeType_  = ChargeType::Point;
     //! Number of particles in the compound
     int                              natom_       = 0;
+    //! Epsilon R
+    double                           epsilonr_    = 1;
     //! Atomic number for each of the atoms
     std::vector<int>                 atomicNumber_;
     //! Parameters for EEM algorithm, chi is electronegativity

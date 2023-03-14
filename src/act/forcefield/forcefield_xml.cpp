@@ -90,9 +90,7 @@ enum class xmlEntry {
     PARTICLETYPES,
     PARTICLETYPE, 
     COMB_RULE,
-    NEXCL,
     VERSION,
-    EPSILONR,
     DESC,
     GEOMETRY,
     NUMBONDS,
@@ -154,13 +152,9 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "parameter",                 xmlEntry::PARAMETER        },
     { "version",                   xmlEntry::VERSION          },
     { "function",                  xmlEntry::FUNCTION         },
-    { "nexclusions",               xmlEntry::NEXCL            },
-    { "epsilonr",                  xmlEntry::EPSILONR         },
     { "description",               xmlEntry::DESC             },
-    //{ "aromatic",                  xmlEntry::AROMATIC         },
     { "geometry",                  xmlEntry::GEOMETRY         },
     { "numbonds",                  xmlEntry::NUMBONDS         },
-    //{ "vdwparams",                 xmlEntry::VDWPARAMS        },
     { "vanderwaals",               xmlEntry::VANDERWAALS      },
     { "interaction",               xmlEntry::INTERACTION      },
     { "identifier",                xmlEntry::IDENTIFIER       },
@@ -325,14 +319,6 @@ static void processAttr(FILE       *fp,
         }
         break;
     case xmlEntry::PARTICLETYPES:
-        if (NNobligatory(xbuf, xmlEntry::NEXCL))
-        {
-            pd->setNexcl(atoi(xbufString(xmlEntry::NEXCL).c_str()));
-        }
-        if (NN(xbuf, xmlEntry::EPSILONR))
-        {
-            pd->setEpsilonR(atof(xbufString(xmlEntry::EPSILONR).c_str()));
-        }
         break;
     case xmlEntry::INTERACTION:
         if (NNobligatory(xbuf, xmlEntry::TYPE) &&
@@ -646,10 +632,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     
     child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
                  
-    add_xml_int(child, exml_names(xmlEntry::NEXCL), pd->getNexcl());
-    double epsilonr = pd->getEpsilonR();
-    add_xml_double(child, exml_names(xmlEntry::EPSILONR), epsilonr);
-
     for (const auto &aType : pd->particleTypesConst())
     {
         auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));

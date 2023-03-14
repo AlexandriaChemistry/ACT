@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="f72c3972da72dffff4a7a3f6602f4562" timestamp="2023-01-27 16:28:14"/>
-  <particletypes nexclusions="0" epsilonr="1">
+  <version checksum="a875c24220bfb5214ca26500ea695ca8" timestamp="2023-03-14 21:00:11"/>
+  <particletypes>
     <particletype identifier="h" type="Atom" description="hydrogen on aliphatic C with 1 electron-withdrawal group">
       <option key="acmtype" value="h_z"/>
       <option key="atomnumber" value="1"/>
@@ -14240,6 +14240,7 @@
   </interaction>
   <interaction type="VANDERWAALS" function="BHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -14583,6 +14584,8 @@
   </interaction>
   <interaction type="COULOMB" function="COUL_SR" canswap="false">
     <option key="chargetype" value="Gaussian"/>
+    <option key="epsilonr" value="1"/>
+    <option key="nexcl" value="0"/>
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>

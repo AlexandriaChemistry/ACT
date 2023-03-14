@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -63,7 +63,13 @@ QgenAcm::QgenAcm(const ForceField              *pd,
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
     qtotal_     = qtotal;
-
+    
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "epsilonr", &epsilonr_))
+    {
+        epsilonr_ = 1;
+    }
+    
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (size_t i = 0; i < atoms.size(); i++)
     {
@@ -642,7 +648,7 @@ void QgenAcm::getBccParams(const ForceField *pd,
 }
 
 int QgenAcm::solveSQE(FILE                    *fp,
-                      const ForceField           *pd,
+                      const ForceField        *pd,
                       const std::vector<Bond> &bonds)
 {
     std::vector<double> myq(nonFixed_.size(), 0.0);
@@ -652,8 +658,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
     {
         MatrixWrapper lhs(nbonds, nbonds);
         std::vector<double> rhs(nbonds, 0.0);
-    
-        auto epsilonr = pd->getEpsilonR();
+
         std::vector<double> delta_chis;
         // First fill the matrix
         for (int bij = 0; bij < nbonds; bij++)
@@ -726,7 +731,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
             if (false && nonFixed_.size() < static_cast<size_t>(natom_))
             {
                 chi_corr[i] += eta_[nfi] * q_[myShell_.find(nfi)->second];
-                chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
+                chi_corr[i] += 0.5*calcJcs(nfi, epsilonr_);
             }
         }
         for (int bij = 0; bij < nbonds; bij++)
@@ -825,7 +830,7 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
     {
         updateParameters(pd, *atoms);
         updatePositions(x);
-        calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
+        calcJcc(epsilonr_, pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
@@ -833,7 +838,7 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
         }
         else
         {
-            calcRhs(pd->getEpsilonR());
+            calcRhs(epsilonr_);
             info = solveEEM(fp);
         }
         if (info == 0)

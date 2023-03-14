@@ -80,9 +80,28 @@ void forceFieldSummary(JsonTree      *jtree,
     jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
     jtree->addObject(JsonTree("Charge generation", 
                               chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
-    jtree->addObject(JsonTree("# exclusions", gmx_itoa(pd->getNexcl())));
+    int nexclvdw;
+    if (!ffOption(*pd, InteractionType::VDW, 
+                  "nexcl", &nexclvdw))
+    {
+        nexclvdw = 0;
+    }
+    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexclvdw)));
+    int nexclqq;
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "nexcl", &nexclqq))
+    {
+        nexclqq = 0;
+    }
+    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexclqq)));
+    double epsilonr;
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
     jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
-                              gmx_ftoa(pd->getEpsilonR())));
+                              gmx_ftoa(epsilonr)));
     jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
     
     JsonTree ftree("InteractionTypes");

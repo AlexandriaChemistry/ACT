@@ -505,7 +505,7 @@ private:
     //! Map from InteractionType to topology element pointers
     std::map<InteractionType, std::vector<TopologyEntry *> >  entries_;
     //! Non bonded exclusions, array is length of number of atoms
-    std::vector<std::vector<int> >                            exclusions_;
+    std::map<InteractionType, std::vector<std::vector<int>>>  exclusions_;
     //! List of atoms
     std::vector<ActAtom>                                      atoms_;
     //! The molecule (compound) name
@@ -625,10 +625,12 @@ private:
                   const std::vector<TopologyEntry *> &entry);
 
     /*! \brief Generate exclusiones
-     * \param[in]  nrexcl    The number of exclusions to generate (max 2)
+     * \param[in]  nrexclvdw The number of exclusions to generate for Van der Waals interactions (max 2)
+     * \param[in]  nrexclqq  The number of exclusions to generate for Coulomb interactions (max 2)
      * \param[in]  nratom    The number of atoms in the system
      */
-    void generateExclusions(int nrexcl,
+    void generateExclusions(int nrexclvdw,
+                            int nrexclqq,
                             int nratoms);
     
     //! \return the number of atoms                    

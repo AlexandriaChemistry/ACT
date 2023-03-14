@@ -372,8 +372,6 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send_str(dest, &filename_);
         cr->send_str(dest, &checkSum_);
         cr->send_str(dest, &timeStamp_);
-        cr->send_int(dest, nexcl_);
-        cr->send_double(dest, gtEpsilonR_);
         cr->send_str(dest, &vsite_angle_unit_);
         cr->send_str(dest, &vsite_length_unit_);
         cr->send_int(dest, static_cast<int>(ChargeGenerationAlgorithm_));
@@ -446,8 +444,6 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&filename_, comm);
         cr->bcast(&checkSum_, comm);
         cr->bcast(&timeStamp_, comm);
-        cr->bcast(&nexcl_, comm);
-        cr->bcast(&gtEpsilonR_, comm);
         cr->bcast(&vsite_angle_unit_, comm);
         cr->bcast(&vsite_length_unit_, comm);
         int icq = static_cast<int>(ChargeGenerationAlgorithm_);
@@ -566,8 +562,6 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         cr->recv_str(src, &filename_);
         cr->recv_str(src, &checkSum_);
         cr->recv_str(src, &timeStamp_);
-        nexcl_                = cr->recv_int(src);
-        gtEpsilonR_           = cr->recv_double(src);
         cr->recv_str(src, &vsite_angle_unit_);
         cr->recv_str(src, &vsite_length_unit_);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cr->recv_int(src));
@@ -930,6 +924,52 @@ void ForceField::calcDependent()
             }
         }
     }
+}
+
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              std::string       *value)
+{
+    if (!pd.interactionPresent(itype))
+    {
+        return false;
+    }
+    auto fs = pd.findForcesConst(itype);
+    if (!fs.optionExists(name))
+    {
+        return false;
+    }
+    *value = fs.optionValue(name);
+    return true;
+}
+
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              int               *value)
+{
+    std::string vstr;
+    if (!ffOption(pd, itype, name, &vstr))
+    {
+        return false;
+    }
+    *value = my_atoi(vstr.c_str(), name.c_str());
+    return true;
+}
+
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              double            *value)
+{
+    std::string vstr;
+    if (!ffOption(pd, itype, name, &vstr))
+    {
+        return false;
+    }
+    *value = my_atof(vstr.c_str(), name.c_str());
+    return true;
 }
 
 } // namespace alexandria

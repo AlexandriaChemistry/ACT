@@ -46,6 +46,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
@@ -146,7 +147,8 @@ int gen_ff(int argc, char*argv[])
         "symmetric_charges.csv - containing groups of atoms that should have symmetric charges[BR]"
     };
     gmx_output_env_t *oenv;
-    int               nexcl    = 0;
+    int               nexclqq  = 0;
+    int               nexclvdw = 0;
     double            epsilonr = 1;
     
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
@@ -167,8 +169,10 @@ int gen_ff(int argc, char*argv[])
     };
     std::vector<t_pargs> pa =
     {
-        { "-nexcl", FALSE, etINT,  {&nexcl},
-          "Number of exclusions, zero recommend for polarizable force fields." },
+        { "-nexclqq", FALSE, etINT,  {&nexclqq},
+          "Number of exclusions for Coulomb interactions, zero recommend for polarizable force fields." },
+        { "-nexclvdw", FALSE, etINT,  {&nexclvdw},
+          "Number of exclusions for Van der Waals interactions." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-qdist", FALSE, etENUM, {qdn2},
@@ -199,8 +203,6 @@ int gen_ff(int argc, char*argv[])
     printf("There are %zu element properties\n", aprops.size());
     
     alexandria::ForceField pd;
-    pd.setNexcl(nexcl);
-    pd.setEpsilonR(epsilonr);
     // More stuff
     std::vector<std::string> options = {
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
@@ -208,8 +210,11 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList pols("Polarization", CanSwap::No);
     ForceFieldParameterList zeta("COUL_SR", CanSwap::Yes);
     zeta.addOption("chargetype", qdn2[0]);
+    zeta.addOption("epsilonr", gmx_ftoa(epsilonr));
+    zeta.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     vdw.addOption("combination_rule", combrules[0]);
+    vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
     for(const auto &entry : table)
     {
