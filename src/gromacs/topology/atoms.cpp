@@ -46,6 +46,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -249,7 +250,10 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
     t_resinfo *ri;
 
     int resind   = atoms->atom[atom_ind].resind;
-    GMX_RELEASE_ASSERT(resind >= 0 && resind <= atoms->nres, "Residue index out of range");
+    if (resind < 0 || resind > atoms->nres)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Residue index %d out of range 0..%d", resind, atoms->nres).c_str()));
+    }
     ri           = &atoms->resinfo[resind];
     ri->name     = put_symtab(symtab, resname);
     ri->rtp      = nullptr;
