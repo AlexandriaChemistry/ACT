@@ -10,16 +10,37 @@ sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 from molprops import *
 from read_gaussian_log import *
 
+def read_basis_table(infile:str)->dict:
+    rbt = {}
+    if os.path.exists(infile):
+        with open(infile, "r") as inf:
+            for line in inf:
+                words = line.strip().split()
+                if len(words) == 2:
+                    rbt[words[0]] = words[1]
+    else:
+        print("No such basisset_table file %s" % infile)
+    return rbt
+    
 def parseArguments():
     desc = '''This script will read a Gaussian output file from the Alexandria library
-    and write an XML file for input to the Alexandria Chemistry Toolkit.'''
+    and write an XML file for input to the Alexandria Chemistry Toolkit. For systems
+    with atoms that needed a special basis set a table can be specified with the flag
+    -basisset_table. The format of the file should be:
+    
+    Elem1 Basis1
+    Elem2 Basis2
+    
+    For all elements not specified the default basis set will be assumed.
+    '''
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("-i", "--infile", help="Gaussian log file for reading (may be gzipped)", type=str)
     outf = "test.xml"
     parser.add_argument("-o", "--outfile", help="Output xml file for writing, default "+outf, type=str, default=outf)
     molname = "chemical"
     parser.add_argument("-n", "--molname", help="Molecule name, default "+molname, type=str, default=molname)
-    parser.add_argument("-basis", "--basisset", help="Basis set, will override what is in the input file", type=str, default="")
+    parser.add_argument("-basis", "--basisset", help="Basis set, will override what is in the input file", type=str, default=None)
+    parser.add_argument("-basis_table", "--basisset_table", help="Table of basis set per element, will override what is in the input file", type=str, default=None)
     parser.add_argument("-v", "--verbose", help="write debug statements", action="store_true")
     parser.add_argument("-coordset", "--coordinate_set", help="Use this coordinate set out of all stored in the gaussian log file. Default 0 which means the last one.", type=int, default=0)
     return parser.parse_args()
@@ -27,8 +48,9 @@ def parseArguments():
 if __name__ == '__main__':
     args  = parseArguments()
 
-    mp = read_gaussian_log(args.infile, args.molname,
-                           args.basisset, args.verbose, args.coordinate_set)
+    rbt   = read_basis_table(args.basisset_table)
+    mp = read_gaussian_log(args.infile, args.molname, args.basisset, rbt,
+                           args.verbose, args.coordinate_set)
     if None != mp:
         molprops = Molprops()
         molprops.open(args.outfile)

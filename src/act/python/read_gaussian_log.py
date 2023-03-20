@@ -31,7 +31,7 @@ class GaussianReader:
     '''Read the output from a Gaussian calculation to extract
     coordinates, charge, multiplicity, multipole moments and
     more.'''
-    def __init__(self, molname:str, basisset:str, verbose:bool, coordinate_set:int):
+    def __init__(self, molname:str, basisset:str, special_basis:dict, verbose:bool, coordinate_set:int):
         # Default stuff
         self.author        = "Spoel2022a"
         self.conformation  = "minimum"
@@ -60,6 +60,7 @@ class GaussianReader:
         self.readPotential = 0
         self.molname       = molname
         self.userbasis     = basisset
+        self.special_basis = special_basis
         self.verbose       = verbose
         # Thermochemistry variables
         self.tcmap         = { "CV": None, "Ezpe": None, "Hcorr": None,
@@ -624,7 +625,10 @@ class GaussianReader:
                 lots = []
                 charges = []
                 for i in range(len(self.atomname)):
-                    lots.append(leveloftheory)
+                    if self.atomname[i] in self.special_basis:
+                        lots.append(self.special_basis[self.atomname[i]])
+                    else:
+                        lots.append(leveloftheory)
                     charges.append(0.0)
                 eHF  = compute_dhform(self.tcmap["E0"], self.atomname,
                                       g2a, ahof, lots, charges,
@@ -684,10 +688,11 @@ class GaussianReader:
                     print("Something fishy with " + infile)
         return mp
         
-def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool, coordinate_set:int) -> Molprop:
+def read_gaussian_log(infile:str, molname:str, basisset:str, special_basis:dict,
+                      verbose:bool, coordinate_set:int) -> Molprop:
     if verbose:
         debug = True
-    gr = GaussianReader(molname, basisset, verbose, coordinate_set)
+    gr = GaussianReader(molname, basisset, special_basis, verbose, coordinate_set)
     mp = gr.read(infile)
     if None == mp:
         print("Could not read %s" % infile)
