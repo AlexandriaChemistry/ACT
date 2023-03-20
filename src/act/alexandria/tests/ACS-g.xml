@@ -2,7 +2,7 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <version checksum="e4e1865a84a3bcbc34f08d64279f1b75" timestamp="2022-09-13 21:14:02"/>
-  <particletypes nexclusions="2" epsilonr="1">
+  <particletypes>
     <particletype identifier="h" type="Atom" description="hydrogen">
       <option key="acmtype" value="h_z"/>
       <option key="atomnumber" value="1"/>
@@ -4541,6 +4541,7 @@
   </interaction>
   <interaction type="VANDERWAALS" function="LJ_SR" canswap="true">
     <option key="combination_rule" value="Geometric"/>
+    <option key="nexcl" value="2"/>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.51" uncertainty="0" minimum="0.02" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="sigma" unit="nm" value="0.3" uncertainty="0" minimum="0.1" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -6920,6 +6921,8 @@
   </interaction>
   <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
+    <option key="nexcl" value="2"/>
+    <option key="epsilonr" value="1"/>
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="Be2+_z">
       <parameter type="zeta" unit="1/nm" value="13" uncertainty="0" minimum="6" maximum="20" ntrain="1" mutability="Bounded" nonnegative="yes"/>

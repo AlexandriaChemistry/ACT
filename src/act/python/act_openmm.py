@@ -271,28 +271,40 @@ class ActOpenMMSim:
         expression += 'Coulomb_point = (ONE_4PI_EPS0*charge1*charge2/r);'
         expression += 'zeta = ((zeta1 * zeta2)/(sqrt(zeta1^2 + zeta2^2)));'
         expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
+<<<<<<< HEAD
         force = openmm.CustomNonbondedForce(expression)
         force.addPerParticleParameter("charge")
         force.addPerParticleParameter("zeta")
         force.setUseSwitchingFunction(self.use_switching_function)
+=======
+        qqforce = openmm.CustomNonbondedForce(expression)
+        qqforce.addPerParticleParameter("charge")
+        qqforce.addPerParticleParameter("zeta")
+        qqforce.setUseSwitchingFunction(self.use_switching_function)
+>>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
         if self.nonbondedMethod == NoCutoff:
-            force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+            qqforce.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
         else:    
-            force.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
-        force.setCutoffDistance(cutoff_distance)
-        force.setSwitchingDistance(switch_distance)
-        force.setUseLongRangeCorrection(False) #Don't use dispersion correction for coulomb, it does not converge: https://github.com/openmm/openmm/issues/3162
+            qqforce.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+        qqforce.setCutoffDistance(cutoff_distance)
+        qqforce.setSwitchingDistance(switch_distance)
+        # Don't use dispersion correction for coulomb, it does not converge: https://github.com/openmm/openmm/issues/3162
+        qqforce.setUseLongRangeCorrection(False)
 
         for index in range(self.reference_nb_force.getNumParticles()):
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
             if self.args.verbose:
                 print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.reference_cnb_force.getParticleParameters(index)}")
+<<<<<<< HEAD
             force.addParticle([charge,zeta])
+=======
+            qqforce.addParticle([charge,zeta])
+>>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.reference_nb_force.getExceptionParameters(index)
-            force.addExclusion(iatom, jatom)
-        self.add_force_group(force, "Coulomb")
-        self.system.addForce(force)
+            qqforce.addExclusion(iatom, jatom)
+        self.add_force_group(qqforce, "Coulomb")
+        self.system.addForce(qqforce)
         # vdW
         expression = 'U_WKB- U_LJ;' 
 
@@ -310,38 +322,51 @@ class ActOpenMMSim:
         expression += 'epsilon = ((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2));'
         expression += 'gamma = ((gamma1 + gamma2)/2);'
         expression += 'vdW = vdW1*vdW2;'
-        force = openmm.CustomNonbondedForce(expression)
-        force.addPerParticleParameter("sigma")
-        force.addPerParticleParameter("epsilon")
-        force.addPerParticleParameter("gamma")
-        force.addPerParticleParameter("vdW")
-        force.addPerParticleParameter("sigma_LJ")
-        force.addPerParticleParameter("epsilon_LJ")
-        force.setUseSwitchingFunction(self.use_switching_function)
+        vdwforce = openmm.CustomNonbondedForce(expression)
+        vdwforce.addPerParticleParameter("sigma")
+        vdwforce.addPerParticleParameter("epsilon")
+        vdwforce.addPerParticleParameter("gamma")
+        vdwforce.addPerParticleParameter("vdW")
+        vdwforce.addPerParticleParameter("sigma_LJ")
+        vdwforce.addPerParticleParameter("epsilon_LJ")
+        vdwforce.setUseSwitchingFunction(self.use_switching_function)
         if self.nonbondedMethod == NoCutoff:
-            force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+            vdwforce.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
         else:    
-            force.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
-        force.setCutoffDistance(cutoff_distance)
-        force.setSwitchingDistance(switch_distance)
-        force.setUseLongRangeCorrection(self.reference_nb_force.getUseDispersionCorrection())
+            vdwforce.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+        vdwforce.setCutoffDistance(cutoff_distance)
+        vdwforce.setSwitchingDistance(switch_distance)
+        vdwforce.setUseLongRangeCorrection(self.reference_nb_force.getUseDispersionCorrection())
         for index in range(self.reference_nb_force.getNumParticles()):
             [charge_LJ, sigma_LJ, epsilon_LJ] = self.reference_nb_force.getParticleParameters(index)
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
+<<<<<<< HEAD
             force.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
+=======
+            vdwforce.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
+>>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
             if self.args.verbose:
                 print("index %d sigma %g, epsilon %g, gamma %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, vdW, sigma_LJ._value, epsilon_LJ._value ))
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.reference_nb_force.getExceptionParameters(index)
-            force.addExclusion(iatom, jatom)
+            vdwforce.addExclusion(iatom, jatom)
             if self.args.verbose:
                 print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
-        self.add_force_group(force, "Wang-Buckingham")
-        self.system.addForce(force)
+        self.add_force_group(vdwforce, "Wang-Buckingham")
+        self.system.addForce(vdwforce)
 
+    def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
+        if nexcl == 0:
+            return False
+        elif nexcl == 1:
+            return ((iatom,jatom) in self.bonds or (jatom,iatom) in self.bonds)
+        else:
+            sys.exit("Cannot handle nexcl == %d" % nexcl)
+        return False
 
     def add_excl_correction(self):
         # Add vdW and electrostactics that have been excluded (this has to be done as the number of exclusions is 3 for nonbonded interactions in OpenMM)
+<<<<<<< HEAD
         # Those interactions are added using a CustomBondForce
         bond_expression =('(U_sterics+U_electrostatics);'
                           'U_sterics = (((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));'
@@ -356,13 +381,32 @@ class ActOpenMMSim:
         bond_force.addPerBondParameter("epsilon")
         bond_force.addPerBondParameter("gamma")
         bond_force.addPerBondParameter("vdW")
+=======
+        # Those interactions are added using two CustomBondForce entries
+        vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));')
+        vdw_force = openmm.CustomBondForce(vdw_expression)
+        vdw_force.addPerBondParameter("sigma")
+        vdw_force.addPerBondParameter("epsilon")
+        vdw_force.addPerBondParameter("gamma")
+        vdw_force.addPerBondParameter("vdW")
+        
+        qq_expression =('(ONE_4PI_EPS0*chargeprod* erf(zeta*r)/r);')
+        qq_expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
+        qq_force = openmm.CustomBondForce(qq_expression)
+        qq_force.addPerBondParameter("chargeprod")
+        qq_force.addPerBondParameter("zeta")
+>>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
 
+        nexclvdw = self.sim_params.getInt("nexclvdw")
+        nexclqq  = self.sim_params.getInt("nexclqq")
+        
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.reference_nb_force.getExceptionParameters(index)
             [vdW1, sigma1, epsilon1, gamma1, charge1, zeta1] = self.reference_cnb_force.getParticleParameters(iatom)
             if self.args.verbose:
                 print(f" custom bond force i {self.reference_cnb_force.getParticleParameters(iatom)}")
             [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
+<<<<<<< HEAD
             chargeprod = charge1*charge2
             zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
             if epsilon1 == 0 and epsilon2 == 0:
@@ -386,10 +430,44 @@ class ActOpenMMSim:
                     bond_force.addBond(iatom, jatom, [chargeprod, zeta, sigma, epsilon, gamma, vdW])
         self.add_force_group(bond_force, "Exclusion Correction")
         self.system.addForce(bond_force)
+=======
+            # Check whether this is not a core shell pair
+            if not (iatom,jatom) in self.core_shell and not (jatom,iatom) in self.core_shell:
+                # Coulomb part
+                if not self.real_exclusion(nexclqq, iatom, jatom):
+                    chargeprod = charge1*charge2
+                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
+                    qq_force.addBond(iatom, jatom, [chargeprod, zeta])
+                
+                # Van der Waals part
+                if not self.real_exclusion(nexclvdw, iatom, jatom):
+                    if epsilon1 == 0 and epsilon2 == 0:
+                        epsilon = 0
+                    else:
+                        epsilon = ((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))
+                    gamma = ((gamma1 + gamma2)/2)
+                    if epsilon == 0 or gamma == 0:
+                        sigma   = 0.01
+                        epsilon = 0.01
+                        gamma   = 10
+                    else:
+                        sigma = sqrt(sigma1*sigma2)
+                    #sigma = (((sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))**(1/6))
+                    if self.args.verbose:
+                        print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta %g chargeprod %g" % 
+                              ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta, chargeprod ))
+                    vdW = vdW1*vdW2
+                    vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma, vdW])
+        self.add_force_group(qq_force, "Coulomb Exclusion Correction")
+        self.system.addForce(qq_force)
+        self.add_force_group(vdw_force, "Van der Waals Exclusion Correction")
+        self.system.addForce(vdw_force)
+>>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
    
     def add_bonded_forces(self):
         forces = { force.__class__.__name__ : force for force in self.system.getForces() }
         reference_cb_force  = forces['CustomBondForce']
+        self.bonds = []
         if self.args.bonded_potential == "morse":
             ### Morse potential ###
             Morse_expression = "(D_e*(1 - exp(-a*(r-r0)))^2)-D_e;"
@@ -400,6 +478,7 @@ class ActOpenMMSim:
             for bond_index in range(reference_cb_force.getNumBonds()):
                 # Retrieve parameters.
                 [iatom, jatom, (D_e, a, r0)] = reference_cb_force.getBondParameters(bond_index)
+                self.bonds.append((iatom, jatom))
                 Morse_force.addBond(iatom, jatom, [D_e, a, r0])
             self.add_force_group(Morse_force, "Morse bonds")
             self.system.addForce(Morse_force)
@@ -419,6 +498,7 @@ class ActOpenMMSim:
             for bond_index in range(reference_cb_force.getNumBonds()):
                 # Retrieve parameters.
                 [iatom, jatom, (bondlength, rmax, kb, D_e)] = reference_cb_force.getBondParameters(bond_index)
+                self.bonds.append((iatom, jatom))
                 Cubic_force.addBond(iatom, jatom, [bondlength, rmax, kb, D_e])
             self.add_force_group(Cubic_force, "Cubic bonds")
             self.system.addForce(Cubic_force)
@@ -478,19 +558,23 @@ class ActOpenMMSim:
         if "NoseHooverIntegrator" == integrator:
             self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
         elif "DrudeLangevinIntegrator" == integrator:
-            self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, self.sim_params.getFloat('friction_s'), self.dt)
-            print(DrudeLangevinIntegrator.getTemperature(integrator))
-            DrudeLangevinIntegrator.setMaxDrudeDistance(integrator,1)
+            self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, 
+                                                      self.sim_params.getFloat('friction_s'), self.dt)
+            print(DrudeLangevinIntegrator.getTemperature(self.integrator))
         elif "DrudeNoseHooverIntegrator" == integrator:
-            self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, 0.1, temperature_s, 0.001, self.dt)
+            self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, friction_c, temperature_s, 
+                                                        self.sim_params.getFloat('friction_s'), self.dt)
         elif "DrudeSCFIntegrator" == integrator:
             self.integrator = DrudeSCFIntegrator(self.dt)
-            self.integrator.setDrudeTemperature(self.temperature_c)
-            if self.args.verbose:
-                print("Temperature %g" % self.integrator.getTemperature())
-                print("Step size %g" % self.integrator.getStepSize())
+            self.integrator.setDrudeTemperature(self.temperature_s)
         else:
             sys.exit("Unknown integrator %s" % integrator)
+        if self.args.polarizable:
+            self.integrator.setMaxDrudeDistance(0.02*nanometer)
+            if self.args.verbose:
+                print("Core Temperature %g" % self.temperature_c)
+                print("Drude Temperature %g" % self.integrator.getDrudeTemperature()._value)
+                print("Step size %g" % self.integrator.getStepSize()._value)
 
     def init_simulation(self):
         #### Simulation setup ####
@@ -557,10 +641,10 @@ class ActOpenMMSim:
         self.print_params()
         self.set_algorithms()
         self.init_simulation()
-        self.print_energy("Initial")
+        self.print_energy("Initial energies:")
         self.minimize_energy()
-        self.print_energy("After minimization")
+        self.print_energy("After minimization:")
         self.equilibrate()
-        self.print_energy("After equilibration")
+        self.print_energy("After equilibration:")
         self.production()
-        self.print_energy("After production")
+        self.print_energy("After production:")

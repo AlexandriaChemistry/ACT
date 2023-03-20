@@ -80,9 +80,28 @@ void forceFieldSummary(JsonTree      *jtree,
     jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
     jtree->addObject(JsonTree("Charge generation", 
                               chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
-    jtree->addObject(JsonTree("# exclusions", gmx_itoa(pd->getNexcl())));
+    int nexclvdw;
+    if (!ffOption(*pd, InteractionType::VDW, 
+                  "nexcl", &nexclvdw))
+    {
+        nexclvdw = 0;
+    }
+    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexclvdw)));
+    int nexclqq;
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "nexcl", &nexclqq))
+    {
+        nexclqq = 0;
+    }
+    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexclqq)));
+    double epsilonr;
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
     jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
-                              gmx_ftoa(pd->getEpsilonR())));
+                              gmx_ftoa(epsilonr)));
     jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
     
     JsonTree ftree("InteractionTypes");
@@ -510,8 +529,9 @@ void ReRunner::rerun(FILE                        *logFile,
         else
         {
             // Read compounds if we have a trajectory file
+            matrix box;
             if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                           &basis, maxpot, nsymm, "Opt", &qtot, false))
+                           &basis, maxpot, nsymm, "Opt", &qtot, false, box))
             {
                 fprintf(stderr, "Could not read compounds from %s\n", trajname_);
                 return;
@@ -853,8 +873,9 @@ int b2(int argc, char *argv[])
         std::string method, basis;
         const char *conf = "";
         const char *jobtype = (char *)"Opt";
+        matrix box;
         if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, &qtot_babel, false))
+                      maxpot, nsymm, jobtype, &qtot_babel, false, box))
         {
             if (mps.size() > 1)
             {

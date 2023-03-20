@@ -313,23 +313,23 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
     return true;
 }
 
-static bool babel2ACT(const ForceField     *pd,
+static bool babel2ACT(const ForceField                         *pd,
                       const std::map<std::string, std::string> &g2a,
-                      const AlexandriaMols &amols,
-                      OpenBabel::OBMol     *mol,
-                      alexandria::MolProp  *mpt,
-                      const char           *molnm,
-                      const char           *iupac,
-                      const char           *conformation,
-                      std::string          *method,
-                      std::string          *basisset,
-                      int                   maxPotential,
-                      int                   nsymm,
-                      const char           *jobType,
-                      double               *qtot,
-                      bool                  addHydrogen,
-                      const char           *g09,
-                      einformat             inputformat)
+                      const AlexandriaMols                     &amols,
+                      OpenBabel::OBMol                         *mol,
+                      alexandria::MolProp                      *mpt,
+                      const char                               *molnm,
+                      const char                               *iupac,
+                      const char                               *conformation,
+                      std::string                              *method,
+                      std::string                              *basisset,
+                      int                                       maxPotential,
+                      int                                       nsymm,
+                      const char                               *jobType,
+                      double                                   *qtot,
+                      bool                                      addHydrogen,
+                      const char                               *g09,
+                      einformat                                 inputformat)
 {
     std::string                formula;
     std::string                attr;
@@ -854,20 +854,74 @@ static bool readBabel(const std::string               &g09,
     return read_ok;
 }
 
-bool readBabel(const ForceField    *pd,
-               const char          *g09,
+static void OBUnitCell2Box(OpenBabel::OBUnitCell *ob, matrix box)
+{
+    double fa = 0.1*ob->GetA();
+    double fb = 0.1*ob->GetB();
+    double fc = 0.1*ob->GetC();
+    double alpha = ob->GetAlpha();
+    double beta  = ob->GetBeta();
+    double gamma = ob->GetGamma();
+    clear_mat(box);
+    box[XX][XX] = fa;
+    if ((alpha != 90.0) || (beta != 90.0) || (gamma != 90.0))
+    {
+        double cosa = 0, cosb = 0, cosg = 0, sing = 0;
+        if (alpha != 90.0)
+        {
+            cosa = std::cos(alpha*DEG2RAD);
+        }
+        else
+        {
+            cosa = 0;
+        }
+        if (beta != 90.0)
+        {
+            cosb = std::cos(beta*DEG2RAD);
+        }
+        else
+        {
+            cosb = 0;
+        }
+        if (gamma != 90.0)
+        {
+            cosg = std::cos(gamma*DEG2RAD);
+            sing = std::sin(gamma*DEG2RAD);
+        }
+        else
+        {
+            cosg = 0;
+            sing = 1;
+        }
+        box[YY][XX] = fb*cosg;
+        box[YY][YY] = fb*sing;
+        box[ZZ][XX] = fc*cosb;
+        box[ZZ][YY] = fc*(cosa - cosb*cosg)/sing;
+        box[ZZ][ZZ] = std::sqrt(fc*fc
+                                - box[ZZ][XX]*box[ZZ][XX] - box[ZZ][YY]*box[ZZ][YY]);
+    }
+    else
+    {
+        box[YY][YY] = fb;
+        box[ZZ][ZZ] = fc;
+    }
+}
+
+bool readBabel(const ForceField                 *pd,
+               const char                       *g09,
                std::vector<alexandria::MolProp> *mpt,
-               const char          *molnm,
-               const char          *iupac,
-               const char          *conformation,
-               std::string         *method,
-               std::string         *basisset,
-               int                  maxPotential,
-               int                  nsymm,
-               const char          *jobType,
-               double              *qtot,
-               bool                 addHydrogen,
-               bool                 renameAtoms)
+               const char                       *molnm,
+               const char                       *iupac,
+               const char                       *conformation,
+               std::string                      *method,
+               std::string                      *basisset,
+               int                               maxPotential,
+               int                               nsymm,
+               const char                      *jobType,
+               double                          *qtot,
+               bool                             addHydrogen,
+               matrix                           box,
+               bool                             renameAtoms)
 {
     std::vector<OpenBabel::OBMol *> mols;
     einformat                       inputformat = einfNotGaussian;
@@ -894,6 +948,11 @@ bool readBabel(const ForceField    *pd,
             mpt->push_back(mp);
         }
         //delete mol;
+    }
+    if (mols[0]->HasData(OpenBabel::OBGenericDataType::UnitCell))
+    {
+        auto OBUC = (OpenBabel::OBUnitCell *)mols[0]->GetData(OpenBabel::OBGenericDataType::UnitCell);
+        OBUnitCell2Box(OBUC, box);
     }
     return true;
 }

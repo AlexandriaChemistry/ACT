@@ -811,7 +811,19 @@ void Topology::build(const ForceField             *pd,
         }
     }
     makePairs(x.size());
-    generateExclusions(pd->getNexcl(), x.size());
+    int nexclvdw;
+    if (!ffOption(*pd, InteractionType::VDW, 
+                  "nexcl", &nexclvdw))
+    {
+        nexclvdw = 0;
+    }
+    int nexclqq;
+    if (!ffOption(*pd, InteractionType::COULOMB, 
+                  "nexcl", &nexclqq))
+    {
+        nexclqq = 0;
+    }
+    generateExclusions(nexclvdw, nexclqq, x.size());
 }
 
 const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
@@ -849,75 +861,82 @@ void Topology::addEntry(InteractionType                     itype,
     }
 }
 
-void Topology::generateExclusions(int nrexcl,
+void Topology::generateExclusions(int nrexclvdw,
+                                  int nrexclqq,
                                   int nratoms)
 {
-    exclusions_.resize(nratoms);
-    
-    for(auto &myEntry: entries_)
-    {
-        switch (myEntry.first)
-        {
-        case InteractionType::BONDS:
-            {
-                if (nrexcl > 0)
-                {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions_[a[0]].push_back(a[1]);
-                        exclusions_[a[1]].push_back(a[0]);
-                    }
-                }
-            }
-            break;
-        case InteractionType::POLARIZATION:
-            {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions_[a[0]].push_back(a[1]);
-                    exclusions_[a[1]].push_back(a[0]);
-                }
-            }
-            break;
-        case InteractionType::ANGLES:
-        case InteractionType::LINEAR_ANGLES:
-            {
-                if (nrexcl > 1)
-                {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions_[a[0]].push_back(a[2]);
-                        exclusions_[a[2]].push_back(a[0]);
-                    }
-                }
-            } 
-            break;
-        default:
-            break;
-        }
-    }
     // Update our own VDW and COULOMB pairs if present
     for(const auto &itype : { InteractionType::VDW,
                               InteractionType::COULOMB })
     {
-        if (hasEntry(itype))
+        if (!hasEntry(itype))
         {
-            auto itt = &entries_.find(itype)->second;
-            for(size_t ai = 0; ai < exclusions_.size(); ai++)
+            continue;
+        }
+        exclusions_.insert({itype, {}});
+        exclusions_[itype].resize(nratoms);
+        int nrexcl = nrexclqq;
+        if (InteractionType::VDW == itype)
+        {
+            nrexcl = nrexclvdw;
+        }
+        for(auto &myEntry: entries_)
+        {
+            switch (myEntry.first)
             {
-                for(size_t j = 0; j < exclusions_[ai].size(); j++)
+            case InteractionType::BONDS:
                 {
-                    AtomPair ap(ai, exclusions_[ai][j]);
-                    for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+                    if (nrexcl > 0)
                     {
-                        if (ap == *static_cast<AtomPair *>(*pp))
+                        for(auto &b : myEntry.second)
                         {
-                            itt->erase(pp);
-                            break;
+                            auto a = b->atomIndices();
+                            exclusions_[itype][a[0]].push_back(a[1]);
+                            exclusions_[itype][a[1]].push_back(a[0]);
                         }
+                    }
+                }
+                break;
+            case InteractionType::POLARIZATION:
+                {
+                    for(auto &b : myEntry.second)
+                    {
+                        auto a = b->atomIndices();
+                        exclusions_[itype][a[0]].push_back(a[1]);
+                        exclusions_[itype][a[1]].push_back(a[0]);
+                    }
+                }
+                break;
+            case InteractionType::ANGLES:
+            case InteractionType::LINEAR_ANGLES:
+                {
+                    if (nrexcl > 1)
+                    {
+                        for(auto &b : myEntry.second)
+                        {
+                            auto a = b->atomIndices();
+                            exclusions_[itype][a[0]].push_back(a[2]);
+                            exclusions_[itype][a[2]].push_back(a[0]);
+                        }
+                    }
+                } 
+                break;
+            default:
+                break;
+            }
+        }
+        auto itt = &entries_.find(itype)->second;
+        for(size_t ai = 0; ai < exclusions_[itype].size(); ai++)
+        {
+            for(size_t j = 0; j < exclusions_[itype][ai].size(); j++)
+            {
+                AtomPair ap(ai, exclusions_[itype][ai][j]);
+                for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+                {
+                    if (ap == *static_cast<AtomPair *>(*pp))
+                    {
+                        itt->erase(pp);
+                        break;
                     }
                 }
             }
@@ -928,15 +947,16 @@ void Topology::generateExclusions(int nrexcl,
 t_excls *Topology::gromacsExclusions()
 {
     t_excls *gmx;
-    snew(gmx, exclusions_.size());
-    for(size_t i = 0; i < exclusions_.size(); i++)
+    auto     itype = InteractionType::VDW;
+    snew(gmx, exclusions_[itype].size());
+    for(size_t i = 0; i < exclusions_[itype].size(); i++)
     {
-        snew(gmx[i].e, exclusions_[i].size());
-        for (size_t j = 0; j < exclusions_[i].size(); j++)
+        snew(gmx[i].e, exclusions_[itype][i].size());
+        for (size_t j = 0; j < exclusions_[itype][i].size(); j++)
         {
-            gmx[i].e[j] = exclusions_[i][j];
+            gmx[i].e[j] = exclusions_[itype][i][j];
         }
-        gmx[i].nr = exclusions_[i].size();
+        gmx[i].nr = exclusions_[itype][i].size();
     }
     return gmx;
 }

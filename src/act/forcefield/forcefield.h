@@ -124,17 +124,6 @@ class ForceField
         //! Return whether Yang & Sharp is used
         bool yang() const;
         
-        /*! \brief
-         * Set relative dielectric constant
-         *
-         */
-        void setEpsilonR(double epsilonR) { gtEpsilonR_ = epsilonR; }
-
-        /*! \brief
-         * Set the number of exclusion
-         */
-        void setNexcl(int nexcl) { nexcl_ = nexcl; }
-
         /*! \brief Add an atom type
          * \param[in] ptp The new particle type
          * \throw if this particle type exists already
@@ -177,14 +166,7 @@ class ForceField
 
         const std::vector<Vsite> &getVsiteConst() const { return vsite_; }
 
-        int getNexcl() const { return nexcl_; }
-
         size_t getNatypes() const { return alexandria_.size(); }
-
-        /*! \brief
-         * Return the relative dielectric constant
-         */
-        double getEpsilonR() const { return gtEpsilonR_; }
 
         /*! \brief Compute dependent parameters
          *
@@ -495,8 +477,6 @@ private:
         std::vector<Vsite>                    vsite_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
-        int                                   nexcl_ = 0;
-        double                                gtEpsilonR_ = 1.0;
         std::map<InteractionType, ForceFieldParameterList> forces_;
         std::vector<Symcharges>               symcharges_;
         bool                                  polarizable_ = false;
@@ -511,6 +491,29 @@ private:
         }
 
 };
+
+/*! \brief Extract option value from a force field component
+ * \param[in]  pd    The force field
+ * \param[in]  itype The InteractionType
+ * \param[in]  name  The name of the option
+ * \param[out] value The value found
+ * \return true if found, false otherwise
+ */
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              int               *value);
+                 
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              double            *value);
+
+bool ffOption(const ForceField  &pd,
+              InteractionType    itype,
+              const std::string &name,
+              std::string       *value);
+                 
 
 }
 #endif

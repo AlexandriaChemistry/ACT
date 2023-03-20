@@ -245,7 +245,12 @@ void write_top(FILE            *out,
         }
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
-        fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", pd->getNexcl());
+        int nexcl;
+        if (!ffOption(*pd, InteractionType::VDW, "nexcl", &nexcl))
+        {
+            nexcl = 0;
+        }
+        fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nexcl);
         print_atoms(out, myAtoms, topology->residueNames());
         for (auto &fs : pd->forcesConst())
         {

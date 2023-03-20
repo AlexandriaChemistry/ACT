@@ -88,8 +88,9 @@ protected:
 
             dataName    = gmx::test::TestFileManager::getInputFilePath(molname);
             double qtot = 0.0;
+            matrix box;
             bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
-                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false, true);
+                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false, box, true);
             EXPECT_TRUE(readOK);
             for(auto &molprop: molprops)
             {

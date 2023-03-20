@@ -256,11 +256,11 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 * BEGIN: EspDevComputer                    *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                   ACTMol                                *actmol,
-                                   std::vector<gmx::RVec>               *coords,
-                                   std::map<eRMS, FittingTarget>        *targets,
-                                   const ForceField                        *forcefield)
+void EspDevComputer::calcDeviation(gmx_unused const ForceComputer *forceComputer,
+                                   ACTMol                         *actmol,
+                                   std::vector<gmx::RVec>         *coords,
+                                   std::map<eRMS, FittingTarget>  *targets,
+                                   const ForceField               *forcefield)
 {
     real rrms     = 0;
     real cosangle = 0;
@@ -275,7 +275,12 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     }
     dumpQX(logfile_, actmol, *coords, "ESP");
     qgr->updateAtomCharges(actmol->atomsConst());
-    qgr->calcPot(forcefield->getEpsilonR());
+    double epsilonr;
+    if (!ffOption(*forcefield, InteractionType::COULOMB, "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    qgr->calcPot(epsilonr);
     real mae, mse;
     real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
     double myRms = convertToGromacs(rms, "Hartree/e");
