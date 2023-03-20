@@ -267,13 +267,13 @@ class ActOpenMMSim:
     
         # Electrostatics
         expression = 'Coulomb_gauss - Coulomb_point;'
-        expression += 'Coulomb_gauss = (ONE_4PI_EPS0*charge1*charge2*erf(beta*r)/r);'
+        expression += 'Coulomb_gauss = (ONE_4PI_EPS0*charge1*charge2*erf(zeta*r)/r);'
         expression += 'Coulomb_point = (ONE_4PI_EPS0*charge1*charge2/r);'
-        expression += 'beta = ((beta1 * beta2)/(sqrt(beta1^2 + beta2^2)));'
+        expression += 'zeta = ((zeta1 * zeta2)/(sqrt(zeta1^2 + zeta2^2)));'
         expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
         force = openmm.CustomNonbondedForce(expression)
         force.addPerParticleParameter("charge")
-        force.addPerParticleParameter("beta")
+        force.addPerParticleParameter("zeta")
         force.setUseSwitchingFunction(self.use_switching_function)
         if self.nonbondedMethod == NoCutoff:
             force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
@@ -284,10 +284,10 @@ class ActOpenMMSim:
         force.setUseLongRangeCorrection(False) #Don't use dispersion correction for coulomb, it does not converge: https://github.com/openmm/openmm/issues/3162
 
         for index in range(self.reference_nb_force.getNumParticles()):
-            [vdW, sigma, epsilon, gamma, charge, beta] = self.reference_cnb_force.getParticleParameters(index)
+            [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
             if self.args.verbose:
-                print(f"nonbonded vdw sigma, epsilon, gamma, charge, beta {self.reference_cnb_force.getParticleParameters(index)}")
-            force.addParticle([charge,beta])
+                print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.reference_cnb_force.getParticleParameters(index)}")
+            force.addParticle([charge,zeta])
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.reference_nb_force.getExceptionParameters(index)
             force.addExclusion(iatom, jatom)
@@ -327,7 +327,7 @@ class ActOpenMMSim:
         force.setUseLongRangeCorrection(self.reference_nb_force.getUseDispersionCorrection())
         for index in range(self.reference_nb_force.getNumParticles()):
             [charge_LJ, sigma_LJ, epsilon_LJ] = self.reference_nb_force.getParticleParameters(index)
-            [vdW, sigma, epsilon, gamma, charge, beta] = self.reference_cnb_force.getParticleParameters(index)
+            [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
             force.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
             if self.args.verbose:
                 print("index %d sigma %g, epsilon %g, gamma %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, vdW, sigma_LJ._value, epsilon_LJ._value ))
@@ -345,13 +345,13 @@ class ActOpenMMSim:
         # Those interactions are added using a CustomBondForce
         bond_expression =('(U_sterics+U_electrostatics);'
                           'U_sterics = (((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));'
-                          'U_electrostatics = (ONE_4PI_EPS0*chargeprod* erf(beta*r)/r);'
+                          'U_electrostatics = (ONE_4PI_EPS0*chargeprod* erf(zeta*r)/r);'
                           )
         bond_expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
 
         bond_force = openmm.CustomBondForce(bond_expression)
         bond_force.addPerBondParameter("chargeprod")
-        bond_force.addPerBondParameter("beta")
+        bond_force.addPerBondParameter("zeta")
         bond_force.addPerBondParameter("sigma")
         bond_force.addPerBondParameter("epsilon")
         bond_force.addPerBondParameter("gamma")
@@ -359,12 +359,12 @@ class ActOpenMMSim:
 
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.reference_nb_force.getExceptionParameters(index)
-            [vdW1, sigma1, epsilon1, gamma1, charge1, beta1] = self.reference_cnb_force.getParticleParameters(iatom)
+            [vdW1, sigma1, epsilon1, gamma1, charge1, zeta1] = self.reference_cnb_force.getParticleParameters(iatom)
             if self.args.verbose:
                 print(f" custom bond force i {self.reference_cnb_force.getParticleParameters(iatom)}")
-            [vdW2, sigma2, epsilon2, gamma2, charge2, beta2] = self.reference_cnb_force.getParticleParameters(jatom)
+            [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
             chargeprod = charge1*charge2
-            beta = ((beta1 * beta2)/(np.sqrt(beta1**2 + beta2**2)))
+            zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
             if epsilon1 == 0 and epsilon2 == 0:
                 epsilon = 0
             else:
@@ -378,12 +378,12 @@ class ActOpenMMSim:
                 sigma = sqrt(sigma1*sigma2)
                 #sigma = (((sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))**(1/6))
             if self.args.verbose:
-                print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g beta %g chargeprod %g" % 
-                      ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, beta, chargeprod ))
+                print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta %g chargeprod %g" % 
+                      ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta, chargeprod ))
             vdW = vdW1*vdW2
             if self.args.polarizable:
                 if not (((jatom,iatom) in self.core_shell) or ((iatom,jatom) in self.core_shell)):
-                    bond_force.addBond(iatom, jatom, [chargeprod, beta, sigma, epsilon, gamma, vdW])
+                    bond_force.addBond(iatom, jatom, [chargeprod, zeta, sigma, epsilon, gamma, vdW])
         self.add_force_group(bond_force, "Exclusion Correction")
         self.system.addForce(bond_force)
    
