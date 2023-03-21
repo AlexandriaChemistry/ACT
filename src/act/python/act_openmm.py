@@ -271,17 +271,14 @@ class ActOpenMMSim:
         expression += 'Coulomb_point = (ONE_4PI_EPS0*charge1*charge2/r);'
         expression += 'zeta = ((zeta1 * zeta2)/(sqrt(zeta1^2 + zeta2^2)));'
         expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
-<<<<<<< HEAD
         force = openmm.CustomNonbondedForce(expression)
         force.addPerParticleParameter("charge")
         force.addPerParticleParameter("zeta")
         force.setUseSwitchingFunction(self.use_switching_function)
-=======
         qqforce = openmm.CustomNonbondedForce(expression)
         qqforce.addPerParticleParameter("charge")
         qqforce.addPerParticleParameter("zeta")
         qqforce.setUseSwitchingFunction(self.use_switching_function)
->>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
         if self.nonbondedMethod == NoCutoff:
             qqforce.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
         else:    
@@ -295,11 +292,8 @@ class ActOpenMMSim:
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
             if self.args.verbose:
                 print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.reference_cnb_force.getParticleParameters(index)}")
-<<<<<<< HEAD
             force.addParticle([charge,zeta])
-=======
             qqforce.addParticle([charge,zeta])
->>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.reference_nb_force.getExceptionParameters(index)
             qqforce.addExclusion(iatom, jatom)
@@ -340,11 +334,8 @@ class ActOpenMMSim:
         for index in range(self.reference_nb_force.getNumParticles()):
             [charge_LJ, sigma_LJ, epsilon_LJ] = self.reference_nb_force.getParticleParameters(index)
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
-<<<<<<< HEAD
             force.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
-=======
             vdwforce.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
->>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
             if self.args.verbose:
                 print("index %d sigma %g, epsilon %g, gamma %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, vdW, sigma_LJ._value, epsilon_LJ._value ))
         for index in range(self.reference_nb_force.getNumExceptions()):
@@ -366,7 +357,6 @@ class ActOpenMMSim:
 
     def add_excl_correction(self):
         # Add vdW and electrostactics that have been excluded (this has to be done as the number of exclusions is 3 for nonbonded interactions in OpenMM)
-<<<<<<< HEAD
         # Those interactions are added using a CustomBondForce
         bond_expression =('(U_sterics+U_electrostatics);'
                           'U_sterics = (((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));'
@@ -381,7 +371,6 @@ class ActOpenMMSim:
         bond_force.addPerBondParameter("epsilon")
         bond_force.addPerBondParameter("gamma")
         bond_force.addPerBondParameter("vdW")
-=======
         # Those interactions are added using two CustomBondForce entries
         vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));')
         vdw_force = openmm.CustomBondForce(vdw_expression)
@@ -395,7 +384,6 @@ class ActOpenMMSim:
         qq_force = openmm.CustomBondForce(qq_expression)
         qq_force.addPerBondParameter("chargeprod")
         qq_force.addPerBondParameter("zeta")
->>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
         nexclqq  = self.sim_params.getInt("nexclqq")
@@ -406,7 +394,6 @@ class ActOpenMMSim:
             if self.args.verbose:
                 print(f" custom bond force i {self.reference_cnb_force.getParticleParameters(iatom)}")
             [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
-<<<<<<< HEAD
             chargeprod = charge1*charge2
             zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
             if epsilon1 == 0 and epsilon2 == 0:
@@ -428,9 +415,6 @@ class ActOpenMMSim:
             if self.args.polarizable:
                 if not (((jatom,iatom) in self.core_shell) or ((iatom,jatom) in self.core_shell)):
                     bond_force.addBond(iatom, jatom, [chargeprod, zeta, sigma, epsilon, gamma, vdW])
-        self.add_force_group(bond_force, "Exclusion Correction")
-        self.system.addForce(bond_force)
-=======
             # Check whether this is not a core shell pair
             if not (iatom,jatom) in self.core_shell and not (jatom,iatom) in self.core_shell:
                 # Coulomb part
@@ -458,11 +442,12 @@ class ActOpenMMSim:
                               ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta, chargeprod ))
                     vdW = vdW1*vdW2
                     vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma, vdW])
+        self.add_force_group(bond_force, "Exclusion Correction")
+        self.system.addForce(bond_force)
         self.add_force_group(qq_force, "Coulomb Exclusion Correction")
         self.system.addForce(qq_force)
         self.add_force_group(vdw_force, "Van der Waals Exclusion Correction")
         self.system.addForce(vdw_force)
->>>>>>> bc0a06cc104a509220ae44772072410fba9e9228
    
     def add_bonded_forces(self):
         forces = { force.__class__.__name__ : force for force in self.system.getForces() }
@@ -546,6 +531,7 @@ class ActOpenMMSim:
     def set_algorithms(self):
         #### Thermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
+            print(self.sim_params.getStr('useMonteCarloBarostat'))
             self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                     self.temperature_c,
                                                     self.sim_params.getInt('barostatInterval')))
