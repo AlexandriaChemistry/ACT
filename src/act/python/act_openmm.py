@@ -531,11 +531,20 @@ class ActOpenMMSim:
     def set_algorithms(self):
         #### Thermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
-            print(self.sim_params.getStr('useMonteCarloBarostat'))
-            self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
+            print(self.sim_params.getBool('useMonteCarloBarostat'))
+            if self.sim_params.getBool('useMonteCarloBarostat') == True:
+                print("Monte Carlo Barostat shall be used, as was asked for.")
+
+                self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                     self.temperature_c,
                                                     self.sim_params.getInt('barostatInterval')))
-            self.system.addForce(AndersenThermostat(self.temperature_c, 1/picosecond))
+            else: 
+                print("I shall refrain from using the Monte Carlo Barostat...")
+            if self.sim_params.getBool('useAndersenThermostat') == True:    
+                self.system.addForce(AndersenThermostat(self.temperature_c, 1/picosecond))
+                print("Andersen Thermostat shall be used, as was asked for.")
+            else:
+                print("I shall refrain from using the Andersen Thermostat...")
 
         #### Integrator ####
         friction_c    = self.sim_params.getFloat('friction_c')
