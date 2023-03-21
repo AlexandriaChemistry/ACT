@@ -51,6 +51,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -481,7 +482,9 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
         { "-printSP", FALSE, etBOOL,{&printSP_},
           "Print information from all single point calculations in detail" },
         { "-calc_frequencies",  FALSE, etBOOL, {&calcFrequencies_},
-          "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled). If turned on, this option will also generate thermochemistry values based on the force field." }
+          "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled). If turned on, this option will also generate thermochemistry values based on the force field." },
+        { "-diatomics", FALSE, etBOOL, {&diatomic_},
+          "Analyse diatomic compounds by plotting the reference energy minus the ACT Coulomb terms as a function of distance in one xvg file per compound." }
     };
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
@@ -932,15 +935,51 @@ static void low_print(std::vector<std::string> *tcout,
                                        label, rmsd, mse, 100*R, stats->get_npoints()));
 }
 
+static void print_diatomics(const alexandria::ACTMol                                                  *mol,
+                            const std::vector<std::pair<double, std::map<InteractionType, double> > > &energyComponentMap,
+                            const gmx_output_env_t                                                    *oenv)
+{
+    std::vector<double> dist;
+    for (const auto &ei : mol->experimentConst())
+    {
+        const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
+        gmx::RVec dx;
+        rvec_sub(xxx[0], xxx[1], dx);
+        dist.push_back(norm(dx));
+    }
+    auto filename = mol->getMolname() + ".xvg";
+    FILE *fp = xvgropen(filename.c_str(), "QM - Coulomb Energy", "Distance (nm)", "Energy (kJ/mol)", oenv);
+    size_t i = 0;
+    for (const auto &ecm : energyComponentMap)
+    {
+        double eee = ecm.first;
+        for(const auto itype : { InteractionType::COULOMB, InteractionType::POLARIZATION })
+        {
+            auto esm = ecm.second.find(itype);
+            if (ecm.second.end() != esm)
+            {
+                eee -= esm->second;
+            }
+        }
+        if (i < dist.size())
+        {
+            fprintf(fp, "%10g  %10g\n", dist[i], eee);
+            i++;
+        }
+    }    
+    xvgrclose(fp);
+}
+                                                
 double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                const ForceField            *pd,
+                                                const ForceField         *pd,
                                                 const ForceComputer      *forceComp,
                                                 const AtomizationEnergy  &atomenergy,
-                                                alexandria::ACTMol        *mol,
+                                                alexandria::ACTMol       *mol,
                                                 gmx_stats                *lsq_rmsf,
                                                 qtStats                  *lsq_epot,
                                                 qtStats                  *lsq_eInter,
-                                                gmx_stats                *lsq_freq)
+                                                gmx_stats                *lsq_freq,
+                                                const gmx_output_env_t   *oenv)
 {
     std::vector<std::pair<double, double> >                 energyMap;
     std::vector<std::pair<double, double> >                 interactionEnergyMap;
@@ -948,6 +987,10 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
                          &energyComponentMap);
+    if (diatomic_ && mol->nRealAtoms() == 2)
+    {
+        print_diatomics(mol, energyComponentMap, oenv);
+    }
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -1272,7 +1315,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             std::vector<std::string> tcout;
             auto epot = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
                                           &lsq_rmsf[ims], &lsq_epot[ims],
-                                          &lsq_eInter[ims], &lsq_freq[ims]);
+                                          &lsq_eInter[ims], &lsq_freq[ims], oenv);
             molEpot.insert({mol->getMolname(), epot});
             for(const auto &tout : tcout)
             {
