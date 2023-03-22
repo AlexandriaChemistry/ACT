@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -90,6 +90,8 @@ private:
     bool printSP_             = false;
     //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
     bool calcFrequencies_     = false;
+    //! Do special analysis of diatomic compounds
+    bool diatomic_            = false;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
@@ -117,7 +119,8 @@ private:
                              gmx_stats                *lsq_rmsf,
                              qtStats                  *lsq_epot,
                              qtStats                  *lsq_eInter,
-                             gmx_stats                *lsq_freq);
+                             gmx_stats                *lsq_freq,
+                             const gmx_output_env_t   *oenv);
 public:
     TuneForceFieldPrinter() {}
     

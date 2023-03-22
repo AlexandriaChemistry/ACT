@@ -250,15 +250,15 @@ static void modifyInteraction(ForceField *pd,
 }
 
 static void modifyForceField(ForceField *pd,
-                          const std::string &paramType,
-                          const std::string &particle,
-                          bool bSetMin, double pmin,
-                          bool bSetVal, double pval,
-                          bool bSetMax, double pmax,
-                          bool bSetMut, const std::string &mutability,
-                          bool bScale,  double scale,
-                          bool force,   bool stretch,
-                          bool bLimit,  double factor)
+                             const std::string &paramType,
+                             const std::string &particle,
+                             bool bSetMin, double pmin,
+                             bool bSetVal, double pval,
+                             bool bSetMax, double pmax,
+                             bool bSetMut, const std::string &mutability,
+                             bool bScale,  double scale,
+                             bool force,   bool stretch,
+                             bool bLimit,  double factor)
 {
     if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale || bLimit))
     {
@@ -270,30 +270,6 @@ static void modifyForceField(ForceField *pd,
         printf("Empty parameter type. Nothing to modify.\n");
         return;
     }
-    std::vector<ParticleTypeIterator> myParticles;
-    if (!particle.empty())
-    {
-        for (const auto &s : gmx::splitString(particle))
-        {
-            if (pd->hasParticleType(s))
-            {
-                myParticles.push_back(pd->findParticleType(s));
-            }
-        }
-    }
-    else
-    {
-        auto particleTypes = pd->particleTypes();
-        for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
-        {
-            myParticles.push_back(pt);
-        }
-    }
-    if (myParticles.empty())
-    {
-        printf("Cannot find any particle %s\n", particle.c_str());
-    }
-    
     InteractionType itype;
     if (pd->typeToInteractionType(paramType, &itype))
     {
@@ -304,18 +280,40 @@ static void modifyForceField(ForceField *pd,
             for (auto &ffp : fs->parametersConst())
             {
                 auto id = ffp.first;
-                modifyInteraction(pd, itype, paramType, id,
-                                  bSetMin, pmin,
-                                  bSetVal, pval,
-                                  bSetMax, pmax,
-                                  bSetMut, mutability,
-                                  bScale,  scale,
-                                  force,   stretch,
-                                  bLimit,  factor);
+                if (particle.empty() || id.id() == particle)
+                {
+                    modifyInteraction(pd, itype, paramType, id,
+                                      bSetMin, pmin,
+                                      bSetVal, pval,
+                                      bSetMax, pmax,
+                                      bSetMut, mutability,
+                                      bScale,  scale,
+                                      force,   stretch,
+                                      bLimit,  factor);
+                }
             }
         }
         else
         {
+            std::vector<ParticleTypeIterator> myParticles;
+            if (!particle.empty())
+            {
+                for (const auto &s : gmx::splitString(particle))
+                {
+                    if (pd->hasParticleType(s))
+                    {
+                        myParticles.push_back(pd->findParticleType(s));
+                    }
+                }
+            }
+            else
+            {
+                auto particleTypes = pd->particleTypes();
+                for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
+                {
+                    myParticles.push_back(pt);
+                }
+            }
             // A particle?
             for (auto p : myParticles)
             {
@@ -328,7 +326,7 @@ static void modifyForceField(ForceField *pd,
                                force,   stretch,
                                bLimit,  factor);
             }
-       }
+        }
     }
 }
 
@@ -735,7 +733,7 @@ int edit_ff(int argc, char*argv[])
         { "-p",      FALSE, etSTR,  {&parameter},
           "Type of parameter to change, e.g. zeta." },
         { "-a",      FALSE, etSTR,  {&particle},
-          "Particle type to change, if not set all particles of the correct type will be changed. A quoted string may be passed to adjust multiple particle types at once, e.g. -a 'h1_z hc_z'" },
+          "Particle/interaction type to change, if not set all particles/interaction of the correct type will be changed. A quoted string may be passed to adjust multiple particle types at once, e.g. -a 'h1_z hc_z'" },
         { "-min",    FALSE, etREAL, {&pmin},
           "Minimum value of parameter." },
         { "-val",    FALSE, etREAL, {&pval},
