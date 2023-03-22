@@ -140,11 +140,12 @@ class ActOpenMMSim:
         self.switch_width              = self.sim_params.getFloat('switch_width')
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
         self.use_dispersion_correction = self.sim_params.getBool('use_dispersion_correction')
-        
+        self.col_freq                  = self.sim_params.getFloat('collision_frequency') 
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
         self.useMonteCarloBarostat     = self.sim_params.getBool('useMonteCarloBarostat')
-        
+        if self.col_freq == None:
+            self.col_freq = 0.1
         constrmethod = { 'HBonds':HBonds, 'HAngles':HAngles, 'None':None }
         self.constraints            = constrmethod[self.sim_params.getStr('constraints')]
         self.rigidWater             = self.sim_params.getBool('rigidWater')
@@ -548,7 +549,7 @@ class ActOpenMMSim:
             else: 
                 print("I shall refrain from using the Monte Carlo Barostat...")
             if self.sim_params.getBool('useAndersenThermostat') == True:    
-                self.system.addForce(AndersenThermostat(self.temperature_c, 1/picosecond))
+                self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq/picosecond))
                 print("Andersen Thermostat shall be used, as was asked for.")
             else:
                 print("I shall refrain from using the Andersen Thermostat...")
