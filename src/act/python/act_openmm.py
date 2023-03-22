@@ -188,19 +188,26 @@ class ActOpenMMSim:
         self.topology  = self.modeller.topology
         self.positions = self.modeller.positions
         myDrudeMass    = self.args.Drude_mass
+        myEwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance')
         if self.args.polarizable:
             self.rigidWater = False
+            self.system    = self.forcefield.createSystem(self.topology,
+                                                nonbondedMethod=self.nonbondedMethod,
+                                                nonbondedCutoff=self.nonbondedCutoff,
+                                                ewaldErrorTolerance=myEwaldErrorTolerance,
+                                                rigidWater=self.rigidWater,
+                                                drudeMass=myDrudeMass*unit.amu)
             if self.args.verbose:
-                print(f"The force field is polarizable and the drude mass is {self.args.Drude_mass}. Make sure it is consistent with your force field file.")
+                print(f"The force field is polarizable and the drude mass is {self.args.Drude_mass}. Make sure it is consistent with your force field file. The water is set to false.")
         else:
-            myDrudeMass = 0.1
-        myEwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance')
-        self.system    = self.forcefield.createSystem(self.topology,
+            self.system    = self.forcefield.createSystem(self.topology,
                                                       nonbondedMethod=self.nonbondedMethod,
                                                       nonbondedCutoff=self.nonbondedCutoff,
                                                       ewaldErrorTolerance=myEwaldErrorTolerance,
-                                                      rigidWater=self.rigidWater,
-                                                      drudeMass=myDrudeMass*unit.amu)
+                                                      rigidWater=self.rigidWater)
+            if self.args.verbose:
+                print(f"The force field is NOT polarizable and the drude mass {self.args.Drude_mass} is not going to be used.")
+
 
         if self.args.verbose:
             print(f"We are working with {self.args.bonded_potential} form of bonded potential.\nIf the corresponding parameters are not found in force field file, the code will crash.")
