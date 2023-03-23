@@ -35,7 +35,7 @@ class SimParams:
                 except:
                     continue
 
-    def getFloat(self, key:str) -> float:
+    def getFloat(self, key:str, default=0) -> float:
         if key in self.params and len(self.params[key]) > 0:
             try:
                 if self.params[key].find("*") > 0:
@@ -49,7 +49,7 @@ class SimParams:
                 sys.exit("Incorrect float value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
             return value
         else:
-            sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
+            print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
         
     def getInt(self, key:str) -> int:
         if key in self.params and len(self.params[key]) > 0:
@@ -74,6 +74,38 @@ class SimParams:
         else:
             sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
         
+class CombinationRules:
+    def __init__(self, qdist:str, comb:str):
+        self.qdist = qdist
+        self.comb  = comb
+        
+    def geometricString(self, vara:str, varb:str)->str:
+        return ("sqrt(%s*%s)" % ( vara, varb ))
+        
+    def geometric(self, vara:float, varb:float)->float:
+        return eval(self.geomString(str(vara), str(varb)))
+        
+    def arithmeticString(self, vara:str, varb:str)->str:
+        return ("0.5*(%s+%s)" % ( vara, varb ))
+
+    def arithmetic(self, vara:float, varb:float)->float:
+        return eval(self.geomString(str(vara), str(varb)))
+
+    def combStrings(self):
+        if "Hogervorst" == self.comb:
+            csigma   = "(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6))"
+            cepsilon = "((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))"
+            cgamma   = "((gamma1 + gamma2)/2)"
+            return csigma, cepsilon, cgamma
+        else:
+            sys.exit("Unknown combination rule '%s'" % self.comb)
+            
+    def zetaString(self)->str:
+        if self.qdist == "Gaussian":
+            return ("(zeta1*zeta2/sqrt(zeta1^2+zeta2^2))")
+        else:
+            sys.exit("No support for charge distribution type %s" % self.qdist)
+        
 class ActOpenMMSim:
     def __init__(self):
         self.args        = self.argParser()
@@ -82,6 +114,8 @@ class ActOpenMMSim:
         self.sim_params  = SimParams(self.args.dat_file)
         self.force_group = {}
         self.fgnumber    = {}
+        self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
+                                            self.sim_params.getStr("combination_rule"))
         
     def add_force_group(self, force, fcname:str):
         fnumber = len(self.fgnumber)
@@ -105,6 +139,8 @@ class ActOpenMMSim:
         parser.add_argument("-pdb", "--pdb_file", help="coordinate .pdb file", default=None)
         parser.add_argument("-xml", "--xml_file", help="openMM force field .xml file", default=None)
         parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file", default=None)
+        deflog = "log.csv"
+        parser.add_argument("-log", "--log_file", help="Log file for energies, default +"+deflog, default=deflog)
         parser.add_argument("-pol", "--polarizable", help="Turn on support for polarization", action="store_true")
         defout = "output"
         parser.add_argument("-odir", "--outputdir", help="Directory to write output to, default: "+defout, type=str, default=defout)
@@ -140,12 +176,10 @@ class ActOpenMMSim:
         self.switch_width              = self.sim_params.getFloat('switch_width')
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
         self.use_dispersion_correction = self.sim_params.getBool('use_dispersion_correction')
-        self.col_freq                  = self.sim_params.getFloat('collision_frequency') 
+        self.col_freq                  = self.sim_params.getFloat('collision_frequency', 0.1) 
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
         self.useMonteCarloBarostat     = self.sim_params.getBool('useMonteCarloBarostat')
-        if self.col_freq == None:
-            self.col_freq = 0.1
         constrmethod = { 'HBonds':HBonds, 'HAngles':HAngles, 'None':None }
         self.constraints            = constrmethod[self.sim_params.getStr('constraints')]
         self.rigidWater             = self.sim_params.getBool('rigidWater')
@@ -165,7 +199,8 @@ class ActOpenMMSim:
         os.makedirs(self.args.outputdir, exist_ok=True)
         save              = self.sim_params.getInt('save')
         self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
-        self.dataReporter = StateDataReporter(self.args.outputdir+'/log.csv', save, totalSteps=self.steps,
+        self.logfile      = self.args.outputdir+'/'+self.args.log_file
+        self.dataReporter = StateDataReporter(self.logfile, save, totalSteps=self.steps,
                                               step=self.sim_params.getBool('outStep'),
                                               time=self.sim_params.getBool('outTime'),
                                               speed=self.sim_params.getBool('outSpeed'),
@@ -275,10 +310,11 @@ class ActOpenMMSim:
     
         # Electrostatics
         expression = 'Coulomb_gauss - Coulomb_point;'
-        expression += 'Coulomb_gauss = (ONE_4PI_EPS0*charge1*charge2*erf(zeta*r)/r);'
-        expression += 'Coulomb_point = (ONE_4PI_EPS0*charge1*charge2/r);'
-        expression += 'zeta = ((zeta1 * zeta2)/(sqrt(zeta1^2 + zeta2^2)));'
-        expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
+        self.qq_expression = ( "(%f*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
+        expression += ( 'Coulomb_gauss = %s;' % self.qq_expression )
+        expression += ( 'Coulomb_point = (%f*charge1*charge2/r);' % ONE_4PI_EPS0 )
+        expression += ( "zeta = %s;" % self.comb.zetaString())
+
         force = openmm.CustomNonbondedForce(expression)
         force.addPerParticleParameter("charge")
         force.addPerParticleParameter("zeta")
@@ -312,17 +348,19 @@ class ActOpenMMSim:
 
         # TODO: Remove hard-coded combination rules if possible
         expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
-        expression += 'epsilon_LJ = sqrt(epsilon_LJ1*epsilon_LJ2);'
-        expression += 'sigma_LJ = 0.5*(sigma_LJ1+sigma_LJ2);'
-        expression += 'sigma_LJ_rec = sqrt(sigma_LJ1*sigma_LJ2);'
+        expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
+        expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
+        expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
     
-#        expression += 'U_WKB = (((((2*epsilon)/(1-(3/(gamma+3)))) * (((((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6))^6)/((((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6))^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6)))))))-1))*vdW));'
-        expression += 'U_WKB = vdW*(((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6)))))))-1));'
-        expression += 'sigma = (((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6));'
-        #expression += 'sigma    = sqrt(sigma1*sigma2);'
-        #expression += 'epsilon  = sqrt(epsilon1*epsilon2);'
-        expression += 'epsilon = ((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2));'
-        expression += 'gamma = ((gamma1 + gamma2)/2);'
+        self.vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
+
+        expression += ( 'U_WKB = %s;' % self.vdw_expression )
+        #vdW*(((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6)))))))-1));'
+        csigma, cepsilon, cgamma = self.comb.combStrings()
+        # The statements have to be in this order! They are evaluated in the reverse order apparently.
+        expression += ( 'sigma    = %s;' % csigma )
+        expression += ( 'epsilon  = %s;' % cepsilon )
+        expression += ( 'gamma    = %s;' % cgamma )
         expression += 'vdW = vdW1*vdW2;'
         vdwforce = openmm.CustomNonbondedForce(expression)
         vdwforce.addPerParticleParameter("sigma")
@@ -365,32 +403,15 @@ class ActOpenMMSim:
 
     def add_excl_correction(self):
         # Add vdW and electrostactics that have been excluded (this has to be done as the number of exclusions is 3 for nonbonded interactions in OpenMM)
-        # Those interactions are added using a CustomBondForce
-        bond_expression =('(U_sterics+U_electrostatics);'
-                          'U_sterics = (((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));'
-                          'U_electrostatics = (ONE_4PI_EPS0*chargeprod* erf(zeta*r)/r);'
-                          )
-        bond_expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
-
-        bond_force = openmm.CustomBondForce(bond_expression)
-        bond_force.addPerBondParameter("chargeprod")
-        bond_force.addPerBondParameter("zeta")
-        bond_force.addPerBondParameter("sigma")
-        bond_force.addPerBondParameter("epsilon")
-        bond_force.addPerBondParameter("gamma")
-        bond_force.addPerBondParameter("vdW")
         # Those interactions are added using two CustomBondForce entries
-        vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));')
-        vdw_force = openmm.CustomBondForce(vdw_expression)
-        vdw_force.addPerBondParameter("vdW")
+        vdw_force = openmm.CustomBondForce(self.vdw_expression)
         vdw_force.addPerBondParameter("sigma")
         vdw_force.addPerBondParameter("epsilon")
         vdw_force.addPerBondParameter("gamma")
         
-        qq_expression =('(ONE_4PI_EPS0*chargeprod* erf(zeta*r)/r);')
-        qq_expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
-        qq_force = openmm.CustomBondForce(qq_expression)
-        qq_force.addPerBondParameter("chargeprod")
+        qq_force = openmm.CustomBondForce(self.qq_expression)
+        qq_force.addPerBondParameter("charge1")
+        qq_force.addPerBondParameter("charge2")
         qq_force.addPerBondParameter("zeta")
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
@@ -399,62 +420,41 @@ class ActOpenMMSim:
         for index in range(self.reference_nb_force.getNumExceptions()):
             # Just get the excluded atoms from the regular NB force
             [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.reference_nb_force.getExceptionParameters(index)
+            # Check for shell exclusions first
+            if (self.args.polarizable and 
+                ((jatom,iatom) in self.core_shell or ((iatom,jatom) in self.core_shell))):
+                continue
             # And get the parameters from the Custom NB force
             [vdW1, sigma1, epsilon1, gamma1, charge1, zeta1] = self.reference_cnb_force.getParticleParameters(iatom)
             [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
             if self.args.verbose:
-                print(f" custom bond force i {self.reference_cnb_force.getParticleParameters(iatom)}")
-                print(f" custom bond force j {self.reference_cnb_force.getParticleParameters(jatom)}")
-            chargeprod = charge1*charge2
-            zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
-            if epsilon1 == 0 and epsilon2 == 0:
-                epsilon = 0
-            else:
-                epsilon = ((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))
-            gamma = ((gamma1 + gamma2)/2)
-            if epsilon == 0 or gamma == 0:
-                sigma   = 0.01
-                epsilon = 0.01
-                gamma   = 10
-            else:
-                sigma = sqrt(sigma1*sigma2)
-                #sigma = (((sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))**(1/6))
-            if self.args.verbose:
-                print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta %g chargeprod %g" % 
-                      ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta, chargeprod ))
-            vdW = vdW1*vdW2
-            if self.args.polarizable:
-                if not (((jatom,iatom) in self.core_shell) or ((iatom,jatom) in self.core_shell)):
-                    bond_force.addBond(iatom, jatom, [chargeprod, zeta, sigma, epsilon, gamma, vdW])
-            # Check whether this is not a core shell pair
-            if not (iatom,jatom) in self.core_shell and not (jatom,iatom) in self.core_shell:
-                # Coulomb part
-                if not self.real_exclusion(nexclqq, iatom, jatom):
-                    chargeprod = charge1*charge2
-                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
-                    qq_force.addBond(iatom, jatom, [chargeprod, zeta])
+                print(f" custom nonbonded force i {self.reference_cnb_force.getParticleParameters(iatom)}")
+                print(f" custom nonbonded force j {self.reference_cnb_force.getParticleParameters(jatom)}")
+
+            # Coulomb part
+            if not self.real_exclusion(nexclqq, iatom, jatom):
+                zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
+                qq_force.addBond(iatom, jatom, [charge1, charge2, zeta])
                 
-                # Van der Waals part
-                if not self.real_exclusion(nexclvdw, iatom, jatom):
-                    if epsilon1 == 0 and epsilon2 == 0:
-                        epsilon = 0
-                    else:
-                        epsilon = ((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))
-                    gamma = ((gamma1 + gamma2)/2)
-                    if epsilon == 0 or gamma == 0:
-                        sigma   = 0.01
-                        epsilon = 0.01
-                        gamma   = 10
-                    else:
-                        sigma = sqrt(sigma1*sigma2)
-                    #sigma = (((sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))**(1/6))
+            # Van der Waals part
+            if not self.real_exclusion(nexclvdw, iatom, jatom):
+                # Note that the 6 below is because of the combination rule
+                if epsilon1 > 0 and epsilon2 > 0 and gamma1 > 6 and gamma2 > 6:
+                    csigma, cepsilon, cgamma = self.comb.combStrings()
                     if self.args.verbose:
-                        print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta %g chargeprod %g" % 
-                              ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta, chargeprod ))
-                    vdW = vdW1*vdW2
-                    vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma, vdW])
-        self.add_force_group(bond_force, "Exclusion Correction")
-        self.system.addForce(bond_force)
+                        print(csigma)
+                        print(cepsilon)
+                        print(cgamma)
+                    gamma   = eval(cgamma)
+                    epsilon = eval(cepsilon)
+                    sigma   = eval(csigma.replace("^", "**"))
+
+                    if self.args.verbose:
+                        print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta1 %g zeta2 %g" % 
+                              ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta1, zeta2 ))
+                    if vdW1 != 0 and vdW2 != 0:
+                        vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma])
+                        
         self.add_force_group(qq_force, "Coulomb Exclusion Correction")
         self.system.addForce(qq_force)
         self.add_force_group(vdw_force, "Van der Waals Exclusion Correction")
@@ -466,7 +466,7 @@ class ActOpenMMSim:
         self.bonds = []
         if self.args.bonded_potential == "morse":
             ### Morse potential ###
-            Morse_expression = "(D_e*(1 - exp(-beta*(r-r0)))^2)-D0;"
+            Morse_expression = "(D_e*(1 - exp(-beta*(r-r0)))^2)+D0;"
             Morse_force = openmm.CustomBondForce(Morse_expression)
             Morse_force.addPerBondParameter("beta")
             Morse_force.addPerBondParameter("D_e")
@@ -475,6 +475,8 @@ class ActOpenMMSim:
             for bond_index in range(reference_cb_force.getNumBonds()):
                 # Retrieve parameters.
                 [iatom, jatom, (beta, D_e, D0, r0)] = reference_cb_force.getBondParameters(bond_index)
+                if self.args.verbose:
+                    print("Morse: iatom %d jatom %d beta %g D_e %g D0 %g r0 %g" % ( iatom, jatom, beta, D_e, D0, r0 ))
                 self.bonds.append((iatom, jatom))
                 Morse_force.addBond(iatom, jatom, [beta, D_e, D0, r0])
             self.add_force_group(Morse_force, "Morse bonds")
@@ -655,3 +657,33 @@ class ActOpenMMSim:
         self.print_energy("After equilibration:")
         self.production()
         self.print_energy("After production:")
+
+    def log_to_xvg(self, xvg:str, ytargets:list):
+        if None == self.logfile or not os.path.exists(self.logfile):
+            print("Could not find any log file")
+        else:
+            xtarget  = "Time (ps)"
+            ix = -1
+            iy = []
+            with open(xvg, "w") as outf:
+                outf.write("@ xaxis label \"%s\"\n" % xtarget)
+                with open(self.logfile, "r") as inf:
+                    for line in inf:
+                        words = line.strip().split(";")
+                        if line.find("#") >= 0:
+                            for i in range(len(words)):
+                                if words[i].find(xtarget) >= 0:
+                                    ix = i
+                                else:
+                                    for j in range(len(ytargets)):
+                                        if words[i].find(ytargets[j]) >= 0:
+                                            iy.append(i)
+                        elif ix >= 0 and len(iy) > 0:
+                            try:
+                                outf.write("%10g" % float(words[ix]))
+                                for ii in iy:
+                                    outf.write("%10g" % (float(words[ii])))
+                                outf.write("\n")
+                            except ValueError:
+                                print("Incomprehensible line in logfile")
+                                
