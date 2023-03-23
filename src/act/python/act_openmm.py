@@ -389,7 +389,7 @@ class ActOpenMMSim:
             vdwforce.addExclusion(iatom, jatom)
             if self.args.verbose:
                 print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
-        self.add_force_group(vdwforce, "Wang-Buckingham")
+        self.add_force_group(vdwforce, "Wang-Buckingham minus Lennard-Jones")
         self.system.addForce(vdwforce)
 
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
@@ -514,6 +514,7 @@ class ActOpenMMSim:
         self.Cnbforce   = forces['CustomNonbondedForce']
         self.CBondforce = forces['CustomBondForce']
         self.nbforce    = forces['NonbondedForce']
+        self.add_force_group(self.nbforce, "NonbondedForce")
         #### for systems with core shell particles in general; nbforce.getNumParticles() is cores+shells
         #### TODO: get the real number of particle
         self.Numb_particles = self.nbforce.getNumParticles()
@@ -545,20 +546,18 @@ class ActOpenMMSim:
     def set_algorithms(self):
         #### Thermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
-            print(self.sim_params.getBool('useMonteCarloBarostat'))
-            if self.sim_params.getBool('useMonteCarloBarostat') == True:
-                print("Monte Carlo Barostat shall be used, as was asked for.")
-
-                self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
+            if self.sim_params.getBool('useMonteCarloBarostat'):
+                if self.args.verbose:
+                    print("Monte Carlo Barostat shall be used, as was asked for.")
+                    self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                     self.temperature_c,
                                                     self.sim_params.getInt('barostatInterval')))
-            else: 
-                print("I shall refrain from using the Monte Carlo Barostat...")
-            if self.sim_params.getBool('useAndersenThermostat') == True:    
+            elif self.sim_params.getBool('useAndersenThermostat'):    
                 self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
-                print(f"Andersen Thermostat shall be used, as was asked for. With temperature {self.temperature_c}")
+                if self.args.verbose:
+                    print(f"Andersen Thermostat shall be used, as was asked for. With temperature {self.temperature_c}")
             else:
-                print("I shall refrain from using the Andersen Thermostat...")
+                print("I shall refrain from using a Thermostat...")
 
         #### Integrator ####
         friction_c    = self.sim_params.getFloat('friction_c')
@@ -614,11 +613,14 @@ class ActOpenMMSim:
         self.nbforce.updateParametersInContext(self.simulation.context)
         
     def print_energy(self, title:str):
-        print("%s:" % title) 
+        print("%s:" % title)
+        etot = 0.0
         for group in range(len(self.force_group.keys())):
-            print('%8d : %64s : %16.4f kJ/mol' % (group, self.force_group[group], self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole))
+            eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
+            etot += eterm
+            print('%8d : %64s : %16.4f kJ/mol' % (group, self.force_group[group], eterm))
         potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
-        print('potential energy = {0:.2f} kJ/mol\n'.format(potE/self.Numb_particles))    
+        print('potential energy = %.2f kJ/mol (sum of the above %.2f)\n' % (potE, etot))    
         
     def minimize_energy(self):
         #### Minimize and Equilibrate ####
@@ -682,7 +684,7 @@ class ActOpenMMSim:
                             try:
                                 outf.write("%10g" % float(words[ix]))
                                 for ii in iy:
-                                    outf.write("%10g" % (float(words[ii])))
+                                    outf.write("  %10g" % (float(words[ii])))
                                 outf.write("\n")
                             except ValueError:
                                 print("Incomprehensible line in logfile")
