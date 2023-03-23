@@ -553,8 +553,8 @@ class ActOpenMMSim:
             else: 
                 print("I shall refrain from using the Monte Carlo Barostat...")
             if self.sim_params.getBool('useAndersenThermostat') == True:    
-                self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq/picosecond))
-                print("Andersen Thermostat shall be used, as was asked for.")
+                self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
+                print(f"Andersen Thermostat shall be used, as was asked for. With temperature {self.temperature_c}")
             else:
                 print("I shall refrain from using the Andersen Thermostat...")
 
