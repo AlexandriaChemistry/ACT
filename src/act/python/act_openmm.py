@@ -382,10 +382,10 @@ class ActOpenMMSim:
         # Those interactions are added using two CustomBondForce entries
         vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))*vdW));')
         vdw_force = openmm.CustomBondForce(vdw_expression)
+        vdw_force.addPerBondParameter("vdW")
         vdw_force.addPerBondParameter("sigma")
         vdw_force.addPerBondParameter("epsilon")
         vdw_force.addPerBondParameter("gamma")
-        vdw_force.addPerBondParameter("vdW")
         
         qq_expression =('(ONE_4PI_EPS0*chargeprod* erf(zeta*r)/r);')
         qq_expression += 'ONE_4PI_EPS0 = %.16e;' % (ONE_4PI_EPS0)
@@ -397,11 +397,14 @@ class ActOpenMMSim:
         nexclqq  = self.sim_params.getInt("nexclqq")
         
         for index in range(self.reference_nb_force.getNumExceptions()):
+            # Just get the excluded atoms from the regular NB force
             [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.reference_nb_force.getExceptionParameters(index)
+            # And get the parameters from the Custom NB force
             [vdW1, sigma1, epsilon1, gamma1, charge1, zeta1] = self.reference_cnb_force.getParticleParameters(iatom)
+            [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
             if self.args.verbose:
                 print(f" custom bond force i {self.reference_cnb_force.getParticleParameters(iatom)}")
-            [vdW2, sigma2, epsilon2, gamma2, charge2, zeta2] = self.reference_cnb_force.getParticleParameters(jatom)
+                print(f" custom bond force j {self.reference_cnb_force.getParticleParameters(jatom)}")
             chargeprod = charge1*charge2
             zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
             if epsilon1 == 0 and epsilon2 == 0:
@@ -463,16 +466,17 @@ class ActOpenMMSim:
         self.bonds = []
         if self.args.bonded_potential == "morse":
             ### Morse potential ###
-            Morse_expression = "(D_e*(1 - exp(-a*(r-r0)))^2)-D_e;"
+            Morse_expression = "(D_e*(1 - exp(-beta*(r-r0)))^2)-D0;"
             Morse_force = openmm.CustomBondForce(Morse_expression)
+            Morse_force.addPerBondParameter("beta")
             Morse_force.addPerBondParameter("D_e")
-            Morse_force.addPerBondParameter("a")
+            Morse_force.addPerBondParameter("D0")
             Morse_force.addPerBondParameter("r0")
             for bond_index in range(reference_cb_force.getNumBonds()):
                 # Retrieve parameters.
-                [iatom, jatom, (D_e, a, r0)] = reference_cb_force.getBondParameters(bond_index)
+                [iatom, jatom, (beta, D_e, D0, r0)] = reference_cb_force.getBondParameters(bond_index)
                 self.bonds.append((iatom, jatom))
-                Morse_force.addBond(iatom, jatom, [D_e, a, r0])
+                Morse_force.addBond(iatom, jatom, [beta, D_e, D0, r0])
             self.add_force_group(Morse_force, "Morse bonds")
             self.system.addForce(Morse_force)
             
