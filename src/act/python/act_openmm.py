@@ -116,6 +116,7 @@ class ActOpenMMSim:
         self.fgnumber    = {}
         self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
                                             self.sim_params.getStr("combination_rule"))
+        self.logfile     = self.args.outputdir+'/'+self.args.log_file
         
     def add_force_group(self, force, fcname:str):
         fnumber = len(self.fgnumber)
@@ -199,7 +200,6 @@ class ActOpenMMSim:
         os.makedirs(self.args.outputdir, exist_ok=True)
         save              = self.sim_params.getInt('save')
         self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
-        self.logfile      = self.args.outputdir+'/'+self.args.log_file
         self.dataReporter = StateDataReporter(self.logfile, save, totalSteps=self.steps,
                                               step=self.sim_params.getBool('outStep'),
                                               time=self.sim_params.getBool('outTime'),
