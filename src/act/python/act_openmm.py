@@ -97,6 +97,11 @@ class CombinationRules:
             cepsilon = "((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))"
             cgamma   = "((gamma1 + gamma2)/2)"
             return csigma, cepsilon, cgamma
+        elif "Geometric" == self.comb:
+            csigma   = "(sqrt(sigma1*sigma2))"
+            cepsilon = "(sqrt(epsilon1*epsilon2))"
+            cgamma   = "(sqrt(gamma1*gamma2))"
+            return csigma, cepsilon, cgamma
         else:
             sys.exit("Unknown combination rule '%s'" % self.comb)
             
@@ -121,12 +126,12 @@ class ActOpenMMSim:
     def add_force_group(self, force, fcname:str):
         fnumber = len(self.fgnumber)
         if fcname == 'NonbondedForce':
-            directname = 'NonbondedForce (direct space)'
+            directname = 'Lennard-Jones (direct space)'
             self.force_group[fnumber] = directname
             self.fgnumber[directname] = fnumber
             force.setForceGroup(fnumber)
             fnumber = len(self.fgnumber)
-            recipname = 'NonbondedForce (reciprocal space)'
+            recipname = 'Lennard-Jones (reciprocal space)'
             self.force_group[fnumber] = recipname
             self.fgnumber[recipname]  = fnumber
             force.setReciprocalSpaceForceGroup(fnumber)
@@ -308,17 +313,13 @@ class ActOpenMMSim:
         cutoff_distance = self.reference_nb_force.getCutoffDistance()
         switch_distance = self.reference_nb_force.getSwitchingDistance()
     
-        # Electrostatics
+        # Electrostatics is our screened Coulomb minus the point charge based potential
         expression = 'Coulomb_gauss - Coulomb_point;'
         self.qq_expression = ( "(%f*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
         expression += ( 'Coulomb_gauss = %s;' % self.qq_expression )
         expression += ( 'Coulomb_point = (%f*charge1*charge2/r);' % ONE_4PI_EPS0 )
         expression += ( "zeta = %s;" % self.comb.zetaString())
 
-        force = openmm.CustomNonbondedForce(expression)
-        force.addPerParticleParameter("charge")
-        force.addPerParticleParameter("zeta")
-        force.setUseSwitchingFunction(self.use_switching_function)
         qqforce = openmm.CustomNonbondedForce(expression)
         qqforce.addPerParticleParameter("charge")
         qqforce.addPerParticleParameter("zeta")
@@ -336,14 +337,14 @@ class ActOpenMMSim:
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
             if self.args.verbose:
                 print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.reference_cnb_force.getParticleParameters(index)}")
-            force.addParticle([charge,zeta])
             qqforce.addParticle([charge,zeta])
         for index in range(self.reference_nb_force.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.reference_nb_force.getExceptionParameters(index)
             qqforce.addExclusion(iatom, jatom)
         self.add_force_group(qqforce, "Coulomb")
         self.system.addForce(qqforce)
-        # vdW
+
+        # Van der Waals, is our custom potential minus the default LJ.
         expression = 'U_WKB- U_LJ;' 
 
         # TODO: Remove hard-coded combination rules if possible
@@ -355,7 +356,6 @@ class ActOpenMMSim:
         self.vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
 
         expression += ( 'U_WKB = %s;' % self.vdw_expression )
-        #vdW*(((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6)))))))-1));'
         csigma, cepsilon, cgamma = self.comb.combStrings()
         # The statements have to be in this order! They are evaluated in the reverse order apparently.
         expression += ( 'sigma    = %s;' % csigma )
@@ -380,7 +380,6 @@ class ActOpenMMSim:
         for index in range(self.reference_nb_force.getNumParticles()):
             [charge_LJ, sigma_LJ, epsilon_LJ] = self.reference_nb_force.getParticleParameters(index)
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.reference_cnb_force.getParticleParameters(index)
-            force.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
             vdwforce.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
             if self.args.verbose:
                 print("index %d sigma %g, epsilon %g, gamma %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, vdW, sigma_LJ._value, epsilon_LJ._value ))
@@ -437,23 +436,22 @@ class ActOpenMMSim:
                 qq_force.addBond(iatom, jatom, [charge1, charge2, zeta])
                 
             # Van der Waals part
-            if not self.real_exclusion(nexclvdw, iatom, jatom):
-                # Note that the 6 below is because of the combination rule
-                if epsilon1 > 0 and epsilon2 > 0 and gamma1 > 6 and gamma2 > 6:
-                    csigma, cepsilon, cgamma = self.comb.combStrings()
-                    if self.args.verbose:
-                        print(csigma)
-                        print(cepsilon)
-                        print(cgamma)
-                    gamma   = eval(cgamma)
-                    epsilon = eval(cepsilon)
-                    sigma   = eval(csigma.replace("^", "**"))
+            if (not self.real_exclusion(nexclvdw, iatom, jatom) and
+                epsilon1 > 0 and epsilon2 > 0):
+                csigma, cepsilon, cgamma = self.comb.combStrings()
+                if self.args.verbose:
+                    print(csigma)
+                    print(cepsilon)
+                    print(cgamma)
+                gamma   = eval(cgamma)
+                epsilon = eval(cepsilon)
+                sigma   = eval(csigma.replace("^", "**"))
 
-                    if self.args.verbose:
-                        print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta1 %g zeta2 %g" % 
-                              ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta1, zeta2 ))
-                    if vdW1 != 0 and vdW2 != 0:
-                        vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma])
+                if self.args.verbose:
+                    print("i %d j %d q1 %g q2 %g sigma %g epsilon %g gamma %g zeta1 %g zeta2 %g" % 
+                          ( iatom, jatom, charge1, charge2, sigma, epsilon, gamma, zeta1, zeta2 ))
+                if vdW1 != 0 and vdW2 != 0:
+                    vdw_force.addBond(iatom, jatom, [sigma, epsilon, gamma])
                         
         self.add_force_group(qq_force, "Coulomb Exclusion Correction")
         self.system.addForce(qq_force)
@@ -620,7 +618,9 @@ class ActOpenMMSim:
             etot += eterm
             print('%8d : %64s : %16.4f kJ/mol' % (group, self.force_group[group], eterm))
         potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
-        print('potential energy = %.2f kJ/mol (sum of the above %.2f)\n' % (potE, etot))    
+        print('potential energy = %.2f kJ/mol' % potE)
+        if abs(potE-etot) > 1e-3:
+            print("sum of the above %.2f" % (etot))
         
     def minimize_energy(self):
         #### Minimize and Equilibrate ####

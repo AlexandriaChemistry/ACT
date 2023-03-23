@@ -417,8 +417,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
     add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
     
-    // This order is important !!! Do not change the order of these parameters,
-    // otherwise the force field is not working !!!
+    // This order is important!
+    // Do not change the order of these parameters, otherwise the force field is not working
     auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
     add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
     auto grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -454,23 +454,49 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             {
                 add_xml_double(grandchild3, "vdW", 0.0);
             }
+            double sigma = 0, epsilon = 0;
             switch (fs.gromacsType())
             {
             case F_BHAM:
-                for(size_t j = 0; j < param.size(); j++)
+                // TODO: optimize values
+                sigma   = param[wbh_name[wbhSIGMA]].internalValue();
+                epsilon = param[wbh_name[wbhEPSILON]].internalValue();
+                if (0 == epsilon)
                 {
-                    if (Mutability::Dependent != param[wbh_name[j]].mutability())
+                    add_xml_double(grandchild3, wbh_name[wbhSIGMA], 0.001);
+                    add_xml_double(grandchild3, wbh_name[wbhEPSILON], 0.001);
+                    add_xml_double(grandchild3, wbh_name[wbhGAMMA], 7);
+                }
+                else
+                {
+                    for(size_t j = 0; j < param.size(); j++)
                     {
-                        add_xml_double(grandchild3, wbh_name[j], param[wbh_name[j]].internalValue());
+                        if (Mutability::Dependent != param[wbh_name[j]].mutability())
+                        {
+                            add_xml_double(grandchild3, wbh_name[j], param[wbh_name[j]].internalValue());
+                        }
                     }
                 }
                 break;
             case F_GBHAM:
-                for(size_t j = 0; j < param.size(); j++)
+                // TODO: optimize values
+                sigma   = param[wbh_name[wbhSIGMA]].internalValue()/std::pow(2,1.0/6.0);
+                epsilon = param[wbh_name[wbhEPSILON]].internalValue();
+                if (0 == epsilon)
                 {
-                    if (Mutability::Dependent != param[gbh_name[j]].mutability())
+                    add_xml_double(grandchild3, gbh_name[gbhRMIN], 0.001);
+                    add_xml_double(grandchild3, gbh_name[gbhEPSILON], 0.001);
+                    add_xml_double(grandchild3, gbh_name[gbhGAMMA], 7);
+                    add_xml_double(grandchild3, gbh_name[gbhDELTA], 1);
+                }
+                else
+                {
+                    for(size_t j = 0; j < param.size(); j++)
                     {
-                        add_xml_double(grandchild3, gbh_name[j], param[gbh_name[j]].internalValue());
+                        if (Mutability::Dependent != param[gbh_name[j]].mutability())
+                        {
+                            add_xml_double(grandchild3, gbh_name[j], param[gbh_name[j]].internalValue());
+                        }
                     }
                 }
                 break;
@@ -496,8 +522,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             // Normal Lennard Jones is always needed
             {
                 auto grandchild4 = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
-                std::vector<double> se_param = { 0.3, 0.05 };
+                add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
+                std::vector<double> se_param = { sigma, epsilon };
                 const char *se_name[] = { "sigma", "epsilon" };
                 
                 //add_xml_double(grandchild4, exml_names(xmlEntryOpenMM::CHARGE_RES), aType->charge());
@@ -776,7 +802,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 // First check whether this type is in the global map
                 auto ffGlobalPtr = fftypeGlobalMap.find(ffType);
                 if (fftypeGlobalMap.end() == ffGlobalPtr || 
-                    (addNumbersToAtomTypes_ && localIndex >= ffGlobalPtr->second))
+                    (addNumbersToAtomTypes_ && localIndex > ffGlobalPtr->second))
                 {
                     // Check whether this type exist in the force field
                     if (!pd->hasParticleType(ffType))
@@ -797,12 +823,12 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     // Make openMM type
                     if (addNumbersToAtomTypes_)
                     {
-                        openMMtype += gmx::formatString("_%d", ++ffGlobalPtr->second);
+                        if (localIndex > ffGlobalPtr->second)
+                        {
+                            ffGlobalPtr->second++;
+                        }
+                        openMMtype += gmx::formatString("_%d", ffGlobalPtr->second);
                         // printf("openMMtype %s counter %d\n", openMMtype.c_str(), ffGlobalPtr->second);
-                    }
-                    else
-                    {
-                        ffGlobalPtr->second++;   
                     }
                     std::string openMMclass = ffType;
                     std::string btype("bondtype");
