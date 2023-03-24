@@ -309,6 +309,7 @@ class ActOpenMMSim:
         if (alpha_ewald/alpha_ewald.unit) == 0.0:
             # If alpha is 0.0, alpha_ewald is computed by OpenMM from from the error tolerance.
             tol = self.reference_nb_force.getEwaldErrorTolerance()
+#            print(f"TOlerance {tol}")
             alpha_ewald = (1.0/self.reference_nb_force.getCutoffDistance()) * np.sqrt(-np.log(2.0*tol))
         cutoff_distance = self.reference_nb_force.getCutoffDistance()
         switch_distance = self.reference_nb_force.getSwitchingDistance()
@@ -348,11 +349,22 @@ class ActOpenMMSim:
         expression = 'U_WKB- U_LJ;' 
 
         # TODO: Remove hard-coded combination rules if possible
-        expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+        ctf = float(str(cutoff_distance).split(" ")[0])
+        if "LJPME" == str(self.nonbondedMethod):
+            ctf = float(str(cutoff_distance).split(" ")[0])
+            if self.args.verbose:
+                print(f"cutoff distance {ctf} tolerance {tol}")
+                print("Using scaling function for the LJ...")
+#        expression += 'swt = erfc(Er_alph*r)/r'
+#        expression += 'Er_alph = ((-log(2*tol))^0.5)/float(ctf)'
+            expression += 'U_LJ = erfc(((-log(2*tol))^0.5)/(ctf)*r)/r * 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+        else:
+            expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
         expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
-    
+        expression += ( 'tol = %s;' % tol)
+        expression += ( 'ctf = %s;' % ctf)
         self.vdw_expression =('(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
 
         expression += ( 'U_WKB = %s;' % self.vdw_expression )
@@ -375,6 +387,8 @@ class ActOpenMMSim:
         else:    
             vdwforce.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
         vdwforce.setCutoffDistance(cutoff_distance)
+#        print(f"cutoff d {cutoff_distance}")
+
         vdwforce.setSwitchingDistance(switch_distance)
         vdwforce.setUseLongRangeCorrection(self.reference_nb_force.getUseDispersionCorrection())
         for index in range(self.reference_nb_force.getNumParticles()):
