@@ -183,6 +183,7 @@ class ActOpenMMSim:
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
         self.use_dispersion_correction = self.sim_params.getBool('use_dispersion_correction')
         self.col_freq                  = self.sim_params.getFloat('collision_frequency', 0.1) 
+        self.MaxDrudeDist              = self.sim_params.getFloat('MaxDrudeDistance', 0.02)
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
         self.useMonteCarloBarostat     = self.sim_params.getBool('useMonteCarloBarostat')
@@ -590,7 +591,8 @@ class ActOpenMMSim:
         else:
             sys.exit("Unknown integrator %s" % integrator)
         if self.args.polarizable:
-            self.integrator.setMaxDrudeDistance(0.02*nanometer)
+#            self.integrator.setMaxDrudeDistance(0.02*nanometer)
+            self.integrator.setMaxDrudeDistance(self.MaxDrudeDist)
             if self.args.verbose:
                 print("Core Temperature %g" % self.temperature_c)
                 print("Drude Temperature %g" % self.integrator.getDrudeTemperature()._value)
