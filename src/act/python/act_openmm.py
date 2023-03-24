@@ -50,6 +50,7 @@ class SimParams:
             return value
         else:
             print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
+            return default
         
     def getInt(self, key:str) -> int:
         if key in self.params and len(self.params[key]) > 0:
@@ -358,9 +359,9 @@ class ActOpenMMSim:
                 print("Using scaling function for the LJ...")
 #        expression += 'swt = erfc(Er_alph*r)/r'
 #        expression += 'Er_alph = ((-log(2*tol))^0.5)/float(ctf)'
-            expression += 'U_LJ = erfc(((-log(2*tol))^0.5)/(ctf)*r)/r * 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
-        else:
-            expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+#            expression += 'U_LJ = erfc(((-log(2*tol))^0.5)/(ctf)*r)/r * 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+#        else:
+        expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
         expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
