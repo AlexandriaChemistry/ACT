@@ -598,6 +598,11 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case F_MORSE:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+                // The Morse bonds potential is written as a string here:
+                auto energy = gmx::formatString("(%s*(1 - exp(-%s*(r-%s)))^2)+%s;", 
+                                                morse_name[morseDE], morse_name[morseBETA],
+                                                morse_name[morseLENGTH], morse_name[morseD0]);
+                add_xml_char(fsPtr, "energy", energy.c_str());
                 // Specify the per bond parameters
                 for(int i = 0; i < morseNR; i++)
                 {
@@ -609,9 +614,8 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case F_CUBICBONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-                // The cubic bonds potential could be written as a string here,
-                // or it can be added in the openmm python script
-                
+                // The cubic bonds potential is written as a string here:
+                add_xml_char(fsPtr, "energy", "(kb*(r-bondlength)^2 * (rmax-r) - D_e)*step(2*rmax+bondlength-3*r) + step(3*r-2*rmax-bondlength)*(-D_e - (4*kb/27)*(bondlength-rmax)^2);");
                 // Specify the per bond parameters
                 for(int i = 0; i < cubicNR; i++)
                 {
@@ -622,21 +626,27 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             break;
         case F_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
+            add_xml_double(fsPtr, "energy", 0);
             break;
         case F_LINEAR_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+            add_xml_double(fsPtr, "energy", 0);
             break;
         case F_UREY_BRADLEY:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+            add_xml_double(fsPtr, "energy", 0);
             break;
         case F_PDIHS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
+            add_xml_double(fsPtr, "energy", 0);
             break;
         case F_IDIHS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
+            add_xml_double(fsPtr, "energy", 0);
             break;
         case F_POLARIZATION:
         case F_BHAM:
+            //add_xml_double(fsPtr, "energy", 0);
             break;
         default:
             // Do nothing
@@ -644,7 +654,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         }
         if (fsPtr)
         {
-            add_xml_double(fsPtr, "energy", 0.0);
             xmlMap_.insert({fs.first, fsPtr});
         }
     }
