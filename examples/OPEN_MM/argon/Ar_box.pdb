@@ -1,5 +1,5 @@
 REMARK    THIS IS A SIMULATION BOX
-CRYST1   28.200   28.200   28.200  90.00  90.00  90.00 P 1           1
+CRYST1   98.200   98.200   98.200  90.00  90.00  90.00 P 1           1
 MODEL        1
 ATOM      1 Ar   Ar      1      60.000  72.000  32.000  1.00  0.00          Ar
 ATOM      2 Ar   Ar      2      46.000  75.000  18.000  1.00  0.00          Ar

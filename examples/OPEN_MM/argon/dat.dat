@@ -65,3 +65,9 @@ constraintTolerance  = 0.000001
 # Platform CUDA or OpenCL (single/double)
 usePlatform         = CPU
 usePrecisionCuda    = single
+charge_distribution    = Gaussian
+combination_rule       = Hogervorst
+nexclvdw               = 0
+MaxDrudeDistance       = 0
+nexclqq                = 0
+integrator             = DrudeLangevinIntegrator
