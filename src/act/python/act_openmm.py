@@ -51,7 +51,12 @@ class SimParams:
         else:
             print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
             return default
-        
+
+    def check_consist(self):
+        if "DrudeLangevinIntegrator" == self.getStr('integrator') and self.getBool('useAndersenThermostat'):
+            print("Warning, Andersen thermostat and Drude Langevin Integrators are used together. The Langevin integrator contains an in-built thermostat.")
+
+
     def getInt(self, key:str) -> int:
         if key in self.params and len(self.params[key]) > 0:
             try:
@@ -244,7 +249,6 @@ class ActOpenMMSim:
         if 'CUDA' == plform:
             properties = {'CudaPrecision': 'single'}
             self.usePrecisionCuda = self.sim_params.getStr('usePrecisionCuda')
-
     def start_output(self):
         # OUTPUT
         ################################################
@@ -569,7 +573,7 @@ class ActOpenMMSim:
         print("----------------------------")
 
     def set_algorithms(self):
-        #### Thermostat / Barostat ####
+        #### ethermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
             if self.sim_params.getBool('useMonteCarloBarostat'):
                 if self.args.verbose:
@@ -679,6 +683,7 @@ class ActOpenMMSim:
 
     def setup(self):
         self.set_params()
+        self.sim_params.check_consist()
         self.start_output()
         self.make_system()
         self.make_forces()
