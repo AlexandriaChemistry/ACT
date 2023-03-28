@@ -116,13 +116,33 @@ class ActOpenMMSim:
     def __init__(self):
         self.args        = self.argParser()
         self.pdb         = PDBFile(self.args.pdb_file)
-        self.forcefield  = ForceField(self.args.xml_file)
         self.sim_params  = SimParams(self.args.dat_file)
         self.force_group = {}
         self.fgnumber    = {}
         self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
                                             self.sim_params.getStr("combination_rule"))
         self.logfile     = self.args.outputdir+'/'+self.args.log_file
+        self.gen_ff()
+        
+    def gen_ff(self):
+        if None != self.args.xml_file:
+            self.forcefield  = ForceField(self.args.xml_file)
+        elif None != self.args.act_file:
+            # Run alexandria gentop, but first check whether we have alexandria
+            if None == shutil.which("alexandria"):
+                sys.exit("You provided and ACT force field file, but the alexandria program is not in your PATH")
+            xmloutfile = self.args.outputdir+"/"+"act.xml"
+            if os.path.exists(xmloutfile):
+                os.unlink(xmloutfile)
+            mycmd = ("alexandria gentop -ff %s -f %s -openmm %s" % ( self.args.act_file, 
+                                                                     self.args.pdb_file,
+                                                                     xmloutfile ))
+            os.system(mycmd)
+            if not os.path.exists(xmloutfile):
+                sys.exit("Failed running '%s'" % mycmd)
+            if self.args.verbose:
+                print("Succesfully generated an OpenMM force field file")
+            self.forcefield = ForceField(xmloutfile)
         
     def add_force_group(self, force, nonbond:bool=False):
         fcname  = force.getName()
@@ -179,7 +199,7 @@ class ActOpenMMSim:
             args.verbose = True
         # Do some checking
         if (None == args.pdb_file or None == args.dat_file or
-            (None == args.xml_file and None == args.alexandria)):
+            (None == args.xml_file and None == args.act_file)):
             sys.exit("Please pass a pdb file, a parameter file and either an OpenMM or Alexandria force field file")
         if not os.path.exists(args.pdb_file):
             sys.exit("Error: pdb file %s does not exist" % args.pdb_file)
