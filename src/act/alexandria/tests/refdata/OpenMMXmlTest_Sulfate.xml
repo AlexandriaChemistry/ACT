@@ -25,7 +25,7 @@
       <Bond atomName1="O_5" atomName2="S_1"/>
     </Residue>
   </Residues>
-  <HarmonicBondForce energy="0">
+  <HarmonicBondForce>
     <Bond class1="o2_b" class2="s3_b" k="300000" length="0.1399" De="0"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0">
@@ -50,11 +50,11 @@
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
     <UseAttributeFromResidue name="charge"/>
-    <Atom type="o2_1" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_2" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_3" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_4" sigma="0.3" epsilon="0.05"/>
-    <Atom type="s3_1" sigma="0.3" epsilon="0.05"/>
+    <Atom type="o2_1" sigma="0" epsilon="0"/>
+    <Atom type="o2_2" sigma="0" epsilon="0"/>
+    <Atom type="o2_3" sigma="0" epsilon="0"/>
+    <Atom type="o2_4" sigma="0" epsilon="0"/>
+    <Atom type="s3_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>

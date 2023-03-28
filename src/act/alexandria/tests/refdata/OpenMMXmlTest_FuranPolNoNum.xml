@@ -44,7 +44,7 @@
       <Bond atomName1="C_7" atomName2="O_9"/>
     </Residue>
   </Residues>
-  <CustomBondForce energy="0">
+  <CustomBondForce energy="(De*(1 - exp(-beta*(r-bondlength)))^2)+D0;">
     <PerBondParameter name="beta"/>
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>
@@ -74,27 +74,11 @@
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
-    <Atom type="c2" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
-    <Atom type="c2_s" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="h" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
-    <Atom type="h_s" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="o2" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_s" vdW="0" sigma="0" epsilon="0" gamma="0" zeta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
     <UseAttributeFromResidue name="charge"/>
-    <Atom type="c2" sigma="0.3" epsilon="0.05"/>
-    <Atom type="c2_s" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h" sigma="0.3" epsilon="0.05"/>
-    <Atom type="h_s" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2" sigma="0.3" epsilon="0.05"/>
-    <Atom type="o2_s" sigma="0.3" epsilon="0.05"/>
   </NonbondedForce>
-  <DrudeForce>
-    <Particle type2="c2" type1="c2_s" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="h" type1="h_s" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="o2" type1="o2_s" polarizability="0.00145" charge="-1.2" thole="0"/>
-  </DrudeForce>
+  <DrudeForce/>
 </ForceField>
 ]]></String>
 </ReferenceData>
