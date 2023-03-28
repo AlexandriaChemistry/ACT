@@ -3,14 +3,13 @@
 # RUN CONTROL PARAMETERS
 ################################################
 # dt in picoseconds
-dt                 = 0.0004*picoseconds
+dt                 = 0.0002*picoseconds
 equilibrationSteps = 0
 steps              = 2500
 
-
 # OPTIONS FOR OUTPUT
 ################################################
-save               = 500
+save               = 50
 outStep            = True
 outTime            = True
 outSpeed           = True
@@ -31,8 +30,11 @@ switch_width           = 0*nanometers
 nonbondedCutoff        = 1*nanometers
 use_dispersion_correction = False 
 ewaldErrorTolerance    = 1e-4 
-
-
+combination_rule       = Hogervorst
+nexclvdw               = 0
+nexclqq                = 0
+MaxDrudeDistance       = 0
+charge_distribution    = Gaussian
 
 # OPTIONS FOR WEAK COUPLING ALGORITHMS
 ################################################
@@ -46,7 +48,8 @@ friction_c             = 5.0/picosecond
 friction_s             = 20/picosecond
 pressure               = 1.0*atmospheres
 barostatInterval       = 25
-
+collision_frequency    = 10
+integrator             = DrudeLangevinIntegrator
 
 # OPTIONS FOR BONDS ,constraints          = None, HBonds, AllBonds, HAngles
 ################################################
