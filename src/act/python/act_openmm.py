@@ -577,12 +577,12 @@ class ActOpenMMSim:
                 self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                         self.temperature_c,
                                                         self.sim_params.getInt('barostatInterval')))
-            elif self.sim_params.getBool('useAndersenThermostat'):    
-                self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
-                if self.args.verbose:
-                    print(f"Andersen Thermostat will be used with temperature {self.temperature_c}")
-            else:
-                print("I shall refrain from using a Thermostat...")
+        if self.sim_params.getBool('useAndersenThermostat'):    
+            self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
+            if self.args.verbose:
+                print(f"Andersen Thermostat will be used with temperature {self.temperature_c}")
+        else:
+            print("I shall refrain from using a Thermostat...")
 
         #### Integrator ####
         friction_c    = self.sim_params.getFloat('friction_c')
