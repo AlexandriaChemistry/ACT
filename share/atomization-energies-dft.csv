@@ -1641,7 +1641,7 @@ I|0|ccsd(t)/aug-cc-pwcvqz-pp-fc|E0|0|-295.729999|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvqz-pp-fc|E0|0|-295.061242|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP-fc|E0|0|-599.164594|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP-fc|E0|0|-599.239998|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pwcvqz-pp|E0|0|-463.336945|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pwcvqz-pp-fc|E0|0|-463.336945|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.252572|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.365044|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-199.648163|1|Hartree|Unknown2023a||
