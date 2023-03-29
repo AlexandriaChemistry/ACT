@@ -523,7 +523,9 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             {
                 auto grandchild4 = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                 add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
-                std::vector<double> se_param = { sigma, epsilon };
+                // Convert the sigma to get the correct position of the minimum.
+                double fac2 = std::pow(2.0, 1.0/6.0);
+                std::vector<double> se_param = { sigma/fac2, epsilon };
                 const char *se_name[] = { "sigma", "epsilon" };
                 
                 //add_xml_double(grandchild4, exml_names(xmlEntryOpenMM::CHARGE_RES), aType->charge());
