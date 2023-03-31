@@ -188,6 +188,63 @@ static void computeNonBonded(const std::vector<TopologyEntry *>    &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
+static void computeNonBondedTest(const std::vector<TopologyEntry *>    &pairs,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto rmin       = params[gbhRMIN_IJ];
+        auto epsilon    = params[gbhEPSILON_IJ];
+        auto gamma      = params[gbhGAMMA_IJ];
+        auto delta      = params[gbhDELTA_IJ];
+        if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
+        {
+            // Get the atom indices
+            auto &indices   = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2        = iprod(dx, dx);
+            auto rinv       = gmx::invsqrt(dr2);
+            real rstar      = dr2*rinv/rmin;
+            real sixterm    = 1 + std::pow(rstar,6);
+
+            real r6term     = 1.0/sixterm;
+            real delterm    = 1 + std::pow(rstar,delta);
+            real delta6gam2 = 6 + delta + 2*gamma;
+            real expterm    = std::exp(gamma*(1 - rstar));
+            
+            real eerep      = delta6gam2*r6term*(6+delta)*expterm/(2*gamma*delta6gam2);
+            real eedisp     = -delta6gam2*r6term/(2*gamma) - 1/delterm;
+            real sixdenom   = 1/(2*gamma*sixterm);
+            //real eerep      = epsilon*delta6*expterm*sixdenom;
+            //real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
+            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) + 
+                                        ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/2.;
+
+            erep     += eerep;
+            edisp    += eedisp;
+            real fbond  = fgbham*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+}
+
 static void computeCoulomb(const std::vector<TopologyEntry *> &pairs,
                            const std::vector<ActAtom>         &atoms,
                            const std::vector<gmx::RVec>       *coordinates,

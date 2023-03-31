@@ -470,6 +470,8 @@ class Molecule:
     def __ge__(self, other):
         return compare_mol_formula(self.formula, other.formula) >= 0
     def __ne__(self, other):
+        if None == other:
+           return True
         return compare_mol_formula(self.formula, other.formula) != 0
 
 class Molecules:
