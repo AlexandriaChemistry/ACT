@@ -60,7 +60,8 @@ def string2coords(xyzstr:str)->list:
         coords.append([ float(xxx[3*i]), float(xxx[3*i+1]), float(xxx[3*i+2]) ])
     return coords
     
-def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int,
+def convert(csv_file:str, outfile:str, selection:str,
+            dimer_selection:str, verbose:bool, maxdimer:int,
             prettyPrint:bool, saveXyz:bool):
     # Do something
     M          = Molecules()
@@ -89,6 +90,9 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
     smiles2    = None
     mp1        = None
 
+    ds = None
+    if None != dimer_selection:
+        ds = open(dimer_selection, "w")
     obConversion = ob.OBConversion()
     obConversion.SetInFormat("xyz")
     csv = open(csv_file, "r")
@@ -213,6 +217,8 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
         mp1.set_molname(molname)
         
         # Done with the generic stuff for this molprop, now add all the experiments
+        if None != ds:
+            ds.write("%s#%s|Train\n" % ( fragnames[0], fragnames[1] ))
         for krow in range(irow,jrow):
             # Create new experiment
             jobtype = "SP"
@@ -255,7 +261,8 @@ def convert(csv_file:str, outfile:str, selection:str, verbose:bool, maxdimer:int
         # Update loop variable
         irow = jrow
         gc.collect()
-
+    if None != ds:
+        ds.close()
     del obConversion
     molprops.close()
 
@@ -265,6 +272,8 @@ def parse_args():
     parser.add_argument("-f", "--infile", help="Input file in csv format", type=str, default=None)
     parser.add_argument("-o", "--outfile", help="Output molprop file", type=str, default=None)
     parser.add_argument("-sel", "--selection", help="ACT selection file", type=str, default=None)
+    selout = "dimer_selection.dat"
+    parser.add_argument("-dsel", "--dimer_selection", help="ACT selection file containg all pairs found, default "+selout, type=str, default=selout)
     maxdim = 1000
     parser.add_argument("-md", "--maxdimer", help="Read only the first N rows from input file, 0 means read them all, default "+str(maxdim), type=int, default=maxdim)
     parser.add_argument("-v", "--verbose", help="Write more output", action="store_true")
@@ -280,7 +289,8 @@ if __name__ == "__main__":
     if args.debug:
         debug = True
     if args.infile and args.outfile:
-        convert(args.infile, args.outfile, args.selection, 
+        convert(args.infile, args.outfile, args.selection,
+                args.dimer_selection,
                 args.verbose, args.maxdimer, args.pretty, args.xyz)
     else:
         print("Please pass me input and output filenames (try -h first)")
