@@ -10,18 +10,6 @@ sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 from molprops import *
 from read_gaussian_log import *
 
-def read_basis_table(infile:str)->dict:
-    rbt = {}
-    if os.path.exists(infile):
-        with open(infile, "r") as inf:
-            for line in inf:
-                words = line.strip().split()
-                if len(words) == 2:
-                    rbt[words[0]] = words[1]
-    else:
-        print("No such basisset_table file %s" % infile)
-    return rbt
-    
 def parseArguments():
     desc = '''This script will read a Gaussian output file from the Alexandria library
     and write an XML file for input to the Alexandria Chemistry Toolkit. For systems

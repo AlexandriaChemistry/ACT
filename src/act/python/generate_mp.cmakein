@@ -61,6 +61,7 @@ def parseArguments():
   parser.add_argument("-xmldir", "--xmldir",       help="Directory for molecule.xml files, leave empty to use the current directory", type=str, default=xmldir)
   parser.add_argument("-skip", "--skip_build",     help="Do not rebuild the xml files for molecules", action="store_true")
   parser.add_argument("-clean", "--clean",         help="Remove data files after use.", action="store_true")
+  parser.add_argument("-basis_table", "--basisset_table", help="Table of basis set per element, will override what is in the input file", type=str, default=None)
   args = parser.parse_args()
   return args
 
@@ -102,9 +103,9 @@ def get_mols(M, musthave, ahlist, output):
   print("There are %d molecules in %s to generate %s" % ( len(mols), musthave, output ) )
   return mols
 
-def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str, jobtype:str, symmetry_number:int) -> str:
+def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str, jobtype:str, symmetry_number:int, rbt:dict) -> str:
   if not os.path.exists(datafile):
-    mp = read_gaussian_log(logfile, molname, basisset, False, 0)
+    mp = read_gaussian_log(logfile, molname, basisset, rbt, False, 0)
     if mp:
       molprops = Molprops()
       molprops.open(datafile)
@@ -127,7 +128,8 @@ def get_method_basis_jobtype(meth:str):
     mm = meth.upper()
     return mm, mm, mm
   
-def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
+def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, 
+                   basisset_table, sdf_ok):
   pool      = Pool()
   results   = []
   for molname in mols:
@@ -135,12 +137,13 @@ def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
       datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
       if None != datafile and None != logfile:
         mm, basis, jobtype = get_method_basis_jobtype(meth)
+        rbt  = read_basis_table(basisset_table)
         symm = 1
         mmm  = M.find_mol(molname)
         if mmm:
           symm = mmm.symmetry_number
         if logfile and os.path.exists(logfile):
-          results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype, symm]))
+          results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype, symm, rbt]))
 
   for r in results:
     try:
@@ -223,7 +226,8 @@ if __name__ == "__main__":
     os.makedirs(args.xmldir, exist_ok=True)
   maxpot = min(100, max(20, args.maxpot))
   if not args.skip_build:
-    parallel_build(M, mols, args.methods, args.xmldir, maxpot, False)
+    parallel_build(M, mols, args.methods, args.xmldir, maxpot,
+                   args.basisset_table, False)
   
   block_length = 2000  
   run_merge(mols, block_length, args.methods, edit_mp, args.xmldir,
