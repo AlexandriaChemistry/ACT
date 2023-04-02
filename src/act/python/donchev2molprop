@@ -23,16 +23,16 @@ def get_selection(selection:str)->list:
                 sel.append(row[0])
     return sel
 
-def get_iupac(M:Molecules, inchi:str, smiles:str)->str:
+def get_filename_iupac(M:Molecules, inchi:str, smiles:str)->list:
     if inchi:
         mol = M.find_inchi(inchi)
         if mol:
-            return mol.iupac
+            return [ mol.filename, mol.iupac ]
         else:
             print("No iupac for inchi %s smiles %s" % (inchi, smiles))    
     else:
         print("No inchi for smiles %s" % smiles)    
-    return smiles
+    return [ None, None ]
     
 def actualsize(input_obj):
     memory_size = 0
@@ -179,6 +179,7 @@ def convert(csv_file:str, outfile:str, selection:str,
                 break
             if len(MD.atoms) != natom:
                 print("Extracted %d atoms from smiles %s, but expected %d" % ( len(MD.atoms), smiles[fff], natom ))
+                success = False
                 break
             # Collect atom properties
             atom_id = []
@@ -188,7 +189,12 @@ def convert(csv_file:str, outfile:str, selection:str,
                 atom_id.append(atomnr_offset+i+1)
                 mass += MD.atoms[i+1]["mass"]
             # Create fragment name from iupac names of monomers
-            fragnames.append(get_iupac(M, MD.inchi, smiles[fff]))
+            [ filename, iupac ] = get_filename_iupac(M, MD.inchi, smiles[fff])
+            if None == filename:
+                print("No filename found for %s" % MD.inchi)
+                success = False
+                break
+            fragnames.append(filename[:-4])
             frag = mp.Fragment(MD.inchi, charge[fff],
                                1, 1, atom_id, mass, MD.formula)
             if smiles[fff] == "O":
