@@ -580,6 +580,7 @@ int edit_mp(int argc, char *argv[])
     auto ffname = opt2fn_null("-ff", fnm.size(), fnm.data());
     if (ffname)
     {
+        printf("Since you provided a force field file I will now check the compounds.\n");
         check_mp(ffname, opt2fn("-g", fnm.size(), fnm.data()), genCharges, &mpt);
     }
     if (writeNode == cr.rank())

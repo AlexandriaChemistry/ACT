@@ -688,6 +688,19 @@ class GaussianReader:
                     print("Something fishy with " + infile)
         return mp
         
+def read_basis_table(infile:str)->dict:
+    rbt = {}
+    if None != infile:
+        if os.path.exists(infile):
+            with open(infile, "r") as inf:
+                for line in inf:
+                    words = line.strip().split()
+                    if len(words) == 2:
+                        rbt[words[0]] = words[1]
+        else:
+            print("No such basisset_table file %s" % infile)
+    return rbt
+    
 def read_gaussian_log(infile:str, molname:str, basisset:str, special_basis:dict,
                       verbose:bool, coordinate_set:int) -> Molprop:
     if verbose:
