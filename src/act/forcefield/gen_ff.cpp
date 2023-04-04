@@ -152,7 +152,7 @@ int gen_ff(int argc, char*argv[])
     double            epsilonr = 1;
     
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "CUBICBONDS", "HARMONIC", "MORSE", nullptr };
+    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", nullptr };
