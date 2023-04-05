@@ -184,8 +184,8 @@ def supported_elements() -> str:
 class Molecule:
     """Class to handle an entry from the alexandria.csv database"""
 
-    def __init__(self, new_id):
-        self.alexandria = new_id
+    def __init__(self, alexandria:int):
+        self.alexandria = alexandria
 
     def check_html(self):
         if len(self.html_name) == 0:
@@ -200,68 +200,40 @@ class Molecule:
         if (self.iupac.find("[") >= 0 or self.iupac.find("]") >= 0) and (len(self.latex_name) == 0):
             self.latex_name = self.iupac.replace("[", "{[}").replace("]", "{]}")
 
-    def from_row(self, row, version, new_id):
-        if (version == 1):
-            print("Version 1 not supported anymore")
-            exit(1)
-        elif (version == 2):
-            self.alexandria      = int(row[0])
-            self.iupac           = row[1]
-            self.formula         = row[2]
-            self.charge          = int(row[3])
-            self.mult            = int(row[4])
-            self.weight          = row[5]
-            self.cas             = row[6]
-            self.csid            = row[7]
-            self.pubchem         = row[8]
-            self.stdinchi        = row[9]
-            self.inchikey        = row[10]
-            self.classification  = row[11]
-            self.synonyms        = row[12]
-            self.filename        = row[13]
-            self.point_group     = row[14]
-            self.symmetry_number = row[15]
-            self.rotbond         = row[16]
-            self.html_name       = row[17]
-            self.latex_name      = row[18]
-            self.author          = row[19]
-            self.timestamp       = row[20]
-            self.comment         = row[21]
-            self.check_latex()
-            self.check_html()
-        elif (version == 3):
-            if (len(row) < 22):
-                print("row[0] %s invalid input" % ( row[0] ))
-                exit(1)
-            self.alexandria      = int(row[0])
-            self.parentid        = int(row[1])
-            self.iupac           = row[2]
-            self.formula         = row[3]
-            self.charge          = int(row[4])
-            self.mult            = int(row[5])
-            self.weight          = row[6]
-            self.cas             = row[7]
-            self.csid            = row[8]
-            self.pubchem         = row[9]
-            self.stdinchi        = row[10]
-            self.inchikey        = row[11]
-            self.classification  = row[12]
-            self.synonyms        = row[13]
-            self.filename        = row[14]
-            self.point_group     = row[15]
-            self.symmetry_number = row[16]
-            self.rotbond         = row[17]
-            self.html_name       = row[18]
-            self.latex_name      = row[19]
-            self.author          = row[20]
-            self.timestamp       = row[21]
-            self.comment         = None
-            if len(row) >= 23:
-                self.comment     = row[22]
-            self.check_latex()
-            self.check_html()
-        else:
-            mol_csv_die("version")
+    def from_row(self, row, version:int):
+        if (version != 3):
+            sys.exit("Version %d not supported" % version)
+
+        if (len(row) < 22):
+            sys.exit("row[0] %s invalid input" % ( row[0] ))
+        if self.alexandria <= 0:
+            self.alexandria = int(row[0])
+        self.parentid        = int(row[1])
+        self.iupac           = row[2]
+        self.formula         = row[3]
+        self.charge          = int(row[4])
+        self.mult            = int(row[5])
+        self.weight          = row[6]
+        self.cas             = row[7]
+        self.csid            = row[8]
+        self.pubchem         = row[9]
+        self.stdinchi        = row[10]
+        self.inchikey        = row[11]
+        self.classification  = row[12]
+        self.synonyms        = row[13]
+        self.filename        = row[14]
+        self.point_group     = row[15]
+        self.symmetry_number = row[16]
+        self.rotbond         = row[17]
+        self.html_name       = row[18]
+        self.latex_name      = row[19]
+        self.author          = row[20]
+        self.timestamp       = row[21]
+        self.comment         = None
+        if len(row) >= 23:
+            self.comment     = row[22]
+        self.check_latex()
+        self.check_html()
 
     def classes(self):
         c = []
@@ -538,16 +510,16 @@ class Molecules:
 
     def add_molecule(self, mol):
         if (mol.alexandria in self.mols):
-            print("Consistency error: alexandria ID %d already in the database. Ignoring this one." % ( mol.alexandria ))
-        else:
-            self.mols[mol.alexandria] = mol
+            print("Consistency error: alexandria ID %d already in the database. Will generate new id." % ( mol.alexandria ))
+            mol.alexandria = self.next_id()
+        self.mols[mol.alexandria] = mol
 
-    def read(self, input_file, version, clean):
-        rows = get_csv_rows(input_file, 18)
+    def read(self, input_file:str, version, clean:bool):
+        rows    = get_csv_rows(input_file, 18)
         for row in rows:
-            next_id = self.next_id()
-            mol     = Molecule(next_id)
-            mol.from_row(row, version, next_id)
+            # Default mol_id = 0 means read from file.
+            mol = Molecule(0)
+            mol.from_row(row, version)
             self.add_molecule(mol)
 
         self.make_name_dict()
@@ -560,11 +532,11 @@ class Molecules:
         acsv = ACTDATA + "/alexandria.csv"
         self.read(acsv, 3, False)
 
-    def write(self, output_file, version):
+    def write(self, output_file:str, version:int):
         outputfile = open(output_file, "w", encoding='utf-8')
 
         try:
-            for mol in self.mols:
+            for mol in sorted(self.mols):
                 row = self.mols[mol].row(version)
                 if (row):
                     outputfile.write(row + "\n")
