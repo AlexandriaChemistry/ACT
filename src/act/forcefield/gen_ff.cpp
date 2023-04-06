@@ -72,7 +72,7 @@ static void add_symm_charges(ForceField *pd)
     }
 }
 
-static std::map<std::string, std::map<std::string, std::string>> read_csv(const char *filename)
+static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(const char *filename)
 {
     std::map<std::string, std::map<std::string, std::string> > table;
     gmx::TextReader          tr(filename);
@@ -105,7 +105,8 @@ static std::map<std::string, std::map<std::string, std::string>> read_csv(const 
         }
         else
         {
-            fprintf(stderr, "Found %zu items on line %d\n", ptr.size(), lineno);
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in %s\n",
+                                                               ptr.size(), lineno, filename).c_str()));
         }
         lineno++;
     }
@@ -196,7 +197,7 @@ int gen_ff(int argc, char*argv[])
         return 0;
     }
     
-    auto table = read_csv(opt2fn("-f", fnm.size(), fnm.data()));
+    auto table = read_atomtypes(opt2fn("-f", fnm.size(), fnm.data()));
     printf("There are %zu atom types in the force field\n", table.size());
     
     auto aprops = readAtomProps();
