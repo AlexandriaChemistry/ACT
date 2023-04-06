@@ -245,7 +245,7 @@ void MolProp::renumberResidues()
     }
     if (nullptr == myexp)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No experiment with JobType::Opt or JobType::Topology for %s", molname_.c_str()).c_str()));
+        myexp = LastExperiment();
     }
     auto calcAtom = myexp->calcAtom();
     for(size_t j = 0; j < fragment_.size(); j++)
