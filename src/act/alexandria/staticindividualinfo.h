@@ -145,7 +145,7 @@ private:
     //! Communication record
     CommunicationRecord                                 *cr_;
     //! ForceField for this individual
-    ForceField                                              pd_;
+    ForceField                                           pd_;
     //! Base targets_ from which to make copies
     std::map<iMolSelect, std::map<eRMS, FittingTarget>>  targets_;
     //! Default parameter values as specified by input file
@@ -233,8 +233,8 @@ public:
      * \param[in] fp        File pointer for printing information
      * \param[in] pd_fn     name of the gentop (Force Field) file
      */
-    void fillForceField(      FILE *fp,
-                     const char *pd_fn);
+    void fillForceField(FILE       *fp,
+                        const char *pd_fn);
 
     /*!
      * \brief Copy the Force Field parameters to the ForceField structure
@@ -246,7 +246,7 @@ public:
      * \throws if length of bases > 0 and the length does not match the known number of parameters.
      */
     void updateForceField(const std::set<int>       &changed,
-                       const std::vector<double> &bases);
+                          const std::vector<double> &bases);
     
     /*! \brief Save the current state of the Force Field to the output file
      * \param[in] updateCheckSum If true, the checksum is updated, typically
