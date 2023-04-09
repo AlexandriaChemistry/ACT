@@ -209,14 +209,21 @@ int gen_ff(int argc, char*argv[])
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
     };
     ForceFieldParameterList pols("Polarization", CanSwap::No);
-    ForceFieldParameterList zeta("COUL_SR", CanSwap::Yes);
-    zeta.addOption("chargetype", qdn2[0]);
-    zeta.addOption("epsilonr", gmx_ftoa(epsilonr));
-    zeta.addOption("nexcl", gmx_itoa(nexclqq));
+    ForceFieldParameterList coulomb("COUL_SR", CanSwap::Yes);
+    coulomb.addOption("chargetype", qdn2[0]);
+    coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
+    coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     vdw.addOption("combination_rule", combrules[0]);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
+    // Check for Point charges
+    std::string ppp("Point");
+    bool bPoint = ppp.compare(qdn2[0]) == 0;
+    if (bPoint)
+    {
+        printf("You selected point charges. Oh dear...\n");
+    }
     for(const auto &entry : table)
     {
         // Generate particle type
@@ -232,7 +239,8 @@ int gen_ff(int argc, char*argv[])
         // Now add the "options"
         for(const auto &opt : options)
         {
-            if (!table[entry.first][opt].empty())
+            if (!table[entry.first][opt].empty() &&
+                !("zetatype" == opt && bPoint))
             {
                 ptp.setOption(opt, table[entry.first][opt]);
             }
@@ -277,8 +285,13 @@ int gen_ff(int argc, char*argv[])
         if (!myatype["zetatype"].empty() &&
             minmaxmut(entry.first, myatype, "zeta", &vmin, &vmax, &vmut))
         {
-            zeta.addParameter(myatype["zetatype"], "zeta",
-                              ForceFieldParameter("1/nm", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            if (bPoint)
+            {
+                vmin = vmax = 0;
+                vmut = Mutability::Fixed;
+            }
+            coulomb.addParameter(myatype["zetatype"], "zeta",
+                                 ForceFieldParameter("1/nm", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
         }
         // Van der Waals
         {
@@ -330,7 +343,7 @@ int gen_ff(int argc, char*argv[])
         }
     }
     pd.addForces(interactionTypeToString(InteractionType::POLARIZATION), pols);
-    pd.addForces(interactionTypeToString(InteractionType::COULOMB), zeta);
+    pd.addForces(interactionTypeToString(InteractionType::COULOMB), coulomb);
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(interactionTypeToString(InteractionType::BONDS), bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);

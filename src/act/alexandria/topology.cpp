@@ -1153,9 +1153,9 @@ void Topology::setIdentifiers(const ForceField *pd)
                     }
                 }
             }
-            else
+            else if (debug)
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Could not find identifier for %s for atomtype '%s'", interactionTypeToString(entry.first).c_str(), atypes.c_str()).c_str()));
+                fprintf(debug, "Could not find identifier for %s for atomtype '%s'", interactionTypeToString(entry.first).c_str(), atypes.c_str());
             }
         }
     }

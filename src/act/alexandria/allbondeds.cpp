@@ -220,7 +220,8 @@ void AllBondeds::addBonded(FILE                           *fplog,
         break;
     case InteractionType::COULOMB:
     case InteractionType::VDW:
-        break;
+        // Nothing to be done for non-bonded interactions.
+        return;
     default:
         {
             gmx_fatal(FARGS, "Help!");
