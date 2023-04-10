@@ -239,8 +239,7 @@ int gen_ff(int argc, char*argv[])
         // Now add the "options"
         for(const auto &opt : options)
         {
-            if (!table[entry.first][opt].empty() &&
-                !("zetatype" == opt && bPoint))
+            if (!table[entry.first][opt].empty())
             {
                 ptp.setOption(opt, table[entry.first][opt]);
             }
