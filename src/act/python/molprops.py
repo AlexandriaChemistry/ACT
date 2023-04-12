@@ -5,6 +5,7 @@
 try:
 #    import xml.etree.cElementTree as ET
     import lxml.etree as ET
+    print("Using lxml as the xml library")
 except ImportError:
     print("Cannot find lxml, using fall back cElementTree")
     import xml.etree.cElementTree as ET
@@ -13,7 +14,11 @@ import gc
 from xml.dom import minidom
 from atomic_heat_of_formation import *
 
-debug = False
+molprops_debug = False
+
+def set_molprops_debug(dbg:bool):
+    print("Setting molprops_debug to %s" % str(dbg))
+    molprops_debug = dbg
 
 class Fragment:
     '''
@@ -162,8 +167,7 @@ class Experiment:
         self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
         self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])
         if not foundThermo:
-            if debug:
-                print("Could not get atomization energies for %s at T = %g" % ( a, tcmap["Temp"]))
+            print("Could not get atomization energies for %s at T = %g" % ( a, tcmap["Temp"]))
         else:
             self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
             self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
@@ -380,10 +384,15 @@ class Molprops:
         if not prettyPrint:
             self.outf.write("%s\n" % (ET.tostring(lastmol, encoding='unicode')))
         else:
-            for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')):
-                if debug:
-                    print(xmlstr)
-                self.outf.write("%s\n" % xmlstr.toprettyxml(indent="  ").splitlines()[1:])
+            xmlstrings = minidom.parseString(ET.tostring(lastmol, encoding='unicode')).toprettyxml(indent="  ").splitlines()
+            if molprops_debug:
+                lineno = 1
+                print("There are %d xml strings" % len(xmlstrings))
+            for xmlstr in xmlstrings[1:]:
+                if molprops_debug:
+                    print("%d: '%s'" % ( lineno, str(xmlstr)))
+                    lineno += 1
+                self.outf.write("%s\n" % xmlstr)
                 del xmlstr
         self.outf.flush()
         lastmol.clear()
