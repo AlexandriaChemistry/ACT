@@ -2,14 +2,7 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-try:
-#    import xml.etree.cElementTree as ET
-    import lxml.etree as ET
-    print("Using lxml as the xml library")
-except ImportError:
-    print("Cannot find lxml, using fall back cElementTree")
-    import xml.etree.cElementTree as ET
-
+import xml.etree.cElementTree as ET
 import gc
 from xml.dom import minidom
 from atomic_heat_of_formation import *
