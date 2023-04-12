@@ -380,8 +380,10 @@ class Molprops:
         if not prettyPrint:
             self.outf.write("%s\n" % (ET.tostring(lastmol, encoding='unicode')))
         else:
-            for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')).toprettyxml(indent="  ").splitlines()[1:]:
-                self.outf.write("%s\n" % xmlstr)
+            for xmlstr in minidom.parseString(ET.tostring(lastmol, encoding='unicode')):
+                if debug:
+                    print(xmlstr)
+                self.outf.write("%s\n" % xmlstr.toprettyxml(indent="  ").splitlines()[1:])
                 del xmlstr
         self.outf.flush()
         lastmol.clear()

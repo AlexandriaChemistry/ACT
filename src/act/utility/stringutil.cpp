@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -120,28 +120,30 @@ std::string gmx_itoa(int f)
     return std::string(a);
 }
 
-double my_atof(const char *str, const char *description)
+double my_atof(const std::string &str, const std::string &description)
 {
-    char   *ptr = nullptr;
-    double  d   = std::strtod(str, &ptr);
-    if (ptr == nullptr)
+    double d = -1;
+    try {
+        d = std::atof(str.c_str());
+    }
+    catch(std::exception &e)
     {
-        fprintf(stderr, "Could not read double precision number %s from '%s' found %f\n",
-                description ? description : "", str, d);
-        d = -1;
+        fprintf(stderr, "Could not read double precision number %s from '%s'\n",
+                description.c_str(), str.c_str());
     }
     return d;
 }
 
-int my_atoi(const char *str, const char *description)
+int my_atoi(const std::string &str, const std::string &description)
 {
-    char *ptr = nullptr;
-    int   d   = std::strtol(str, &ptr, 10);
-    if (ptr == nullptr)
+    int d = -1;
+    try {
+        d = std::atoi(str.c_str());
+    }
+    catch(std::exception &e)
     {
-        fprintf(stderr, "Could not read double precision number %s from '%s' found %d\n",
-                description ? description : "", str, d);
-        d = -1;
+        fprintf(stderr, "Could not read int %s from '%s'\n",
+                description.c_str(), str.c_str());
     }
     return d;
 }
