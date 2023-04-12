@@ -170,7 +170,7 @@ class GaussianReader:
             methodline += content[content_index+1].strip()
             content_index += 1
         self.tcmap["Method"], basis, self.jobtype = method_basis(methodline.split()[1])
-        if len(self.userbasis) > 0:
+        if self.userbasis and len(self.userbasis) > 0:
             basis = self.userbasis
         return basis, content_index
         
