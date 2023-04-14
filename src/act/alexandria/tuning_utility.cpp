@@ -1027,6 +1027,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
             tcout->push_back(ttt);
             ccc++;
         }
+        for(const auto &iem : interactionEnergyMap)
+        {
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.first, iem.second);
+            tcout->push_back(ttt);
+        }
         for(const auto &ff : forceMap)
         {
             for(const auto &fxyz : ff)
