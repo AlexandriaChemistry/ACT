@@ -326,13 +326,23 @@ class ActOpenMMSim:
         Create a CustomBondForce to calculate the direct space force of WBK and gaussian Coulomb for interactions 
         that are excluded (besides core-shell interactions).
         """
-        forces = { force.getName() : force for force in self.system.getForces() }
+        cnbname      = 'CustomNonbondedForce'
+        haveCustomNB = False
+        forces       = {}
+        for force in self.system.getForces():
+            fname = force.getName()
+            forces[fname] = force
+            if cnbname == fname:
+                haveCustomNM = True
+        # There always is a regular NonbondedForce
         self.nb_openmm  = forces['NonbondedForce']
-#        self.nb_openmm.setName("NonbondedOpenMM")
         self.add_force_group(self.nb_openmm, True)
-        self.nb_correction = forces['CustomNonbondedForce']
-        self.nb_correction.setName("NB_Correction")
-#        self.add_force_group(self.nb_correction)
+        if haveCustomNB:
+            self.nb_correction = forces[cnbname]
+            self.nb_correction.setName("NB_Correction")
+        else:
+            self.nb_correction = None
+
         dforce = 'DrudeForce'
         if dforce in forces and not self.args.polarizable:
             sys.exit("There are drudes in the system but you forgot the -pol flag")
@@ -364,13 +374,16 @@ class ActOpenMMSim:
         cutoff_distance = self.nb_openmm.getCutoffDistance()
         switch_distance = self.nb_openmm.getSwitchingDistance()
     
+        if not self.nb_correction:
+            return
+            
         # Electrostatics is our screened Coulomb minus the point charge based potential
         expression = 'Coulomb_gauss - Coulomb_point;'
         self.qq_expression = ( "(%f*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
         expression += ( 'Coulomb_gauss = %s;' % self.qq_expression )
         expression += ( 'Coulomb_point = (%f*charge1*charge2/r);' % ONE_4PI_EPS0 )
         expression += ( "zeta = %s;" % self.comb.zetaString())
-
+            
         self.qq_correction = openmm.CustomNonbondedForce(expression)
         self.qq_correction.setName("CoulombCorrection")
         self.qq_correction.addPerParticleParameter("charge")
@@ -383,9 +396,10 @@ class ActOpenMMSim:
             self.qq_correction.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
         self.qq_correction.setCutoffDistance(cutoff_distance)
         self.qq_correction.setSwitchingDistance(switch_distance)
-        # Don't use dispersion correction for coulomb, it does not converge: https://github.com/openmm/openmm/issues/3162
+        # Don't use dispersion correction for coulomb, it does not converge, see:
+        # https://github.com/openmm/openmm/issues/3162
         self.qq_correction.setUseLongRangeCorrection(False)
-
+        
         for index in range(self.nb_openmm.getNumParticles()):
             [vdW, sigma, epsilon, gamma, charge, zeta] = self.nb_correction.getParticleParameters(index)
             if self.args.debug:
@@ -396,10 +410,10 @@ class ActOpenMMSim:
             self.qq_correction.addExclusion(iatom, jatom)
         self.add_force_group(self.qq_correction)
         self.system.addForce(self.qq_correction)
-
+        
         # Van der Waals, is our custom potential minus the default LJ.
         expression = 'U_WKB-U_LJ;' 
-
+        
         # TODO: Remove hard-coded combination rules if possible
         expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
         expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
@@ -459,6 +473,8 @@ class ActOpenMMSim:
         # This has to be done as the number of exclusions is 3 for 
         # nonbonded interactions in OpenMM and it likely less in ACT.
         # These interactions are added using two CustomBondForce entries.
+        if not self.nb_correction:
+            return
         vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
         vdw_excl_corr.setName("VanderWaalsExclusionCorrection")
         vdw_excl_corr.addPerBondParameter("sigma")
@@ -638,8 +654,9 @@ class ActOpenMMSim:
             print(f"number of particles (incl. drudes):  {self.system.getNumParticles()}")
             for np in new_pos:
                 print("%10.5f  %10.5f  %10.5f" % ( np[0]._value, np[1]._value, np[2]._value ))
-        self.qq_correction.updateParametersInContext(self.simulation.context)
-        self.vdw_correction.updateParametersInContext(self.simulation.context)
+        if self.nb_correction:
+            self.qq_correction.updateParametersInContext(self.simulation.context)
+            self.vdw_correction.updateParametersInContext(self.simulation.context)
         self.nb_openmm.updateParametersInContext(self.simulation.context)
         
     def print_energy(self, title:str):

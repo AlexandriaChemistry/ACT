@@ -40,6 +40,8 @@ if __name__ == '__main__':
     mp = read_gaussian_log(args.infile, args.molname, args.basisset, rbt,
                            args.verbose, args.coordinate_set)
     if None != mp:
+        if args.verbose:
+            set_molprops_debug(True)
         molprops = Molprops()
         molprops.open(args.outfile)
         molprops.add_molecule(mp, True)
