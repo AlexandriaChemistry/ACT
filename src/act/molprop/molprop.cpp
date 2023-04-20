@@ -236,7 +236,7 @@ static bool fragCompare(const Fragment &a, const Fragment &b)
     return amin < bmin;
 }
 
-void MolProp::renumberResidues()
+bool MolProp::renumberResidues()
 {
     Experiment *myexp = findExperiment(JobType::OPT);
     if (nullptr == myexp)
@@ -246,6 +246,10 @@ void MolProp::renumberResidues()
     if (nullptr == myexp)
     {
         myexp = LastExperiment();
+    }
+    if (!myexp)
+    {
+        return false;
     }
     auto calcAtom = myexp->calcAtom();
     for(size_t j = 0; j < fragment_.size(); j++)
@@ -259,6 +263,7 @@ void MolProp::renumberResidues()
             (*calcAtom)[k].setResidue(res_j, j);
         }
     }
+    return true;
 }
 
 void MolProp::generateFragments(const ForceField *pd,
