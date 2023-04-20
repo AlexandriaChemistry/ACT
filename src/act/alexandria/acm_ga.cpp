@@ -184,6 +184,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     if (logFile_)
     {
         fprintf(logFile_, "\nStarting GA/HYBRID evolution\n");
+        fflush(logFile_);
     }
     // Open surveillance files for fitness
     openFitnessFiles();
@@ -489,6 +490,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             (*bestGenome)[imstr] = tmpGenome; 
             tmpGenome.print(" new best:\n", logFile_);
             bMinimum = true;
+            fflush(logFile_);
         }
         if (gach_->evaluateTestset())
         {
