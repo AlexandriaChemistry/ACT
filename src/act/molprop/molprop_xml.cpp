@@ -861,7 +861,12 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     mp_process_tree(nullptr, doc->children, mpt, &xbuf);
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
-        mp->renumberResidues();
+        if (!mp->renumberResidues())
+        {
+            fprintf(stderr, "Cannot find a correct experiment for %s, removing it.\n", 
+                    mp->getMolname().c_str());
+            mpt->erase(mp);
+        }
     }
     xmlFreeDoc(doc);
     print_memory_usage(debug);
