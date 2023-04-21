@@ -72,7 +72,7 @@ static void add_symm_charges(ForceField *pd)
     }
 }
 
-static std::map<std::string, std::map<std::string, std::string>> read_csv(const char *filename)
+static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(const char *filename)
 {
     std::map<std::string, std::map<std::string, std::string> > table;
     gmx::TextReader          tr(filename);
@@ -105,7 +105,8 @@ static std::map<std::string, std::map<std::string, std::string>> read_csv(const 
         }
         else
         {
-            fprintf(stderr, "Found %zu items on line %d\n", ptr.size(), lineno);
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in %s\n",
+                                                               ptr.size(), lineno, filename).c_str()));
         }
         lineno++;
     }
@@ -152,7 +153,7 @@ int gen_ff(int argc, char*argv[])
     double            epsilonr = 1;
     
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "CUBICBONDS", "HARMONIC", "MORSE", nullptr };
+    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", nullptr };
@@ -196,7 +197,7 @@ int gen_ff(int argc, char*argv[])
         return 0;
     }
     
-    auto table = read_csv(opt2fn("-f", fnm.size(), fnm.data()));
+    auto table = read_atomtypes(opt2fn("-f", fnm.size(), fnm.data()));
     printf("There are %zu atom types in the force field\n", table.size());
     
     auto aprops = readAtomProps();
@@ -208,14 +209,21 @@ int gen_ff(int argc, char*argv[])
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
     };
     ForceFieldParameterList pols("Polarization", CanSwap::No);
-    ForceFieldParameterList zeta("COUL_SR", CanSwap::Yes);
-    zeta.addOption("chargetype", qdn2[0]);
-    zeta.addOption("epsilonr", gmx_ftoa(epsilonr));
-    zeta.addOption("nexcl", gmx_itoa(nexclqq));
+    ForceFieldParameterList coulomb("COUL_SR", CanSwap::Yes);
+    coulomb.addOption("chargetype", qdn2[0]);
+    coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
+    coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     vdw.addOption("combination_rule", combrules[0]);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
+    // Check for Point charges
+    std::string ppp("Point");
+    bool bPoint = ppp.compare(qdn2[0]) == 0;
+    if (bPoint)
+    {
+        printf("You selected point charges. Oh dear...\n");
+    }
     for(const auto &entry : table)
     {
         // Generate particle type
@@ -276,8 +284,13 @@ int gen_ff(int argc, char*argv[])
         if (!myatype["zetatype"].empty() &&
             minmaxmut(entry.first, myatype, "zeta", &vmin, &vmax, &vmut))
         {
-            zeta.addParameter(myatype["zetatype"], "zeta",
-                              ForceFieldParameter("1/nm", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            if (bPoint)
+            {
+                vmin = vmax = 0;
+                vmut = Mutability::Fixed;
+            }
+            coulomb.addParameter(myatype["zetatype"], "zeta",
+                                 ForceFieldParameter("1/nm", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
         }
         // Van der Waals
         {
@@ -329,7 +342,7 @@ int gen_ff(int argc, char*argv[])
         }
     }
     pd.addForces(interactionTypeToString(InteractionType::POLARIZATION), pols);
-    pd.addForces(interactionTypeToString(InteractionType::COULOMB), zeta);
+    pd.addForces(interactionTypeToString(InteractionType::COULOMB), coulomb);
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(interactionTypeToString(InteractionType::BONDS), bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);

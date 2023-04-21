@@ -146,7 +146,7 @@ int gentop(int argc, char *argv[])
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
     static gmx_bool                  addNumbersToAtoms = true;
-
+    static rvec                      mybox           = { 0, 0, 0 };
     //static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
     static const char               *qcustom        = nullptr;
 
@@ -166,6 +166,8 @@ int gentop(int argc, char *argv[])
           "Conformation of the molecule" },
         { "-ws",     FALSE, etBOOL, {&writeShells},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
+        { "-box",    FALSE, etRVEC, {mybox},
+          "If set will replace the simulation box in the output coordinate file." },
         { "-mDrude", FALSE, etREAL, {&mDrude},
           "Mass to use for the drude particle if any. Default is 0.1 Da" },
         { "-maxpot", FALSE, etINT, {&maxpot},
@@ -401,6 +403,13 @@ int gentop(int argc, char *argv[])
             {
                 std::string cfn = gmx::formatString("%s%s", index.c_str(),
                                                     opt2fn("-c", NFILE, fnm));
+                if (opt2parg_bSet("-box", asize(pa), pa))
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        box[m][m] = mybox[m];
+                    }
+                }
                 actmol.PrintConformation(cfn.c_str(), coords, writeShells, box);
             }
         }

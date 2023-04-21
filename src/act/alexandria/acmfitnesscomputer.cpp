@@ -274,7 +274,14 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose)
     }
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
     {
-        devComputers_.push_back(new PolarDevComputer(logfile_, verbose));
+        if (sii_->forcefield()->polarizable())
+        {
+            devComputers_.push_back(new PolarDevComputer(logfile_, verbose));
+        }
+        else
+        {
+            sii_->target(iMolSelect::Train, eRMS::Polar)->setWeight(0);
+        }
     }
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
     {

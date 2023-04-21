@@ -152,7 +152,8 @@ class ForceFieldParameterList
      */
     bool parameterExists(const Identifier &identifier) const
     {
-        return parameters_.find(identifier) != parameters_.end();
+        return !identifier.atoms().empty() && 
+            parameters_.find(identifier) != parameters_.end();
     }
 
     /*! \brief Get number of parameters in this list

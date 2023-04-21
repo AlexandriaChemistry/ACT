@@ -244,8 +244,11 @@ public:
     void addFragment(const Fragment &f) { fragment_.push_back(f); }
 
     /*! \brief Renumber the residues to one residue per fragment.
+     * If there is no correct experiment (Opt or Topology) this is not
+     * possible and the function will return false.
+     * \return true if everything is fine.
      */
-    void renumberResidues();
+    bool renumberResidues();
 
     /*! Generate fragments based on bonds
      * \param[in] pd     The force field needed for looking up atom props

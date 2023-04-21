@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -77,10 +77,9 @@ std::string gmx_itoa(int f);
  * \param[in] str         The string to read a double from
  * \param[in] description If there is any issue this will be used
  *                        to describe the variable being read.
- *                        May be nullptr.
  * \return The value read or -1 in case of issues.
  */
-double my_atof(const char *str, const char *description);
+double my_atof(const std::string &str, const std::string &description);
 
 /*! \brief
  *
@@ -88,10 +87,9 @@ double my_atof(const char *str, const char *description);
  * \param[in] str         The string to read a int from
  * \param[in] description If there is any issue this will be used
  *                        to describe the variable being read.
- *                        May be nullptr.
  * \return The value read or -1 in case of issues.
  */
-int my_atoi(const char *str, const char *description);
+int my_atoi(const std::string &str, const std::string &description);
 
 /*! \brief Do case-insensitive string compare
  * \param[in] a First string

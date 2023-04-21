@@ -108,17 +108,17 @@ QgenAcm::QgenAcm(const ForceField              *pd,
         {
             myShell_.insert({ i, i+1 });
         }
-        auto qtype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
         if (eqtModel != ChargeType::Point)
         {
+            auto qtype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
             zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
+            qdist_id_.push_back(qtype);
         }
         else
         {
             zeta_.push_back(0.0);
         }
-        qdist_id_.push_back(qtype);
         auto acmtp = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
         if (atype->hasInteractionType(acmtp))
         {

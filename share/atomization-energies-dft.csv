@@ -1519,10 +1519,11 @@ F|0|ccsd(t)/aug-cc-pvtz|E0|0|-99.640076|2|Hartree|Unknown2023a||
 F|-1|ccsd(t)/aug-cc-pvtz|E0|0|-99.761989|1|Hartree|Unknown2023a||
 H|0|ccsd(t)/aug-cc-pvtz|E0|0|-0.499821|2|Hartree|Unknown2023a||
 He|0|ccsd(t)/aug-cc-pvtz|E0|0|-2.900598|1|Hartree|Unknown2023a||
-I|0|ccsd(t)/aug-cc-pvtz-pp|E0|0|-294.893468|2|Hartree|Unknown2023a||
+I|0|ccsd(t)/aug-cc-pvtz|E0|0|-295.553467|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvtz-pp|E0|0|-295.010226|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-TZVPP|E0|0|-599.330965|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-TZVPP|E0|0|-599.174870|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pvtz|E0|0|-463.158366|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvtz|E0|0|-7.249419|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvtz|E0|0|-7.446155|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvtz|E0|0|-199.667403|1|Hartree|Unknown2023a||
@@ -1539,6 +1540,7 @@ Rb|1|ccsd(t)/def2-TZVPP|E0|0|-23.759841|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/aug-cc-pvtz|E0|0|-397.689731|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/aug-cc-pvtz|E0|0|-397.613189|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/aug-cc-pvtz|E0|0|-288.989449|3|Hartree|Unknown2023a||
+Xe|0|ccsd(t)/aug-cc-pvtz|E0|0|-329.248959|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-241.931502|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/aug-cc-pvtz-fc|E0|0|-240.059650|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-527.048758|1|Hartree|Unknown2023a||
@@ -1548,8 +1550,6 @@ Be|2|ccsd(t)/aug-cc-pvtz-fc|E0|0|-13.616250|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-2572.668458|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvtz-fc|E0|0|-2572.793175|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-37.781825|3|Hartree|Unknown2023a||
-Ca|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-676.987385|1|Hartree|Unknown2023a||
-Ca|2|ccsd(t)/aug-cc-pvtz-fc|E0|0|-676.335861|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvtz-fc|E0|0|-459.676216|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvtz-fc|E0|0|-459.805042|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-TZVPP-fc|E0|0|-19.855196|2|Hartree|Unknown2023a||
@@ -1601,6 +1601,7 @@ I|0|ccsd(t)/aug-cc-pwcvqz-pp|E0|0|-295.729999|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvqz-pp|E0|0|-295.122563|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP|E0|0|-599.434855|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP|E0|0|-599.276868|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pwcvqz-pp|E0|0|-463.336945|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvqz|E0|0|-7.252572|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvqz|E0|0|-7.382469|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvqz|E0|0|-199.680351|1|Hartree|Unknown2023a||
@@ -1617,7 +1618,6 @@ Rb|1|ccsd(t)/def2-QZVPP|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/aug-cc-pvqz|E0|0|-397.726271|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/aug-cc-pvqz|E0|0|-397.658188|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/aug-cc-pvqz|E0|0|-288.981307|3|Hartree|Unknown2023a||
-Xe|0|ccsd(t)/aug-cc-pwcvqz-pp|E0|0|-329.433079|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-241.933748|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/aug-cc-pvqz-fc|E0|0|-240.022123|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-527.075055|1|Hartree|Unknown2023a||
@@ -1627,8 +1627,6 @@ Be|2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-13.630409|1|Hartree|Unknown2023a||
 Br|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2572.737062|2|Hartree|Unknown2023a||
 Br|-1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2572.865719|1|Hartree|Unknown2023a||
 C|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-37.786875|3|Hartree|Unknown2023a||
-Ca|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-677.078739|1|Hartree|Unknown2023a||
-Ca|2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-676.422819|1|Hartree|Unknown2023a||
 Cl|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-459.694743|2|Hartree|Unknown2023a||
 Cl|-1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-459.827254|1|Hartree|Unknown2023a||
 Cs|0|ccsd(t)/def2-QZVPP-fc|E0|0|-19.855219|2|Hartree|Unknown2023a||
@@ -1637,11 +1635,11 @@ F|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-99.652908|2|Hartree|Unknown2023a||
 F|-1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-99.777073|1|Hartree|Unknown2023a||
 H|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-0.499948|2|Hartree|Unknown2023a||
 He|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-2.902534|1|Hartree|Unknown2023a||
-I|0|ccsd(t)/aug-cc-pwcvqz-pp-fc|E0|0|-295.729999|2|Hartree|Unknown2023a||
+I|0|ccsd(t)/aug-cc-pvqz-pp-fc|E0|0|-294.939975|2|Hartree|Unknown2023a||
 I|-1|ccsd(t)/aug-cc-pvqz-pp-fc|E0|0|-295.061242|1|Hartree|Unknown2023a||
 K|0|ccsd(t)/def2-QZVPP-fc|E0|0|-599.164594|2|Hartree|Unknown2023a||
 K|1|ccsd(t)/def2-QZVPP-fc|E0|0|-599.239998|1|Hartree|Unknown2023a||
-Kr|0|ccsd(t)/aug-cc-pwcvqz-pp-fc|E0|0|-463.336945|1|Hartree|Unknown2023a||
+Kr|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-462.605189|1|Hartree|Unknown2023a||
 Li|1|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.252572|1|Hartree|Unknown2023a||
 Li|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-7.365044|2|Hartree|Unknown2023a||
 Mg|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-199.648163|1|Hartree|Unknown2023a||
@@ -1658,7 +1656,6 @@ Rb|1|ccsd(t)/def2-QZVPP-fc|E0|0|-23.829670|1|Hartree|Unknown2023a||
 S|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-397.667984|3|Hartree|Unknown2023a||
 S|-2|ccsd(t)/aug-cc-pvqz-fc|E0|0|-397.599968|1|Hartree|Unknown2023a||
 Si|0|ccsd(t)/aug-cc-pvqz-fc|E0|0|-288.937789|3|Hartree|Unknown2023a||
-Xe|0|ccsd(t)/aug-cc-pwcvqz-pp-fc|E0|0|-329.433079|1|Hartree|Unknown2023a||
 Al|0|ccsd(t)/def2-TZVPP|E0|0|-242.082667|2|Hartree|Unknown2023a||
 Al|3|ccsd(t)/def2-TZVPP|E0|0|-240.137954|1|Hartree|Unknown2023a||
 Ar|0|ccsd(t)/def2-TZVPP|E0|0|-527.200549|1|Hartree|Unknown2023a||

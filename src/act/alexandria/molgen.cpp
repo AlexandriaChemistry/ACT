@@ -191,6 +191,10 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
         {
             iOpt_.insert({ itype, true });
         }
+        else
+        {
+            printf("Cannot find parameter '%s' in force field\n", fit.first.c_str()); 
+        }
     }
 }
 

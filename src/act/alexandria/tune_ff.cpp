@@ -376,6 +376,11 @@ void OptACM::initMaster()
             mutator, terminators, penalizers, sii_, &gach_, dis(gen)
         );
     }
+    if (logFile())
+    {
+        fprintf(logFile(), "Done initializing master node\n");
+        fflush(logFile());
+    }
 }
 
 void OptACM::printNumCalcDevEstimate()
@@ -562,6 +567,7 @@ bool OptACM::runMaster(bool optimize,
         if (logFile())
         {
             printNumCalcDevEstimate();
+            fflush(logFile());
         }
         // Optimize!
         bMinimum = ga_->evolve(&bestGenome);

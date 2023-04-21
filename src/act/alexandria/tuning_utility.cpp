@@ -1027,6 +1027,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
             tcout->push_back(ttt);
             ccc++;
         }
+        for(const auto &iem : interactionEnergyMap)
+        {
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.first, iem.second);
+            tcout->push_back(ttt);
+        }
         for(const auto &ff : forceMap)
         {
             for(const auto &fxyz : ff)
@@ -1128,6 +1133,49 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     return eBefore[InteractionType::EPOT];
 }
 
+static void printOutliers(FILE              *fp, 
+                          gmx_stats         *lsq,
+                          const std::string &label,
+                          const std::map<std::string, std::vector<std::pair<double, double> > > &allEpot)
+{
+    real epotAver;
+    if (eStats::OK == lsq->get_rmsd(&epotAver))
+    {
+        double epotMax = 1.5*epotAver;
+        if (allEpot.size() > 0)
+        {
+            fprintf(fp, "\nOverview of %s outliers for %s (Diff > %.3f)\n",
+                    label.c_str(),
+                    qTypeName(qType::Calc).c_str(), epotMax);
+            fprintf(fp, "----------------------------------\n");
+            fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
+                    qTypeName(qType::Calc).c_str(), "QM/DFT", "ACT-QM");
+            int noutlier = 0;
+            for (auto emm : allEpot)
+            {
+                for (auto ener : emm.second)
+                {
+                    if (std::abs(ener.first-ener.second) > epotMax)
+                    {
+                        fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
+                                ener.first, ener.second, ener.first-ener.second);
+                        noutlier++;
+                    }
+                }
+            }
+            if (noutlier)
+            {
+                printf("There were %d %s outliers. Check the bottom of the log file\n", noutlier,
+                       label.c_str());
+            }
+            else
+            {
+                printf("No %s outliers! Well done.\n", label.c_str());
+            }
+        }
+    }
+}
+
 void TuneForceFieldPrinter::print(FILE                            *fp,
                                   std::vector<alexandria::ACTMol> *actmol,
                                   const ForceField                *pd,
@@ -1225,6 +1273,8 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
         qtype = stringToQtype(chargeMethod);
         alg   = ChargeGenerationAlgorithm::Read;
     }
+    std::map<std::string, std::vector<std::pair<double, double> > > allEpot; 
+    std::map<std::string, std::vector<std::pair<double, double> > > allEinter; 
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -1313,9 +1363,39 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             printAtoms(fp, &(*mol), coords, forces);
             // Energies
             std::vector<std::string> tcout;
-            auto epot = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
-                                          &lsq_rmsf[ims], &lsq_epot[ims],
-                                          &lsq_eInter[ims], &lsq_freq[ims], oenv);
+            auto nepot   = lsq_epot[ims][qType::Calc].get_npoints();
+            auto neInter = lsq_eInter[ims][qType::Calc].get_npoints();
+            auto epot    = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
+                                             &lsq_rmsf[ims], &lsq_epot[ims],
+                                             &lsq_eInter[ims], &lsq_freq[ims], oenv);
+            {
+                // Copy the epot pairs
+                auto x = lsq_epot[ims][qType::Calc].getX();
+                auto y = lsq_epot[ims][qType::Calc].getY();
+                if (x.size() > nepot)
+                {
+                    std::vector<std::pair<double, double>> myEpot;
+                    for(size_t kk = nepot; kk < x.size(); kk++)
+                    {
+                        myEpot.push_back({x[kk], y[kk]});
+                    }
+                    allEpot.insert({mol->getMolname(), myEpot});
+                }
+            }
+            {
+                // Copy the eInter pairs
+                auto x = lsq_eInter[ims][qType::Calc].getX();
+                auto y = lsq_eInter[ims][qType::Calc].getY();
+                if (x.size() > neInter)
+                {
+                    std::vector<std::pair<double, double>> myEpot;
+                    for(size_t kk = neInter; kk < x.size(); kk++)
+                    {
+                        myEpot.push_back({x[kk], y[kk]});
+                    }
+                    allEinter.insert({ mol->getMolname(),myEpot });
+                }
+            }
             molEpot.insert({mol->getMolname(), epot});
             for(const auto &tout : tcout)
             {
@@ -1463,46 +1543,8 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
         }
     }
     // List outliers based on the deviation in the Potential energy
-    real epotAver;
-    if (eStats::OK == lsq_epot[iMolSelect::Train][qType::Calc].get_rmsd(&epotAver))
-    {
-        int nout = 0;
-        double epotMax = 1.5*epotAver;
-        fprintf(fp, "\nOverview of Epot outliers for %s (Diff > %.3f)\n",
-                qTypeName(qType::Calc).c_str(), epotMax);
-        fprintf(fp, "----------------------------------\n");
-        fprintf(fp, "%-40s  %12s  %12s\n", "Name",
-                qTypeName(qType::Calc).c_str(), "QM/DFT");
-        for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
-        {
-            double deltaE0;
-            if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
-            {
-                // deltaE0 += mol->atomizationEnergy();
-                auto meiter = molEpot.find(mol->getMolname());
-                if (molEpot.end() != meiter)
-                {
-                    auto epot = meiter->second;
-                    auto diff = std::abs(epot-deltaE0);
-                    if ((mol->support() != eSupport::No) && (diff > epotMax))
-                    {
-                        fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
-                                mol->getMolname().c_str(), epot, deltaE0,
-                                iMolSelectName(mol->datasetType()));
-                        nout++;
-                    }
-                }
-            }
-        }
-        if (nout)
-        {
-            printf("There were %d EPot outliers. Check the bottom of the log file\n", nout);
-        }
-        else
-        {
-            printf("No Epot outliers! Well done.\n");
-        }
-    }
+    printOutliers(fp, &lsq_epot[iMolSelect::Train][qType::Calc], "Epot", allEpot);
+    printOutliers(fp, &lsq_eInter[iMolSelect::Train][qType::Calc], "Einter", allEinter);
 }
 
 void print_header(FILE                       *fp, 
