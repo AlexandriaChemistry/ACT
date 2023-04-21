@@ -237,6 +237,16 @@ class ActOpenMMSim:
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
         self.useMonteCarloBarostat     = self.sim_params.getBool('useMonteCarloBarostat')
+        self.useMonteCarloAnisotropicBarostat     = self.sim_params.getBool('useMonteCarloAnisotropicBarostat')
+        if self.useMonteCarloAnisotropicBarostat:
+            self.scaleX             = self.sim_params.getBool('scaleX')
+            self.scaleY             = self.sim_params.getBool('scaleY')
+            self.scaleZ             = self.sim_params.getBool('scaleZ')
+            self.pressX             = self.sim_params.getFloat('pressX')
+            self.pressY             = self.sim_params.getFloat('pressY')
+            self.pressZ             = self.sim_params.getFloat('pressZ')
+            self.pressvec           = [self.pressX,self.pressY,self.pressZ]
+
         constrmethod = { 'HBonds':HBonds, 'HAngles':HAngles, 'None':None }
         self.constraints            = constrmethod[self.sim_params.getStr('constraints')]
         self.rigidWater             = self.sim_params.getBool('rigidWater')
@@ -581,6 +591,10 @@ class ActOpenMMSim:
                 self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                         self.temperature_c,
                                                         self.sim_params.getInt('barostatInterval')))
+            elif self.sim_params.getBool('useMonteCarloAnisotropicBarostat'):
+                self.system.addForce(MonteCarloAnisotropicBarostat(self.pressvec,self.temperature_c,self.scaleX,self.scaleY,self.scaleZ,self.sim_params.getInt('barostatInterval'))) 
+                if self.args.verbose:
+                    print(f"Monte Carlo ANISOTROPIC Barostat will be used. The dimensions that can change are: X = {self.scaleX} Y = {self.scaleY} Z = {self.scaleZ}")
         if self.sim_params.getBool('useAndersenThermostat'):    
             self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
             if self.args.verbose:
