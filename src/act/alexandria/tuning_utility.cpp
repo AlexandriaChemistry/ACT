@@ -1149,7 +1149,7 @@ static void printOutliers(FILE              *fp,
                     qTypeName(qType::Calc).c_str(), epotMax);
             fprintf(fp, "----------------------------------\n");
             fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                    qTypeName(qType::Calc).c_str(), "QM/DFT", "ACT-QM");
+                    "QM/DFT", qTypeName(qType::Calc).c_str(), "ACT-QM");
             int noutlier = 0;
             for (auto emm : allEpot)
             {
