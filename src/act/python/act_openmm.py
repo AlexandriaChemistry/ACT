@@ -336,14 +336,16 @@ class ActOpenMMSim:
         Create a CustomBondForce to calculate the direct space force of WBK and gaussian Coulomb for interactions 
         that are excluded (besides core-shell interactions).
         """
-        cnbname      = 'CustomNonbondedForce'
+        cnbname      = "CustomNonbondedForce"
         haveCustomNB = False
         forces       = {}
         for force in self.system.getForces():
             fname = force.getName()
+            if self.args.debug:
+                print("Found force %s" % fname)
             forces[fname] = force
             if cnbname == fname:
-                haveCustomNM = True
+                haveCustomNB = True
         # There always is a regular NonbondedForce
         self.nb_openmm  = forces['NonbondedForce']
         self.add_force_group(self.nb_openmm, True)
@@ -352,7 +354,8 @@ class ActOpenMMSim:
             self.nb_correction.setName("NB_Correction")
         else:
             self.nb_correction = None
-
+            if self.args.debug:
+                print("No %s in the system" % cnbname)
         dforce = 'DrudeForce'
         if dforce in forces and not self.args.polarizable:
             sys.exit("There are drudes in the system but you forgot the -pol flag")
@@ -503,9 +506,9 @@ class ActOpenMMSim:
         
         csigma, cepsilon, cgamma = self.comb.combStrings()
         if self.args.debug:
-            print(csigma)
-            print(cepsilon)
-            print(cgamma)
+            print("csigma   = %s" % csigma)
+            print("cepsilon = %s" % cepsilon)
+            print("cgamma   = %s" % cgamma)
         for index in range(self.nb_openmm.getNumExceptions()):
             # Just get the excluded atoms from the regular NB force
             [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nb_openmm.getExceptionParameters(index)
@@ -574,7 +577,7 @@ class ActOpenMMSim:
                                                    self.force_group[force.getForceGroup()],
                                                    force.getForceGroup(),
                                                    str(force.usesPeriodicBoundaryConditions())))
-            if force.getName() == self.nb_correction.getName():
+            if self.nb_correction and force.getName() == self.nb_correction.getName():
                 print('"Cutoff?" {0}'.format(force.getCutoffDistance()))
                 print('"SwitchingDistance?" {0}'.format(force.getSwitchingDistance ()))
                 print('"CustomNonbondedMethod?" {0}'.format(force.getNonbondedMethod()))

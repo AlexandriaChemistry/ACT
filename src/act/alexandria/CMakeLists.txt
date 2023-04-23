@@ -49,6 +49,7 @@ target_sources(actLib
            geometry_ff.cpp
            gromacs_top.cpp
            mcmcmutator.cpp
+           min_complex.cpp
            molgen.cpp
            molhandler.cpp
            molselect.cpp
