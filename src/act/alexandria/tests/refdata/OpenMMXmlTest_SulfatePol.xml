@@ -46,8 +46,9 @@
     <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.96175"/>
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="0">
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
@@ -66,7 +67,7 @@
     <Atom type="s3_1" vdW="1" sigma="0.29" epsilon="1.05" gamma="15" zeta="6"/>
     <Atom type="s3_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="0">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="o2_1" sigma="0.106908" epsilon="0.75"/>
     <Atom type="o2_2" sigma="0.106908" epsilon="0.75"/>
