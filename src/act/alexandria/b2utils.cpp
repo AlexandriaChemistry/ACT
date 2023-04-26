@@ -378,7 +378,7 @@ void DimerGenerator::finishOptions()
 }
 
 static void dump_coords(const char                                *outcoords,
-                        const ACTMol                               *actmol,
+                        const ACTMol                              *actmol,
                         const std::vector<std::vector<gmx::RVec>> &coords)
 {
     std::string outxyz(outcoords);

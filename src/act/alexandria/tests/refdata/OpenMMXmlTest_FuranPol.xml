@@ -73,12 +73,13 @@
     <Angle class1="c2_b" class2="o2_b" class3="c2_b" k="300" angle="1.86227"/>
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="o2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="0">
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
@@ -105,7 +106,7 @@
     <Atom type="o2_1" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
     <Atom type="o2_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="0">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="c2_1" sigma="0.106908" epsilon="0.55"/>
     <Atom type="c2_2" sigma="0.106908" epsilon="0.55"/>

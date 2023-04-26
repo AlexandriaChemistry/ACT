@@ -282,7 +282,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
         double binWidth = 0.0025; // nm
         if (ndist > 1)
         {
-            binWidth = (xmax-xmin)/(ndist-1);
+            binWidth = 2*(xmax-xmin)/(ndist-1);
         }
         // Bins start from zero for proper integration
         size_t nbins    = 1+std::round(xmax/binWidth);
@@ -456,8 +456,8 @@ void ReRunner::computeB2(FILE                                      *logFile,
                                 }
                             }
                         }
-                        r1 = r2;
                     }
+                    r1 = r2;
                 }
                 // Conversion to regular units cm^3/mol.
                 double fac  = AVOGADRO*1e-21;
