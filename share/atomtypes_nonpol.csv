@@ -34,7 +34,8 @@ Li+|Li|1|1|Fixed|||Li+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|1|6|Bound
 Br-|Br|-1|-1|Fixed|||Br-_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||bromide ion|
 Cs+|Cs|1|1|Fixed|||Cs+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|1|6|Bounded|0.141|6||||6|20|Bounded|||||||cesium ion|
 K+|K|1|1|Fixed|||K+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||potassium ion|
-He|He|0|0|Fixed|||he_z|he_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|1|6|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|he|
-Ne|Ne|0|0|Fixed|||ne_z|ne_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|1|6|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ne|
-Ar|Ar|0|0|Fixed|||ar_z|ar_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|1|6|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ar|
-Kr|Kr|0|0|Fixed|||kr_z|kr_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|1|6|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|
+He|He|0|0|Fixed|||he_z|he_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|he|
+Ne|Ne|0|0|Fixed|||ne_z|ne_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ne|
+Ar|Ar|0|0|Fixed|||ar_z|ar_z|0.03|3|Bounded|4|25|Bounded|0.15|0.5|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ar|
+Kr|Kr|0|0|Fixed|||kr_z|kr_z|0.03|3|Bounded|4|25|Bounded|0.15|0.6|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|
+Xe|Xe|0|0|Fixed|||xe_z|xe_z|0.03|3|Bounded|4|25|Bounded|0.15|0.8|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|xe|
