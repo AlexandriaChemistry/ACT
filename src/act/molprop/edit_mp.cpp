@@ -34,9 +34,12 @@
  
 #include "actpre.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+//#include <cstdlib>
+//#include <cstring>
+
+#include <set>
+#include <vector>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/actmol.h"
@@ -50,9 +53,11 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -448,6 +453,44 @@ static void check_mp(const char           *ffname,
 
 }
 
+static void gen_ehist(const std::vector<MolProp> *mpt,
+                      gmx_output_env_t           *oenv)
+{
+    std::set<MolPropObservable> mpset = { MolPropObservable::DELTAE0, MolPropObservable::INTERACTIONENERGY };
+    for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
+    {
+        std::map<MolPropObservable, gmx_stats> histo;
+        for(auto mps : mpset)
+        {
+            histo[mps] = gmx_stats();
+            for(auto eee : mp->experimentConst())
+            {
+                if (eee.hasProperty(mps))
+                {
+                    for (auto prop : eee.propertyConst(mps))
+                    {
+                        histo[mps].add_point(prop->getValue());
+                    }
+                }
+            }
+            if (histo[mps].get_npoints() > 1)
+            {
+                std::vector<double> x, y;
+                real binwidth = 1;
+                int  nbins    = 0;
+                histo[mps].make_histogram(binwidth, &nbins, eHisto::Y, false, &x, &y);
+                auto filename = gmx::formatString("%s-%s.xvg", mp->getMolname().c_str(), mpo_name(mps));
+                FILE *fp = xvgropen(filename.c_str(), "Energy distribution in molprop", "Energy (kJ/mol)", "(a.u.)", oenv);
+                for(size_t i = 0; i < x.size(); i++)
+                {
+                    fprintf(fp, "%10g  %10g\n", x[i], y[i]);
+                }
+                xvgrclose(fp);
+            }
+        }
+    }
+}
+
 int edit_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
@@ -481,6 +524,7 @@ int edit_mp(int argc, char *argv[])
     bool     forceMerge  = false;
     gmx_bool bcast       = false;
     bool     genCharges  = false;
+    bool     energyHisto = false;
     int      maxwarn     = 0;
     int      writeNode   = 0;
     t_pargs pa[] =
@@ -498,7 +542,9 @@ int edit_mp(int argc, char *argv[])
         { "-wn", FALSE, etINT, {&writeNode},
           "Processor ID to write from if in parallel." },
         { "-charges", FALSE, etBOOL, {&genCharges},
-          "Compute charges based on monomers and store them in the output. If there are cluster, e.g. dimers they will get the same charges." }
+          "Compute charges based on monomers and store them in the output. If there are cluster, e.g. dimers they will get the same charges." },
+        { "-ehisto", FALSE, etBOOL, {&energyHisto},
+          "Make a histogram of the energy distribution per molecule or complex." }
     };
     std::vector<MolProp>  mpt;
     ForceField            pd;
@@ -582,6 +628,10 @@ int edit_mp(int argc, char *argv[])
     {
         printf("Since you provided a force field file I will now check the compounds.\n");
         check_mp(ffname, opt2fn("-g", fnm.size(), fnm.data()), genCharges, &mpt);
+    }
+    if (energyHisto)
+    {
+        gen_ehist(&mpt, oenv);
     }
     if (writeNode == cr.rank())
     {
