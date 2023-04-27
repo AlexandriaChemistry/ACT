@@ -92,6 +92,8 @@ private:
     bool calcFrequencies_     = false;
     //! Do special analysis of diatomic compounds
     bool diatomic_            = false;
+    //! Dump outliers to xyz files
+    bool dumpOutliers_        = false;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,

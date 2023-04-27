@@ -429,8 +429,8 @@ immStatus ACTMol::zetaToAtoms(const ForceField *pd,
 void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
                              const ForceComputer                                                 *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                             std::vector<std::pair<double, double> >                             *energyMap,
-                             std::vector<std::pair<double, double> >                             *interactionEnergyMap,
+                             std::vector<ACTEnergy>                                              *energyMap,
+                             std::vector<ACTEnergy>                                              *interactionEnergyMap,
                              std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
@@ -508,7 +508,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     }
                     double Einter = calculateInteractionEnergy(pd, forceComp, &interactionForces, &mycoords);
                     
-                    interactionEnergyMap->push_back({ eprops[0]->getValue(), Einter });
+                    interactionEnergyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(), Einter));
                     // TODO Store the interaction forces
                 }
             }
@@ -538,7 +538,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             }
             else if (eprops.size() == 1)
             {
-                energyMap->push_back({ eprops[0]->getValue(), energies[InteractionType::EPOT] });
+                energyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(), energies[InteractionType::EPOT]));
                 energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }
         
