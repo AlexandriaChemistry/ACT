@@ -454,7 +454,9 @@ static void check_mp(const char           *ffname,
 }
 
 static void gen_ehist(const std::vector<MolProp> *mpt,
-                      gmx_output_env_t           *oenv)
+                      gmx_output_env_t           *oenv,
+                      real                        ewarnLow,
+                      real                        ewarnHi)
 {
     std::set<MolPropObservable> mpset = { MolPropObservable::DELTAE0, MolPropObservable::INTERACTIONENERGY };
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
@@ -473,19 +475,37 @@ static void gen_ehist(const std::vector<MolProp> *mpt,
                     }
                 }
             }
-            if (histo[mps].get_npoints() > 1)
+            if (histo[mps].get_npoints() > 0)
             {
                 std::vector<double> x, y;
                 real binwidth = 1;
                 int  nbins    = 0;
                 histo[mps].make_histogram(binwidth, &nbins, eHisto::Y, false, &x, &y);
                 auto filename = gmx::formatString("%s-%s.xvg", mp->getMolname().c_str(), mpo_name(mps));
-                FILE *fp = xvgropen(filename.c_str(), "Energy distribution in molprop", "Energy (kJ/mol)", "(a.u.)", oenv);
+                FILE *fp     = xvgropen(filename.c_str(), "Energy distribution in molprop", "Energy (kJ/mol)", "(a.u.)", oenv);
+                bool warnLow = false;
+                bool warnHi  = false;
                 for(size_t i = 0; i < x.size(); i++)
                 {
                     fprintf(fp, "%10g  %10g\n", x[i], y[i]);
+                    if (x[i] < ewarnLow)
+                    {
+                        warnLow = true;
+                    }
+                    else if (x[i] > ewarnHi)
+                    {
+                        warnHi = true;
+                    }
                 }
                 xvgrclose(fp);
+                if (warnLow)
+                {
+                    fprintf(stderr, "Warning: low energies encountered for %s\n", mp->getMolname().c_str());
+                }
+                if (warnHi)
+                {
+                    fprintf(stderr, "Warning: high energies encountered for %s\n", mp->getMolname().c_str());
+                }
             }
         }
     }
@@ -526,6 +546,8 @@ int edit_mp(int argc, char *argv[])
     bool     genCharges  = false;
     bool     energyHisto = false;
     int      maxwarn     = 0;
+    real     ewarnLow    = -20;
+    real     ewarnHi     = 100;
     int      writeNode   = 0;
     t_pargs pa[] =
     {
@@ -544,7 +566,11 @@ int edit_mp(int argc, char *argv[])
         { "-charges", FALSE, etBOOL, {&genCharges},
           "Compute charges based on monomers and store them in the output. If there are cluster, e.g. dimers they will get the same charges." },
         { "-ehisto", FALSE, etBOOL, {&energyHisto},
-          "Make a histogram of the energy distribution per molecule or complex." }
+          "Make a histogram of the energy distribution per molecule or complex." },
+        { "-ewarnLow", FALSE, etREAL, {&ewarnLow},
+          "Print a warning if energy is lower than this number (kJ/mol)" },
+        { "-ewarnHi", FALSE, etREAL, {&ewarnHi},
+          "Print a warning if energy is higher than this number (kJ/mol)" }
     };
     std::vector<MolProp>  mpt;
     ForceField            pd;
@@ -631,7 +657,7 @@ int edit_mp(int argc, char *argv[])
     }
     if (energyHisto)
     {
-        gen_ehist(&mpt, oenv);
+        gen_ehist(&mpt, oenv, ewarnLow, ewarnHi);
     }
     if (writeNode == cr.rank())
     {
