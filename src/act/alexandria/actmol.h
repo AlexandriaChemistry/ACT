@@ -577,7 +577,7 @@ public:
      * \param[inout] coords          Atomic coordinates (shell positions can be updated)
      * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const ForceField          *pd,
+    double calculateInteractionEnergy(const ForceField       *pd,
                                       const ForceComputer    *forceComputer,
                                       std::vector<gmx::RVec> *interactionForces,
                                       std::vector<gmx::RVec> *coords) const;
