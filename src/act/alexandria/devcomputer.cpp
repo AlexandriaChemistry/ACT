@@ -513,8 +513,8 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                                            std::map<eRMS, FittingTarget>     *targets,
                                            const ForceField                  *forcefield)
 {
-    std::vector<std::pair<double, double> >                 energyMap;
-    std::vector<std::pair<double, double> >                 interactionEnergyMap;
+    std::vector<ACTEnergy>                                  energyMap;
+    std::vector<ACTEnergy>                                  interactionEnergyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
     actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
@@ -540,7 +540,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         for(const auto &ff : energyMap)
         {
-            if (std::isnan(ff.second))
+            if (std::isnan(ff.eact()))
             {
                 printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
             }
@@ -548,11 +548,11 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             {
                 // TODO Double check if the atomizationEnergy is needed.
                 // auto enerexp = actmol->atomizationEnergy() + ff.first;
-                double mydev2 = gmx::square(ff.first-ff.second);
+                double mydev2 = gmx::square(ff.eqm()-ff.eact());
                 if (mydev2 == 0)
                 {
                     printf("Energy difference exactly zero for %s. Ref ener %g\n",
-                           actmol->getMolname().c_str(), ff.first);
+                           actmol->getMolname().c_str(), ff.eqm());
                 }
                 te->second.increase(1, mydev2);
             }
@@ -563,7 +563,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         for(const auto &ff : interactionEnergyMap)
         {
-            ti->second.increase(1, gmx::square(ff.first-ff.second));
+            ti->second.increase(1, gmx::square(ff.eqm()-ff.eact()));
         }
     }
 }

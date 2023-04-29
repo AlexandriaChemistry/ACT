@@ -150,12 +150,18 @@ int min_complex(int argc, char *argv[])
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
             eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                  &xmin, &energies, logFile);
+                                                  &xmin, &energies, 
+                                                  verbose ? logFile : nullptr);
+    
             if (eMinimizeStatus::OK == eMin)
             {
+                std::vector<gmx::RVec> interactionForces;
+                double eInter = actmol.calculateInteractionEnergy(&pd, forceComp,
+                                                                  &interactionForces, &xmin);
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
-                        energies[InteractionType::EPOT], rmsd);
+                fprintf(logFile, "%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
+                        actmol.getMolname().c_str(),
+                        energies[InteractionType::EPOT], eInter, rmsd);
                 std::string confout = gmx::formatString("%s.pdb",
                                                         actmol.getMolname().c_str());
                 actmol.PrintConformation(confout.c_str(), xmin, false, box);
