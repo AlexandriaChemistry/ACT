@@ -131,8 +131,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
                     auto shellID = Identifier(shell->optionValue(zetatype));
                     auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
                     auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
-                    double dZdiff    = 2;
-                    double deltaZeta = fpcore.value() - fpshell.value() - dZdiff;
+                    double deltaZeta = zetaDiff_ - (fpcore.value() - fpshell.value());
                     if (deltaZeta > 0)
                     {
                         bound += gmx::square(deltaZeta);

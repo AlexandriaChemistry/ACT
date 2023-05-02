@@ -267,7 +267,8 @@ private:
     std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
-    
+    //! Difference between core and shell zeta to count as unphysical
+    double                          zetaDiff_ = 2;    
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
@@ -359,7 +360,10 @@ public:
     
     //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
-        
+
+    //! Zeta difference
+    double zetaDiff() const { return zetaDiff_; }
+
     //! Tell the user whether this interaction type needs optimization
     bool optimize(InteractionType itype) const
     {
