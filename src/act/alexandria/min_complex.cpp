@@ -156,12 +156,13 @@ int min_complex(int argc, char *argv[])
             if (eMinimizeStatus::OK == eMin)
             {
                 std::vector<gmx::RVec> interactionForces;
-                double eInter = actmol.calculateInteractionEnergy(&pd, forceComp,
-                                                                  &interactionForces, &xmin);
+                std::map<InteractionType, double> einter;
+                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin);
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                 fprintf(logFile, "%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
                         actmol.getMolname().c_str(),
-                        energies[InteractionType::EPOT], eInter, rmsd);
+                        energies[InteractionType::EPOT], 
+                        einter[InteractionType::EPOT], rmsd);
                 std::string confout = gmx::formatString("%s.pdb",
                                                         actmol.getMolname().c_str());
                 actmol.PrintConformation(confout.c_str(), xmin, false, box);

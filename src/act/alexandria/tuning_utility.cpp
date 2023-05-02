@@ -1152,8 +1152,9 @@ static void dump_xyz(const ACTMol    *mol,
         int j = 0;
         for(int ra : mol->realAtoms())
         {
+            // Convert coordinates to Angstrom
             fprintf(fp, "%3s  %12f  %12f  %12f\n", actatoms[ra].element().c_str(),
-                    coords[j][XX], coords[j][YY], coords[j][ZZ]);
+                    10*coords[j][XX], 10*coords[j][YY], 10*coords[j][ZZ]);
             j++;
         }
         gmx_ffclose(fp);

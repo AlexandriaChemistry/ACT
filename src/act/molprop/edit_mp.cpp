@@ -310,8 +310,8 @@ static void monomer2cluster(FILE                                              *f
     }
 }
 
-static void check_mp(const char           *ffname,
-                     const char           *logname,
+static void check_mp(FILE                 *mylog,
+                     const char           *ffname,
                      bool                  genCharges,
                      std::vector<MolProp> *mp)
 {
@@ -333,7 +333,6 @@ static void check_mp(const char           *ffname,
     auto mdlog     = gmx::MDLogger {};
     std::map<std::string, std::vector<double> > qmap;
 
-    FILE *mylog = gmx_ffopen(logname, "w");
     fprintf(mylog, "Force field file %s\n", ffname);
     int numberOk = 0, numberFailed = 0;
     for (auto m = mp->begin(); m < mp->end(); ++m)
@@ -449,11 +448,10 @@ static void check_mp(const char           *ffname,
         // Copy charges from monomers
         monomer2cluster(mylog, mp, pd, qmap, inputrec);
     }
-    fclose(mylog);
-
 }
 
-static void gen_ehist(const std::vector<MolProp> *mpt,
+static void gen_ehist(FILE                       *mylog,
+                      const std::vector<MolProp> *mpt,
                       gmx_output_env_t           *oenv,
                       real                        ewarnLow,
                       real                        ewarnHi)
@@ -500,12 +498,15 @@ static void gen_ehist(const std::vector<MolProp> *mpt,
                 xvgrclose(fp);
                 if (warnLow)
                 {
-                    fprintf(stderr, "Warning: low energies encountered for %s\n", mp->getMolname().c_str());
+                    fprintf(mylog, "Warning: low energies encountered for %s\n", mp->getMolname().c_str());
                 }
                 if (warnHi)
                 {
-                    fprintf(stderr, "Warning: high energies encountered for %s\n", mp->getMolname().c_str());
+                    fprintf(mylog, "Warning: high energies encountered for %s\n", mp->getMolname().c_str());
                 }
+                fprintf(mylog, "Range of energies for %s : %g - %g%s\n",
+                        mp->getMolname().c_str(), x[0], x[x.size()-1],
+                        x[0] > 0 ? " ALL-POSITIVE" : "");
             }
         }
     }
@@ -650,14 +651,25 @@ int edit_mp(int argc, char *argv[])
         }
     }
     auto ffname = opt2fn_null("-ff", fnm.size(), fnm.data());
+    FILE *mylog = nullptr;
+    if (ffname || energyHisto)
+    {
+        mylog = gmx_ffopen(opt2fn("-g", fnm.size(), fnm.data()), "w");
+    }
     if (ffname)
     {
         printf("Since you provided a force field file I will now check the compounds.\n");
-        check_mp(ffname, opt2fn("-g", fnm.size(), fnm.data()), genCharges, &mpt);
+        check_mp(mylog, ffname, genCharges, &mpt);
     }
     if (energyHisto)
     {
-        gen_ehist(&mpt, oenv, ewarnLow, ewarnHi);
+        gen_ehist(mylog, &mpt, oenv, ewarnLow, ewarnHi);
+    }
+    if (nullptr != mylog)
+    {
+        printf("Please check %s for analyses.\n", 
+               opt2fn("-g", fnm.size(), fnm.data()));
+        gmx_ffclose(mylog);
     }
     if (writeNode == cr.rank())
     {

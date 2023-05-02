@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -72,11 +72,11 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                      gmx_unused ACTMol                     *actmol,
-                                      gmx_unused std::vector<gmx::RVec>    *coords,
-                                      std::map<eRMS, FittingTarget>        *targets,
-                                      const ForceField                        *forcefield)
+void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceComputer,
+                                      gmx_unused ACTMol                 *actmol,
+                                      gmx_unused std::vector<gmx::RVec> *coords,
+                                      std::map<eRMS, FittingTarget>     *targets,
+                                      const ForceField                  *forcefield)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
     if (targets->end() != mytarget)
