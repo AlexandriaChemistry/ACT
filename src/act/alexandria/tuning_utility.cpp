@@ -920,9 +920,9 @@ void doFrequencyAnalysis(const ForceField         *pd,
     jtree->addObject(tctree);
 }
 
-static void low_print(std::vector<std::string> *tcout,
-                      gmx_stats                *stats,
-                      const char               *label)
+static void low_print_stats(std::vector<std::string> *tcout,
+                            gmx_stats                *stats,
+                            const char               *label)
 {
     real mse, mae, rmsd, R = 0;
     stats->get_mse_mae(&mse, &mae);
@@ -1014,27 +1014,32 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (printSP_)
     {
         size_t ccc = 0;
-        for(const auto &eam : energyComponentMap)
+        std::sort(energyComponentMap.begin(), energyComponentMap.end());
+        for(auto eam = energyComponentMap.begin(); eam < energyComponentMap.end(); ++eam)
         {
-            auto enerexp = eam.first;
+            auto enerexp = eam->first;
             std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
                                                 enerexp);
-            for(const auto &terms : eam.second)
+            for(const auto &terms : eam->second)
             {
                 ttt += gmx::formatString(" %s: %g", interactionTypeToString(terms.first).c_str(), 
                                          terms.second);
             }
+            ttt += gmx::formatString(" Diff: %g", eam->second[InteractionType::EPOT]-enerexp);
             tcout->push_back(ttt);
             ccc++;
         }
-        for(const auto &iem : interactionEnergyMap)
+        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end());
+        for(auto iem = interactionEnergyMap.begin(); iem < interactionEnergyMap.end(); ++iem)
         {
-            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.first, iem.second);
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g Diff %g",
+                                                iem->first, iem->second, iem->second-iem->first);
             tcout->push_back(ttt);
         }
-        for(const auto &ff : forceMap)
+        std::sort(forceMap.begin(), forceMap.end());
+        for(auto ff = forceMap.begin(); ff < forceMap.end(); ++ff)
         {
-            for(const auto &fxyz : ff)
+            for(const auto &fxyz : *ff)
             {
                 if (fxyz.first != 0 || fxyz.second != 0)
                 {
@@ -1047,11 +1052,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        low_print(tcout, &myepot, "Energy");
+        low_print_stats(tcout, &myepot, "Energy");
     }
     if (interactionEnergyMap.size() > 0)
     {
-        low_print(tcout, &myinter, "Einteraction");
+        low_print_stats(tcout, &myinter, "Einteraction");
     }
     if (!forceMap.empty())
     {
@@ -1067,7 +1072,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                 }
             }
         }
-        low_print(tcout, &myforce, "Force");
+        low_print_stats(tcout, &myforce, "Force");
     }
 
     // Energy
@@ -1158,7 +1163,7 @@ static void printOutliers(FILE              *fp,
                     if (std::abs(ener.first-ener.second) > epotMax)
                     {
                         fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
-                                ener.first, ener.second, ener.first-ener.second);
+                                ener.first, ener.second, ener.second-ener.first);
                         noutlier++;
                     }
                 }
