@@ -339,7 +339,7 @@ public:
                          const ForceComputer                                                 *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                          std::vector<ACTEnergy>                                              *energyMap,
-                         std::vector<ACTEnergy>                                              *interactionEnergyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier

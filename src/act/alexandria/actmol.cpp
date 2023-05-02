@@ -430,7 +430,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                              const ForceComputer                                                 *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                              std::vector<ACTEnergy>                                              *energyMap,
-                             std::vector<ACTEnergy>                                              *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
                              std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
@@ -508,7 +508,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     }
                     std::map<InteractionType, double> einter;
                     calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &mycoords);
-                    interactionEnergyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(), einter[InteractionType::EPOT]));
+                    interactionEnergyMap->push_back({ eprops[0]->getValue(), einter});
                     // TODO Store the interaction forces
                 }
             }

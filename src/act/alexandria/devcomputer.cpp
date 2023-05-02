@@ -514,9 +514,8 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                                            const ForceField                  *forcefield)
 {
     std::vector<ACTEnergy>                                  energyMap;
-    std::vector<ACTEnergy>                                  interactionEnergyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap, interactionEnergyMap;
     actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
                             &interactionEnergyMap, &enerComponentMap);
 
@@ -563,7 +562,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         for(const auto &ff : interactionEnergyMap)
         {
-            ti->second.increase(1, gmx::square(ff.eqm()-ff.eact()));
+            ti->second.increase(1, gmx::square(ff.first-ff.second.find(InteractionType::EPOT)->second));
         }
     }
 }

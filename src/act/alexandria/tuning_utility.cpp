@@ -984,9 +984,8 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                 const gmx_output_env_t   *oenv)
 {
     std::vector<ACTEnergy>                                  energyMap;
-    std::vector<ACTEnergy>                                  interactionEnergyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap, interactionEnergyMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
                          &energyComponentMap);
     if (diatomic_ && mol->nRealAtoms() == 2)
@@ -1010,8 +1009,9 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     gmx_stats myinter;
     for(const auto &ff : interactionEnergyMap)
     {
-        (*lsq_eInter)[qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
-        myinter.add_point(ff.eqm(), ff.eact(), 0, 0);
+        auto eact = ff.second.find(InteractionType::EPOT)->second;
+        (*lsq_eInter)[qType::Calc].add_point(ff.first, eact, 0, 0);
+        myinter.add_point(ff.first, eact);
     }
     if (printSP_)
     {
@@ -1031,7 +1031,20 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
         for(const auto &iem : interactionEnergyMap)
         {
-            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.eqm(), iem.eact());
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.first, iem.second.find(InteractionType::EPOT)->second);
+            std::map<InteractionType, const char *> terms = { 
+                { InteractionType::COULOMB, "Coul." },
+                { InteractionType::POLARIZATION, "Pol." },
+                { InteractionType::DISPERSION, "Disp." },
+                { InteractionType::REPULSION, "Rep." } };
+            for(auto &term : terms)
+            {
+                auto tptr = iem.second.find(term.first);
+                if (iem.second.end() != tptr)
+                {
+                    ttt += gmx::formatString(" %s %g", term.second, tptr->second);
+                }
+            }
             tcout->push_back(ttt);
         }
         for(const auto &ff : forceMap)
