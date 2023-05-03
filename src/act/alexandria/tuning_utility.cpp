@@ -1019,7 +1019,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         for(const auto &eam : energyComponentMap)
         {
             auto enerexp = eam.first;
-            std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
+            std::string ttt = gmx::formatString("%s Reference: %g ACT:", dataFileNames[ccc].c_str(),
                                                 enerexp);
             for(const auto &terms : eam.second)
             {
@@ -1192,7 +1192,7 @@ static void printOutliers(FILE              *fp,
                     qTypeName(qType::Calc).c_str(), epotMax);
             fprintf(fp, "----------------------------------\n");
             fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                    "QM/DFT", qTypeName(qType::Calc).c_str(), "ACT-QM");
+                    "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
             int noutlier = 0;
             for (auto emm : allEpot)
             {
