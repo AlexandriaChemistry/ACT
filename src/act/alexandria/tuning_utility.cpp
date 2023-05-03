@@ -922,9 +922,9 @@ void doFrequencyAnalysis(const ForceField         *pd,
     jtree->addObject(tctree);
 }
 
-static void low_print(std::vector<std::string> *tcout,
-                      gmx_stats                *stats,
-                      const char               *label)
+static void low_print_stats(std::vector<std::string> *tcout,
+                            gmx_stats                *stats,
+                            const char               *label)
 {
     real mse, mae, rmsd, R = 0;
     stats->get_mse_mae(&mse, &mae);
@@ -1016,22 +1016,27 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (printSP_)
     {
         size_t ccc = 0;
-        for(const auto &eam : energyComponentMap)
+        std::sort(energyComponentMap.begin(), energyComponentMap.end());
+        for(auto eam = energyComponentMap.begin(); eam < energyComponentMap.end(); ++eam)
         {
-            auto enerexp = eam.first;
+            auto enerexp = eam->first;
             std::string ttt = gmx::formatString("%s Reference: %g ACT:", dataFileNames[ccc].c_str(),
                                                 enerexp);
-            for(const auto &terms : eam.second)
+            for(const auto &terms : eam->second)
             {
                 ttt += gmx::formatString(" %s: %g", interactionTypeToString(terms.first).c_str(), 
                                          terms.second);
             }
+            ttt += gmx::formatString(" Diff: %g", eam->second[InteractionType::EPOT]-enerexp);
             tcout->push_back(ttt);
             ccc++;
         }
-        for(const auto &iem : interactionEnergyMap)
+        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end());
+        for(auto iem = interactionEnergyMap.begin(); iem < interactionEnergyMap.end(); ++iem)
         {
-            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.first, iem.second.find(InteractionType::EPOT)->second);
+            auto eact = iem->second.find(InteractionType::EPOT)->second;
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g Diff %g",
+                                                iem->first, eact, eact-iem->first);
             std::map<InteractionType, const char *> terms = { 
                 { InteractionType::COULOMB, "Coul." },
                 { InteractionType::POLARIZATION, "Pol." },
@@ -1039,17 +1044,18 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                 { InteractionType::REPULSION, "Rep." } };
             for(auto &term : terms)
             {
-                auto tptr = iem.second.find(term.first);
-                if (iem.second.end() != tptr)
+                auto tptr = iem->second.find(term.first);
+                if (iem->second.end() != tptr)
                 {
                     ttt += gmx::formatString(" %s %g", term.second, tptr->second);
                 }
             }
             tcout->push_back(ttt);
         }
-        for(const auto &ff : forceMap)
+        std::sort(forceMap.begin(), forceMap.end());
+        for(auto ff = forceMap.begin(); ff < forceMap.end(); ++ff)
         {
-            for(const auto &fxyz : ff)
+            for(const auto &fxyz : *ff)
             {
                 if (fxyz.first != 0 || fxyz.second != 0)
                 {
@@ -1062,11 +1068,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        low_print(tcout, &myepot, "Energy");
+        low_print_stats(tcout, &myepot, "Energy");
     }
     if (interactionEnergyMap.size() > 0)
     {
-        low_print(tcout, &myinter, "Einteraction");
+        low_print_stats(tcout, &myinter, "Einteraction");
     }
     if (!forceMap.empty())
     {
@@ -1082,7 +1088,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                 }
             }
         }
-        low_print(tcout, &myforce, "Force");
+        low_print_stats(tcout, &myforce, "Force");
     }
 
     // Energy
