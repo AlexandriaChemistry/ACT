@@ -134,6 +134,12 @@ public:
     //! Dump the contents of this object to a file
     void Dump(FILE *fp) const;
 
+    //! Set the experiment id
+    void setId(int id) { id_ = id; }
+    
+    //! Get the id
+    int id() const { return id_; }
+
     /*! \brief Whether a property is present
      * \param[in] mpo Theproperty
      * \return true if found
@@ -297,6 +303,8 @@ private:
     JobType                              jobtype_ = JobType::UNKNOWN;
     std::vector<CalcAtom>                catom_;
     
+    //! Experiment ID
+    int                                  id_ = 0;
     std::map<MolPropObservable, std::vector<GenericProperty *> > property_;
     
     std::vector<ElectrostaticPotential>  potential_;

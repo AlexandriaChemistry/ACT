@@ -40,6 +40,7 @@ namespace alexandria
 
 int gentop(int argc, char *argv[]);
 int simulate(int argc, char *argv[]);
+int min_complex(int argc, char *argv[]);
 int b2(int argc, char *argv[]);
 int nma(int argc, char *argv[]);
 int tune_ff(int argc, char *argv[]);

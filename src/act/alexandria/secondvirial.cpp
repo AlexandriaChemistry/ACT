@@ -282,7 +282,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
         double binWidth = 0.0025; // nm
         if (ndist > 1)
         {
-            binWidth = (xmax-xmin)/(ndist-1);
+            binWidth = 2*(xmax-xmin)/(ndist-1);
         }
         // Bins start from zero for proper integration
         size_t nbins    = 1+std::round(xmax/binWidth);
@@ -456,8 +456,8 @@ void ReRunner::computeB2(FILE                                      *logFile,
                                 }
                             }
                         }
-                        r1 = r2;
                     }
+                    r1 = r2;
                 }
                 // Conversion to regular units cm^3/mol.
                 double fac  = AVOGADRO*1e-21;
@@ -626,7 +626,8 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         if (eInter_)
         {
-            auto EE         = actmol->calculateInteractionEnergy(pd, forceComp_, &forces, &coords);
+            std::map<InteractionType, double> einter;
+            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f    = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -712,6 +713,7 @@ void ReRunner::rerun(FILE                        *logFile,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
+            auto EE = einter[InteractionType::EPOT];
             if (verbose)
             {
                 fprintf(logFile, " r %g Einter %g Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",

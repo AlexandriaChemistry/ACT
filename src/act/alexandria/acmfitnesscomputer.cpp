@@ -256,12 +256,13 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
     }
 }
 
-void ACMFitnessComputer::fillDevComputers(const bool verbose)
+void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
 {
     if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
     {
-        bdc_ = new BoundsDevComputer(logfile_, verbose, sii_->optIndexPtr());
+        bdc_ = new BoundsDevComputer(logfile_, verbose, sii_->optIndexPtr(),
+                                     zetaDiff);
     }
     if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)

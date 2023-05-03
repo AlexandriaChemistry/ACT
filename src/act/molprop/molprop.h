@@ -285,8 +285,12 @@ public:
     Experiment *findExperiment(JobType job);
     
     //! Add an experiment
-    void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
-    
+    void AddExperiment(const Experiment &myexp) 
+    {
+        exper_.push_back(myexp); 
+        exper_.back().setId(exper_.size()-1);
+    }
+
     //! Return const vector of experiments
     const std::vector<Experiment> &experimentConst() const { return exper_; }
 

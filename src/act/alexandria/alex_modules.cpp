@@ -70,6 +70,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian. Only inputs for OpenMM can be generated at this point in time.");
     registerModule(manager, &alexandria::simulate, "simulate",
                    "Perform a MD simulation and generate a trajectory.");
+    registerModule(manager, &alexandria::min_complex, "min_complex",
+                   "Generate inputs for an energy scan.");
     registerModule(manager, &alexandria::b2, "b2",
                    "Compute second virial coefficient as a function of temperature.");
     registerModule(manager, &alexandria::nma, "nma",

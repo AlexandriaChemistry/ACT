@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -72,11 +72,11 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                      gmx_unused ACTMol                     *actmol,
-                                      gmx_unused std::vector<gmx::RVec>    *coords,
-                                      std::map<eRMS, FittingTarget>        *targets,
-                                      const ForceField                        *forcefield)
+void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceComputer,
+                                      gmx_unused ACTMol                 *actmol,
+                                      gmx_unused std::vector<gmx::RVec> *coords,
+                                      std::map<eRMS, FittingTarget>     *targets,
+                                      const ForceField                  *forcefield)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
     if (targets->end() != mytarget)
@@ -131,8 +131,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
                     auto shellID = Identifier(shell->optionValue(zetatype));
                     auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
                     auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
-                    double dZdiff    = 2;
-                    double deltaZeta = fpcore.value() - fpshell.value() - dZdiff;
+                    double deltaZeta = zetaDiff_ - (fpcore.value() - fpshell.value());
                     if (deltaZeta > 0)
                     {
                         bound += gmx::square(deltaZeta);
@@ -513,10 +512,9 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                                            std::map<eRMS, FittingTarget>     *targets,
                                            const ForceField                  *forcefield)
 {
-    std::vector<std::pair<double, double> >                 energyMap;
-    std::vector<std::pair<double, double> >                 interactionEnergyMap;
+    std::vector<ACTEnergy>                                  energyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap, interactionEnergyMap;
     actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
                             &interactionEnergyMap, &enerComponentMap);
 
@@ -540,7 +538,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         for(const auto &ff : energyMap)
         {
-            if (std::isnan(ff.second))
+            if (std::isnan(ff.eact()))
             {
                 printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
             }
@@ -548,11 +546,11 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             {
                 // TODO Double check if the atomizationEnergy is needed.
                 // auto enerexp = actmol->atomizationEnergy() + ff.first;
-                double mydev2 = gmx::square(ff.first-ff.second);
+                double mydev2 = gmx::square(ff.eqm()-ff.eact());
                 if (mydev2 == 0)
                 {
                     printf("Energy difference exactly zero for %s. Ref ener %g\n",
-                           actmol->getMolname().c_str(), ff.first);
+                           actmol->getMolname().c_str(), ff.eqm());
                 }
                 te->second.increase(1, mydev2);
             }
@@ -563,7 +561,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         for(const auto &ff : interactionEnergyMap)
         {
-            ti->second.increase(1, gmx::square(ff.first-ff.second));
+            ti->second.increase(1, gmx::square(ff.first-ff.second.find(InteractionType::EPOT)->second));
         }
     }
 }

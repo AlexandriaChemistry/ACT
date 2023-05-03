@@ -83,6 +83,25 @@ enum class eSupport {
     Remote
 };
 
+class ACTEnergy
+{
+private:
+    //! Id of the experiment
+    int    experiment_;
+    //! QM energy
+    double eqm_;
+    //! ACT energy
+    double eact_;
+public:
+    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment), eqm_(eqm), eact_(eact) {}
+    
+    int id() const { return experiment_; }
+    
+    double eqm() const { return eqm_; }
+    
+    double eact() const { return eact_; }
+};
+
 /*! \brief
  * Contains molecular properties from a range of sources.
  * Overloads the regular molprop and adds a lot of functionality.
@@ -316,11 +335,11 @@ public:
      * \param[out] interactionEnergyMap The interaction energies
      * \param[out] energyComponentsMap  The energy components
      */
-    void forceEnergyMaps(const ForceField                                                       *pd,
+    void forceEnergyMaps(const ForceField                                                    *pd,
                          const ForceComputer                                                 *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                         std::vector<std::pair<double, double> >                             *energyMap,
-                         std::vector<std::pair<double, double> >                             *interactionEnergyMap,
+                         std::vector<ACTEnergy>                                              *energyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier
@@ -554,14 +573,15 @@ public:
      * For a polarizable model the shell positions are minimized.
      * \param[in] pd                 The force field
      * \param[in] forceComputer      The code to run the calculations.
+     * \param[out] einter            The interaction energy components
      * \param[out] interactionForces The forces on the atoms due to the interacting components
      * \param[inout] coords          Atomic coordinates (shell positions can be updated)
-     * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const ForceField          *pd,
-                                      const ForceComputer    *forceComputer,
-                                      std::vector<gmx::RVec> *interactionForces,
-                                      std::vector<gmx::RVec> *coords) const;
+    void calculateInteractionEnergy(const ForceField                  *pd,
+                                    const ForceComputer               *forceComputer,
+                                    std::map<InteractionType, double> *einter,
+                                    std::vector<gmx::RVec>            *interactionForces,
+                                    std::vector<gmx::RVec>            *coords) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd

@@ -87,7 +87,7 @@ private:
      * \brief Fill the devComputers vector according to the needs of the user
      * \param[in] verbose whether the DevComputers write stuff to the logfile or not
      */
-    void fillDevComputers(const bool verbose);
+    void fillDevComputers(const bool verbose, double zetaDiff);
 
 public:
 
@@ -107,7 +107,7 @@ public:
                              ForceComputer         *forceComp)
         : logfile_(logfile), sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
     {
-        fillDevComputers(verbose);
+        fillDevComputers(verbose, molgen->zetaDiff());
     }
 
     /*! \brief Do the actual computation
