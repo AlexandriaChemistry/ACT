@@ -1181,26 +1181,29 @@ static void dump_xyz(const ACTMol    *mol,
 }
 
 static void printOutliers(FILE              *fp, 
-                          gmx_stats         *lsq,
+                          iMolSelect         ims,
+                          double             tolerance,
                           const std::string &label,
                           bool               dumpExperiment,
                           const std::vector<alexandria::ACTMol>                *actmol,
                           const std::map<std::string, std::vector<ACTEnergy> > &allEpot)
 {
-    real epotAver;
-    if (eStats::OK == lsq->get_rmsd(&epotAver))
+    double epotMax = tolerance;
+    if (allEpot.size() > 0)
     {
-        double epotMax = 1.5*epotAver;
-        if (allEpot.size() > 0)
+        fprintf(fp, "\nOverview of %s outliers for %s (Diff > %.3f)\n",
+                iMolSelectName(ims),
+                qTypeName(qType::Calc).c_str(), epotMax);
+        fprintf(fp, "----------------------------------\n");
+        fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
+                "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
+        int noutlier = 0;
+        for (auto emm : allEpot)
         {
-            fprintf(fp, "\nOverview of %s outliers for %s (Diff > %.3f)\n",
-                    label.c_str(),
-                    qTypeName(qType::Calc).c_str(), epotMax);
-            fprintf(fp, "----------------------------------\n");
-            fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                    "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
-            int noutlier = 0;
-            for (auto emm : allEpot)
+            std::string toFind(emm.first);
+            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
+                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
+            if (actmolptr->datasetType() == ims)
             {
                 for (auto ener : emm.second)
                 {
@@ -1210,27 +1213,24 @@ static void printOutliers(FILE              *fp,
                                 ener.eqm(), ener.eact(), ener.eqm()-ener.eact());
                         if (dumpExperiment)
                         {
-                            std::string toFind(emm.first);
-                            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
-                                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
                             if (actmol->end() != actmolptr)
                             {
                                 dump_xyz(&(*actmolptr), ener);
                             }
                         }
-                        noutlier++;
+                    noutlier++;
                     }
                 }
             }
-            if (noutlier)
-            {
-                printf("There were %d %s outliers. Check the bottom of the log file\n", noutlier,
-                       label.c_str());
-            }
-            else
-            {
-                printf("No %s outliers! Well done.\n", label.c_str());
-            }
+        }
+        if (noutlier)
+        {
+            printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
+                   label.c_str(), iMolSelectName(ims));
+        }
+        else
+        {
+            printf("No %s outliers! Well done.\n", label.c_str());
         }
     }
 }
@@ -1601,12 +1601,25 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             printf("No ESP outliers! Well done.\n");
         }
     }
-    // List outliers based on the deviation in the Potential energy ...
-    printOutliers(fp, &lsq_epot[iMolSelect::Train][qType::Calc], "Epot", dumpOutliers_,
-                  actmol, allEpot);
-    // ... and the interaction energies.
-    printOutliers(fp, &lsq_eInter[iMolSelect::Train][qType::Calc], "Einter", dumpOutliers_, 
-                  actmol, allEinter);
+    real epotAver = 0, einterAver = 0;
+    if (eStats::OK != lsq_epot[iMolSelect::Train][qType::Calc].get_sigma(&epotAver))
+    {
+        printf("Something wrong with potential energy\n");
+    }
+    if (eStats::OK != lsq_eInter[iMolSelect::Train][qType::Calc].get_sigma(&einterAver))
+    {
+        printf("Something wrong with interaction energy\n");
+    }
+        
+    for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
+    {
+        // List outliers based on the deviation in the Potential energy ...
+        printOutliers(fp, ims, 1.5*epotAver, "Epot", dumpOutliers_,
+                      actmol, allEpot);
+        // ... and the interaction energies.
+        printOutliers(fp, ims, 1.5*einterAver, "Einter", dumpOutliers_, 
+                      actmol, allEinter);
+    }
 }
 
 void print_header(FILE                       *fp, 
