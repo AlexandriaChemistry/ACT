@@ -584,6 +584,12 @@ class ActOpenMMSim:
 
 ###### e*((d + 2*g + 6) /(2*g)) * (1/(1 + ((x/s)**6))) * ( ((6+d)/(d + 2*g + 6))*np.exp(g*(1-(x/s))) - 1 ) - e/(1+((x/s)**d))
 #################################################
+#        if self.args.vdw == "LJ":
+
+
+
+
+#################################################
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
         if nexcl == 0:
             return False

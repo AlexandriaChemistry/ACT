@@ -45,7 +45,7 @@
   <Real Name="gammaI-4">10</Real>
   <Real Name="gammaJ-4">10</Real>
   <Real Name="sigmaIJ-4">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-4">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-4">0.70710678118654757</Real>
   <Real Name="gammaIJ-4">10</Real>
   <Real Name="sigmaI-5">0.20000000000000001</Real>
   <Real Name="sigmaJ-5">0.20000000000000001</Real>
@@ -54,7 +54,7 @@
   <Real Name="gammaI-5">10</Real>
   <Real Name="gammaJ-5">15</Real>
   <Real Name="sigmaIJ-5">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-5">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-5">0.70710678118654757</Real>
   <Real Name="gammaIJ-5">12.5</Real>
   <Real Name="sigmaI-6">0.20000000000000001</Real>
   <Real Name="sigmaJ-6">0.20000000000000001</Real>
@@ -63,7 +63,7 @@
   <Real Name="gammaI-6">15</Real>
   <Real Name="gammaJ-6">10</Real>
   <Real Name="sigmaIJ-6">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-6">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-6">0.70710678118654757</Real>
   <Real Name="gammaIJ-6">12.5</Real>
   <Real Name="sigmaI-7">0.20000000000000001</Real>
   <Real Name="sigmaJ-7">0.20000000000000001</Real>
@@ -72,7 +72,7 @@
   <Real Name="gammaI-7">15</Real>
   <Real Name="gammaJ-7">15</Real>
   <Real Name="sigmaIJ-7">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-7">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-7">0.70710678118654757</Real>
   <Real Name="gammaIJ-7">15</Real>
   <Real Name="sigmaI-8">0.20000000000000001</Real>
   <Real Name="sigmaJ-8">0.20000000000000001</Real>
@@ -81,7 +81,7 @@
   <Real Name="gammaI-8">10</Real>
   <Real Name="gammaJ-8">10</Real>
   <Real Name="sigmaIJ-8">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-8">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-8">0.70710678118654757</Real>
   <Real Name="gammaIJ-8">10</Real>
   <Real Name="sigmaI-9">0.20000000000000001</Real>
   <Real Name="sigmaJ-9">0.20000000000000001</Real>
@@ -90,7 +90,7 @@
   <Real Name="gammaI-9">10</Real>
   <Real Name="gammaJ-9">15</Real>
   <Real Name="sigmaIJ-9">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-9">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-9">0.70710678118654757</Real>
   <Real Name="gammaIJ-9">12.5</Real>
   <Real Name="sigmaI-10">0.20000000000000001</Real>
   <Real Name="sigmaJ-10">0.20000000000000001</Real>
@@ -99,7 +99,7 @@
   <Real Name="gammaI-10">15</Real>
   <Real Name="gammaJ-10">10</Real>
   <Real Name="sigmaIJ-10">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-10">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-10">0.70710678118654757</Real>
   <Real Name="gammaIJ-10">12.5</Real>
   <Real Name="sigmaI-11">0.20000000000000001</Real>
   <Real Name="sigmaJ-11">0.20000000000000001</Real>
@@ -108,7 +108,7 @@
   <Real Name="gammaI-11">15</Real>
   <Real Name="gammaJ-11">15</Real>
   <Real Name="sigmaIJ-11">0.20000000000000004</Real>
-  <Real Name="epsilonIJ-11">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-11">0.70710678118654757</Real>
   <Real Name="gammaIJ-11">15</Real>
   <Real Name="sigmaI-12">0.20000000000000001</Real>
   <Real Name="sigmaJ-12">0.20000000000000001</Real>
@@ -153,7 +153,7 @@
   <Real Name="gammaI-16">10</Real>
   <Real Name="gammaJ-16">10</Real>
   <Real Name="sigmaIJ-16">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-16">0.5</Real>
+  <Real Name="epsilonIJ-16">0.12307692307692308</Real>
   <Real Name="gammaIJ-16">10</Real>
   <Real Name="sigmaI-17">0.20000000000000001</Real>
   <Real Name="sigmaJ-17">0.40000000000000002</Real>
@@ -162,7 +162,7 @@
   <Real Name="gammaI-17">10</Real>
   <Real Name="gammaJ-17">15</Real>
   <Real Name="sigmaIJ-17">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-17">0.5</Real>
+  <Real Name="epsilonIJ-17">0.12307692307692308</Real>
   <Real Name="gammaIJ-17">12.5</Real>
   <Real Name="sigmaI-18">0.20000000000000001</Real>
   <Real Name="sigmaJ-18">0.40000000000000002</Real>
@@ -171,7 +171,7 @@
   <Real Name="gammaI-18">15</Real>
   <Real Name="gammaJ-18">10</Real>
   <Real Name="sigmaIJ-18">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-18">0.5</Real>
+  <Real Name="epsilonIJ-18">0.12307692307692308</Real>
   <Real Name="gammaIJ-18">12.5</Real>
   <Real Name="sigmaI-19">0.20000000000000001</Real>
   <Real Name="sigmaJ-19">0.40000000000000002</Real>
@@ -180,7 +180,7 @@
   <Real Name="gammaI-19">15</Real>
   <Real Name="gammaJ-19">15</Real>
   <Real Name="sigmaIJ-19">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-19">0.5</Real>
+  <Real Name="epsilonIJ-19">0.12307692307692308</Real>
   <Real Name="gammaIJ-19">15</Real>
   <Real Name="sigmaI-20">0.20000000000000001</Real>
   <Real Name="sigmaJ-20">0.40000000000000002</Real>
@@ -261,7 +261,7 @@
   <Real Name="gammaI-28">10</Real>
   <Real Name="gammaJ-28">10</Real>
   <Real Name="sigmaIJ-28">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-28">1</Real>
+  <Real Name="epsilonIJ-28">0.24615384615384617</Real>
   <Real Name="gammaIJ-28">10</Real>
   <Real Name="sigmaI-29">0.20000000000000001</Real>
   <Real Name="sigmaJ-29">0.40000000000000002</Real>
@@ -270,7 +270,7 @@
   <Real Name="gammaI-29">10</Real>
   <Real Name="gammaJ-29">15</Real>
   <Real Name="sigmaIJ-29">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-29">1</Real>
+  <Real Name="epsilonIJ-29">0.24615384615384617</Real>
   <Real Name="gammaIJ-29">12.5</Real>
   <Real Name="sigmaI-30">0.20000000000000001</Real>
   <Real Name="sigmaJ-30">0.40000000000000002</Real>
@@ -279,7 +279,7 @@
   <Real Name="gammaI-30">15</Real>
   <Real Name="gammaJ-30">10</Real>
   <Real Name="sigmaIJ-30">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-30">1</Real>
+  <Real Name="epsilonIJ-30">0.24615384615384617</Real>
   <Real Name="gammaIJ-30">12.5</Real>
   <Real Name="sigmaI-31">0.20000000000000001</Real>
   <Real Name="sigmaJ-31">0.40000000000000002</Real>
@@ -288,7 +288,7 @@
   <Real Name="gammaI-31">15</Real>
   <Real Name="gammaJ-31">15</Real>
   <Real Name="sigmaIJ-31">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-31">1</Real>
+  <Real Name="epsilonIJ-31">0.24615384615384617</Real>
   <Real Name="gammaIJ-31">15</Real>
   <Real Name="sigmaI-32">0.40000000000000002</Real>
   <Real Name="sigmaJ-32">0.20000000000000001</Real>
@@ -297,7 +297,7 @@
   <Real Name="gammaI-32">10</Real>
   <Real Name="gammaJ-32">10</Real>
   <Real Name="sigmaIJ-32">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-32">0.5</Real>
+  <Real Name="epsilonIJ-32">0.12307692307692308</Real>
   <Real Name="gammaIJ-32">10</Real>
   <Real Name="sigmaI-33">0.40000000000000002</Real>
   <Real Name="sigmaJ-33">0.20000000000000001</Real>
@@ -306,7 +306,7 @@
   <Real Name="gammaI-33">10</Real>
   <Real Name="gammaJ-33">15</Real>
   <Real Name="sigmaIJ-33">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-33">0.5</Real>
+  <Real Name="epsilonIJ-33">0.12307692307692308</Real>
   <Real Name="gammaIJ-33">12.5</Real>
   <Real Name="sigmaI-34">0.40000000000000002</Real>
   <Real Name="sigmaJ-34">0.20000000000000001</Real>
@@ -315,7 +315,7 @@
   <Real Name="gammaI-34">15</Real>
   <Real Name="gammaJ-34">10</Real>
   <Real Name="sigmaIJ-34">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-34">0.5</Real>
+  <Real Name="epsilonIJ-34">0.12307692307692308</Real>
   <Real Name="gammaIJ-34">12.5</Real>
   <Real Name="sigmaI-35">0.40000000000000002</Real>
   <Real Name="sigmaJ-35">0.20000000000000001</Real>
@@ -324,7 +324,7 @@
   <Real Name="gammaI-35">15</Real>
   <Real Name="gammaJ-35">15</Real>
   <Real Name="sigmaIJ-35">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-35">0.5</Real>
+  <Real Name="epsilonIJ-35">0.12307692307692308</Real>
   <Real Name="gammaIJ-35">15</Real>
   <Real Name="sigmaI-36">0.40000000000000002</Real>
   <Real Name="sigmaJ-36">0.20000000000000001</Real>
@@ -405,7 +405,7 @@
   <Real Name="gammaI-44">10</Real>
   <Real Name="gammaJ-44">10</Real>
   <Real Name="sigmaIJ-44">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-44">1</Real>
+  <Real Name="epsilonIJ-44">0.24615384615384617</Real>
   <Real Name="gammaIJ-44">10</Real>
   <Real Name="sigmaI-45">0.40000000000000002</Real>
   <Real Name="sigmaJ-45">0.20000000000000001</Real>
@@ -414,7 +414,7 @@
   <Real Name="gammaI-45">10</Real>
   <Real Name="gammaJ-45">15</Real>
   <Real Name="sigmaIJ-45">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-45">1</Real>
+  <Real Name="epsilonIJ-45">0.24615384615384617</Real>
   <Real Name="gammaIJ-45">12.5</Real>
   <Real Name="sigmaI-46">0.40000000000000002</Real>
   <Real Name="sigmaJ-46">0.20000000000000001</Real>
@@ -423,7 +423,7 @@
   <Real Name="gammaI-46">15</Real>
   <Real Name="gammaJ-46">10</Real>
   <Real Name="sigmaIJ-46">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-46">1</Real>
+  <Real Name="epsilonIJ-46">0.24615384615384617</Real>
   <Real Name="gammaIJ-46">12.5</Real>
   <Real Name="sigmaI-47">0.40000000000000002</Real>
   <Real Name="sigmaJ-47">0.20000000000000001</Real>
@@ -432,7 +432,7 @@
   <Real Name="gammaI-47">15</Real>
   <Real Name="gammaJ-47">15</Real>
   <Real Name="sigmaIJ-47">0.35728152202037844</Real>
-  <Real Name="epsilonIJ-47">1</Real>
+  <Real Name="epsilonIJ-47">0.24615384615384617</Real>
   <Real Name="gammaIJ-47">15</Real>
   <Real Name="sigmaI-48">0.40000000000000002</Real>
   <Real Name="sigmaJ-48">0.40000000000000002</Real>
@@ -477,7 +477,7 @@
   <Real Name="gammaI-52">10</Real>
   <Real Name="gammaJ-52">10</Real>
   <Real Name="sigmaIJ-52">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-52">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-52">0.70710678118654757</Real>
   <Real Name="gammaIJ-52">10</Real>
   <Real Name="sigmaI-53">0.40000000000000002</Real>
   <Real Name="sigmaJ-53">0.40000000000000002</Real>
@@ -486,7 +486,7 @@
   <Real Name="gammaI-53">10</Real>
   <Real Name="gammaJ-53">15</Real>
   <Real Name="sigmaIJ-53">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-53">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-53">0.70710678118654757</Real>
   <Real Name="gammaIJ-53">12.5</Real>
   <Real Name="sigmaI-54">0.40000000000000002</Real>
   <Real Name="sigmaJ-54">0.40000000000000002</Real>
@@ -495,7 +495,7 @@
   <Real Name="gammaI-54">15</Real>
   <Real Name="gammaJ-54">10</Real>
   <Real Name="sigmaIJ-54">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-54">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-54">0.70710678118654757</Real>
   <Real Name="gammaIJ-54">12.5</Real>
   <Real Name="sigmaI-55">0.40000000000000002</Real>
   <Real Name="sigmaJ-55">0.40000000000000002</Real>
@@ -504,7 +504,7 @@
   <Real Name="gammaI-55">15</Real>
   <Real Name="gammaJ-55">15</Real>
   <Real Name="sigmaIJ-55">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-55">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-55">0.70710678118654757</Real>
   <Real Name="gammaIJ-55">15</Real>
   <Real Name="sigmaI-56">0.40000000000000002</Real>
   <Real Name="sigmaJ-56">0.40000000000000002</Real>
@@ -513,7 +513,7 @@
   <Real Name="gammaI-56">10</Real>
   <Real Name="gammaJ-56">10</Real>
   <Real Name="sigmaIJ-56">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-56">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-56">0.70710678118654757</Real>
   <Real Name="gammaIJ-56">10</Real>
   <Real Name="sigmaI-57">0.40000000000000002</Real>
   <Real Name="sigmaJ-57">0.40000000000000002</Real>
@@ -522,7 +522,7 @@
   <Real Name="gammaI-57">10</Real>
   <Real Name="gammaJ-57">15</Real>
   <Real Name="sigmaIJ-57">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-57">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-57">0.70710678118654757</Real>
   <Real Name="gammaIJ-57">12.5</Real>
   <Real Name="sigmaI-58">0.40000000000000002</Real>
   <Real Name="sigmaJ-58">0.40000000000000002</Real>
@@ -531,7 +531,7 @@
   <Real Name="gammaI-58">15</Real>
   <Real Name="gammaJ-58">10</Real>
   <Real Name="sigmaIJ-58">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-58">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-58">0.70710678118654757</Real>
   <Real Name="gammaIJ-58">12.5</Real>
   <Real Name="sigmaI-59">0.40000000000000002</Real>
   <Real Name="sigmaJ-59">0.40000000000000002</Real>
@@ -540,7 +540,7 @@
   <Real Name="gammaI-59">15</Real>
   <Real Name="gammaJ-59">15</Real>
   <Real Name="sigmaIJ-59">0.40000000000000002</Real>
-  <Real Name="epsilonIJ-59">0.1740570538305348</Real>
+  <Real Name="epsilonIJ-59">0.70710678118654757</Real>
   <Real Name="gammaIJ-59">15</Real>
   <Real Name="sigmaI-60">0.40000000000000002</Real>
   <Real Name="sigmaJ-60">0.40000000000000002</Real>
