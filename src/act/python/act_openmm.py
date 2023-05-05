@@ -457,16 +457,21 @@ class ActOpenMMSim:
         # https://github.com/openmm/openmm/issues/3162
         self.qq_correction.setUseLongRangeCorrection(False)
         
+        self.charges = []
         for index in range(self.nb_openmm.getNumParticles()):
             if self.args.vdw == "WBH":
                 [vdW, sigma, epsilon, gamma, charge, zeta] = self.nb_correction.getParticleParameters(index)
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.nb_correction.getParticleParameters(index)}")
-            if self.args.vdw == "GWBH":
+            elif self.args.vdw == "GWBH":
                 [vdW, rmin, epsilon, gamma, delta, charge, zeta] = self.nb_correction.getParticleParameters(index)
                 if self.args.debug:
                     print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {self.nb_correction.getParticleParameters(index)}")
+            else:
+                sys.exit("Not implemented what to do")
+            self.charges.append(charge)
             self.qq_correction.addParticle([charge,zeta])
+            
         for index in range(self.nb_openmm.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.nb_openmm.getExceptionParameters(index)
             self.qq_correction.addExclusion(iatom, jatom)
@@ -778,8 +783,6 @@ class ActOpenMMSim:
             self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
             if self.args.verbose:
                 print(f"Andersen Thermostat will be used with temperature {self.temperature_c}")
-        else:
-            print("I shall refrain from using a Thermostat...")
 
         #### Integrator ####
         friction_c    = self.sim_params.getFloat('friction_c')
@@ -807,12 +810,21 @@ class ActOpenMMSim:
                 print("Drude Temperature %g" % self.integrator.getDrudeTemperature()._value)
                 print("Step size %g" % self.integrator.getStepSize()._value)
 
+    def compute_dipole(self)->list:
+        positions = self.simulation.context.getState(getPositions=True).getPositions()
+        dip = [ 0, 0, 0 ]
+        enm2Debye = 48.0321
+        for index in range(self.system.getNumParticles()):
+            for m in range(3):
+                dip[m] += positions[index][m]._value * self.charges[index] * enm2Debye
+        return dip
+
     def init_simulation(self):
         #### Simulation setup ####
         self.simulation = Simulation(self.topology, self.system, self.integrator, self.platform)
         self.simulation.context.setPositions(self.positions)
 
-        #### Set positions of shell systemot zero) ####
+        #### Set positions of shell system to almost zero) ####
         #### the shell displacement is necessary for the LJPME to work, otherwise an error is thrown:
         #### simtk.openmm.OpenMMException: Particle coordinate is nan
         positions = self.simulation.context.getState(getPositions=True).getPositions()
@@ -822,9 +834,9 @@ class ActOpenMMSim:
                 new_pos_x = positions[index][0]
                 new_pos.append((new_pos_x,positions[index][1],positions[index][2]))
             if (self.args.polarizable and index in self.shells):
-                new_pos_x = positions[index][0]+0.01*nanometer
-                new_pos_y = positions[index][1]+0.01*nanometer
-                new_pos_z = positions[index][2]+0.01*nanometer
+                new_pos_x = positions[index][0]+0.001*nanometer
+                new_pos_y = positions[index][1]+0.001*nanometer
+                new_pos_z = positions[index][2]+0.001*nanometer
                 new_pos.append((new_pos_x,new_pos_y,new_pos_z)) 
         self.simulation.context.setPositions(new_pos)
         if self.args.debug:
@@ -853,11 +865,11 @@ class ActOpenMMSim:
         if abs(potE-etot) > 1e-3:
             print("sum of the above %.2f" % (etot))
         
-    def minimize_energy(self):
+    def minimize_energy(self, maxIter:int):
         #### Minimize and Equilibrate ####
         if self.args.verbose:
             print('Performing energy minimization...')
-        self.simulation.minimizeEnergy()
+        self.simulation.minimizeEnergy(maxIterations=maxIter)
 
     def equilibrate(self):
         print('Equilibrating...')
@@ -887,8 +899,8 @@ class ActOpenMMSim:
         self.init_simulation()
         self.print_energy("Initial energies")
 
-    def minimize(self):
-        self.minimize_energy()
+    def minimize(self, maxIter:int=0):
+        self.minimize_energy(maxIter)
         self.print_energy("After minimization")
 
     def write_coordinates(self, outfile:str):
