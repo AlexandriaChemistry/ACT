@@ -91,7 +91,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
             { "-flush",              FALSE, etBOOL, {&flush_},
               "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
             { "-v",              FALSE, etBOOL, {&verbose_},
-              "Print extra information to the log file during optimization."}
+              "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
         };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
@@ -229,9 +229,13 @@ void OptACM::initMaster()
     else
     {
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
-        // TODO Only open these files when we are optimizing.
-        mut->openParamConvFiles(oenv_);
-        mut->openChi2ConvFile(oenv_);
+        // TODO Only open these files when we are optimizing in verbose mode.
+        if (verbose_)
+        {
+            printf("Will open param conv fle on the master!\n");
+            mut->openParamConvFiles(oenv_);
+            mut->openChi2ConvFile(oenv_);
+        }
         mutator = mut;
     }
 
@@ -655,8 +659,8 @@ int tune_ff(int argc, char *argv[])
         "[TT]PxM[tt].[PAR]",
         "If the [TT]-random_init[tt] flag is",
         "given a completely random set of parameters is generated at the start",
-        "of each run, within the bounds given in the input force field file.[PAR]"
-        "The absolut dipole moment of a molecule remains unchanged if all the",
+        "of each run, within the bounds given in the input force field file.[PAR]",
+        "The absolute dipole moment of a molecule remains unchanged if all the",
         "atoms swap the sign of the charge. To prevent this kind of mirror",
         "effects a penalty is added to the square deviation ",
         "if hydrogen atoms have a negative charge. Similarly a penalty is",
@@ -691,8 +695,6 @@ int tune_ff(int argc, char *argv[])
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
               "Do a sensitivity analysis." }
-            // { "-force_output", FALSE, etBOOL, {&bForceOutput},
-            //   "Write output force field even if no new minimum is found beyond the initial set of candidate solutions." },
         };
 
         for (int i = 0; i < asize(pa); i++)
@@ -852,7 +854,6 @@ int tune_ff(int argc, char *argv[])
             if (bForceOutput && !bMinimum)
             {
                 fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                // fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
@@ -873,7 +874,7 @@ int tune_ff(int argc, char *argv[])
             // Master and Individuals (middle-men) need to initialize more,
             // so let's go.
             ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                   opt.verbose(), opt.oenv());
+                                   opt.verbose(), opt.oenv(), opt.verbose());
             middleman.run();
         }
     }

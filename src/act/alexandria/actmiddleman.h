@@ -80,13 +80,15 @@ namespace alexandria
          * \param[in] bch        Bayes Config handler
          * \param[in] flush      Whether or not to to flush file output directly instead of letting the OS handle it.
          * \param[in] oenv       GROMACS output environment
+         * \param[in] openConvFiles Whether or not to create convergence files
          */
         ACTMiddleMan(MolGen               *mg,
                      StaticIndividualInfo *sii,
                      GAConfigHandler      *gach,
                      BayesConfigHandler   *bch,
                      bool                  flush,
-                     gmx_output_env_t     *oenv);
+                     gmx_output_env_t     *oenv,
+                     bool                  openConvFiles);
         
         //! \brief Run the middleman process
         void run();

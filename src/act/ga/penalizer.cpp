@@ -189,7 +189,7 @@ static void printCause(FILE         *out,
         "The empire fires off the death star, scraping the surface of the earth.\n%g percent of individuals are exterminated.\n",
         "Desertification makes agriculture in  southern Europe impossible.\n%g percent of the population will be regrown.\n",
         "Mutant fungi wipe out industrial agriculture in North America.\n%g percent of the population has to start from scratch.\n",
-        "Tricholoma fungi adopt to oil palm trees in south east Asia, turning them into matsutake mushrooms.\n%g percent of the population are impoverished and replaced.\n"
+        "Tricholoma fungi adapt to oil palm trees in south east Asia, turning them into matsutake mushrooms.\n%g percent of the population are impoverished and replaced.\n"
     };
     std::uniform_int_distribution<int>  distr(0, ccc.size());
     int csel = distr(gen) % ccc.size();

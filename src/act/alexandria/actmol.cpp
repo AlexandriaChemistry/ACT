@@ -430,7 +430,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                              const ForceComputer                                                 *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                              std::vector<ACTEnergy>                                              *energyMap,
-                             std::vector<ACTEnergy>                                              *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
                              std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
@@ -506,9 +506,9 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                             copy_rvec(mycoords[i-1], mycoords[i]);
                         }
                     }
-                    double Einter = calculateInteractionEnergy(pd, forceComp, &interactionForces, &mycoords);
-                    
-                    interactionEnergyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(), Einter));
+                    std::map<InteractionType, double> einter;
+                    calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &mycoords);
+                    interactionEnergyMap->push_back({ eprops[0]->getValue(), einter});
                     // TODO Store the interaction forces
                 }
             }
@@ -1505,23 +1505,23 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
-                                          const ForceComputer    *forceComputer,
-                                          std::vector<gmx::RVec> *interactionForces,
-                                          std::vector<gmx::RVec> *coords) const
+void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
+                                        const ForceComputer               *forceComputer,
+                                        std::map<InteractionType, double> *einter,
+                                        std::vector<gmx::RVec>            *interactionForces,
+                                        std::vector<gmx::RVec>            *coords) const
 {
     auto &tops = fraghandler_->topologies();
+    einter->clear();
     if (tops.size() <= 1)
     {
-        return 0;
+        return;
     }
     // First, compute the total energy
     gmx::RVec fzero = { 0, 0, 0 };
     interactionForces->resize(coords->size(), fzero);
-    std::map<InteractionType, double> etot;
-    (void) forceComputer->compute(pd, topology_, coords, interactionForces, &etot);
+    (void) forceComputer->compute(pd, topology_, coords, interactionForces, einter);
     // Now compute interaction energies if there are fragments
-    double Einter  = etot[InteractionType::EPOT];
     auto   &astart = fraghandler_->atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
@@ -1536,7 +1536,18 @@ double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
         }
         std::map<InteractionType, double> energies;
         (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
-        Einter -= energies[InteractionType::EPOT];
+        for(const auto &ee : energies)
+        {
+            auto eptr = einter->find(ee.first);
+            if (einter->end() != eptr)
+            {
+                eptr->second -= ee.second;
+            }
+            else
+            {
+                einter->insert({ee.first, -ee.second});
+            }
+        }
         j = 0;
         for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
@@ -1549,10 +1560,9 @@ double ACTMol::calculateInteractionEnergy(const ForceField       *pd,
         if (debug)
         {
             fprintf(debug, "%s Fragment %zu Epot %g\n", getMolname().c_str(), ff, 
-                    energies[InteractionType::EPOT]);
+                    einter->find(InteractionType::EPOT)->second);
         }
     }
-    return Einter;
 }
 
 immStatus ACTMol::calculateEnergyOld(const t_commrec                   *crtmp,

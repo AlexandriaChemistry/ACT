@@ -43,7 +43,8 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
                            bool                  flush,
-                           gmx_output_env_t     *oenv)
+                           gmx_output_env_t     *oenv,
+                           bool                  openConvFiles)
 : gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
@@ -78,8 +79,11 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
         auto mut = new alexandria::MCMCMutator(nullptr, false, flush, dis(gen),
                                                bch, fitComp_, sii,
                                                bch->evaluateTestset());
-        mut->openParamConvFiles(oenv);
-        mut->openChi2ConvFile(oenv);
+        if (openConvFiles)
+        {
+            mut->openParamConvFiles(oenv);
+            mut->openChi2ConvFile(oenv);
+        }
         mutator_ = mut;
     }
 }

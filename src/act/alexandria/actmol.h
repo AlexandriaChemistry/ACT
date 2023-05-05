@@ -339,7 +339,7 @@ public:
                          const ForceComputer                                                 *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >               *forceMap,
                          std::vector<ACTEnergy>                                              *energyMap,
-                         std::vector<ACTEnergy>                                              *interactionEnergyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier
@@ -573,14 +573,15 @@ public:
      * For a polarizable model the shell positions are minimized.
      * \param[in] pd                 The force field
      * \param[in] forceComputer      The code to run the calculations.
+     * \param[out] einter            The interaction energy components
      * \param[out] interactionForces The forces on the atoms due to the interacting components
      * \param[inout] coords          Atomic coordinates (shell positions can be updated)
-     * \return The interaction energy.
      */
-    double calculateInteractionEnergy(const ForceField       *pd,
-                                      const ForceComputer    *forceComputer,
-                                      std::vector<gmx::RVec> *interactionForces,
-                                      std::vector<gmx::RVec> *coords) const;
+    void calculateInteractionEnergy(const ForceField                  *pd,
+                                    const ForceComputer               *forceComputer,
+                                    std::map<InteractionType, double> *einter,
+                                    std::vector<gmx::RVec>            *interactionForces,
+                                    std::vector<gmx::RVec>            *coords) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd

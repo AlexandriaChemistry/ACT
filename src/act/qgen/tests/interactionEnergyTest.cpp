@@ -240,9 +240,13 @@ protected:
             {
                 std::vector<gmx::RVec> forces;
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
-                auto einter = mp_.calculateInteractionEnergy(pd, fcomp, &forces, &coords);
-                checker_.checkReal(einter, "InteractionEnergy");
-                // TODO: Check the forces as well
+                std::map<InteractionType, double> einter;
+                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
+                checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
+                checker_.checkReal(einter[InteractionType::COULOMB], "Coulomb");
+                checker_.checkReal(einter[InteractionType::POLARIZATION], "Polarization");
+                checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
+                checker_.checkReal(einter[InteractionType::REPULSION], "Repulsion");
             }
         }
     }

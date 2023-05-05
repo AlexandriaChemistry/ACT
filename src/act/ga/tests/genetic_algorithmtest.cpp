@@ -296,7 +296,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Run middleman-like code.
                 alexandria::ACTMiddleMan middleman(&molgen, 
                                                    &sii, &gach, &bch,
-                                                   false, oenv);
+                                                   false, oenv, false);
                 middleman.run();
             }
             else if (cr.isHelper())

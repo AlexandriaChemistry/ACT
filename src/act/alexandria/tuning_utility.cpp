@@ -922,9 +922,9 @@ void doFrequencyAnalysis(const ForceField         *pd,
     jtree->addObject(tctree);
 }
 
-static void low_print(std::vector<std::string> *tcout,
-                      gmx_stats                *stats,
-                      const char               *label)
+static void low_print_stats(std::vector<std::string> *tcout,
+                            gmx_stats                *stats,
+                            const char               *label)
 {
     real mse, mae, rmsd, R = 0;
     stats->get_mse_mae(&mse, &mae);
@@ -984,9 +984,8 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                 const gmx_output_env_t   *oenv)
 {
     std::vector<ACTEnergy>                                  energyMap;
-    std::vector<ACTEnergy>                                  interactionEnergyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap, interactionEnergyMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
                          &energyComponentMap);
     if (diatomic_ && mol->nRealAtoms() == 2)
@@ -1010,33 +1009,53 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     gmx_stats myinter;
     for(const auto &ff : interactionEnergyMap)
     {
-        (*lsq_eInter)[qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
-        myinter.add_point(ff.eqm(), ff.eact(), 0, 0);
+        auto eact = ff.second.find(InteractionType::EPOT)->second;
+        (*lsq_eInter)[qType::Calc].add_point(ff.first, eact, 0, 0);
+        myinter.add_point(ff.first, eact);
     }
     if (printSP_)
     {
         size_t ccc = 0;
-        for(const auto &eam : energyComponentMap)
+        std::sort(energyComponentMap.begin(), energyComponentMap.end());
+        for(auto eam = energyComponentMap.begin(); eam < energyComponentMap.end(); ++eam)
         {
-            auto enerexp = eam.first;
-            std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
+            auto enerexp = eam->first;
+            std::string ttt = gmx::formatString("%s Reference: %g ACT:", dataFileNames[ccc].c_str(),
                                                 enerexp);
-            for(const auto &terms : eam.second)
+            for(const auto &terms : eam->second)
             {
                 ttt += gmx::formatString(" %s: %g", interactionTypeToString(terms.first).c_str(), 
                                          terms.second);
             }
+            ttt += gmx::formatString(" Diff: %g", eam->second[InteractionType::EPOT]-enerexp);
             tcout->push_back(ttt);
             ccc++;
         }
-        for(const auto &iem : interactionEnergyMap)
+        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end());
+        for(auto iem = interactionEnergyMap.begin(); iem < interactionEnergyMap.end(); ++iem)
         {
-            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g", iem.eqm(), iem.eact());
+            auto eact = iem->second.find(InteractionType::EPOT)->second;
+            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g Diff %g",
+                                                iem->first, eact, eact-iem->first);
+            std::map<InteractionType, const char *> terms = { 
+                { InteractionType::COULOMB, "Coul." },
+                { InteractionType::POLARIZATION, "Pol." },
+                { InteractionType::DISPERSION, "Disp." },
+                { InteractionType::REPULSION, "Rep." } };
+            for(auto &term : terms)
+            {
+                auto tptr = iem->second.find(term.first);
+                if (iem->second.end() != tptr)
+                {
+                    ttt += gmx::formatString(" %s %g", term.second, tptr->second);
+                }
+            }
             tcout->push_back(ttt);
         }
-        for(const auto &ff : forceMap)
+        std::sort(forceMap.begin(), forceMap.end());
+        for(auto ff = forceMap.begin(); ff < forceMap.end(); ++ff)
         {
-            for(const auto &fxyz : ff)
+            for(const auto &fxyz : *ff)
             {
                 if (fxyz.first != 0 || fxyz.second != 0)
                 {
@@ -1049,11 +1068,11 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     // RMS energy
     if (energyMap.size() > 0)
     {
-        low_print(tcout, &myepot, "Energy");
+        low_print_stats(tcout, &myepot, "Energy");
     }
     if (interactionEnergyMap.size() > 0)
     {
-        low_print(tcout, &myinter, "Einteraction");
+        low_print_stats(tcout, &myinter, "Einteraction");
     }
     if (!forceMap.empty())
     {
@@ -1069,7 +1088,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                 }
             }
         }
-        low_print(tcout, &myforce, "Force");
+        low_print_stats(tcout, &myforce, "Force");
     }
 
     // Energy
@@ -1152,8 +1171,9 @@ static void dump_xyz(const ACTMol    *mol,
         int j = 0;
         for(int ra : mol->realAtoms())
         {
+            // Convert coordinates to Angstrom
             fprintf(fp, "%3s  %12f  %12f  %12f\n", actatoms[ra].element().c_str(),
-                    coords[j][XX], coords[j][YY], coords[j][ZZ]);
+                    10*coords[j][XX], 10*coords[j][YY], 10*coords[j][ZZ]);
             j++;
         }
         gmx_ffclose(fp);
@@ -1178,7 +1198,7 @@ static void printOutliers(FILE              *fp,
                     qTypeName(qType::Calc).c_str(), epotMax);
             fprintf(fp, "----------------------------------\n");
             fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                    "QM/DFT", qTypeName(qType::Calc).c_str(), "ACT-QM");
+                    "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
             int noutlier = 0;
             for (auto emm : allEpot)
             {
