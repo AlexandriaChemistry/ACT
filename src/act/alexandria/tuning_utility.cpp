@@ -1210,7 +1210,7 @@ static void printOutliers(FILE              *fp,
                     if (std::abs(ener.eqm()-ener.eact()) > epotMax)
                     {
                         fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
-                                ener.eqm(), ener.eact(), ener.eqm()-ener.eact());
+                                ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
                         if (dumpExperiment)
                         {
                             if (actmol->end() != actmolptr)
