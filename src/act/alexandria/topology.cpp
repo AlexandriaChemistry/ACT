@@ -654,6 +654,46 @@ void Topology::makePairs(int natoms)
     }
 }
 
+void Topology::fixShellExclusions()
+{
+    for (const auto &itype : { InteractionType::VDW,
+                               InteractionType::COULOMB } )
+    {
+        if (!hasEntry(itype) || exclusions_.find(itype) == exclusions_.end())
+        {
+            continue;
+        }
+        auto &ffpl = entries_.find(itype)->second;
+        // Loop over all exclusions
+        for(size_t ai = 0; ai < exclusions_[itype].size(); ++ai)
+        {
+            for(size_t jj = 0; jj < exclusions_[itype][ai].size(); ++jj)
+            {
+                auto aj = exclusions_[itype][ai][jj];
+                // Check whether these particles have shells
+                for(auto si : atoms_[ai].shells())
+                {
+                    for(auto sj : atoms_[aj].shells())
+                    {
+                        // See whether this interaction exists
+                        auto it = ffpl.begin();
+                        while (ffpl.end() != it)
+                        {
+                            auto aai = (*it)->atomIndices()[0];
+                            auto aaj = (*it)->atomIndices()[1];
+                            if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) || 
+                                ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
+                            {
+                                it = ffpl.erase(it);
+                            }
+                        }
+                    }
+                }                
+            }
+        }
+    }
+}
+
 void  Topology::addShellPairs()
 {
     if (hasEntry(InteractionType::POLARIZATION))
@@ -710,7 +750,7 @@ void  Topology::addShellPairs()
                 ffpl.push_back(std::move(ap));
             }
         }
-    }   
+    }
 }
 
 void Topology::makePropers()
@@ -780,6 +820,20 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
         {
             b->renumberAtoms(renumber);
         }
+    }
+}
+
+void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    auto plist = entry(itype);
+    for(auto pl = plist.begin(); pl < plist.end(); ++pl)
+    {
+        fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
+                (*pl)->atomIndices()[0], (*pl)->atomIndices()[1]);
     }
 }
 

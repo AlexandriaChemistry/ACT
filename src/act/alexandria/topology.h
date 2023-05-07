@@ -553,6 +553,9 @@ private:
     //! Add an atom to the topology
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
     
+    //! Debugging stuff
+    void dumpPairlist(FILE *fp, InteractionType itype) const;
+
     /*! \brief Build the topology internals
      * Calls the functions to generate angles, impropers and dihedrals (if flag set).
      * Will also generate non-bonded atom pairs and exclusions.
@@ -624,6 +627,12 @@ private:
     void addEntry(InteractionType                     itype,
                   const std::vector<TopologyEntry *> &entry);
 
+    /*! \brief Remove interactions that should not be there in the first place.
+     * If two atoms are in the exclusion list, their shells should be as well.
+     * This routine checks for such interactions (Coulomb, VDW) and removes them.
+     */
+    void fixShellExclusions();
+    
     /*! \brief Generate exclusiones
      * \param[in]  nrexclvdw The number of exclusions to generate for Van der Waals interactions (max 2)
      * \param[in]  nrexclqq  The number of exclusions to generate for Coulomb interactions (max 2)

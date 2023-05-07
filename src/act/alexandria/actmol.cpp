@@ -1014,6 +1014,11 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
         {
             addShells(debug, pd, atoms_);
             topology_->addShellPairs();
+            if (debug)
+            {
+                topology_->dumpPairlist(debug, InteractionType::COULOMB);
+                topology_->dumpPairlist(debug, InteractionType::VDW);
+            }
         }
         // Now we can add the atom structures, whether or not the FF
         // is polarizable.

@@ -208,10 +208,16 @@ FragmentHandler::FragmentHandler(const ForceField               *pd,
         }
 
         topologies_[ff].build(pd, myx, 175.0, 5.0, missingParameters::Error);
+        topologies_[ff].fixShellExclusions();
         topologies_[ff].setIdentifiers(pd);
         if (missing != missingParameters::Generate)
         {
             topologies_[ff].fillParameters(pd);
+        }
+        if (debug)
+        {
+            topologies_[ff].dumpPairlist(debug, InteractionType::COULOMB);
+            topologies_[ff].dumpPairlist(debug, InteractionType::VDW);
         }
     }
     if (debug)
