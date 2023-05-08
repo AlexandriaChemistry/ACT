@@ -274,7 +274,7 @@ int simulate(int argc, char *argv[])
                     rd_index(freezeName, 1, &isize, &myindex, &grpnames);
                     if (isize > 0)
                     {
-                        printf("Will free freeze %d atoms %s\n", isize, grpnames);
+                        printf("Will freeze %d atoms %s\n", isize, grpnames);
                         for(int ii = 0; ii < isize; ii++)
                         {
                             freeze.push_back(myindex[ii]);
