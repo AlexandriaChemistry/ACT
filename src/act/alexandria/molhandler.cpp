@@ -599,15 +599,28 @@ static void printEnergies(FILE *logFile, int myIter,
 }
 
 static double msForce(const std::vector<int>       &theAtoms,
-                      const std::vector<gmx::RVec> &forces)
+                      const std::vector<gmx::RVec> &forces,
+                      const std::vector<int>       &freeze)
 {
     double msAtomForce  = 0;
+    int    nonFrozen    = 0;
     for(size_t kk = 0; kk < theAtoms.size(); kk++)
     {
         int atomI = theAtoms[kk];
-        msAtomForce  += iprod(forces[atomI], forces[atomI]);
+        if (freeze.end() == std::find(freeze.begin(), freeze.end(), atomI))
+        {
+            msAtomForce += iprod(forces[atomI], forces[atomI]);
+            nonFrozen   += 1;
+        }
     }
-    return msAtomForce /= theAtoms.size();
+    if (nonFrozen > 0)
+    {
+        return msAtomForce /= nonFrozen;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 static void updateCoords(const std::vector<int>       &theAtoms,
@@ -632,7 +645,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                                                 const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
                                                 std::map<InteractionType, double> *energies,
-                                                FILE                              *logFile) const
+                                                FILE                              *logFile,
+                                                const std::vector<int>            &freeze) const
 {
     bool      converged    = false;
     int       myIter       = 0;
@@ -652,11 +666,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     // List of atoms (not shells) and weighting factors
     auto             &myatoms   = mol->atomsConst();
     std::vector<int>  theAtoms;
+    std::vector<int>  freezeAtoms;
+    int               nTheAtom = 0;
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         if (myatoms[atom].pType() == eptAtom)
         {
             theAtoms.push_back(atom);
+            // Store the atom numbers for the frozen atoms in the counting incl. shells
+            if (freeze.end() != std::find(freeze.begin(), freeze.end(), nTheAtom))
+            {
+                freezeAtoms.push_back(atom);
+            }
+            nTheAtom += 1;
         }
     }
     // Two sets of forces
@@ -801,7 +823,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 *energies = newEnergies[current];
             }
             epotMin = newEnergies[current][InteractionType::EPOT];
-            msfMin  = msForce(theAtoms, forces[current]);
+            msfMin  = msForce(theAtoms, forces[current], freezeAtoms);
             // Write stuff
             printEnergies(logFile, myIter, msfMin, 0, 0, newEnergies[current], gamma);
             firstStep = false;
@@ -814,12 +836,20 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         // Update coordinates and check energy
         do
         {
+            // Account for frozen atoms
+            for(auto &ia : freeze)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    deltaX[current][DIM*ia+m] = 0;
+                }
+            }
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
             
             // Do an energy and force calculation with the new coordinates
             msShellForce   = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
-            double msfNew  = msForce(theAtoms, forces[next]);
+            double msfNew  = msForce(theAtoms, forces[next], freezeAtoms);
             acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
             double gmin    = gamma;
             if (!acceptStep)
@@ -834,7 +864,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 if (logFile)
                 {
                     fprintf(logFile, "Trying line minimization, step 2.\n");
-                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
+                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next], freezeAtoms), 0, 0, newEnergies[next], gamma);
                 }
                 double epotHalf = newEnergies[next][InteractionType::EPOT];
                 // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
@@ -880,7 +910,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         } while (!acceptStep && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
         
         // Now check force convergencs
-        double msAtomForce = msForce(theAtoms, forces[current]);
+        double msAtomForce = msForce(theAtoms, forces[current], freezeAtoms);
         converged = msAtomForce <= msForceToler;
         double fcurprev = 0;
         for(size_t ii = 0; ii < theAtoms.size(); ii++)

@@ -50,6 +50,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/futil.h"
 
 namespace alexandria
@@ -70,7 +71,10 @@ int simulate(int argc, char *argv[])
         "of dimers is presented as input for energy calculations, the",
         "corresponding molecule file, used for generating the topology",
         "needs to be a molprop (xml) file and contain information about",
-        "the compounds in the dimer."
+        "the compounds in the dimer.[PAR]",
+        "During minimization a user select group of atoms can be frozen.",
+        "To do so, supply an index file with atom numbers (first atom is 1)",
+        "and numbering should disregard shells if present."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -79,7 +83,8 @@ int simulate(int argc, char *argv[])
         { efPDB, "-o",  "trajectory", ffWRITE },
         { efSTO, "-c",  "confout",    ffOPTWR },
         { efXVG, "-e",  "energy",     ffWRITE },
-        { efLOG, "-g",  "simulation", ffWRITE }
+        { efLOG, "-g",  "simulation", ffWRITE },
+        { efNDX, "-freeze", "freeze", ffOPTRD }
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
@@ -259,9 +264,27 @@ int simulate(int argc, char *argv[])
             std::vector<gmx::RVec> xmin   = coords;
             if (sch.minimize())
             {
+                std::vector<int> freeze;
+                auto freezeName = opt2fn_null("-freeze", fnm.size(),fnm.data());
+                if (nullptr != freezeName)
+                {
+                    int isize;
+                    int *myindex;
+                    char *grpnames;
+                    rd_index(freezeName, 1, &isize, &myindex, &grpnames);
+                    if (isize > 0)
+                    {
+                        printf("Will free freeze %d atoms %s\n", isize, grpnames);
+                        for(int ii = 0; ii < isize; ii++)
+                        {
+                            freeze.push_back(myindex[ii]);
+                        }
+                    }
+                }
+                
                 std::map<InteractionType, double> energies;
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile);
+                                                      &xmin, &energies, logFile, freeze);
                 if (eMinimizeStatus::OK == eMin)
                 {
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);

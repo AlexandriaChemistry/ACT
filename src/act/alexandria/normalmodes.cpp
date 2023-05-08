@@ -201,7 +201,7 @@ int nma(int argc, char *argv[])
             {
                 std::map<InteractionType, double> energies;
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile);
+                                                      &xmin, &energies, logFile, {});
                 if (eMinimizeStatus::OK == eMin)
                 {
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);

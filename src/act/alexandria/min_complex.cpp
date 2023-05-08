@@ -151,7 +151,7 @@ int min_complex(int argc, char *argv[])
             std::map<InteractionType, double> energies;
             eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
                                                   &xmin, &energies, 
-                                                  verbose ? logFile : nullptr);
+                                                  verbose ? logFile : nullptr, {});
     
             if (eMinimizeStatus::OK == eMin)
             {

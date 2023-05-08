@@ -134,6 +134,8 @@ public:
      * \param[in] sch          Configuration options
      * \param[inout] coords    The coordinates to be minimized
      * \param[in] logFile      File to write some info to, may be a nullptr
+     * \param[in] freeze       List of atoms (not shells) that will not be
+     *                         moved during the minimization.
      * \return Status flag
      */
     eMinimizeStatus minimizeCoordinates(const ForceField                  *pd,
@@ -142,7 +144,8 @@ public:
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
                                         std::map<InteractionType, double> *energies,
-                                        FILE                              *logFile) const;
+                                        FILE                              *logFile,
+                                        const std::vector<int>            &freeze) const;
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple
      * molecules, while relaxing shells if present.

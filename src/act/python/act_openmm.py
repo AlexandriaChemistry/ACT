@@ -475,6 +475,8 @@ class ActOpenMMSim:
         for index in range(self.nb_openmm.getNumExceptions()):
             [iatom, jatom, chargeprod, sigma, epsilon] = self.nb_openmm.getExceptionParameters(index)
             self.qq_correction.addExclusion(iatom, jatom)
+            if self.args.debug:
+                print("Coulomb excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
         self.add_force_group(self.qq_correction)
         self.system.addForce(self.qq_correction)
         
@@ -524,7 +526,7 @@ class ActOpenMMSim:
                 [iatom, jatom, chargeprod, sigma, epsilon] = self.nb_openmm.getExceptionParameters(index)
                 self.vdw_correction.addExclusion(iatom, jatom)
                 if self.args.debug:
-                    print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+                    print("VDW excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
             self.add_force_group(self.vdw_correction)
             self.system.addForce(self.vdw_correction)
 #################################################
