@@ -110,7 +110,7 @@ class CombinationRules:
             elif self.args.vdw == "GWBH":
                 crmin   = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1/6))"
                 #This combination rule is likely wrong for GWBH 4 parameter one
-                print("WARNINg, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
+                print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
                 cdelta = "(sqrt(delta1*delta2))"
                 return crmin, cepsilon, cgamma, cdelta
         elif "Geometric" == self.comb:
@@ -142,6 +142,9 @@ class ActOpenMMSim:
         self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
                                             self.sim_params.getStr("combination_rule"), self.args)
         self.logfile     = self.args.outputdir+'/'+self.args.log_file
+        if not os.path.isdir(self.args.outputdir):
+            os.makedirs(self.args.outputdir, exist_ok=True)
+
         self.gen_ff()
         
     def gen_ff(self):
@@ -260,6 +263,9 @@ class ActOpenMMSim:
             
         return args
 
+    def set_monomer_energy(self, emonomer:float):
+        self.args.emonomer = emonomer
+
     def set_params(self):
         # SET SIMULATION PARAMETERS
         ################################################
@@ -306,7 +312,6 @@ class ActOpenMMSim:
     def start_output(self):
         # OUTPUT
         ################################################
-        os.makedirs(self.args.outputdir, exist_ok=True)
         save              = self.sim_params.getInt('save')
         self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
         self.dataReporter = StateDataReporter(self.logfile, save, totalSteps=self.steps,
@@ -479,21 +484,23 @@ class ActOpenMMSim:
                 print("Coulomb excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
         self.add_force_group(self.qq_correction)
         self.system.addForce(self.qq_correction)
+
+        print("Using %s for Van der Waals interactions" % self.args.vdw)
         
         # Van der Waals, is our custom potential minus the default LJ.
+        LJ_expression = 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+        LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
+        LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
+        LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
         if self.args.vdw == "WBH":
-            expression = 'U_WKB-U_LJ;' 
-            print("using WBH")
-        # TODO: Remove hard-coded combination rules if possible
-            expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
-            expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
-            expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
-            expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
+            expression = 'U_WKB-U_LJ;'
+            expression += LJ_expression
+            # TODO: Remove hard-coded combination rules if possible
             self.vdw_expression =('vdW*(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
-
+            
             expression += ( 'U_WKB = %s;' % self.vdw_expression )
             csigma, cepsilon, cgamma = self.comb.combStrings()
-        # The statements have to be in this order! They are evaluated in the reverse order apparently.
+            # The statements have to be in this order! They are evaluated in the reverse order apparently.
             expression += ( 'sigma    = %s;' % csigma )
             expression += ( 'epsilon  = %s;' % cepsilon )
             expression += ( 'gamma    = %s;' % cgamma )
@@ -530,13 +537,10 @@ class ActOpenMMSim:
             self.add_force_group(self.vdw_correction)
             self.system.addForce(self.vdw_correction)
 #################################################
-        if self.args.vdw == "GWBH":
+        elif self.args.vdw == "GWBH":
             expression = 'U_GWKB-U_LJ;'
-            expression += 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+            expression += LJ_expression
 
-            expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
-            expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
-            expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
 #            self.vdw_expression =('vdW*(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
             self.vdw_expression =('vdW*(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           );')
             expression += ( 'U_GWKB = %s;' % self.vdw_expression )
@@ -580,15 +584,6 @@ class ActOpenMMSim:
                     print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
             self.add_force_group(self.vdw_correction)
             self.system.addForce(self.vdw_correction)
-
-
-
-
-###### e*((d + 2*g + 6) /(2*g)) * (1/(1 + ((x/s)**6))) * ( ((6+d)/(d + 2*g + 6))*np.exp(g*(1-(x/s))) - 1 ) - e/(1+((x/s)**d))
-#################################################
-#        if self.args.vdw == "LJ":
-
-
 
 
 #################################################
@@ -868,16 +863,18 @@ class ActOpenMMSim:
         if None != self.args.emonomer:
             nmol = self.topology.getNumResidues()
             relener = potE/nmol - self.args.emonomer
+            print('Interaction energy for %d-mer %g' % ( nmol, relener ))
             kB = 1.380649e-23 * 6.02214e23 / 1000
             print('Delta H vap %g kJ/mol' % ( kB*self.temperature_c - relener ))
         if abs(potE-etot) > 1e-3:
             print("sum of the above %.2f" % (etot))
         
-    def minimize_energy(self, maxIter:int):
+    def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####
         if self.args.verbose:
             print('Performing energy minimization...')
         self.simulation.minimizeEnergy(maxIterations=maxIter)
+        return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
     def equilibrate(self):
         print('Equilibrating...')
@@ -907,16 +904,16 @@ class ActOpenMMSim:
         self.init_simulation()
         self.print_energy("Initial energies")
 
-    def minimize(self, maxIter:int=0):
-        self.minimize_energy(maxIter)
+    def minimize(self, maxIter:int=0)->float:
+        epot = self.minimize_energy(maxIter)
         self.print_energy("After minimization")
-
+        return epot
+        
     def write_coordinates(self, outfile:str):
         with open(outfile, "w") as outf:
             self.pdb.writeFile(self.topology,
                                self.simulation.context.getState(getPositions=True).getPositions(),
                                outf)
-        
     def run(self):
         self.setup()
         self.minimize()

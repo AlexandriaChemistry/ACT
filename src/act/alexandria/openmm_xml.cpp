@@ -406,7 +406,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     {
         fsPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_xml_double(fsPtr, "energy", 0.0);
-        add_xml_int(fsPtr, "bondCutoff", nrexcl);
+        add_xml_int(fsPtr, "bondCutoff", 3);
         auto uafr = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
@@ -436,7 +436,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     add_xml_double(ljPtr, "coulomb14scale", 1.0); 
     add_xml_double(ljPtr, "lj14scale", 1.0); 
     add_xml_double(ljPtr, "energy", 0.0);
-    add_xml_int(ljPtr, "bondCutoff", nrexcl);
+    add_xml_int(ljPtr, "bondCutoff", 3);
     auto uafr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
     add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
     
