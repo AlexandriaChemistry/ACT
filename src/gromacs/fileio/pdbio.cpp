@@ -467,7 +467,6 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     }
 
     fprintf(out, "TER\n");
-    fprintf(out, "ENDMDL\n");
 
     if (nullptr != gc)
     {
@@ -484,6 +483,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
             fprintf(out, "CONECT%5d%5d\n", ai+1, aj+1);
         }
     }
+    fprintf(out, "ENDMDL\n");
 
     gmx_residuetype_destroy(rt);
 }
