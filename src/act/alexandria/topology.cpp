@@ -686,6 +686,10 @@ void Topology::fixShellExclusions()
                             {
                                 it = ffpl.erase(it);
                             }
+                            else
+                            {
+                                ++it;
+                            }
                         }
                     }
                 }                
