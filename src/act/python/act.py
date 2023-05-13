@@ -10,10 +10,11 @@ class Alg(Enum):
     HYBRID = 3
     
 class Target(Enum):
-    EEM    = 1
+    ACM    = 1
     Epot   = 2
     Force  = 3
-    Freq   = 4
+    Inter  = 4
+    Freq   = 5
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
@@ -96,6 +97,25 @@ class ACT:
                 nprocs = self.popsize
             return ( "%s -n %d -oversubscribe " % ( runit, nprocs ))
         return ""
+
+    def set_charges(ff:str, xmlref:str, xmlin:str, xmlout:str)->bool:
+        if not os.path.exists(ff):
+            print("No force field file %s" % ff)
+        elif not os.path.exists(xmlref):
+            print("No reference molprop file %s" % xmlref)
+        elif not os.path.exists(xmlin):
+            print("No input molprop file %s" % xmlin)
+        else:
+            if os.path.exists(xmlout):
+                os.unlink(xmlout)
+            cmd = ( "alexandria edit_mp -ff %s -charges %s -mp %s -o %s" % ( ff, xmlref, xmlin, xmlout ))
+            if self.verbose or self.debug:
+                print(cmd)
+            if not self.debug:
+                os.system(cmd)
+            return os.path.exists(xmlout)
+        
+        return False
         
     def geometry_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                     LogFile:str, options: dict):
@@ -129,14 +149,18 @@ class ACT:
         for e in ener_params:
             fit_params += " " + e
         fit_params += "'"
-        if target == Target.EEM:
+        if target == Target.ACM:
             myopts = { "-fc_esp":          "1", 
                        "-fc_charge":       "400", 
                        "-fc_unphysical":   "100", 
-                       "-fc_polar":        "1",
+                       "-fc_polar":        "10",
+                       "-zetadiff":        "5",
                        "-fit":             "'alpha zeta charge eta chi delta_eta delta_chi'" }
         elif target == Target.Epot:
             myopts = { "-fc_epot":  "1",
+                       "-fit":      fit_params }
+        elif target == Target.Inter:
+            myopts = { "-fc_inter":  "1",
                        "-fit":      fit_params }
         elif target == Target.Force:
             myopts = { "-fc_epot":  "1",

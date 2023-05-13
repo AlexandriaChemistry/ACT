@@ -7,9 +7,12 @@ import os
 from act import *
 
 # All these files should be in place or alexandria will crash.
-sel    = "../SELECTIONS/alcohol.dat"
-xml    = "../XML/alcohol.xml"
-act = ACT(xml, sel, True)
+selmonomer  = "../SELECTIONS/alcohol.dat"
+seldimer    = "../SELECTIONS/alcoholdimer.dat"
+xmlesp      = "../XML/alcohol-esp.xml"
+xmlepot     = "../XML/alcohol-epot.xml"
+xmldimer    = "../XML/alcohol-dimer.xml"
+act         = ACT(xml, sel, True)
 
 # The force field file we start with
 ForceFieldFileIn  = "../ACS-pg.xml"
@@ -18,6 +21,18 @@ ForceFieldFileIn  = "../ACS-pg.xml"
 act.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
                 { "-klin": 36000 })
 
+# What bonded parameters to fit determines on what we used to generate the initial force field
+fitmorse   = "'beta De D0 bondlength'"
+fitcubic   = "'bondenergy rmax bondlength kb'"
+fitbondeds = fitmorse
+
+fitvdw = "'sigma epsilon gamma'"
+
+# All these files should be in place or alexandria will crash.
+run_flags = { Target.EEM: { "sel": selmonomer,  "xml": xmlesp },
+              Target.Epot: { "sel": selmonomer, "xml": xmlepot,  "extra": { "-fit": fitbondeds } },
+              Target.Inter: { "sel": seldimer,  "xml": xmldimer, "extra": { "-fit": fitvdw } } }
+
 # Now loop over the optimization targets.
 # First, the EEM parameters will be optimized to reproduce the
 # electrostatic potential.
@@ -25,7 +40,16 @@ act.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "bastat.log",
 # to get those properties correct.
 # Third, another round of optimization where also the frequencies
 # are targeted.
-for target in Target:
+ffACM = "Train-tune_ff_ACM.xml"
+for target in [ Target.ACM, Target.Epot, Target.Inter ]:
+    # Check whether we can use the charges determined earlier
+    useACM = False
+    if Target.ACM != target:
+        # Set the charges in the xml file based on the Alexandria Charge Model
+        xmlout = "temp_" + run_flags[target]["xml"]
+        useACM = act.set_charges(ffACM, xmlesp, run_flags[target]["xml"], xmlout)
+        if useACM:
+            run_flags[target]["xml"] = xmlout
     ForceFieldFileOut = ( "tune_ff_%s.xml" % ( target.name ) )
     LogFile           = ( "tune_ff_%s.log" % ( target.name ) )
     Chi2File          = ( "chi2_%s.xvg" % ( target.name ) )
@@ -36,6 +60,9 @@ for target in Target:
                           "-pop_size":        16,
                           "-chi2":            Chi2File,
                           "-conv":            ConvFile }
+    # If we already have charges in the xml file, let's use them.
+    if useACM:
+        options["-qqm"] = "ACM"
     # After the last step of the optimizations, where we tune the
     # frequencies, we will also print some files for analysis.
     if Target.Freq == target:
