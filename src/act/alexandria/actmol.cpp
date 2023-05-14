@@ -1813,6 +1813,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             algorithm = ChargeGenerationAlgorithm::NONE;
         }
     }
+    fraghandler_->setChargeGenerationAlgorithm(algorithm);
     switch (algorithm)
     {
     case ChargeGenerationAlgorithm::NONE:
@@ -1845,11 +1846,15 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
         break;
     case ChargeGenerationAlgorithm::Read:
         {
-            // TODO really loop over all experiments?
             std::vector<double> qread;
-            for (auto exper : experimentConst())
+            auto exper = findExperimentConst(JobType::OPT);
+            if (nullptr == exper)
             {
-                for (auto &ca : exper.calcAtomConst())
+                exper  = findExperimentConst(JobType::TOPOLOGY);
+            }
+            if (nullptr != exper)
+            {
+                for (auto &ca : exper->calcAtomConst())
                 {
                     if (!ca.hasCharge(qtype))
                     {
@@ -1859,10 +1864,6 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     {
                         qread.push_back(ca.charge(qtype));
                     }
-                }
-                if (!qread.empty())
-                {
-                    break;
                 }
             }
             if (qread.empty())
@@ -1889,8 +1890,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     (*myatoms)[i-1].setCharge(qread[j-1]-q);
                 }
             }
-            // TODO check this. Copy charges to topology
-            // topology_->setAtoms(myatoms);
+            fraghandler_->setCharges(*myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::Custom:
@@ -1958,8 +1958,8 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             {
                 (*myatoms)[i].setCharge(qq[i]);
             }
-            // Copy charges to topology
-            // topology_->setAtoms(myatoms);
+            // Copy charges to fragments
+            fraghandler_->setCharges(*myatoms);
         }
         break;
     case ChargeGenerationAlgorithm::EEM:

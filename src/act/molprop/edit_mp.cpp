@@ -360,94 +360,96 @@ static void check_mp(FILE                 *mylog,
     auto forceComp = new ForceComputer();
     auto mdlog     = gmx::MDLogger {};
 
-    fprintf(mylog, "Force field file %s\n", ffname);
-    int numberOk = 0, numberFailed = 0;
-    for (auto m = mp->begin(); m < mp->end(); ++m)
+    if (mylog)
     {
-        typedef struct
+        fprintf(mylog, "Force field file %s\n", ffname);
+        int numberOk = 0, numberFailed = 0;
+        for (auto m = mp->begin(); m < mp->end(); ++m)
         {
-            std::string name;
-            rvec        mu;
-        } name_mu;
-        std::string basis, method;
-        std::vector<name_mu> mus;
-        for (auto &ci : m->experimentConst())
-        {
-            int nH = 0, nC = 0;
-            for (auto &cai : ci.calcAtomConst())
+            typedef struct
             {
-                std::string name = cai.getName();
-                if (name.compare("H") == 0)
+                std::string name;
+                rvec        mu;
+            } name_mu;
+            std::string basis, method;
+            std::vector<name_mu> mus;
+            for (auto &ci : m->experimentConst())
+            {
+                int nH = 0, nC = 0;
+                for (auto &cai : ci.calcAtomConst())
                 {
-                    nH++;
+                    std::string name = cai.getName();
+                    if (name.compare("H") == 0)
+                    {
+                        nH++;
+                    }
+                    else if (name.compare("C") == 0)
+                    {
+                        nC++;
+                    }
                 }
-                else if (name.compare("C") == 0)
+                if (nC > 0 && nH == 0)
                 {
-                    nC++;
+                    fprintf(mylog, "%s #C %d #H %d\n",
+                            ci.getDatafile().c_str(), 
+                            nC, nH);
                 }
-            }
-            if (nC > 0 && nH == 0)
-            {
-                fprintf(mylog, "%s #C %d #H %d\n",
-                        ci.getDatafile().c_str(), 
-                        nC, nH);
-            }
-            if (ci.NAtom() > 0)
-            {
-                method = ci.getMethod();
-                basis  = ci.getBasisset();
-            }
-            double T = 0;
-            auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
-            if (gp)
-            {
-                std::vector<double> mu = gp->getVector();
-                name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
-                mus.push_back(nmu);
-            }
-        
-            auto Xcalc = ci.getCoordinates();
-            auto Esp   = ci.electrostaticPotentialConst();
-            if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
-            {
-                double msd = 0;
-                auto xunit = Esp[0].getXYZunit();
-                double fac = convertToGromacs(1.0, xunit);
-                for(size_t i = 0; i < Xcalc.size(); i++)
+                if (ci.NAtom() > 0)
                 {
-                    msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
-                            gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
-                            gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
+                    method = ci.getMethod();
+                    basis  = ci.getBasisset();
                 }
-                double rmsd = std::sqrt(msd/Xcalc.size());
-                if (rmsd != 0)
+                double T = 0;
+                auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
+                if (gp)
                 {
-                    fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
-                            m->getMolname().c_str(), rmsd);
+                    std::vector<double> mu = gp->getVector();
+                    name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                    mus.push_back(nmu);
                 }
-                if (rmsd > 1e-3)
+                
+                auto Xcalc = ci.getCoordinates();
+                auto Esp   = ci.electrostaticPotentialConst();
+                if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
                 {
+                    double msd = 0;
+                    auto xunit = Esp[0].getXYZunit();
+                    double fac = convertToGromacs(1.0, xunit);
                     for(size_t i = 0; i < Xcalc.size(); i++)
                     {
-                        fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                                static_cast<int>(i+1),
-                                Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
-                                fac*Esp[i].getX(), fac*Esp[i].getY(),
-                                fac*Esp[i].getZ());
+                        msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
+                                gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
+                                gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
+                    }
+                    double rmsd = std::sqrt(msd/Xcalc.size());
+                    if (rmsd != 0)
+                    {
+                        fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
+                                m->getMolname().c_str(), rmsd);
+                    }
+                    if (rmsd > 1e-3)
+                    {
+                        for(size_t i = 0; i < Xcalc.size(); i++)
+                        {
+                            fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                                    static_cast<int>(i+1),
+                                    Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
+                                    fac*Esp[i].getX(), fac*Esp[i].getY(),
+                                    fac*Esp[i].getZ());
+                        }
                     }
                 }
             }
-        }
-        // Check dipoles
-        if (debug)
-        {
-            for(const auto &mi : mus)
+            // Check dipoles
+            if (debug)
             {
-                fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
-                        mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
+                for(const auto &mi : mus)
+                {
+                    fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
+                            mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
+                }
             }
-        }
-
+            
         if (dump_molecule(mylog, forceComp, &commRec, mdlog, &atomTypeCount,
                           &bccTypeCount, pd, &(*m), inputrec))
         {
@@ -458,17 +460,18 @@ static void check_mp(FILE                 *mylog,
             numberFailed++;
             mp->erase(m);
         }
-    }
-    fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
+        }
+        fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
             numberOk, numberFailed);
-    fprintf(mylog, "Statistics\n");
-    for(auto &atc : atomTypeCount)
-    {
-        fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
-    }
-    for(auto &bcc : bccTypeCount)
-    {
-        fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+        fprintf(mylog, "Statistics\n");
+        for(auto &atc : atomTypeCount)
+        {
+            fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
+        }
+        for(auto &bcc : bccTypeCount)
+        {
+            fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+        }
     }
     if (charge_fn)
     {
@@ -679,20 +682,27 @@ int edit_mp(int argc, char *argv[])
             }
         }
     }
-    auto ffname = opt2fn_null("-ff", fnm.size(), fnm.data());
+    auto ffname  = opt2fn_null("-ff", fnm.size(), fnm.data());
+    auto logname = opt2fn_null("-g", fnm.size(), fnm.data());
     FILE *mylog = nullptr;
-    if (ffname || energyHisto)
+    if (logname || energyHisto)
     {
-        mylog = gmx_ffopen(opt2fn("-g", fnm.size(), fnm.data()), "w");
+        mylog = gmx_ffopen(logname, "w");
     }
+    auto molpropout = opt2fn("-o", fnm.size(), fnm.data());
     if (ffname)
     {
-        printf("Since you provided a force field file I will now check the compounds.\n");
+        if (mylog)
+        {
+            printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
+        }
         auto charge_fn = opt2fn_null("-charges", fnm.size(), fnm.data());
         if (charge_fn)
         {
-            printf("Will set ACM charges based on structures in %s to the output molprop file\n",
-                   charge_fn);
+            printf("Will set ACM charges for monomeric compounds in %s,"
+                   "copy the charges to compounds and clusters in the input molprop\n"
+                   "and save those with charges to the output molprop file %s\n",
+                   charge_fn, molpropout);
         }
         check_mp(mylog, ffname, charge_fn, &mpt);
     }
@@ -708,7 +718,7 @@ int edit_mp(int argc, char *argv[])
     }
     if (writeNode == cr.rank())
     {
-        MolPropWrite(opt2fn("-o", fnm.size(), fnm.data()), mpt, compress);
+        MolPropWrite(molpropout, mpt, compress);
     }
     return 0;
 }

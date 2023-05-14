@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -235,7 +235,20 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
         for (size_t a = 0; a < topologies_[ff].atoms().size(); a++)
         {
             // TODO: Check whether this works for polarizable models
-            (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
+            switch (algorithm_)
+            {
+            case ChargeGenerationAlgorithm::EEM:
+            case ChargeGenerationAlgorithm::SQE:
+                (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
+                break;
+            case ChargeGenerationAlgorithm::Read:
+                (*qq)[atomStart_[ff] + a] = topologies_[ff].atoms()[a].charge();
+                break;
+            default:
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
+                                                                   chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
+                break;
+            }
         }
     }
 }
@@ -247,29 +260,54 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        std::vector<ActAtom>         *atoms)
 {
     auto   eqgen = eQgen::OK;
-    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    switch (algorithm_)
     {
-        // TODO only copy the coordinates if there is more than one fragment.
-        std::vector<gmx::RVec> xx;
-        xx.resize(topologies_[ff].atoms().size());
-        for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+    case ChargeGenerationAlgorithm::EEM:
+    case ChargeGenerationAlgorithm::SQE:
         {
-            copy_rvec(x[atomStart_[ff]+a], xx[a]);
+            for(size_t ff = 0; ff < topologies_.size(); ++ff)
+            {
+                // TODO only copy the coordinates if there is more than one fragment.
+                std::vector<gmx::RVec> xx;
+                xx.resize(topologies_[ff].atoms().size());
+                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                {
+                    copy_rvec(x[atomStart_[ff]+a], xx[a]);
+                }
+                QgenAcm_[ff].setQtotal(qtotal_[ff]);
+                eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
+                                                     topologies_[ff].atomsPtr(),
+                                                     xx, bonds_[ff]);
+                if (eQgen::OK != eqgen)
+                {
+                    break;
+                }
+                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                {
+                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
+                }
+            }
         }
-        QgenAcm_[ff].setQtotal(qtotal_[ff]);
-        eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
-                                             topologies_[ff].atomsPtr(),
-                                             xx, bonds_[ff]);
-        if (eQgen::OK != eqgen)
-        {
-            break;
-        }
-        for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
-        {
-            (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
-        }
+        break;
+    case ChargeGenerationAlgorithm::Read:
+        break;
+    default:
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
+                                                           chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
     }
     return eqgen;
+}
+
+void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
+{
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto aptr = topologies_[ff].atomsPtr();
+        for(size_t a = 0; a < aptr->size(); a++)
+        {
+            (*aptr)[a].setCharge(atoms[atomStart_[ff]+a].charge());
+        }
+    }
 }
 
 } // namespace alexandria
