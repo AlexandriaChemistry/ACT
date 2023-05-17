@@ -177,7 +177,7 @@ protected:
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(1e-4);
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                               &xmin, &eAfter, nullptr);
+                                               &xmin, &eAfter, nullptr, {});
             if (eMinimizeStatus::OK != eMin)
             {
                 // New try using steepest descents
@@ -185,7 +185,7 @@ protected:
                 xmin    = coords;
                 simConfig.setMaxIter(5000);
                 eMin    = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                                 &xmin, &eAfter, nullptr);
+                                                 &xmin, &eAfter, nullptr, {});
             }
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
