@@ -1,13 +1,4 @@
-#Atom1|BondType|Atom2|v2_a
-o2|=|o2|0.5
-n1|#|n1|0.5
-o2|=|s2|0.5
-f|~|f|0.5
-cl|~|cl|0.5
-br|~|br|0.5
-br|~|cl|0.5
-br|~|f|0.5
-br|~|i|0.5
-cl|~|f|0.5
-cl|~|i|0.5
-f|~|i|0.5
+v2|VSITE2|h~f|1.05
+v2|VSITE2|h~cl|1.05
+v2|VSITE2|h~br|1.05
+v2|VSITE2|h~i|1.05
