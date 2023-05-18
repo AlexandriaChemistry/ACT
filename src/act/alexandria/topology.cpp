@@ -669,18 +669,18 @@ void Topology::fixShellExclusions()
         {
             for(size_t jj = 0; jj < exclusions_[itype][ai].size(); ++jj)
             {
-                auto aj = exclusions_[itype][ai][jj];
+                size_t aj = exclusions_[itype][ai][jj];
                 // Check whether these particles have shells
-                for(auto si : atoms_[ai].shells())
+                for(size_t si : atoms_[ai].shells())
                 {
-                    for(auto sj : atoms_[aj].shells())
+                    for(size_t sj : atoms_[aj].shells())
                     {
                         // See whether this interaction exists
                         auto it = ffpl.begin();
                         while (ffpl.end() != it)
                         {
-                            auto aai = (*it)->atomIndices()[0];
-                            auto aaj = (*it)->atomIndices()[1];
+                            size_t aai = (*it)->atomIndices()[0];
+                            size_t aaj = (*it)->atomIndices()[1];
                             if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) || 
                                 ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
                             {

@@ -396,8 +396,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto fs     = pd->findForcesConst(InteractionType::VDW);
     auto fsCoul = pd->findForcesConst(InteractionType::COULOMB);
     std::string nnn("nexcl");
-    int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
-                           my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
+    //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
+    //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
     xmlNodePtr fsPtr = nullptr;
     // Custom non-bonded force is needed if we use Buckingham (not LJ)
     if (fs.gromacsType() != F_LJ)
