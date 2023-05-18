@@ -6,8 +6,8 @@
   <Real Name="Potential before">0.55994035938589426</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
   <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0022963891289465598</Real>
-  <Real Name="Bond after">1.5157008442989046e-12</Real>
-  <Real Name="Angle after">4.315035346203046e-11</Real>
-  <Real Name="Potential after">4.4666054306329366e-11</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0022963684324229451</Real>
+  <Real Name="Bond after">2.1276705858379222e-20</Real>
+  <Real Name="Angle after">1.8771906380465326e-22</Real>
+  <Real Name="Potential after">2.1464424922183876e-20</Real>
 </ReferenceData>

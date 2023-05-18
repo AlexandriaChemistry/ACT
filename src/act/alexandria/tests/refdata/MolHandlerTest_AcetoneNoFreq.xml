@@ -2,20 +2,20 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">0.18122894212805943</Real>
-  <Real Name="Angle before">1.6749064998308814</Real>
+  <Real Name="Angle before">1.6749064998308829</Real>
   <Real Name="Proper Dih. before">15.062394391986754</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="LJ (SR) before">-1.7472008376964434e-05</Real>
-  <Real Name="Coulomb (SR) before">-34.189297501647353</Real>
-  <Real Name="Potential before">-17.270785139710036</Real>
-  <Real Name="Coordinate RMSD before minimizing">4.6860416993492717e-17</Real>
+  <Real Name="Coulomb (SR) before">-34.189294492696483</Real>
+  <Real Name="Potential before">-17.270782130759162</Real>
+  <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
   <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.013771472998335142</Real>
-  <Real Name="Bond after">0.025715905953290076</Real>
-  <Real Name="Angle after">0.37494644852551651</Real>
-  <Real Name="Proper Dih. after">8.0390624483436124</Real>
-  <Real Name="Improper Dih. after">8.1295530944519609e-15</Real>
-  <Real Name="LJ (SR) after">-1.7787580906746691e-05</Real>
-  <Real Name="Coulomb (SR) after">-34.524726629561002</Real>
-  <Real Name="Potential after">-26.085019614319481</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.013771483068416381</Real>
+  <Real Name="Bond after">0.025715902759672081</Real>
+  <Real Name="Angle after">0.37494644571782887</Real>
+  <Real Name="Proper Dih. after">8.0390624484355921</Real>
+  <Real Name="Improper Dih. after">8.0901440902471401e-15</Real>
+  <Real Name="LJ (SR) after">-1.7787580894401528e-05</Real>
+  <Real Name="Coulomb (SR) after">-34.52472358518019</Real>
+  <Real Name="Potential after">-26.08501657584798</Real>
 </ReferenceData>

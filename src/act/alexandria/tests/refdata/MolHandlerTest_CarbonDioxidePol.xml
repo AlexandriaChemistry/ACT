@@ -12,7 +12,7 @@
   <String Name="algorithm">Newton</String>
   <Real Name="Coordinate RMSD after minimizing">0.0096425775053432996</Real>
   <Real Name="Morse after">-767.47348837921072</Real>
-  <Real Name="Lin. Angle after">1.4353703390837317e-22</Real>
+  <Real Name="Lin. Angle after">1.4353703391141083e-22</Real>
   <Real Name="Dispersion after">-3.28085467676026</Real>
   <Real Name="Repulsion after">60.91821008875219</Real>
   <Real Name="Coulomb (SR) after">-0.35994593456405255</Real>
@@ -32,14 +32,14 @@
   </Sequence>
   <Sequence Name="DeltaX">
     <Int Name="Length">9</Int>
-    <Real>5.8443556292929343e-24</Real>
-    <Real>1.7746809158060569e-24</Real>
-    <Real>1.2173550816425533e-08</Real>
-    <Real>7.7444049689060024e-27</Real>
-    <Real>2.3516446592853622e-27</Real>
-    <Real>3.466215224724217e-14</Real>
-    <Real>-4.4272167795026959e-25</Real>
-    <Real>-1.3443564401419468e-25</Real>
+    <Real>1.4610889073232338e-24</Real>
+    <Real>4.436702289515145e-25</Real>
+    <Real>1.2173550816425532e-08</Real>
+    <Real>1.9361012422265017e-27</Real>
+    <Real>5.8791116482134117e-28</Real>
+    <Real>3.4662152245346765e-14</Real>
+    <Real>-1.1068041948756721e-25</Real>
+    <Real>-3.3608911003548665e-26</Real>
     <Real>-1.2173442338027741e-08</Real>
   </Sequence>
   <Sequence Name="Frequencies">
@@ -54,7 +54,7 @@
     <Real>0.50480976957874157</Real>
     <Real>1.1032780931605877</Real>
     <Real>0.097568545566797144</Real>
-    <Real>0.77231277501262086</Real>
+    <Real>0.77231277501262097</Real>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">22.801116835191195</Real>
   <Real Name="Delta H form (kJ/mol)">1237.519832688665</Real>
