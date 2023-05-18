@@ -38,11 +38,11 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/listed-forces/bonded.h"
+//#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
+//#include "gromacs/topology/atoms.h"
 
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"

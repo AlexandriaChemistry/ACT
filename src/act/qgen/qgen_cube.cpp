@@ -41,7 +41,7 @@
 #include <map>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/listed-forces/bonded.h"
+//#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
