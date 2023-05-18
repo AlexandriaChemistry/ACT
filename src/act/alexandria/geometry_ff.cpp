@@ -49,7 +49,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"

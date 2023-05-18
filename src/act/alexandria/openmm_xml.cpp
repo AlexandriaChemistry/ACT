@@ -46,8 +46,6 @@
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/topology/topology.h"
-
 
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
