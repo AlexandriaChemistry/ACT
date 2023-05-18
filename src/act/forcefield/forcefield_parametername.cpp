@@ -61,4 +61,10 @@ const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3", "c4", "c5", "c6" };
 
 const char *pdih_name[pdihNR] = { "phi0", "kp", "mult" };
 
+const char *vsite2_name[vsite2NR] = { "a" };
+
+const char *vsite3fad_name[vsite3fadNR] = { "a", "b" };
+    
+const char *vsite3out_name[vsite3outNR] = { "a", "b", "c" };
+
 } // namespace alexandria

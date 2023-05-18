@@ -52,6 +52,51 @@
 namespace alexandria
 {
 
+/*! \brief
+ * Virtual site on a linear bond.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Vsite2 : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    Vsite2() {}
+    
+    //! Constructor setting the ids of the atoms and the bondorder
+    Vsite2(int ai, int aj, int vs)
+    {
+        addAtom(ai);
+        addAtom(aj);
+        addAtom(vs);
+    }
+    
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *aj, int *vs) const;
+    
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+      
+     //! Returns the second atom id
+    int aJ() const
+    {
+        return atomIndex(1);
+    }
+    
+    //! Return a Vsite2 with the order of atoms swapped
+    Vsite2 swap() const;
+ 
+    /*! \brief Return whether two Bonds are the same
+     * \param[in] other The other bond
+     * \return true if they are the same
+     */
+    bool operator==(const Vsite2 &other) const;
+};
+
 class ActAtom
 {
 private:
@@ -168,10 +213,17 @@ private:
      */
     void fillParameters(const ForceField *pd);
          
+    /*! Generate virtual sites for bonds.
+     * \param[in] pd The force field
+     * \return the number of vsites added
+     */
+    int makeVsite2s(const ForceField *pd);
+
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
      */                              
     void setIdentifiers(const ForceField *pd);
+
     /*! Add polarizabilities to the topology if needed
      * \param[in]  fp File pointer for debugging
      * \param[in]  pd Force field
@@ -207,11 +259,6 @@ private:
      * \param[in] bond The bond to add
      */
     void addBond(const Bond &bond);
-
-    /*! \brief Copy shell info to atoms
-     * Must be called after setAtoms
-     */
-    void shellsToAtoms();
 
     //! Add an atom to the topology
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
@@ -263,18 +310,6 @@ private:
     //! \return the mass of the compound
     double mass() const;
     
-    /*! \brief Find a topology entry matching the inputs/
-     * \param[in] itype     The InteractionType
-     * \param[in] aindex    The atom indices
-     * \param[in] bondOrder The array of bond orders
-     * \param[in] cs        Whether or not the order of the atoms can be swapped
-     * \return the entry
-     */
-    const TopologyEntry *findTopologyEntry(InteractionType            itype,
-                                           const std::vector<int>    &aindex,
-                                           const std::vector<double> &bondOrder,
-                                           CanSwap                    cs) const;
-
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
@@ -292,6 +327,22 @@ private:
       */
     void makeImpropers(const std::vector<gmx::RVec> &x,
                        double                        PlanarAngleMax);
+
+    /*! Generate the proper dihedrals
+     */
+    void makePropers();
+
+    /*! \brief Find a topology entry matching the inputs/
+     * \param[in] itype     The InteractionType
+     * \param[in] aindex    The atom indices
+     * \param[in] bondOrder The array of bond orders
+     * \param[in] cs        Whether or not the order of the atoms can be swapped
+     * \return the entry
+     */
+    const TopologyEntry *findTopologyEntry(InteractionType            itype,
+                                           const std::vector<int>    &aindex,
+                                           const std::vector<double> &bondOrder,
+                                           CanSwap                    cs) const;
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
@@ -334,13 +385,13 @@ private:
      */
     void addShellPairs();
     
-    /*! Generate the proper dihedrals
+    /*! Generate virtual sites.
+     * \param[in] pd   The force field
+     * \param[inout] x The atomic coordinate array, will be extended as needed.
+     * \return the number of vsites added
      */
-    void makePropers();
-
-    /*! Generate virtual sites for bonds
-     */
-    void makeVsite2s(const ForceFieldParameterList &vsite2);
+    int makeVsites(const ForceField       *pd,
+                   std::vector<gmx::RVec> *x);
 
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);

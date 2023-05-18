@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -96,6 +96,18 @@ namespace alexandria
     enum { pdihANGLE = 0, pdihKP = 1, pdihMULT = 2, pdihNR = 3 };
     
     extern const char *pdih_name[pdihNR];
+
+    enum { vsite2A = 0, vsite2NR = 1 };
+    
+    extern const char *vsite2_name[vsite2NR];
+
+    enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };    
+    
+    extern const char *vsite3fad_name[vsite3fadNR];
+    
+    enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 3, vsite3outNR = 4 };    
+    
+    extern const char *vsite3out_name[vsite3outNR];
     
 } // namespace alexandria
 

@@ -55,13 +55,25 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-double ForceComputer::compute(const ForceField                     *pd,
+ForceComputer::ForceComputer(double   msForce,
+                             int      maxiter)
+{ 
+    msForce_ = msForce;
+    maxiter_ = maxiter;
+    clear_mat(box_);
+    real dt = 0.001;
+    vsiteHandler_ = new VsiteHandler(box_, dt);
+}
+
+double ForceComputer::compute(const ForceField                  *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
                               const gmx::RVec                   &field) const
 {
+    // Spread virtual sites
+    vsiteHandler_->constructPositions(top, coordinates, box_);
     // Do first calculation every time.
     computeOnce(pd, top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
@@ -119,6 +131,8 @@ double ForceComputer::compute(const ForceField                     *pd,
         msForce  = dotProdRvec(isShell, *forces);
         iter    += 1;
     }
+    // Spread forces to atoms
+    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce/nshell;
 }
 
