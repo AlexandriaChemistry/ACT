@@ -475,7 +475,7 @@ void Topology::addBond(const Bond &bond)
 }
 
 int Topology::makeVsites(const ForceField       *pd,
-                          std::vector<gmx::RVec> *x)
+                         std::vector<gmx::RVec> *x)
 {
     int vsitesAdded = 0;
     // Check whether we have virtual sites in the force field.
@@ -1074,7 +1074,7 @@ void Topology::build(const ForceField             *pd,
         auto &fs = pd->findForcesConst(InteractionType::VSITE2);
         if (!fs.empty())
         {
-            makeVsite2s(fs);
+            makeVsite2s(pd);
         }
     }
     makePairs(x->size());
