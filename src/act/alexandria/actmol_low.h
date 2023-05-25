@@ -32,25 +32,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef MYMOL_LOW_H
-#define MYMOL_LOW_H
+#ifndef ACTMOL_LOW_H
+#define ACTMOL_LOW_H
 
-#include <assert.h>
-
+#include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <vector>
 
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "act/basics/atomization_energy.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
-
-struct t_atoms;
-struct t_symtab;
 
 namespace alexandria
 {
@@ -146,28 +140,15 @@ bool is_linear(const rvec xi, const rvec xj,
                const rvec xk, const t_pbc *pbc,
                real th_toler);
 
-void copy_atoms(t_atoms *src, t_atoms *dest);
-
 real calc_relposition(const ForceField                  *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders);
 
 std::vector<double> getDoubles(const std::string &s);
 
-void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
-                           const ForceField *pd,
-                           t_forcerec    *fr);
-
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
-
-gmx_mtop_t *do_init_mtop(const ForceField                   *pd,
-                         char                           **molname,
-                         t_atoms                         *atoms,
-                         t_inputrec                      *ir,
-                         t_symtab                        *symtab,
-                         const char                      *tabfn);
 
 double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,

@@ -40,6 +40,8 @@
 
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/molprop/experiment.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -322,6 +324,137 @@ Topology::Topology(const std::vector<Bond> &bonds)
     }
 }
 
+static void dump_entry(FILE *fp, 
+                       const std::vector<TopologyEntry *> &entries,
+                       const std::string &label)
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(auto &entry : entries)
+    {
+        fprintf(fp, "%s", label.c_str());
+        for (auto &ai : entry->atomIndices())
+        {
+            fprintf(fp, " %d", ai);
+        }
+        fprintf(fp, "\n");
+    }
+}
+
+void Topology::addShells(FILE                   *fp,
+                         const ForceField       *pd,
+                         std::vector<gmx::RVec> *x)
+{
+    /* Calculate the total number of Atom and Vsite particles and
+     * generate the renumbering array.
+     */
+    std::vector<int>             shellRenumber;
+    std::map<int, int>           originalAtomIndex;
+
+    int                          nshell = 0;
+    shellRenumber.resize(atoms_.size(), 0);
+    for (size_t i = 0; i < atoms_.size(); i++)
+    {
+        auto atype       = pd->findParticleType(atoms_[i].ffType());
+        shellRenumber[i] = i + nshell;
+        originalAtomIndex.insert({shellRenumber[i], i});
+        if (atype->hasInteractionType(InteractionType::POLARIZATION))
+        {
+            // TODO: Update if particles can have more than one shell
+            nshell++;
+        }
+        if (debug)
+        {
+            fprintf(debug, "Shell renumber %s %zu is %d\n", atoms_[i].name().c_str(), i, shellRenumber[i]);
+        }
+    }
+    if (fp)
+    {
+        fprintf(fp, "Found %d shells to be added\n", nshell);
+    }
+    
+    /* Add Polarization to the plist. */
+    std::vector<TopologyEntry *> pols;
+    auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
+    
+    // Atoms first
+    size_t i = 0;
+    auto xiter = x->begin();
+    for (auto iter = atoms_.begin(); iter < atoms_.end() && xiter < x->end(); ++iter, ++xiter)
+    {
+        if (iter->pType() == eptAtom || iter->pType() == eptVSite)
+        {
+            std::string atomtype(iter->ffType());
+            if (pd->hasParticleType(atomtype))
+            {
+                // TODO: Allow adding multiple shells
+                auto fa = pd->findParticleType(atomtype);
+                if (fa->hasInteractionType(InteractionType::POLARIZATION))
+                {
+                    auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+                    auto param  = fs.findParameterTypeConst(ptype, pol_name[polALPHA]);
+                    auto fp     = pd->findParticleType(ptype);
+                    auto charge = fp->charge();
+                    auto pol    = convertToGromacs(param.value(), param.unit());
+                    if (pol <= 0)
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
+                    }
+                    // TODO Multiple shell support
+                    auto pp = new TopologyEntry();
+                    auto core = shellRenumber[i];
+                    auto shell = core+1;
+                    pp->addAtom(core);
+                    pp->addAtom(shell);
+                    pp->addBondOrder(1.0);
+                    pols.push_back(pp);
+
+                    // Insert shell atom
+                    auto shellName = iter->name() + "s";
+                    ActAtom newshell(shellName, "EP", ptype.id(), eptShell,
+                                     0, 0, charge);
+                    newshell.setResidueNumber(iter->residueNumber());
+                    iter = atoms_.insert(iter+1, newshell);
+                    // Insert new coordinate
+                    xiter = x->insert(xiter+1, (*x)[shellRenumber[i]]); 
+                    // Create link between shell and atom
+                    atoms_[core].addShell(shell);
+                    atoms_[shell].setCore(core);
+                    if (debug)
+                    {
+                        fprintf(debug, "Just made an atom-shell pair %s %d %s %d\n",
+                                atoms_[core].name().c_str(), core,
+                                atoms_[shell].name().c_str(), shell);
+                    }
+                }
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find atomtype %s in forcefield\n", 
+                                                                   atomtype.c_str())));
+            }
+            // Increase counter for atoms and vsites only.
+            i += 1;
+        }
+    }
+    // Check length of arrays.
+    if (atoms_.size() != x->size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: %zu atoms but %zu coordinates.", atoms_.size(),
+                                                       x->size()).c_str()));
+    }
+    if (!pols.empty())
+    {
+        addEntry(InteractionType::POLARIZATION, pols);
+        dump_entry(debug, pols, "Before renumber");
+        renumberAtoms(shellRenumber);
+        dump_entry(debug, pols, "After renumber");
+    }
+}
+
+
 void Topology::addBond(const Bond &bond)
 {
     if (bond.aI() < 0 || bond.aJ() < 0)
@@ -330,85 +463,6 @@ void Topology::addBond(const Bond &bond)
     }
     entries_.insert({ InteractionType::BONDS, {} });
     entries_[InteractionType::BONDS].push_back(new Bond(bond));
-}
-
-void Topology::shellsToAtoms()
-{
-    auto itype = InteractionType::POLARIZATION;
-    if (hasEntry(itype))
-    {
-        // Now update the atoms structure
-        for(const auto &ee : entry(itype))
-        {
-            auto ai    = ee->atomIndices();
-            if (ai.size() == 2 && 
-                ai[0] >= 0 && ai[0] < static_cast<int>(atoms_.size()) && 
-                ai[1] >= 0 && ai[1] < static_cast<int>(atoms_.size()))
-            {
-                if (eptAtom == atoms_[ai[0]].pType() && eptShell == atoms_[ai[1]].pType())
-                {
-                    atoms_[ai[0]].addShell(ai[1]);
-                    atoms_[ai[1]].setCore(ai[0]);
-                }
-                else if (eptAtom == atoms_[ai[1]].pType() && eptShell == atoms_[ai[0]].pType())
-                {
-                    atoms_[ai[1]].addShell(ai[0]);
-                    atoms_[ai[0]].setCore(ai[1]);
-                }
-                else
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Incomprehensible polarization entry: ai %d (%s), aj %d (%s)", ai[0], ptype_str[ai[0]], ai[1], ptype_str[ai[1]]).c_str()));
-                }
-            }
-            else
-            {
-                std::string err = gmx::formatString("Atoms.size %zu qtom shell pair with %zu particles:", atoms_.size(), ai.size());
-                for(auto &aa : ai)
-                {
-                    err += gmx::formatString(" %d", aa);
-                }
-                GMX_THROW(gmx::InternalError(err.c_str()));
-            }
-        }
-    }
-}
-
-void Topology::setAtoms(const t_atoms *atoms)
-{
-    atoms_.clear();
-    if (atoms->nres < 1)
-    {
-        GMX_THROW(gmx::InternalError("Number of residues incorrect in t_atoms"));
-    }
-    int minres = atoms->nres;
-    for(int i = 0; i < atoms->nr; i++)
-    {
-        minres = std::min(minres, atoms->atom[i].resind);
-    }
-    for(int i = 0; i < atoms->nr; i++)
-    {
-        ActAtom anew(*atoms->atomname[i], atoms->atom[i].elem,
-                     *atoms->atomtype[i], atoms->atom[i].ptype,
-                     atoms->atom[i].atomnumber,
-                     atoms->atom[i].m, atoms->atom[i].q);
-        // TODO this is not the real residue number, but an index
-        int resind = atoms->atom[i].resind;
-        anew.setResidueNumber(resind-minres);
-        if (atoms->resinfo != nullptr)
-        {
-            if (resind < 0 || resind >= atoms->nres)
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Residue index %d out of range. Should be within %d-%d",
-                                                               resind, 0, atoms->nres).c_str()));
-            }
-            if (nullptr == atoms->resinfo[minres+resind].name)
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Invalid residue name for residue %d", resind).c_str()));
-            }
-            addResidue(resind, *(atoms->resinfo[resind].name));
-        }
-        atoms_.push_back(anew);
-    }
 }
 
 double Topology::mass() const
@@ -820,9 +874,12 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
 {
     for(auto &myEntry: entries_)
     {
-        for(auto &b : myEntry.second)
+        if (InteractionType::POLARIZATION != myEntry.first)
         {
-            b->renumberAtoms(renumber);
+            for(auto &b : myEntry.second)
+            {
+                b->renumberAtoms(renumber);
+            }
         }
     }
 }
@@ -841,14 +898,83 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     }
 }
 
+immStatus Topology::GenerateAtoms(const ForceField       *pd,
+                                  const MolProp          *mol,
+                                  std::vector<gmx::RVec> *x)
+{
+    immStatus imm   = immStatus::OK;
+    
+    auto ci = mol->findExperimentConst(JobType::OPT);
+    if (!ci)
+    {
+        ci = mol->findExperimentConst(JobType::TOPOLOGY);
+    }
+    if (ci)
+    {
+        if (ci->NAtom() == 0)
+        {
+            return immStatus::NoAtoms;
+        }
+        int res0 = -666;
+        int nres = 0;
+        for (auto &cai : ci->calcAtomConst())
+        {
+            auto myunit = cai.coordUnit();
+            double    xx, yy, zz;
+            cai.coords(&xx, &yy, &zz);
+            int resnr = cai.residueNumber();
+            if (resnr != res0)
+            {
+                res0  = resnr;
+                addResidue(nres, cai.residueName());
+                nres += 1;
+            }
+            gmx::RVec xxx = { convertToGromacs(xx, myunit),
+                              convertToGromacs(yy, myunit),
+                              convertToGromacs(zz, myunit) };
+            x->push_back(xxx);
+
+            if (pd->hasParticleType(cai.getObtype()))
+            {
+                auto atype = pd->findParticleType(cai.getObtype());
+                
+                ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), eptAtom,
+                                atype->atomnumber(), atype->mass(), atype->charge());
+                newatom.setResidueNumber(nres-1);
+                addAtom(newatom);
+            }
+            else
+            {
+                fprintf(stderr, "Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.\n", 
+                        cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes());
+                
+                return immStatus::AtomTypes;
+            }
+        }
+    }
+    else
+    {
+        imm = immStatus::Topology;
+    }
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %zu\n",
+                mol->getMolname().c_str(),
+                ci->getMethod().c_str(),
+                ci->getBasisset().c_str(), atoms_.size());
+    }
+
+    return imm;
+}
+
 void Topology::build(const ForceField             *pd,
-                     const std::vector<gmx::RVec> &x,
+                     std::vector<gmx::RVec>       *x,
                      double                        LinearAngleMin,
                      double                        PlanarAngleMax,
                      missingParameters             missing)
 {
-    makeAngles(x, LinearAngleMin);
-    makeImpropers(x, PlanarAngleMax);
+    makeAngles(*x, LinearAngleMin);
+    makeImpropers(*x, PlanarAngleMax);
     // Check whether we have dihedrals in the force field.
     if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
     {
@@ -868,7 +994,7 @@ void Topology::build(const ForceField             *pd,
             makeVsite2s(fs);
         }
     }
-    makePairs(x.size());
+    makePairs(x->size());
     int nexclvdw;
     if (!ffOption(*pd, InteractionType::VDW, 
                   "nexcl", &nexclvdw))
@@ -881,7 +1007,23 @@ void Topology::build(const ForceField             *pd,
     {
         nexclqq = 0;
     }
-    generateExclusions(nexclvdw, nexclqq, x.size());
+    generateExclusions(nexclvdw, nexclqq, x->size());
+    if (pd->polarizable())
+    {
+        addShells(debug, pd, x);
+        addShellPairs();
+        fixShellExclusions();
+    }
+    setIdentifiers(pd);
+    if (missing != missingParameters::Generate)
+    {
+        fillParameters(pd);
+    }
+    if (debug)
+    {
+        dumpPairlist(debug, InteractionType::COULOMB);
+        dumpPairlist(debug, InteractionType::VDW);
+    }
 }
 
 const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
@@ -1142,8 +1284,15 @@ void Topology::setIdentifiers(const ForceField *pd)
         {
             std::string              atypes;
             std::vector<std::string> btype;
-            for(auto &jj : topentry->atomIndices())
+            for(const size_t &jj : topentry->atomIndices())
             {
+                if (jj >= atoms_.size())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Atom index %zu should be less than %zu for %s",
+                                                                   jj, atoms_.size(),
+                                                                   interactionTypeToString(entry.first).c_str()).c_str()
+                                                 ));
+                }
                 // Check whether we do not e.g. have a shell here
                 //if (!pd->hasParticleType(atoms_[jj].ffType()))
                 //{

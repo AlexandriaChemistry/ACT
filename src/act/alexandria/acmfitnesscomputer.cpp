@@ -190,10 +190,6 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                     itUpdate.push_back(io.first);
                 }
             }
-            // Update the polarizabilities and other params only once before the loop
-            // TODO: is this still needed if we do not use GROMACS code for force
-            // calculations?
-            actmol.UpdateIdef(sii_->forcefield(), itUpdate, molgen_->fit("zeta"));
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol.atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol.xOriginal();

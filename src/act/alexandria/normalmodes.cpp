@@ -165,13 +165,11 @@ int nma(int argc, char *argv[])
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
     }
     std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
-        CommunicationRecord cr;
-        gmx::MDLogger  mdlog {};
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
         std::vector<double> myq;
@@ -182,7 +180,7 @@ int nma(int argc, char *argv[])
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
         }
-        imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+        imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {
@@ -221,8 +219,9 @@ int nma(int argc, char *argv[])
                     {
                         matrix box;
                         clear_mat(box);
+                        // TODO This will crash
                         write_sto_conf(confout, actmol.getMolname().c_str(),
-                                       actmol.gmxAtomsConst(),
+                                       nullptr,
                                        as_rvec_array(xmin.data()), nullptr,
                                        epbcNONE, box);
                     }

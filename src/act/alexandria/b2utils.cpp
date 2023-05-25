@@ -432,7 +432,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     std::vector<gmx::RVec> xmOrig[2];
     for(int m = 0; m < 2; m++)
     {
-        auto   atoms   = tops[m].atoms();
+        auto   atoms   = tops[m]->atoms();
         for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
         {
             xmOrig[m].push_back(xorig[j]);
@@ -444,7 +444,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     {
         // Compute center of mass
         clear_rvec(com[m]);
-        auto   atoms   = tops[m].atoms();
+        auto   atoms   = tops[m]->atoms();
         double totmass = 0;
         for(size_t j = 0; j < atoms.size(); j++)
         {
@@ -514,7 +514,7 @@ void DimerGenerator::generate(FILE                                *logFile,
                 dist += range*((1.0*idist)/(ndist_-1));
             }
             gmx::RVec trans = { 0, 0, dist };
-            auto      atoms = tops[1].atoms();
+            auto      atoms = tops[1]->atoms();
             for(size_t j = 0; j < atoms.size(); j++)
             {
                 rvec_inc(xrand[1][j], trans);
@@ -523,7 +523,7 @@ void DimerGenerator::generate(FILE                                *logFile,
             (*coords)[idim].resize(xorig.size());
             for(int m = 0; m < 2; m++)
             {
-                auto   atoms   = tops[m].atoms();
+                auto   atoms   = tops[m]->atoms();
                 for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
                 {
                     auto jindex = j - atomStart[m];

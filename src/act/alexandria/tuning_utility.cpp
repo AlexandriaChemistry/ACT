@@ -643,18 +643,18 @@ void TuneForceFieldPrinter::printAtoms(FILE                         *fp,
  * \param[in] pdb   File name
  * \param[in] title Text string
  */
-static void writeCoordinates(const t_atoms           *atoms,
-                             const std::string       &pdb,
-                             const std::string       &title,
+static void writeCoordinates(const std::vector<ActAtom>  &atoms,
+                             const std::string           &pdb,
+                             const std::string            &title,
                              const std::vector<gmx::RVec> &xorig,
                              const std::vector<gmx::RVec> &xmin)
 {
     FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
-    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xorig.data()),
+    write_pdbfile(out, title.c_str(), nullptr, as_rvec_array(xorig.data()),
                   epbcNONE, box, 'A', 1, nullptr, false);
 
-    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xmin.data()),
+    write_pdbfile(out, title.c_str(), nullptr, as_rvec_array(xmin.data()),
                   epbcNONE, box, 'B', 1, nullptr, false);
 
     gmx_fio_fclose(out);
@@ -1120,7 +1120,7 @@ double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         {
             auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
             auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
-            writeCoordinates(mol->gmxAtomsConst(), pdb, title, coords, xmin);
+            writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
         }
         tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
                                            "Term", "Before", "After", "Difference"));
@@ -1238,9 +1238,7 @@ static void printOutliers(FILE              *fp,
 void TuneForceFieldPrinter::print(FILE                            *fp,
                                   std::vector<alexandria::ACTMol> *actmol,
                                   const ForceField                *pd,
-                                  const gmx::MDLogger              &fplog,
                                   const gmx_output_env_t           *oenv,
-                                  const CommunicationRecord        *cr,
                                   const std::vector<t_filenm>      &filenm,
                                   const char                       *chargeMethod)
 {
@@ -1352,8 +1350,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
-            mol->GenerateCharges(pd, forceComp, fplog, cr,
-                                 alg, qtype, dummy, &coords, &forces);
+            mol->GenerateCharges(pd, forceComp, alg, qtype, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd, &coords);

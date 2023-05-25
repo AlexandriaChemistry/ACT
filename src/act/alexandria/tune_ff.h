@@ -41,8 +41,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/unique_cptr.h"

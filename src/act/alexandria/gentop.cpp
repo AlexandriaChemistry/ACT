@@ -210,7 +210,6 @@ int gentop(int argc, char *argv[])
     }
 
     ForceField        pd;
-    t_inputrec    *inputrec = new t_inputrec();
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     std::string    method, basis;
@@ -263,7 +262,6 @@ int gentop(int argc, char *argv[])
                static_cast<int>(pd.getNatypes()));
     }
 
-    fill_inputrec(inputrec);
     std::vector<ACTMol> actmols;
     matrix box;
     clear_mat(box);
@@ -295,7 +293,6 @@ int gentop(int argc, char *argv[])
         }
         ACTMol mm;
         mm.Merge(&(*mpi));
-        mm.setInputrec(inputrec);
         actmols.push_back(mm);
     }
     else
@@ -313,7 +310,6 @@ int gentop(int argc, char *argv[])
             {
                 ACTMol mm;
                 mm.Merge(&mp);
-                mm.setInputrec(inputrec);
                 actmols.push_back(mm);
             }
         }
@@ -328,8 +324,7 @@ int gentop(int argc, char *argv[])
     for(auto &actmol : actmols)
     {
         imm = actmol.GenerateTopology(stdout, &pd,
-                                      bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
-                                      false);
+                                      bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
         std::vector<gmx::RVec> coords = actmol.xOriginal();
@@ -359,7 +354,7 @@ int gentop(int argc, char *argv[])
 
             }
             printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
-            imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
         /* Generate output file for debugging if requested */
         if (immStatus::OK == imm)

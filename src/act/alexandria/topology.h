@@ -45,362 +45,12 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/molprop/fragment.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/topologyentry.h"
 #include "act/utility/communicationrecord.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 
 namespace alexandria
 {
-
-/*! \brief
- * Base class for topology components
- */
-class TopologyEntry
-{
-private:
-    //! Atom indices
-    std::vector<int>                            indices_;
-    //! Parameters belonging to this interaction
-    std::vector<double>                         params_;
-    //! The bond orders
-    std::vector<double>                         bondOrder_;
-    //! The force field identifier belonging to this entry
-    Identifier                                  id_;
-    //! The gromacs topology index (in idef.ffparams)
-    int                                         gromacsType_ = -1;
-public:
-    //! Default empty constructor
-    TopologyEntry() {}
-
-    /*! \brief Add one atom index
-     * \param[ai] The atom index
-     */
-    void addAtom(int ai) { indices_.push_back(ai); }
-
-    /*! Renumber atoms if needed
-     * If shells are added to a molecule, additional particles
-     * are inserted and atoms making up bonds have to be
-     * renumbered.
-     * \param[in] renumber The mapping array
-     */
-    void renumberAtoms(const std::vector<int> &renumber);
-
-    /*! Returns an atom id
-     * \param[in] ai The index number
-     */
-    int atomIndex(size_t ai) const
-    {
-        if (ai >= indices_.size())
-        {
-            GMX_THROW(gmx::InternalError("Atom index out of range"));
-        }
-        return indices_[ai];
-    }
-
-    //! \return atom index array
-    const std::vector<int> &atomIndices() const { return indices_; }
-
-    //! \return the bondorders
-    const std::vector<double> &bondOrders() const { return bondOrder_; }
-
-    //! Add a bond order
-    void addBondOrder(double bo) { bondOrder_.push_back(bo); }
-
-    /*! Set a specific bond order
-     * \param[in] ai The index in the array
-     * \param[in] bo The new bond order
-     * \throws if ai is outside the range of the vector length
-     */
-    void setBondOrder(size_t ai, double bo);
-
-    double bondOrder(size_t ai) const { return bondOrder_[ai]; }
-
-    double bondOrder() const { return bondOrder_[0]; }
-
-    //! Return the gromacs type
-    int gromacsType() const { return gromacsType_; }
-
-    //! Set the gromacs type
-    void setGromacsType(int gromacsType) { gromacsType_ = gromacsType; }
-
-    /*! \brief Set the identifier(s)
-     * \param[in] id    The identifier(s)
-     */
-    void setId(const Identifier &id) { id_ = id; }
-    
-    /*! \brief Set the parameters
-     * \param[in] param The parameter(s)
-     */
-    void setParams(const std::vector<double> &param) { params_ = param; }
-
-    const std::vector<double> &params() const { return params_; }
-    
-    //! Return my identifier(s)
-    const Identifier &id() const { return id_; }
-
-    /*! \brief Check whether this entry has nAtom atoms
-     * \param[in] nAtom the expected number of atoms
-     * \throws if the number of atoms does not match the expectation
-     */
-    void check(size_t nAtom) const;
-    /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   GROMACS data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] root The MPI root
-     * \param[in] comm MPI communicator
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                  int                        root,
-                                  MPI_Comm                   comm);
-
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  GROMACS data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
-};
-
-/*! \brief
- * Atom pair in a molecule
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class AtomPair : public TopologyEntry
-{
- public:
-    //! Default constructor
-    AtomPair() {}
-    
-    //! Constructor setting the ids of the atoms
-    AtomPair(int ai, int aj) { Set(ai, aj); }
-
-    //! Sets the ids of the atoms
-    void Set(int ai, int aj)
-    {
-        addAtom(ai);
-        addAtom(aj);
-        // TODO: This is a fake bond order.
-        addBondOrder(1);
-    }
-    
-    //! Returns the ids of the atoms and the bondorder
-    void get(int *ai, int *aj) const;
-    
-    //! Returns the first atom id
-    int aI() const
-    {
-        return atomIndex(0);
-    }
-      
-     //! Returns the second atom id
-    int aJ() const
-    {
-        return atomIndex(1);
-    }
-    
-    //! Return an AtomPair with the order of atoms swapped
-    AtomPair swap() const;
-    
-    /*! \brief Return whether two AtomPairs are the same
-     * \param[in] other The other AtomPair
-     * \return true if they are the same
-     */
-    bool operator==(const AtomPair &other) const;
-    
-    /*! \brief Return whether one AtomPair is smaller than the other
-     * \param[in] other The other AtomPair
-     * \return true if this pair is smaller
-     */
-    bool operator<(const AtomPair &other) const;
-};
-
-/*! \brief
- * Chemical bond in a molecule with associated bond order.
- *
- * The chemical bonds in a molecule are stored here along with the bond order
- * which together can be used for determining the atom types in a force field
- * calculation. In the present implementation this data is generated by OpenBabel
- * and stored in molprop files. 
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Bond : public TopologyEntry
-{
- public:
-    //! Default constructor
-    Bond() {}
-    
-    //! Constructor setting the ids of the atoms and the bondorder
-    Bond(int ai, int aj, double bondorder) { Set(ai, aj, bondorder); }
-
-     //! Sets the ids of the atoms and the bondorder
-    void Set(int ai, int aj, double bondorder)
-    {
-        addAtom(ai);
-        addAtom(aj);
-        addBondOrder(bondorder);
-    }
-    
-    //! Returns the ids of the atoms and the bondorder
-    void get(int *ai, int *aj, double *bondorder) const;
-    
-    //! Returns the first atom id
-    int aI() const
-    {
-        return atomIndex(0);
-    }
-      
-     //! Returns the second atom id
-    int aJ() const
-    {
-        return atomIndex(1);
-    }
-    
-    //! Return a Bond with the order of atoms swapped
-    Bond swap() const;
- 
-    /*! \brief Return whether two Bonds are the same
-     * \param[in] other The other bond
-     * \return true if they are the same
-     */
-    bool operator==(const Bond &other) const;
-};
-//! Iterator over Bond items
-using BondIterator      = typename std::vector<Bond>::iterator;
-//! Const iterator over Bond items
-using BondConstIterator = typename std::vector<Bond>::const_iterator;
-
-/*! \brief
- * Angle between two bonds i-j and j-k in a molecule.
- * Atom j of the first bond should be identical to atom i
- * of the second bond.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Angle : public TopologyEntry
-{
- private:
-    //! The bonds
-    Bond             b_[2];
-    //! Whether this is a linear angle
-    bool             isLinear_ = false;
- public:
-    //! Default constructor
-    Angle() {}
-    
-    /*! Angle constructor with initial data
-     * \param[in] bij  First bond
-     * \param[in] bjk  Second bond
-     */
-    Angle(Bond bij, Bond bjk);
-
-    //! Return the first bond
-    const Bond &bij() const { return b_[0]; }
-    
-    //! Return the second bond
-    const Bond &bjk() const { return b_[1]; }
-    
-    //! Return whether this is a linear angle
-    bool isLinear() const { return isLinear_; }
-
-    //! Set whether this is a linear angle
-    void setLinear(bool linear) { isLinear_ = linear; }
-
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
-};
-
-/*! \brief
- * Improper dihedral defined by one central atom i and three bonds
- * bij, bik, bil in a molecule in a planar arrangement.
- * Atom i should be the first atom in all bonds.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Improper : public TopologyEntry
-{
- private:
-    //! The bonds
-    Bond             b_[3];
- public:
-    //! Default constructor
-    Improper() {}
-    
-    /*! Improper dihedral constructor with initial data
-     * \param[in] bij  First bond
-     * \param[in] bik  Second bond
-     * \param[in] bil  Third bond
-     */
-    Improper(Bond bij, Bond bik, Bond bil);
-
-    //! Return the first bond
-    const Bond &bij() const { return b_[0]; }
-    
-    //! Return the second bond
-    const Bond &bik() const { return b_[1]; }
-    
-    //! Return the third bond
-    const Bond &bil() const { return b_[2]; }
-    
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
-};
-
-/*! \brief
- * Proper dihedral defined by three bonds in a row 
- * bij, bjk, bkl in a molecule.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Proper : public TopologyEntry
-{
- private:
-    //! The bonds
-    Bond             b_[3];
- public:
-    //! Default constructor
-    Proper() {}
-    
-    /*! Improper dihedral constructor with initial data
-     * \param[in] bij  First bond
-     * \param[in] bjk  Second bond
-     * \param[in] bkl  Third bond
-     */
-    Proper(Bond bij, Bond bjk, Bond bkl);
-
-    //! Return the first bond
-    const Bond &bij() const { return b_[0]; }
-    
-    //! Return the second bond
-    const Bond &bjk() const { return b_[1]; }
-    
-    //! Return the third bond
-    const Bond &bkl() const { return b_[2]; }
-    
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
-};
 
 class ActAtom
 {
@@ -512,6 +162,25 @@ private:
     std::string                                               moleculeName_;
     //! The residue names. If just one, this will likely be the same as the moleculeName_
     std::vector<std::string>                                  residueNames_;
+    /*! \brief Fill in the parameters in the topology entries.
+     * Must be called repeatedly during optimizations of energy.
+     * \param[in] pd The force field structure
+     */
+    void fillParameters(const ForceField *pd);
+         
+    /*! \brief Add identifiers to interactions
+     * \param[in] pd The force field structure
+     */                              
+    void setIdentifiers(const ForceField *pd);
+    /*! Add polarizabilities to the topology if needed
+     * \param[in]  fp File pointer for debugging
+     * \param[in]  pd Force field
+     * \param[out] x  Coordinates will be updated as well  
+     */
+    void addShells(FILE                   *fp,
+                   const ForceField       *pd,
+                   std::vector<gmx::RVec> *x);
+
  public:
     Topology()
     {
@@ -539,12 +208,6 @@ private:
      */
     void addBond(const Bond &bond);
 
-    /*! \brief Initiate or update the atoms data.
-     * Must be called every time the data changes (e.g. charges).
-     * \param[in] atoms Gromacs atoms structure
-     */
-    void setAtoms(const t_atoms *atoms);
-
     /*! \brief Copy shell info to atoms
      * Must be called after setAtoms
      */
@@ -556,20 +219,30 @@ private:
     //! Debugging stuff
     void dumpPairlist(FILE *fp, InteractionType itype) const;
 
+    /*! Generate atoms in the topology from an experiment (QM calc)
+     * \param[in] pd  The force field
+     * \param[in] mol The molecule
+     * \param[out] x The coordinate
+     * \returns status variable
+     */
+    immStatus GenerateAtoms(const ForceField       *pd,
+                            const MolProp          *mol,
+                            std::vector<gmx::RVec> *x);
     /*! \brief Build the topology internals
      * Calls the functions to generate angles, impropers and dihedrals (if flag set).
-     * Will also generate non-bonded atom pairs and exclusions.
+     * Will also generate non-bonded atom pairs and exclusions. Shells will be generated
+     * if they are present in the force field.
      * \param[in] pd             The force field structure
-     * \param[in] x              The atomic coordinates
+     * \param[inout] x           The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
-    void build(const ForceField             *pd,
-               const std::vector<gmx::RVec> &x,
-               double                        LinearAngleMin,
-               double                        PlanarAngleMax,
-               missingParameters             missing);
+    void build(const ForceField       *pd,
+               std::vector<gmx::RVec> *x,
+               double                  LinearAngleMin,
+               double                  PlanarAngleMax,
+               missingParameters       missing);
 
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
@@ -696,16 +369,6 @@ private:
      */
     void dump(FILE *fp) const;
 
-    /*! \brief Fill in the parameters in the topology entries.
-     * Must be called repeatedly during optimizations of energy.
-     * \param[in] pd The force field structure
-     */
-    void fillParameters(const ForceField *pd);
-         
-    /*! \brief Add identifiers to interactions
-     * \param[in] pd The force field structure
-     */                              
-    void setIdentifiers(const ForceField *pd);
 };
 
 } // namespace alexandria

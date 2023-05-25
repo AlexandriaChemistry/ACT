@@ -2,7 +2,7 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <version checksum="6e67be36d1f83aafba0f8e0da9858886" timestamp="2022-05-21 12:04:59"/>
-  <particletypes nexclusions="0" epsilonr="1">
+  <particletypes>
     <particletype identifier="h" type="Atom" description="hydrogen">
       <option key="acmtype" value="h_z"/>
       <option key="atomnumber" value="1"/>

@@ -38,15 +38,13 @@
 #include <string>
 
 #include "act/molprop/molpropobservable.h"
-#include "act/alexandria/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-
-struct t_atoms;
 
 namespace alexandria
 {
 
+class ActAtom;
 class QgenResp;
 
 /*! \brief Enumerated type to differentiate the charge types 

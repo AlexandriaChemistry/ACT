@@ -637,7 +637,7 @@ void ReRunner::rerun(FILE                        *logFile,
             auto      tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk].atoms().size();
+                auto natom = tops[kk]->atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -673,12 +673,10 @@ void ReRunner::rerun(FILE                        *logFile,
                     x_com.push_back(ri);
                 }
                 // Compute moments of inertia and transformation matrix
-                rvec   inertia1;
+                gmx::RVec inertia1;
                 clear_rvec(inertia1);
                 matrix trans;
-                principal_comp(index.size(), index.data(), mass.data(), 
-                               as_rvec_array(x_com.data()),
-                               trans, inertia1);
+                principal_comp(index, mass, x_com, &trans, &inertia1);
 
                 // Move to inertial frame (only well-defined for
                 // rigid molecules).
@@ -756,8 +754,8 @@ void ReRunner::rerun(FILE                        *logFile,
         }
         // Compute the relative mass
         std::vector<double> masses = {
-            actmol->fragmentHandler()->topologies()[0].mass(),
-            actmol->fragmentHandler()->topologies()[1].mass()
+            actmol->fragmentHandler()->topologies()[0]->mass(),
+            actmol->fragmentHandler()->topologies()[1]->mass()
         };
         auto info = gmx::formatString("Done with energy calculations, now time for second virial.");
         printf("%s\n", info.c_str());
@@ -894,13 +892,11 @@ int b2(int argc, char *argv[])
     immStatus imm = immStatus::OK;
     if (status == 0)
     {
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
     }
     std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
-        CommunicationRecord cr;
-        gmx::MDLogger  mdlog {};
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
         std::vector<double> myq;
@@ -911,7 +907,7 @@ int b2(int argc, char *argv[])
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
         }
-        imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+        imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {

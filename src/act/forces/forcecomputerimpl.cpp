@@ -36,6 +36,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
+#include "gromacs/topology/ifunc.h"
 
 namespace alexandria
 {

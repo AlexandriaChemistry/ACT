@@ -72,9 +72,8 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         auto ff         = getForceField(forceField);
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
-        t_inputrec      inputrecInstance;
         std::vector<ACTMol> mps;
-        initACTMol(fileName.c_str(), ff, fcomp, &inputrecInstance, &mps);
+        initACTMol(fileName.c_str(), ff, fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
         bool compress = false;

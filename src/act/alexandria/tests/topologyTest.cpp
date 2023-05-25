@@ -40,7 +40,6 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/topology.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -56,8 +55,6 @@ class TopologyTest : public gmx::test::CommandLineTestBase
 protected:
     std::vector<Bond>      bonds_;
     std::vector<gmx::RVec> x_, y_;
-    t_atoms                gmxAtoms_;
-    t_symtab               symtab_;
     //! Constructor that does initialization and reads an input file
     TopologyTest()
     {
@@ -87,25 +84,6 @@ protected:
             { 1.2, 0.6, 0.0 },
             { 0.6, 0.3, 0.0 },
         };
-        init_t_atoms(&gmxAtoms_, bonds_.size(), false);
-        snew(gmxAtoms_.atomtype, bonds_.size());
-        std::vector<int> ptp = { eptAtom, eptShell, eptShell, eptAtom, eptAtom, eptShell };
-        open_symtab(&symtab_);
-        for(int i = 0; i < gmxAtoms_.nr; i++)
-        {
-            gmxAtoms_.atomname[i]        = put_symtab(&symtab_, "C");
-            gmxAtoms_.atom[i].elem[0]    = 'C';
-            gmxAtoms_.atom[i].ptype      = ptp[i];
-            gmxAtoms_.atomtype[i]        = put_symtab(&symtab_, "c3");
-            gmxAtoms_.atom[i].m          = 12;
-            gmxAtoms_.atom[i].q          = 0;
-            gmxAtoms_.atom[i].atomnumber = 6;
-            gmxAtoms_.atom[i].resind     = 0;
-        }
-        gmxAtoms_.nres = 1;
-        snew(gmxAtoms_.resinfo, 1);
-        gmxAtoms_.resinfo[0].name = put_symtab(&symtab_, "Benzene");
-        close_symtab(&symtab_);
     }
 
     //! Static initiation, only run once every test.
@@ -217,44 +195,6 @@ protected:
         
     }
     
-    void testShells()
-    {
-        gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
-        std::vector<TopologyEntry *> pols;
-        std::vector<std::pair<int, int> > mypairs = {
-            { 0, 1 }, { 0, 2 }, { 4, 5 } 
-        };
-        for(size_t k = 0; k < mypairs.size(); k++)
-        {
-            auto pp = new TopologyEntry();
-            pp->addAtom(mypairs[k].first);
-            pp->addAtom(mypairs[k].second);
-            pp->addBondOrder(1.0);
-            pols.push_back(pp);
-        }
-        top.addEntry(InteractionType::POLARIZATION, pols);
-        top.setAtoms(&gmxAtoms_);
-        top.shellsToAtoms();
-        std::vector<int> shells;
-        std::vector<int> cores;
-        auto &atoms = top.atoms();
-        for(size_t k = 0; k < atoms.size(); k++)
-        {
-            for(auto &ss: atoms[k].shells())
-            {
-                shells.push_back(ss);
-            }
-            auto cc = atoms[k].core();
-            if (-1 != cc)
-            {
-                cores.push_back(cc);
-            }
-        }
-        myCheck.checkSequence(shells.begin(), shells.end(), "Shells");
-        myCheck.checkSequence(cores.begin(), cores.end(), "Cores");
-    }
-    
     //! Clean the test data.
     static void TearDownTestCase()
     {
@@ -276,10 +216,6 @@ TEST_F (TopologyTest, FindBond){
         auto bb = top.findBond(b.aI(), b.aJ());
         EXPECT_TRUE(bb->bondOrder() == b.bondOrder());
     }
-}
-
-TEST_F (TopologyTest, FindShells){
-    testShells();
 }
 
 TEST_F (TopologyTest, DontFindBond){

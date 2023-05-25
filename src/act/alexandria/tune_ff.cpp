@@ -858,8 +858,8 @@ int tune_ff(int argc, char *argv[])
             }
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), &(tmpMg->actmols()),
-                          opt.sii()->forcefield(), tmpMg->mdlog(),
-                          oenv, opt.commRec(), filenms, tmpMg->chargeMethod());
+                          opt.sii()->forcefield(),
+                          oenv, filenms, tmpMg->chargeMethod());
             print_memory_usage(debug);
         }
         else if (!bMinimum)

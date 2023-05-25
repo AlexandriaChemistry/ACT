@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,19 +41,11 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "fill_inputrec.h"
 #include "act/forces/combinationrules.h"
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
@@ -107,8 +99,6 @@ void FittingTarget::print(FILE *fp) const
 MolGen::MolGen(const CommunicationRecord *cr)
 {
     cr_        = cr;
-    inputrec_  = new t_inputrec();
-    fill_inputrec(inputrec_);
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
@@ -164,9 +154,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
 
 void MolGen::optionsFinished()
 {
-    mdlog_                      = gmx::MDLogger {};
-    auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    gmx_omp_nthreads_init(mdlog_, cr_->commrec(), 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
         for(const auto &toFit : gmx::splitString(fitString_))
@@ -707,9 +694,8 @@ size_t MolGen::Read(FILE                                *fp,
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
                 actmol.Merge(&(*mpi));
-                actmol.setInputrec(inputrec_);
                 imm = actmol.GenerateTopology(fp, pd,
-                                             missingParameters::Error, false);
+                                             missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -725,7 +711,7 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<double> dummy;
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                imm = actmol.GenerateCharges(pd, forceComp, alg,
                                             qtype, dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
@@ -883,10 +869,7 @@ size_t MolGen::Read(FILE                                *fp,
                 fprintf(debug, "Succesfully retrieved %s\n", actmol.getMolname().c_str());
                 fflush(debug);
             }
-            actmol.setInputrec(inputrec_);
-
-            imm = actmol.GenerateTopology(debug, pd,
-                                         missingParameters::Error, false);
+            imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
 
             if (immStatus::OK == imm)
             {
@@ -895,7 +878,7 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.symmetrizeCharges(pd, qsymm_, nullptr);
                 actmol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                imm = actmol.GenerateCharges(pd, forceComp, alg,
                                             qtype, dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)

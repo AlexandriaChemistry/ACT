@@ -15,13 +15,11 @@ namespace alexandria
      * \param[in]  molname  The name of the compound
      * \param[in]  pd       The force field
      * \param[in]  fcomp    The force computer
-     * \param[in]  inputrec GROMACS input record
      * \param[out] mps      The ACTMol structures
      */
     void initACTMol(const char          *molname, 
                     const ForceField    *pd,
                     ForceComputer       *fcomp,
-                    t_inputrec          *inputrec,
                     std::vector<ACTMol> *mps);
 
 }

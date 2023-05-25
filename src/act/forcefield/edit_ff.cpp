@@ -48,6 +48,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arraysize.h"
 
 namespace alexandria

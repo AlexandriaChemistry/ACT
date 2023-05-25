@@ -1,32 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="MORSE_gmx">0.0049707080459597741</Real>
-  <Real Name="MORSE_act">0.0049707080459606597</Real>
-  <Real Name="UREY_BRADLEY_gmx">0.0021322557372346757</Real>
-  <Real Name="UREY_BRADLEY_act">0.0021322557372346757</Real>
-  <Real Name="BHAM_gmx">4504.9067947588137</Real>
-  <Real Name="BHAM_act">4504.9067947588128</Real>
-  <Real Name="COUL_SR_gmx">-34.842308379253829</Real>
-  <Real Name="COUL_SR_act">-34.842308379253822</Real>
-  <Real Name="EPOT_gmx">4470.0715893433426</Real>
+  <Real Name="BONDS_act">0.0049707080459606597</Real>
+  <Real Name="ANGLES_act">0.0021322557372346757</Real>
+  <Real Name="DISPERSION_act">-2.7135824572624498</Real>
+  <Real Name="REPULSION_act">4507.6203772160752</Real>
+  <Real Name="COULOMB_act">-34.842308379253822</Real>
   <Real Name="EPOT_act">4470.0715893433417</Real>
-  <Real Name="o3-1_gmx fX">0</Real>
   <Real Name="o3-1_act fX">0</Real>
-  <Real Name="o3-1_gmx fY">0</Real>
   <Real Name="o3-1_act fY">2.8421709430404007e-14</Real>
-  <Real Name="o3-1_gmx fZ">158086.36304659475</Real>
   <Real Name="o3-1_act fZ">158086.36304659478</Real>
-  <Real Name="h-2_gmx fX">0</Real>
   <Real Name="h-2_act fX">0</Real>
-  <Real Name="h-2_gmx fY">104082.35400289338</Real>
   <Real Name="h-2_act fY">104082.35400289336</Real>
-  <Real Name="h-2_gmx fZ">-79043.181523297375</Real>
   <Real Name="h-2_act fZ">-79043.181523297375</Real>
-  <Real Name="h-3_gmx fX">0</Real>
   <Real Name="h-3_act fX">0</Real>
-  <Real Name="h-3_gmx fY">-104082.35400289338</Real>
   <Real Name="h-3_act fY">-104082.35400289336</Real>
-  <Real Name="h-3_gmx fZ">-79043.181523297375</Real>
   <Real Name="h-3_act fZ">-79043.181523297375</Real>
 </ReferenceData>

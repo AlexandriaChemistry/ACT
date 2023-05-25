@@ -46,9 +46,6 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -170,13 +167,7 @@ protected:
             }
             mp_.Merge(&molprop);
             // Generate charges and topology
-            t_inputrec      inputrecInstance;
-            t_inputrec     *inputrec   = &inputrecInstance;
-            fill_inputrec(inputrec);
-            mp_.setInputrec(inputrec);
-            
-            auto imm = mp_.GenerateTopology(stdout, pd,
-                                            missingParameters::Error, false);
+            auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Error);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -184,9 +175,6 @@ protected:
             }
             
             // Needed for GenerateCharges
-            CommunicationRecord cr;
-            auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
@@ -196,7 +184,7 @@ protected:
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+            mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
@@ -221,7 +209,7 @@ protected:
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
                         double qt    = 0;
-                        auto   natom = fh->topologies()[f].atoms().size();
+                        auto   natom = fh->topologies()[f]->atoms().size();
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {
                             qt += myatoms[atom].charge();

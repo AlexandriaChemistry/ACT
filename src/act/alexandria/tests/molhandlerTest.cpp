@@ -122,12 +122,7 @@ protected:
                                 maxpot, nsymm, jobtype, &qtot, false, box);
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
-        t_inputrec      inputrecInstance;
-        t_inputrec     *inputrec   = &inputrecInstance;
-        fill_inputrec(inputrec);
         // Needed for GenerateCharges
-        CommunicationRecord cr;
-        gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
         double shellTolerance = 1e-12;
         int    shellMaxIter   = 100;
@@ -141,9 +136,8 @@ protected:
                 ACTMol mm;
                 mm.Merge(&molprop);
                 // Generate charges and topology
-                mm.setInputrec(inputrec);
                 auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Error, false);
+                                               missingParameters::Error);
                 EXPECT_TRUE(immStatus::OK == imm);
                 if (immStatus::OK != imm)
                 {
@@ -154,7 +148,7 @@ protected:
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
                 mm.symmetrizeCharges(pd, qSymm, nullptr);
-                mm.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
                 mps.push_back(mm);
             }
         }

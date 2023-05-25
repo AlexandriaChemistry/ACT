@@ -129,18 +129,16 @@ int min_complex(int argc, char *argv[])
         actmol.Merge(&(*mp));
     
         immStatus imm = immStatus::OK;
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error, false);
+        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         if (immStatus::OK == imm)
         {
-            CommunicationRecord cr;
-            gmx::MDLogger  mdlog {};
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             
             std::vector<double> myq;
             auto alg   = pd.chargeGenerationAlgorithm();
             auto qtype = qType::Calc;
-            imm    = actmol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, qtype, myq, &coords, &forces);
+            imm        = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
         if (immStatus::OK == imm)
         {

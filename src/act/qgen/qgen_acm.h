@@ -44,8 +44,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 
-struct t_atoms;
-
 /*! \brief Charge generation status
  */
 enum class eQgen {

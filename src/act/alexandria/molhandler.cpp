@@ -1178,7 +1178,8 @@ void MolHandler::simulate(const ForceField              *pd,
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
-            write_pdbfile_indexed(traj, title, mol->gmxAtoms(),
+            // TODO: rewrite without gromacs fluff.
+            write_pdbfile_indexed(traj, title, nullptr,
                                   as_rvec_array(coordinates.data()), epbcNONE,
                                   box, chain, step+1, trajIndex.size(), trajIndex.data(),
                                   nullptr, false, false);

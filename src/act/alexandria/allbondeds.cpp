@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -546,8 +546,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 continue;
             }
             auto imm = mmi.GenerateTopology(fp, &pd,
-                                            missingParameters::Generate,
-                                            false);
+                                            missingParameters::Generate);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
