@@ -39,16 +39,9 @@
 #include <map>
 #include <vector>
 
-//#include "act/alexandria/actmol_low.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
-//#include "act/forcefield/forcefield_parameterlist.h"
-//#include "act/molprop/fragment.h"
-//#include "act/molprop/molprop.h"
-//#include "act/utility/communicationrecord.h"
-//#include "gromacs/gmxpreprocess/grompp-impl.h"
-//#include "gromacs/gpu_utils/hostallocator.h"
 
 namespace alexandria
 {
@@ -93,7 +86,8 @@ public:
     {
         if (ai >= indices_.size())
         {
-            GMX_THROW(gmx::InternalError("Atom index out of range"));
+            GMX_THROW(gmx::InternalError(gmx::formatString("Atom index %ld out of range, should be <= %ld", 
+                                                           ai, indices_.size()).c_str()));
         }
         return indices_[ai];
     }
@@ -312,7 +306,13 @@ class Angle : public TopologyEntry
      * \param[in] bij  First bond
      * \param[in] bjk  Second bond
      */
-    Angle(Bond bij, Bond bjk);
+    Angle(const Bond bij, const Bond bjk);
+
+    /*! \brief Set the two bonds
+     * \param[in] bij First bond
+     * \param[in] bjk Second bond
+     */
+    void setBonds(const Bond &bij, const Bond &bjk);
 
     //! Return the first bond
     const Bond &bij() const { return b_[0]; }
@@ -401,6 +401,113 @@ class Proper : public TopologyEntry
     
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
+};
+
+/*! \brief
+ * Virtual site on a linear bond.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Vsite2 : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    Vsite2() {}
+    
+    //! Constructor setting the ids of the atoms and the bondorder
+    Vsite2(int ai, int aj, int vs)
+    {
+        addAtom(ai);
+        addAtom(aj);
+        addAtom(vs);
+    }
+    
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *aj, int *vs) const;
+    
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+      
+     //! Returns the second atom id
+    int aJ() const
+    {
+        return atomIndex(1);
+    }
+    
+    //! \return virtual site ID
+    int vs() const
+    {
+        return atomIndex(2);
+    }
+    //! Return a Vsite2 with the order of atoms swapped
+    Vsite2 swap() const;
+ 
+    /*! \brief Return whether two Vsite2 instances are the same
+     * \param[in] other The other Vsite2
+     * \return true if they are the same
+     */
+    bool operator==(const Vsite2 &other) const;
+};
+
+/*! \brief
+ * Virtual site based on 3 particles
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Vsite3 : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    Vsite3() {}
+    
+    //! Constructor setting the ids of the atoms and the bondorder
+    Vsite3(int ai, int aj,  int ak, int vs)
+    {
+        addAtom(ai);
+        addAtom(aj);
+        addAtom(ak);
+        addAtom(vs);
+    }
+    
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *aj, int *ak, int *vs) const;
+    
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+      
+     //! Returns the second atom id
+    int aJ() const
+    {
+        return atomIndex(1);
+    }
+    
+     //! Returns the third atom id
+    int aK() const
+    {
+        return atomIndex(2);
+    }
+    
+    //! \return virtual site ID
+    int vs() const
+    {
+        return atomIndex(3);
+    }
+    //! Return a Vsite3 with the order of atoms swapped
+    Vsite3 swap() const;
+ 
+    /*! \brief Return whether two Vsite3 instances are the same
+     * \param[in] other The other Vsite3
+     * \return true if they are the same
+     */
+    bool operator==(const Vsite3 &other) const;
 };
 
 } // namespace alexandria

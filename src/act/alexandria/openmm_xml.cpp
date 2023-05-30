@@ -346,8 +346,8 @@ void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
             auto myatoms = topol->atoms();
             for(const auto topentry : topol->entry(itbonds))
             {
-                int ai = topentry->atomIndex(0);
-                int aj = topentry->atomIndex(1);
+                int ai = topentry.atomIndex(0);
+                int aj = topentry.atomIndex(1);
 
                 int reali = tellme_RealAtom(ai, myatoms);
                 int realj = tellme_RealAtom(aj, myatoms);
@@ -718,8 +718,8 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
         
         for(auto &entry : topology->entry(fs.first))
         {
-            const auto &bondId = entry->id().id();
-            const auto &atoms  = entry->id().atoms();
+            const auto &bondId = entry.id().id();
+            const auto &atoms  = entry.id().atoms();
             if (ClassUsed.end() == ClassUsed.find(bondId))
             {
                 ClassUsed.insert(bondId);
@@ -729,47 +729,47 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                     {
                         const char *omm_bonds[] = { "k", "length", "De" };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                                   atoms, omm_bonds, entry->params());
+                                   atoms, omm_bonds, entry.params());
                     }
                     break;
                 case F_CUBICBONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, cubic_name, entry->params());
+                               atoms, cubic_name, entry.params());
                     break;
                 case F_MORSE:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, morse_name, entry->params());
+                               atoms, morse_name, entry.params());
                     break;
                 case F_ANGLES:
                     {
                         const char *omm_angles[] = { "k", "angle" };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                                   atoms, omm_angles, entry->params());
+                                   atoms, omm_angles, entry.params());
                     }
                     break;
                 case F_UREY_BRADLEY:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, ub_name, entry->params());
+                               atoms, ub_name, entry.params());
                     break;
                     
                 case F_LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, linang_name, entry->params());
+                               atoms, linang_name, entry.params());
                     break;
                     
                 case F_FOURDIHS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::RBTORSIONFORCE,
-                               atoms, fdih_name, entry->params());
+                               atoms, fdih_name, entry.params());
                     break;
                     
                 case F_PDIHS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PERIODICTORSIONFORCE,
-                               atoms, pdih_name, entry->params());
+                               atoms, pdih_name, entry.params());
                     break;
                     
                 case F_IDIHS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::IMPROPER,
-                               atoms, idih_name, entry->params());
+                               atoms, idih_name, entry.params());
                     break;
                     
                 case F_COUL_SR:

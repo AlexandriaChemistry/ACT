@@ -120,7 +120,7 @@ double ForceComputer::compute(const ForceField                  *pd,
             // Since the potential is harmonic we use Hooke's law
             // F = k dx -> dx = F / k
             // TODO Optimize this protocol using overrelaxation
-            int shell = p->atomIndex(1);
+            int shell = p.atomIndex(1);
             for(int m = 0; m < DIM; m++)
             {
                 (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
@@ -153,6 +153,9 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
         svmul(fac, field, (*forces)[ff]);
     }
     double epot = 0;
+    std::set<InteractionType> vsites = {
+        InteractionType::VSITE2, InteractionType::VSITE3OUT,InteractionType::VSITE3FAD,
+    };
     for(const auto &entry : top->entries())
     {
         if (entry.second.empty())
@@ -163,12 +166,7 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
         auto &ffpl = pd->findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.gromacsType());
-        if (nullptr == bfc)
-        {
-            fprintf(stderr, "Please implement a force function for type %s\n",
-                    interaction_function[ffpl.gromacsType()].name);
-        }
-        else
+        if (bfc)
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
@@ -183,6 +181,11 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
                 energies->insert({ me.first, me.second });
                 epot += me.second;
             }
+        }
+        else if (vsites.end() == vsites.find(entry.first))
+        {
+            fprintf(stderr, "Please implement a force function for type %s\n",
+                    interaction_function[ffpl.gromacsType()].name);
         }
     }
     // Avoid double counting. TODO remove the VDW term

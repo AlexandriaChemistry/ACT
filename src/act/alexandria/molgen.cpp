@@ -350,7 +350,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                         if (optimize(btype))
                         {
                             // TODO check the loop over multiple ids
-                            for(auto &ff : *(bonds->findParameters(topentry->id())))
+                            for(auto &ff : *(bonds->findParameters(topentry.id())))
                             {
                                 if (ff.second.isMutable())
                                 {
@@ -362,16 +362,16 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                         auto bcctype = InteractionType::BONDCORRECTIONS;
                         if (optimize(bcctype) && pd->interactionPresent(bcctype))
                         {
-                            int ai = topentry->atomIndex(0);
-                            int aj = topentry->atomIndex(1);
+                            int ai = topentry.atomIndex(0);
+                            int aj = topentry.atomIndex(1);
                             auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
                             auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
                             auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
                             auto bcc   = pd->findForces(bcctype);
-                            auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
+                            auto bccId = Identifier({iPType, jPType}, topentry.bondOrders(), bcc->canSwap());
                             if (!bcc->parameterExists(bccId))
                             {
-                                bccId = Identifier({jPType, iPType}, topentry->bondOrders(), bcc->canSwap());
+                                bccId = Identifier({jPType, iPType}, topentry.bondOrders(), bcc->canSwap());
                                 if (!bcc->parameterExists(bccId))
                                 {
                                     GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
@@ -400,7 +400,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                             for (const auto &topentry : top->entry(atype))
                             {
                                 // TODO check multiple ids
-                                for (auto &ff : *(angles->findParameters(topentry->id())))
+                                for (auto &ff : *(angles->findParameters(topentry.id())))
                                 {
                                     if (ff.second.isMutable())
                                     {

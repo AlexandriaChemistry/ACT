@@ -56,7 +56,6 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
     size_t  ff = 0;
     // Copy the coordinates
     std::vector<gmx::RVec> x = coordinates;
-
     for(auto f = fragments->begin(); f < fragments->end(); ++f)
     {
         // First reality check
@@ -75,7 +74,6 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
             }
             atomFound[i] = true;
         }
-        atomStart_.push_back(offset);
         // Split bonds
         for(const auto &b : bonds)
         {
@@ -93,29 +91,21 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
                 bonds_[ff].push_back(bb);
             }
         }
+        // Create new topology
+        auto top = new Topology(bonds_[ff]);
+
         // Split coordinate array
         size_t natom = f->atoms().size();
         std::vector<gmx::RVec> xfrag(natom);
+        // Copy the atoms from the global topology and make new coordinate array
         int j = 0;
-        for (size_t i = atomStart_[ff]; i < atomStart_[ff]+natom; i++)
-        {
-            copy_rvec(x[i], xfrag[j++]);
-        }
-        // Create new topology
-        auto top = new Topology(bonds_[ff]);
-        // Copy the atoms
-        for(size_t i = offset; i < offset+f->atoms().size(); i++)
+        for(size_t i = offset; i < offset+natom; i++)
         {
             top->addAtom(atoms[i]);
+            copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
         top->build(pd, &xfrag, 175.0, 5.0, missing);
-        if (pd->polarizable())
-        {
-            // Update the atomstart array to include shells
-            // TODO: do this properly
-            atomStart_[atomStart_.size()-1] *= 2;
-        }
         // Array of total charges
         qtotal_.push_back(f->charge());
         // ID
@@ -128,6 +118,19 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         topologies_.push_back(top);
         // Increase counter
         ff += 1;
+    }
+    // Finaly determine molecule boundaries
+    atomStart_.resize(fragments->size(), 0);
+    for(size_t ff = 0; ff < topologies_.size(); ff++)
+    {
+        if (0 == ff)
+        {
+            atomStart_[ff] = 0;
+        }
+        else
+        {
+            atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
+        }
     }
 }
 
@@ -144,11 +147,13 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
             case ChargeGenerationAlgorithm::EEM:
             case ChargeGenerationAlgorithm::SQE:
                 {
-                    int index = atomStart_[ff] + a;
+                    size_t index = atomStart_[ff] + a;
+                    GMX_RELEASE_ASSERT(index < natoms_, 
+                                       gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
                     (*qq)[index] = QgenAcm_[ff].getQ(a);
                     if (debug)
                     {
-                        fprintf(debug, "Charge %d = %g\n", index,
+                        fprintf(debug, "Charge %ld = %g\n", index,
                                 (*qq)[index]);
                     }
                 }

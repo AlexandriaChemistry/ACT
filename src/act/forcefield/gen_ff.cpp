@@ -276,6 +276,10 @@ int gen_ff(int argc, char*argv[])
         {
             gmxtype = eptShell;
         }
+        else if (elem == "VS")
+        {
+            gmxtype = eptVSite;
+        }
         auto ptp = ParticleType(Identifier(entry.first),
                                 table[entry.first]["comment"], gmxtype);
                                 

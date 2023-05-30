@@ -163,6 +163,8 @@ class Identifier
 
     //! Correct the order of atoms and created permuted ids
     void orderAtoms();
+
+    void update();
 };
 
 } // namespace alexandria

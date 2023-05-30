@@ -35,6 +35,7 @@
 #include "topology.h"
 
 #include <algorithm>
+#include <list>
 #include <map>
 #include <set>
 #include <vector>
@@ -42,280 +43,44 @@
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
+#include "act/molprop/topologyentry.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "actmol_low.h"
-
 namespace alexandria
 {
 
-void TopologyEntry::check(size_t nAtom) const
+class ActAtomListItem
 {
-    if (indices_.size() != nAtom)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Expected %d atom indices, found %d",
-                                                       static_cast<int>(nAtom), static_cast<int>(indices_.size())).c_str()));
-    }
-}
+private:
+    //! The atom information
+    ActAtom   atom_;
+    //! The original index
+    size_t    index_;
+    //! Atomic coordinates
+    gmx::RVec x_;
+public:
+    //! constructor
+    ActAtomListItem(const ActAtom   atom,
+                    size_t          index,
+                    const gmx::RVec x) : atom_(atom), index_(index), x_(x) {}
+    
+    //! \return the atom
+    const ActAtom atom() const { return atom_; }
 
-void TopologyEntry::renumberAtoms(const std::vector<int> &renumber)
-{
-    for(auto &a : indices_)
-    {
-        a = renumber[a];
-    }
-}
+    //! \return pointer to the atom for editing
+    ActAtom *atomPtr() { return &atom_; }
 
-void TopologyEntry::setBondOrder(size_t ai, double bo)
-{
-    if (ai >= bondOrder_.size())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect index"));
-    }
-    bondOrder_[ai] = bo;
-}
+    //! \return the index
+    size_t index() const { return index_; }
 
-AtomPair AtomPair::swap() const
-{
-    AtomPair te;
-    auto &indices = atomIndices();
-    for (size_t i = 0; i < indices.size(); i++)
-    {
-        te.addAtom(indices[indices.size()-1-i]);
-    }
-    return te;
-}
+    //! \return the coordinates
+    const gmx::RVec x() const { return x_; }
 
-Bond Bond::swap() const
-{
-    Bond te;
-    auto &indices = atomIndices();
-    for (size_t i = 0; i < indices.size(); i++)
-    {
-        te.addAtom(indices[indices.size()-1-i]);
-    }
-    auto &bondOrder = bondOrders();
-    for (size_t i = 0; i < bondOrder.size(); i++)
-    {
-        te.addBondOrder(bondOrder[bondOrder.size()-1-i]);
-    }   
-    return te;
-}
-
-CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send_int(dest, indices_.size());
-        for(auto &ai : indices_)
-        {
-            cr->send_int(dest, ai);
-        }
-        cr->send_int(dest, bondOrder_.size());
-        for(auto &bo : bondOrder_)
-        {
-            cr->send_double(dest, bo);
-        }
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
-                                             int                        root,
-                                             MPI_Comm                   comm)
-{
-    CommunicationStatus cs = cr->bcast_data(comm);
-
-    if (CommunicationStatus::OK == cs)
-    {
-        int nai = indices_.size();
-        cr->bcast(&nai, comm);
-        if (cr->rank() == root)
-        {
-            for (int i= 0; i < nai; i++)
-            {
-                cr->bcast(&indices_[i], comm);
-            }
-        }
-        else
-        {
-            indices_.resize(nai, 0);
-            for (int i = 0; i < nai; i++)
-            {
-                cr->bcast(&indices_[i], comm);
-            }
-        }
-        int nbo = bondOrder_.size();
-        cr->bcast(&nbo, comm);
-        if (cr->rank() != root)
-        {
-            bondOrder_.resize(nbo);
-        }
-        cr->bcast(&bondOrder_, comm);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        int nai = cr->recv_int(src);
-        for (int i=0; i < nai; i++)
-        {
-            addAtom(cr->recv_int(src));
-        }
-        int nbo = cr->recv_int(src);
-        for (int i=0; i < nbo; i++)
-        {
-            addBondOrder(cr->recv_double(src));
-        }
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-bool AtomPair::operator==(const AtomPair &other) const
-{
-    return ((aI() == other.aI() && aJ() == other.aJ()) ||
-            (aJ() == other.aI() && aI() == other.aJ()));
-}
-
-bool AtomPair::operator<(const AtomPair &other) const
-{
-    return (aI() < other.aI() ||
-            (aI() == other.aI() && aJ() < other.aJ()) ||
-            (aI() == other.aJ() && aJ() < other.aI()));
-}
-
-bool Bond::operator==(const Bond &other) const
-{
-    return ((aI() == other.aI() && aJ() == other.aJ()) ||
-            (aJ() == other.aI() && aI() == other.aJ()));
-}
-
-void AtomPair::get(int *ai, int *aj) const
-{
-    check(2);
-    *ai        = atomIndex(0);
-    *aj        = atomIndex(1);
-}
-
-void Bond::get(int *ai, int *aj, double *bondorder) const
-{
-    check(2);
-    *ai        = atomIndex(0);
-    *aj        = atomIndex(1);
-    *bondorder = bondOrders()[0];
-}
-
-void Vsite2::get(int *ai, int *aj, int *vs) const
-{
-    check(3);
-    *ai = atomIndex(0);
-    *aj = atomIndex(1);
-    *vs = atomIndex(2);
-}
-
-Angle::Angle(Bond bij, Bond bjk)
-{
-    b_[0] = bij;
-    b_[1] = bjk;
-    if (b_[0].aJ() != b_[1].aI())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect bonds passed"));
-    }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
-    addBondOrder(bij.bondOrder());
-    addBondOrder(bjk.bondOrder());
-}
-
-void Angle::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-}
-
-Improper::Improper(Bond bij, Bond bik, Bond bil)
-{
-    b_[0] = bij;
-    b_[1] = bik;
-    b_[2] = bil;
-    if (b_[0].aI() != b_[1].aI())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect second bond passed"));
-    }
-    if (b_[0].aI() != b_[2].aI())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect third bond passed"));
-    }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
-    addAtom(b_[2].aJ());
-    GMX_RELEASE_ASSERT(atomIndices().size() == 4, "Something weird with impropers");
-    addBondOrder(bij.bondOrder());
-    addBondOrder(bik.bondOrder());
-    addBondOrder(bil.bondOrder());
-}
-
-void Improper::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-    b_[2].renumberAtoms(renumber);
-}
-
-Proper::Proper(Bond bij, Bond bjk, Bond bkl)
-{
-    b_[0] = bij;
-    b_[1] = bjk;
-    b_[2] = bkl;
-    if (b_[0].aJ() != b_[1].aI())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect second bond passed"));
-    }
-    if (b_[1].aJ() != b_[2].aI())
-    {
-        GMX_THROW(gmx::InvalidInputError("Incorrect third bond passed"));
-    }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
-    addAtom(b_[2].aJ());
-    addBondOrder(bij.bondOrder());
-    addBondOrder(bjk.bondOrder());
-    addBondOrder(bkl.bondOrder());
-}
-
-void Proper::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-    b_[2].renumberAtoms(renumber);
-}
+    //! Equal index
+    bool operator==(size_t index) const { return index == index_; }
+};
 
 Topology::Topology(const std::vector<Bond> &bonds)
 {
@@ -328,13 +93,13 @@ Topology::Topology(const std::vector<Bond> &bonds)
             {
                 GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
             }
-            entries_[InteractionType::BONDS].push_back(new Bond(b));
+            entries_[InteractionType::BONDS].push_back(b);
         }
     }
 }
 
 static void dump_entry(FILE *fp, 
-                       const std::vector<TopologyEntry *> &entries,
+                       const std::vector<TopologyEntry> &entries,
                        const std::string &label)
 {
     if (nullptr == fp)
@@ -344,7 +109,7 @@ static void dump_entry(FILE *fp,
     for(auto &entry : entries)
     {
         fprintf(fp, "%s", label.c_str());
-        for (auto &ai : entry->atomIndices())
+        for (auto &ai : entry.atomIndices())
         {
             fprintf(fp, " %d", ai);
         }
@@ -352,50 +117,23 @@ static void dump_entry(FILE *fp,
     }
 }
 
-void Topology::addShells(FILE                   *fp,
-                         const ForceField       *pd,
-                         std::vector<gmx::RVec> *x)
+void Topology::addShells(const ForceField *pd,
+                         AtomList         *atomList)
 {
-    /* Calculate the total number of Atom and Vsite particles and
-     * generate the renumbering array.
-     */
-    std::vector<int>             shellRenumber;
-    std::map<int, int>           originalAtomIndex;
-
-    int                          nshell = 0;
-    shellRenumber.resize(atoms_.size(), 0);
-    for (size_t i = 0; i < atoms_.size(); i++)
+    if (!pd->polarizable())
     {
-        auto atype       = pd->findParticleType(atoms_[i].ffType());
-        shellRenumber[i] = i + nshell;
-        originalAtomIndex.insert({shellRenumber[i], i});
-        if (atype->hasInteractionType(InteractionType::POLARIZATION))
-        {
-            // TODO: Update if particles can have more than one shell
-            nshell++;
-        }
-        if (debug)
-        {
-            fprintf(debug, "Shell renumber %s %zu is %d\n", atoms_[i].name().c_str(), i, shellRenumber[i]);
-        }
+        return;
     }
-    if (fp)
-    {
-        fprintf(fp, "Found %d shells to be added\n", nshell);
-    }
-    
     /* Add Polarization to the plist. */
-    std::vector<TopologyEntry *> pols;
+    std::vector<TopologyEntry> pols;
     auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
-    
-    // Atoms first
-    size_t i = 0;
-    auto xiter = x->begin();
-    for (auto iter = atoms_.begin(); iter < atoms_.end() && xiter < x->end(); ++iter, ++xiter)
+
+    // Loop through the atomList.    
+    for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {
-        if (iter->pType() == eptAtom || iter->pType() == eptVSite)
+        if (iter->atom().pType() == eptAtom || iter->atom().pType() == eptVSite)
         {
-            std::string atomtype(iter->ffType());
+            std::string atomtype(iter->atom().ffType());
             if (pd->hasParticleType(atomtype))
             {
                 // TODO: Allow adding multiple shells
@@ -412,31 +150,24 @@ void Topology::addShells(FILE                   *fp,
                         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
                     }
                     // TODO Multiple shell support
-                    auto pp = new TopologyEntry();
-                    auto core = shellRenumber[i];
-                    auto shell = core+1;
-                    pp->addAtom(core);
-                    pp->addAtom(shell);
-                    pp->addBondOrder(1.0);
-                    pols.push_back(pp);
+                    TopologyEntry pp;
+                    auto core  = iter->index();
+                    auto shell = atomList->size();
+                    pp.addAtom(core);
+                    pp.addAtom(shell);
+                    pp.addBondOrder(1.0);
+                    pols.push_back(std::move(pp));
 
                     // Insert shell atom
-                    auto shellName = iter->name() + "s";
+                    auto shellName = iter->atom().name() + "s";
                     ActAtom newshell(shellName, "EP", ptype.id(), eptShell,
                                      0, 0, charge);
-                    newshell.setResidueNumber(iter->residueNumber());
-                    iter = atoms_.insert(iter+1, newshell);
-                    // Insert new coordinate
-                    xiter = x->insert(xiter+1, (*x)[shellRenumber[i]]); 
+                    newshell.setResidueNumber(iter->atom().residueNumber());
+                    auto olditer = iter;
+                    iter = atomList->insert(std::next(iter), ActAtomListItem(newshell, shell, olditer->x()));
                     // Create link between shell and atom
-                    atoms_[core].addShell(shell);
-                    atoms_[shell].setCore(core);
-                    if (debug)
-                    {
-                        fprintf(debug, "Just made an atom-shell pair %s %d %s %d\n",
-                                atoms_[core].name().c_str(), core,
-                                atoms_[shell].name().c_str(), shell);
-                    }
+                    olditer->atomPtr()->addShell(shell);
+                    iter->atomPtr()->addCore(core);
                 }
             }
             else
@@ -444,22 +175,13 @@ void Topology::addShells(FILE                   *fp,
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find atomtype %s in forcefield\n", 
                                                                    atomtype.c_str())));
             }
-            // Increase counter for atoms and vsites only.
-            i += 1;
         }
     }
-    // Check length of arrays.
-    if (atoms_.size() != x->size())
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: %zu atoms but %zu coordinates.", atoms_.size(),
-                                                       x->size()).c_str()));
-    }
+
     if (!pols.empty())
     {
         addEntry(InteractionType::POLARIZATION, pols);
-        dump_entry(debug, pols, "Before renumber");
-        renumberAtoms(shellRenumber);
-        dump_entry(debug, pols, "After renumber");
+        dump_entry(debug, pols, "The pols");
     }
 }
 
@@ -471,23 +193,7 @@ void Topology::addBond(const Bond &bond)
         GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
     }
     entries_.insert({ InteractionType::BONDS, {} });
-    entries_[InteractionType::BONDS].push_back(new Bond(bond));
-}
-
-int Topology::makeVsites(const ForceField       *pd,
-                         std::vector<gmx::RVec> *x)
-{
-    int vsitesAdded = 0;
-    // Check whether we have virtual sites in the force field.
-    if (pd->interactionPresent(InteractionType::VSITE2))
-    {
-        vsitesAdded += makeVsite2s(pd);
-    }
-    if (vsitesAdded > 0)
-    {
-        x->resize(x->size()+vsitesAdded);
-    }
-    return vsitesAdded;
+    entries_[InteractionType::BONDS].push_back(bond);
 }
 
 double Topology::mass() const
@@ -500,18 +206,18 @@ double Topology::mass() const
     return mtot;
 }
 
-const Bond *Topology::findBond(int ai, int aj) const
+const Bond &Topology::findBond(int ai, int aj) const
 {
     Bond b(ai, aj, 1.0);
-    std::vector<TopologyEntry *>::const_iterator bptr;
+    std::vector<TopologyEntry>::const_iterator bptr;
     auto bondsptr = entries_.find(InteractionType::BONDS);
     if (entries_.end() != bondsptr)
     {
-        const std::vector<TopologyEntry *> &bonds = bondsptr->second;
+        const std::vector<TopologyEntry> &bonds = bondsptr->second;
         bptr  = std::find_if(bonds.begin(), bonds.end(),
-                             [b](const TopologyEntry *bb)
-                             { return (bb->atomIndex(0) == b.atomIndex(0) && bb->atomIndex(1) == b.atomIndex(1)) ||
-                               (bb->atomIndex(0) == b.atomIndex(1) && bb->atomIndex(1) == b.atomIndex(0)); });
+                             [b](const TopologyEntry &bb)
+                             { return (bb.atomIndex(0) == b.atomIndex(0) && bb.atomIndex(1) == b.atomIndex(1)) ||
+                               (bb.atomIndex(0) == b.atomIndex(1) && bb.atomIndex(1) == b.atomIndex(0)); });
         if (bptr == bonds.end())
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond between %d and %d", ai, aj).c_str()));
@@ -521,10 +227,11 @@ const Bond *Topology::findBond(int ai, int aj) const
     {
         GMX_THROW(gmx::InternalError("There are no bonds at all."));
     }
-    auto myptr = static_cast<const Bond *>(*bptr);
+    const TopologyEntry *ppp = &(*bptr);
+    auto myptr = static_cast<const Bond *>(ppp);
     if (myptr->aI() == ai)
     {
-        return myptr;
+        return *myptr;
     }
     else
     {
@@ -532,21 +239,22 @@ const Bond *Topology::findBond(int ai, int aj) const
     }
 }
 
-const TopologyEntry *Topology::findTopologyEntry(InteractionType            itype,
-                                                 const std::vector<int>    &aindex,
-                                                 const std::vector<double> &bondOrder,
-                                                 CanSwap                    cs) const
+bool Topology::findTopologyEntry(InteractionType            itype,
+                                 const std::vector<int>    &aindex,
+                                 const std::vector<double> &bondOrder,
+                                 CanSwap                    cs,
+                                 TopologyEntry             *entry) const
 {
     if (!hasEntry(itype))
     {
-        return nullptr;
+        return false;
     }
     auto eptr  = entries_.find(itype);
     if (entries_.end() == eptr)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such entry %s in topology", interactionTypeToString(itype).c_str()).c_str()));
     }
-    auto entry = eptr->second;
+    auto entries = eptr->second;
     TopologyEntry te;
     for (auto &a : aindex)
     {
@@ -556,19 +264,19 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
     {
         te.addBondOrder(b);
     }
-    auto bptr  = std::find_if(entry.begin(), entry.end(),
-                              [te, cs](const TopologyEntry *bb)
+    auto bptr  = std::find_if(entries.begin(), entries.end(),
+                              [te, cs](const TopologyEntry &bb)
     {
-        bool same = te.atomIndices().size() == bb->atomIndices().size();
+        bool same = te.atomIndices().size() == bb.atomIndices().size();
         if (same)
         {
             for(size_t i = 0; i < te.atomIndices().size() and same; i++)
             {
-                same = same && (te.atomIndices()[i] == bb->atomIndices()[i]);
+                same = same && (te.atomIndices()[i] == bb.atomIndices()[i]);
             }
             for(size_t i = 0; i < te.bondOrders().size() and same; i++)
             {
-                same = same && (te.bondOrders()[i] == bb->bondOrders()[i]);
+                same = same && (te.bondOrders()[i] == bb.bondOrders()[i]);
             }
         }
         if (!same && CanSwap::Yes == cs)
@@ -576,26 +284,28 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
             same = true;
             for(size_t i = 0; i < te.atomIndices().size() and same; i++)
             {
-                same = same && (te.atomIndices()[i] == bb->atomIndices()[bb->atomIndices().size()-1-i]);
+                same = same && (te.atomIndex(i) == bb.atomIndex(bb.atomIndices().size()-1-i));
             }
             for(size_t i = 0; i < te.bondOrders().size() and same; i++)
             {
-                same = same && (te.bondOrders()[i] == bb->bondOrders()[bb->bondOrders().size()-1-i]);
+                same = same && (te.bondOrder(i) == bb.bondOrder(bb.bondOrders().size()-1-i));
             }
         }
         return same;
     });
-    if (bptr == entry.end())
+    if (bptr == entries.end())
     {
-        return nullptr;
+        return false;
     }
     else
     {
-        return *bptr;
+        *entry = *bptr;
+        return true;
     }
 }
  
-void Topology::makeAngles(const std::vector<gmx::RVec> &x,
+void Topology::makeAngles(const ForceField             *pd,
+                          const std::vector<gmx::RVec> &x,
                           double                        LinearAngleMin)
 {
     auto ib = InteractionType::BONDS;
@@ -610,62 +320,65 @@ void Topology::makeAngles(const std::vector<gmx::RVec> &x,
     auto &linangles = entries_.find(InteractionType::LINEAR_ANGLES)->second;
     for(size_t i = 0; i < bonds.size(); i++)
     {
-        auto  b1  = static_cast<Bond *>(bonds[i]);
-        int   ai1 = b1->atomIndex(0);
-        int   aj1 = b1->atomIndex(1);
+        auto b1  = static_cast<const Bond *>(&bonds[i]);
+        int  ai1 = bonds[i].atomIndex(0);
+        int  aj1 = bonds[i].atomIndex(1);
         for(size_t j = 0; j < bonds.size(); j++)
         {
             if (i == j)
             {
                 continue;
             }
-            auto  b2     = static_cast<Bond *>(bonds[j]);
-            int   ai2    = b2->atomIndex(0);
-            int   aj2    = b2->atomIndex(1);
-            Angle *angle = nullptr;
+            auto b2  = static_cast<const Bond *>(&bonds[j]);
+            int  ai2 = b2->atomIndex(0);
+            int  aj2 = b2->atomIndex(1);
+            Angle angle;
             if (aj1 == ai2)
             {
-                angle = new Angle(*b1, *b2);
+                angle.setBonds(*b1, *b2);
             }
             else if (aj1 == aj2)
             {
-                angle = new Angle(*b1, b2->swap());
+                angle.setBonds(*b1, b2->swap());
             }
             else if (ai1 == ai2)
             {
-                angle = new Angle(b1->swap(), *b2);
+                angle.setBonds(b1->swap(), *b2);
             }
             else if (ai1 == aj2)
             {
-                angle = new Angle(b1->swap(), b2->swap());
+                angle.setBonds(b1->swap(), b2->swap());
             }
-            if (angle)
+
+            if (is_linear(x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
+                          nullptr, LinearAngleMin))
             {
-                
-                if (is_linear(x[angle->atomIndex(0)], x[angle->atomIndex(1)], x[angle->atomIndex(2)],
-                              nullptr, LinearAngleMin))
+                angle.setLinear(true);
+                if (findTopologyEntry(InteractionType::LINEAR_ANGLES, angle.atomIndices(),
+                                      angle.bondOrders(), CanSwap::Yes, &angle))
                 {
-                    angle->setLinear(true);
-                    if (nullptr == findTopologyEntry(InteractionType::LINEAR_ANGLES, angle->atomIndices(),
-                                          angle->bondOrders(), CanSwap::Yes))
-                    {
-                        linangles.push_back(angle);
-                    }
+                    linangles.push_back(angle);
                 }
-                else
+            }
+            else
+            {
+                if (findTopologyEntry(InteractionType::ANGLES, angle.atomIndices(),
+                                      angle.bondOrders(), CanSwap::Yes, &angle))
                 {
-                    if (nullptr == findTopologyEntry(InteractionType::ANGLES, angle->atomIndices(),
-                                          angle->bondOrders(), CanSwap::Yes))
-                    {
-                        angles.push_back(angle);
-                    }
+                    angles.push_back(angle);
                 }
             }
         }
     }
+    if (pd)
+    {
+        setEntryIdentifiers(pd, InteractionType::ANGLES);
+        setEntryIdentifiers(pd, InteractionType::LINEAR_ANGLES);
+    }
 }
 
-void Topology::makeImpropers(const std::vector<gmx::RVec> &x,
+void Topology::makeImpropers(const ForceField             *pd,
+                             const std::vector<gmx::RVec> &x,
                              double                        PlanarAngleMax)
 {
     auto ib = InteractionType::BONDS;
@@ -682,8 +395,8 @@ void Topology::makeImpropers(const std::vector<gmx::RVec> &x,
     auto &bonds = entry(InteractionType::BONDS);
     for(auto &b : bonds)
     {
-        mybonds[b->atomIndex(0)].insert(b->atomIndex(1));
-        mybonds[b->atomIndex(1)].insert(b->atomIndex(0));
+        mybonds[b.atomIndex(0)].insert(b.atomIndex(1));
+        mybonds[b.atomIndex(1)].insert(b.atomIndex(0));
     }
     entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, {} });
     auto &impropers = entries_.find(InteractionType::IMPROPER_DIHEDRALS)->second;
@@ -703,65 +416,113 @@ void Topology::makeImpropers(const std::vector<gmx::RVec> &x,
                 Bond bjkl[3];
                 for(int m = 0; m < 3; m++)
                 {
-                    bjkl[m] = *findBond(i, jkl[m]);
+                    bjkl[m] = findBond(i, jkl[m]);
                     if (bjkl[m].atomIndex(0) != static_cast<int>(i))
                     {
                         bjkl[m] = bjkl[m].swap();
                     }
                 }
-                impropers.push_back(new Improper(bjkl[0], bjkl[1], bjkl[2]));
+                impropers.push_back(Improper(bjkl[0], bjkl[1], bjkl[2]));
             }
         }
     }
-}
-
-void Topology::makePairs(int natoms)
-{
-    for(const auto &itype : { InteractionType::VDW,
-                              InteractionType::COULOMB })
+    if (pd)
     {
-        entries_.insert({itype, {} });
-        auto &pairs = entries_.find(itype)->second;
-        for(int i = 0; i < natoms; i++)
-        {
-            // Check for exclusions is done later.
-            for(int j = i+1; j < natoms; j++)
-            {
-                pairs.push_back(new AtomPair(i, j));
-            }
-        }
+        setEntryIdentifiers(pd, InteractionType::IMPROPER_DIHEDRALS);
     }
 }
 
-void Topology::fixShellExclusions()
+void Topology::makePairs(const ForceField *pd,
+                         InteractionType   itype)
 {
-    for (const auto &itype : { InteractionType::VDW,
-                               InteractionType::COULOMB } )
+    entries_.insert({itype, {} });
+    auto &pairs = entries_.find(itype)->second;
+    for(size_t i = 0; i < atoms_.size(); i++)
     {
-        if (!hasEntry(itype) || exclusions_.find(itype) == exclusions_.end())
+        // Check for exclusions is done later.
+        for(size_t j = i+1; j < atoms_.size(); j++)
         {
-            continue;
+            pairs.push_back(AtomPair(i, j));
         }
-        auto &ffpl = entries_.find(itype)->second;
-        // Loop over all exclusions
-        for(size_t ai = 0; ai < exclusions_[itype].size(); ++ai)
+    }
+    // Now time for exclusions
+    int nexcl;
+    if (!ffOption(*pd, itype, "nexcl", &nexcl))
+    {
+        nexcl = 0;
+    }
+    generateExclusions(itype, nexcl);
+    fixExclusions(itype);
+    // Finally insert the identifiers
+    if (pd)
+    {
+        setEntryIdentifiers(pd, itype);
+    }
+}
+
+void Topology::fixExclusions(InteractionType itype)
+{
+    if (!hasEntry(itype) || exclusions_.find(itype) == exclusions_.end())
+    {
+        return;
+    }
+    auto &ffpl = entries_.find(itype)->second;
+    // Loop over all exclusions
+    for(size_t ai = 0; ai < exclusions_[itype].size(); ++ai)
+    {
+        for(size_t jj = 0; jj < exclusions_[itype][ai].size(); ++jj)
         {
-            for(size_t jj = 0; jj < exclusions_[itype][ai].size(); ++jj)
+            size_t aj = exclusions_[itype][ai][jj];
+            // Check whether these particles have shells
+            for(size_t si : atoms_[ai].shells())
             {
-                size_t aj = exclusions_[itype][ai][jj];
-                // Check whether these particles have shells
-                for(size_t si : atoms_[ai].shells())
+                for(size_t sj : atoms_[aj].shells())
                 {
-                    for(size_t sj : atoms_[aj].shells())
+                    // See whether this interaction exists
+                    auto it = ffpl.begin();
+                    while (ffpl.end() != it)
                     {
-                        // See whether this interaction exists
-                        auto it = ffpl.begin();
+                        size_t aai = it->atomIndices()[0];
+                        size_t aaj = it->atomIndices()[1];
+                        if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) || 
+                            ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
+                        {
+                            it = ffpl.erase(it);
+                        }
+                        else
+                        {
+                            ++it;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Now remove interactions with vsites that are excluded
+    // from the constructing atoms.
+    for(size_t i = 0; i < atoms_.size(); i++)
+    {
+        if (eptVSite == atoms_[i].pType())
+        {
+            // Each vsite has two or more cores
+            for (size_t core : atoms_[i].cores())
+            {
+                std::vector<int> core_and_shells = atoms_[core].shells();
+                core_and_shells.push_back(core);
+                for (size_t cas : core_and_shells)
+                {
+                    // Loop over the exclusions for this itype and core or its shells
+                    for (size_t jj = 0; jj < exclusions_[itype][cas].size(); ++jj)
+                    {
+                        size_t aj = exclusions_[itype][cas][jj];
+                        // Now check the pair list
+                        auto it   = ffpl.begin();
                         while (ffpl.end() != it)
                         {
-                            size_t aai = (*it)->atomIndices()[0];
-                            size_t aaj = (*it)->atomIndices()[1];
-                            if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) || 
-                                ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
+                            size_t aai = it->atomIndices()[0];
+                            size_t aaj = it->atomIndices()[1];
+                            // If we find an interaction with the vsite, remove it.
+                            if ((aai == i && aaj == aj) || (aaj == i || aai == aj))
                             {
                                 it = ffpl.erase(it);
                             }
@@ -771,7 +532,7 @@ void Topology::fixShellExclusions()
                             }
                         }
                     }
-                }                
+                }
             }
         }
     }
@@ -793,24 +554,25 @@ void  Topology::addShellPairs()
             std::set<AtomPair> newf;
             for(auto &f : ffpl)
             {
-                auto indices = f->atomIndices();
+                auto indices = f.atomIndices();
                 auto core_i = indices[0];
                 auto core_j = indices[1];
                 int shell_i = -1;
                 int shell_j = -1;
                 for(const auto &p_i : pol)
+                
                 {
-                    if (core_i == p_i->atomIndices()[0])
+                    if (core_i == p_i.atomIndices()[0])
                     {
-                        shell_i = p_i->atomIndices()[1];
+                        shell_i = p_i.atomIndices()[1];
                         break;
                     }
                 }
                 for(const auto &p_j : pol)
                 {
-                    if (core_j == p_j->atomIndices()[0])
+                    if (core_j == p_j.atomIndices()[0])
                     {
-                        shell_j = p_j->atomIndices()[1];
+                        shell_j = p_j.atomIndices()[1];
                         break;
                     }
                 }
@@ -829,14 +591,14 @@ void  Topology::addShellPairs()
             }
             for(const auto &n : newf)
             {
-                auto ap = new AtomPair(n);
+                AtomPair ap(n);
                 ffpl.push_back(std::move(ap));
             }
         }
     }
 }
 
-void Topology::makePropers()
+void Topology::makePropers(const ForceField *pd)
 {
     auto ia = InteractionType::ANGLES;
     if (entries_.find(ia) == entries_.end())
@@ -848,7 +610,7 @@ void Topology::makePropers()
     auto &angles  = entries_.find(ia)->second;
     for(size_t i = 0; i < angles.size(); i++)
     {
-        auto a1 = static_cast<Angle *>(angles[i]);
+        auto a1 = static_cast<const Angle *>(&angles[i]);
         if (a1->isLinear())
         {
             continue;
@@ -857,7 +619,7 @@ void Topology::makePropers()
         auto bjk1 = a1->bjk();
         for(size_t j = i+1; j < angles.size(); j++)
         {
-            auto a2 = static_cast<Angle *>(angles[j]);
+            auto a2 = static_cast<const Angle *>(&angles[j]);
             if (a2->isLinear())
             {
                 continue;
@@ -869,31 +631,44 @@ void Topology::makePropers()
             // 1) the first angle is i-j-k and the second j-k-l
             if (bjk1.aI() == bij2.aI() && bjk1.aJ() == bij2.aJ())
             {
-                propers.push_back(new Proper(bij1, bjk1, bjk2));
+                propers.push_back(Proper(bij1, bjk1, bjk2));
             }
             // 2) the first angle is k-j-i and the second j-k-l
             else if (bij1.aI() == bij2.aJ() && bij1.aJ() == bij2.aI())
             {
-                propers.push_back(new Proper(bjk1.swap(), bij2, bjk2));
+                propers.push_back(Proper(bjk1.swap(), bij2, bjk2));
             }
             // 2) the first angle is k-j-i and the second l-k-j
             else if (bij1.aI() == bij2.aJ() && bij1.aJ() == bjk2.aJ() )
             {
-                propers.push_back(new Proper(bjk1.swap(), bij1.swap(), bij2.swap()));
+                propers.push_back(Proper(bjk1.swap(), bij1.swap(), bij2.swap()));
             }
             // 4) the first angle is i-j-k and the second l-k-j
             else if (bij1.aJ() == bjk2.aJ() && bjk1.aJ() == bij2.aJ())
             {
-                propers.push_back(new Proper(bij1, bjk1, bij2.swap()));
+                propers.push_back(Proper(bij1, bjk1, bij2.swap()));
             }
         }
     }
+    if (pd)
+    {
+        setEntryIdentifiers(pd, InteractionType::PROPER_DIHEDRALS);
+    }
 }
 
-int Topology::makeVsite2s(const ForceField *pd)
+int Topology::makeVsite2s(const ForceField *pd,
+                          AtomList         *atomList)
 {
-    auto itype_vs2 = InteractionType::VSITE2;
-    auto &ffvs     = pd->findForcesConst(itype_vs2);
+    if (!pd)
+    {
+        return 0;
+    }
+    auto itype = InteractionType::VSITE2;
+    if (!pd->interactionPresent(itype))
+    {
+        return 0;
+    }
+    auto &ffvs     = pd->findForcesConst(itype);
     if (ffvs.empty())
     {
         return 0;
@@ -905,15 +680,22 @@ int Topology::makeVsite2s(const ForceField *pd)
         return 0;
     }
     auto &bonds     = entry(itype_b);
-    entries_.insert({ itype_vs2, {} });
-    auto &vsite2    = entries_.find(itype_vs2)->second;
+    // Add the virtual sites entry...
+    entries_.insert({ itype, {} });
+    // ... and look up the vector
+    auto &vsite2    = entries_.find(itype)->second;
     int vsitesAdded = 0;
+    // Loop over bonds to see if there are any pairs of atoms
+    // that should be augmented with a virtual site.
+    // Since we insert atoms and coordinates, the bonds array needs to be
+    // interpreted with care.
     for(size_t i = 0; i < bonds.size(); i++)
     {
-        auto bid    = static_cast<Bond *>(bonds[i])->id();
+        auto mybond = static_cast<const Bond *>(&bonds[i]);
+        mybond->check(2);
+        auto bid    = mybond->id();
         auto batoms = bid.atoms();
         auto border = bid.bondOrders();
-        GMX_RELEASE_ASSERT(2 == batoms.size(), "Not enough atoms");
         printf("Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
         
         for(auto fvs : ffvs.parametersConst())
@@ -935,20 +717,42 @@ int Topology::makeVsite2s(const ForceField *pd)
                 auto vsname = vsatoms[vsatoms.size()-1];
                 if (!pd->hasParticleType(vsname))
                 {
-                    printf("No such particle type %s as found in vsite %s\n", vsname.c_str(), fvs.first.id().c_str());
+                    printf("No such particle type %s as found in vsite %s\n",
+                           vsname.c_str(), fvs.first.id().c_str());
                 }
                 else
                 {
                     auto ptype = pd->findParticleType(vsname);
                     
                     ActAtom newatom(ptype->id().id(), ptype->element(), ptype->id().id(),
-                                    ptype->gmxParticleType(), 0, ptype->mass(), ptype->charge());
-                    atoms_.push_back(newatom);
-                    vsite2.push_back(new Vsite2(bonds[i]->atomIndex(0), bonds[i]->atomIndex(1), atoms_.size()-1));
+                                    ptype->gmxParticleType(), 
+                                    0, ptype->mass(), ptype->charge());
+                    // We need to add the number of previous vsites to get the
+                    // corect numbers here.
+                    int ai  = mybond->aI();
+                    int aj  = mybond->aJ();
+                    // Put virtual site straight after the last atom.
+                    int vs2 = atomList->size();
+                    newatom.addCore(ai);
+                    newatom.addCore(aj);
+                    gmx::RVec vzero = { 0, 0, 0 };
+                    size_t after = std::max(ai, aj);
+                    auto iter = std::find(atomList->begin(), atomList->end(), after);
+                    atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
                     vsitesAdded += 1;
+                    // Create new topology entry
+                    Vsite2 vsnew(ai, aj, vs2);
+                    // Add bond orders, copied from the bond.
+                    for (auto b : border)
+                    {
+                        vsnew.addBondOrder(b);
+                    }
+                    // Special bond order for vsites
+                    vsnew.addBondOrder(9);
+                    vsite2.push_back(vsnew);
                 }
             }
-        }    
+        }
     }
     return vsitesAdded;
 }
@@ -957,12 +761,9 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
 {
     for(auto &myEntry: entries_)
     {
-        if (InteractionType::POLARIZATION != myEntry.first)
+        for(auto &b : myEntry.second)
         {
-            for(auto &b : myEntry.second)
-            {
-                b->renumberAtoms(renumber);
-            }
+            b.renumberAtoms(renumber);
         }
     }
 }
@@ -977,7 +778,7 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     for(auto pl = plist.begin(); pl < plist.end(); ++pl)
     {
         fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
-                (*pl)->atomIndices()[0], (*pl)->atomIndices()[1]);
+                pl->atomIndex(0), pl->atomIndex(1));
     }
 }
 
@@ -998,8 +799,9 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
         {
             return immStatus::NoAtoms;
         }
-        int res0 = -666;
-        int nres = 0;
+        int res0  = -666;
+        int nres  = 0;
+        int natom = 0;
         for (auto &cai : ci->calcAtomConst())
         {
             auto myunit = cai.coordUnit();
@@ -1025,6 +827,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
                                 atype->atomnumber(), atype->mass(), atype->charge());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);
+                realAtoms_.push_back(natom++);
             }
             else
             {
@@ -1056,8 +859,73 @@ void Topology::build(const ForceField             *pd,
                      double                        PlanarAngleMax,
                      missingParameters             missing)
 {
-    makeAngles(*x, LinearAngleMin);
-    makeImpropers(*x, PlanarAngleMax);
+    // We use a list structure to keep track of the atoms and their coordinates.
+    // This is needed since we may insert both shells and virtual sites. Although
+    // one can insert items in std::vector structures it may lead to poor (N^2)
+    // scaling to insert for instance one shell per particle. At the end of this 
+    // algorithm we copy the contents of the list back to std::vectors.
+    AtomList atomList;
+    for(size_t index = 0; index < atoms_.size(); index++)
+    {
+        atomList.push_back(ActAtomListItem(atoms_[index], index, (*x)[index]));
+    }
+
+    // Before we can do anything we need to "identify" the bonds
+    setEntryIdentifiers(pd, InteractionType::BONDS);
+
+    // Check whether we have virtual sites in the force field.
+    int nvsites = makeVsite2s(pd, &atomList);
+    if (debug)
+    {
+        fprintf(debug, "Added %d vsites\n", nvsites);
+    }
+    // Now time for shells.
+    addShells(pd, &atomList);
+    if (debug)
+    {
+        fprintf(debug, "Added %zu shells\n", atomList.size()-atoms_.size());
+    }
+    // Now there will be no more changes to the atomList and we can copy it back.
+    std::vector<int> renumber(atomList.size(), 0);
+    size_t atom = 0;
+    atoms_.clear();
+    x->clear();
+    for(auto iter = atomList.begin(); iter != atomList.end(); iter = std::next(iter))
+    {
+        atoms_.push_back(iter->atom());
+        (*x).push_back(iter->x());
+        renumber[iter->index()] = atom++;
+    }
+    // Renumber the list of real atoms
+    for (size_t i = 0; i < realAtoms_.size(); i++)
+    {
+        realAtoms_[i] = renumber[realAtoms_[i]];
+    }
+    // Now renumber the atoms' internal links to cores and shells
+    for (auto &atom: atoms_)
+    {
+        auto ccc = atom.coresPtr();
+        for(auto c = ccc->begin(); c < ccc->end(); ++c)
+        {
+            *c = renumber[*c];
+        }
+        auto sss = atom.shellsPtr();
+        for(auto s = sss->begin(); s < sss->end(); ++s)
+        {
+            *s = renumber[*s];
+        }
+    }
+    // Renumber the atoms in the TopologyEntries that have been created so far.
+    renumberAtoms(renumber);
+    setEntryIdentifiers(pd, InteractionType::POLARIZATION);
+    if (nvsites > 0)
+    {
+        setEntryIdentifiers(pd, InteractionType::VSITE2);
+    }
+
+    // Now make angles etc.
+    makeAngles(pd, *x, LinearAngleMin);
+    makeImpropers(pd, *x, PlanarAngleMax);
     // Check whether we have dihedrals in the force field.
     if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
     {
@@ -1065,39 +933,18 @@ void Topology::build(const ForceField             *pd,
         auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
         if (!fs.empty() || missingParameters::Generate == missing)
         {
-            makePropers();
+            makePropers(pd);
         }
     }
-    // Check whether we have virtual sites in the force field.
-    if (pd->interactionPresent(InteractionType::VSITE2))
-    {
-        auto &fs = pd->findForcesConst(InteractionType::VSITE2);
-        if (!fs.empty())
-        {
-            makeVsite2s(pd);
-        }
-    }
-    makePairs(x->size());
-    int nexclvdw;
-    if (!ffOption(*pd, InteractionType::VDW, 
-                  "nexcl", &nexclvdw))
-    {
-        nexclvdw = 0;
-    }
-    int nexclqq;
-    if (!ffOption(*pd, InteractionType::COULOMB, 
-                  "nexcl", &nexclqq))
-    {
-        nexclqq = 0;
-    }
-    generateExclusions(nexclvdw, nexclqq, x->size());
-    if (pd->polarizable())
-    {
-        addShells(debug, pd, x);
-        addShellPairs();
-        fixShellExclusions();
-    }
-    setIdentifiers(pd);
+    //setIdentifiers(pd);
+    makePairs(pd, InteractionType::VDW);
+    makePairs(pd, InteractionType::COULOMB);
+    //addShellPairs();
+    // Correct for interactions that should not be there
+    //fixExclusions();
+    
+    // TODO: Analyze why this is needed.
+    //setIdentifiers(pd);
     if (missing != missingParameters::Generate)
     {
         fillParameters(pd);
@@ -1109,7 +956,7 @@ void Topology::build(const ForceField             *pd,
     }
 }
 
-const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
+const std::vector<TopologyEntry> &Topology::entry(InteractionType itype) const
 {
     return entries_.find(itype)->second;
 }
@@ -1130,8 +977,8 @@ void Topology::addResidue(int                residueNumber,
     }
 }
     
-void Topology::addEntry(InteractionType                     itype,
-                        const std::vector<TopologyEntry *> &entry)
+void Topology::addEntry(InteractionType                   itype,
+                        const std::vector<TopologyEntry> &entry)
 {
     if (hasEntry(itype))
     {
@@ -1144,104 +991,76 @@ void Topology::addEntry(InteractionType                     itype,
     }
 }
 
-void Topology::generateExclusions(int nrexclvdw,
-                                  int nrexclqq,
-                                  int nratoms)
+void Topology::generateExclusions(InteractionType itype,
+                                  int             nrexcl)
 {
-    // Update our own VDW and COULOMB pairs if present
-    for(const auto &itype : { InteractionType::VDW,
-                              InteractionType::COULOMB })
+    if (!hasEntry(itype))
     {
-        if (!hasEntry(itype))
+        return;
+    }
+    exclusions_.insert({itype, {}});
+    exclusions_[itype].resize(atoms_.size());
+    for(auto &myEntry: entries_)
+    {
+        switch (myEntry.first)
         {
-            continue;
-        }
-        exclusions_.insert({itype, {}});
-        exclusions_[itype].resize(nratoms);
-        int nrexcl = nrexclqq;
-        if (InteractionType::VDW == itype)
-        {
-            nrexcl = nrexclvdw;
-        }
-        for(auto &myEntry: entries_)
-        {
-            switch (myEntry.first)
+        case InteractionType::BONDS:
             {
-            case InteractionType::BONDS:
-                {
-                    if (nrexcl > 0)
-                    {
-                        for(auto &b : myEntry.second)
-                        {
-                            auto a = b->atomIndices();
-                            exclusions_[itype][a[0]].push_back(a[1]);
-                            exclusions_[itype][a[1]].push_back(a[0]);
-                        }
-                    }
-                }
-                break;
-            case InteractionType::POLARIZATION:
+                if (nrexcl > 0)
                 {
                     for(auto &b : myEntry.second)
                     {
-                        auto a = b->atomIndices();
+                        auto a = b.atomIndices();
                         exclusions_[itype][a[0]].push_back(a[1]);
                         exclusions_[itype][a[1]].push_back(a[0]);
                     }
                 }
-                break;
-            case InteractionType::ANGLES:
-            case InteractionType::LINEAR_ANGLES:
-                {
-                    if (nrexcl > 1)
-                    {
-                        for(auto &b : myEntry.second)
-                        {
-                            auto a = b->atomIndices();
-                            exclusions_[itype][a[0]].push_back(a[2]);
-                            exclusions_[itype][a[2]].push_back(a[0]);
-                        }
-                    }
-                } 
-                break;
-            default:
-                break;
             }
-        }
-        auto itt = &entries_.find(itype)->second;
-        for(size_t ai = 0; ai < exclusions_[itype].size(); ai++)
-        {
-            for(size_t j = 0; j < exclusions_[itype][ai].size(); j++)
+            break;
+        case InteractionType::POLARIZATION:
             {
-                AtomPair ap(ai, exclusions_[itype][ai][j]);
-                for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+                for(auto &b : myEntry.second)
                 {
-                    if (ap == *static_cast<AtomPair *>(*pp))
+                    auto a = b.atomIndices();
+                    exclusions_[itype][a[0]].push_back(a[1]);
+                    exclusions_[itype][a[1]].push_back(a[0]);
+                }
+            }
+            break;
+        case InteractionType::ANGLES:
+        case InteractionType::LINEAR_ANGLES:
+            {
+                if (nrexcl > 1)
+                {
+                    for(auto &b : myEntry.second)
                     {
-                        itt->erase(pp);
-                        break;
+                        auto a = b.atomIndices();
+                        exclusions_[itype][a[0]].push_back(a[2]);
+                        exclusions_[itype][a[2]].push_back(a[0]);
                     }
+                }
+            } 
+            break;
+        default:
+            break;
+        }
+    }
+    auto itt = &entries_.find(itype)->second;
+    for(size_t ai = 0; ai < exclusions_[itype].size(); ai++)
+    {
+        for(size_t j = 0; j < exclusions_[itype][ai].size(); j++)
+        {
+            AtomPair ap(ai, exclusions_[itype][ai][j]);
+            for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+            {
+                if (ap == *static_cast<AtomPair *>(&(*pp)))
+                {
+                    itt->erase(pp);
+                    break;
                 }
             }
         }
     }
-}
-
-t_excls *Topology::gromacsExclusions()
-{
-    t_excls *gmx;
-    auto     itype = InteractionType::VDW;
-    snew(gmx, exclusions_[itype].size());
-    for(size_t i = 0; i < exclusions_[itype].size(); i++)
-    {
-        snew(gmx[i].e, exclusions_[itype][i].size());
-        for (size_t j = 0; j < exclusions_[itype][i].size(); j++)
-        {
-            gmx[i].e[j] = exclusions_[itype][i][j];
-        }
-        gmx[i].nr = exclusions_[itype][i].size();
-    }
-    return gmx;
 }
 
 void Topology::dump(FILE *fp) const
@@ -1255,7 +1074,7 @@ void Topology::dump(FILE *fp) const
         fprintf(fp, "%s\n", interactionTypeToString(myEntry.first).c_str());
         for (auto &tt : myEntry.second)
         {
-            for(auto &aa : tt->atomIndices())
+            for(auto &aa : tt.atomIndices())
             {
                 fprintf(fp, " %d", aa+1);
             }
@@ -1303,7 +1122,7 @@ void Topology::fillParameters(const ForceField *pd)
         auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry : entry.second)
         {
-            const auto &topID = topentry->id();
+            const auto &topID = topentry.id();
 
             std::vector<double> param;
             switch (fs.gromacsType())
@@ -1350,103 +1169,128 @@ void Topology::fillParameters(const ForceField *pd)
             case F_PDIHS:
                 fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
+            case F_VSITE2:
+                fillParams(fs, topID, vsite2NR, vsite2_name, &param);
+                break;
+            case F_VSITE3OUT:
+                fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
+                break;
+            case F_VSITE3FAD:
+                fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
+                break;
             default:
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.gromacsType()].name).c_str()));
             }
-            topentry->setParams(param);
+            topentry.setParams(param);
         }
     }
 }
 
+void Topology::setEntryIdentifiers(const ForceField *pd,
+                                   InteractionType   itype)
+{
+    if (!hasEntry(itype))
+    {
+        return;
+    }
+    auto fs     = pd->findForcesConst(itype);
+    auto iEntry = entries_.find(itype);
+    if (entries_.end() == iEntry)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find entry %s in topology",
+                                                       interactionTypeToString(itype).c_str()).c_str()));
+    }
+    for(auto topentry = iEntry->second.begin(); topentry < iEntry->second.end(); ++topentry)
+    {
+        std::string              atypes;
+        std::vector<std::string> btype;
+        for(const size_t &jj : topentry->atomIndices())
+        {
+            if (jj >= atoms_.size())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Atom index %zu should be less than %zu for %s",
+                                                               jj, atoms_.size(),
+                                                               interactionTypeToString(itype).c_str()).c_str()
+                                             ));
+            }
+            // Check whether we do not e.g. have a shell here
+            //if (!pd->hasParticleType(atoms_[jj].ffType()))
+            //{
+            //  continue;
+            //}
+            auto atype = pd->findParticleType(atoms_[jj].ffType());
+            if (!atypes.empty())
+            {
+                atypes += " ";
+            }
+            atypes += atype->id().id();
+            switch (itype)
+            {
+            case InteractionType::VDW:
+                //            case InteractionType::VSITE2:
+                {
+                    btype.push_back(atoms_[jj].ffType());
+                    break;
+                }
+            case InteractionType::POLARIZATION:
+                {
+                    // For COULOMB there are two particles,
+                    // but for polarization just one.
+                    if (atype->hasInteractionType(itype))
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(itype).id());
+                    }
+                    break;
+                }
+            case InteractionType::COULOMB:
+                {
+                    // For COULOMB there are two particles,
+                    // but for polarization just one.
+                    if (atype->hasInteractionType(itype))
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(itype).id());
+                    }
+                    break;
+                }
+            default:
+                {
+                    auto itype = InteractionType::BONDS;
+                    if (atype->hasInteractionType(itype))
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(itype).id());
+                    }
+                    break;
+                }
+            }
+        }
+        if (!btype.empty())
+        {
+            if (btype.size() == 1)
+            {
+                topentry->setId(Identifier(btype[0]));
+            }
+            else
+            {
+                topentry->setId({ Identifier(btype, topentry->bondOrders(),
+                                             fs.canSwap()) });
+            }
+        }
+        else if (debug)
+        {
+            fprintf(debug, "Could not find identifier for %s for atomtype '%s'",
+                    interactionTypeToString(itype).c_str(), atypes.c_str());
+        }
+    }
+}
+    
 void Topology::setIdentifiers(const ForceField *pd)
 {
     for(auto &entry : entries_)
     {
-        auto &fs = pd->findForcesConst(entry.first);
-        for(auto &topentry : entry.second)
+        // TODO this if statement should not be needed.
+        if (InteractionType::VSITE2 != entry.first)
         {
-            std::string              atypes;
-            std::vector<std::string> btype;
-            for(const size_t &jj : topentry->atomIndices())
-            {
-                if (jj >= atoms_.size())
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Atom index %zu should be less than %zu for %s",
-                                                                   jj, atoms_.size(),
-                                                                   interactionTypeToString(entry.first).c_str()).c_str()
-                                                 ));
-                }
-                // Check whether we do not e.g. have a shell here
-                //if (!pd->hasParticleType(atoms_[jj].ffType()))
-                //{
-                //  continue;
-                //}
-                auto atype = pd->findParticleType(atoms_[jj].ffType());
-                if (!atypes.empty())
-                {
-                    atypes += " ";
-                }
-                atypes += atype->id().id();
-                switch (entry.first)
-                {
-                case InteractionType::VDW:
-                case InteractionType::VSITE2:
-                    {
-                        btype.push_back(atoms_[jj].ffType());
-                        break;
-                    }
-                case InteractionType::POLARIZATION:
-                    {
-                        // For COULOMB there are two particles,
-                        // but for polarization just one.
-                        if (atype->hasInteractionType(entry.first))
-                        {
-                            btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
-                        }
-                        break;
-                    }
-                case InteractionType::COULOMB:
-                    {
-                        // For COULOMB there are two particles,
-                        // but for polarization just one.
-                        if (atype->hasInteractionType(entry.first))
-                        {
-                            btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
-                        }
-                        break;
-                    }
-                default:
-                    {
-                        auto itype = InteractionType::BONDS;
-                        if (atype->hasInteractionType(itype))
-                        {
-                            btype.push_back(atype->interactionTypeToIdentifier(itype).id());
-                        }
-                        break;
-                    }
-                }
-            }
-            if (!btype.empty())
-            {
-                if (btype.size() == 1)
-                {
-                    topentry->setId(Identifier(btype[0]));
-                }
-                else
-                {
-                    topentry->setId({ Identifier(btype, topentry->bondOrders(),
-                                                 fs.canSwap()) });
-                    if ((btype.size() == 3 && btype[2].compare("h_b") == 0 && topentry->bondOrders()[1] != 1) || 
-                        (topentry->id().id().compare("c2_b:c2_b:h_b~c2_b") == 0))
-                    {
-                        fprintf(stderr, "Found a funny one: %s\n", topentry->id().id().c_str());
-                    }
-                }
-            }
-            else if (debug)
-            {
-                fprintf(debug, "Could not find identifier for %s for atomtype '%s'", interactionTypeToString(entry.first).c_str(), atypes.c_str());
-            }
+            setEntryIdentifiers(pd, entry.first);
         }
     }
 }

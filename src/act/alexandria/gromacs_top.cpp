@@ -33,10 +33,10 @@ static int get_subtype(directive d, int ftype)
     return 1;
 }
 
-static void print_bondeds(FILE                               *out,
-                          directive                           d,
-                          int                                 ftype,
-                          const std::vector<TopologyEntry *> &entries)
+static void print_bondeds(FILE                             *out,
+                          directive                         d,
+                          int                               ftype,
+                          const std::vector<TopologyEntry> &entries)
 {
     if (entries.empty())
     {
@@ -52,16 +52,16 @@ static void print_bondeds(FILE                               *out,
     int subtype = get_subtype(d, ftype);
     for (auto &entry : entries)
     {
-        for (auto &j : entry->atomIndices())
+        for (auto &j : entry.atomIndices())
         {
             fprintf(out, "  %5d", 1+j);
         }
         fprintf(out, "  %5d", subtype);
-        for (const double &j : entry->params())
+        for (const double &j : entry.params())
         {
             fprintf(out, "  %10g", j);
         }
-        fprintf(out, "; %s\n", entry->id().id().c_str());
+        fprintf(out, "; %s\n", entry.id().id().c_str());
     }
     fprintf(out, "\n");
 }

@@ -45,28 +45,20 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <set>
 #include <vector>
 
 #include "act/forcefield/forcefield_parametername.h"
-#include "gromacs/compat/make_unique.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxomp.h"
 
 using gmx::RVec;
 
@@ -1073,13 +1065,20 @@ void VsiteHandler::constructPositions(const Topology         *top,
 {
     // Ugly shortcut...
     std::vector<gmx::RVec> &x = *coordinates;
-    
+    std::set<InteractionType> vsites = {
+        InteractionType::VSITE2, InteractionType::VSITE3FAD, InteractionType::VSITE3OUT
+    };
     for (const auto &entry: top->entries())
     {
-        for (const auto vs : entry.second)
+        // Only construct positions for vsites.
+        if (vsites.find(entry.first) == vsites.end())
         {
-            auto atomIndices = vs->atomIndices();
-            auto params      = vs->params();
+            continue;
+        }
+        for (const auto &vs : entry.second)
+        {
+            auto atomIndices = vs.atomIndices();
+            auto params      = vs.params();
             int ai = atomIndices[0];
             int aj = atomIndices[1];
             int ak = atomIndices[2];
@@ -1156,8 +1155,8 @@ void VsiteHandler::distributeForces(const Topology               *top,
     {
         for (const auto vs : entry.second)
         {
-            auto atomIndices = vs->atomIndices();
-            auto params      = vs->params();
+            auto atomIndices = vs.atomIndices();
+            auto params      = vs.params();
             // Ugly hack to minimize change in underlying gromacs code
             t_iatom *ia      = atomIndices.data() - 1;
             switch(entry.first)

@@ -318,7 +318,7 @@ void EspDevComputer::dumpQX(FILE                         *fp,
             fprintf(fp, "%s alpha", label.c_str());
             for(auto &topentry : top->entry(InteractionType::POLARIZATION))
             {
-                fprintf(fp, " %g", topentry->params()[polALPHA]);
+                fprintf(fp, " %g", topentry.params()[polALPHA]);
             }
             fprintf(fp, "\n");
         }

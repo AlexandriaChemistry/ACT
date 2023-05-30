@@ -43,7 +43,7 @@ br_s|X|-2|-0.4|Bounded|||br_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|2|5
 i|I|0|0|ACM|i_b|i_s|i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.25|0.5|Bounded|1|6|Bounded|0.139|5||||6|20|Bounded|6|20|Bounded|4|9|Bounded|iodine|
 i_s|X|-2|-0.4|Bounded|||i_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|5|10|Bounded|2|12|Bounded|||||||iodine shell|
 # Virtual site particle| can be turned on or off independently|||||||||||||||||||||||||||||||||||
-v2|X|0|0|Fixed||v2_s|v2_z||0|0|Bounded|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0||||6|20|Bounded|6|20|Bounded|4|9|Bounded|bond virtual site|
+v2|VS|0|0|Fixed||v2_s|v2_z||0|0|Bounded|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0||||6|20|Bounded|6|20|Bounded|4|9|Bounded|bond virtual site|
 v2_s|X|-0.6|-0.2|Bounded|||v2_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|0.5|Bounded|2|12|Bounded|||||||bond virtual site shell|
 # Ions| that can not use any ACM algorithm for charges|||||||||||||||||||||||||||||||||||
 Be2+|Be|3|3|Fixed||Be2+_s|Be2+_z||0.2|0.2|Bounded|10|20|Bounded|0.2|0.2|Bounded|1|6|Bounded|0.059|2||||6|20|Bounded|||||||beryllium ion|

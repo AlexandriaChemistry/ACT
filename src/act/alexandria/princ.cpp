@@ -160,11 +160,11 @@ void principal_comp(const std::vector<int>       &index,
 
     for (i = 0; (i < NDIM); i++)
     {
-        delete inten[i];
-        delete ev[i];
+      delete[] inten[i];
+      delete[] ev[i];
     }
-    delete inten;
-    delete ev;
+    delete[] inten;
+    delete[] ev;
 }
 
 void rotate_atoms(const std::vector<int> &index,

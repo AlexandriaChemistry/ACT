@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -78,7 +78,7 @@ const std::string &canSwapToString(CanSwap canSwap)
  * as a carboxylate.
  */
 static std::map<double, char> BondOrderDelimeter =
-    { { 1, '~' }, { 1.5, ':' }, { 2, '=' }, { 3, '#' } };
+    { { 1, '~' }, { 1.5, ':' }, { 2, '=' }, { 3, '#' }, { 9, '!' } };
 
 /*! Reverse map of the above.
  * Will be created on first use
@@ -245,6 +245,32 @@ Identifier::Identifier(InteractionType    iType,
     orderAtoms();
 }
 
+void Identifier::update()
+{
+    std::string newid(atoms_[0]);
+    for(size_t i = 1; i < atoms_.size(); i++)
+    {
+        if (BondOrderDelimeter.find(bondOrders_[i-1]) == BondOrderDelimeter.end())
+        {
+            gmx_fatal(FARGS, "Don't understand a bond order of %g", bondOrders_[i-1]);
+        }
+        if (!atoms_[i].empty())
+        {
+            newid += BondOrderDelimeter[bondOrders_[i-1]];
+            newid += atoms_[i];
+        }
+    }
+    if (ids_.empty())
+    {
+        ids_.push_back(newid);
+    }
+    else
+    {
+        ids_[0] = newid;
+    }
+    orderAtoms();
+}
+
 Identifier::Identifier(const std::vector<std::string> &atoms,
                        const std::vector<double>      &bondOrders,
                        CanSwap                         canSwap)
@@ -253,23 +279,10 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str()));
     }
-    ids_.push_back(atoms[0]);
-    canSwap_ = canSwap;
-    for(size_t i = 1; i < atoms.size(); i++)
-    {
-        if (BondOrderDelimeter.find(bondOrders[i-1]) == BondOrderDelimeter.end())
-        {
-            gmx_fatal(FARGS, "Don't understand a bond order of %g", bondOrders[i-1]);
-        }
-        if (!atoms[i].empty())
-        {
-            ids_[0] += BondOrderDelimeter[bondOrders[i-1]];
-            ids_[0] += atoms[i];
-        }
-    }
     atoms_      = atoms;
     bondOrders_ = bondOrders;
-    orderAtoms();
+    canSwap_    = canSwap;
+    update();
 }
 
 CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) const

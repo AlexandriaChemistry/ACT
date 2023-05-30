@@ -36,6 +36,7 @@
 #define ACT_TOPOLOGY_H
 
 #include <cstdio>
+#include <list>
 #include <map>
 #include <vector>
 
@@ -51,51 +52,6 @@
 
 namespace alexandria
 {
-
-/*! \brief
- * Virtual site on a linear bond.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Vsite2 : public TopologyEntry
-{
- public:
-    //! Default constructor
-    Vsite2() {}
-    
-    //! Constructor setting the ids of the atoms and the bondorder
-    Vsite2(int ai, int aj, int vs)
-    {
-        addAtom(ai);
-        addAtom(aj);
-        addAtom(vs);
-    }
-    
-    //! Returns the ids of the atoms and the bondorder
-    void get(int *ai, int *aj, int *vs) const;
-    
-    //! Returns the first atom id
-    int aI() const
-    {
-        return atomIndex(0);
-    }
-      
-     //! Returns the second atom id
-    int aJ() const
-    {
-        return atomIndex(1);
-    }
-    
-    //! Return a Vsite2 with the order of atoms swapped
-    Vsite2 swap() const;
- 
-    /*! \brief Return whether two Bonds are the same
-     * \param[in] other The other bond
-     * \return true if they are the same
-     */
-    bool operator==(const Vsite2 &other) const;
-};
 
 class ActAtom
 {
@@ -113,7 +69,7 @@ private:
     //! My shell particles, if any
     std::vector<int> shells_;
     //! My atom particle, if any,or -1
-    int              core_ = -1;
+    std::vector<int> cores_;
     //! The atomic number
     int              atomicNumber_;
     //! The mass
@@ -156,6 +112,9 @@ public:
     //! \return the list of shells for this particle
     const std::vector<int> &shells() const { return shells_; }
 
+    //! \return the list of shells for this particle for editing
+    std::vector<int> *shellsPtr() { return &shells_; }
+
     /*! \brief Add a shell particle index
      * \param[in] index The index
      */
@@ -164,12 +123,17 @@ public:
     /*! \brief Set the core particle index
      * \param[in] index The index
      */
-    void setCore(int index) { core_ = index; }
+    void addCore(int index) { cores_.push_back(index); }
 
     /*! \brief Return the core particle connected to this shell
      * \return the core particle or -1 if there is none
      */
-    int core() const { return core_; }
+    const std::vector<int> &cores() const { return cores_; }
+
+    /*! \brief Return the core particle connected to this shell
+     * \return the core particle or -1 if there is none
+     */
+    std::vector<int> *coresPtr() { return &cores_; }
 
     //! \return the atomic number
     int atomicNumber() const { return atomicNumber_; }
@@ -194,11 +158,16 @@ public:
     void setResidueNumber(int resnr) { residueNumber_ = resnr; }
 };
 
+class ActAtomListItem;
+
+//! Shortcut for passing this around.
+typedef std::list<ActAtomListItem> AtomList;
+
 class Topology
 {
 private:
     //! Map from InteractionType to topology element pointers
-    std::map<InteractionType, std::vector<TopologyEntry *> >  entries_;
+    std::map<InteractionType, std::vector<TopologyEntry> >    entries_;
     //! Non bonded exclusions, array is length of number of atoms
     std::map<InteractionType, std::vector<std::vector<int>>>  exclusions_;
     //! List of atoms
@@ -207,6 +176,8 @@ private:
     std::string                                               moleculeName_;
     //! The residue names. If just one, this will likely be the same as the moleculeName_
     std::vector<std::string>                                  residueNames_;
+    //! The real atoms, that is, not the vsites or shells
+    std::vector<int>                                          realAtoms_;
     /*! \brief Fill in the parameters in the topology entries.
      * Must be called repeatedly during optimizations of energy.
      * \param[in] pd The force field structure
@@ -214,24 +185,30 @@ private:
     void fillParameters(const ForceField *pd);
          
     /*! Generate virtual sites for bonds.
-     * \param[in] pd The force field
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The atom and coordinate list that may be extended
      * \return the number of vsites added
      */
-    int makeVsite2s(const ForceField *pd);
-
+    int makeVsite2s(const ForceField *pd,
+                    AtomList         *atomList);
+    
+    /*! \brief Add identifiers to interactions
+     * \param[in] pd The force field structure
+     * \param[in] itype The interaction type for which to do this
+     */                              
+    void setEntryIdentifiers(const ForceField *pd,
+                             InteractionType   itype);
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
      */                              
     void setIdentifiers(const ForceField *pd);
 
     /*! Add polarizabilities to the topology if needed
-     * \param[in]  fp File pointer for debugging
-     * \param[in]  pd Force field
-     * \param[out] x  Coordinates will be updated as well  
+     * \param[in]    pd       Force field
+     * \param[inout] atomList The atoms and coordinates will be updated as well  
      */
-    void addShells(FILE                   *fp,
-                   const ForceField       *pd,
-                   std::vector<gmx::RVec> *x);
+    void addShells(const ForceField *pd,
+                   AtomList         *atomList);
 
  public:
     Topology()
@@ -253,7 +230,7 @@ private:
      * \return pointer to the Bond
      * \throws if not found
      */
-    const Bond *findBond(int ai, int aj) const;
+    const Bond &findBond(int ai, int aj) const;
 
     /*! \brief Add one bond to the list
      * \param[in] bond The bond to add
@@ -265,6 +242,9 @@ private:
     
     //! Debugging stuff
     void dumpPairlist(FILE *fp, InteractionType itype) const;
+
+    //! \return the array of real atoms
+    const std::vector<int> &realAtoms() const { return realAtoms_; }
 
     /*! Generate atoms in the topology from an experiment (QM calc)
      * \param[in] pd  The force field
@@ -313,58 +293,65 @@ private:
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
+     * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      */
-    void makeAngles(const std::vector<gmx::RVec> &x,
+    void makeAngles(const ForceField             *pd,
+                    const std::vector<gmx::RVec> &x,
                     double                        LinearAngleMin);
 
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
      * there is a planar geometry.
+     * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
       */
-    void makeImpropers(const std::vector<gmx::RVec> &x,
+    void makeImpropers(const ForceField             *pd,
+                       const std::vector<gmx::RVec> &x,
                        double                        PlanarAngleMax);
 
     /*! Generate the proper dihedrals
+     * \param[in] pd The force field
      */
-    void makePropers();
+    void makePropers(const ForceField *pd);
 
-    /*! \brief Find a topology entry matching the inputs/
+    /*! \brief Find a topology entry matching the inputs if it exists
      * \param[in] itype     The InteractionType
      * \param[in] aindex    The atom indices
      * \param[in] bondOrder The array of bond orders
      * \param[in] cs        Whether or not the order of the atoms can be swapped
-     * \return the entry
+     * \param[out] entry    The entry you were looking for
+     * \return true if it was found.
      */
-    const TopologyEntry *findTopologyEntry(InteractionType            itype,
-                                           const std::vector<int>    &aindex,
-                                           const std::vector<double> &bondOrder,
-                                           CanSwap                    cs) const;
+    bool findTopologyEntry(InteractionType            itype,
+                           const std::vector<int>    &aindex,
+                           const std::vector<double> &bondOrder,
+                           CanSwap                    cs,
+                           TopologyEntry             *entry) const;
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
      * \param[in] vec   The new interactions
      */
-    void addEntry(InteractionType                     itype,
-                  const std::vector<TopologyEntry *> &entry);
+    void addEntry(InteractionType                   itype,
+                  const std::vector<TopologyEntry> &entry);
 
     /*! \brief Remove interactions that should not be there in the first place.
      * If two atoms are in the exclusion list, their shells should be as well.
-     * This routine checks for such interactions (Coulomb, VDW) and removes them.
+     * This routine checks for such interactions (Coulomb or VDW) and removes them.
+     * For vsites, they inherit the exclusions from their constructing atoms.
+     * \param[in] itype The interaction to check
      */
-    void fixShellExclusions();
+    void fixExclusions(InteractionType itype);
     
     /*! \brief Generate exclusiones
-     * \param[in]  nrexclvdw The number of exclusions to generate for Van der Waals interactions (max 2)
-     * \param[in]  nrexclqq  The number of exclusions to generate for Coulomb interactions (max 2)
-     * \param[in]  nratom    The number of atoms in the system
+     * \param[in] itype The interaction type tp check
+     * \param[in] nrexcl The number of exclusions to generate for Coulomb interactions (max 2)
      */
-    void generateExclusions(int nrexclvdw,
-                            int nrexclqq,
-                            int nratoms);
+    void generateExclusions(InteractionType itype,
+                            int             nrexcl);
     
     //! \return the number of atoms                    
     size_t nAtoms() const { return atoms_.size(); }
@@ -373,9 +360,11 @@ private:
      */
     t_excls *gromacsExclusions();
     /*! Generate the non-bonded pair list based on just the atoms
+     * \param[in] pd     Force field needed to set identifiers.
      * \param[in] natoms The number of atoms
      */
-    void makePairs(int natoms);
+    void makePairs(const ForceField *pd,
+                   InteractionType   itype);
 
     /*! Add shell pairs
      * Based on the atom pair list, add interaction between atoms and shell
@@ -385,14 +374,6 @@ private:
      */
     void addShellPairs();
     
-    /*! Generate virtual sites.
-     * \param[in] pd   The force field
-     * \param[inout] x The atomic coordinate array, will be extended as needed.
-     * \return the number of vsites added
-     */
-    int makeVsites(const ForceField       *pd,
-                   std::vector<gmx::RVec> *x);
-
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
 
@@ -407,13 +388,13 @@ private:
      * \return a vector of pointers
      * \throws if not found. If you do not want that to happen, check first!
      */
-    const std::vector<TopologyEntry *> &entry(InteractionType itype) const;
+    const std::vector<TopologyEntry> &entry(InteractionType itype) const;
 
     //! \return the whole map of parameters
-    std::map<InteractionType, std::vector<TopologyEntry *> > *entries() { return &entries_; }
+    std::map<InteractionType, std::vector<TopologyEntry> > *entries() { return &entries_; }
 
     //! \return the whole map of parameters, const style
-    const std::map<InteractionType, std::vector<TopologyEntry *> > &entries() const { return entries_; }
+    const std::map<InteractionType, std::vector<TopologyEntry> > &entries() const { return entries_; }
     
     /*! \brief Print structure to a file
      * \param[in] fp The file pointer

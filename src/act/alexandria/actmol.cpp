@@ -268,9 +268,9 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             }
             else if (myatoms[i].pType() == eptShell)
             {
-                auto core = myatoms[i].core();
-                GMX_RELEASE_ASSERT(core != -1, "Shell without core");
-                copy_rvec(coords[core], coords[i]);
+                auto cores = myatoms[i].cores();
+                GMX_RELEASE_ASSERT(!cores.empty(), "Shell without core");
+                copy_rvec(coords[cores[0]], coords[i]);
             }
             else
             {
@@ -488,7 +488,7 @@ bool ACTMol::linearMolecule() const
 
 double ACTMol::bondOrder(int ai, int aj) const
 {
-    return topology_->findBond(ai, aj)->bondOrder();
+    return topology_->findBond(ai, aj).bondOrder();
 }
 
 void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
@@ -869,8 +869,7 @@ void ACTMol::PrintConformation(const char                   *fn,
         auto bonds = top->entry(itype);
         for(const auto &b: bonds)
         {
-            auto bb = static_cast<Bond *>(b);
-            gmx_conect_add(conect, bb->aI(), bb->aJ());
+            gmx_conect_add(conect, b.atomIndex(0), b.atomIndex(1));
         }
     }
     auto       epbc          = epbcNONE;
