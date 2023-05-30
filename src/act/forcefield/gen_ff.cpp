@@ -201,7 +201,7 @@ int gen_ff(int argc, char*argv[])
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", nullptr };
+    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", "LJ_86", "LJ_147", nullptr };
     std::vector<const char *> combrules = { nullptr };
     int i = 0;
     while(ecomb_names[i])
@@ -355,6 +355,12 @@ int gen_ff(int argc, char*argv[])
             {
             case F_LJ:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
+                break;
+	   case F_LJ_86:
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
+                break;
+           case F_LJ_147:  
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
             case F_BHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };

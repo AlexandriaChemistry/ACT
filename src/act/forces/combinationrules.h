@@ -54,6 +54,15 @@ void CombineLJ(int     CombinationRule,
                double *c6,
                double *c12);
 
+void CombineLJ_86(int     CombinationRule,
+               double  sigmaI,
+               double  sigmaJ,
+               double  epsilonI,
+               double  epsilonJ,
+               double *c6,
+               double *c8);
+
+
 /*! \brief Extract the GROMACS style combination rule
  * \param[in] vdw Van der Waals list of ff params
  * \return index in GROMACS list of comb rules
@@ -82,6 +91,19 @@ void CombineBham(int     CombinationRule,
                  double *sigmaIJ,
                  double *epsilonIJ,
                  double *gammaIJ);
+void CombineLJ_147(int     CombinationRule,
+                 double  sigmaI,
+                 double  sigmaJ,
+                 double  epsilonI,
+                 double  epsilonJ,
+                 double  gammaI,
+                 double  gammaJ,
+		 double  deltaI,
+		 double  deltaJ,
+                 double *sigmaIJ,
+                 double *epsilonIJ,
+                 double *gammaIJ,
+		 double *deltaIJ);
 
 void CombineGBham(int     CombinationRule,
                   double  rminI,

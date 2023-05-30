@@ -158,6 +158,8 @@ enum
     F_LJC14_Q,
     F_LJC_PAIRS_NB,
     F_LJ,
+    F_LJ_86,
+    F_LJ_147,
     F_BHAM,
     F_GBHAM,
     F_REPULSION,

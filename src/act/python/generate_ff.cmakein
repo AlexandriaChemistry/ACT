@@ -14,7 +14,7 @@ from elements     import AtomNumberToAtomName
 
 BohrInverse2nmInverse = 18.897268
 
-vdwfunctions = [ "BHAM", "GBHAM", "LJ_SR" ]
+vdwfunctions = [ "BHAM", "GBHAM", "LJ_SR", "LJ_86", "LJ_147" ]
 
 def string2bool(string):
   return string == "True" or string == "true" or string == "yes" or string == "Yes"
@@ -121,7 +121,7 @@ class AtomTypes:
   def print_vdwparams(self, outf, vdwfunc:str, combRule):
     vdwparamlist = []
     units = { "epsilon": "kJ/mol" }
-    if vdwfunc == "LJ_SR":
+    if vdwfunc == "LJ_SR" or vdwfunc == "LJ_86" or vdwfunc == "LJ_147":
       units["sigma"] = "nm"
     elif vdwfunc == "BHAM":
       units["sigma"] = "nm"
@@ -130,6 +130,9 @@ class AtomTypes:
       units["rmin"] = "nm"
       units["gamma"] = ""
       units["delta"] = ""
+    elif vdwfunc == "LJ_147":
+        units["gamma"] = ""
+        units["delta"] = ""
     # We use the sigma field in the force field tables for both sigma
     # and rmin.
     utranslate = { "rmin": "sigma" }
@@ -388,7 +391,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
         defcomb = "Geometric"
-        parser.add_argument("-comb",     "--combRule",   help=("Combination rule options: None, Arithmetic, Geometric, Hogervorst, Kong_Mason, Waldman_Hagler, Yang for Buckingham van der Waals potential option (BHAM) or None,  Arithmetic, Geometric, Lorentz_Berthelot for Lennard-Jones van der Waals potential (LJ_SR). Default %s" % defcomb), type=str, default =defcomb)
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule options: None, Arithmetic, Geometric, Hogervorst, Kong_Mason, Waldman_Hagler, Yang for Buckingham van der Waals potential option (BHAM) or None,  Arithmetic, Geometric, Lorentz_Berthelot for Lennard-Jones van der Waals potential (LJ_SR or LJ_86 or LJ_147). Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defvdw = vdwfunctions[0]
