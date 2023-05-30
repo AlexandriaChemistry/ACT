@@ -166,14 +166,14 @@ static void computeLJ_147(const std::vector<TopologyEntry *>    &pairs,
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
+	real rstar      = dr2*rinv/sigma;
 //        auto rinv2      = rinv*rinv;
 //        auto rinv6      = rinv2*rinv2*rinv2; 
 //        auto vvdw_disp  = c6*rinv6;     
 //        auto vvdw_rep   = c8*rinv6*rinv6;
 //        auto elj        = vvdw_rep - vvdw_disp;
 //        auto flj        = (8*vvdw_rep - 6*vvdw_disp)*rinv2;
-	real f147       = (epsilon * (std::pow( ((delta + 1 )/( (rinv/sigma) + delta)   ), 7) )* ( ((1 + gamma)/( (std::pow((rinv/sigma), 7)) + gamma )) - 2 )              ); 
-		
+	real f147       = (epsilon * (std::pow( ((delta + 1 )/( (rstar) + delta)   ), 7) )* ( ((1 + gamma)/( (std::pow((rstar), 7)) + gamma )) - 2 )              ); 
         if (debug)
         {    
             fprintf(debug, "ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", ai, aj, f147, epsilon, gamma, sigma, delta);

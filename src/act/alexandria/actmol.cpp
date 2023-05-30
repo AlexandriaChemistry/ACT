@@ -876,6 +876,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_LJ:
     case F_LJ_86:
+    case F_LJ_147:
     case F_COUL_SR:
     case F_BHAM:
     case F_GBHAM:

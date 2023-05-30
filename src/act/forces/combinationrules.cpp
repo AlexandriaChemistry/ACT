@@ -448,7 +448,7 @@ static void generateVdwParameterPairs(ForceField *pd)
                     newParams.addParameter(pairID, lj_147_name[lj_147SIGMA_IJ], sigparm);
                     newParams.addParameter(pairID, lj_147_name[lj_147EPSILON_IJ], epsparm);
                     newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], gamparm);
-		    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], delparm);
+		    newParams.addParameter(pairID, lj_147_name[lj_147DELTA_IJ], delparm);
 
                     // Add some dummy parameters
                     newParams.addParameter(pairID, csigma,
@@ -510,7 +510,7 @@ static void generateVdwParameterPairs(ForceField *pd)
                                            ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
                                                                mutd, true, true));
                     newParams.addParameter(pairID, cdelta, 
-                                           ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
+                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
                                                                mutd, true, true));
                 }
                 break;
