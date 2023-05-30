@@ -33,6 +33,10 @@ namespace alexandria
 
 const char *lj_name[ljNR] = { "sigma", "epsilon", "c6_ij", "c12_ij" };
 
+const char *lj_86_name[lj_NR_86] = { "sigma", "epsilon", "c6_ij", "c8_ij" };
+
+const char *lj_147_name[lj_NR_147] = { "sigma", "gamma", "delta", "sigma_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
+
 const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilon_ij", "gamma_ij" };
     
 const char *gbh_name[gbhNR] = { "rmin", "epsilon", "gamma", "delta", "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };

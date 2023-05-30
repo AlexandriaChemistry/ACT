@@ -40,10 +40,18 @@ namespace alexandria
     enum { ljSIGMA = 0, ljEPSILON = 1, ljC6_IJ = 2, ljC12_IJ = 3, ljNR = 4 };
     
     extern const char *lj_name[ljNR];
+
+    enum { lj_86SIGMA = 0, lj_86EPSILON = 1, lj_C6_IJ = 2, lj_C8_IJ = 3, lj_NR_86 = 4 };
+
+    extern const char *lj_86_name[lj_NR_86];
     
     enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
     
     extern const char *wbh_name[wbhNR];
+
+    enum { lj_147SIGMA = 0, lj_147EPSILON = 1, lj_147GAMMA = 2, lj_147DELTA = 3, lj_147SIGMA_IJ = 4, lj_147EPSILON_IJ = 5, lj_147GAMMA_IJ = 6, lj_147DELTA_IJ = 7, lj_NR_147 = 9 };
+
+    extern const char *lj_147_name[lj_NR_147];
     
     enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
     

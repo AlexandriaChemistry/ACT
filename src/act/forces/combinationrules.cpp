@@ -83,6 +83,101 @@ void CombineLJ(int     CombinationRule,
     }
 }
 
+void CombineLJ_86(int     CombinationRule,
+               double  sigmaI,
+               double  sigmaJ,
+               double  epsilonI,
+               double  epsilonJ,
+               double *c6,
+               double *c8)
+{
+    switch (CombinationRule)
+    {
+    case eCOMB_GEOMETRIC:
+        {
+            double sig  = std::sqrt(sigmaI * sigmaJ);
+            double eps  = std::sqrt(epsilonI * epsilonJ);
+            double sig6 = std::pow(sig, 6.0);
+            *c6  = 4*eps*sig6;
+            *c8 = *c6 * sig6;
+        }
+        break;
+    case eCOMB_ARITHMETIC:
+        {
+            double sig  = 0.5 * (sigmaI + sigmaJ);
+            double eps  = 0.5 * (epsilonI + epsilonJ);
+            double sig6 = std::pow(sig, 6.0);
+            *c6  = 4*eps*sig6;
+            *c8 = *c6 * sig6;
+        }
+        break;
+    case eCOMB_LORENTZ_BERTHELOT:
+        {
+            double sig  = 0.5 * (sigmaI + sigmaJ);
+            double eps  = std::sqrt(epsilonI * epsilonJ);
+            double sig6 = std::pow(sig, 6.0);
+            *c6  = 4*eps*sig6;
+            *c8 = *c6 * sig6;
+        }
+        break;
+    case eCOMB_NONE:
+        break;
+    default:
+        gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", CombinationRule);
+    }
+}
+
+void CombineLJ_147(int     CombinationRule,
+                 double  sigmaI,
+                 double  sigmaJ,
+                 double  epsilonI,
+                 double  epsilonJ,
+                 double  gammaI,
+                 double  gammaJ,
+		 double  deltaI,
+		 double  deltaJ,
+                 double *sigmaIJ,
+                 double *epsilonIJ,
+                 double *gammaIJ,
+		 double *deltaIJ)
+
+{
+    switch (CombinationRule)
+    {
+        case eCOMB_GEOMETRIC:
+            *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+            *gammaIJ = std::sqrt(gammaI * gammaJ);
+	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            break;
+        case eCOMB_ARITHMETIC:
+            *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+            *gammaIJ = 0.5 * (gammaI + gammaJ);
+	    *deltaIJ = 0.5 * (deltaI + deltaJ);
+            break;
+        case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+            *gammaIJ = 0.5 * (gammaI + gammaJ);
+	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            break;
+        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. for 14_7 the qi is optimized, having KM gamma
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+            *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+//            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            break;
+
+    case eCOMB_NONE:
+        break;
+    default:
+        gmx_fatal(FARGS, "Unsupported combination rule %d for 14_7 Lennard Jones. Use Geometric, Arithmetic, Qi or Qi_2 (special for 14-7 with Kong-Mason gamma)", CombinationRule);
+    }
+}
+
+
 void CombineBham(int     CombinationRule,
                  double  sigmaI,
                  double  sigmaJ,
@@ -252,7 +347,33 @@ static void generateVdwParameterPairs(ForceField *pd)
                                            ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
                                                                mutd, true, true));
                 }
-                break;
+                break;	
+            case F_LJ_86:
+                {
+                    auto csigma     = lj_name[ljSIGMA];
+                    auto cepsilon   = lj_name[ljEPSILON];
+                    double isigma   = ivdw.second[csigma].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double jsigma   = jvdw.second[csigma].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
+                    double c6 = 0, c8 = 0;
+                    CombineLJ(comb_rule, isigma, jsigma,
+                              iepsilon, jepsilon, &c6, &c8);
+                    ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6,
+                                               mutd, true, true);
+                    ForceFieldParameter c8parm(unit, c8, 0, 1, c8, c8,
+                                                mutd, true, true);
+                    newParams.addParameter(pairID, lj_name[lj_C6_IJ], c6parm);
+                    newParams.addParameter(pairID, lj_name[lj_C8_IJ], c8parm);
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, csigma,
+                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0,
+                                                               mutd, true, true));
+                }
+                break;	
             case F_BHAM:
                 {
                     auto csigma     = wbh_name[wbhSIGMA];
@@ -290,6 +411,57 @@ static void generateVdwParameterPairs(ForceField *pd)
                                                                mutd, true, true));
                     newParams.addParameter(pairID, cgamma, 
                                            ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                               mutd, true, true));
+                }
+                break;
+            case F_LJ_147:
+                {
+                    auto csigma     = lj_147_name[lj_147SIGMA];
+                    auto cepsilon   = lj_147_name[lj_147EPSILON];
+                    auto cgamma     = lj_147_name[lj_147GAMMA];
+		    auto cdelta     = lj_147_name[lj_147DELTA];
+                    double isigma   = ivdw.second[csigma].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double igamma   = ivdw.second[cgamma].internalValue();
+		    double idelta   = ivdw.second[cdelta].internalValue();
+		    double jdelta   = ivdw.second[cdelta].internalValue();
+                    double jsigma   = jvdw.second[csigma].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
+                    double jgamma   = jvdw.second[cgamma].internalValue();
+                    double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
+                    CombineLJ_147(comb_rule, isigma, jsigma,
+                                iepsilon, jepsilon,
+                                igamma, jgamma, idelta, jdelta, &sigmaij,
+                                &epsilonij, &gammaij, &deltaij);
+                    ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
+                                                sigmaij, sigmaij,
+                                                mutd, true, true);
+                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
+                                                epsilonij, epsilonij,
+                                                mutd, true, true);
+                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
+                                                gammaij, gammaij,
+                                                mutd, true, true);
+		    ForceFieldParameter delparm(unit, deltaij, 0, 1,
+                                                deltaij, deltaij,
+                                                mutd, true, true);
+                    newParams.addParameter(pairID, lj_147_name[lj_147SIGMA_IJ], sigparm);
+                    newParams.addParameter(pairID, lj_147_name[lj_147EPSILON_IJ], epsparm);
+                    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], gamparm);
+		    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], delparm);
+
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, csigma,
+                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cgamma,
+                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
+                                                               mutd, true, true));
+		    newParams.addParameter(pairID, cdelta,
+                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
                                                                mutd, true, true));
                 }
                 break;

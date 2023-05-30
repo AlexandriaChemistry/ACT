@@ -875,6 +875,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         }
         break;
     case F_LJ:
+    case F_LJ_86:
     case F_COUL_SR:
     case F_BHAM:
     case F_GBHAM:
@@ -1661,6 +1662,8 @@ immStatus ACTMol::calculateEnergyOld(const t_commrec                   *crtmp,
     { F_ANGLES,        InteractionType::ANGLES             },
     { F_LINEAR_ANGLES, InteractionType::LINEAR_ANGLES      },
     { F_LJ,            InteractionType::VDW                },
+    { F_LJ_86,            InteractionType::VDW                },
+    { F_LJ_147,            InteractionType::VDW                },
     { F_BHAM,          InteractionType::VDW                },
     { F_COUL_SR,       InteractionType::COULOMB            },
     { F_POLARIZATION,  InteractionType::POLARIZATION       },
