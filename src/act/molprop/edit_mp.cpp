@@ -35,8 +35,6 @@
 #include "actpre.h"
 
 #include <cstdio>
-//#include <cstdlib>
-//#include <cstring>
 
 #include <set>
 #include <vector>
@@ -56,15 +54,11 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace alexandria
 {
@@ -584,7 +578,7 @@ int edit_mp(int argc, char *argv[])
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
     int      writeNode   = 0;
-    t_pargs pa[] =
+    std::vector<t_pargs> pa =
     {
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
@@ -611,7 +605,8 @@ int edit_mp(int argc, char *argv[])
     gmx_output_env_t     *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, fnm.size(), fnm.data(),
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                           pa.size(), pa.data(), sizeof(desc)/sizeof(desc[0]), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }

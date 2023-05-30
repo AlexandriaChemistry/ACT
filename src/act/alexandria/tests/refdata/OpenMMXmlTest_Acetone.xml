@@ -59,7 +59,7 @@
   <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="2">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="c2_1" sigma="0.2" epsilon="0.55"/>
     <Atom type="c3_1" sigma="0.2" epsilon="0.55"/>

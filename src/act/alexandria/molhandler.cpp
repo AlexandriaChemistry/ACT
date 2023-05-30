@@ -46,7 +46,6 @@
 #include "act/utility/units.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/units.h"
@@ -54,7 +53,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 
 namespace alexandria

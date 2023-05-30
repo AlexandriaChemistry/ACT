@@ -2,22 +2,22 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Morse before">-4778.7158908170932</Real>
-  <Real Name="Angle before">29.434308363918039</Real>
+  <Real Name="Angle before">29.434308363917996</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="Dispersion before">-10.096019437976086</Real>
   <Real Name="Repulsion before">161.05724583689985</Real>
-  <Real Name="Coulomb (SR) before">-229.16407039746451</Real>
-  <Real Name="Polarization before">8.8650446264416001</Real>
-  <Real Name="Potential before">-4818.6193818252741</Real>
-  <Real Name="Coordinate RMSD before minimizing">7.2317252678955018e-17</Real>
+  <Real Name="Coulomb (SR) before">-229.16405022905417</Real>
+  <Real Name="Polarization before">8.865043846241738</Real>
+  <Real Name="Potential before">-4818.6193624370635</Real>
+  <Real Name="Coordinate RMSD before minimizing">7.2305237604181833e-17</Real>
   <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.008271240157109009</Real>
-  <Real Name="Morse after">-4772.8760497420253</Real>
-  <Real Name="Angle after">14.519706022285586</Real>
-  <Real Name="Improper Dih. after">2.7657134864571886e-30</Real>
-  <Real Name="Dispersion after">-10.051087654583599</Real>
-  <Real Name="Repulsion after">80.959861125100744</Real>
-  <Real Name="Coulomb (SR) after">-226.39404835251889</Real>
-  <Real Name="Polarization after">9.7630856047174941</Real>
-  <Real Name="Potential after">-4904.0785329970249</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0082712397539125727</Real>
+  <Real Name="Morse after">-4772.8760495225797</Real>
+  <Real Name="Angle after">14.519705949249236</Real>
+  <Real Name="Improper Dih. after">4.6812753698114063e-32</Real>
+  <Real Name="Dispersion after">-10.051087652699865</Real>
+  <Real Name="Repulsion after">80.959860883925131</Real>
+  <Real Name="Coulomb (SR) after">-226.39402835458463</Real>
+  <Real Name="Polarization after">9.763084765055595</Real>
+  <Real Name="Potential after">-4904.078513931634</Real>
 </ReferenceData>
