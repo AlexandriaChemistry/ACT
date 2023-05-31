@@ -55,7 +55,7 @@ configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
     "-Wno-source-uses-openmp" #Don't warn for no-omp build
-    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
+    #    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
     "-Wno-documentation-unknown-command" #Custom commands are used
     "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
     "-Wno-switch-enum" # default statement for enum is OK
