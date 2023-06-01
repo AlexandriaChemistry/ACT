@@ -593,7 +593,7 @@ static void printEnergies(FILE *logFile, int myIter,
             myIter, msAtomForce, msShellForce, fcurprev, gamma);
     for(const auto &ee : energies)
     {
-        fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+        fprintf(logFile, "  %s %.5f", interactionTypeToString(ee.first).c_str(), ee.second);
     }
     fprintf(logFile, "\n");
 }

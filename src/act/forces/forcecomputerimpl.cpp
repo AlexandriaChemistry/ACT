@@ -249,7 +249,7 @@ static void computeCoulomb(const std::vector<TopologyEntry *> &pairs,
                            const std::vector<ActAtom>         &atoms,
                            const std::vector<gmx::RVec>       *coordinates,
                            std::vector<gmx::RVec>             *forces,
-                           std::map<InteractionType, double>              *energies)
+                           std::map<InteractionType, double>  *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;

@@ -294,8 +294,9 @@ int simulate(int argc, char *argv[])
                     std::string unit("kJ/mol");
                     for (const auto &ener : energies)
                     {
+                        auto val = gmx::formatString("%.4f", ener.second);
                         jtener.addValueUnit(interactionTypeToString(ener.first),
-                                            gmx_ftoa(ener.second), unit);
+                                            val.c_str(), unit);
                     }
                     jtree.addObject(jtener);
                 }
