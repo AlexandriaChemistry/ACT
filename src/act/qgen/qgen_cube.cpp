@@ -41,12 +41,10 @@
 #include <map>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/strconvert.h"

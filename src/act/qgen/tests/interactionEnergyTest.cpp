@@ -46,9 +46,7 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 

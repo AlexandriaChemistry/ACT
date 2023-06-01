@@ -40,6 +40,8 @@ namespace alexandria
     private:
         //! We need one ACM structure for each fragment
         std::vector<QgenAcm>               QgenAcm_;
+        //! What algorithm do we use for generating charges
+        ChargeGenerationAlgorithm          algorithm_ = ChargeGenerationAlgorithm::EEM;
         //! A complete topology for each fragment is needed to compute energies
         std::vector<Topology>              topologies_;
         //! And a vector of bonds
@@ -99,5 +101,15 @@ namespace alexandria
                               const std::vector<gmx::RVec> &x,
                               const ForceField             *pd,
                               std::vector<ActAtom>         *atoms);
+
+        /*! \brief Copy charges from the atoms to the fragments
+         * \param[in] atoms The atoms from the complete topology for all fragments
+         */
+        void setCharges(const std::vector<ActAtom> &atoms);
+        
+        /*! \brief Set the charge generation algorithm to use
+         * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
+         */
+        void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm alg) { algorithm_ = alg; }
     };
 } // namespace alexandria

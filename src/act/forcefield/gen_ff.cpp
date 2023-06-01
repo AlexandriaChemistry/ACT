@@ -136,12 +136,52 @@ static bool minmaxmut(const std::string                  &atomtype,
     return true;
 }
 
+static void add_vsites(const char *vsfile,
+                       ForceField *pd)
+{
+    if (nullptr == vsfile)
+    {
+        return;
+    }
+    gmx::TextReader          tr(vsfile);
+    std::string              tmp;
+    std::vector<std::string> value;
+    int                      lineno = 1;
+    ForceFieldParameterList  vsite2("vsite2", CanSwap::No);
+    auto itypeVS2            = InteractionType::VSITE2;
+    while (tr.readLine(&tmp))
+    {
+        auto ptr = split(tmp, '|');
+        Identifier vsid(ptr[0]);
+        if (!pd->hasParticleType(vsid))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown vsite type %s on line %d in file %s",
+                                                               ptr[0].c_str(), lineno, vsfile).c_str()));
+        }
+        auto itype = stringToInteractionType(ptr[1]);
+        if (itype != itypeVS2)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not supported yet on line %d in file %s",
+                                                               ptr[1].c_str(), lineno, vsfile).c_str()));
+        }
+        Identifier vs(itype, ptr[2], CanSwap::No);
+        double a = my_atof(ptr[3], "vsite_parameter");
+        ForceFieldParameter vs2param("", a, 0, 0, -1.5, 1.5, Mutability::Bounded, false, false);
+        vsite2.addParameter(vs, "a", vs2param);
+        lineno += 1;
+    }
+    pd->addForces(interactionTypeToString(itypeVS2), vsite2);
+}
+    
 int gen_ff(int argc, char*argv[])
 {
     std::vector<const char *> desc =
     {
         "gen_ff generates a new force field file based on a specification",
-        "provided by the user in a csv file and command line options.[PAR]",
+        "provided by the user in one or more csv files and command line options.[PAR]",
+        "Most important is the atomtypes file for which there are some",
+        "examples. In addition a file containing virtual sites can be provided.",
+        "with the [TT]-vs[tt] option. Default is not to add virtual sites.[PAR]"
         "In order to work the ACTDATA environment variable should point to",
         "the directory where some input files are located, namely:[BR]",
         "atomprops.csv - containing properties for atoms[BR]",
@@ -166,6 +206,7 @@ int gen_ff(int argc, char*argv[])
     combrules.push_back(nullptr);
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
+        { efCSV, "-vs",  "vsites",    ffOPTRD },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
     std::vector<t_pargs> pa =
@@ -355,8 +396,8 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(interactionTypeToString(InteractionType::PROPER_DIHEDRALS), pdihs);
     pd.addForces(interactionTypeToString(InteractionType::VDW), vdw);
     pd.addForces(interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION), eem);
-    ForceFieldParameterList vsite2("vsite2", CanSwap::No);
-    pd.addForces(interactionTypeToString(InteractionType::VSITE2), vsite2);
+    // Virtual sites
+    add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
     add_symm_charges(&pd);
     pd.updateTimeStamp();
     pd.updateCheckSum();

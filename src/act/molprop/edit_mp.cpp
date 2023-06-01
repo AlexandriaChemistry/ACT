@@ -35,8 +35,6 @@
 #include "actpre.h"
 
 #include <cstdio>
-//#include <cstdlib>
-//#include <cstring>
 
 #include <set>
 #include <vector>
@@ -56,51 +54,49 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace alexandria
 {
 
 typedef std::map<const std::string, int> stringCount;
 
-static bool dump_molecule(FILE                                        *fp,
+static void fetch_charges(const ForceField                            *pd,
                           ForceComputer                               *forceComp,
                           CommunicationRecord                         *cr,
                           const gmx::MDLogger                         &mdlog,
-                          stringCount                                 *atomTypeCount,
-                          stringCount                                 *bccTypeCount,
-                          const ForceField                               &pd,
-                          MolProp                                     *mp,
+                          const char                                  *charge_fn,
                           std::map<std::string, std::vector<double> > *qmap,
                           t_inputrec                                  *inputrec)
 {
-    alexandria::ACTMol actmol;
-    actmol.Merge(mp);
-    actmol.setInputrec(inputrec);
-    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
-                                      false);
-    if (immStatus::OK == imm)
+    std::vector<MolProp> mps;
+    MolPropRead(charge_fn, &mps);
+    for(auto mp = mps.begin(); mp < mps.end(); mp++)
     {
+        alexandria::ACTMol actmol;
+        actmol.Merge(&(*mp));
+        actmol.setInputrec(inputrec);
+        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error, false);
+        if (immStatus::OK != imm)
+        {
+            continue;
+        }
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-        //actmol.symmetrizeCharges(pd, qsymm, nullptr);
-        actmol.initQgenResp(&pd, coords, 0.0, 100);
+
+        actmol.initQgenResp(pd, coords, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(&pd, forceComp, mdlog, cr,
-                                        pd.chargeGenerationAlgorithm(),
-                                        qType::ACM,
-                                        dummy, &coords, &forces);
+            imm = actmol.GenerateCharges(pd, forceComp, mdlog, cr,
+                                         pd->chargeGenerationAlgorithm(),
+                                         qType::ACM,
+                                         dummy, &coords, &forces);
             if (immStatus::OK == imm)
             {
                 // Add ACM charges
@@ -119,7 +115,7 @@ static bool dump_molecule(FILE                                        *fp,
                     {
                         // TODO this is not general!
                         double qq = topatoms[index++].charge();
-                        if (pd.polarizable())
+                        if (pd->polarizable())
                         {
                             qq += topatoms[index++].charge();
                         }
@@ -129,6 +125,39 @@ static bool dump_molecule(FILE                                        *fp,
                     qmap->insert({fhandler->ids()[0], newq});
                 }
             }
+        }
+    }
+}
+
+static bool dump_molecule(FILE                                        *fp,
+                          ForceComputer                               *forceComp,
+                          CommunicationRecord                         *cr,
+                          const gmx::MDLogger                         &mdlog,
+                          stringCount                                 *atomTypeCount,
+                          stringCount                                 *bccTypeCount,
+                          const ForceField                            &pd,
+                          MolProp                                     *mp,
+                          t_inputrec                                  *inputrec)
+{
+    alexandria::ACTMol actmol;
+    actmol.Merge(mp);
+    actmol.setInputrec(inputrec);
+    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
+                                      false);
+    if (immStatus::OK == imm)
+    {
+        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        //actmol.symmetrizeCharges(pd, qsymm, nullptr);
+        actmol.initQgenResp(&pd, coords, 0.0, 100);
+        auto fhandler = actmol.fragmentHandler();
+        if (fhandler->topologies().size() == 1)
+        {
+            std::vector<double> dummy;
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            imm = actmol.GenerateCharges(&pd, forceComp, mdlog, cr,
+                                         pd.chargeGenerationAlgorithm(),
+                                         qType::ACM,
+                                         dummy, &coords, &forces);
         }
     }
     if (immStatus::OK != imm)
@@ -240,79 +269,72 @@ static bool dump_molecule(FILE                                        *fp,
 
 static void monomer2cluster(FILE                                              *fp,
                             std::vector<MolProp>                              *mp,
-                            const ForceField                                  &pd,
-                            const std::map<std::string, std::vector<double> > &qmap,
-                            t_inputrec                                        *inputrec)
+                            const std::map<std::string, std::vector<double> > &qmap)
 {
     // Premature optimization and all that
-    for(auto mm = mp->begin(); mm < mp->end(); mm++)
+    for(auto mm = mp->begin(); mm < mp->end(); )
     {
-         alexandria::ACTMol actmol;
-         actmol.Merge(&(*mm));
-         actmol.setInputrec(inputrec);
-         auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
-                                           false);
-         if (immStatus::OK == imm)
-         {
-             std::vector<gmx::RVec> coords = actmol.xOriginal();
-             //actmol.symmetrizeCharges(pd, qsymm, nullptr);
-             actmol.initQgenResp(&pd, coords, 0.0, 100);
-             auto fhandler = actmol.fragmentHandler();
-             if (fhandler->topologies().size() > 1)
-             {
-                 // Add ACM charges
-                 auto allexp = mm->experiment();
-                 if (allexp->empty())
-                 {
-                     if (fp)
-                     {
-                         fprintf(fp, "No experiment for %s, removing it.\n",
-                                 mm->getMolname().c_str());
-                     }
-                     mp->erase(mm);
-                 }
-                 for(auto myexp = allexp->begin(); myexp < allexp->end(); ++myexp)
-                 {
-                     auto ca    = myexp->calcAtom();
-                     size_t idx = 0;
-                     bool found = true;
-                     for(const auto &id : fhandler->ids())
-                     {
-                         auto qm = qmap.find(id);
-                         found   = qmap.end() != qm;
-                         if (!found)
-                         {
-                             break;
-                         }
-                         for(size_t iq = 0; iq < qm->second.size(); iq++)
-                         {
-                             if (idx == ca->size())
-                             {
-                                 GMX_THROW(gmx::InternalError(gmx::formatString("Size of charge array (%lu) does not match number of atoms (%d) for %s", qm->second.size(), myexp->NAtom(), mm->getMolname().c_str()).c_str()));
-                             }
-                             (*ca)[idx].AddCharge(qType::ACM, qm->second[iq]);
-                             idx++;
-                         }
-                     }
-                     if (!found)
-                     {
-                         // No support for this dimer, remove it.
-                         if (fp)
-                         {
-                             fprintf(fp, "No charge support for all fragments in %s, removing it.\n",
-                                     mm->getMolname().c_str());
-                         }
-                         mp->erase(mm);
-                     }
-                 }
-             }
-         }
+        // Add ACM charges
+        auto allexp  = mm->experiment();
+        bool keep_mp = true;
+        if (allexp->empty())
+        {
+            if (fp)
+            {
+                fprintf(fp, "No experiment for %s, removing it.\n",
+                        mm->getMolname().c_str());
+            }
+            mm = mp->erase(mm);
+            keep_mp = false;
+        }
+        for(auto myexp = allexp->begin(); keep_mp && myexp < allexp->end(); ++myexp)
+        {
+            auto ca    = myexp->calcAtom();
+            size_t idx = 0;
+            bool found = true;
+            for(const auto &ff : mm->fragments())
+            {
+                auto qm = qmap.find(ff.id());
+                found   = qmap.end() != qm;
+                if (!found)
+                {
+                    break;
+                }
+                for(size_t iq = 0; iq < qm->second.size(); iq++)
+                {
+                    if (idx == ca->size())
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Size of charge array (%lu) does not match number of atoms (%d) for %s", qm->second.size(), myexp->NAtom(), mm->getMolname().c_str()).c_str()));
+                    }
+                    (*ca)[idx].AddCharge(qType::ACM, qm->second[iq]);
+                    idx++;
+                }
+            }
+            if (!found)
+            {
+                // No support for this compound or complex, remove it.
+                if (fp)
+                {
+                    fprintf(fp, "No charge support for all fragments in %s, removing it.\n",
+                            mm->getMolname().c_str());
+                }
+                keep_mp = false;
+            }
+        }
+        if (keep_mp)
+        {
+            mm++;
+        }
+        else
+        {
+            mm = mp->erase(mm);
+        }
     }
 }
 
 static void check_mp(FILE                 *mylog,
                      const char           *ffname,
-                     bool                  genCharges,
+                     const char           *charge_fn,
                      std::vector<MolProp> *mp)
 {
     alexandria::ForceField pd;
@@ -331,98 +353,99 @@ static void check_mp(FILE                 *mylog,
     CommunicationRecord commRec;
     auto forceComp = new ForceComputer();
     auto mdlog     = gmx::MDLogger {};
-    std::map<std::string, std::vector<double> > qmap;
 
-    fprintf(mylog, "Force field file %s\n", ffname);
-    int numberOk = 0, numberFailed = 0;
-    for (auto m = mp->begin(); m < mp->end(); ++m)
+    if (mylog)
     {
-        typedef struct
+        fprintf(mylog, "Force field file %s\n", ffname);
+        int numberOk = 0, numberFailed = 0;
+        for (auto m = mp->begin(); m < mp->end(); ++m)
         {
-            std::string name;
-            rvec        mu;
-        } name_mu;
-        std::string basis, method;
-        std::vector<name_mu> mus;
-        for (auto &ci : m->experimentConst())
-        {
-            int nH = 0, nC = 0;
-            for (auto &cai : ci.calcAtomConst())
+            typedef struct
             {
-                std::string name = cai.getName();
-                if (name.compare("H") == 0)
+                std::string name;
+                rvec        mu;
+            } name_mu;
+            std::string basis, method;
+            std::vector<name_mu> mus;
+            for (auto &ci : m->experimentConst())
+            {
+                int nH = 0, nC = 0;
+                for (auto &cai : ci.calcAtomConst())
                 {
-                    nH++;
+                    std::string name = cai.getName();
+                    if (name.compare("H") == 0)
+                    {
+                        nH++;
+                    }
+                    else if (name.compare("C") == 0)
+                    {
+                        nC++;
+                    }
                 }
-                else if (name.compare("C") == 0)
+                if (nC > 0 && nH == 0)
                 {
-                    nC++;
+                    fprintf(mylog, "%s #C %d #H %d\n",
+                            ci.getDatafile().c_str(), 
+                            nC, nH);
                 }
-            }
-            if (nC > 0 && nH == 0)
-            {
-                fprintf(mylog, "%s #C %d #H %d\n",
-                        ci.getDatafile().c_str(), 
-                        nC, nH);
-            }
-            if (ci.NAtom() > 0)
-            {
-                method = ci.getMethod();
-                basis  = ci.getBasisset();
-            }
-            double T = 0;
-            auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
-            if (gp)
-            {
-                std::vector<double> mu = gp->getVector();
-                name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
-                mus.push_back(nmu);
-            }
-        
-            auto Xcalc = ci.getCoordinates();
-            auto Esp   = ci.electrostaticPotentialConst();
-            if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
-            {
-                double msd = 0;
-                auto xunit = Esp[0].getXYZunit();
-                double fac = convertToGromacs(1.0, xunit);
-                for(size_t i = 0; i < Xcalc.size(); i++)
+                if (ci.NAtom() > 0)
                 {
-                    msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
-                            gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
-                            gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
+                    method = ci.getMethod();
+                    basis  = ci.getBasisset();
                 }
-                double rmsd = std::sqrt(msd/Xcalc.size());
-                if (rmsd != 0)
+                double T = 0;
+                auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
+                if (gp)
                 {
-                    fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
-                            m->getMolname().c_str(), rmsd);
+                    std::vector<double> mu = gp->getVector();
+                    name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                    mus.push_back(nmu);
                 }
-                if (rmsd > 1e-3)
+                
+                auto Xcalc = ci.getCoordinates();
+                auto Esp   = ci.electrostaticPotentialConst();
+                if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
                 {
+                    double msd = 0;
+                    auto xunit = Esp[0].getXYZunit();
+                    double fac = convertToGromacs(1.0, xunit);
                     for(size_t i = 0; i < Xcalc.size(); i++)
                     {
-                        fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                                static_cast<int>(i+1),
-                                Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
-                                fac*Esp[i].getX(), fac*Esp[i].getY(),
-                                fac*Esp[i].getZ());
+                        msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
+                                gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
+                                gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
+                    }
+                    double rmsd = std::sqrt(msd/Xcalc.size());
+                    if (rmsd != 0)
+                    {
+                        fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
+                                m->getMolname().c_str(), rmsd);
+                    }
+                    if (rmsd > 1e-3)
+                    {
+                        for(size_t i = 0; i < Xcalc.size(); i++)
+                        {
+                            fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                                    static_cast<int>(i+1),
+                                    Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
+                                    fac*Esp[i].getX(), fac*Esp[i].getY(),
+                                    fac*Esp[i].getZ());
+                        }
                     }
                 }
             }
-        }
-        // Check dipoles
-        if (debug)
-        {
-            for(const auto &mi : mus)
+            // Check dipoles
+            if (debug)
             {
-                fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
-                        mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
+                for(const auto &mi : mus)
+                {
+                    fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
+                            mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
+                }
             }
-        }
-
+            
         if (dump_molecule(mylog, forceComp, &commRec, mdlog, &atomTypeCount,
-                          &bccTypeCount, pd, &(*m), &qmap, inputrec))
+                          &bccTypeCount, pd, &(*m), inputrec))
         {
             numberOk++;
         }
@@ -431,22 +454,25 @@ static void check_mp(FILE                 *mylog,
             numberFailed++;
             mp->erase(m);
         }
-    }
-    fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
+        }
+        fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
             numberOk, numberFailed);
-    fprintf(mylog, "Statistics\n");
-    for(auto &atc : atomTypeCount)
-    {
-        fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
+        fprintf(mylog, "Statistics\n");
+        for(auto &atc : atomTypeCount)
+        {
+            fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
+        }
+        for(auto &bcc : bccTypeCount)
+        {
+            fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+        }
     }
-    for(auto &bcc : bccTypeCount)
-    {
-        fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
-    }
-    if (genCharges)
+    if (charge_fn)
     {
         // Copy charges from monomers
-        monomer2cluster(mylog, mp, pd, qmap, inputrec);
+        std::map<std::string, std::vector<double> > qmap;
+        fetch_charges(&pd, forceComp, &commRec, mdlog, charge_fn, &qmap, inputrec);
+        monomer2cluster(mylog, mp, qmap);
     }
 }
 
@@ -523,18 +549,21 @@ int edit_mp(int argc, char *argv[])
         "an MPI connection to one or more other processors to write. In this manner the MPI transfer",
         "software in ACT can be tested.[PAR]",
         "edit_mp can check calculations for missing hydrogens and inconsistent dipoles if a force field file is given.", 
-        "It also can try to make a topology and reports errors doing this. Output is to a log file.",
+        "It also can try to make a topology and reports errors doing this. Output is to a log file.[PAR]",
         "If the optional [TT]-charges[tt] flag is given, this program will generate",
-        "charges for all the monomeric compounds in the molprop file,",
+        "charges for all the monomeric compounds in a reference molprop file,",
         "according to the input force field file and store them",
         "in the output molprop file as ACM (Alexandria Charge Model) charges.",
         "If there are clusters in the input molprop file they will get charges",
-        "from the monomers.[PAR]"
+        "from the monomers. Only compounds or clusters in the input molprop file that do",
+        "have a corresponding monomer in the reference molprop file will be stored in the",
+        "output file.[PAR]"
 
     };
     std::vector<t_filenm> fnm =
     {
         { efXML, "-mp",  "data",    ffOPTRDMULT },
+        { efXML, "-charges", "esp", ffOPTRD     },
         { efXML, "-o",   "allmols", ffWRITE     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
         { efLOG, "-g",   "check",   ffOPTWR     },
@@ -544,13 +573,12 @@ int edit_mp(int argc, char *argv[])
     real     temperature = 298.15;
     bool     forceMerge  = false;
     gmx_bool bcast       = false;
-    bool     genCharges  = false;
     bool     energyHisto = false;
     int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
     int      writeNode   = 0;
-    t_pargs pa[] =
+    std::vector<t_pargs> pa =
     {
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
@@ -564,8 +592,6 @@ int edit_mp(int argc, char *argv[])
           "Use broadcast instead of send/receive when running in parallel" },
         { "-wn", FALSE, etINT, {&writeNode},
           "Processor ID to write from if in parallel." },
-        { "-charges", FALSE, etBOOL, {&genCharges},
-          "Compute charges based on monomers and store them in the output. If there are cluster, e.g. dimers they will get the same charges." },
         { "-ehisto", FALSE, etBOOL, {&energyHisto},
           "Make a histogram of the energy distribution per molecule or complex." },
         { "-ewarnLow", FALSE, etREAL, {&ewarnLow},
@@ -579,7 +605,8 @@ int edit_mp(int argc, char *argv[])
     gmx_output_env_t     *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, fnm.size(), fnm.data(),
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                           pa.size(), pa.data(), sizeof(desc)/sizeof(desc[0]), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -650,16 +677,29 @@ int edit_mp(int argc, char *argv[])
             }
         }
     }
-    auto ffname = opt2fn_null("-ff", fnm.size(), fnm.data());
+    auto ffname  = opt2fn_null("-ff", fnm.size(), fnm.data());
+    auto logname = opt2fn_null("-g", fnm.size(), fnm.data());
     FILE *mylog = nullptr;
-    if (ffname || energyHisto)
+    if (logname || energyHisto)
     {
-        mylog = gmx_ffopen(opt2fn("-g", fnm.size(), fnm.data()), "w");
+        mylog = gmx_ffopen(logname, "w");
     }
+    auto molpropout = opt2fn("-o", fnm.size(), fnm.data());
     if (ffname)
     {
-        printf("Since you provided a force field file I will now check the compounds.\n");
-        check_mp(mylog, ffname, genCharges, &mpt);
+        if (mylog)
+        {
+            printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
+        }
+        auto charge_fn = opt2fn_null("-charges", fnm.size(), fnm.data());
+        if (charge_fn)
+        {
+            printf("Will set ACM charges for monomeric compounds in %s,"
+                   "copy the charges to compounds and clusters in the input molprop\n"
+                   "and save those with charges to the output molprop file %s\n",
+                   charge_fn, molpropout);
+        }
+        check_mp(mylog, ffname, charge_fn, &mpt);
     }
     if (energyHisto)
     {
@@ -673,7 +713,7 @@ int edit_mp(int argc, char *argv[])
     }
     if (writeNode == cr.rank())
     {
-        MolPropWrite(opt2fn("-o", fnm.size(), fnm.data()), mpt, compress);
+        MolPropWrite(molpropout, mpt, compress);
     }
     return 0;
 }

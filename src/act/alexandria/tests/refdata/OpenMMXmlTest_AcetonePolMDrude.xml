@@ -80,7 +80,7 @@
   <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="0">
+  <CustomNonbondedForce energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
@@ -109,7 +109,7 @@
     <Atom type="o2_1" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
     <Atom type="o2_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="0">
+  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="c2_1" sigma="0.106908" epsilon="0.55"/>
     <Atom type="c2_s_1" sigma="0" epsilon="0"/>
