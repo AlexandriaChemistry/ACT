@@ -167,7 +167,7 @@ class Topology
 {
 private:
     //! Map from InteractionType to topology element pointers
-    std::map<InteractionType, std::vector<TopologyEntry> >    entries_;
+    std::map<InteractionType, TopologyEntryVector>            entries_;
     //! Non bonded exclusions, array is length of number of atoms
     std::map<InteractionType, std::vector<std::vector<int>>>  exclusions_;
     //! List of atoms
@@ -227,10 +227,10 @@ private:
     /*! Find a bond between two atoms
      * \param[in] ai The first atom
      * \param[in] aj The second atom
-     * \return pointer to the Bond
+     * \return Copy of the Bond
      * \throws if not found
      */
-    const Bond &findBond(int ai, int aj) const;
+    Bond findBond(int ai, int aj) const;
 
     /*! \brief Add one bond to the list
      * \param[in] bond The bond to add
@@ -322,21 +322,19 @@ private:
      * \param[in] aindex    The atom indices
      * \param[in] bondOrder The array of bond orders
      * \param[in] cs        Whether or not the order of the atoms can be swapped
-     * \param[out] entry    The entry you were looking for
-     * \return true if it was found.
+     * \return The entry you were looking for or nullptr
      */
-    bool findTopologyEntry(InteractionType            itype,
-                           const std::vector<int>    &aindex,
-                           const std::vector<double> &bondOrder,
-                           CanSwap                    cs,
-                           TopologyEntry             *entry) const;
+    const TopologyEntry *findTopologyEntry(InteractionType            itype,
+                                           const std::vector<int>    &aindex,
+                                           const std::vector<double> &bondOrder,
+                                           CanSwap                    cs) const;
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
      * \param[in] vec   The new interactions
      */
-    void addEntry(InteractionType                   itype,
-                  const std::vector<TopologyEntry> &entry);
+    void addEntry(InteractionType            itype,
+                  const TopologyEntryVector &entry);
 
     /*! \brief Remove interactions that should not be there in the first place.
      * If two atoms are in the exclusion list, their shells should be as well.
@@ -388,13 +386,13 @@ private:
      * \return a vector of pointers
      * \throws if not found. If you do not want that to happen, check first!
      */
-    const std::vector<TopologyEntry> &entry(InteractionType itype) const;
+    const TopologyEntryVector &entry(InteractionType itype) const;
 
     //! \return the whole map of parameters
-    std::map<InteractionType, std::vector<TopologyEntry> > *entries() { return &entries_; }
+    std::map<InteractionType, TopologyEntryVector> *entries() { return &entries_; }
 
     //! \return the whole map of parameters, const style
-    const std::map<InteractionType, std::vector<TopologyEntry> > &entries() const { return entries_; }
+    const std::map<InteractionType, TopologyEntryVector> &entries() const { return entries_; }
     
     /*! \brief Print structure to a file
      * \param[in] fp The file pointer

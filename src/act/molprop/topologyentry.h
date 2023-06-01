@@ -39,6 +39,7 @@
 #include <map>
 #include <vector>
 
+#include "act/basics/basecontainer.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
@@ -66,6 +67,12 @@ public:
     //! Default empty constructor
     TopologyEntry() {}
 
+    //! Return myself or an inherited class in const form
+    const TopologyEntry *self() const { return this; }
+    
+    //! Return myself or an inherited class in non-const form
+    TopologyEntry *selfPtr() { return this; }
+    
     /*! \brief Add one atom index
      * \param[ai] The atom index
      */
@@ -170,6 +177,9 @@ public:
     CommunicationStatus Receive(const CommunicationRecord *cr,
                                 int                        src);
 };
+
+//! Vector of TopologyEntry items or inherited variants
+typedef std::vector<BaseContainer<TopologyEntry>> TopologyEntryVector;
 
 /*! \brief
  * Atom pair in a molecule

@@ -107,7 +107,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     }
     double msForceMax = msForce_*nshell;
     double msForce    = dotProdRvec(isShell, *forces);
-    auto pols         = top->entry(itype);
+    const auto pols   = top->entry(itype);
     int    iter       = 1;
     // Golden ratio, may be used for overrelaxation
     // double gold     = 0.5*(1+std::sqrt(5.0));
@@ -120,7 +120,7 @@ double ForceComputer::compute(const ForceField                  *pd,
             // Since the potential is harmonic we use Hooke's law
             // F = k dx -> dx = F / k
             // TODO Optimize this protocol using overrelaxation
-            int shell = p.atomIndex(1);
+            int shell = p->atomIndex(1);
             for(int m = 0; m < DIM; m++)
             {
                 (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];

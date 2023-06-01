@@ -869,7 +869,7 @@ void ACTMol::PrintConformation(const char                   *fn,
         auto bonds = top->entry(itype);
         for(const auto &b: bonds)
         {
-            gmx_conect_add(conect, b.atomIndex(0), b.atomIndex(1));
+            gmx_conect_add(conect, b->atomIndex(0), b->atomIndex(1));
         }
     }
     auto       epbc          = epbcNONE;

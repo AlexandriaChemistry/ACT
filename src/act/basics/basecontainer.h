@@ -31,15 +31,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef BASECONTAINER_H
-#define BASECONTAINER_H
+#ifndef ACT_BASICS_BASECONTAINER_H
+#define ACT_BASICS_BASECONTAINER_H
 
 #include <any>
 
 namespace alexandria
 {
 
-// This code was derived from:
+// This code was inspired by:
 // https://www.fluentcpp.com/2021/01/29/inheritance-without-pointers/ 
 // It requires C++17.
 
@@ -53,11 +53,11 @@ public:
         , getter{ [](std::any &storage) -> ActBase& { return std::any_cast<ConcreteType&>(storage); } }
     {}
     
-    ActBase *operator->() { return &getter(storage); }
+    const ActBase *operator->() const { return &getter(storage); }
     
 private:
     std::any storage;
-    ActBase& (*getter)(std::any&);
+    const ActBase& (*getter)(const std::any&);
 };
 
 } // namespace alexandria

@@ -589,7 +589,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             {
                 for (const auto &topentry : entry.second)
                 {
-                    addBonded(fp, entry.first, mmi, topentry.id(), topentry.atomIndices());
+                    addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
             actmols->push_back(mmi);

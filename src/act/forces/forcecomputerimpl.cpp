@@ -41,7 +41,7 @@
 namespace alexandria
 {
 
-static void computeLJ(const std::vector<TopologyEntry>      &pairs,
+static void computeLJ(const TopologyEntryVector             &pairs,
                       gmx_unused const std::vector<ActAtom> &atoms,
                       const std::vector<gmx::RVec>          *coordinates,
                       std::vector<gmx::RVec>                *forces,
@@ -54,11 +54,11 @@ static void computeLJ(const std::vector<TopologyEntry>      &pairs,
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto c6         = params[ljC6_IJ];
         auto c12        = params[ljC12_IJ];
         // Get the atom indices
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
         rvec dx;
@@ -91,7 +91,7 @@ static void computeLJ(const std::vector<TopologyEntry>      &pairs,
     energies->insert({InteractionType::VDW, ebond});
 }
 
-static void computeWBH(const std::vector<TopologyEntry>      &pairs,
+static void computeWBH(const TopologyEntryVector             &pairs,
                        gmx_unused const std::vector<ActAtom> &atoms,
                        const std::vector<gmx::RVec>          *coordinates,
                        std::vector<gmx::RVec>                *forces,
@@ -104,14 +104,14 @@ static void computeWBH(const std::vector<TopologyEntry>      &pairs,
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto sigma      = params[wbhSIGMA_IJ];
         auto epsilon    = params[wbhEPSILON_IJ];
         auto gamma      = params[wbhGAMMA_IJ];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
             // Get the atom indices
-            auto &indices   = b.atomIndices();
+            auto &indices   = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
@@ -134,7 +134,7 @@ static void computeWBH(const std::vector<TopologyEntry>      &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
-static void computeNonBonded(const std::vector<TopologyEntry>      &pairs,
+static void computeNonBonded(const TopologyEntryVector             &pairs,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
@@ -147,7 +147,7 @@ static void computeNonBonded(const std::vector<TopologyEntry>      &pairs,
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto rmin       = params[gbhRMIN_IJ];
         auto epsilon    = params[gbhEPSILON_IJ];
         auto gamma      = params[gbhGAMMA_IJ];
@@ -155,7 +155,7 @@ static void computeNonBonded(const std::vector<TopologyEntry>      &pairs,
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
-            auto &indices   = b.atomIndices();
+            auto &indices   = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
@@ -188,7 +188,7 @@ static void computeNonBonded(const std::vector<TopologyEntry>      &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
-static void gmx_unused computeNonBondedTest(const std::vector<TopologyEntry>      &pairs,
+static void gmx_unused computeNonBondedTest(const TopologyEntryVector             &pairs,
                                             gmx_unused const std::vector<ActAtom> &atoms,
                                             const std::vector<gmx::RVec>          *coordinates,
                                             std::vector<gmx::RVec>                *forces,
@@ -201,7 +201,7 @@ static void gmx_unused computeNonBondedTest(const std::vector<TopologyEntry>    
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto rmin       = params[gbhRMIN_IJ];
         auto epsilon    = params[gbhEPSILON_IJ];
         auto gamma      = params[gbhGAMMA_IJ];
@@ -209,7 +209,7 @@ static void gmx_unused computeNonBondedTest(const std::vector<TopologyEntry>    
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
-            auto &indices   = b.atomIndices();
+            auto &indices   = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
@@ -245,7 +245,7 @@ static void gmx_unused computeNonBondedTest(const std::vector<TopologyEntry>    
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
-static void computeCoulomb(const std::vector<TopologyEntry>  &pairs,
+static void computeCoulomb(const TopologyEntryVector         &pairs,
                            const std::vector<ActAtom>        &atoms,
                            const std::vector<gmx::RVec>      *coordinates,
                            std::vector<gmx::RVec>            *forces,
@@ -257,9 +257,9 @@ static void computeCoulomb(const std::vector<TopologyEntry>  &pairs,
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto ai     = b.atomIndices()[0];
-        auto aj     = b.atomIndices()[1];
-        auto &params= b.params();
+        auto ai     = b->atomIndices()[0];
+        auto aj     = b->atomIndices()[1];
+        auto &params= b->params();
         auto izeta  = params[coulZETAI];
         auto jzeta  = params[coulZETAJ];
         // Get the atom indices
@@ -285,7 +285,7 @@ static void computeCoulomb(const std::vector<TopologyEntry>  &pairs,
 }
 
 #ifdef FUTURE
-static void computePartridge(const std::vector<TopologyEntry>      &angles,
+static void computePartridge(const TopologyEntryVector             &angles,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
@@ -358,7 +358,7 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
-static void computeDummy(gmx_unused const std::vector<TopologyEntry>  &bonds,
+static void computeDummy(gmx_unused const TopologyEntryVector         &bonds,
                          gmx_unused const std::vector<ActAtom>        &atoms,
                          gmx_unused const std::vector<gmx::RVec>      *coordinates,
                          gmx_unused std::vector<gmx::RVec>            *forces,
@@ -366,7 +366,7 @@ static void computeDummy(gmx_unused const std::vector<TopologyEntry>  &bonds,
 {
 }
 
-static void computeBonds(const std::vector<TopologyEntry>      &bonds,
+static void computeBonds(const TopologyEntryVector             &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
@@ -383,12 +383,12 @@ static void computeBonds(const std::vector<TopologyEntry>      &bonds,
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto bondlength = params[bondLENGTH];
         auto kb         = params[bondKB];
         auto D0         = params[bondENERGY];
         // Get the atom indices
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
 
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
@@ -412,7 +412,7 @@ static void computeBonds(const std::vector<TopologyEntry>      &bonds,
     energies->insert({InteractionType::BONDS, ebond});
 }
 
-static void computeCubic(const std::vector<TopologyEntry>      &bonds,
+static void computeCubic(const TopologyEntryVector             &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
@@ -429,13 +429,13 @@ static void computeCubic(const std::vector<TopologyEntry>      &bonds,
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto bondlength = params[cubicLENGTH];
         auto rmax       = params[cubicRMAX];
         auto kb         = params[cubicKB];
         auto De         = params[cubicDE];
         // Get the atom indices
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
 
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
@@ -463,7 +463,7 @@ static void computeCubic(const std::vector<TopologyEntry>      &bonds,
     energies->insert({InteractionType::BONDS, ebond});
 }
 
-static void computeMorse(const std::vector<TopologyEntry>      &bonds,
+static void computeMorse(const TopologyEntryVector             &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
@@ -475,13 +475,13 @@ static void computeMorse(const std::vector<TopologyEntry>      &bonds,
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = b.params();
+        auto &params    = b->params();
         auto bondlength = params[morseLENGTH];
         auto beta       = params[morseBETA];
         auto De         = params[morseDE];
         auto D0         = params[morseD0];
         // Get the atom indices
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
@@ -503,7 +503,7 @@ static void computeMorse(const std::vector<TopologyEntry>      &bonds,
     energies->insert({InteractionType::BONDS, ebond});
 }
 
-static void computeLinearAngles(const std::vector<TopologyEntry>      &angles,
+static void computeLinearAngles(const TopologyEntryVector             &angles,
                                 gmx_unused const std::vector<ActAtom> &atoms,
                                 const std::vector<gmx::RVec>          *coordinates,
                                 std::vector<gmx::RVec>                *forces,
@@ -515,11 +515,11 @@ static void computeLinearAngles(const std::vector<TopologyEntry>      &angles,
     for (const auto &aaa : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params= aaa.params();
+        auto &params= aaa->params();
         auto a      = params[linangA];
         auto klin   = params[linangKLIN];
         // Get the atom indices
-        auto &indices= aaa.atomIndices();
+        auto &indices= aaa->atomIndices();
         
         rvec r_ij, r_kj, r_ik;
         rvec_sub(x[indices[0]], x[indices[1]], r_ij);
@@ -546,7 +546,7 @@ static void computeLinearAngles(const std::vector<TopologyEntry>      &angles,
 }
 
 // It is not finished yes, needs to be double checked. 
-static void computeAngles(const std::vector<TopologyEntry>      &angles,
+static void computeAngles(const TopologyEntryVector             &angles,
                           gmx_unused const std::vector<ActAtom> &atoms,
                           const std::vector<gmx::RVec>          *coordinates,
                           std::vector<gmx::RVec>                *forces,
@@ -559,11 +559,11 @@ static void computeAngles(const std::vector<TopologyEntry>      &angles,
     for (const auto &a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = a.params();
+        auto &params    = a->params();
         auto theta0     = params[angleANGLE];
         auto ka         = params[angleKT];
         // Get the atom indices
-        auto &indices   = a.atomIndices();
+        auto &indices   = a->atomIndices();
 
         rvec r_ij, r_kj;
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
@@ -610,7 +610,7 @@ static void computeAngles(const std::vector<TopologyEntry>      &angles,
 }
 
 // It is not finished yes, needs to be double checked. 
-static void computeUreyBradley(const std::vector<TopologyEntry>      &angles,
+static void computeUreyBradley(const TopologyEntryVector             &angles,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
@@ -623,13 +623,13 @@ static void computeUreyBradley(const std::vector<TopologyEntry>      &angles,
     for (const auto &a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params    = a.params();
+        auto &params    = a->params();
         auto theta0     = params[ubANGLE];
         auto ka         = params[ubKT];
         auto r13        = params[ubR13];
         auto kUB        = params[ubKUB];
         // Get the atom indices
-        auto &indices   = a.atomIndices();
+        auto &indices   = a->atomIndices();
         auto ai = indices[0];
         auto aj = indices[1];
         auto ak = indices[2];
@@ -691,7 +691,7 @@ static void computeUreyBradley(const std::vector<TopologyEntry>      &angles,
     energies->insert({InteractionType::ANGLES, energy});
 }
 
-static void computePolarization(const std::vector<TopologyEntry>      &bonds,
+static void computePolarization(const TopologyEntryVector             &bonds,
                                 gmx_unused const std::vector<ActAtom> &atoms,
                                 const std::vector<gmx::RVec>          *coordinates,
                                 std::vector<gmx::RVec>                *forces,
@@ -704,10 +704,10 @@ static void computePolarization(const std::vector<TopologyEntry>      &bonds,
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params   = b.params();
+        auto &params   = b->params();
         auto ksh       = params[polKSH];
         // Get the atom indices
-        auto &indices  = b.atomIndices();
+        auto &indices  = b->atomIndices();
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
@@ -782,7 +782,7 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
     return phi;
 }
 
-static void computeFourDihs(const std::vector<TopologyEntry>      &propers,
+static void computeFourDihs(const TopologyEntryVector             &propers,
                             gmx_unused const std::vector<ActAtom> &atoms,
                             const std::vector<gmx::RVec>          *coordinates,
                             std::vector<gmx::RVec>                *forces,
@@ -793,11 +793,11 @@ static void computeFourDihs(const std::vector<TopologyEntry>      &propers,
     for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params  = a.params();
+        auto &params  = a->params();
         // Assume we have the parameters in the correct order 0-nparam-1
         size_t nparam = params.size();
         // Get the atom indices
-        auto &indices = a.atomIndices();
+        auto &indices = a->atomIndices();
         auto ai       = indices[0];
         auto aj       = indices[1];
         auto ak       = indices[2];
@@ -837,7 +837,7 @@ static void computeFourDihs(const std::vector<TopologyEntry>      &propers,
     energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
 }
 
-static void computeImpropers(const std::vector<TopologyEntry>      &impropers,
+static void computeImpropers(const TopologyEntryVector             &impropers,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
@@ -849,10 +849,10 @@ static void computeImpropers(const std::vector<TopologyEntry>      &impropers,
     for (const auto &a : impropers)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params  = a.params();
+        auto &params  = a->params();
         auto kA       = params[idihKPHI];
         // Get the atom indices
-        auto &indices = a.atomIndices();
+        auto &indices = a->atomIndices();
         auto ai       = indices[0];
         auto aj       = indices[1];
         auto ak       = indices[2];
@@ -873,7 +873,7 @@ static void computeImpropers(const std::vector<TopologyEntry>      &impropers,
     energies->insert({InteractionType::IMPROPER_DIHEDRALS, energy});
 }
 
-static void computePropers(const std::vector<TopologyEntry>      &propers,
+static void computePropers(const TopologyEntryVector             &propers,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
@@ -884,12 +884,12 @@ static void computePropers(const std::vector<TopologyEntry>      &propers,
     for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
-        auto &params  = a.params();
+        auto &params  = a->params();
         auto phi0     = params[pdihANGLE];
         auto kphi     = params[pdihKP];
         auto mult     = params[pdihMULT];
         // Get the atom indices
-        auto &indices = a.atomIndices();
+        auto &indices = a->atomIndices();
         auto ai       = indices[0];
         auto aj       = indices[1];
         auto ak       = indices[2];

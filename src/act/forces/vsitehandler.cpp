@@ -1077,8 +1077,8 @@ void VsiteHandler::constructPositions(const Topology         *top,
         }
         for (const auto &vs : entry.second)
         {
-            auto atomIndices = vs.atomIndices();
-            auto params      = vs.params();
+            auto atomIndices = vs->atomIndices();
+            auto params      = vs->params();
             int ai = atomIndices[0];
             int aj = atomIndices[1];
             int ak = atomIndices[2];
@@ -1155,8 +1155,8 @@ void VsiteHandler::distributeForces(const Topology               *top,
     {
         for (const auto vs : entry.second)
         {
-            auto atomIndices = vs.atomIndices();
-            auto params      = vs.params();
+            auto atomIndices = vs->atomIndices();
+            auto params      = vs->params();
             // Ugly hack to minimize change in underlying gromacs code
             t_iatom *ia      = atomIndices.data() - 1;
             switch(entry.first)
