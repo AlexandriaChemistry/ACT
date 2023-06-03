@@ -98,7 +98,9 @@ Bond Bond::swap() const
     for (size_t i = 0; i < bondOrder.size(); i++)
     {
         te.addBondOrder(bondOrder[bondOrder.size()-1-i]);
-    }   
+    }
+    te.setGromacsType(gromacsType());
+    te.setId(id());
     return te;
 }
 

@@ -210,6 +210,18 @@ private:
     void addShells(const ForceField *pd,
                    AtomList         *atomList);
 
+    /*! \brief Find a topology entry matching the inputs if it exists
+     * \param[in] itype     The InteractionType
+     * \param[in] aindex    The atom indices
+     * \param[in] bondOrder The array of bond orders
+     * \param[in] cs        Whether or not the order of the atoms can be swapped
+     * \return The entry you were looking for or nullptr
+     */
+    const TopologyEntry *findTopologyEntry(const TopologyEntryVector &entries,
+                                           const std::vector<int>    &aindex,
+                                           const std::vector<double> &bondOrder,
+                                           CanSwap                    cs) const;
+
  public:
     Topology()
     {
@@ -316,18 +328,6 @@ private:
      * \param[in] pd The force field
      */
     void makePropers(const ForceField *pd);
-
-    /*! \brief Find a topology entry matching the inputs if it exists
-     * \param[in] itype     The InteractionType
-     * \param[in] aindex    The atom indices
-     * \param[in] bondOrder The array of bond orders
-     * \param[in] cs        Whether or not the order of the atoms can be swapped
-     * \return The entry you were looking for or nullptr
-     */
-    const TopologyEntry *findTopologyEntry(InteractionType            itype,
-                                           const std::vector<int>    &aindex,
-                                           const std::vector<double> &bondOrder,
-                                           CanSwap                    cs) const;
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)

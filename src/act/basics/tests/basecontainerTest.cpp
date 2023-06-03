@@ -51,9 +51,9 @@ class TopologyEntry
 public:
     TopologyEntry() {};
     
-    TopologyEntry *self() { return this; }
+    const TopologyEntry *self() const { return this; }
     
-    int print()
+    int print() const
     {
         return 2;
     }
@@ -64,7 +64,7 @@ class TopologyInherited : public TopologyEntry
 public:
     TopologyInherited() {}
     
-    int koko()
+    int koko() const
     {
         return 3;
     }
@@ -99,10 +99,30 @@ protected:
         }
         else
         {
-            auto f = static_cast<TopologyInherited *>(entries_[1]->self());
+            auto f = static_cast<const TopologyInherited *>(entries_[1]->self());
             result = f->koko();
         }
         EXPECT_TRUE(result == expected);
+    }
+    
+    void printThem(const std::vector<BaseContainer<TopologyEntry>> &entries)
+    {
+        size_t i = 0;
+        for (const auto &e : entries)
+        {
+            EXPECT_TRUE(2 == e->print());
+            if (i > 0)
+            {
+                auto f = static_cast<const TopologyInherited *>(e->self());
+                EXPECT_TRUE(3 == f->koko());
+            }
+            i++;
+        }
+    }
+    
+    void doPrint()
+    {
+        printThem(entries_);
     }
 };
 
@@ -114,6 +134,11 @@ TEST_F(BaseContainerTest, Base)
 TEST_F(BaseContainerTest, Inherited) 
 {
     runTest(1, 3);
+}
+
+TEST_F(BaseContainerTest, ConstVector) 
+{
+    doPrint();
 }
 
 } // namespace

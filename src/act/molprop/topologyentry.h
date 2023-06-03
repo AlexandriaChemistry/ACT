@@ -36,6 +36,7 @@
 #define ACT_MOLPROP_TOPOLOGYENTRY_H
 
 #include <cstdio>
+#include <any>
 #include <map>
 #include <vector>
 
@@ -68,8 +69,10 @@ public:
     TopologyEntry() {}
 
     //! Return myself or an inherited class in const form
-    const TopologyEntry *self() const { return this; }
+    TopologyEntry *self() { return this; }
     
+    const TopologyEntry *self() const { return this; }
+        
     //! Return myself or an inherited class in non-const form
     TopologyEntry *selfPtr() { return this; }
     

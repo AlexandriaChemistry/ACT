@@ -344,7 +344,7 @@ void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
         if (topol->hasEntry(itbonds))
         {
             auto myatoms = topol->atoms();
-            for(const auto topentry : topol->entry(itbonds))
+            for(const auto &topentry : topol->entry(itbonds))
             {
                 int ai = topentry->atomIndex(0);
                 int aj = topentry->atomIndex(1);

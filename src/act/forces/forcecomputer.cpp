@@ -107,7 +107,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     }
     double msForceMax = msForce_*nshell;
     double msForce    = dotProdRvec(isShell, *forces);
-    const auto pols   = top->entry(itype);
+    auto &pols        = top->entry(itype);
     int    iter       = 1;
     // Golden ratio, may be used for overrelaxation
     // double gold     = 0.5*(1+std::sqrt(5.0));
@@ -136,7 +136,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     return msForce/nshell;
 }
 
-void ForceComputer::computeOnce(const ForceField                     *pd,
+void ForceComputer::computeOnce(const ForceField                  *pd,
                                 const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,

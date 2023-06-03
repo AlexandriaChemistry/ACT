@@ -107,7 +107,7 @@ protected:
         std::vector<std::string> astrings;
         for(auto &a: angles)
         {
-            auto ai = a.atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Angle");
@@ -125,7 +125,7 @@ protected:
             std::vector<std::string> astrings;
             for(auto &a: angles)
             {
-                auto ai = a.atomIndices();
+                auto &ai = a->atomIndices();
                 astrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
             }
             myCheck.checkSequence(astrings.begin(), astrings.end(), "Angle");
@@ -135,7 +135,7 @@ protected:
             std::vector<std::string> lastrings;
             for(auto &a: linangles)
             {
-                auto ai = a.atomIndices();
+                auto &ai = a->atomIndices();
                 lastrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
             }
             myCheck.checkSequence(lastrings.begin(), lastrings.end(), "LinearAngle");
@@ -153,7 +153,7 @@ protected:
         std::vector<std::string> astrings;
         for(auto &a: imps)
         {
-            auto ai = a.atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d-%d", ai[0], ai[1], ai[2], ai[3]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Improper");
@@ -171,14 +171,14 @@ protected:
         std::vector<std::string> astrings;
         for(auto &a: imps)
         {
-            auto ai = a.atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d-%d", ai[0], ai[1], ai[2], ai[3]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Proper");
     }
 
-    void testInteraction(InteractionType                   itype,
-                         const std::vector<TopologyEntry> &entry)
+    void testInteraction(InteractionType            itype,
+                         const TopologyEntryVector &entry)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
@@ -189,7 +189,7 @@ protected:
         for(auto &a: imps)
         {
             std::string astring;
-            for(auto ai : a.atomIndices())
+            for(auto &ai : a->atomIndices())
             {
                 if (!astring.empty())
                 {
@@ -261,7 +261,7 @@ TEST_F (TopologyTest, MakePropersLinearAngles){
 }
 
 TEST_F (TopologyTest, AddPolarization){
-    std::vector<TopologyEntry> pols = {
+    TopologyEntryVector pols = {
         Bond(1, 2, 1.0),
         Bond(3, 4, 1.0)
     };
@@ -269,21 +269,21 @@ TEST_F (TopologyTest, AddPolarization){
 }
 
 TEST_F (TopologyTest, AddVsite2){
-    std::vector<TopologyEntry> vs2 = {
+    TopologyEntryVector vs2 = {
         Vsite2(1, 2, 0),
     };
     testInteraction(InteractionType::VSITE2, vs2); 
 }
 
 TEST_F (TopologyTest, AddVsite3out){
-    std::vector<TopologyEntry> vs3 = {
+    TopologyEntryVector vs3 = {
         Vsite3(1, 2, 3, 0),
     };
     testInteraction(InteractionType::VSITE3OUT, vs3); 
 }
 
 TEST_F (TopologyTest, AddVsite3fad){
-    std::vector<TopologyEntry> vs3 = {
+    TopologyEntryVector vs3 = {
         Vsite3(1, 3, 5, 0),
     };
     testInteraction(InteractionType::VSITE3FAD, vs3); 

@@ -153,7 +153,7 @@ class Identifier
 
  private:
     //! Whether we can swap and if so, how
-    CanSwap                  canSwap_;
+    CanSwap                  canSwap_ = CanSwap::No;
     //! The id in short of these parameter, with alternate ids
     std::vector<std::string> ids_;
     //! The bond orders

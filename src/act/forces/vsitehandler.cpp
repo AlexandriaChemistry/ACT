@@ -101,8 +101,8 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     /* TOTAL: 10 flops */
 }
 
-static void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
-                          const t_pbc *pbc)
+static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
+                                     const t_pbc *pbc)
 {
     real c = 1 - a - b;
     /* 2 flops */
@@ -128,8 +128,8 @@ static void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, r
     /* TOTAL: 17 flops */
 }
 
-static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
-                            const t_pbc *pbc)
+static gmx_unused void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
+                                       const t_pbc *pbc)
 {
     rvec xij, xjk, temp;
     real c;
@@ -199,8 +199,8 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
     /* TOTAL: 33 flops */
 }
 
-static void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
-                            real a, real b, real c, const t_pbc *pbc)
+static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
+                                       real a, real b, real c, const t_pbc *pbc)
 {
     rvec xij, xjk, xjl, temp;
     real d;
@@ -227,8 +227,8 @@ static void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const r
     /* TOTAL: 43 flops */
 }
 
-static void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
-                             real a, real b, real c, const t_pbc *pbc)
+static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
+                                        real a, real b, real c, const t_pbc *pbc)
 {
     rvec xij, xik, xil, ra, rb, rja, rjb, rm;
     real d;
@@ -267,8 +267,8 @@ static void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const 
 }
 
 
-static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
-                         rvec *x, const t_pbc *pbc)
+static gmx_unused int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
+                                    rvec *x, const t_pbc *pbc)
 {
     rvec x1, dx;
     dvec dsum;
@@ -355,10 +355,9 @@ static void spread_vsite2(const t_iatom ia[], real a,
     /* TOTAL: 13 flops */
 }
 
-static void spread_vsite3(const t_iatom ia[], real a, real b,
-                          const rvec x[],
-                          rvec f[], rvec fshift[],
-                          const t_pbc *pbc, const t_graph *g)
+static gmx_unused void spread_vsite3(const t_iatom ia[], real a, real b,
+                                     const rvec x[], rvec f[], rvec fshift[],
+                                     const t_pbc *pbc, const t_graph *g)
 {
     rvec    fi, fj, fk, dx;
     int     av, ai, aj, ak;
@@ -413,11 +412,10 @@ static void spread_vsite3(const t_iatom ia[], real a, real b,
     /* TOTAL: 20 flops */
 }
 
-static void spread_vsite3FD(const t_iatom ia[], real a, real b,
-                            const rvec x[],
-                            rvec f[], rvec fshift[],
-                            gmx_bool VirCorr, matrix dxdf,
-                            const t_pbc *pbc, const t_graph *g)
+static gmx_unused void spread_vsite3FD(const t_iatom ia[], real a, real b,
+                                       const rvec x[], rvec f[], rvec fshift[],
+                                       gmx_bool VirCorr, matrix dxdf,
+                                       const t_pbc *pbc, const t_graph *g)
 {
     real    c, invl, fproj, a1;
     rvec    xvi, xij, xjk, xix, fv, temp;
@@ -735,11 +733,10 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     /* TOTAL: 54 flops */
 }
 
-static void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
-                            const rvec x[],
-                            rvec f[], rvec fshift[],
-                            gmx_bool VirCorr, matrix dxdf,
-                            const t_pbc *pbc, const t_graph *g)
+static gmx_unused void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
+                                       const rvec x[], rvec f[], rvec fshift[],
+                                       gmx_bool VirCorr, matrix dxdf,
+                                       const t_pbc *pbc, const t_graph *g)
 {
     real    d, invl, fproj, a1;
     rvec    xvi, xij, xjk, xjl, xix, fv, temp;
@@ -845,11 +842,10 @@ static void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
 }
 
 
-static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
-                             const rvec x[],
-                             rvec f[], rvec fshift[],
-                             gmx_bool VirCorr, matrix dxdf,
-                             const t_pbc *pbc, const t_graph *g)
+static gmx_unused void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
+                                        const rvec x[], rvec f[], rvec fshift[],
+                                        gmx_bool VirCorr, matrix dxdf,
+                                        const t_pbc *pbc, const t_graph *g)
 {
     rvec xvi, xij, xik, xil, ra, rb, rja, rjb, rab, rm, rt;
     rvec fv, fj, fk, fl;
@@ -998,10 +994,9 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
 }
 
 
-static int spread_vsiten(const t_iatom ia[], const t_iparams ip[],
-                         const rvec x[],
-                         rvec f[], rvec fshift[],
-                         const t_pbc *pbc, const t_graph *g)
+static gmx_unused int spread_vsiten(const t_iatom ia[], const t_iparams ip[],
+                                    const rvec x[], rvec f[], rvec fshift[],
+                                    const t_pbc *pbc, const t_graph *g)
 {
     rvec xv, dx, fi;
     int  n3, av, i, ai;
@@ -1061,7 +1056,7 @@ VsiteHandler::VsiteHandler(matrix box,
 
 void VsiteHandler::constructPositions(const Topology         *top,
                                       std::vector<gmx::RVec> *coordinates,
-                                      const matrix            box)
+                                      const gmx_unused matrix            box)
 {
     // Ugly shortcut...
     std::vector<gmx::RVec> &x = *coordinates;
@@ -1142,7 +1137,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
 void VsiteHandler::distributeForces(const Topology               *top,
                                     const std::vector<gmx::RVec> &coords,
                                     std::vector<gmx::RVec>       *forces,
-                                    const matrix                  box)
+                                    const gmx_unused matrix                  box)
 {
     bool     VirCorr = false;
     matrix   dxdf    = { { 0 } };
@@ -1153,7 +1148,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
     rvec       *f    = as_rvec_array((*forces).data());
     for (const auto &entry: top->entries())
     {
-        for (const auto vs : entry.second)
+        for (const auto &vs : entry.second)
         {
             auto atomIndices = vs->atomIndices();
             auto params      = vs->params();

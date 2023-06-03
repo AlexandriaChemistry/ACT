@@ -30,7 +30,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-
 #ifndef ACT_BASICS_BASECONTAINER_H
 #define ACT_BASICS_BASECONTAINER_H
 
@@ -40,7 +39,9 @@ namespace alexandria
 {
 
 // This code was inspired by:
-// https://www.fluentcpp.com/2021/01/29/inheritance-without-pointers/ 
+// https://www.fluentcpp.com/2021/01/29/inheritance-without-pointers/
+// See also
+// https://stackoverflow.com/questions/76379814/how-to-use-const-variables-using-c17-stdany-in-a-stdvector
 // It requires C++17.
 
 template<typename ActBase>
@@ -51,13 +52,17 @@ public:
     BaseContainer(ConcreteType&& object)
         : storage{std::forward<ConcreteType>(object)}
         , getter{ [](std::any &storage) -> ActBase& { return std::any_cast<ConcreteType&>(storage); } }
+        , const_getter{ [](const std::any &storage) -> const ActBase& { return std::any_cast<const ConcreteType&>(storage); } }
+
     {}
     
-    const ActBase *operator->() const { return &getter(storage); }
+    const ActBase *operator->() const { return &const_getter(storage); }
+    ActBase *operator->() { return &getter(storage); }
     
 private:
     std::any storage;
-    const ActBase& (*getter)(const std::any&);
+    ActBase& (*getter)(std::any&);
+    const ActBase& (*const_getter)(const std::any&);
 };
 
 } // namespace alexandria

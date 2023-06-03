@@ -374,7 +374,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     /* Store bonds in harmonic potential list first, update type later */
     if (immStatus::OK == imm)
     {
-        topology_ = new Topology(bondsConst());
+        topology_ = new Topology(*bonds());
     }
     if (immStatus::OK == imm)
     {
@@ -866,7 +866,7 @@ void ACTMol::PrintConformation(const char                   *fn,
     auto       top           = topology();
     if (top->hasEntry(itype))
     {
-        auto bonds = top->entry(itype);
+        auto &bonds = top->entry(itype);
         for(const auto &b: bonds)
         {
             gmx_conect_add(conect, b->atomIndex(0), b->atomIndex(1));

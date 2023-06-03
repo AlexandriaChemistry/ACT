@@ -65,7 +65,7 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      */
-    void computeOnce(const ForceField                     *pd,
+    void computeOnce(const ForceField                  *pd,
                      const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
@@ -92,7 +92,7 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const ForceField                     *pd,
+    double compute(const ForceField                  *pd,
                    const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,

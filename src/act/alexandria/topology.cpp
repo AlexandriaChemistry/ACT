@@ -84,17 +84,9 @@ public:
 
 Topology::Topology(const std::vector<Bond> &bonds)
 {
-    if (!bonds.empty())
+    for(const auto &b : bonds)
     {
-        entries_.insert({ InteractionType::BONDS, {} });
-        for(auto &b : bonds)
-        {
-            if (b.aI() < 0 || b.aJ() < 0)
-            {
-                GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
-            }
-            entries_[InteractionType::BONDS].push_back(b);
-        }
+        addBond(b);
     }
 }
 
@@ -185,15 +177,18 @@ void Topology::addShells(const ForceField *pd,
     }
 }
 
-
 void Topology::addBond(const Bond &bond)
 {
     if (bond.aI() < 0 || bond.aJ() < 0)
     {
         GMX_THROW(gmx::InternalError("Negative atom indices when adding bonds"));
     }
-    entries_.insert({ InteractionType::BONDS, {} });
-    entries_[InteractionType::BONDS].push_back(bond);
+    auto itb = InteractionType::BONDS;
+    if (entries_.find(itb) == entries_.end())
+    {
+        entries_.insert({ itb, TopologyEntryVector{} });
+    }
+    entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
 }
 
 double Topology::mass() const
@@ -211,47 +206,39 @@ Bond Topology::findBond(int ai, int aj) const
     Bond b(ai, aj, 1.0);
     auto bondsptr = entries_.find(InteractionType::BONDS);
     TopologyEntryVector::const_iterator bptr;
-    if (entries_.end() != bondsptr)
-    {
-        bptr = std::find_if(bondsptr->second.begin(), bondsptr->second.end(),
-                            [b](const TopologyEntry &bb)
-                            { return (bb.atomIndex(0) == b.atomIndex(0) && bb.atomIndex(1) == b.atomIndex(1)) ||
-                              (bb.atomIndex(0) == b.atomIndex(1) && bb.atomIndex(1) == b.atomIndex(0)); });
-        if (bptr == bondsptr->second.end())
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond between %d and %d", ai, aj).c_str()));
-        }
-    }
-    else
+    if (entries_.end() == bondsptr)
     {
         GMX_THROW(gmx::InternalError("There are no bonds at all."));
     }
+    for(bptr = bondsptr->second.begin(); bptr < bondsptr->second.end(); ++bptr)
+    {
+        if (((*bptr)->atomIndex(0) == ai && (*bptr)->atomIndex(1) == aj) ||
+            ((*bptr)->atomIndex(0) == aj && (*bptr)->atomIndex(1) == ai))
+        {
+            break;
+        }
+    }
+    if (bptr == bondsptr->second.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond between %d and %d", ai, aj).c_str()));
+    }
+
+    auto c = (*bptr)->self();
     if ((*bptr)->atomIndex(0) == ai)
     {
-        auto c = (*bptr)->self();
         return *static_cast<const Bond *>(c);
     }
     else
     {
-        return findBond(aj, ai);
+        return static_cast<const Bond *>(c)->swap();
     }
 }
 
-const TopologyEntry *Topology::findTopologyEntry(InteractionType            itype,
+const TopologyEntry *Topology::findTopologyEntry(const TopologyEntryVector &entries,
                                                  const std::vector<int>    &aindex,
                                                  const std::vector<double> &bondOrder,
                                                  CanSwap                    cs) const
 {
-    if (!hasEntry(itype))
-    {
-        return nullptr;
-    }
-    auto eptr  = entries_.find(itype);
-    if (entries_.end() == eptr)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("No such entry %s in topology", interactionTypeToString(itype).c_str()).c_str()));
-    }
-    auto entries = eptr->second;
     TopologyEntry te;
     for (auto &a : aindex)
     {
@@ -261,19 +248,20 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
     {
         te.addBondOrder(b);
     }
-    auto bptr  = std::find_if(entries.begin(), entries.end(),
-                              [te, cs](const TopologyEntry &bb)
+    TopologyEntryVector::const_iterator bptr;
+    bool swapped = false;
+    for(bptr = entries.begin(); bptr < entries.end(); ++bptr)
     {
-        bool same = te.atomIndices().size() == bb.atomIndices().size();
+        bool same = te.atomIndices().size() == (*bptr)->atomIndices().size();
         if (same)
         {
             for(size_t i = 0; i < te.atomIndices().size() and same; i++)
             {
-                same = same && (te.atomIndices()[i] == bb.atomIndices()[i]);
+                same = same && (te.atomIndices()[i] == (*bptr)->atomIndices()[i]);
             }
             for(size_t i = 0; i < te.bondOrders().size() and same; i++)
             {
-                same = same && (te.bondOrders()[i] == bb.bondOrders()[i]);
+                same = same && (te.bondOrders()[i] == (*bptr)->bondOrders()[i]);
             }
         }
         if (!same && CanSwap::Yes == cs)
@@ -281,25 +269,29 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
             same = true;
             for(size_t i = 0; i < te.atomIndices().size() and same; i++)
             {
-                same = same && (te.atomIndex(i) == bb.atomIndex(bb.atomIndices().size()-1-i));
+                same = same && (te.atomIndex(i) == (*bptr)->atomIndex((*bptr)->atomIndices().size()-1-i));
             }
             for(size_t i = 0; i < te.bondOrders().size() and same; i++)
             {
-                same = same && (te.bondOrder(i) == bb.bondOrder(bb.bondOrders().size()-1-i));
+                same = same && (te.bondOrder(i) == (*bptr)->bondOrder((*bptr)->bondOrders().size()-1-i));
             }
+            swapped = same;
         }
-        return same;
-    });
+        if (same)
+        {
+            break;
+        }
+    }
     if (bptr == entries.end())
     {
         return nullptr;
     }
     else
     {
-        return (*bptr)->self();
+        return std::any_cast<const TopologyEntry *>((*bptr)->self());
     }
 }
- 
+
 void Topology::makeAngles(const ForceField             *pd,
                           const std::vector<gmx::RVec> &x,
                           double                        LinearAngleMin)
@@ -310,10 +302,8 @@ void Topology::makeAngles(const ForceField             *pd,
         return;
     }
     auto &bonds = entry(ib);
-    entries_.insert({ InteractionType::ANGLES, {} });
-    entries_.insert({ InteractionType::LINEAR_ANGLES, {} });
-    auto &angles    = entries_.find(InteractionType::ANGLES)->second;
-    auto &linangles = entries_.find(InteractionType::LINEAR_ANGLES)->second;
+    TopologyEntryVector angles{};
+    TopologyEntryVector linangles{};
     for(size_t i = 0; i < bonds.size(); i++)
     {
         auto b1  = static_cast<const Bond &>(*bonds[i]->self());
@@ -328,7 +318,8 @@ void Topology::makeAngles(const ForceField             *pd,
             auto b2  = static_cast<const Bond &>(*bonds[j]->self());
             int  ai2 = bonds[j]->atomIndex(0);
             int  aj2 = bonds[j]->atomIndex(1);
-            Angle angle;
+            Angle angle{};
+            // Check if the bonds share atoms
             if (aj1 == ai2)
             {
                 angle.setBonds(b1, b2);
@@ -345,33 +336,44 @@ void Topology::makeAngles(const ForceField             *pd,
             {
                 angle.setBonds(b1.swap(), b2.swap());
             }
-
-            if (is_linear(x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
-                          nullptr, LinearAngleMin))
+            if (angle.atomIndices().size() == 3)
             {
-                if (nullptr == findTopologyEntry(InteractionType::LINEAR_ANGLES,
-                                                 angle.atomIndices(),
-                                                 angle.bondOrders(), CanSwap::Yes))
+                if (is_linear(x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
+                              nullptr, LinearAngleMin))
                 {
-                    angle.setLinear(true);
-                    linangles.push_back(angle);
+                    if (nullptr == findTopologyEntry(linangles, angle.atomIndices(),
+                                                     angle.bondOrders(), CanSwap::Yes))
+                    {
+                        angle.setLinear(true);
+                        linangles.push_back(std::move(angle));
+                    }
                 }
-            }
-            else
-            {
-                if (nullptr == findTopologyEntry(InteractionType::ANGLES,
-                                                 angle.atomIndices(),
-                                                 angle.bondOrders(), CanSwap::Yes))
+                else
                 {
-                    angles.push_back(angle);
+                    if (nullptr == findTopologyEntry(angles, angle.atomIndices(),
+                                                     angle.bondOrders(), CanSwap::Yes))
+                    {
+                        angles.push_back(std::move(angle));
+                    }
                 }
             }
         }
     }
-    if (pd)
+    if (!angles.empty())
     {
-        setEntryIdentifiers(pd, InteractionType::ANGLES);
-        setEntryIdentifiers(pd, InteractionType::LINEAR_ANGLES);
+        entries_.insert({ InteractionType::ANGLES, std::move(angles) });
+        if (pd)
+        {
+            setEntryIdentifiers(pd, InteractionType::ANGLES);
+        }
+    }
+    if (!linangles.empty())
+    {
+        entries_.insert({ InteractionType::LINEAR_ANGLES, std::move(linangles) });
+        if (pd)
+        {
+            setEntryIdentifiers(pd, InteractionType::LINEAR_ANGLES);
+        }
     }
 }
 
@@ -396,8 +398,7 @@ void Topology::makeImpropers(const ForceField             *pd,
         mybonds[b->atomIndex(0)].insert(b->atomIndex(1));
         mybonds[b->atomIndex(1)].insert(b->atomIndex(0));
     }
-    entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, {} });
-    auto &impropers = entries_.find(InteractionType::IMPROPER_DIHEDRALS)->second;
+    TopologyEntryVector impropers{};
     // Now loop over the atoms
     const rvec *myx = as_rvec_array(x.data());
     for(size_t i = 0; i < nAtoms; i++)
@@ -415,7 +416,7 @@ void Topology::makeImpropers(const ForceField             *pd,
                 for(int m = 0; m < 3; m++)
                 {
                     auto bbb = findBond(i, jkl[m]);
-                    if (bjkl[m].atomIndex(0) != static_cast<int>(i))
+                    if (bbb.atomIndex(0) != static_cast<int>(i))
                     {
                         bjkl[m] = bbb.swap();
                     }
@@ -428,17 +429,20 @@ void Topology::makeImpropers(const ForceField             *pd,
             }
         }
     }
-    if (pd)
+    if (!impropers.empty())
     {
-        setEntryIdentifiers(pd, InteractionType::IMPROPER_DIHEDRALS);
+        entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, std::move(impropers) });
+        if (pd)
+        {
+            setEntryIdentifiers(pd, InteractionType::IMPROPER_DIHEDRALS);
+        }
     }
 }
 
 void Topology::makePairs(const ForceField *pd,
                          InteractionType   itype)
 {
-    entries_.insert({itype, {} });
-    auto &pairs = entries_.find(itype)->second;
+    TopologyEntryVector pairs{};
     for(size_t i = 0; i < atoms_.size(); i++)
     {
         // Check for exclusions is done later.
@@ -447,18 +451,22 @@ void Topology::makePairs(const ForceField *pd,
             pairs.push_back(AtomPair(i, j));
         }
     }
-    // Now time for exclusions
-    int nexcl;
-    if (!ffOption(*pd, itype, "nexcl", &nexcl))
+    if (!pairs.empty())
     {
-        nexcl = 0;
-    }
-    generateExclusions(itype, nexcl);
-    fixExclusions(itype);
-    // Finally insert the identifiers
-    if (pd)
-    {
-        setEntryIdentifiers(pd, itype);
+        entries_.insert({itype, std::move(pairs) });
+        // Now time for exclusions
+        int nexcl;
+        if (!ffOption(*pd, itype, "nexcl", &nexcl))
+        {
+            nexcl = 0;
+        }
+        generateExclusions(itype, nexcl);
+        fixExclusions(itype);
+        // Finally insert the identifiers
+        if (pd)
+        {
+            setEntryIdentifiers(pd, itype);
+        }
     }
 }
 
@@ -544,7 +552,7 @@ void  Topology::addShellPairs()
 {
     if (hasEntry(InteractionType::POLARIZATION))
     {
-        auto pol = entries_.find(InteractionType::POLARIZATION)->second;
+        auto &pol = entries_.find(InteractionType::POLARIZATION)->second;
         for (const auto &itype : { InteractionType::VDW,
                                    InteractionType::COULOMB } )
         {
@@ -606,8 +614,7 @@ void Topology::makePropers(const ForceField *pd)
     {
         return;
     }
-    entries_.insert({ InteractionType::PROPER_DIHEDRALS, {} });
-    auto &propers = entries_.find(InteractionType::PROPER_DIHEDRALS)->second;
+    TopologyEntryVector propers{};
     auto &angles  = entries_.find(ia)->second;
     for(size_t i = 0; i < angles.size(); i++)
     {
@@ -651,9 +658,13 @@ void Topology::makePropers(const ForceField *pd)
             }
         }
     }
-    if (pd)
+    if (!propers.empty())
     {
-        setEntryIdentifiers(pd, InteractionType::PROPER_DIHEDRALS);
+        entries_.insert({ InteractionType::PROPER_DIHEDRALS, std::move(propers) });
+        if (pd)
+        {
+            setEntryIdentifiers(pd, InteractionType::PROPER_DIHEDRALS);
+        }
     }
 }
 
@@ -682,7 +693,7 @@ int Topology::makeVsite2s(const ForceField *pd,
     }
     auto &bonds     = entry(itype_b);
     // Add the virtual sites entry...
-    entries_.insert({ itype, {} });
+    entries_.insert({ itype, TopologyEntryVector{} });
     // ... and look up the vector
     auto &vsite2    = entries_.find(itype)->second;
     int vsitesAdded = 0;
@@ -699,7 +710,7 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto border = bid.bondOrders();
         printf("Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
         
-        for(auto fvs : ffvs.parametersConst())
+        for(auto &fvs : ffvs.parametersConst())
         {
             printf("Checking vsite %s\n", fvs.first.id().c_str());
             auto vsatoms = fvs.first.atoms();
@@ -750,7 +761,7 @@ int Topology::makeVsite2s(const ForceField *pd,
                     }
                     // Special bond order for vsites
                     vsnew.addBondOrder(9);
-                    vsite2.push_back(vsnew);
+                    vsite2.push_back(std::move(vsnew));
                 }
             }
         }
@@ -775,7 +786,7 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     {
         return;
     }
-    auto plist = entry(itype);
+    auto &plist = entry(itype);
     for(auto pl = plist.begin(); pl < plist.end(); ++pl)
     {
         fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
@@ -988,7 +999,13 @@ void Topology::addEntry(InteractionType            itype,
     }
     if (entry.size() > 0)
     {
-        entries_.insert({ itype, entry });
+        // Make a copy first.
+        TopologyEntryVector newv;
+        for(const auto &ee : entry)
+        {
+            newv.push_back(ee);
+        }
+        entries_.insert({ itype, std::move(newv) });
     }
 }
 
@@ -1051,12 +1068,12 @@ void Topology::generateExclusions(InteractionType itype,
     {
         for(size_t j = 0; j < exclusions_[itype][ai].size(); j++)
         {
-            auto aj = exclusions_[itype][ai][j];
+            size_t aj = exclusions_[itype][ai][j];
             for(auto pp = itt->begin(); pp < itt->end(); ++pp)
             {
-                auto a0 = (*pp)->atomIndex(0);
-                auto a1 = (*pp)->atomIndex(1);
-                if (ai == a0 && aj == a1 || ai == a1 && aj == a0)
+                size_t a0 = (*pp)->atomIndex(0);
+                size_t a1 = (*pp)->atomIndex(1);
+                if ((ai == a0 && aj == a1) || (ai == a1 && aj == a0))
                 {
                     itt->erase(pp);
                     break;
@@ -1207,7 +1224,7 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
     {
         std::string              atypes;
         std::vector<std::string> btype;
-        for(const size_t &jj : (*topentry)->atomIndices())
+        for(const size_t jj : (*topentry)->atomIndices())
         {
             if (jj >= atoms_.size())
             {
@@ -1270,12 +1287,12 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
         {
             if (btype.size() == 1)
             {
-                topentry->setId(Identifier(btype[0]));
+                (*topentry)->setId(Identifier(btype[0]));
             }
             else
             {
-                topentry->setId({ Identifier(btype, topentry->bondOrders(),
-                                             fs.canSwap()) });
+                (*topentry)->setId({ Identifier(btype, (*topentry)->bondOrders(),
+                                                fs.canSwap()) });
             }
         }
         else if (debug)
