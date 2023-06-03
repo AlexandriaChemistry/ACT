@@ -41,10 +41,10 @@
 
 #include <numeric>
 
+#include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
@@ -1179,10 +1179,11 @@ void MolHandler::simulate(const ForceField              *pd,
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
             // TODO: rewrite without gromacs fluff.
-            write_pdbfile_indexed(traj, title, nullptr,
-                                  as_rvec_array(coordinates.data()), epbcNONE,
-                                  box, chain, step+1, trajIndex.size(), trajIndex.data(),
-                                  nullptr, false, false);
+            pdbWriter(traj, title, mol->atomsConst(),
+                      coordinates, mol->topology()->residueNames(),
+                      epbcNONE,
+                      box, chain, step+1, trajIndex,
+                      nullptr, true);
         }
         // Swap force arrays
         cur = prev;

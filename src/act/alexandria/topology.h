@@ -222,6 +222,24 @@ private:
                                            const std::vector<double> &bondOrder,
                                            CanSwap                    cs) const;
 
+    /*! \brief Remove interactions that should not be there in the first place.
+     * If two atoms are in the exclusion list, their shells should be as well.
+     * This routine checks for such interactions (Coulomb or VDW) and removes them.
+     * For vsites, they inherit the exclusions from their constructing atoms.
+     * \param[inout] pairs      The pair list
+     * \param[in]    exclusions The exclusions
+     */
+    void fixExclusions(TopologyEntryVector                 *pairs,
+                       const std::vector<std::vector<int>> &exclusions);
+    
+    /*! \brief Generate exclusions and remove pairs
+     * \param[inout] pairs The list of all atom pairs
+     * \param[in] nrexcl   The number of exclusions to generate for Coulomb interactions (max 2)
+     * \return list of exclusions
+     */
+    std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
+                                                     int                  nrexcl);
+    
  public:
     Topology()
     {
@@ -336,27 +354,9 @@ private:
     void addEntry(InteractionType            itype,
                   const TopologyEntryVector &entry);
 
-    /*! \brief Remove interactions that should not be there in the first place.
-     * If two atoms are in the exclusion list, their shells should be as well.
-     * This routine checks for such interactions (Coulomb or VDW) and removes them.
-     * For vsites, they inherit the exclusions from their constructing atoms.
-     * \param[in] itype The interaction to check
-     */
-    void fixExclusions(InteractionType itype);
-    
-    /*! \brief Generate exclusiones
-     * \param[in] itype The interaction type tp check
-     * \param[in] nrexcl The number of exclusions to generate for Coulomb interactions (max 2)
-     */
-    void generateExclusions(InteractionType itype,
-                            int             nrexcl);
-    
     //! \return the number of atoms                    
     size_t nAtoms() const { return atoms_.size(); }
         
-    /*! \brief Convert to gromacs exclusiones
-     */
-    t_excls *gromacsExclusions();
     /*! Generate the non-bonded pair list based on just the atoms
      * \param[in] pd     Force field needed to set identifiers.
      * \param[in] natoms The number of atoms

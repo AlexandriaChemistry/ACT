@@ -41,7 +41,6 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

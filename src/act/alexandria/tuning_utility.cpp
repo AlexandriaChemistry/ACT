@@ -40,6 +40,7 @@
 #include <cstdlib>
 
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/thermochemistry.h"
 #include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
@@ -49,7 +50,6 @@
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/coolstuff.h"
@@ -651,11 +651,12 @@ static void writeCoordinates(const std::vector<ActAtom>  &atoms,
 {
     FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
-    write_pdbfile(out, title.c_str(), nullptr, as_rvec_array(xorig.data()),
-                  epbcNONE, box, 'A', 1, nullptr, false);
+    std::vector<std::string> resnames = { "A", "B" };
+    pdbWriter(out, title.c_str(), atoms, xorig, resnames,
+              epbcNONE, box, 'A', 1, {}, nullptr, false);
 
-    write_pdbfile(out, title.c_str(), nullptr, as_rvec_array(xmin.data()),
-                  epbcNONE, box, 'B', 1, nullptr, false);
+    pdbWriter(out, title.c_str(), atoms, xmin, resnames,
+              epbcNONE, box, 'B', 1, {}, nullptr, false);
 
     gmx_fio_fclose(out);
 }

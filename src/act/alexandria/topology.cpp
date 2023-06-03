@@ -453,51 +453,59 @@ void Topology::makePairs(const ForceField *pd,
     }
     if (!pairs.empty())
     {
-        entries_.insert({itype, std::move(pairs) });
         // Now time for exclusions
         int nexcl;
         if (!ffOption(*pd, itype, "nexcl", &nexcl))
         {
             nexcl = 0;
         }
-        generateExclusions(itype, nexcl);
-        fixExclusions(itype);
+        //! Non bonded exclusions, array is length of number of atoms
+        auto exclusions = generateExclusions(&pairs, nexcl);
+        fixExclusions(&pairs, exclusions);
         // Finally insert the identifiers
-        if (pd)
+        if (!pairs.empty())
         {
-            setEntryIdentifiers(pd, itype);
+            entries_.insert({itype, std::move(pairs) });
+            if (pd)
+            {
+                setEntryIdentifiers(pd, itype);
+            }
         }
     }
 }
 
-void Topology::fixExclusions(InteractionType itype)
+void Topology::fixExclusions(TopologyEntryVector                 *pairs,
+                             const std::vector<std::vector<int>> &exclusions)
 {
-    if (!hasEntry(itype) || exclusions_.find(itype) == exclusions_.end())
-    {
-        return;
-    }
-    auto &ffpl = entries_.find(itype)->second;
     // Loop over all exclusions
-    for(size_t ai = 0; ai < exclusions_[itype].size(); ++ai)
+    for(size_t ai = 0; ai < exclusions.size(); ++ai)
     {
-        for(size_t jj = 0; jj < exclusions_[itype][ai].size(); ++jj)
+        if (eptAtom != atoms_[ai].pType())
         {
-            size_t aj = exclusions_[itype][ai][jj];
+            continue;
+        }
+        for(size_t jj = 0; jj < exclusions[ai].size(); ++jj)
+        {
+            size_t aj = exclusions[ai][jj];
+            if (eptAtom != atoms_[aj].pType())
+            {
+                continue;
+            }
             // Check whether these particles have shells
             for(size_t si : atoms_[ai].shells())
             {
                 for(size_t sj : atoms_[aj].shells())
                 {
                     // See whether this interaction exists
-                    auto it = ffpl.begin();
-                    while (ffpl.end() != it)
+                    auto it = pairs->begin();
+                    while (pairs->end() != it)
                     {
                         size_t aai = (*it)->atomIndex(0);
                         size_t aaj = (*it)->atomIndex(1);
                         if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) || 
                             ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
                         {
-                            it = ffpl.erase(it);
+                            it = pairs->erase(it);
                         }
                         else
                         {
@@ -522,19 +530,19 @@ void Topology::fixExclusions(InteractionType itype)
                 for (size_t cas : core_and_shells)
                 {
                     // Loop over the exclusions for this itype and core or its shells
-                    for (size_t jj = 0; jj < exclusions_[itype][cas].size(); ++jj)
+                    for (size_t jj = 0; jj < exclusions[cas].size(); ++jj)
                     {
-                        size_t aj = exclusions_[itype][cas][jj];
+                        size_t aj = exclusions[cas][jj];
                         // Now check the pair list
-                        auto it   = ffpl.begin();
-                        while (ffpl.end() != it)
+                        auto it   = pairs->begin();
+                        while (pairs->end() != it)
                         {
                             size_t aai = (*it)->atomIndex(0);
                             size_t aaj = (*it)->atomIndex(1);
                             // If we find an interaction with the vsite, remove it.
-                            if ((aai == i && aaj == aj) || (aaj == i || aai == aj))
+                            if ((aai == i && aaj == aj) || (aaj == i && aai == aj))
                             {
-                                it = ffpl.erase(it);
+                                it = pairs->erase(it);
                             }
                             else
                             {
@@ -747,6 +755,8 @@ int Topology::makeVsite2s(const ForceField *pd,
                     int vs2 = atomList->size();
                     newatom.addCore(ai);
                     newatom.addCore(aj);
+                    // Residue number
+                    newatom.setResidueNumber(atoms_[ai].residueNumber());
                     gmx::RVec vzero = { 0, 0, 0 };
                     size_t after = std::max(ai, aj);
                     auto iter = std::find(atomList->begin(), atomList->end(), after);
@@ -948,15 +958,9 @@ void Topology::build(const ForceField             *pd,
             makePropers(pd);
         }
     }
-    //setIdentifiers(pd);
     makePairs(pd, InteractionType::VDW);
     makePairs(pd, InteractionType::COULOMB);
-    //addShellPairs();
-    // Correct for interactions that should not be there
-    //fixExclusions();
     
-    // TODO: Analyze why this is needed.
-    //setIdentifiers(pd);
     if (missing != missingParameters::Generate)
     {
         fillParameters(pd);
@@ -1009,15 +1013,11 @@ void Topology::addEntry(InteractionType            itype,
     }
 }
 
-void Topology::generateExclusions(InteractionType itype,
-                                  int             nrexcl)
+std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *pairs,
+                                                           int                  nrexcl)
 {
-    if (!hasEntry(itype))
-    {
-        return;
-    }
-    exclusions_.insert({itype, {}});
-    exclusions_[itype].resize(atoms_.size());
+    std::vector<std::vector<int>> exclusions;
+    exclusions.resize(atoms_.size());
     for(auto &myEntry: entries_)
     {
         switch (myEntry.first)
@@ -1029,8 +1029,8 @@ void Topology::generateExclusions(InteractionType itype,
                     for(auto &b : myEntry.second)
                     {
                         auto a = b->atomIndices();
-                        exclusions_[itype][a[0]].push_back(a[1]);
-                        exclusions_[itype][a[1]].push_back(a[0]);
+                        exclusions[a[0]].push_back(a[1]);
+                        exclusions[a[1]].push_back(a[0]);
                     }
                 }
             }
@@ -1040,8 +1040,8 @@ void Topology::generateExclusions(InteractionType itype,
                 for(auto &b : myEntry.second)
                 {
                     auto a = b->atomIndices();
-                    exclusions_[itype][a[0]].push_back(a[1]);
-                    exclusions_[itype][a[1]].push_back(a[0]);
+                    exclusions[a[0]].push_back(a[1]);
+                    exclusions[a[1]].push_back(a[0]);
                 }
             }
             break;
@@ -1053,8 +1053,8 @@ void Topology::generateExclusions(InteractionType itype,
                     for(auto &b : myEntry.second)
                     {
                         auto a = b->atomIndices();
-                        exclusions_[itype][a[0]].push_back(a[2]);
-                        exclusions_[itype][a[2]].push_back(a[0]);
+                        exclusions[a[0]].push_back(a[2]);
+                        exclusions[a[2]].push_back(a[0]);
                     }
                 }
             } 
@@ -1063,24 +1063,24 @@ void Topology::generateExclusions(InteractionType itype,
             break;
         }
     }
-    auto itt = &entries_.find(itype)->second;
-    for(size_t ai = 0; ai < exclusions_[itype].size(); ai++)
+    for(size_t ai = 0; ai < exclusions.size(); ai++)
     {
-        for(size_t j = 0; j < exclusions_[itype][ai].size(); j++)
+        for(size_t j = 0; j < exclusions[ai].size(); j++)
         {
-            size_t aj = exclusions_[itype][ai][j];
-            for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+            size_t aj = exclusions[ai][j];
+            for(auto pp = pairs->begin(); pp < pairs->end(); ++pp)
             {
                 size_t a0 = (*pp)->atomIndex(0);
                 size_t a1 = (*pp)->atomIndex(1);
                 if ((ai == a0 && aj == a1) || (ai == a1 && aj == a0))
                 {
-                    itt->erase(pp);
+                    pairs->erase(pp);
                     break;
                 }
             }
         }
     }
+    return exclusions;
 }
 
 void Topology::dump(FILE *fp) const

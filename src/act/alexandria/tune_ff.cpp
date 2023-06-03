@@ -46,7 +46,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"

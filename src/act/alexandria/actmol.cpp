@@ -40,6 +40,7 @@
 #include <random>
 #include <string>
 
+#include "act/alexandria/pdbwriter.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -47,7 +48,6 @@
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
@@ -880,15 +880,17 @@ void ACTMol::PrintConformation(const char                   *fn,
     FILE *fp = gmx_ffopen(fn, "w");
     if (writeShells)
     {
-        write_pdbfile(fp, title, nullptr, as_rvec_array(coords.data()),
-                      epbc, box, chain, model_nr, conect, bTerSepChains);
+        pdbWriter(fp, title, topology_->atoms(), 
+                  coords, topology_->residueNames(),
+                  epbc, box, chain, model_nr, {},
+                  conect);
     }
     else
     {
-        bool usePqrFormat = false;
-        write_pdbfile_indexed(fp, title, nullptr, as_rvec_array(coords.data()),
-                              epbc, box, chain, model_nr, realAtoms_.size(),
-                              realAtoms_.data(), conect, bTerSepChains, usePqrFormat, true);
+        pdbWriter(fp, title, topology_->atoms(),
+                  coords, topology_->residueNames(),
+                  epbc, box, chain, model_nr, realAtoms_,
+                  conect, true);
     }
     gmx_ffclose(fp);
     gmx_conect_done(conect);
