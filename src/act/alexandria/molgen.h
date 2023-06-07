@@ -321,7 +321,7 @@ public:
     const std::vector<ACTMol> &actmols() const { return actmol_; }
 
     //! \brief Return the mutable vector of molecules
-    std::vector<ACTMol> &actmols() { return actmol_; }
+    std::vector<ACTMol> *actmolsPtr() { return &actmol_; }
 
     /*! \brief Return size of data set
      * \param[in] ims The data set 

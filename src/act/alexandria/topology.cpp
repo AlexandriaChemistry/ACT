@@ -249,7 +249,6 @@ const TopologyEntry *Topology::findTopologyEntry(const TopologyEntryVector &entr
         te.addBondOrder(b);
     }
     TopologyEntryVector::const_iterator bptr;
-    bool swapped = false;
     for(bptr = entries.begin(); bptr < entries.end(); ++bptr)
     {
         bool same = te.atomIndices().size() == (*bptr)->atomIndices().size();
@@ -275,7 +274,6 @@ const TopologyEntry *Topology::findTopologyEntry(const TopologyEntryVector &entr
             {
                 same = same && (te.bondOrder(i) == (*bptr)->bondOrder((*bptr)->bondOrders().size()-1-i));
             }
-            swapped = same;
         }
         if (same)
         {
@@ -681,30 +679,43 @@ int Topology::makeVsite2s(const ForceField *pd,
 {
     if (!pd)
     {
+        GMX_THROW(gmx::InternalError("Why did you call makeVsites2 without a force field?"));
         return 0;
     }
-    auto itype = InteractionType::VSITE2;
-    if (!pd->interactionPresent(itype))
+    auto itype_vs2 = InteractionType::VSITE2;
+    if (!pd->interactionPresent(itype_vs2))
     {
+        if (debug)
+        {
+            fprintf(debug, "Force field does not contain vsites.\n");
+        }
         return 0;
     }
-    auto &ffvs     = pd->findForcesConst(itype);
+    auto &ffvs     = pd->findForcesConst(itype_vs2);
     if (ffvs.empty())
     {
+        if (debug)
+        {
+            fprintf(debug, "Force field does contain vsites, but it is empty!\n");
+        }
         return 0;
     }
     // Loop over all the bonds to make vsites.
     auto itype_b = InteractionType::BONDS;
     if (entries_.find(itype_b) == entries_.end())
     {
+        if (debug)
+        {
+            fprintf(debug, "There are no bonds to generate vsites2 from.\n");
+        }
         return 0;
     }
     auto &bonds     = entry(itype_b);
-    // Add the virtual sites entry...
-    entries_.insert({ itype, TopologyEntryVector{} });
-    // ... and look up the vector
-    auto &vsite2    = entries_.find(itype)->second;
-    int vsitesAdded = 0;
+    // Add the virtual sites entry
+    TopologyEntryVector vsite2;
+    // Force field info for vsites2
+    auto ff_vs2 = pd->findForcesConst(itype_vs2);
+
     // Loop over bonds to see if there are any pairs of atoms
     // that should be augmented with a virtual site.
     // Since we insert atoms and coordinates, the bonds array needs to be
@@ -716,23 +727,21 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto bid    = mybond->id();
         auto batoms = bid.atoms();
         auto border = bid.bondOrders();
-        printf("Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
-        
+        if (debug)
+        {
+            fprintf(debug, "Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
+        }
         for(auto &fvs : ffvs.parametersConst())
         {
-            printf("Checking vsite %s\n", fvs.first.id().c_str());
+            if (debug)
+            {
+                fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
+            }
             auto vsatoms = fvs.first.atoms();
             auto vsbo    = fvs.first.bondOrders();
-            bool equal   = batoms.size()+1 == vsatoms.size();
-            for(size_t i = 0; i < batoms.size() && equal; ++i)
-            {
-                equal = equal && (batoms[i] == vsatoms[i]);
-            }
-            for(size_t i = 0; i < border.size() && equal; ++i)
-            {
-                equal = equal && (border[i] == vsbo[i]);
-            }
-            if (equal)
+            // Make dummmy bond identifier using just the two atoms and the real bond order.
+            Identifier btest({vsatoms[0], vsatoms[1]}, {vsbo[0]}, CanSwap::Yes);
+            if (btest == bid)
             {
                 auto vsname = vsatoms[vsatoms.size()-1];
                 if (!pd->hasParticleType(vsname))
@@ -748,9 +757,15 @@ int Topology::makeVsite2s(const ForceField *pd,
                                     ptype->gmxParticleType(), 
                                     0, ptype->mass(), ptype->charge());
                     // We need to add the number of previous vsites to get the
-                    // corect numbers here.
-                    int ai  = mybond->aI();
-                    int aj  = mybond->aJ();
+                    // corect numbers here. Let's first check to see whether we need to swap the atoms though.
+                    int        ai = mybond->aI(), aj = mybond->aJ();
+                    Identifier v2test({ atoms_[ai].element(), atoms_[aj].element(), newatom.element() },
+                                      { border[0], 9 }, CanSwap::No);
+                    if (!ff_vs2.parameterExists(v2test))
+                    {
+                        aj  = mybond->aI();
+                        ai  = mybond->aJ();
+                    }
                     // Put virtual site straight after the last atom.
                     int vs2 = atomList->size();
                     newatom.addCore(ai);
@@ -761,9 +776,14 @@ int Topology::makeVsite2s(const ForceField *pd,
                     size_t after = std::max(ai, aj);
                     auto iter = std::find(atomList->begin(), atomList->end(), after);
                     atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
-                    vsitesAdded += 1;
                     // Create new topology entry
                     Vsite2 vsnew(ai, aj, vs2);
+                    if (debug)
+                    {
+                        fprintf(debug, "Adding vs2 %s%d %s%d %d\n",
+                                atoms_[ai].element().c_str(), ai,
+                                atoms_[aj].element().c_str(), aj, vs2);
+                    }
                     // Add bond orders, copied from the bond.
                     for (auto b : border)
                     {
@@ -771,12 +791,21 @@ int Topology::makeVsite2s(const ForceField *pd,
                     }
                     // Special bond order for vsites
                     vsnew.addBondOrder(9);
-                    vsite2.push_back(std::move(vsnew));
+                    vsite2.push_back(std::any_cast<Vsite2>(std::move(vsnew)));
                 }
             }
         }
     }
-    return vsitesAdded;
+    // If we did find any vsite2 instances, add the whole vector to the topology.
+    // A very subtle programming issue arises here:
+    // after the std::move operation, the vector is empty
+    // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
+    int nvsites = vsite2.size();
+    if (nvsites > 0)
+    {
+        entries_.insert({ itype_vs2, std::move(vsite2) });
+    }
+    return nvsites;
 }
 
 void Topology::renumberAtoms(const std::vector<int> &renumber)
@@ -905,7 +934,7 @@ void Topology::build(const ForceField             *pd,
     addShells(pd, &atomList);
     if (debug)
     {
-        fprintf(debug, "Added %zu shells\n", atomList.size()-atoms_.size());
+        fprintf(debug, "Added %zu shells\n", atomList.size()-nvsites-atoms_.size());
     }
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
@@ -1233,11 +1262,6 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                                                                interactionTypeToString(itype).c_str()).c_str()
                                              ));
             }
-            // Check whether we do not e.g. have a shell here
-            //if (!pd->hasParticleType(atoms_[jj].ffType()))
-            //{
-            //  continue;
-            //}
             auto atype = pd->findParticleType(atoms_[jj].ffType());
             if (!atypes.empty())
             {
@@ -1247,7 +1271,6 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
             switch (itype)
             {
             case InteractionType::VDW:
-                //            case InteractionType::VSITE2:
                 {
                     btype.push_back(atoms_[jj].ffType());
                     break;

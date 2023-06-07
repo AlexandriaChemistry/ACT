@@ -360,6 +360,9 @@ public:
     //! Return the ACT topology structure
     const Topology *topology() const { return topology_; }
     
+    //! Return the ACT topology structure for editing
+    Topology *topologyPtr() { return topology_; }
+    
     /*! \brief
      *  Computes polarizability tensor in the presence of external
      *  electric field. The result is stored in 

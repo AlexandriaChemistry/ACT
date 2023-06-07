@@ -42,15 +42,14 @@
 
 namespace alexandria
 {
-
-enum class CanSwap {
-    //! The order of atoms in an interaction cannot be swapped
-    No,
-    //! The order of atoms in an interaction can be swapped by reversing the order
-    Yes,
-    //! The order of atoms can be swapped specific for improper dihedrals
-    Idih
-};
+    enum class CanSwap {
+        //! The order of atoms in an interaction cannot be swapped
+        No,
+        //! The order of atoms in an interaction can be swapped by reversing the order
+        Yes,
+        //! The order of atoms can be swapped specifically for improper dihedrals
+        Idih
+    };
 
 /*! \brief Convert string to CanSwap
  * \param[in] str The string

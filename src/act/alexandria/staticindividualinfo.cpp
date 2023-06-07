@@ -119,7 +119,7 @@ void StaticIndividualInfo::fillForceField(      FILE *fp,
 }
 
 void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
-                                         const std::vector<double> &bases)
+                                            const std::vector<double> &bases)
 {
     if (bases.size() == 0)
     {
@@ -154,6 +154,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
         GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
         if (p)
         {
+            if (debug && InteractionType::VSITE2 == iType)
+            {
+                fprintf(debug, "Updating vsite parameter to %g\n", bases[n]);
+            }
             p->setValue(bases[n]);
             // TODO fix the uncertainty
             // p->setUncertainty(psigma_[n]);

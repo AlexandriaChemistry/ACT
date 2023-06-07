@@ -178,11 +178,6 @@ private:
     std::vector<std::string>                                  residueNames_;
     //! The real atoms, that is, not the vsites or shells
     std::vector<int>                                          realAtoms_;
-    /*! \brief Fill in the parameters in the topology entries.
-     * Must be called repeatedly during optimizations of energy.
-     * \param[in] pd The force field structure
-     */
-    void fillParameters(const ForceField *pd);
          
     /*! Generate virtual sites for bonds.
      * \param[in]    pd       The force field
@@ -301,6 +296,11 @@ private:
                double                  PlanarAngleMax,
                missingParameters       missing);
 
+    /*! \brief Fill in the parameters in the topology entries.
+     * Must be called repeatedly during optimizations of energy.
+     * \param[in] pd The force field structure
+     */
+    void fillParameters(const ForceField *pd);
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
 

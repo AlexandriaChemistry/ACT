@@ -220,6 +220,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
         break;
     case InteractionType::COULOMB:
     case InteractionType::VDW:
+    case InteractionType::VSITE2:
         // Nothing to be done for non-bonded interactions.
         return;
     default:

@@ -1056,11 +1056,11 @@ VsiteHandler::VsiteHandler(matrix box,
 
 void VsiteHandler::constructPositions(const Topology         *top,
                                       std::vector<gmx::RVec> *coordinates,
-                                      const gmx_unused matrix            box)
+                                      const gmx_unused matrix box)
 {
     // Ugly shortcut...
-    std::vector<gmx::RVec> &x = *coordinates;
-    std::set<InteractionType> vsites = {
+    std::vector<gmx::RVec>    &x      = *coordinates;
+    std::set<InteractionType>  vsites = {
         InteractionType::VSITE2, InteractionType::VSITE3FAD, InteractionType::VSITE3OUT
     };
     for (const auto &entry: top->entries())
@@ -1082,6 +1082,10 @@ void VsiteHandler::constructPositions(const Topology         *top,
             {
             case InteractionType::VSITE2:
                 constr_vsite2(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
+                if (debug)
+                {
+                    fprintf(debug, "vsite a = %g\n", params[vsite2A]);
+                }
                 break;
                 //case InteractionType::VSITE3:
                 //al = atomIndices[3];

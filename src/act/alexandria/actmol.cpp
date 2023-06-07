@@ -262,19 +262,23 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         // since we cannot be sure about the order of atoms and shells.
         for(size_t i = 0; i < myatoms.size(); i++)
         {
-            if (myatoms[i].pType() == eptAtom)
+            switch (myatoms[i].pType())
             {
+            case eptAtom:
                 // Do nothing
-            }
-            else if (myatoms[i].pType() == eptShell)
-            {
-                auto cores = myatoms[i].cores();
-                GMX_RELEASE_ASSERT(!cores.empty(), "Shell without core");
-                copy_rvec(coords[cores[0]], coords[i]);
-            }
-            else
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+                break;
+            case eptShell:
+            case eptVSite:
+                {
+                    auto cores = myatoms[i].cores();
+                    GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
+                    copy_rvec(coords[cores[0]], coords[i]);
+                }
+                break;
+            default:
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+                }
             }
         }
         // We compute either interaction energies or normal energies for one experiment
@@ -860,7 +864,6 @@ void ACTMol::PrintConformation(const char                   *fn,
             getMolname().c_str());
     int        model_nr      = 1;
     char       chain         = ' ';
-    gmx_bool   bTerSepChains = FALSE;
     gmx_conect conect        = gmx_conect_init();
     auto       itype         = InteractionType::BONDS;
     auto       top           = topology();

@@ -179,6 +179,10 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
+            if (debug)
+            {
+                fprintf(debug, "Adding parameter %s to fitting\n", fit.first.c_str());
+            }
         }
         else
         {
@@ -187,7 +191,7 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
     }
 }
 
-void MolGen::checkDataSufficiency(FILE     *fp,
+void MolGen::checkDataSufficiency(FILE        *fp,
                                   ForceField  *pd) // Called in read method
 {
     size_t nmol = 0;
@@ -248,7 +252,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 }
             }
         }
-        // TODO: Handle bonded interactions
+        
         std::vector<InteractionType> atomicItypes = {
             InteractionType::POLARIZATION,
             InteractionType::COULOMB,
@@ -338,11 +342,11 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 }
             }
             // Now check bonds and bondcorrections
+            auto top   = mol.topology();
             auto btype = InteractionType::BONDS;
             if (pd->interactionPresent(btype))
             {
                 auto bonds = pd->findForces(btype);
-                auto top   = mol.topology();
                 if (top->hasEntry(btype))
                 {
                     for (const auto &topentry : top->entry(btype))
@@ -386,26 +390,47 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                             }
                         }
                     }
-                    // Now angles and dihedrals
-                    std::vector<InteractionType> atypes = {
-                        InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
-                        InteractionType::PROPER_DIHEDRALS,
-                        InteractionType::IMPROPER_DIHEDRALS
-                    };
-                    for (const auto &atype : atypes)
+                }
+            }
+            // Now angles and dihedrals
+            std::vector<InteractionType> atypes = {
+                InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                InteractionType::PROPER_DIHEDRALS,
+                InteractionType::IMPROPER_DIHEDRALS,
+                InteractionType::VSITE2
+            };
+            for (const auto &atype : atypes)
+            {
+                if (fp && InteractionType::VSITE2 == atype)
+                {
+                    fprintf(fp, "Looking for vsite2 in force field\n");
+                }
+                if (optimize(atype) && pd->interactionPresent(atype))
+                {
+                    auto angles = pd->findForces(atype);
+                    if (fp && InteractionType::VSITE2 == atype)
                     {
-                        if (optimize(atype) && pd->interactionPresent(atype))
+                        fprintf(fp, "Looking for vsite2 in molecular tpology\n");
+                        top->dump(fp);
+                    }
+                    if (top->hasEntry(atype))
+                    {
+                        for (const auto &topentry : top->entry(atype))
                         {
-                            auto angles = pd->findForces(atype);
-                            for (const auto &topentry : top->entry(atype))
+                            // TODO check multiple ids
+                            if (fp && InteractionType::VSITE2 == atype)
                             {
-                                // TODO check multiple ids
-                                for (auto &ff : *(angles->findParameters(topentry->id())))
+                                fprintf(fp, "Looking for vsite2 %s\n", topentry->id().id().c_str());
+                            }
+                            for (auto &ff : *(angles->findParameters(topentry->id())))
+                            {
+                                if (fp && InteractionType::VSITE2 == atype)
                                 {
-                                    if (ff.second.isMutable())
-                                    {
-                                        ff.second.incrementNtrain();
-                                    }
+                                    fprintf(fp, "Found vsite2 %s\n", topentry->id().id().c_str());
+                                }
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
                                 }
                             }
                         }
@@ -606,7 +631,7 @@ static double computeCost(const ACTMol                         *actmol,
                      
 size_t MolGen::Read(FILE                                *fp,
                     const char                          *fn,
-                    ForceField                             *pd,
+                    ForceField                          *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
                     bool                                 verbose)
