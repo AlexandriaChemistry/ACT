@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -167,6 +167,48 @@ TEST(IdentifierSimpleTest, ANotEqualToBBondOrder2) {
     Identifier b({"C", "H"}, { 2 }, CanSwap::Yes);
     bool equal = !(a < b) && !(b < a);
     EXPECT_FALSE((equal));
+}
+
+TEST(IdentifierSimpleTest, LinearNotEqual) {
+    Identifier a({"P", "H", "X"}, { 1, 9 }, CanSwap::Linear);
+    Identifier b({"C", "H", "X"}, { 2, 9 }, CanSwap::Linear);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_FALSE((equal));
+}
+
+TEST(IdentifierSimpleTest, LinearEqual) {
+    Identifier a({"P", "H", "X"}, { 1, 9 }, CanSwap::Linear);
+    Identifier b({"P", "H", "X"}, { 1, 9 }, CanSwap::Linear);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, LinearSwappedEqual) {
+    Identifier a({"H", "P", "O"}, { 1, 2 }, CanSwap::Linear);
+    Identifier b({"O", "P", "H"}, { 2, 1 }, CanSwap::Linear);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, Vsite2NotEqual) {
+    Identifier a({"P", "H", "X"}, { 1, 9 }, CanSwap::Vsite2);
+    Identifier b({"C", "H", "X"}, { 2, 9 }, CanSwap::Vsite2);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_FALSE((equal));
+}
+
+TEST(IdentifierSimpleTest, Vsite2Equal) {
+    Identifier a({"P", "H", "X"}, { 1, 9 }, CanSwap::Vsite2);
+    Identifier b({"P", "H", "X"}, { 1, 9 }, CanSwap::Vsite2);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, Vsite2SwappedEqual) {
+    Identifier a({"H", "P", "X"}, { 1, 9 }, CanSwap::Vsite2);
+    Identifier b({"H", "P", "X"}, { 1, 9 }, CanSwap::Vsite2);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_TRUE((equal));
 }
 
 TEST(IdentifierSimpleTest, Idih1a) {

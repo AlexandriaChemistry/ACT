@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -48,7 +48,11 @@ namespace alexandria
         //! The order of atoms in an interaction can be swapped by reversing the order
         Yes,
         //! The order of atoms can be swapped specifically for improper dihedrals
-        Idih
+        Idih,
+        //! Special case for linear angles
+        Linear,
+        //! Special case for vsite2
+        Vsite2
     };
 
 /*! \brief Convert string to CanSwap

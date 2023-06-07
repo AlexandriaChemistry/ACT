@@ -51,7 +51,9 @@ std::map<CanSwap, std::string> cs2string =
     {
         { CanSwap::No,       "false"    },
         { CanSwap::Yes,      "true"     },
-        { CanSwap::Idih,     "idih"     }
+        { CanSwap::Idih,     "idih"     },
+        { CanSwap::Linear,   "linear"   },
+        { CanSwap::Vsite2,   "vsite2"   }
     };
     
 CanSwap stringToCanSwap(const std::string &str)
@@ -110,7 +112,8 @@ const std::string &Identifier::id() const
 
 void Identifier::orderAtoms()
 {
-    if (canSwap_ == CanSwap::Yes && atoms_.size() > 0)
+    if ((canSwap_ == CanSwap::Yes && atoms_.size() > 0) ||
+        (canSwap_ == CanSwap::Linear && atoms_.size() == 3))
     {
         std::string swapped = atoms_[atoms_.size()-1];
         for(size_t i = atoms_.size()-1; i > 0; i--)
@@ -140,6 +143,23 @@ void Identifier::orderAtoms()
             {
                 bondOrders_.push_back(tmpbo[i-1]);
             }
+        }
+    }
+    else if (canSwap_ == CanSwap::Vsite2 && atoms_.size() == 3)
+    {
+        std::string swapped = atoms_[2] + BondOrderDelimeter[bondOrders_[1]] + atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0];
+        if (swapped >= ids_[0])
+        {
+            ids_.push_back(swapped);
+        }
+        else
+        {
+            // Reverse the order on things, i.e. swap the atoms but not the vsite
+            auto tmpid = ids_[0];
+            ids_[0] = swapped;
+            ids_.push_back(tmpid);
+            auto tmpat = atoms_;
+            atoms_ = { tmpat[1], tmpat[0], tmpat[2] };
         }
     }
     else if (canSwap_ == CanSwap::Idih && atoms_.size() == 4)
@@ -400,14 +420,12 @@ bool operator==(const Identifier &a, const Identifier &b)
 {
     // TODO check implementation
     return a.id() == b.id();
-    //|| (!a.swappedId().empty() && a.swappedId() == b.id()));
 }
 
 bool operator<(const Identifier &a, const Identifier &b)
 {
     // TODO check implementation
     return a.id() < b.id();
-    // || (!a.swappedId().empty() && a.swappedId() < b.id()));
 }
 
 } // namespace alexandria
