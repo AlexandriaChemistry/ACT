@@ -97,27 +97,30 @@ void CombineLJ_86(int     CombinationRule,
         {
             double sig  = std::sqrt(sigmaI * sigmaJ);
             double eps  = std::sqrt(epsilonI * epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
+	    double sig6 = std::pow(sig, 6.0);
+            double sig2 = std::pow(sig, 2.0);
             *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig6;
+            *c8 = *c6 * sig2;
         }
         break;
     case eCOMB_ARITHMETIC:
         {
             double sig  = 0.5 * (sigmaI + sigmaJ);
             double eps  = 0.5 * (epsilonI + epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
+            double sig2 = std::pow(sig, 2.0);
+	    double sig6 = std::pow(sig, 6.0);
             *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig6;
+            *c8 = *c6 * sig2;
         }
         break;
     case eCOMB_LORENTZ_BERTHELOT:
         {
             double sig  = 0.5 * (sigmaI + sigmaJ);
             double eps  = std::sqrt(epsilonI * epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
+            double sig2 = std::pow(sig, 2.0);
+	    double sig6 = std::pow(sig, 6.0);
             *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig6;
+            *c8 = *c6 * sig2;
         }
         break;
     case eCOMB_NONE:
@@ -162,13 +165,19 @@ void CombineLJ_147(int     CombinationRule,
             *gammaIJ = 0.5 * (gammaI + gammaJ);
 	    *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;
-        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. for 14_7 the qi is optimized, having KM gamma
+        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. but has WH rule for gamma, as is the winner for WBH
             *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-            *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-//            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+//            *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
 	    *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;
+        case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+            *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+            *deltaIJ = std::sqrt(deltaI * deltaJ);
+            break;	    
 
     case eCOMB_NONE:
         break;
@@ -236,10 +245,10 @@ void CombineBham(int     CombinationRule,
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
             *gammaIJ = 0.5 * (gammaI + gammaJ);;
             break;
-        case eCOMB_WALDMAN_HAGLER_2: // Waldman & Hagler, J. Comp. Chem., Year: 1993.
-            *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
+	case eCOMB_QYQY: // Waldman & Hagler, J. Comp. Chem., Year: 1993. kriz changing to the best rule for GBHAM Qi, Yang, Qi (with the "yang" for delta)
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
-            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+            *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));
             break;
         case eCOMB_NONE:
             break;
@@ -265,7 +274,8 @@ void CombineGBham(int     CombinationRule,
     // This is just a quick hack!
     CombineBham(CombinationRule, rminI, rminJ, epsilonI, epsilonJ,
                 gammaI, gammaJ, rminIJ, epsilonIJ, gammaIJ);
-    *deltaIJ = (deltaI+deltaJ)/2;
+//    *deltaIJ = (deltaI+deltaJ)/2;
+      *deltaIJ = ((deltaI * deltaJ) *  (deltaI + deltaJ))/ (pow(deltaI,2) + pow(deltaJ,2));
 }
 
 int getCombinationRule(const ForceFieldParameterList &vdw)
@@ -350,14 +360,14 @@ static void generateVdwParameterPairs(ForceField *pd)
                 break;	
             case F_LJ_86:
                 {
-                    auto csigma     = lj_name[ljSIGMA];
-                    auto cepsilon   = lj_name[ljEPSILON];
+                    auto csigma     = lj_name[lj_86SIGMA];
+                    auto cepsilon   = lj_name[lj_86EPSILON];
                     double isigma   = ivdw.second[csigma].internalValue();
                     double iepsilon = ivdw.second[cepsilon].internalValue();
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double c6 = 0, c8 = 0;
-                    CombineLJ(comb_rule, isigma, jsigma,
+                    CombineLJ_86(comb_rule, isigma, jsigma,
                               iepsilon, jepsilon, &c6, &c8);
                     ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6,
                                                mutd, true, true);
@@ -424,10 +434,10 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double iepsilon = ivdw.second[cepsilon].internalValue();
                     double igamma   = ivdw.second[cgamma].internalValue();
 		    double idelta   = ivdw.second[cdelta].internalValue();
-		    double jdelta   = ivdw.second[cdelta].internalValue();
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double jgamma   = jvdw.second[cgamma].internalValue();
+		    double jdelta   = ivdw.second[cdelta].internalValue();
                     double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
                     CombineLJ_147(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon,
@@ -452,16 +462,16 @@ static void generateVdwParameterPairs(ForceField *pd)
 
                     // Add some dummy parameters
                     newParams.addParameter(pairID, csigma,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3,
+                                           ForceFieldParameter(unit, 0.3, 0, 0, 0.3, 0.3,
                                                                mutd, true, true));
                     newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0,
+                                           ForceFieldParameter(unit, 0, 0, 0, 0, 0,
                                                                mutd, true, true));
                     newParams.addParameter(pairID, cgamma,
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
+                                           ForceFieldParameter(unit, 10, 0, 0, 10, 10,
                                                                mutd, true, true));
 		    newParams.addParameter(pairID, cdelta,
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
+                                           ForceFieldParameter(unit, 10, 0, 0, 10, 10,
                                                                mutd, true, true));
                 }
                 break;

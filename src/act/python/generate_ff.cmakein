@@ -391,7 +391,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
         defcomb = "Geometric"
-        parser.add_argument("-comb",     "--combRule",   help=("Combination rule options: None, Arithmetic, Geometric, Hogervorst, Kong_Mason, Waldman_Hagler, Yang for Buckingham van der Waals potential option (BHAM) or None,  Arithmetic, Geometric, Lorentz_Berthelot for Lennard-Jones van der Waals potential (LJ_SR or LJ_86 or LJ_147). Default %s" % defcomb), type=str, default =defcomb)
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule options: None, Arithmetic, Geometric, Hogervorst, Kong_Mason, Waldman_Hagler, Yang, Qi, Qi_2 and QYQY (Qi, Yang, Qi, Yang and QKmQG for 14-7 EPOT;epsilon, gamma, sigma, delta) for Buckingham van der Waals potential option (BHAM) or None,  Arithmetic, Geometric, Lorentz_Berthelot for Lennard-Jones van der Waals potential (LJ_SR or LJ_86(malfunctional atm) or LJ_147). Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defvdw = vdwfunctions[0]
