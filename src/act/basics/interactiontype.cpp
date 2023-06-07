@@ -110,11 +110,12 @@ int interactionTypeToNatoms(InteractionType iType)
     {
     case InteractionType::PROPER_DIHEDRALS:
     case InteractionType::IMPROPER_DIHEDRALS:
+    case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3OUT:
         return 4;
     case InteractionType::ANGLES:
     case InteractionType::LINEAR_ANGLES:
-    case InteractionType::VSITE3FAD:
-    case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE2:
         return 3;
     case InteractionType::VDW:
     case InteractionType::DISPERSION:
@@ -124,7 +125,6 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
     case InteractionType::BONDS:
-    case InteractionType::VSITE2:
     case InteractionType::CONSTR:
     case InteractionType::BONDCORRECTIONS:
         return 2;

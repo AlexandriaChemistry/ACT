@@ -85,11 +85,9 @@ protected:
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
-        t_inputrec      inputrecInstance;
-        
         // The molecule
         std::vector<ACTMol> mps;
-        initACTMol(molname, pd, fcomp, &inputrecInstance, &mps);
+        initACTMol(molname, pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {
@@ -125,55 +123,18 @@ protected:
             }
             else
             {
-                std::map<InteractionType, double> gmxEnergies, actEnergies;
-                // This turns on comparison of gromacs and ACT. For debugging
-                // you may want to set this to false.
-                bool       strict    = true;
-                double     shellRmsf;
-                t_commrec *crtmp     = init_commrec();
-                crtmp->nnodes = 1;
-                PaddedVector<gmx::RVec> gmxforces;
-                gmxforces.resizeWithPadding(mp.atomsConst().size());
-                
-                auto fsc = pd->forcesConst();
-                mp.calculateEnergyOld(crtmp, &coordinates, &gmxforces, &gmxEnergies, &shellRmsf);
+                std::map<InteractionType, double> actEnergies;
                 fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
-                for(auto &ifm : gmxEnergies)
+                for(auto &ifm : actEnergies)
                 {
-                    int ftype = F_EPOT;
-                    if (ifm.first != InteractionType::EPOT)
-                    {
-                        auto fs = fsc.find(ifm.first);
-                        EXPECT_TRUE(fsc.end() != fs);
-                        ftype = fs->second.gromacsType();
-                    }
-                    std::string label = gmx::formatString("%s", interaction_function[ftype].name);
+                    std::string label = interactionTypeToString(ifm.first);
                     if (stretch != 1)
                     {
                         label += gmx::formatString("%g", stretch);
                     }
-                    auto gmxlabel = label+"_gmx";
-                    checker_.checkReal(ifm.second, gmxlabel.c_str());
                     auto actlabel = label+"_act";
-                    // Hack to compare GROMACS Buckingham or LJ to ACT
-                    double actEner;
-                    auto irep  = InteractionType::REPULSION;
-                    auto idisp = InteractionType::DISPERSION;
-                    if (ifm.first == InteractionType::VDW &&
-                        actEnergies.find(irep) != actEnergies.end() &&
-                        actEnergies.find(idisp) != actEnergies.end())
-                    {
-                        actEner  = (actEnergies[irep]+actEnergies[idisp]);
-                    }
-                    else
-                    {
-                        actEner  = actEnergies[ifm.first];
-                    }
+                    double actEner  = actEnergies[ifm.first];
                     checker_.checkReal(actEner, actlabel.c_str());
-                    if (strict)
-                    {
-                        EXPECT_TRUE(std::abs(ifm.second-actEner) < 1e-3);
-                    }
                 }
                 auto atoms = mp.atomsConst();
                 const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -189,18 +150,10 @@ protected:
                             {
                                 stretchName += gmx::formatString("%g", stretch);
                             }
-                            checker_.checkReal(gmxforces[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
-                                                                                  atoms[i].ffType().c_str(),
-                                                                                  i+1, stretchName.c_str(),
-                                                                                  xyz[m]).c_str());
                             checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
                                                                                atoms[i].ffType().c_str(),
                                                                                i+1, stretchName.c_str(),
                                                                                xyz[m]).c_str());
-                        }
-                        if (strict)
-                        {
-                            EXPECT_TRUE(std::abs(forces[i][m]-gmxforces[i][m]) < 1e-3);
                         }
                     }
                 }
@@ -216,11 +169,9 @@ protected:
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
-        t_inputrec      inputrecInstance;
-        
         // The molecule
         std::vector<ACTMol> mps;
-        initACTMol(molname, pd, fcomp, &inputrecInstance, &mps);
+        initACTMol(molname, pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {
@@ -236,27 +187,8 @@ protected:
             fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
             for(auto &ifm : actEnergies)
             {
-                int ftype = F_EPOT;
-                switch (ifm.first)
-                {
-                case InteractionType::EPOT:
-                    break;
-                case InteractionType::DISPERSION:
-                    ftype = F_DISPERSION;
-                    break;
-                case InteractionType::REPULSION:
-                    ftype = F_REPULSION;
-                    break;
-                default:
-                    {
-                        auto fs = fsc.find(ifm.first);
-                        EXPECT_TRUE(fsc.end() != fs);
-                        ftype = fs->second.gromacsType();
-                    }
-                }
-                std::string label = gmx::formatString("%s", interaction_function[ftype].name);
                 auto actEner  = actEnergies[ifm.first];
-                checker_.checkReal(actEner, label.c_str());
+                checker_.checkReal(actEner, interactionTypeToString(ifm.first).c_str());
                 auto atoms = mp.atomsConst();
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)

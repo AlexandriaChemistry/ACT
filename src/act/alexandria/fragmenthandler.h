@@ -27,12 +27,15 @@
  */
 #include <vector>
 
+#include "act/alexandria/actmol_low.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 
 namespace alexandria
 {
 
+    class Topology;
+    
     /*! Class to control charge generation for fragments
      */
     class FragmentHandler
@@ -43,12 +46,12 @@ namespace alexandria
         //! What algorithm do we use for generating charges
         ChargeGenerationAlgorithm          algorithm_ = ChargeGenerationAlgorithm::EEM;
         //! A complete topology for each fragment is needed to compute energies
-        std::vector<Topology>              topologies_;
+        std::vector<Topology *>            topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
         //! Fragment identifiers
         std::vector<std::string>           ids_;
-        //! Array denoting where the atoms start in the global
+        //! Array denoting where the atoms start in the global system
         std::vector<size_t>                atomStart_;
         //! Pointer to copy of the fragments
         std::vector<double>                qtotal_;
@@ -57,22 +60,18 @@ namespace alexandria
     public:
         /*! Constructor
          * \param[in] pd            Force field data
-         * \param[in] coordinates   The atomic coordinates
-         * \param[in] residueNames  The residue names
-         * \param[in] atoms         The atoms
+         * \param[in] coordinates   The atomic coordinates, may be extended if shells are present.
+         * \param[in] atoms         The ActAtoms
          * \param[in] bonds         The bonds
          * \param[in] fragments     The fragmentation information
-         * \param[in] shellRenumber Info on renumbering atoms because of shells
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const ForceField               *pd,
-                        const std::vector<gmx::RVec>   &coordinates,
-                        const std::vector<std::string> &residueNames,
-                        const std::vector<ActAtom>     &atoms,
-                        const std::vector<Bond>        &bonds,
-                        const std::vector<Fragment>    *fragments,
-                        const std::vector<int>         &shellRenumber,
-                        missingParameters               missing);
+        FragmentHandler(const ForceField             *pd,
+                        const std::vector<gmx::RVec> &coordinates,
+                        const std::vector<ActAtom>   &atoms,
+                        const std::vector<Bond>      &bonds,
+                        const std::vector<Fragment>  *fragments,
+                        missingParameters             missing);
 
         /*! \brief Fetch charges for all atoms
          * \param[out] qq Vector that will be reinitialized at correct length
@@ -86,7 +85,7 @@ namespace alexandria
         const std::vector<size_t> atomStart() const { return atomStart_; }
 
         //! \return the vector of Topology structures        
-        const std::vector<Topology> topologies() const { return topologies_; }
+        const std::vector<Topology *> topologies() const { return topologies_; }
 
         /*! \brief Generate charges for all fragments
          * \param[in]  fp      Debug file pointer, may be nullptr

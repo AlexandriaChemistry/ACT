@@ -57,6 +57,7 @@ target_sources(actLib
            actmol_low.cpp
            normalmodes.cpp
            openmm_xml.cpp
+           pdbwriter.cpp
            percentmutator.cpp
            princ.cpp
            secondvirial.cpp

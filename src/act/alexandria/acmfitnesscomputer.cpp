@@ -171,15 +171,16 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;
-    for (ACTMol &actmol : molgen_->actmols())
+    auto mymols = molgen_->actmolsPtr();
+    for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
-        if (ims != actmol.datasetType())
+        if (ims != actmol->datasetType())
         {
             continue;
         }
         ntrain++;
-        if ((actmol.support() == eSupport::Local) ||
-            (task == CalcDev::ComputeAll && actmol.support() == eSupport::Remote))
+        if ((actmol->support() == eSupport::Local) ||
+            (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
             nlocal++;
             std::vector<InteractionType> itUpdate;
@@ -190,23 +191,21 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                     itUpdate.push_back(io.first);
                 }
             }
-            // Update the polarizabilities and other params only once before the loop
-            // TODO: is this still needed if we do not use GROMACS code for force
-            // calculations?
-            actmol.UpdateIdef(sii_->forcefield(), itUpdate, molgen_->fit("zeta"));
+            // Now update the topology
+            actmol->topologyPtr()->fillParameters(sii_->forcefield());
             // Run charge generation including shell minimization
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size(), { 0, 0, 0 });
-            std::vector<gmx::RVec> coords = actmol.xOriginal();
-            immStatus imm = actmol.GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
+            std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+            std::vector<gmx::RVec> coords = actmol->xOriginal();
+            immStatus imm = actmol->GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
             {
-                actmol.setSupport(eSupport::No);
+                actmol->setSupport(eSupport::No);
                 continue;
             }
 
-            computeMultipoles(targets, &actmol, coords);
+            computeMultipoles(targets, &(*actmol), coords);
 
             if (devComputers_.size() == 0)
             {
@@ -214,12 +213,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &actmol, &coords, targets, sii_->forcefield());
+                mydev->calcDeviation(forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
             }
             if (debug)
             {
                 fprintf(debug, "rank %d mol %s #energies %zu ndp %d\n",
-                        cr->rank(), actmol.getMolname().c_str(), actmol.experimentConst().size(),
+                        cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                         targets->find(eRMS::EPOT)->second.numberOfDatapoints());
             }
         }

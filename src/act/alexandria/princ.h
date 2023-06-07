@@ -38,20 +38,23 @@
 #ifndef GMX_GMXANA_PRINC_H
 #define GMX_GMXANA_PRINC_H
 
+#include <vector>
+
+#include "act/alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_atom;
-struct t_atoms;
+namespace alexandria
+{
 
 /*! \brief Rotate all atoms in index using matrix trans 
- * \param[in]    gnx    Size of the index array
  * \param[in]    index  List of atom numbers
  * \param[inout] x      The coordinates
  * \param[in]    matrix The 3x3 rotation matrix
  */
-void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
+void rotate_atoms(const std::vector<int> &index,
+                  std::vector<gmx::RVec> *x,
+                  const matrix            trans);
 
 /*! \brief Compute principal components
  * Atoms are mass weighted and it is assumed that the center of 
@@ -63,26 +66,37 @@ void rotate_atoms(int gnx, const int index[], rvec x[], matrix trans);
  * \param[out] trans   The matrix needed to rotate the molecule to the reference frame
  * \param[out] inertia The moments of inertia
  */
-void principal_comp(int n, const int index[], const real mass[], 
-                    const rvec x[], matrix trans, rvec inertia);
-
+void principal_comp(const std::vector<int>       &index,
+                    const std::vector<real>      &mass,
+                    const std::vector<gmx::RVec> &x, 
+                    matrix                       *trans,
+                    gmx::RVec                    *inertia);
                     
-//void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d);
-/* rotates molecule to align principal axes with coordinate axes */
-
-real calc_xcm(const rvec x[], int gnx, const int* index, const t_atom* atom, rvec xcm, gmx_bool bQ);
-/* Calculate the center of mass of the atoms in index. if bQ then the atoms
+/*! \brief Calculate the center of mass of the atoms in index. if bQ then the atoms
  * will be charge weighted rather than mass weighted.
- * Returns the total mass/charge.
+ * \return the total mass/charge.
  */
+real calc_xcm(const std::vector<gmx::RVec> &x,
+              const std::vector<int>       &index,
+              const std::vector<ActAtom>   &atom,
+              gmx::RVec                    *xcm,
+              bool                          bQ);
 
-real sub_xcm(rvec x[], int gnx, const int* index, const t_atom atom[], rvec xcm, gmx_bool bQ);
-/* Calc. the center of mass and subtract it from all coordinates.
+/*! \brief Calculate the center of mass and subtract it from all coordinates.
  * Returns the original center of mass in xcm
- * Returns the total mass
+ * \return the total mass
  */
+real sub_xcm(std::vector<gmx::RVec>       *x,
+             const std::vector<int>       &index,
+             const std::vector<ActAtom>   &atom,
+             gmx::RVec                    *xcm,
+             bool                          bQ);
 
-void add_xcm(rvec x[], int gnx, const int* index, rvec xcm);
+void add_xcm(std::vector<gmx::RVec>       *x,
+             const std::vector<int>       &index,
+             gmx::RVec                    &xcm);
 /* Increment all atoms in index with xcm */
+
+} // namespace
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -220,6 +220,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
         break;
     case InteractionType::COULOMB:
     case InteractionType::VDW:
+    case InteractionType::VSITE2:
         // Nothing to be done for non-bonded interactions.
         return;
     default:
@@ -546,8 +547,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 continue;
             }
             auto imm = mmi.GenerateTopology(fp, &pd,
-                                            missingParameters::Generate,
-                                            false);
+                                            missingParameters::Generate);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
@@ -588,7 +588,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             auto top = mmi.topology();
             for(const auto &entry : top->entries())
             {
-                for (auto topentry : entry.second)
+                for (const auto &topentry : entry.second)
                 {
                     addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }

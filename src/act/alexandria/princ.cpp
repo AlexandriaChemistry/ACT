@@ -35,7 +35,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
+/* Adopted for ACT structure by DvdS 2023-05 */
+
 #include "actpre.h"
 
 #include "princ.h"
@@ -45,91 +46,47 @@
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/utility/smalloc.h"
 
 #define NDIM 4
 
-#ifdef DEBUG
-static void m_op(matrix mat, rvec x)
+namespace alexandria
 {
-    rvec xp;
-    int  m;
 
-    for (m = 0; (m < DIM); m++)
-    {
-        xp[m] = mat[m][XX] * x[XX] + mat[m][YY] * x[YY] + mat[m][ZZ] * x[ZZ];
-    }
-    fprintf(stderr, "x    %8.3f  %8.3f  %8.3f\n", x[XX], x[YY], x[ZZ]);
-    fprintf(stderr, "xp   %8.3f  %8.3f  %8.3f\n", xp[XX], xp[YY], xp[ZZ]);
-    fprintf(stderr, "fac  %8.3f  %8.3f  %8.3f\n", xp[XX] / x[XX], xp[YY] / x[YY], xp[ZZ] / x[ZZ]);
-}
-
-static void ptrans(char* s, real** inten, real d[], real e[])
-{
-    int  m;
-    real n, x, y, z;
-    for (m = 1; (m < NDIM); m++)
-    {
-        x = inten[m][1];
-        y = inten[m][2];
-        z = inten[m][3];
-        n = x * x + y * y + z * z;
-        fprintf(stderr, "%8s %8.3f %8.3f %8.3f, norm:%8.3f, d:%8.3f, e:%8.3f\n", s, x, y, z, std::sqrt(n), d[m], e[m]);
-    }
-    fprintf(stderr, "\n");
-}
-
-void t_trans(matrix trans, real d[], real** ev)
-{
-    rvec x;
-    int  j;
-    for (j = 0; (j < DIM); j++)
-    {
-        x[XX] = ev[1][j + 1];
-        x[YY] = ev[2][j + 1];
-        x[ZZ] = ev[3][j + 1];
-        m_op(trans, x);
-        fprintf(stderr, "d[%d]=%g\n", j, d[j + 1]);
-    }
-}
-#endif
-
-void principal_comp(int n, 
-                    const int index[], 
-                    const real mass[], 
-                    const rvec x[], 
-                    matrix trans,
-                    rvec inertia)
+void principal_comp(const std::vector<int>       &index,
+                    const std::vector<real>      &mass,
+                    const std::vector<gmx::RVec> &x, 
+                    matrix                       *trans,
+                    gmx::RVec                    *inertia)
 {
     int      i, j, ai, m, nrot;
     real     mm, rx, ry, rz;
-    double **inten, dd[NDIM], tvec[NDIM], **ev;
+    double   dd[NDIM], tvec[NDIM];
+    double **inten, **ev;
 #ifdef DEBUG
     real e[NDIM];
 #endif
     real temp;
 
-    snew(inten, NDIM);
-    snew(ev, NDIM);
-    for (i = 0; (i < NDIM); i++)
+    inten = new double *[NDIM];
+    ev    = new double *[NDIM];
+    for (int i = 0; (i < NDIM); i++)
     {
-        snew(inten[i], NDIM);
-        snew(ev[i], NDIM);
+        inten[i] = new double[NDIM];
+        ev[i]    = new double[NDIM];
         dd[i] = 0.0;
 #ifdef DEBUG
         e[i] = 0.0;
 #endif
     }
 
-    for (i = 0; (i < NDIM); i++)
+    for (int i = 0; (i < NDIM); i++)
     {
-        for (m = 0; (m < NDIM); m++)
+        for (int m = 0; (m < NDIM); m++)
         {
             inten[i][m] = 0;
         }
     }
-    for (i = 0; (i < n); i++)
+    for (size_t i = 0; (i < index.size()); i++)
     {
         ai = index[i];
         mm = mass[ai];
@@ -154,7 +111,7 @@ void principal_comp(int n,
     {
         for (m = 0; (m < DIM); m++)
         {
-            trans[i][m] = inten[i][m];
+            (*trans)[i][m] = inten[i][m];
         }
     }
 
@@ -189,141 +146,143 @@ void principal_comp(int n,
     SWAPPER(0)
 #ifdef DEBUG
     ptrans("swap", ev, dd, e);
-    t_trans(trans, dd, ev);
+    t_trans(*trans, dd, ev);
 #endif
 
     for (i = 0; (i < DIM); i++)
     {
-        inertia[i] = dd[i];
+        (*inertia)[i] = dd[i];
         for (m = 0; (m < DIM); m++)
         {
-            trans[i][m] = ev[m][i];
+            (*trans)[i][m] = ev[m][i];
         }
     }
 
     for (i = 0; (i < NDIM); i++)
     {
-        sfree(inten[i]);
-        sfree(ev[i]);
+      delete[] inten[i];
+      delete[] ev[i];
     }
-    sfree(inten);
-    sfree(ev);
+    delete[] inten;
+    delete[] ev;
 }
 
-void rotate_atoms(int gnx, const int* index, rvec x[], matrix trans)
+void rotate_atoms(const std::vector<int> &index,
+                  std::vector<gmx::RVec> *x,
+                  const matrix            trans)
 {
-    real xt, yt, zt;
-    int  i, ii;
-
-    for (i = 0; (i < gnx); i++)
+    size_t n = x->size();
+    if (!index.empty())
     {
-        ii        = index ? index[i] : i;
-        xt        = x[ii][XX];
-        yt        = x[ii][YY];
-        zt        = x[ii][ZZ];
-        x[ii][XX] = trans[XX][XX] * xt + trans[XX][YY] * yt + trans[XX][ZZ] * zt;
-        x[ii][YY] = trans[YY][XX] * xt + trans[YY][YY] * yt + trans[YY][ZZ] * zt;
-        x[ii][ZZ] = trans[ZZ][XX] * xt + trans[ZZ][YY] * yt + trans[ZZ][ZZ] * zt;
+        n = index.size();
+    }
+    n = index.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        size_t ii    = i;
+        if (!index.empty())
+        {
+            ii = index[i];
+        }
+        real xt   = (*x)[ii][XX];
+        real yt   = (*x)[ii][YY];
+        real zt   = (*x)[ii][ZZ];
+        (*x)[ii][XX] = trans[XX][XX] * xt + trans[XX][YY] * yt + trans[XX][ZZ] * zt;
+        (*x)[ii][YY] = trans[YY][XX] * xt + trans[YY][YY] * yt + trans[YY][ZZ] * zt;
+        (*x)[ii][ZZ] = trans[ZZ][XX] * xt + trans[ZZ][YY] * yt + trans[ZZ][ZZ] * zt;
     }
 }
 
-real calc_xcm(const rvec x[], int gnx, const int* index, const t_atom* atom, rvec xcm, gmx_bool bQ)
+real calc_xcm(const std::vector<gmx::RVec> &x,
+              const std::vector<int>       &index,
+              const std::vector<ActAtom>   &atoms,
+              gmx::RVec                    *xcm,
+              bool                          bQ)
 {
-    int  i, ii, m;
-    real m0, tm;
-
-    clear_rvec(xcm);
-    tm = 0;
-    for (i = 0; (i < gnx); i++)
+    clear_rvec(*xcm);
+    real   tm = 0;
+    size_t n  = x.size();
+    if (!index.empty())
     {
-        ii = index ? index[i] : i;
-        if (atom)
+        n = index.size();
+    }
+    for (size_t i = 0; i < n; i++)
+    {
+        size_t ii    = i;
+        if (!index.empty())
+        {
+            ii = index[i];
+        }
+        real m0 = 1;
+        if (!atoms.empty())
         {
             if (bQ)
             {
-                m0 = std::abs(atom[ii].q);
+                m0 = std::abs(atoms[ii].charge());
             }
             else
             {
-                m0 = atom[ii].m;
+                m0 = atoms[ii].mass();
             }
         }
-        else
-        {
-            m0 = 1;
-        }
         tm += m0;
-        for (m = 0; (m < DIM); m++)
+        for (int m = 0; (m < DIM); m++)
         {
-            xcm[m] += m0 * x[ii][m];
+            (*xcm)[m] += m0 * x[ii][m];
         }
     }
-    for (m = 0; (m < DIM); m++)
+    for (int m = 0; (m < DIM); m++)
     {
-        xcm[m] /= tm;
+        (*xcm)[m] /= tm;
     }
 
     return tm;
 }
 
-real sub_xcm(rvec x[], int gnx, const int* index, const t_atom atom[], rvec xcm, gmx_bool bQ)
+real sub_xcm(std::vector<gmx::RVec>       *x,
+             const std::vector<int>       &index,
+             const std::vector<ActAtom>   &atoms,
+             gmx::RVec                    *xcm,
+             bool                          bQ)
 {
-    int  i, ii;
-    real tm;
-
-    tm = calc_xcm(x, gnx, index, atom, xcm, bQ);
-    for (i = 0; (i < gnx); i++)
+    real tm  = calc_xcm(*x, index, atoms, xcm, bQ);
+    size_t n = x->size();
+    if (!index.empty())
     {
-        ii = index ? index[i] : i;
-        rvec_dec(x[ii], xcm);
+        n = index.size();
+    }
+    n = index.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        size_t ii    = i;
+        if (!index.empty())
+        {
+            ii = index[i];
+        }
+        rvec_dec((*x)[ii], *xcm);
     }
     return tm;
 }
 
-void add_xcm(rvec x[], int gnx, const int* index, rvec xcm)
+void add_xcm(std::vector<gmx::RVec>       *x,
+             const std::vector<int>       &index,
+             gmx::RVec                    &xcm)
 {
-    int i, ii;
-
-    for (i = 0; (i < gnx); i++)
+    size_t n  = x->size();
+    if (!index.empty())
     {
-        ii = index ? index[i] : i;
-        rvec_inc(x[ii], xcm);
+        n = index.size();
     }
-}
-
-static void gmx_unused orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d)
-{
-    int    i, m;
-    rvec   xcm, prcomp;
-    matrix trans;
-
-    calc_xcm(x, isize, index, atoms->atom, xcm, FALSE);
-    for (i = 0; i < natoms; i++)
+    n = index.size();
+    for (size_t i = 0; i < n; i++)
     {
-        rvec_dec(x[i], xcm);
-    }
-    //    principal_comp(isize, index, atoms->atom, x, trans, prcomp);
-    if (d)
-    {
-        copy_rvec(prcomp, d);
-    }
-
-    /* Check whether this trans matrix mirrors the molecule */
-    if (det(trans) < 0)
-    {
-        for (m = 0; (m < DIM); m++)
+        size_t ii    = i;
+        if (!index.empty())
         {
-            trans[ZZ][m] = -trans[ZZ][m];
+            ii = index[i];
         }
-    }
-    rotate_atoms(natoms, nullptr, x, trans);
-    if (v)
-    {
-        rotate_atoms(natoms, nullptr, v, trans);
-    }
-
-    for (i = 0; i < natoms; i++)
-    {
-        rvec_inc(x[i], xcm);
+        rvec_inc((*x)[ii], xcm);
     }
 }
+
+} // namespace

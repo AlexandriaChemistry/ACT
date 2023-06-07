@@ -41,7 +41,6 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
@@ -67,11 +66,8 @@ typedef std::map<const std::string, int> stringCount;
 
 static void fetch_charges(const ForceField                            *pd,
                           ForceComputer                               *forceComp,
-                          CommunicationRecord                         *cr,
-                          const gmx::MDLogger                         &mdlog,
                           const char                                  *charge_fn,
-                          std::map<std::string, std::vector<double> > *qmap,
-                          t_inputrec                                  *inputrec)
+                          std::map<std::string, std::vector<double> > *qmap)
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
@@ -79,8 +75,7 @@ static void fetch_charges(const ForceField                            *pd,
     {
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
-        actmol.setInputrec(inputrec);
-        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error, false);
+        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
         if (immStatus::OK != imm)
         {
             continue;
@@ -93,10 +88,8 @@ static void fetch_charges(const ForceField                            *pd,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(pd, forceComp, mdlog, cr,
-                                         pd->chargeGenerationAlgorithm(),
-                                         qType::ACM,
-                                         dummy, &coords, &forces);
+            imm = actmol.GenerateCharges(pd, forceComp, pd->chargeGenerationAlgorithm(),
+                                         qType::ACM, dummy, &coords, &forces);
             if (immStatus::OK == imm)
             {
                 // Add ACM charges
@@ -131,19 +124,14 @@ static void fetch_charges(const ForceField                            *pd,
 
 static bool dump_molecule(FILE                                        *fp,
                           ForceComputer                               *forceComp,
-                          CommunicationRecord                         *cr,
-                          const gmx::MDLogger                         &mdlog,
                           stringCount                                 *atomTypeCount,
                           stringCount                                 *bccTypeCount,
                           const ForceField                            &pd,
-                          MolProp                                     *mp,
-                          t_inputrec                                  *inputrec)
+                          MolProp                                     *mp)
 {
     alexandria::ACTMol actmol;
     actmol.Merge(mp);
-    actmol.setInputrec(inputrec);
-    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error,
-                                      false);
+    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error);
     if (immStatus::OK == imm)
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
@@ -154,10 +142,8 @@ static bool dump_molecule(FILE                                        *fp,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(&pd, forceComp, mdlog, cr,
-                                         pd.chargeGenerationAlgorithm(),
-                                         qType::ACM,
-                                         dummy, &coords, &forces);
+            imm = actmol.GenerateCharges(&pd, forceComp, pd.chargeGenerationAlgorithm(),
+                                         qType::ACM, dummy, &coords, &forces);
         }
     }
     if (immStatus::OK != imm)
@@ -344,15 +330,10 @@ static void check_mp(FILE                 *mylog,
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    auto inputrec  = new t_inputrec();
-    fill_inputrec(inputrec);
-
     stringCount atomTypeCount;
     stringCount bccTypeCount;
 
-    CommunicationRecord commRec;
     auto forceComp = new ForceComputer();
-    auto mdlog     = gmx::MDLogger {};
 
     if (mylog)
     {
@@ -444,8 +425,8 @@ static void check_mp(FILE                 *mylog,
                 }
             }
             
-        if (dump_molecule(mylog, forceComp, &commRec, mdlog, &atomTypeCount,
-                          &bccTypeCount, pd, &(*m), inputrec))
+        if (dump_molecule(mylog, forceComp, &atomTypeCount,
+                          &bccTypeCount, pd, &(*m)))
         {
             numberOk++;
         }
@@ -471,7 +452,7 @@ static void check_mp(FILE                 *mylog,
     {
         // Copy charges from monomers
         std::map<std::string, std::vector<double> > qmap;
-        fetch_charges(&pd, forceComp, &commRec, mdlog, charge_fn, &qmap, inputrec);
+        fetch_charges(&pd, forceComp, charge_fn, &qmap);
         monomer2cluster(mylog, mp, qmap);
     }
 }

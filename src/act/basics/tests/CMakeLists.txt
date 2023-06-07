@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     allmolsTest.cpp
     atompropTest.cpp
+    basecontainerTest.cpp
     datasetTest.cpp
     identifierTest.cpp
     identifierMapTest.cpp

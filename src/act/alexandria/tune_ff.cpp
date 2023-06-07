@@ -46,7 +46,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
@@ -146,18 +145,19 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     std::vector<double> vec;
-    for (ACTMol &actmol : mg_.actmols())
+    auto mymols = mg_.actmolsPtr();
+    for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
-        if (actmol.datasetType() != ims)
+        if (actmol->datasetType() != ims)
         {
             continue;
         }
         // For fitting alpha we need a reference polarizability
         double T = 0;
-        auto gp = reinterpret_cast<const MolecularPolarizability*>(actmol.qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
+        auto gp = reinterpret_cast<const MolecularPolarizability*>(actmol->qmProperty(MolPropObservable::POLARIZABILITY, T, JobType::OPT));
         if (gp)
         {
-            auto qelec = actmol.qTypeProps(qType::Elec);
+            auto qelec = actmol->qTypeProps(qType::Elec);
             qelec->setPolarizabilityTensor(gp->getTensor());
         }
     }
@@ -857,9 +857,9 @@ int tune_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), &(tmpMg->actmols()),
-                          opt.sii()->forcefield(), tmpMg->mdlog(),
-                          oenv, opt.commRec(), filenms, tmpMg->chargeMethod());
+            printer.print(opt.logFile(), tmpMg->actmolsPtr(),
+                          opt.sii()->forcefield(),
+                          oenv, filenms, tmpMg->chargeMethod());
             print_memory_usage(debug);
         }
         else if (!bMinimum)

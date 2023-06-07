@@ -40,7 +40,6 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/topology.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -56,8 +55,6 @@ class TopologyTest : public gmx::test::CommandLineTestBase
 protected:
     std::vector<Bond>      bonds_;
     std::vector<gmx::RVec> x_, y_;
-    t_atoms                gmxAtoms_;
-    t_symtab               symtab_;
     //! Constructor that does initialization and reads an input file
     TopologyTest()
     {
@@ -87,25 +84,6 @@ protected:
             { 1.2, 0.6, 0.0 },
             { 0.6, 0.3, 0.0 },
         };
-        init_t_atoms(&gmxAtoms_, bonds_.size(), false);
-        snew(gmxAtoms_.atomtype, bonds_.size());
-        std::vector<int> ptp = { eptAtom, eptShell, eptShell, eptAtom, eptAtom, eptShell };
-        open_symtab(&symtab_);
-        for(int i = 0; i < gmxAtoms_.nr; i++)
-        {
-            gmxAtoms_.atomname[i]        = put_symtab(&symtab_, "C");
-            gmxAtoms_.atom[i].elem[0]    = 'C';
-            gmxAtoms_.atom[i].ptype      = ptp[i];
-            gmxAtoms_.atomtype[i]        = put_symtab(&symtab_, "c3");
-            gmxAtoms_.atom[i].m          = 12;
-            gmxAtoms_.atom[i].q          = 0;
-            gmxAtoms_.atom[i].atomnumber = 6;
-            gmxAtoms_.atom[i].resind     = 0;
-        }
-        gmxAtoms_.nres = 1;
-        snew(gmxAtoms_.resinfo, 1);
-        gmxAtoms_.resinfo[0].name = put_symtab(&symtab_, "Benzene");
-        close_symtab(&symtab_);
     }
 
     //! Static initiation, only run once every test.
@@ -123,13 +101,13 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(xx, 175.0);
+        top.makeAngles(nullptr, xx, 175.0);
         auto &angles = top.entry(InteractionType::ANGLES);
         myCheck.checkInteger(angles.size(), "#angles");
         std::vector<std::string> astrings;
         for(auto &a: angles)
         {
-            auto ai = a->atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Angle");
@@ -140,14 +118,14 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(xx, 175.0);
+        top.makeAngles(nullptr, xx, 175.0);
         {
             auto &angles = top.entry(InteractionType::ANGLES);
             myCheck.checkInteger(angles.size(), "#angles");
             std::vector<std::string> astrings;
             for(auto &a: angles)
             {
-                auto ai = a->atomIndices();
+                auto &ai = a->atomIndices();
                 astrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
             }
             myCheck.checkSequence(astrings.begin(), astrings.end(), "Angle");
@@ -157,7 +135,7 @@ protected:
             std::vector<std::string> lastrings;
             for(auto &a: linangles)
             {
-                auto ai = a->atomIndices();
+                auto &ai = a->atomIndices();
                 lastrings.push_back(gmx::formatString("%d-%d-%d", ai[0], ai[1], ai[2]));
             }
             myCheck.checkSequence(lastrings.begin(), lastrings.end(), "LinearAngle");
@@ -169,13 +147,13 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeImpropers(x_, PlanarAngleMax);
+        top.makeImpropers(nullptr, x_, PlanarAngleMax);
         auto &imps = top.entry(InteractionType::IMPROPER_DIHEDRALS);
         myCheck.checkInteger(imps.size(), "#impropers");
         std::vector<std::string> astrings;
         for(auto &a: imps)
         {
-            auto ai = a->atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d-%d", ai[0], ai[1], ai[2], ai[3]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Improper");
@@ -186,21 +164,21 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(xx, 175.0);
-        top.makePropers();
+        top.makeAngles(nullptr, xx, 175.0);
+        top.makePropers(nullptr);
         auto &imps = top.entry(InteractionType::PROPER_DIHEDRALS);
         myCheck.checkInteger(imps.size(), "#propers");
         std::vector<std::string> astrings;
         for(auto &a: imps)
         {
-            auto ai = a->atomIndices();
+            auto &ai = a->atomIndices();
             astrings.push_back(gmx::formatString("%d-%d-%d-%d", ai[0], ai[1], ai[2], ai[3]));
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), "Proper");
     }
 
-    void testInteraction(InteractionType                     itype,
-                         const std::vector<TopologyEntry *> &entry)
+    void testInteraction(InteractionType            itype,
+                         const TopologyEntryVector &entry)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
@@ -210,49 +188,19 @@ protected:
         std::vector<std::string> astrings;
         for(auto &a: imps)
         {
-            auto ai = a->atomIndices();
-            astrings.push_back(gmx::formatString("%d-%d", ai[0], ai[1]));
+            std::string astring;
+            for(auto &ai : a->atomIndices())
+            {
+                if (!astring.empty())
+                {
+                    astring += "-";
+                }
+                astring += gmx::formatString("%d", ai);
+            }
+            astrings.push_back(astring);
         }
         myCheck.checkSequence(astrings.begin(), astrings.end(), interactionTypeToString(itype).c_str());
         
-    }
-    
-    void testShells()
-    {
-        gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
-        std::vector<TopologyEntry *> pols;
-        std::vector<std::pair<int, int> > mypairs = {
-            { 0, 1 }, { 0, 2 }, { 4, 5 } 
-        };
-        for(size_t k = 0; k < mypairs.size(); k++)
-        {
-            auto pp = new TopologyEntry();
-            pp->addAtom(mypairs[k].first);
-            pp->addAtom(mypairs[k].second);
-            pp->addBondOrder(1.0);
-            pols.push_back(pp);
-        }
-        top.addEntry(InteractionType::POLARIZATION, pols);
-        top.setAtoms(&gmxAtoms_);
-        top.shellsToAtoms();
-        std::vector<int> shells;
-        std::vector<int> cores;
-        auto &atoms = top.atoms();
-        for(size_t k = 0; k < atoms.size(); k++)
-        {
-            for(auto &ss: atoms[k].shells())
-            {
-                shells.push_back(ss);
-            }
-            auto cc = atoms[k].core();
-            if (-1 != cc)
-            {
-                cores.push_back(cc);
-            }
-        }
-        myCheck.checkSequence(shells.begin(), shells.end(), "Shells");
-        myCheck.checkSequence(cores.begin(), cores.end(), "Cores");
     }
     
     //! Clean the test data.
@@ -274,12 +222,8 @@ TEST_F (TopologyTest, FindBond){
     for(const auto &b : bonds_)
     {
         auto bb = top.findBond(b.aI(), b.aJ());
-        EXPECT_TRUE(bb->bondOrder() == b.bondOrder());
+        EXPECT_TRUE(bb.bondOrder() == b.bondOrder());
     }
-}
-
-TEST_F (TopologyTest, FindShells){
-    testShells();
 }
 
 TEST_F (TopologyTest, DontFindBond){
@@ -317,11 +261,32 @@ TEST_F (TopologyTest, MakePropersLinearAngles){
 }
 
 TEST_F (TopologyTest, AddPolarization){
-    std::vector<TopologyEntry *> pols = {
-        new Bond(1, 2, 1.0),
-        new Bond(3, 4, 1.0)
+    TopologyEntryVector pols = {
+        Bond(1, 2, 1.0),
+        Bond(3, 4, 1.0)
     };
     testInteraction(InteractionType::POLARIZATION, pols); 
+}
+
+TEST_F (TopologyTest, AddVsite2){
+    TopologyEntryVector vs2 = {
+        Vsite2(1, 2, 0),
+    };
+    testInteraction(InteractionType::VSITE2, vs2); 
+}
+
+TEST_F (TopologyTest, AddVsite3out){
+    TopologyEntryVector vs3 = {
+        Vsite3(1, 2, 3, 0),
+    };
+    testInteraction(InteractionType::VSITE3OUT, vs3); 
+}
+
+TEST_F (TopologyTest, AddVsite3fad){
+    TopologyEntryVector vs3 = {
+        Vsite3(1, 3, 5, 0),
+    };
+    testInteraction(InteractionType::VSITE3FAD, vs3); 
 }
 
 } // namespace alexandria

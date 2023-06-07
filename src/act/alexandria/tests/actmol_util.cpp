@@ -13,7 +13,6 @@ namespace alexandria
 void initACTMol(const char          *molname, 
                 const ForceField    *pd,
                 ForceComputer       *fcomp,
-                t_inputrec          *inputrec,
                 std::vector<ACTMol> *mps)
     {
         int           maxpot   = 100;
@@ -25,10 +24,6 @@ void initACTMol(const char          *molname,
         std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         std::vector<alexandria::MolProp> molprops;
         double        qtot     = 0;
-        // Needed for GenerateCharges
-        CommunicationRecord cr;
-        // Generate charges and topology
-        fill_inputrec(inputrec);
         // Charge gen params
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
@@ -40,19 +35,17 @@ void initACTMol(const char          *molname,
         EXPECT_TRUE(readOK);
         if (readOK)
         {
-            gmx::MDLogger mdlog {};
             for(auto &molprop : molprops)
             {
                 ACTMol mm;
                 mm.Merge(&molprop);
                 auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Error, true);
+                                               missingParameters::Error);
                 EXPECT_TRUE(immStatus::OK ==imm);
-                mm.setInputrec(inputrec);
                 mm.symmetrizeCharges(pd, qSymm, nullptr);
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, fcomp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces);
                 mps->push_back(mm);
             }
         }

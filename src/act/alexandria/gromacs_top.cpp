@@ -33,10 +33,10 @@ static int get_subtype(directive d, int ftype)
     return 1;
 }
 
-static void print_bondeds(FILE                               *out,
-                          directive                           d,
-                          int                                 ftype,
-                          const std::vector<TopologyEntry *> &entries)
+static void print_bondeds(FILE                      *out,
+                          directive                  d,
+                          int                        ftype,
+                          const TopologyEntryVector &entries)
 {
     if (entries.empty())
     {

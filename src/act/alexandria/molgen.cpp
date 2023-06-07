@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,19 +41,11 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "fill_inputrec.h"
 #include "act/forces/combinationrules.h"
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
@@ -107,8 +99,6 @@ void FittingTarget::print(FILE *fp) const
 MolGen::MolGen(const CommunicationRecord *cr)
 {
     cr_        = cr;
-    inputrec_  = new t_inputrec();
-    fill_inputrec(inputrec_);
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
@@ -164,9 +154,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
 
 void MolGen::optionsFinished()
 {
-    mdlog_                      = gmx::MDLogger {};
-    auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    gmx_omp_nthreads_init(mdlog_, cr_->commrec(), 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
         for(const auto &toFit : gmx::splitString(fitString_))
@@ -192,6 +179,10 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
+            if (debug)
+            {
+                fprintf(debug, "Adding parameter %s to fitting\n", fit.first.c_str());
+            }
         }
         else
         {
@@ -200,7 +191,7 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
     }
 }
 
-void MolGen::checkDataSufficiency(FILE     *fp,
+void MolGen::checkDataSufficiency(FILE        *fp,
                                   ForceField  *pd) // Called in read method
 {
     size_t nmol = 0;
@@ -261,7 +252,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 }
             }
         }
-        // TODO: Handle bonded interactions
+        
         std::vector<InteractionType> atomicItypes = {
             InteractionType::POLARIZATION,
             InteractionType::COULOMB,
@@ -351,11 +342,11 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 }
             }
             // Now check bonds and bondcorrections
+            auto top   = mol.topology();
             auto btype = InteractionType::BONDS;
             if (pd->interactionPresent(btype))
             {
                 auto bonds = pd->findForces(btype);
-                auto top   = mol.topology();
                 if (top->hasEntry(btype))
                 {
                     for (const auto &topentry : top->entry(btype))
@@ -399,26 +390,47 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                             }
                         }
                     }
-                    // Now angles and dihedrals
-                    std::vector<InteractionType> atypes = {
-                        InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
-                        InteractionType::PROPER_DIHEDRALS,
-                        InteractionType::IMPROPER_DIHEDRALS
-                    };
-                    for (const auto &atype : atypes)
+                }
+            }
+            // Now angles and dihedrals
+            std::vector<InteractionType> atypes = {
+                InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                InteractionType::PROPER_DIHEDRALS,
+                InteractionType::IMPROPER_DIHEDRALS,
+                InteractionType::VSITE2
+            };
+            for (const auto &atype : atypes)
+            {
+                if (fp && InteractionType::VSITE2 == atype)
+                {
+                    fprintf(fp, "Looking for vsite2 in force field\n");
+                }
+                if (optimize(atype) && pd->interactionPresent(atype))
+                {
+                    auto angles = pd->findForces(atype);
+                    if (fp && InteractionType::VSITE2 == atype)
                     {
-                        if (optimize(atype) && pd->interactionPresent(atype))
+                        fprintf(fp, "Looking for vsite2 in molecular tpology\n");
+                        top->dump(fp);
+                    }
+                    if (top->hasEntry(atype))
+                    {
+                        for (const auto &topentry : top->entry(atype))
                         {
-                            auto angles = pd->findForces(atype);
-                            for (const auto &topentry : top->entry(atype))
+                            // TODO check multiple ids
+                            if (fp && InteractionType::VSITE2 == atype)
                             {
-                                // TODO check multiple ids
-                                for (auto &ff : *(angles->findParameters(topentry->id())))
+                                fprintf(fp, "Looking for vsite2 %s\n", topentry->id().id().c_str());
+                            }
+                            for (auto &ff : *(angles->findParameters(topentry->id())))
+                            {
+                                if (fp && InteractionType::VSITE2 == atype)
                                 {
-                                    if (ff.second.isMutable())
-                                    {
-                                        ff.second.incrementNtrain();
-                                    }
+                                    fprintf(fp, "Found vsite2 %s\n", topentry->id().id().c_str());
+                                }
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
                                 }
                             }
                         }
@@ -619,7 +631,7 @@ static double computeCost(const ACTMol                         *actmol,
                      
 size_t MolGen::Read(FILE                                *fp,
                     const char                          *fn,
-                    ForceField                             *pd,
+                    ForceField                          *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
                     bool                                 verbose)
@@ -707,9 +719,8 @@ size_t MolGen::Read(FILE                                *fp,
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
                 actmol.Merge(&(*mpi));
-                actmol.setInputrec(inputrec_);
                 imm = actmol.GenerateTopology(fp, pd,
-                                             missingParameters::Error, false);
+                                             missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -725,7 +736,7 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<double> dummy;
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                imm = actmol.GenerateCharges(pd, forceComp, alg,
                                             qtype, dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
@@ -883,10 +894,7 @@ size_t MolGen::Read(FILE                                *fp,
                 fprintf(debug, "Succesfully retrieved %s\n", actmol.getMolname().c_str());
                 fflush(debug);
             }
-            actmol.setInputrec(inputrec_);
-
-            imm = actmol.GenerateTopology(debug, pd,
-                                         missingParameters::Error, false);
+            imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
 
             if (immStatus::OK == imm)
             {
@@ -895,7 +903,7 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.symmetrizeCharges(pd, qsymm_, nullptr);
                 actmol.initQgenResp(pd, coords, 0.0, 100);
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, mdlog_, cr_, alg,
+                imm = actmol.GenerateCharges(pd, forceComp, alg,
                                             qtype, dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)

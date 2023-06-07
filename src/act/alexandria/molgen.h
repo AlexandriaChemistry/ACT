@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -251,16 +251,10 @@ private:
     std::map<InteractionType, bool> iOpt_;
     //! Whether or not to use charge symmetry
     bool                            qsymm_      = false;
-    //! GROMACS logger structure
-    gmx::MDLogger                   mdlog_;
-    //! GROMACS MD parameter structure
-    t_inputrec                     *inputrec_   = nullptr;
     //! String for command line to harvest the options to fit
     char                           *fitString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
-    //! GROMACS structure containing optional MD modules, used for electric fields
-    gmx::MDModules                  mdModules_;
     //! Which charge type to use
     char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
@@ -327,7 +321,7 @@ public:
     const std::vector<ACTMol> &actmols() const { return actmol_; }
 
     //! \brief Return the mutable vector of molecules
-    std::vector<ACTMol> &actmols() { return actmol_; }
+    std::vector<ACTMol> *actmolsPtr() { return &actmol_; }
 
     /*! \brief Return size of data set
      * \param[in] ims The data set 
@@ -346,9 +340,6 @@ public:
         }
     }
     
-    //! Return the mdlogger structure
-    const gmx::MDLogger &mdlog()  const {return mdlog_; }
-
     /*! Tell the user whether this parameter needs to be fitted
      * \param[in] type The parameter type
      * \return whether or not this parameter is part of the fitting target

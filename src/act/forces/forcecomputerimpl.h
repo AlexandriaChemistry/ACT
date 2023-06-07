@@ -34,7 +34,7 @@
 namespace alexandria
 {
 
-typedef void (*bondForceComputer)(const std::vector<TopologyEntry *> &bonds,
+typedef void (*bondForceComputer)(const TopologyEntryVector          &bonds,
                                   const std::vector<ActAtom>         &atoms,
                                   const std::vector<gmx::RVec>       *coordinates,
                                   std::vector<gmx::RVec>             *forces,

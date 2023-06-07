@@ -267,7 +267,7 @@ private:
     
     void addXmlResidueBonds(xmlNodePtr           residuePtr,
                             const ForceField    *pd,
-                            const Topology      &topol);
+                            const Topology      *topol);
 
     void addBondAtoms(xmlNodePtr                      parent,
                       const std::vector<std::string> &atoms);
@@ -332,19 +332,19 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
 }
 
 
-void OpenMMWriter::addXmlResidueBonds(xmlNodePtr           residuePtr, 
-                                      const ForceField    *pd, 
-                                      const Topology      &topol)
+void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr, 
+                                      const ForceField *pd, 
+                                      const Topology   *topol)
 {
     auto itbonds = InteractionType::BONDS;
     if (pd->interactionPresent(itbonds))
     {
         auto fs = pd->findForcesConst(itbonds);
         
-        if (topol.hasEntry(itbonds))
+        if (topol->hasEntry(itbonds))
         {
-            auto myatoms = topol.atoms();
-            for(const auto topentry : topol.entry(itbonds))
+            auto myatoms = topol->atoms();
+            for(const auto &topentry : topol->entry(itbonds))
             {
                 int ai = topentry->atomIndex(0);
                 int aj = topentry->atomIndex(1);
@@ -843,7 +843,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             // be a different residue from a mid-chain amino acid.
             // This is taken care of under the hood when reading through the OpenBabel
             // interface, which replaces the residue names by InChi strings.
-            auto myatoms       = topologies[fff].atoms();
+            auto myatoms       = topologies[fff]->atoms();
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));

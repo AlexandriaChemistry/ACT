@@ -47,10 +47,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/units.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -154,12 +150,6 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
             }
-            t_inputrec      inputrecInstance;
-            t_inputrec     *inputrec   = &inputrecInstance;
-            fill_inputrec(inputrec);
-            CommunicationRecord cr;
-            auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
 
             // Now loop over molprops, there may be more than one
@@ -170,10 +160,8 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
                 actmol.Merge(&molprop);
                 // Generate charges and topology
-                actmol.setInputrec(inputrec);
-
                 auto imm = actmol.GenerateTopology(stdout, pd,
-                                                  missingParameters::Error, false);
+                                                   missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
                     fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -189,7 +177,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                     alg = ChargeGenerationAlgorithm::Custom;
                 }
                 actmol.symmetrizeCharges(pd, qSymm, nullptr);
-                actmol.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+                actmol.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
                 
                 std::vector<double> q;
                 auto myatoms = actmol.atomsConst();

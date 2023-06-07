@@ -42,15 +42,14 @@
 
 namespace alexandria
 {
-
-enum class CanSwap {
-    //! The order of atoms in an interaction cannot be swapped
-    No,
-    //! The order of atoms in an interaction can be swapped by reversing the order
-    Yes,
-    //! The order of atoms can be swapped specific for improper dihedrals
-    Idih
-};
+    enum class CanSwap {
+        //! The order of atoms in an interaction cannot be swapped
+        No,
+        //! The order of atoms in an interaction can be swapped by reversing the order
+        Yes,
+        //! The order of atoms can be swapped specifically for improper dihedrals
+        Idih
+    };
 
 /*! \brief Convert string to CanSwap
  * \param[in] str The string
@@ -153,7 +152,7 @@ class Identifier
 
  private:
     //! Whether we can swap and if so, how
-    CanSwap                  canSwap_;
+    CanSwap                  canSwap_ = CanSwap::No;
     //! The id in short of these parameter, with alternate ids
     std::vector<std::string> ids_;
     //! The bond orders
@@ -163,6 +162,8 @@ class Identifier
 
     //! Correct the order of atoms and created permuted ids
     void orderAtoms();
+
+    void update();
 };
 
 } // namespace alexandria

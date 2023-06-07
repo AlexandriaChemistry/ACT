@@ -176,17 +176,17 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
     return universalGasConstant * SR;
 }
 
-static void calcTheta(const ACTMol                  *actmol,
+static void calcTheta(const ACTMol                 *actmol,
                       const std::vector<gmx::RVec> &coords,
                       rvec                          theta)
 {
-    rvec       xcm;
-    const auto atoms = actmol->gmxAtomsConst();
-    std::vector<int> index;
+    gmx::RVec              xcm;
+    const auto            &atoms = actmol->topology()->atoms();
+    std::vector<int>       index;
     std::vector<gmx::RVec> xx;
-    for(int i = 0; i < atoms->nr; i++)
+    for(size_t i = 0; i < atoms.size(); i++)
     {
-        if (atoms->atom[i].ptype == eptAtom)
+        if (atoms[i].pType() == eptAtom)
         {
             index.push_back(i);
         }
@@ -198,25 +198,21 @@ static void calcTheta(const ACTMol                  *actmol,
         xx.push_back(zzz);
     }
     
-    (void) calc_xcm(as_rvec_array(xx.data()),
-                    index.size(), index.data(), atoms->atom, xcm, false);
+    (void) calc_xcm(xx, index, atoms, &xcm, false);
     std::vector<gmx::RVec> x_com;
-    x_com.resize(atoms->nr);
+    x_com.resize(atoms.size());
     clear_rvec(theta);
     std::vector<real> mass;
-    for (int i = 0; i < atoms->nr; i++)
+    for (size_t i = 0; i < atoms.size(); i++)
     {
         copy_rvec(coords[i], x_com[i]);
-        mass.push_back(atoms->atom[i].m);
+        mass.push_back(atoms[i].mass());
     }
-    (void)sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(), 
-                  atoms->atom, xcm, false);
+    (void)sub_xcm(&x_com, index, atoms, &xcm, false);
 
-    rvec   inertia;
-    matrix trans;
-    principal_comp(index.size(), index.data(), mass.data(), 
-                   as_rvec_array(x_com.data()),
-                   trans, inertia);
+    gmx::RVec inertia;
+    matrix    trans;
+    principal_comp(index, mass, x_com, &trans, &inertia);
     // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
     // c_kilo kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
     // c_kilo^2 10^18 / 10^24 K = 1/K
@@ -241,7 +237,7 @@ static void calcTheta(const ACTMol                  *actmol,
     }
 }
 
-ThermoChemistry::ThermoChemistry(const ACTMol                  *actmol,
+ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
                                  const std::vector<gmx::RVec> &coords,
                                  const AtomizationEnergy      &atomenergy,
                                  const std::vector<double>    &frequencies,
@@ -278,7 +274,8 @@ ThermoChemistry::ThermoChemistry(const ACTMol                  *actmol,
     }
     // Using the equations from Ochterski2000a
     double sumAtomicEps0 = 0;
-    double D0M           = sumAtomicEps0 - actmol->energyTerms()[F_EPOT] - zpe_;
+    double epot          = 0;
+    double D0M           = sumAtomicEps0 - epot - zpe_;
     double sumAtomicH0   = computeAtomizationEnergy(actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;
     if (temperature == 0)

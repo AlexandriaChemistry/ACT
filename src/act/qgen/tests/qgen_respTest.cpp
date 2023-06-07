@@ -117,33 +117,25 @@ protected:
         //Generate charges and topology
         std::string   method("B3LYP");
         std::string   basis("Gen");
-        t_inputrec    inputrec;
-        fill_inputrec(&inputrec);
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
-        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Error, false);
+        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Error);
         EXPECT_TRUE(immStatus::OK == imm);
         
-        //Needed for GenerateCharges
-        CommunicationRecord cr;
-        auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-        gmx::MDLogger  mdlog {};
+        // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
         auto qt = pd->findForcesConst(InteractionType::COULOMB);
         auto ct = name2ChargeType(qt.optionValue("chargetype"));
         
         EXPECT_FALSE(ChargeType::Slater  == ct);
 
-        mp.setInputrec(&inputrec);
         mp.symmetrizeCharges(pd, qSymm, nullptr);
         std::vector<gmx::RVec> coords = mp.xOriginal();
         mp.initQgenResp(pd, coords, 0.0, 100);
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
-        mp.GenerateCharges(pd, forceComp, mdlog, &cr,
-                           ChargeGenerationAlgorithm::ESP,
-                           qType::ESP,
-                           qcustom, &coords, &forces);
+        mp.GenerateCharges(pd, forceComp, ChargeGenerationAlgorithm::ESP,
+                           qType::ESP, qcustom, &coords, &forces);
         
         std::vector<double> qtotValues;
         auto atoms = mp.atomsConst();

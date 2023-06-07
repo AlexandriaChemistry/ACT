@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "act/alexandria/topology.h"
+#include "act/molprop/topologyentry.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/fragment.h"

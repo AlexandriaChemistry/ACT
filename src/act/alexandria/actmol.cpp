@@ -40,6 +40,7 @@
 #include <random>
 #include <string>
 
+#include "act/alexandria/pdbwriter.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -47,38 +48,12 @@
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/listed-forces/manage-threading.h"
-#include "gromacs/math/do_fit.h"
-#include "gromacs/math/invertmatrix.h"
-#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/forceoutput.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/group.h"
-#include "gromacs/mdtypes/iforceprovider.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs_top.h"
@@ -88,31 +63,13 @@
 namespace alexandria
 {
 
-static void vsiteType_to_atomType(const std::string &vsiteType, std::string *atomType)
+ACTMol::ACTMol()
 {
-    std::size_t pos = vsiteType.find("L");
-    *atomType       = vsiteType.substr (0, pos);
-}
-
-ACTMol::ACTMol() //: gvt_(VsiteType::ALL)
-
-{
-    snew(symtab_, 1);
-    open_symtab(symtab_);
-    gromppAtomtype_    = init_atomtype();
-    state_         = new t_state;
-    state_->flags |= (1<<estX);
-    state_->flags |= (1<<estV);
-    state_->flags |= (1<<estCGP);
-    snew(enerd_, 1);
-    snew(fcd_, 1);
-    clear_mat(state_->box);
+    clear_mat(box_);
     for (int m = 0; m < DIM; m++)
     {
-        state_->box[m][m] = 10.0;
+        box_[m][m] = 10.0;
     }
-    init_enerdata(1, 0, enerd_);
-    init_nrnb(&nrnb_);
 }
 
 bool ACTMol::IsSymmetric(real toler) const
@@ -191,7 +148,7 @@ void ACTMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
             }
         }
     }
-    /*Now try to find atoms bound to bca, except ca.*/
+    /* Now try to find atoms bound to bca, except ca. */
     for (auto bi : bondsConst())
     {
         if ((ca != bi.aJ()   &&
@@ -238,121 +195,18 @@ bool ACTMol::IsVsiteNeeded(std::string       atype,
     return vsite != pd->getVsiteEnd();
 }
 
-immStatus ACTMol::GenerateAtoms(const ForceField *pd,
-                                t_atoms          *atoms)
-{
-    double                    xx, yy, zz;
-    int                       natom = 0;
-    immStatus                 imm   = immStatus::OK;
-    const Experiment         *ci    = nullptr;
-    
-    ci = findExperimentConst(JobType::OPT);
-    if (!ci)
-    {
-        ci = findExperimentConst(JobType::TOPOLOGY);
-    }
-    if (ci)
-    {
-        if (ci->NAtom() == 0)
-        {
-            return immStatus::NoAtoms;
-        }
-        myJobType_ = ci->getJobtype();
-        t_param nb;
-        memset(&nb, 0, sizeof(nb));
-        natom = 0;
-        init_t_atoms(atoms, ci->NAtom(), false);
-        snew(atoms->atomtype, ci->NAtom());
-        snew(atoms->atomtypeB, ci->NAtom());
-        int res0 = -1;
-        atoms->nres = 0;
-        for (auto &cai : ci->calcAtomConst())
-        {
-            auto myunit = cai.coordUnit();
-            cai.coords(&xx, &yy, &zz);
-            int resnr = cai.residueNumber();
-            if (resnr != res0)
-            {
-                res0  = resnr;
-                atoms->nres += 1;
-            }
-            gmx::RVec xxx = { convertToGromacs(xx, myunit),
-                              convertToGromacs(yy, myunit),
-                              convertToGromacs(zz, myunit) };
-            copy_rvec(xxx, state_->x[natom]);
-            optimizedCoordinates_.push_back(xxx);
-            
-            atoms->atom[natom].q      =
-                atoms->atom[natom].qB = 0;
-            atoms->atom[natom].resind = resnr;
-            t_atoms_set_resinfo(atoms, natom, symtab_, cai.residueName().c_str(),
-                                atoms->atom[natom].resind+1, ' ', 
-                                cai.chainId(), cai.chain());
-            atoms->atomname[natom]    = put_symtab(symtab_, cai.getName().c_str());
-
-            // First set the atomtype
-            atoms->atomtype[natom]      =
-                atoms->atomtypeB[natom] = put_symtab(symtab_, cai.getObtype().c_str());
-            if (pd->hasParticleType(cai.getObtype()))
-            {
-                auto atype = pd->findParticleType(cai.getObtype());
-                atoms->atom[natom].m      =
-                    atoms->atom[natom].mB = atype->mass();
-                atoms->atom[natom].q      =
-                    atoms->atom[natom].qB = atype->charge();
-                
-                atoms->atom[natom].atomnumber = atype->atomnumber();
-                strncpy(atoms->atom[natom].elem, atype->element().c_str(), sizeof(atoms->atom[natom].elem)-1);
-                
-                natom++;
-            }
-            else
-            {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in forcefield, there are %d atomtypes.\n", 
-                                                            cai.getObtype().c_str(), natom, pd->nParticleTypes()));
-
-                return immStatus::AtomTypes;
-            }
-        }
-        for (auto i = 0; i < natom; i++)
-        {
-            atoms->atom[i].type      =
-                atoms->atom[i].typeB = add_atomtype(gromppAtomtype_, symtab_,
-                                                    &(atoms->atom[i]),
-                                                    *atoms->atomtype[i],
-                                                    &nb, 0,
-                                                    atoms->atom[i].atomnumber);
-        }
-        GMX_RELEASE_ASSERT(atoms->nr == natom, "Inconsistency numbering atoms");
-    }
-    else
-    {
-        imm = immStatus::Topology;
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %d\n",
-                getMolname().c_str(),
-                ci->getMethod().c_str(),
-                ci->getBasisset().c_str(), natom);
-    }
-
-    return imm;
-}
-
-immStatus ACTMol::checkAtoms(const ForceField *pd,
-                             const t_atoms    *atoms)
+immStatus ACTMol::checkAtoms(const ForceField *pd)
 {
     int nmissing        = 0;
     int atomnumberTotal = 0;
-    for (auto i = 0; i < atoms->nr; i++)
+    auto myatoms = topology_->atoms();
+    for (size_t i = 0; i < myatoms.size(); i++)
     {
-        const auto atype(*atoms->atomtype[i]);
+        auto atype = myatoms[i].ffType();
         if (!pd->hasParticleType(atype))
         {
-            printf("Could not find a force field entry for atomtype %s atom %d in compound '%s'\n",
-                   *atoms->atomtype[i], i+1,
-                   getMolname().c_str());
+            printf("Could not find a force field entry for atomtype %s atom %zu in compound '%s'\n",
+                   atype.c_str(), i+1, getMolname().c_str());
             nmissing++;
         }
         else
@@ -375,57 +229,6 @@ immStatus ACTMol::checkAtoms(const ForceField *pd,
     return immStatus::OK;
 }
 
-immStatus ACTMol::zetaToAtoms(const ForceField *pd,
-                              t_atoms          *atoms)
-{
-    /* The first time around we add zeta for the core and addShells will
-     * take care of the zeta for the shells.
-     * For later calls during optimization of zeta also the
-     * zeta on the shells will be set. 
-     */
-    auto &qt       = pd->findForcesConst(InteractionType::COULOMB);
-    const char *ct = "chargetype";
-    if (!qt.optionExists(ct))
-    {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No option %s in in the force field file", ct).c_str()));
-    }
-    auto eqtModel = name2ChargeType(qt.optionValue(ct));
-    if (eqtModel == ChargeType::Point)
-    {
-        return immStatus::OK;
-    }
-    
-    auto iType = InteractionType::COULOMB;
-    for (auto i = 0; i < atoms->nr; i++)
-    {
-        auto atype = pd->findParticleType(*atoms->atomtype[i]);
-        auto ztype = atype->interactionTypeToIdentifier(iType);
-        GMX_RELEASE_ASSERT(qt.parameterExists(ztype), gmx::formatString("No such parameter '%s' for atom type %s in %s",
-                                                                        ztype.id().c_str(),
-                                                                        atype->id().id().c_str(),
-                                                                        interactionTypeToString(iType).c_str()).c_str());
-
-        auto eep   = qt.findParametersConst(ztype);
-        const char *zzz =  "zeta";
-        if (eep.find(zzz) ==  eep.end())
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find parameter type %s for atomtype %s",
-                                                               zzz, atype->id().id().c_str()).c_str()));
-        }
-        auto zeta  = eep["zeta"].value();
-        
-        if (zeta == 0 && eqtModel != ChargeType::Point)
-        {
-            return immStatus::ZeroZeta;
-        }
-        
-        atoms->atom[i].zetaA     =
-            atoms->atom[i].zetaB = zeta;
-        atoms->atom[i].row       = eep["row"].value();
-    }
-    return immStatus::OK;
-}
-
 void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
                              const ForceComputer                                                 *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >               *forceMap,
@@ -434,8 +237,6 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                              std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
-    t_commrec *crtmp   = init_commrec();
-    crtmp->nnodes      = 1;
     forceMap->clear();
     energyMap->clear();
     interactionEnergyMap->clear();
@@ -454,7 +255,6 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             {
                 // Read coords from the experimental structure without shells
                 copy_rvec(xxx[j], coords[i]);
-                copy_rvec(xxx[j], state_->x[i]);
                 j += 1;
             }
         }
@@ -462,19 +262,23 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         // since we cannot be sure about the order of atoms and shells.
         for(size_t i = 0; i < myatoms.size(); i++)
         {
-            if (myatoms[i].pType() == eptAtom)
+            switch (myatoms[i].pType())
             {
+            case eptAtom:
                 // Do nothing
-            }
-            else if (myatoms[i].pType() == eptShell)
-            {
-                auto core = myatoms[i].core();
-                GMX_RELEASE_ASSERT(core != -1, "Shell without core");
-                copy_rvec(coords[core], coords[i]);
-            }
-            else
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+                break;
+            case eptShell:
+            case eptVSite:
+                {
+                    auto cores = myatoms[i].cores();
+                    GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
+                    copy_rvec(coords[cores[0]], coords[i]);
+                }
+                break;
+            default:
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+                }
             }
         }
         // We compute either interaction energies or normal energies for one experiment
@@ -517,20 +321,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         {
             std::map<InteractionType, double> energies;
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
-            if (forceComp)
-            {
-                (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
-            }
-            else
-            {
-                PaddedVector<gmx::RVec> gmxforces;
-                gmxforces.resizeWithPadding(myatoms.size());
-                //calculateEnergyOld(crtmp, &coords, &gmxforces, &energies, &shellForceRMS);
-                for(size_t i = 0; i < myatoms.size(); i++)
-                {
-                    copy_rvec(gmxforces[i], forces[i]);
-                }
-            }
+            (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
@@ -566,389 +357,11 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             }
         }
     }
-    done_commrec(crtmp);
 }
 
-static void fill_atom(t_atom *atom,
-                      real m, real q, real mB, real qB, int atomnumber,
-                      int atomtype, int ept,
-                      real zetaA, real zetaB, int row, int resind)
-{
-    atom->m             = m;
-    atom->mB            = mB;
-    atom->q             = q;
-    atom->qB            = qB;
-    atom->atomnumber    = atomnumber;
-    atom->type          = atomtype;
-    atom->typeB         = atomtype;
-    atom->ptype         = ept;
-    atom->zetaA         = zetaA;
-    atom->zetaB         = zetaB;
-    atom->row           = row;
-    atom->resind        = resind;
-}
-
-static void UpdateIdefEntry(const ForceFieldParameterList &fs,
-                            const Identifier              &bondId,
-                            int                            gromacsType,
-                            gmx_mtop_t                    *mtop,
-                            gmx_localtop_t                *ltop)
-{
-    double myval = 0;
-    switch (fs.gromacsType())
-    {
-    case F_MORSE:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, morse_name[morseLENGTH]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].morse.b0A         =
-                mtop->ffparams.iparams[gromacsType].morse.b0B     = myval;
-            if (ltop)
-            { 
-                ltop->idef.iparams[gromacsType].morse.b0A     =
-                ltop->idef.iparams[gromacsType].morse.b0B = myval;
-            }
-                    
-            fp = fs.findParameterTypeConst(bondId, morse_name[morseDE]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].morse.cbA         =
-                mtop->ffparams.iparams[gromacsType].morse.cbB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].morse.cbA     =
-                ltop->idef.iparams[gromacsType].morse.cbB = myval;
-            }   
-
-            fp = fs.findParameterTypeConst(bondId, morse_name[morseBETA]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].morse.betaA         =
-                mtop->ffparams.iparams[gromacsType].morse.betaB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].morse.betaA     =
-                ltop->idef.iparams[gromacsType].morse.betaB = myval;
-            }
-            
-            fp = fs.findParameterTypeConst(bondId, morse_name[morseD0]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].morse.D0A         =
-                mtop->ffparams.iparams[gromacsType].morse.D0B     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].morse.D0A     =
-                        ltop->idef.iparams[gromacsType].morse.D0B = myval;
-            }
-        }
-        break;
-    case F_BONDS:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, bond_name[bondLENGTH]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.rA     =
-                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
-            }
-                        
-            fp = fs.findParameterTypeConst(bondId, bond_name[bondKB]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.krA     =
-                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
-            }
-        }
-        break;
-    case F_ANGLES:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, angle_name[angleANGLE]);
-            // GROMACS uses degrees internally, therefore no conversion
-            // myval = fp.internalValue();
-            myval = fp.value();
-            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.rA     =
-                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
-            }
-                        
-            fp = fs.findParameterTypeConst(bondId, angle_name[angleKT]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.krA     =
-                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
-            }
-        }
-        break;
-    case F_POLARIZATION:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, pol_name[polALPHA]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].polarize.alpha = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].polarize.alpha = myval;
-            }
-        }
-        break;
-    case F_UREY_BRADLEY:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, ub_name[ubANGLE]);
-            // GROMACS uses degrees internally, therefore no conversion
-            // double angle = fp.internalValue();
-            double angle = fp.value();
-            mtop->ffparams.iparams[gromacsType].u_b.thetaA         =
-                mtop->ffparams.iparams[gromacsType].u_b.thetaB     = angle;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].u_b.thetaA     =
-                ltop->idef.iparams[gromacsType].u_b.thetaB = angle;
-            }
-
-            fp = fs.findParameterTypeConst(bondId, ub_name[ubKT]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].u_b.kthetaA         =
-                mtop->ffparams.iparams[gromacsType].u_b.kthetaB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].u_b.kthetaA     =
-                ltop->idef.iparams[gromacsType].u_b.kthetaB = myval;
-            }
-
-            fp = fs.findParameterTypeConst(bondId, ub_name[ubR13]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].u_b.r13A         =
-                mtop->ffparams.iparams[gromacsType].u_b.r13B     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].u_b.r13A     =
-                ltop->idef.iparams[gromacsType].u_b.r13B = myval;
-            }                     
-                         
-            fp = fs.findParameterTypeConst(bondId, ub_name[ubKUB]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].u_b.kUBA         =
-                mtop->ffparams.iparams[gromacsType].u_b.kUBB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].u_b.kUBA     =
-                ltop->idef.iparams[gromacsType].u_b.kUBB = myval;
-            }
-        }
-        break;
-    case F_LINEAR_ANGLES:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, linang_name[linangA]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].linangle.aA         =
-                mtop->ffparams.iparams[gromacsType].linangle.aB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].linangle.aA     =
-                ltop->idef.iparams[gromacsType].linangle.aB = myval;
-            }
-            
-            fp = fs.findParameterTypeConst(bondId, linang_name[linangKLIN]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].linangle.klinA         =
-                mtop->ffparams.iparams[gromacsType].linangle.klinB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].linangle.klinA     =
-                ltop->idef.iparams[gromacsType].linangle.klinB = myval;
-            }
-
-            mtop->ffparams.iparams[gromacsType].linangle.r13A         =
-                mtop->ffparams.iparams[gromacsType].linangle.r13B     = 0;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].linangle.r13A     =
-                ltop->idef.iparams[gromacsType].linangle.r13B = myval;
-            }
-                        
-            mtop->ffparams.iparams[gromacsType].linangle.kUBA         =
-                mtop->ffparams.iparams[gromacsType].linangle.kUBB     = 0;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].linangle.kUBA     =
-                ltop->idef.iparams[gromacsType].linangle.kUBB = myval;
-            }
-        }
-        break;
-    case F_FOURDIHS:
-        {
-            auto newparam = &mtop->ffparams.iparams[gromacsType];
-            std::vector<double> parameters;
-            for(int i = 0; i < fdihNR; i++)
-            {
-                auto p = fs.findParameterTypeConst(bondId, fdih_name[i]).value();
-                parameters.push_back(p);
-            }
-            newparam->rbdihs.rbcA[0] =  parameters[0];
-            newparam->rbdihs.rbcA[1] = -parameters[1];
-            newparam->rbdihs.rbcA[2] =  parameters[2];
-            newparam->rbdihs.rbcA[3] = -parameters[3];
-            newparam->rbdihs.rbcA[4] =  0.0;
-            newparam->rbdihs.rbcA[5] =  0.0;
-            for (int k = 0; k < NR_RBDIHS; k++)
-            {
-                if (ltop)
-                {
-                    ltop->idef.iparams[gromacsType].rbdihs.rbcA[k]     =
-                    ltop->idef.iparams[gromacsType].rbdihs.rbcB[k] = newparam->rbdihs.rbcA[k];
-                }
-                newparam->rbdihs.rbcB[k] = newparam->rbdihs.rbcA[k];
-                    
-            }
-            break;
-        }
-    case F_PDIHS:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, pdih_name[pdihANGLE]);
-            // GROMACS uses degrees internally, therefore no conversion
-            // double angle = fp.internalValue();
-            myval   = fp.value();
-            mtop->ffparams.iparams[gromacsType].pdihs.phiA         =
-                mtop->ffparams.iparams[gromacsType].pdihs.phiB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].pdihs.phiA     =
-                ltop->idef.iparams[gromacsType].pdihs.phiB = myval;
-            }
-                        
-            fp    = fs.findParameterTypeConst(bondId, pdih_name[pdihKP]);
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].pdihs.cpA         =
-                mtop->ffparams.iparams[gromacsType].pdihs.cpB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].pdihs.cpA     =
-                ltop->idef.iparams[gromacsType].pdihs.cpB = myval;
-            }
-                    
-            int mult = fs.findParameterTypeConst(bondId, pdih_name[pdihMULT]).value();
-            mtop->ffparams.iparams[gromacsType].pdihs.mult = mult;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].pdihs.mult = mult;
-            }
-        }
-        break;
-    case F_IDIHS:
-        {
-            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.rB     = 0;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.rA     =
-                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
-            }
-            
-            auto fp    = fs.findParameterTypeConst(bondId, idih_name[idihKPHI]);
-            auto myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].harmonic.krA     =
-                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
-            }
-        }
-        break;
-    case F_VSITE2:
-        {
-            auto fp = fs.findParameterTypeConst(bondId, "v2_a");
-            myval = fp.internalValue();
-            mtop->ffparams.iparams[gromacsType].vsite.a         = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].vsite.a = myval;
-            }
-        }
-        break;
-    case F_LJ:
-    case F_COUL_SR:
-    case F_BHAM:
-    case F_GBHAM:
-        break;
-    default:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
-                                                        interaction_function[fs.gromacsType()].longname).c_str()));
-        break;
-    }
-}
-
-static void TopologyToMtop(Topology       *top,
-                           const ForceField  *pd,
-                           gmx_mtop_t     *mtop)
-{
-    int ffparamsSize = mtop->ffparams.numTypes();
-    auto entries = top->entries();
-    for(auto &entry : *entries)
-    {
-        std::map<Identifier, int> idToGromacsType;
-        auto &fs = pd->findForcesConst(entry.first);
-        for(auto &topentry: entry.second)
-        {
-            int gromacsType = -1;
-            // First check whether we have this gromacsType already
-            // TODO check multiple
-            auto &bondId = topentry->id();
-            GMX_RELEASE_ASSERT(!bondId.id().empty(), "Empty bondId");
-            if (idToGromacsType.end() != idToGromacsType.find(bondId))
-            {
-                gromacsType = idToGromacsType.find(bondId)->second;
-            }
-            else
-            {
-                mtop->ffparams.functype.push_back(fs.gromacsType());
-                t_iparams ip = { { 0 } };
-                mtop->ffparams.iparams.push_back(ip);
-                gromacsType = mtop->ffparams.numTypes()-1;
-                UpdateIdefEntry(fs, topentry->id(), gromacsType, mtop, nullptr);
-                
-            }
-            if (gromacsType >= ffparamsSize)
-            {
-                topentry->setGromacsType(gromacsType);
-                idToGromacsType.insert(std::pair<Identifier, int>(bondId, gromacsType));
-            }
-            else
-            {
-                GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
-            }
-            // One more consistency check
-            if (interaction_function[fs.gromacsType()].nratoms > 0 &&
-                interaction_function[fs.gromacsType()].nratoms !=
-                static_cast<int>(topentry->atomIndices().size()))
-            {
-                GMX_THROW(gmx::InternalError(
-                           gmx::formatString("Inconsistency in number of atoms. Expected %d, got %d for %s",
-                           interaction_function[fs.gromacsType()].nratoms, static_cast<int>(topentry->atomIndices().size()),
-                           interaction_function[fs.gromacsType()].name).c_str()));
-            }
-            // Now fill the gromacs structure
-            mtop->moltype[0].ilist[fs.gromacsType()].iatoms.push_back(gromacsType);
-            for (auto &i : topentry->atomIndices())
-            {
-                mtop->moltype[0].ilist[fs.gromacsType()].iatoms.push_back(i);
-            }
-        }
-    }
-}
-                 
-immStatus ACTMol::GenerateTopology(FILE              *fp,
+immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
                                    const ForceField  *pd,
-                                   missingParameters  missing,
-                                   bool               gromacsSupport)
+                                   missingParameters  missing)
 {
     immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
@@ -962,26 +375,31 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
     {
         imm = immStatus::AtomTypes;
     }
-    if (immStatus::OK == imm)
-    {
-        snew(atoms_, 1);
-        state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(pd, atoms_);
-    }
-    if (immStatus::OK == imm)
-    {
-        imm = checkAtoms(pd, atoms_);
-    }
     /* Store bonds in harmonic potential list first, update type later */
     if (immStatus::OK == imm)
     {
-        topology_ = new Topology(bondsConst());
+        topology_ = new Topology(*bonds());
+    }
+    if (immStatus::OK == imm)
+    {
+        imm = topology_->GenerateAtoms(pd, this,  &optimizedCoordinates_);
+    }
+    if (immStatus::OK == imm)
+    {
+        imm = checkAtoms(pd);
+    }
+    // Create fragments before adding shells!
+    if (immStatus::OK == imm)
+    {
+        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(),
+                                           bondsConst(), fragmentPtr(), missing);
+        // Finally, extract frequencies etc.
+        getHarmonics();
     }
     
     if (immStatus::OK == imm)
     {
-        topology_->build(pd, optimizedCoordinates_, 175.0, 5.0, missing);
-        excls_ = topology_->gromacsExclusions();
+        topology_->build(pd, &optimizedCoordinates_, 175.0, 5.0, missing);
     }
     if (immStatus::OK == imm)
     {
@@ -994,9 +412,10 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
         /* Center of charge */
         auto atntot = 0;
         rvec coc    = { 0 };
-        for (auto i = 0; i < atoms_->nr; i++)
+        auto myatoms = topology_->atoms();
+        for (size_t i = 0; i < myatoms.size(); i++)
         {
-            auto atn = atoms_->atom[i].atomnumber;
+            auto atn = myatoms[i].atomicNumber();
             atntot  += atn;
             for (auto m = 0; m < DIM; m++)
             {
@@ -1009,68 +428,13 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
         {
             qp.second.setCenterOfCharge(CenterOfCharge_);
         }
-        addBondVsites(fp, pd, atoms_);
-        if (pd->polarizable())
-        {
-            addShells(debug, pd, atoms_);
-            topology_->addShellPairs();
-            if (debug)
-            {
-                topology_->dumpPairlist(debug, InteractionType::COULOMB);
-                topology_->dumpPairlist(debug, InteractionType::VDW);
-            }
-        }
-        // Now we can add the atom structures, whether or not the FF
-        // is polarizable.
-        topology_->setAtoms(atoms_);
-        topology_->shellsToAtoms();
         realAtoms_.clear();
-        for(int i = 0; i < atoms_->nr; i++)
+        for(size_t i = 0; i < myatoms.size(); i++)
         {
-            if (atoms_->atom[i].ptype == eptAtom)
+            if (myatoms[i].pType() == eptAtom)
             {
                 realAtoms_.push_back(i);
             }
-        }
-        char **molnameptr = put_symtab(symtab_, getMolname().c_str());
-        if (gromacsSupport)
-        {
-            // Generate mtop
-            mtop_ = do_init_mtop(pd, molnameptr, atoms_,
-                                 inputrec_, symtab_, nullptr);
-        }
-        // First create the identifiers for topology entries
-        topology_->setIdentifiers(pd);
-        if (missing != missingParameters::Generate)
-        {
-            // Fill the parameters
-            topology_->fillParameters(pd);
-            if (gromacsSupport)
-            {
-                // Now generate the mtop fields
-                TopologyToMtop(topology_, pd, mtop_);
-            }
-        }
-        if (excls_ && gromacsSupport)
-        {
-            excls_to_blocka(atoms_->nr, excls_, &(mtop_->moltype[0].excls));
-        }
-        
-        if (pd->polarizable() && gromacsSupport)
-        {
-            // Update mtop internals to account for shell type
-            srenew(mtop_->atomtypes.atomnumber,
-                   get_atomtype_ntypes(gromppAtomtype_));
-            for (auto i = 0; i < get_atomtype_ntypes(gromppAtomtype_); i++)
-            {
-                mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, gromppAtomtype_);
-            }
-            mtop_->ffparams.atnr = get_atomtype_ntypes(gromppAtomtype_);
-        }
-        if (nullptr == ltop_ && gromacsSupport)
-        {
-            // Generate ltop from mtop
-            ltop_ = gmx_mtop_generate_local_top(mtop_, false);
         }
     }
     if (immStatus::OK == imm && missing != missingParameters::Generate)
@@ -1080,16 +444,10 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
         {
             itUpdate.push_back(entry.first);
         }
-        UpdateIdef(pd, itUpdate, true);
-    }
-    if (immStatus::OK == imm && pd->polarizable() && gromacsSupport)
-    {
-        // Generate shell data structure
-        shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
     if (immStatus::OK == imm)
     {
-        imm = checkAtoms(pd, atoms_);
+        imm = checkAtoms(pd);
     }
     if (immStatus::OK != imm && debug)
     {
@@ -1098,92 +456,7 @@ immStatus ACTMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    if (immStatus::OK == imm)
-    {
-        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, 
-                                           topology_->residueNames(), 
-                                           topology_->atoms(), bondsConst(), 
-                                           fragmentPtr(), shellRenumber_, missing);
-        // Finally, extract frequencies etc.
-        getHarmonics();
-    }
     return imm;
-}
-
-void ACTMol::addBondVsites(FILE             *fp,
-                           const ForceField *pd,
-                           t_atoms          *atoms)
-{
-    if (!topology_->hasEntry(InteractionType::BONDS))
-    {
-        return;
-    }
-    auto bonds = topology_->entry(InteractionType::BONDS);
-
-    int     atomNrOld = atoms->nr;
-    // First add virtual sites for bond shells if needed.
-    auto   &vs2       = pd->findForcesConst(InteractionType::VSITE2);
-    auto   &qt        = pd->findForcesConst(InteractionType::COULOMB);
-    // TODO: add a flag to turn that on or off?
-    t_atom  vsite_atom = { 0 };
-    t_param nb         = { { 0 } };
-    std::vector<TopologyEntry *> vsites;
-    for (auto &b: bonds)
-    {
-        int ai = b->atomIndex(0);
-        int aj = b->atomIndex(1);
-        std::string aTypei(*atoms->atomtype[ai]);
-        std::string aTypej(*atoms->atomtype[aj]);
-        Identifier  bsId({ aTypei, aTypej }, b->bondOrders(), CanSwap::No);
-        // Check whether a vsite is defined for this bond
-        std::string v2("v2");
-        if (vs2.parameterExists(bsId) && pd->hasParticleType(v2))
-        {
-            // Yes! We need to add a virtual site
-            auto vsite = new TopologyEntry();
-            vsite->addAtom(atoms->nr);
-            vsite->addAtom(ai);
-            vsite->addAtom(aj);
-            vsite->addBondOrder(0.0);
-            vsite->addBondOrder(0.0);
-            vsites.push_back(vsite);
-             // Now add the particle
-            add_t_atoms(atoms, 1, 0);
-            // Add exclusion for the vsite and its constituting atoms
-            srenew(excls_, atoms->nr);
-            excls_[atoms->nr-1].nr = 2;
-            snew(excls_[atoms->nr-1].e, 2);
-            excls_[atoms->nr-1].e[0] = ai;
-            excls_[atoms->nr-1].e[1] = aj;
-        
-            auto ptype     = pd->findParticleType(v2);
-            auto m         = ptype->paramValue("mass");
-            auto q         = ptype->paramValue("charge");
-            auto vsid      = ptype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-            auto vstype    = pd->findParticleType(vsid.id());
-            auto vszetaid  = vstype->interactionTypeToIdentifier(InteractionType::COULOMB);
-            auto vseep     = qt.findParametersConst(vszetaid);
-            // Now fill the newatom
-            auto zeta      = vseep["zeta"].value();
-            auto vsgpp     = add_atomtype(gromppAtomtype_, symtab_, &vsite_atom,
-                                          ptype->id().id().c_str(), &nb, 0, 0);
-            fill_atom(&atoms->atom[atoms->nr-1],
-                      m, q, m, q,
-                      ptype->atomnumber(),
-                      vsgpp, eptVSite,
-                      zeta, zeta, ptype->row(), 
-                      atoms->atom[ai].resind);
-            atoms->atomname[atoms->nr-1]  = put_symtab(symtab_, v2.c_str());
-            atoms->atomtype[atoms->nr-1]  = put_symtab(symtab_, v2.c_str());
-            atoms->atomtypeB[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
-        }
-    }
-    topology_->addEntry(InteractionType::VSITE2, vsites);
-    if (atoms->nr > atomNrOld && fp)
-    {
-        fprintf(fp, "Added %d bond vsite(s) for %s\n",
-                atoms->nr - atomNrOld, getMolname().c_str());
-    }
 }
 
 bool ACTMol::linearMolecule() const
@@ -1217,297 +490,9 @@ bool ACTMol::linearMolecule() const
     return linear;
 }
 
-void ACTMol::addShells(FILE             *fp,
-                       const ForceField *pd,
-                       t_atoms          *atoms)
-{
-    int                    shell  = 0;
-    int                    nshell = 0;
-    std::map<int, int>     inv_renum;
-    std::vector<std::string> newname;
-    t_atoms               *newatoms;
-    t_excls               *newexcls;
-    std::vector<gmx::RVec> newx;
-    t_param                p = { { 0 } };
-    std::vector<TopologyEntry *> pols;
-    
-    /* Calculate the total number of Atom and Vsite particles and
-     * generate the renumbering array.
-     */
-    shellRenumber_.resize(atoms->nr, 0);
-    for (int i = 0; i < atoms->nr; i++)
-    {
-        auto atype                  = pd->findParticleType(*atoms->atomtype[i]);
-        shellRenumber_[i]           = i + nshell;
-        originalAtomIndex_.insert(std::pair<int, int>(shellRenumber_[i], i));
-        if (atype->hasInteractionType(InteractionType::POLARIZATION))
-        {
-            // TODO: Update if particles can have more than one shell
-            nshell++;
-        }
-    }
-    if (fp)
-    {
-        fprintf(fp, "Found %d shells to be added\n", nshell);
-    }
-    int nParticles = atoms->nr+nshell;
-    state_change_natoms(state_, nParticles);
-    
-    /* Add Polarization to the plist. */
-    auto &qt  = pd->findForcesConst(InteractionType::COULOMB);
-    auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
-    
-    // Atoms first
-    for (int i = 0; i < atoms->nr; i++)
-    {
-        std::string atomtype(*atoms->atomtype[i]);
-        if (atoms->atom[i].ptype == eptAtom ||
-            atoms->atom[i].ptype == eptVSite)
-        {
-            if (pd->hasParticleType(atomtype))
-            {
-                // TODO: Allow adding multiple shells
-                auto fa = pd->findParticleType(atomtype);
-                if (fa->hasInteractionType(InteractionType::POLARIZATION))
-                {
-                    auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-                    auto param = fs.findParameterTypeConst(ptype, "alpha");
-                    auto pol   = convertToGromacs(param.value(), param.unit());
-                    if (pol <= 0)
-                    {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
-                    }
-                    // TODO Multiple shell support
-                    if (bHaveVSites_)
-                    {
-                        auto vsite = pd->findVsite(atomtype);
-                        if (vsite != pd->getVsiteEnd())
-                        {
-                            pol /= vsite->nvsite();
-                        }
-                    }
-                    auto pp = new TopologyEntry();
-                    pp->addAtom(shellRenumber_[i]);
-                    pp->addAtom(shellRenumber_[i]+1);
-                    pp->addBondOrder(1.0);
-                    pols.push_back(pp);
-                }
-            }
-            else
-            {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in forcefield\n", 
-                                                            atomtype.c_str()));
-            }
-        }
-    }
-    /* Make new atoms and x arrays. */
-    snew(newatoms, 1);
-    init_t_atoms(newatoms, nParticles, false);
-    snew(newatoms->atomtype, nParticles);
-    snew(newatoms->atomtypeB, nParticles);
-    snew(newatoms->atomname, nParticles);
-    newatoms->nres = atoms->nres;
-    newx.resize(newatoms->nr);
-    newname.resize(newatoms->nr);
-
-    /* Make a new exclusion array and put the shells in it. */
-    snew(newexcls, newatoms->nr);
-    /* Add exclusion for F_POLARIZATION. */
-
-    /* Copy the old atoms to the new structures. */
-    for (int i = 0; i < atoms->nr; i++)
-    {
-        newatoms->atom[shellRenumber_[i]]      = atoms->atom[i];
-        newatoms->atomname[shellRenumber_[i]]  = put_symtab(symtab_, *atoms->atomname[i]);
-        newatoms->atomtype[shellRenumber_[i]]  = put_symtab(symtab_, *atoms->atomtype[i]);
-        newatoms->atomtypeB[shellRenumber_[i]] = put_symtab(symtab_, *atoms->atomtypeB[i]);
-        copy_rvec(optimizedCoordinates_[i], newx[shellRenumber_[i]]);
-        newname[shellRenumber_[i]].assign(*atoms->atomtype[i]);
-        int resind = atoms->atom[i].resind;
-        t_atoms_set_resinfo(newatoms, shellRenumber_[i], symtab_,
-                            *atoms->resinfo[resind].name,
-                            atoms->resinfo[resind].nr,
-                            atoms->resinfo[resind].ic, 
-                            atoms->resinfo[resind].chainnum, 
-                            atoms->resinfo[resind].chainid);
-    }
-    t_atom shell_atom = { 0 };
-    for (int i = 0; i < atoms->nr; i++)
-    {
-        if (atoms->atom[i].ptype == eptAtom ||
-            atoms->atom[i].ptype == eptVSite)
-        {
-            std::string atomtype;
-            // Shell sits next to the Atom or Vsite
-            // TODO make this more precise.
-            auto j            = 1+shellRenumber_[i];
-            // Add an exclusion for the shell
-            snew(newexcls[shellRenumber_[i]].e, 1);
-            newexcls[shellRenumber_[i]].e[0] = j;
-            newexcls[shellRenumber_[i]].nr = 1;
-            auto atomtypeName = get_atomtype_name(atoms->atom[i].type, gromppAtomtype_);
-            auto fa           = pd->findParticleType(atomtypeName);
-            auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-            if (shellid.id().empty())
-            {
-                // This particle has no shell.
-                continue;
-            }
-            auto shelltype    = pd->findParticleType(shellid.id());
-            auto shellzetaid  = shelltype->interactionTypeToIdentifier(InteractionType::COULOMB);
-            auto shelleep     = qt.findParametersConst(shellzetaid);
-            // Now fill the newatom
-            newatoms->atom[j]               = atoms->atom[i];
-            newatoms->atom[j].m             =
-                newatoms->atom[j].mB            = shelltype->mass();
-            // Shell has no core
-            newatoms->atom[j].atomnumber    = 0;
-            shell                           = add_atomtype(gromppAtomtype_, symtab_, &shell_atom, shellid.id().c_str(), &p, 0, 1);
-            newatoms->atom[j].type          = shell;
-            newatoms->atom[j].typeB         = shell;
-            newatoms->atomtype[j]           = put_symtab(symtab_, shellid.id().c_str());
-            newatoms->atomtypeB[j]          = put_symtab(symtab_, shellid.id().c_str());
-            newatoms->atomname[j]           = put_symtab(symtab_, atomtypeName);
-            newatoms->atom[j].ptype         = eptShell;
-            newatoms->atom[j].zetaA         = shelleep["zeta"].value();
-            newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
-            newatoms->atom[j].row           = shelltype->row();
-            newatoms->atom[j].resind        = atoms->atom[i].resind;
-            copy_rvec(optimizedCoordinates_[i], newx[j]);
-
-            newatoms->atom[j].q      =
-                newatoms->atom[j].qB = shelltype->charge();
-            if (bHaveVSites_)
-            {
-                if (atoms->atom[i].ptype == eptVSite)
-                {
-                    vsiteType_to_atomType(atomtypeName, &atomtype);
-                }
-                auto vsite = pd->findVsite(atomtype);
-                if (vsite != pd->getVsiteEnd())
-                {
-                    newatoms->atom[j].q /= vsite->nvsite();
-                    newatoms->atom[j].qB = newatoms->atom[j].q;
-                }
-            }
-        }
-    }
-    /* Copy newatoms to atoms */
-    copy_atoms(newatoms, atoms);
-
-    for (int i = 0; i < newatoms->nr; i++)
-    {
-        copy_rvec(newx[i], state_->x[i]);
-        atoms->atomtype[i] = 
-            atoms->atomtypeB[i] = put_symtab(symtab_, *newatoms->atomtype[i]);
-    }
-    optimizedCoordinates_ = newx;
-
-    /* Copy exclusions, empty the original first */
-    sfree(excls_);
-    excls_ = newexcls;
-    topology_->renumberAtoms(shellRenumber_);
-    topology_->addEntry(InteractionType::POLARIZATION, pols);
-    bHaveShells_ = true;
-}
-
 double ACTMol::bondOrder(int ai, int aj) const
 {
-    return topology_->findBond(ai, aj)->bondOrder();
-}
-
-immStatus ACTMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
-                                 const CommunicationRecord *cr,
-                                 const char                *tabfn,
-                                 ChargeType                 ieqt)
-{
-    if (gromacsGenerated_)
-    {
-        return immStatus::OK;
-    }
-    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-
-    if (!fr_)
-    {
-        fr_ = mk_forcerec();
-    }
-    if (tabfn)
-    {
-        inputrec_->coulombtype = eelUSER;
-    }
-    mdModules_ = new std::unique_ptr<gmx::MDModules>(new gmx::MDModules());
-    mdModules_->get()->assignOptionsToModules(*(inputrec_->params), nullptr);
-    fr_->forceProviders = mdModules_->get()->initForceProviders();
-    // Tell gromacs to use the generic kernel only.
-    gmx_nonbonded_setup(fr_, true);
-
-    gmx::ArrayRef<const std::string>  tabbfnm;
-    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr->commrec(),
-                  state_->box, tabfn, tabfn, tabbfnm, false, true, -1);
-    gmx_omp_nthreads_set(emntBonded, 1);
-    init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
-    setup_bonded_threading(fr_->bondedThreading, mtop_->natoms, false, ltop_->idef);
-    wcycle_    = wallcycle_init(debug, 0, cr->commrec());
-
-    MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
-    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_);
-    atoms2md(mtop_, inputrec_, -1, nullptr, mtop_->natoms, MDatoms_->get());
-    auto mdatoms = MDatoms_->get()->mdatoms();
-
-    if (nullptr != shellfc_)
-    {
-        make_local_shells(mdatoms, shellfc_);
-    }
-    if (ChargeType::Slater != ieqt)
-    {
-        for (auto i = 0; i < mtop_->natoms; i++)
-        {
-            mdatoms->row[i] = 0;
-        }
-    }
-    gromacsGenerated_ = true;
-    return immStatus::OK;
-}
-
-void ACTMol::updateMDAtoms()
-{
-    auto mdatoms = MDatoms_->get()->mdatoms();
-    auto myatoms = topology_->atoms();
-    for (auto i = 0; i < atoms_->nr; i++)
-    {
-        mdatoms->chargeA[i] = myatoms[i].charge();
-        mdatoms->typeA[i]   = atoms_->atom[i].type;
-        mdatoms->zetaA[i]   = atoms_->atom[i].zetaA;
-        if (mdatoms->zetaB)
-        {
-            mdatoms->zetaB[i]   = atoms_->atom[i].zetaB;
-        }
-        if (nullptr != debug)
-        {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
-        }
-    }
-}
-
-static void reset_f_e(int                      natoms, 
-                      PaddedVector<gmx::RVec> *f_,
-                      gmx_enerdata_t          *enerd_)
-{
-    for (int i = 0; i < natoms; i++)
-    {
-        clear_rvec((*f_)[i]);
-    }
-    for (int i = 0; i < F_NRE; i++)
-    {
-        enerd_->term[i] = 0;
-    }
-    for (int i = 0; i < enerd_->grpp.nener; i++)
-    {
-        for (int j = 0; j < egNR; j++)
-        {
-            enerd_->grpp.ener[j][i] = 0;
-        }
-    }
+    return topology_->findBond(ai, aj).bondOrder();
 }
 
 void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
@@ -1525,12 +510,16 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     // First, compute the total energy
     gmx::RVec fzero = { 0, 0, 0 };
     interactionForces->resize(coords->size(), fzero);
-    (void) forceComputer->compute(pd, topology_, coords, interactionForces, einter);
+    double edimer = forceComputer->compute(pd, topology_, coords, interactionForces, einter);
+    if (debug)
+    {
+        fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
+    }
     // Now compute interaction energies if there are fragments
     auto   &astart = fraghandler_->atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
-        int natom = tops[ff].atoms().size();
+        int natom = tops[ff]->atoms().size();
         std::vector<gmx::RVec> forces(natom, fzero);
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
@@ -1540,7 +529,11 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             j++;
         }
         std::map<InteractionType, double> energies;
-        (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
+        edimer -= forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
+        if (debug)
+        {
+            fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
+        }
         for(const auto &ee : energies)
         {
             auto eptr = einter->find(ee.first);
@@ -1568,123 +561,10 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                     einter->find(InteractionType::EPOT)->second);
         }
     }
-}
-
-immStatus ACTMol::calculateEnergyOld(const t_commrec                   *crtmp,
-                                    std::vector<gmx::RVec>            *coordinates,
-                                    PaddedVector<gmx::RVec>           *forces,
-                                    std::map<InteractionType, double> *energies,
-                                    real                              *shellForceRMS)
-{
-    auto          imm         = immStatus::OK;
-    unsigned long force_flags = ~0;
-    double        t           = 0;
-    rvec          mu_tot      = { 0, 0, 0 };
-    tensor        force_vir   = { { 0 } };
-    auto          mdatoms     = MDatoms_->get()->mdatoms();
-    updateMDAtoms();
-
-    for(size_t i = 0; i < coordinates->size(); i++)
+    if (debug)
     {
-        copy_rvec((*coordinates)[i], state_->x[i]);
+        fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
     }
-    // (Re)create v-sites if needed
-    if (!vsite_)
-    {
-        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-        *vsite_ = initVsite(*mtop_, crtmp);
-    }
-    constructVsitesGlobal(*mtop_, state_->x);
-    
-    // Set force and energy to zero
-    reset_f_e(mtop_->natoms, forces, enerd_);
-    
-    if (nullptr != shellfc_)
-    {
-        if (debug)
-        {
-            fprintf(debug, "mol %s alpha %g\n",
-                    getMolname().c_str(),
-                    mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
-        }
-        try
-        {
-            *shellForceRMS = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
-                                                 0, inputrec_,
-                                                 true, force_flags, ltop_,
-                                                 enerd_, fcd_, state_,
-                                                 forces->arrayRefWithPadding(), force_vir, mdatoms,
-                                                 &nrnb_, wcycle_, nullptr,
-                                                 &(mtop_->groups), shellfc_,
-                                                 fr_, t, mu_tot, vsite_->get());
-        }
-        catch (gmx::SimulationInstabilityError &ex)
-        {
-            fprintf(stderr, "Something wrong minimizing shells for %s. Error code %d\n",
-                    getMolname().c_str(), ex.errorCode());
-            imm = immStatus::ShellMinimization;
-        }
-        if (*shellForceRMS > inputrec_->em_tol && debug)
-        {
-            for (int i = 0;  i<F_NRE; i++)
-            {
-                auto ei = enerd_->term[i];
-                if (ei != 0)
-                {
-                    fprintf(debug, "E[%s] = %g\n", interaction_function[i].name,
-                                ei);
-                }
-            }
-            fprintf(debug, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
-                    inputrec_->niter, getMolname().c_str(),
-                    *shellForceRMS);
-            pr_rvecs(debug, 0, "f", forces->rvec_array(), mtop_->natoms);
-            imm = immStatus::ShellMinimization;
-        }
-    }
-    else
-    {
-        do_force(debug, crtmp, nullptr, inputrec_, 0,
-                 &nrnb_, wcycle_, ltop_,
-                 &(mtop_->groups),
-                 state_->box, state_->x.arrayRefWithPadding(), nullptr,
-                 forces->arrayRefWithPadding(), force_vir, mdatoms,
-                 enerd_, fcd_,
-                 state_->lambda, nullptr,
-                 fr_, vsite_->get(), mu_tot, t,
-                 force_flags);
-        *shellForceRMS = 0;
-    }
-    std::map<int, InteractionType> ifmap = {
-    { F_BONDS,         InteractionType::BONDS              },
-    { F_MORSE,         InteractionType::BONDS              },
-    { F_ANGLES,        InteractionType::ANGLES             },
-    { F_LINEAR_ANGLES, InteractionType::LINEAR_ANGLES      },
-    { F_LJ,            InteractionType::VDW                },
-    { F_BHAM,          InteractionType::VDW                },
-    { F_COUL_SR,       InteractionType::COULOMB            },
-    { F_POLARIZATION,  InteractionType::POLARIZATION       },
-    { F_IDIHS,         InteractionType::IMPROPER_DIHEDRALS },
-    { F_PDIHS,         InteractionType::PROPER_DIHEDRALS   },
-    { F_FOURDIHS,      InteractionType::PROPER_DIHEDRALS   },
-    { F_UREY_BRADLEY,  InteractionType::ANGLES             },
-    { F_EPOT,          InteractionType::EPOT               }
-    };
-
-    for(const auto &ifm : ifmap)
-    {
-        if (enerd_->term[ifm.first] != 0)
-        {
-            energies->insert({ifm.second, enerd_->term[ifm.first]});
-        }
-    }
-    auto xOri = xOriginal();
-    for(size_t i = 0; i < coordinates->size(); i++)
-    {
-        copy_rvec(xOri[i], state_->x[i]);
-    }
-
-    return imm;
 }
 
 void ACTMol::symmetrizeCharges(const ForceField  *pd,
@@ -1768,8 +648,6 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
 
 immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                                   const ForceComputer       *forceComp,
-                                  const gmx::MDLogger       &mdlog,
-                                  const CommunicationRecord *cr,
                                   ChargeGenerationAlgorithm  algorithm,
                                   qType                      qtype,
                                   const std::vector<double> &qcustom,
@@ -1778,13 +656,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
-    auto      &qt         = pd->findForcesConst(InteractionType::COULOMB);
-    auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
-    if (nullptr != mtop_)
-    {
-        GenerateGromacs(mdlog, cr, nullptr, iChargeType);
-    }
     // TODO check whether this needed
     std::map<InteractionType, double> energies;
     auto myatoms = atoms();
@@ -1977,10 +849,6 @@ void ACTMol::CalcPolarizability(const ForceField    *pd,
 {
     auto natoms = atomsConst().size();
     std::vector<gmx::RVec> coordinates(natoms);
-    for(size_t i = 0; i < natoms; i++)
-    {
-        copy_rvec(state_->x[i], coordinates[i]);
-    }
     forceComp->calcPolarizability(pd, topology_, &coordinates,
                                   qTypeProps(qType::Calc));
 }
@@ -1996,36 +864,36 @@ void ACTMol::PrintConformation(const char                   *fn,
             getMolname().c_str());
     int        model_nr      = 1;
     char       chain         = ' ';
-    gmx_bool   bTerSepChains = FALSE;
     gmx_conect conect        = gmx_conect_init();
     auto       itype         = InteractionType::BONDS;
     auto       top           = topology();
     if (top->hasEntry(itype))
     {
-        auto bonds = top->entry(itype);
+        auto &bonds = top->entry(itype);
         for(const auto &b: bonds)
         {
-            auto bb = static_cast<Bond *>(b);
-            gmx_conect_add(conect, bb->aI(), bb->aJ());
+            gmx_conect_add(conect, b->atomIndex(0), b->atomIndex(1));
         }
     }
     auto       epbc          = epbcNONE;
-    if (det(state_->box) > 0)
+    if (det(box_) > 0)
     {
         epbc = epbcXYZ;
     }
     FILE *fp = gmx_ffopen(fn, "w");
     if (writeShells)
     {
-        write_pdbfile(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
-                      epbc, box, chain, model_nr, conect, bTerSepChains);
+        pdbWriter(fp, title, topology_->atoms(), 
+                  coords, topology_->residueNames(),
+                  epbc, box, chain, model_nr, {},
+                  conect);
     }
     else
     {
-        bool usePqrFormat = false;
-        write_pdbfile_indexed(fp, title, gmxAtoms(), as_rvec_array(coords.data()),
-                              epbc, box, chain, model_nr, realAtoms_.size(),
-                              realAtoms_.data(), conect, bTerSepChains, usePqrFormat, true);
+        pdbWriter(fp, title, topology_->atoms(),
+                  coords, topology_->residueNames(),
+                  epbc, box, chain, model_nr, realAtoms_,
+                  conect, true);
     }
     gmx_ffclose(fp);
     gmx_conect_done(conect);
@@ -2167,8 +1035,8 @@ void ACTMol::PrintTopology(const char                   *fn,
 
     // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
-    write_top(fp, printmol.name, gmxAtoms(),
-              topology_, excls_, gromppAtomtype_, pd);
+    write_top(fp, printmol.name, nullptr,
+              topology_, nullptr, nullptr, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, pd->filename().c_str(),
@@ -2371,11 +1239,6 @@ void ACTMol::getHarmonics()
     }
 }
 
-const real *ACTMol::energyTerms() const
-{
-    return enerd_->term;
-}
-        
 immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              double                                      T)
 {
@@ -2487,60 +1350,6 @@ immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         imm = immStatus::NoData;
     }
     return imm;
-}
-
-void ACTMol::UpdateIdef(const ForceField                   *pd,
-                        const std::vector<InteractionType> &iTypes,
-                        bool                                updateZeta)
-{
-    topology_->fillParameters(pd);
-    // TODO Check whether this is sufficient for updating the particleTypes
-    if (updateZeta)
-    {
-        // Update the electronegativity parameters
-        zetaToAtoms(pd, gmxAtoms());
-    }
-    if (mtop_ == nullptr)
-    {
-        return;
-    }
-    for(const auto &iType : iTypes)
-    {
-        if (debug)
-        {
-            fprintf(debug, "UpdateIdef for %s\n", interactionTypeToString(iType).c_str());
-        }
-        // The rest may not be needed anymore!
-        
-        if (iType == InteractionType::VDW)
-        {
-            nonbondedFromPdToMtop(mtop_, pd, fr_);
-            if (debug)
-            {
-                pr_ffparams(debug, 0, "UpdateIdef Before", &mtop_->ffparams, false);
-            }
-        }
-        else
-        {
-            // Update other iTypes
-            if (topology_->hasEntry(iType))
-            {
-                auto &fs   = pd->findForcesConst(iType);
-                auto entry = topology_->entry(iType);
-                for (size_t i = 0; i < entry.size(); i++)
-                {
-                    // TODO check multiple
-                    auto &bondId = entry[i]->id();
-                    auto  gromacsType     = entry[i]->gromacsType();
-                    if (gromacsType < 0 || gromacsType >= mtop_->ffparams.numTypes())
-                    {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
-                    }
-                    UpdateIdefEntry(fs, bondId, gromacsType, mtop_, ltop_);
-                }
-            }            
-        }
-    }
 }
 
 void ACTMol::initQgenResp(const ForceField             *pd,

@@ -29,141 +29,52 @@
 
 #include <vector>
 
+#include "act/alexandria/topology.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 #include "act/utility/stringutil.h"
-#include "gromacs/topology/atoms.h"
 
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const ForceField               *pd,
-                                 const std::vector<gmx::RVec>   &coordinates,
-                                 const std::vector<std::string> &residueNames,
-                                 const std::vector<ActAtom>     &atoms,
-                                 const std::vector<Bond>        &bonds,
-                                 const std::vector<Fragment>    *fragments,
-                                 const std::vector<int>         &shellRenumber,
-                                 missingParameters               missing)
+FragmentHandler::FragmentHandler(const ForceField             *pd,
+                                 const std::vector<gmx::RVec> &coordinates,
+                                 const std::vector<ActAtom>   &atoms,
+                                 const std::vector<Bond>      &bonds,
+                                 const std::vector<Fragment>  *fragments,
+                                 missingParameters             missing)
 
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
-    if (fragments->size() != residueNames.size())
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Number of fragments (%zu) should match number of residue names (%zu)", fragments->size(), residueNames.size()).c_str()));
-    }
-    topologies_.resize(fragments->size());
 
     bonds_.resize(fragments->size());
-    natoms_           = 0;
-    size_t  ff        = 0;
+    std::vector<bool> atomFound(coordinates.size(), false);
+    // Total number of atoms
+    natoms_ = 0;
+    size_t  ff = 0;
+    // Copy the coordinates
+    std::vector<gmx::RVec> x = coordinates;
     for(auto f = fragments->begin(); f < fragments->end(); ++f)
     {
-        int minatom = atoms.size();
-        for(auto &i : f->atoms())
-        {
-            minatom = std::min(minatom, i);
-        }
-        atomStart_.push_back(minatom);
-        qtotal_.push_back(f->charge());
-    }
-    std::vector<bool> atomFound(atoms.size(), false);
-    for(auto f = fragments->begin(); f < fragments->end(); ++f)
-    {
+        // First reality check
         if (f->atoms().size() == 0)
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("No atoms in fragment %zu with formula %s", ff, f->formula().c_str()).c_str()));
         }
-        // ID
-        ids_.push_back(f->id());
-        // If polarizable we will need to add these
-        std::vector<TopologyEntry *> pols;
-        int offset     = atomStart_[ff];
-        int pol_offset = offset;
-        if (!shellRenumber.empty())
+        // Determine start of each molecule
+        int offset = x.size()+1;
+        for(auto &i : f->atoms())
         {
-            pol_offset = shellRenumber[offset];
-            atomStart_[ff] = pol_offset;
+            offset = std::min(offset, i);
+            if (atomFound[i])
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str()).c_str()));
+            }
+            atomFound[i] = true;
         }
-        // Count the number of atoms
-        std::vector<int> toAdd;
-        for(auto &a : f->atoms())
-        {
-            size_t anew = a;
-            // Check whether this atom is present already
-            if (anew >= atoms.size()) 
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom number %zu in fragment %zu too large (max %zu)",
-                                                                   anew, fragments->size(), atoms.size()).c_str()));
-            }
-            else if (atomFound[anew])
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom %zu occurs more than once in fragment description", anew).c_str()));
-            }
-            else
-            {
-                atomFound[anew] = true;
-            }
-            if (!shellRenumber.empty())
-            {
-                GMX_RELEASE_ASSERT(anew < shellRenumber.size(), "Atom number out of range");
-                anew   = shellRenumber[anew];
-            }
-            
-            // We add the new atom index, but relative to the first atom
-            // in the compound.
-            toAdd.push_back(anew-pol_offset);
-            if (pd->polarizable())
-            {
-                auto fa = pd->findParticleType(atoms[anew].ffType());
-                if (fa->hasInteractionType(InteractionType::POLARIZATION))
-                {
-                    for(const auto &ss : atoms[anew].shells())
-                    {
-                        toAdd.push_back(ss-pol_offset);
-                        auto pp = new TopologyEntry();
-                        pp->addAtom(anew-pol_offset);
-                        pp->addAtom(ss-pol_offset);
-                        pp->addBondOrder(1.0);
-                        pols.push_back(pp);
-                    }
-                }
-            }
-        }
-        if (pd->polarizable())
-        {
-            topologies_[ff].addEntry(InteractionType::POLARIZATION, pols);
-        }
-
-        int j = 0;
-        for(auto &i : toAdd)
-        {
-            auto fa      = pd->findParticleType(atoms[i+pol_offset].ffType());
-            int  anumber = my_atoi(fa->optionValue("atomnumber").c_str(), "atomic number");
-            ActAtom newat(atoms[i+pol_offset].name(),
-                          fa->optionValue("element"),
-                          atoms[i+pol_offset].ffType(),
-                          atoms[i+pol_offset].pType(),
-                          anumber,
-                          atoms[i+pol_offset].mass(),
-                          atoms[i+pol_offset].charge());
-            size_t resnr = atoms[i+pol_offset].residueNumber();
-            if (resnr >= residueNames.size())
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("resnr = %zu, should be < %zu", resnr, residueNames.size()).c_str()));
-            }
-            newat.setResidueNumber(resnr);
-            topologies_[ff].addResidue(resnr, residueNames[resnr]);
-            topologies_[ff].addAtom(newat);
-            j++;
-        }
-        // Make sure the residue names and numbers are consistent
-        std::vector<Fragment> copyFragment;
-        copyFragment.push_back((*fragments)[ff]);
-        topologies_[ff].shellsToAtoms();
-        QgenAcm_.push_back(QgenAcm(pd, topologies_[ff].atoms(), f->charge()));
+        // Split bonds
         for(const auto &b : bonds)
         {
             int ai = b.aI();
@@ -178,52 +89,48 @@ FragmentHandler::FragmentHandler(const ForceField               *pd,
                 // the ACM code will do it.
                 Bond bb(ai - offset, aj - offset, b.bondOrder());
                 bonds_[ff].push_back(bb);
-                if (shellRenumber.empty())
-                {
-                    topologies_[ff].addBond(bb);
-                }
-                else
-                {
-                    // For the internal topologies however, the atoms are renumbered
-                    // already if there are shell, and the bonds should be too.
-                    ai = shellRenumber[ai] - pol_offset;
-                    aj = shellRenumber[aj] - pol_offset;
-                
-                    Bond bb2(ai, aj, b.bondOrder());
-                    topologies_[ff].addBond(bb2);
-                }
             }
         }
-        natoms_ += toAdd.size();
-        ff      += 1;
+        // Create new topology
+        auto top = new Topology(bonds_[ff]);
+
+        // Split coordinate array
+        size_t natom = f->atoms().size();
+        std::vector<gmx::RVec> xfrag(natom);
+        // Copy the atoms from the global topology and make new coordinate array
+        int j = 0;
+        for(size_t i = offset; i < offset+natom; i++)
+        {
+            top->addAtom(atoms[i]);
+            copy_rvec(x[i], xfrag[j++]);
+        }
+        // Now build the rest of the topology
+        top->build(pd, &xfrag, 175.0, 5.0, missing);
+        // Array of total charges
+        qtotal_.push_back(f->charge());
+        // ID
+        ids_.push_back(f->id());
+        // Structure for charge generation
+        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), f->charge()));
+        // Total number of atoms
+        natoms_ += top->atoms().size();
+        // Extend topologies_ array
+        topologies_.push_back(top);
+        // Increase counter
+        ff += 1;
     }
+    // Finaly determine molecule boundaries
+    atomStart_.resize(fragments->size(), 0);
     for(size_t ff = 0; ff < topologies_.size(); ff++)
     {
-        int natom = topologies_[ff].atoms().size();
-        std::vector<gmx::RVec> myx(natom);
-        int j = 0;
-        for (size_t i = atomStart_[ff]; i < atomStart_[ff]+natom; i++)
+        if (0 == ff)
         {
-            copy_rvec(coordinates[i], myx[j++]);
+            atomStart_[ff] = 0;
         }
-
-        topologies_[ff].build(pd, myx, 175.0, 5.0, missingParameters::Error);
-        topologies_[ff].fixShellExclusions();
-        topologies_[ff].setIdentifiers(pd);
-        if (missing != missingParameters::Generate)
+        else
         {
-            topologies_[ff].fillParameters(pd);
+            atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
         }
-        if (debug)
-        {
-            topologies_[ff].dumpPairlist(debug, InteractionType::COULOMB);
-            topologies_[ff].dumpPairlist(debug, InteractionType::VDW);
-        }
-    }
-    if (debug)
-    {
-        fprintf(debug, "FragmentHandler: atoms.size() %lu natoms %zu nbonds %zu nfragments %zu\n",
-                atoms.size(), natoms_, bonds.size(), topologies_.size());
     }
 }
 
@@ -232,17 +139,27 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        for (size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+        for (size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
         {
             // TODO: Check whether this works for polarizable models
             switch (algorithm_)
             {
             case ChargeGenerationAlgorithm::EEM:
             case ChargeGenerationAlgorithm::SQE:
-                (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
+                {
+                    size_t index = atomStart_[ff] + a;
+                    GMX_RELEASE_ASSERT(index < natoms_, 
+                                       gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
+                    (*qq)[index] = QgenAcm_[ff].getQ(a);
+                    if (debug)
+                    {
+                        fprintf(debug, "Charge %ld = %g\n", index,
+                                (*qq)[index]);
+                    }
+                }
                 break;
             case ChargeGenerationAlgorithm::Read:
-                (*qq)[atomStart_[ff] + a] = topologies_[ff].atoms()[a].charge();
+                (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
                 break;
             default:
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
@@ -269,22 +186,22 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
             {
                 // TODO only copy the coordinates if there is more than one fragment.
                 std::vector<gmx::RVec> xx;
-                xx.resize(topologies_[ff].atoms().size());
-                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                xx.resize(topologies_[ff]->atoms().size());
+                for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
                     copy_rvec(x[atomStart_[ff]+a], xx[a]);
                 }
                 QgenAcm_[ff].setQtotal(qtotal_[ff]);
                 eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
-                                                     topologies_[ff].atomsPtr(),
+                                                     topologies_[ff]->atomsPtr(),
                                                      xx, bonds_[ff]);
                 if (eQgen::OK != eqgen)
                 {
                     break;
                 }
-                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
-                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
+                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff]->atoms()[a].charge());
                 }
             }
         }
@@ -302,7 +219,7 @@ void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
 {
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        auto aptr = topologies_[ff].atomsPtr();
+        auto aptr = topologies_[ff]->atomsPtr();
         for(size_t a = 0; a < aptr->size(); a++)
         {
             (*aptr)[a].setCharge(atoms[atomStart_[ff]+a].charge());

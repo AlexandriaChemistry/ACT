@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="MORSE">0.13005811786523364</Real>
+  <Real Name="BONDS">0.13005811786523364</Real>
   <Real Name="o2-1 fX">-0.05425727628937696</Real>
   <Real Name="o2-1 fY">18855.068082924692</Real>
   <Real Name="o2-1 fZ">5.1159076974727213e-13</Real>
@@ -33,11 +33,11 @@
   <Real Name="h-19 fY">-5995.4491870365791</Real>
   <Real Name="h-19 fZ">-421.23893664430761</Real>
   <Real Name="ANGLES">1.2700114638490865</Real>
-  <Real Name="FOURDIHS">18.1507146871357</Real>
-  <Real Name="IDIHS">0</Real>
+  <Real Name="PROPER_DIHEDRALS">18.1507146871357</Real>
+  <Real Name="IMPROPER_DIHEDRALS">0</Real>
   <Real Name="DISPERSION">-23.527449044929064</Real>
   <Real Name="REPULSION">5922.2272809345095</Real>
-  <Real Name="COUL_SR">-202.78398994841439</Real>
+  <Real Name="COULOMB">-202.78398994841439</Real>
   <Real Name="POLARIZATION">7.1702095805613313</Real>
   <Real Name="EPOT">5722.6368357905776</Real>
 </ReferenceData>

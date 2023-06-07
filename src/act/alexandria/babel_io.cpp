@@ -48,8 +48,6 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "act/forces/forcecomputerimpl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "act/qgen/qtype.h"
@@ -54,20 +55,32 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-double ForceComputer::compute(const ForceField                     *pd,
+ForceComputer::ForceComputer(double   msForce,
+                             int      maxiter)
+{ 
+    msForce_ = msForce;
+    maxiter_ = maxiter;
+    clear_mat(box_);
+    real dt = 0.001;
+    vsiteHandler_ = new VsiteHandler(box_, dt);
+}
+
+double ForceComputer::compute(const ForceField                  *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
                               const gmx::RVec                   &field) const
 {
+    // Spread virtual sites
+    vsiteHandler_->constructPositions(top, coordinates, box_);
     // Do first calculation every time.
     computeOnce(pd, top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
     if (!pd->polarizable() || !top->hasEntry(itype))
     {
-        return 0;
+        return (*energies)[InteractionType::EPOT];
     }
     // Is this particle a shell?
     std::vector<bool>   isShell;
@@ -94,7 +107,7 @@ double ForceComputer::compute(const ForceField                     *pd,
     }
     double msForceMax = msForce_*nshell;
     double msForce    = dotProdRvec(isShell, *forces);
-    auto pols         = top->entry(itype);
+    auto &pols        = top->entry(itype);
     int    iter       = 1;
     // Golden ratio, may be used for overrelaxation
     // double gold     = 0.5*(1+std::sqrt(5.0));
@@ -118,10 +131,12 @@ double ForceComputer::compute(const ForceField                     *pd,
         msForce  = dotProdRvec(isShell, *forces);
         iter    += 1;
     }
+    // Spread forces to atoms
+    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce/nshell;
 }
 
-void ForceComputer::computeOnce(const ForceField                     *pd,
+void ForceComputer::computeOnce(const ForceField                  *pd,
                                 const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,
@@ -138,19 +153,12 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
         svmul(fac, field, (*forces)[ff]);
     }
     double epot = 0;
-    std::set<InteractionType> exclude = {
-        //InteractionType::BONDS,
-        //InteractionType::ANGLES,
-        //InteractionType::LINEAR_ANGLES,
-        //InteractionType::COULOMB,
-        //InteractionType::VDW,
-        //InteractionType::POLARIZATION,
-        //InteractionType::PROPER_DIHEDRALS,
-        //InteractionType::IMPROPER_DIHEDRALS
+    std::set<InteractionType> vsites = {
+        InteractionType::VSITE2, InteractionType::VSITE3OUT,InteractionType::VSITE3FAD,
     };
     for(const auto &entry : top->entries())
     {
-        if (entry.second.empty() || exclude.find(entry.first) != exclude.end() )
+        if (entry.second.empty())
         {
             continue;
         }
@@ -158,12 +166,7 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
         auto &ffpl = pd->findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.gromacsType());
-        if (nullptr == bfc)
-        {
-            fprintf(stderr, "Please implement a force function for type %s\n",
-                    interaction_function[ffpl.gromacsType()].name);
-        }
-        else
+        if (bfc)
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
@@ -178,6 +181,11 @@ void ForceComputer::computeOnce(const ForceField                     *pd,
                 energies->insert({ me.first, me.second });
                 epot += me.second;
             }
+        }
+        else if (vsites.end() == vsites.find(entry.first))
+        {
+            fprintf(stderr, "Please implement a force function for type %s\n",
+                    interaction_function[ffpl.gromacsType()].name);
         }
     }
     // Avoid double counting. TODO remove the VDW term
@@ -333,9 +341,7 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::COULOMB:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
-                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd);
-                    top.fillParameters(pd);
+                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
@@ -391,9 +397,7 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::ANGLES:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
-                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd);
-                    top.fillParameters(pd);
+                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -411,9 +415,7 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd);
-                    top.fillParameters(pd);
+                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -430,9 +432,7 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd);
-                    top.fillParameters(pd);
+                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -449,9 +449,7 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                    top.setIdentifiers(pd);
-                    top.fillParameters(pd);
+                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)

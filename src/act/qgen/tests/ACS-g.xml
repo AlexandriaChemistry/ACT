@@ -2,7 +2,7 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <version checksum="ad4b65c3685f49a91cdd54607d562224" timestamp="2023-03-03 08:39:43"/>
-  <particletypes nexclusions="0" epsilonr="1">
+  <particletypes>
     <particletype identifier="h" type="Atom" description="hydrogen on aliphatic C with 1 electron-withdrawal group">
       <option key="acmtype" value="h_z"/>
       <option key="atomnumber" value="1"/>

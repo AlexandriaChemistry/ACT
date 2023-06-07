@@ -46,10 +46,6 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -171,13 +167,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.Merge(&molprop);
             // Generate charges and topology
-            t_inputrec      inputrecInstance;
-            t_inputrec     *inputrec   = &inputrecInstance;
-            fill_inputrec(inputrec);
-            mp_.setInputrec(inputrec);
-            
             auto imm = mp_.GenerateTopology(stdout, pd,
-                                            missingParameters::Error, false);
+                                            missingParameters::Error);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -185,9 +176,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             
             // Needed for GenerateCharges
-            CommunicationRecord cr;
-            auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-            gmx::MDLogger  mdlog {};
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
@@ -197,7 +185,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qType::Calc, qcustom, &coords, &forces);
+            mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
@@ -212,7 +200,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
                      chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
             checker_.checkInteger(static_cast<int>(qtotValues.size()), "qtotSize");
             checker_.checkSequence(qtotValues.begin(), qtotValues.end(), buf);
-            // This vector has n+1 entries for n fragments
             auto fh        = mp_.fragmentHandler();
             if (fh)
             {
@@ -221,7 +208,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 {
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
-                        auto   natom = fh->topologies()[f].atoms().size();
+                        auto   natom = fh->topologies()[f]->atoms().size();
                         double qt    = 0;
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {

@@ -32,8 +32,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef EXPERIMENT_H
-#define EXPERIMENT_H
+#ifndef ACT_MOLPROP_EXPERIMENT_H
+#define ACT_MOLPROP_EXPERIMENT_H
 
 #include <map>
 #include <string>

@@ -37,11 +37,13 @@
 #include <cctype>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 
+#include "act/alexandria/topology.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/molprop/molprop.h"
@@ -61,7 +63,6 @@ QgenAcm::QgenAcm(const ForceField              *pd,
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
     qtotal_     = qtotal;
-    
     if (!ffOption(*pd, InteractionType::COULOMB, 
                   "epsilonr", &epsilonr_))
     {

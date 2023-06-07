@@ -48,6 +48,8 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
@@ -273,6 +275,10 @@ int gen_ff(int argc, char*argv[])
         if (elem == "X")
         {
             gmxtype = eptShell;
+        }
+        else if (elem == "VS")
+        {
+            gmxtype = eptVSite;
         }
         auto ptp = ParticleType(Identifier(entry.first),
                                 table[entry.first]["comment"], gmxtype);

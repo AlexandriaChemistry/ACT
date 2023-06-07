@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -88,9 +88,8 @@ void symmetrize_charges(bool              bQsym,
                         std::vector<int> hs;
                         for (const auto &jj : bonds)
                         {
-                            auto j  = static_cast<const Bond *>(jj);
-                            size_t ai = j->aI();
-                            size_t aj = j->aJ();
+                            size_t ai = jj->atomIndex(0);
+                            size_t aj = jj->atomIndex(1);
                             
                             if (ai == i && 
                                 symcharges->getAttached().compare((*atoms)[aj].element()) == 0)

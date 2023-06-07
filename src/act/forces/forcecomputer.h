@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
 
@@ -50,6 +51,10 @@ private:
     int            maxiter_;
     //! Electric field to be optionally applied
     gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
+    //! Box for periodic boundaries
+    matrix         box_;
+    //! Virtual site handler
+    VsiteHandler  *vsiteHandler_;
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  pd          The force field structure
@@ -60,7 +65,7 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      */
-    void computeOnce(const ForceField                     *pd,
+    void computeOnce(const ForceField                  *pd,
                      const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
@@ -73,7 +78,7 @@ private:
      * \param[in] maxiter The maximum number of iterations for shell minimization
      */
     ForceComputer(double   msForce = 1e-6,
-                  int      maxiter = 25) : msForce_(msForce), maxiter_(maxiter) {}
+                  int      maxiter = 25);
     
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
@@ -87,7 +92,7 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const ForceField                     *pd,
+    double compute(const ForceField                  *pd,
                    const Topology                    *top,
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,

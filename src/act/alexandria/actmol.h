@@ -63,13 +63,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_enerdata_t;
-struct gmx_shellfc_t;
-struct t_forcerec;
-struct t_inputrec;
-struct gmx_vsite_t;
-struct t_nrnb;
-
 namespace alexandria
 {
 
@@ -114,28 +107,8 @@ public:
 class ACTMol : public MolProp
 {
 private:
-    // GromacsStuff
-    t_excls                         *excls_          = nullptr;
-    std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
-    std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
-    std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
-    bool                             gromacsGenerated_ = false;
-    gpp_atomtype_t                   gromppAtomtype_;
-    //! GROMACS state variable
-    t_state                         *state_      = nullptr;
-    //! GROMACS force record
-    t_forcerec                      *fr_         = nullptr;
-   //! GROMACS style atoms structure
-    t_atoms                         *atoms_;
-    //! GROMACS symbol table
-    t_symtab                        *symtab_         = nullptr;
-    //! GROMACS Topology etc.
-    gmx_mtop_t                      *mtop_           = nullptr;
-    gmx_localtop_t                  *ltop_           = nullptr;
-    t_inputrec                      *inputrec_       = nullptr;
-    gmx_enerdata_t                  *enerd_          = nullptr;
-    t_fcdata                        *fcd_            = nullptr;
-
+    //! Periodic box.
+    matrix                            box_;
     // The energy storage
     std::map<InteractionType, double> energies_;
     // Optimized coordinates from the input.
@@ -159,27 +132,15 @@ private:
     gmx::RVec                        CenterOfCharge_ = { 0, 0, 0 };
     //! Function that returns true if a molecule is symmetric
     bool IsSymmetric(real toler) const;
-    /*! \brief
-     * Generate Atoms based on quantum calculation with specified level of theory.
-     * If the requested level of theory is not present, another
-     * level can be tried if the strict flag is false.
-     * \param[in]  pd     Force field data
-     * \param[out] atoms  The structure to update
-     * \return The status
-     */
-    immStatus GenerateAtoms(const ForceField     *pd,
-                            t_atoms           *atoms);
     
     /*! \brief
      * Add vsites on bonds to hos bond shell particles
      *
      * \param[in]  fp    File to write (debug) information to
      * \param[in]  pd    Data structure containing atomic properties
-     * \param[out] atoms Structure to modify with new particles.
      */
-    void addBondVsites(FILE          *fp,
-                       const ForceField *pd,
-                       t_atoms       *atoms);
+    void addBondVsites(FILE             *fp,
+                       const ForceField *pd);
     
     /*! \brief
      * Add shell particles
@@ -188,9 +149,8 @@ private:
      * \param[in]  pd    Data structure containing atomic properties
      * \param[out] atoms Structure to modify with new particles.
      */
-    void addShells(FILE          *fp,
-                   const ForceField *pd,
-                   t_atoms       *atoms);
+    void addShells(FILE             *fp,
+                   const ForceField *pd);
     
     /*! \brief
      * Check whether atom types exist in the force field
@@ -200,8 +160,7 @@ private:
      * \param[in] atoms The structure to check
      * \return status code.
      */
-    immStatus checkAtoms(const ForceField *pd,
-                         const t_atoms *atoms);
+    immStatus checkAtoms(const ForceField *pd);
     
     /*! \brief
      * Return true if atom type needs to have virtual site.
@@ -300,7 +259,7 @@ public:
     const std::vector<int> &realAtoms() const { return realAtoms_; }
 
     //! \return the GROMACS energy data
-    const gmx_enerdata_t *enerdata() const { return enerd_; }
+    //const gmx_enerdata_t *enerdata() const { return enerd_; }
     
     /*! Return an energy component
      * \param[in]  mpo  The particular term that is requested
@@ -366,25 +325,6 @@ public:
     const std::vector<std::string> &errors() const {return error_messages_;}
     
     /*! \brief
-     * Add the screening factors of the distributed charge to atom structure
-     *
-     * \param[in] pd     Data structure containing atomic properties
-     * \param[out] atoms Structure to fill with force field data
-     */
-    immStatus zetaToAtoms(const ForceField *pd,
-                          t_atoms       *atoms);
-    
-    /*! \brief
-     * \return mdatoms structure
-     */
-    t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
-    
-    /*! \brief
-     * \return GROMACS atoms structure
-     */
-    t_atoms *gmxAtoms() const { return atoms_; }
-    
-    /*! \brief
      * \return atoms data for editing
      */
     std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
@@ -392,11 +332,6 @@ public:
     /*! \brief Return the fragment handler
      */
     const FragmentHandler *fragmentHandler() const { return fraghandler_; }
-    
-    /*! \brief
-     * \return atoms const structure
-     */
-    const t_atoms *gmxAtomsConst() const { return atoms_; }
     
     /*! \brief
      * \return atoms data
@@ -416,16 +351,17 @@ public:
      * \param[in]  fp      File to write (debug) information to
      * \param[in]  pd      Data structure containing atomic properties
      * \param[in]  missing How to treat missing parameters
-     * \param[in]  gromacsSupport Whether or not to include legacy gromacs
      * \return status
      */
     immStatus GenerateTopology(FILE              *fp,
-                               const ForceField     *pd,
-                               missingParameters  missing,
-                               bool               gromacsSupport);
+                               const ForceField  *pd,
+                               missingParameters  missing);
     
     //! Return the ACT topology structure
     const Topology *topology() const { return topology_; }
+    
+    //! Return the ACT topology structure for editing
+    Topology *topologyPtr() { return topology_; }
     
     /*! \brief
      *  Computes polarizability tensor in the presence of external
@@ -443,8 +379,6 @@ public:
      *
      * \param[in]  pd        Data structure containing atomic properties
      * \param[in]  forceComp Force computer utility
-     * \param[in]  fplog     Logger
-     * \param[in]  cr        Communication parameters
      * \param[in]  algorithm The algorithm for determining charges,
      *                       if NONE it is read from the ForceField structure.
      * \param[in]  qtype     If algorithm is Read this type of charges will
@@ -453,10 +387,8 @@ public:
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
      */
-    immStatus GenerateCharges(const ForceField             *pd,
+    immStatus GenerateCharges(const ForceField          *pd,
                               const ForceComputer       *forceComp,
-                              const gmx::MDLogger       &fplog,
-                              const CommunicationRecord *cr,
                               ChargeGenerationAlgorithm  algorithm,
                               qType                      qtype,
                               const std::vector<double> &qcustom,
@@ -645,16 +577,6 @@ public:
                            const std::vector<gmx::RVec> &coords,
                            bool                          writeShells,
                            const matrix                  box);
-    
-    /*! \brief
-     * set the inputrec of the ACTMol object
-     *
-     * \param[in] ir   GROMACS t_inputrec structure
-     */
-    void setInputrec(t_inputrec  *ir)
-    {
-        inputrec_ = ir;
-    }
     
     /*! \brief
      * Equal operator for ACTMol object

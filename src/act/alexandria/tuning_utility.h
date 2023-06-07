@@ -40,9 +40,7 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/mtop_util.h"
 
 #include "actmol.h"
 #include "molhandler.h"
@@ -114,7 +112,7 @@ private:
      * \return the potential energy before minimization
      */
     double printEnergyForces(std::vector<std::string> *tcout,
-                             const ForceField            *pd,
+                             const ForceField         *pd,
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
                              alexandria::ACTMol        *mol,
@@ -139,9 +137,7 @@ public:
     void print(FILE                            *fp,
                std::vector<alexandria::ACTMol> *actmol,
                const ForceField                *pd,
-               const gmx::MDLogger             &fplog,
                const gmx_output_env_t          *oenv,
-               const CommunicationRecord       *cr,
                const std::vector<t_filenm>     &filenm,
                const char                      *chargeMethod);
 };
