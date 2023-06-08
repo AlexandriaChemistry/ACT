@@ -149,7 +149,7 @@ static void add_vsites(const char *vsfile,
     std::string              tmp;
     std::vector<std::string> value;
     int                      lineno = 1;
-    ForceFieldParameterList  vsite2("vsite2", CanSwap::No);
+    ForceFieldParameterList  vsite2("vsite2", CanSwap::Vsite2);
     auto itypeVS2            = InteractionType::VSITE2;
     while (tr.readLine(&tmp))
     {
@@ -166,9 +166,12 @@ static void add_vsites(const char *vsfile,
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not supported yet on line %d in file %s",
                                                                ptr[1].c_str(), lineno, vsfile).c_str()));
         }
-        Identifier vs(itype, ptr[2], CanSwap::No);
+        std::string myId = ptr[2] + "!" + ptr[0];
+        Identifier vs(itype, myId, CanSwap::Vsite2);
         double a = my_atof(ptr[3], "vsite_parameter");
-        ForceFieldParameter vs2param("", a, 0, 0, -1.5, 1.5, Mutability::Bounded, false, false);
+        double minmax = std::abs(a)+0.5;
+        ForceFieldParameter vs2param("", a, 0, 0, -minmax, minmax,
+                                     Mutability::Bounded, false, false);
         vsite2.addParameter(vs, "a", vs2param);
         lineno += 1;
     }
@@ -291,7 +294,12 @@ int gen_ff(int argc, char*argv[])
                 ptp.setOption(opt, table[entry.first][opt]);
             }
         }
-        auto atomnumber = aprops.find(elem)->second.atomnumber();
+        int atomnumber = 0;
+        auto apropsptr = aprops.find(elem);
+        if (aprops.end() != apropsptr)
+        {
+            atomnumber = apropsptr->second.atomnumber();
+        }
         ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
         ptp.setOption("vdwtype", entry.first);
         
@@ -394,7 +402,7 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(interactionTypeToString(InteractionType::BONDS), bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
     pd.addForces(interactionTypeToString(InteractionType::ANGLES), angles);
-    ForceFieldParameterList linang("LINEAR_ANGLES", CanSwap::No);
+    ForceFieldParameterList linang("LINEAR_ANGLES", CanSwap::Linear);
     pd.addForces(interactionTypeToString(InteractionType::LINEAR_ANGLES), linang);
     ForceFieldParameterList idihs("IDIHS", CanSwap::Idih);
     pd.addForces(interactionTypeToString(InteractionType::IMPROPER_DIHEDRALS), idihs);
