@@ -110,6 +110,18 @@ const std::string &Identifier::id() const
     }
 }
 
+const std::string &Identifier::swapped() const
+{
+    if (ids_.size() == 2)
+    {
+        return ids_[1];
+    }
+    else
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Identifier with insufficient #ids (%zu)", ids_.size()).c_str()));
+    }
+}
+
 void Identifier::orderAtoms()
 {
     if ((canSwap_ == CanSwap::Yes && atoms_.size() > 0) ||
@@ -147,7 +159,7 @@ void Identifier::orderAtoms()
     }
     else if (canSwap_ == CanSwap::Vsite2 && atoms_.size() == 3)
     {
-        std::string swapped = atoms_[2] + BondOrderDelimeter[bondOrders_[1]] + atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0];
+        std::string swapped = atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0] + BondOrderDelimeter[bondOrders_[1]] + atoms_[2];
         if (swapped >= ids_[0])
         {
             ids_.push_back(swapped);
@@ -217,6 +229,7 @@ Identifier::Identifier(const std::string &atom)
     atoms_.push_back(atom);
     ids_.push_back(atom);
     canSwap_ = CanSwap::No;
+    update();
 }
 
 Identifier::Identifier(InteractionType    iType,
@@ -247,7 +260,7 @@ Identifier::Identifier(InteractionType    iType,
     }
     if (InteractionType::VDW != iType && InteractionType::COULOMB != iType)
     {
-        // Those InteractionTypes that hace a fixed number of atom types
+        // Those InteractionTypes that have a fixed number of atom types
         // are tested here. (VDW and COULOMB both store single atoms and
         // atom pairs in the force field file).
         size_t natoms = interactionTypeToNatoms(iType);
@@ -419,7 +432,16 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 bool operator==(const Identifier &a, const Identifier &b)
 {
     // TODO check implementation
-    return a.id() == b.id();
+    bool equal = a.id() == b.id();
+    if (!equal && a.ids_.size() == 2)
+    {
+        equal = a.ids_[1] == b.id();
+    }
+    else if (!equal && b.ids_.size() == 2)
+    {
+        equal = a.id() == b.ids_[1];
+    }
+    return equal;
 }
 
 bool operator<(const Identifier &a, const Identifier &b)

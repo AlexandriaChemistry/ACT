@@ -109,6 +109,14 @@ class Identifier
      */
     const std::string &id() const;
 
+    /*! \brief Return swapped identifier string
+     * \throws if there are no ids
+     */
+    const std::string &swapped() const;
+
+    //! \return swappability of this identifier
+    CanSwap canSwap() const { return canSwap_; }
+
     //! \brief Return the bond orders
     const std::vector<double> &bondOrders() const { return bondOrders_; }
 

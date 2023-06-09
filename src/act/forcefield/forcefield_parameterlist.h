@@ -150,11 +150,7 @@ class ForceFieldParameterList
      * \param[in] identifier  Name of the bond or atomtype
      * \return bool value 
      */
-    bool parameterExists(const Identifier &identifier) const
-    {
-        return !identifier.atoms().empty() && 
-            parameters_.find(identifier) != parameters_.end();
-    }
+    bool parameterExists(const Identifier &identifier) const;
 
     /*! \brief Get number of parameters in this list
      * \return number of parameters

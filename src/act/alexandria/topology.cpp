@@ -752,8 +752,8 @@ int Topology::makeVsite2s(const ForceField *pd,
                 else
                 {
                     auto ptype = pd->findParticleType(vsname);
-                    
-                    ActAtom newatom(ptype->id().id(), ptype->element(), ptype->id().id(),
+                    std::string vstype = ptype->optionValue("bondtype");
+                    ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                     ptype->gmxParticleType(), 
                                     0, ptype->mass(), ptype->charge());
                     // We need to add the number of previous vsites to get the
@@ -1132,18 +1132,28 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(const ForceFieldParameterList &fs,
+static void fillParams(InteractionType                iType,
+                       const ForceFieldParameterList &fs,
                        const Identifier              &btype,
                        int                            nr,
                        const char                    *param_names[],
                        std::vector<double>           *param)
 {
+    auto myBtype = btype;
     for (int i = 0; i < nr; i++)
     {
-        if (!fs.parameterExists(btype))
+        if (!fs.parameterExists(myBtype))
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameters for %s and topid %s", fs.function().c_str(),
-                                                           btype.id().c_str()).c_str()));
+            myBtype = Identifier(iType, btype.swapped(), btype.canSwap());
+            printf("Created swapped is %s, original %s\n", myBtype.id().c_str(),
+                   btype.id().c_str());
+            if (!fs.parameterExists(myBtype))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameters for %s (%s) and topid %s", 
+                                                               interactionTypeToString(iType).c_str(), 
+                                                               fs.function().c_str(), 
+                                                               myBtype.id().c_str()).c_str()));
+            }
         }
         else
         {
@@ -1152,7 +1162,7 @@ static void fillParams(const ForceFieldParameterList &fs,
             // some force fields have the atomic sigma, epsilon, etc. while others
             // store the combined values, but not atomic ones (because that would
             // not make sense).
-            auto ff      = fs.findParametersConst(btype);
+            auto ff      = fs.findParametersConst(myBtype);
             auto fp      = ff.find(param_names[i]);
             double value = 0;
             if (ff.end() != fp)
@@ -1177,55 +1187,55 @@ void Topology::fillParameters(const ForceField *pd)
             switch (fs.gromacsType())
             {
             case F_LJ:
-                fillParams(fs, topID, ljNR, lj_name, &param);
+                fillParams(entry.first, fs, topID, ljNR, lj_name, &param);
                 break;
             case F_BHAM:
-                fillParams(fs, topID, wbhNR, wbh_name, &param);
+                fillParams(entry.first, fs, topID, wbhNR, wbh_name, &param);
                 break;
             case F_GBHAM:
-                fillParams(fs, topID, gbhNR, gbh_name, &param);
+                fillParams(entry.first, fs, topID, gbhNR, gbh_name, &param);
                 break;
             case F_COUL_SR:
-                fillParams(fs, topID, coulNR, coul_name, &param);
+                fillParams(entry.first, fs, topID, coulNR, coul_name, &param);
                 break;
             case F_MORSE:
-                fillParams(fs, topID, morseNR, morse_name, &param);
+                fillParams(entry.first, fs, topID, morseNR, morse_name, &param);
                 break;
             case F_CUBICBONDS:
-                fillParams(fs, topID, cubicNR, cubic_name, &param);
+                fillParams(entry.first, fs, topID, cubicNR, cubic_name, &param);
                 break;
             case F_BONDS:
-                fillParams(fs, topID, bondNR, bond_name, &param);
+                fillParams(entry.first, fs, topID, bondNR, bond_name, &param);
                 break;
             case F_ANGLES:
-                fillParams(fs, topID, angleNR, angle_name, &param);
+                fillParams(entry.first, fs, topID, angleNR, angle_name, &param);
                 break;
             case F_UREY_BRADLEY:
-                fillParams(fs, topID, ubNR, ub_name, &param);
+                fillParams(entry.first, fs, topID, ubNR, ub_name, &param);
                 break;
             case F_LINEAR_ANGLES:
-                fillParams(fs, topID, linangNR, linang_name, &param);
+                fillParams(entry.first, fs, topID, linangNR, linang_name, &param);
                 break;
             case F_IDIHS:
-                fillParams(fs, topID, idihNR, idih_name, &param);
+                fillParams(entry.first, fs, topID, idihNR, idih_name, &param);
                 break;
             case F_FOURDIHS:
-                fillParams(fs, topID, fdihNR, fdih_name, &param);
+                fillParams(entry.first, fs, topID, fdihNR, fdih_name, &param);
                 break;
             case F_POLARIZATION:
-                fillParams(fs, topID, polNR, pol_name, &param);
+                fillParams(entry.first, fs, topID, polNR, pol_name, &param);
                 break;
             case F_PDIHS:
-                fillParams(fs, topID, pdihNR, pdih_name, &param);
+                fillParams(entry.first, fs, topID, pdihNR, pdih_name, &param);
                 break;
             case F_VSITE2:
-                fillParams(fs, topID, vsite2NR, vsite2_name, &param);
+                fillParams(entry.first, fs, topID, vsite2NR, vsite2_name, &param);
                 break;
             case F_VSITE3OUT:
-                fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
+                fillParams(entry.first, fs, topID, vsite3outNR, vsite3out_name, &param);
                 break;
             case F_VSITE3FAD:
-                fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
+                fillParams(entry.first, fs, topID, vsite3fadNR, vsite3fad_name, &param);
                 break;
             default:
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.gromacsType()].name).c_str()));
