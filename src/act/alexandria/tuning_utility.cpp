@@ -1298,7 +1298,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
     
         for (auto ai : pd->particleTypesConst())
         {
-            auto qparam = ai.parameterConst("charge");
+            auto qparam = ai.second.parameterConst("charge");
             if (Mutability::ACM == qparam.mutability())
             {
                 auto lll = lsqt.find(ims.first);
@@ -1308,7 +1308,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
                     lll = lsqt.find(ims.first);
                 }
                 gmx_stats newz;
-                lll->second.insert({ai.id().id(), std::move(newz)});
+                lll->second.insert({ai.second.id().id(), std::move(newz)});
             }
         }
     }

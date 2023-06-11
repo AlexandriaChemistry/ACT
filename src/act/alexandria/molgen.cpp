@@ -238,11 +238,11 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                     // Loop over particles to find mutable charges
                     auto pv = pd->particleTypes();
                     std::string ccc("charge");
-                    for (auto pt = pv->begin(); pt < pv->end(); ++pt )
+                    for (auto &pt : *pv)
                     {
-                        if (pt->hasParameter(ccc))
+                        if (pt.second.hasParameter(ccc))
                         {
-                            auto p = pt->parameter(ccc);
+                            auto p = pt.second.parameter(ccc);
                             if (p->isMutable())
                             {
                                 p->setNtrain(0);

@@ -72,19 +72,16 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
                                            const std::string         &type,
                                            const ForceFieldParameter &param)
 {
-    std::map<std::string, ForceFieldParameter> newParam = {
-        { type, param }
-    };
-    auto params = std::find_if(parameters_.begin(), parameters_.end(), 
-                               [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                                   return t.first == identifier;
-                               });
+    auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
         // New parameter!
+        std::map<std::string, ForceFieldParameter> newParam = {
+            { type, param }
+        };
         newParam[type].setIndex(counter_);
-        parameters_.insert(std::pair<Identifier, std::map<std::string, ForceFieldParameter>>(identifier, newParam));
+        parameters_.insert({identifier, newParam});
         // Increase counter since we have a new parameter
         counter_ += 1;
     }
@@ -92,7 +89,7 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
     {
         if (params->second.find(type) == params->second.end())
         {
-            params->second.insert(std::pair<std::string, ForceFieldParameter>( type, param ));
+            params->second.insert({ type, param });
         }
         else
         {
@@ -103,10 +100,7 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
 
 size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
 {
-    auto p = std::find_if(parameters_.begin(), parameters_.end(), 
-                          [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                              return t.first == identifier;
-                          });
+    auto p = parameters_.find(identifier);
 
     if (p == parameters_.end())
     {
@@ -129,12 +123,8 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
 
 const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findParametersConst(const Identifier &identifier) const
 {
-    auto params = std::find_if(parameters_.begin(), parameters_.end(), 
-                               [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                                   return t.first == identifier;
-                               });
-    
-    if (params == parameters_.end())
+    auto iter = parameters_.find(identifier);
+    if (parameters_.end() == iter)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %d entries for function '%s'",
                                                            identifier.id().c_str(),
@@ -142,16 +132,13 @@ const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findP
                                                            function_.c_str()).c_str()));
     }
     
-    return params->second;
+    return iter->second;
 }
 
 const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const Identifier  &identifier,
                                                                            const std::string &type) const
 {
-    auto params = std::find_if(parameters_.begin(), parameters_.end(), 
-                               [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                                   return t.first == identifier;
-                               });
+    auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -168,10 +155,7 @@ const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const
 ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier  &identifier,
                                                                 const std::string &type)
 {
-    auto params = std::find_if(parameters_.begin(), parameters_.end(), 
-                               [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                                   return t.first == identifier;
-                               });
+    auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -187,10 +171,7 @@ ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier
 
 ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier &identifier)
 {
-    auto params = std::find_if(parameters_.begin(), parameters_.end(), 
-                               [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                                   return t.first == identifier;
-                               });
+    auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
@@ -202,11 +183,7 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
 
 bool ForceFieldParameterList::parameterExists(const Identifier &identifier) const
 {
-    auto it = std::find_if(parameters_.begin(), parameters_.end(), 
-                           [identifier](const std::pair<Identifier, ForceFieldParameterMap> & t) -> bool { 
-                               return t.first == identifier;
-                           });
-    return parameters_.end() != it;
+    return parameters_.end() != parameters_.find(identifier);
 }
 
 void ForceFieldParameterList::dump(FILE *fp) const

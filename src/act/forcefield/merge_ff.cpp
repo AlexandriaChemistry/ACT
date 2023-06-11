@@ -98,7 +98,7 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
             // Loop over particles
             for (const auto &pp : pd.particleTypesConst())
             {
-                for(const auto &ppar : pp.parametersConst())
+                for(const auto &ppar : pp.second.parametersConst())
                 {
                     if (parameter == ppar.first)
                     {
@@ -149,10 +149,9 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
     else
     {
         // Loop over particles
-        auto part = pdout->particleTypes();
-        for (auto pp = part->begin(); pp < part->end(); ++pp)
+        for (auto &pp : *pdout->particleTypes())
         {
-            auto mypar = pp->parameters();
+            auto mypar = pp.second.parameters();
             for(auto &ppar : *mypar)
             {
                 if (parameter == ppar.first)

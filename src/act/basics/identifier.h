@@ -127,7 +127,11 @@ class Identifier
      * \param b Another identifier
      * \return Whether a < b
      */
-    friend bool operator<(const Identifier &a, const Identifier &b);
+    friend bool operator<(const Identifier &a, const Identifier &b)
+    {
+        // TODO check implementation
+        return a.ids_[0] < b.ids_[0];
+    }
 
     /*! \brief Comparison operator
      *
@@ -136,7 +140,13 @@ class Identifier
      * \param b Another identifier
      * \return Whether a == b
      */
-    friend bool operator==(const Identifier &a, const Identifier &b);
+    friend bool operator==(const Identifier &a, const Identifier &b)
+    {
+        // TODO check implementation
+        return ((a.ids_[0] == b.ids_[0]) ||
+                (a.ids_.size() == 2 && a.ids_[1] == b.id()) ||
+                (b.ids_.size() == 2 && a.id() == b.ids_[1]));
+    }
 
     //! \brief Return the atoms, or rather the components of the id
     const std::vector<std::string> &atoms() const { return atoms_; }

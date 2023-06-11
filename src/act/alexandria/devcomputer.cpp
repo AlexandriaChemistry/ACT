@@ -124,10 +124,10 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
             std::string zetatype = "zetatype";
             for(const auto &p : forcefield->particleTypesConst())
             {
-                if (p.hasOption(poltype))
+                if (p.second.hasOption(poltype))
                 {
-                    auto coreID  = Identifier(p.optionValue(zetatype));
-                    auto shell   = forcefield->findParticleType(p.optionValue(poltype));
+                    auto coreID  = Identifier(p.second.optionValue(zetatype));
+                    auto shell   = forcefield->findParticleType(p.second.optionValue(poltype));
                     auto shellID = Identifier(shell->optionValue(zetatype));
                     auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
                     auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
@@ -202,7 +202,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         {
             continue;
         }
-        ParticleTypeConstIterator  atype = forcefield->findParticleType(myatoms[j].ffType());
+        auto                       atype = forcefield->findParticleType(myatoms[j].ffType());
         const ForceFieldParameter &qparm = atype->parameterConst("charge");
         double qj  = myatoms[j].charge();
         double qjj = qj;

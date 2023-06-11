@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -67,17 +67,17 @@ void alexandria_subtype_table(FILE          *fp,
     std::vector<std::string> subtypes = { "acmtype", "zetatype", "bondtype", "poltype" };
     for (const auto &pt : pd->particleTypesConst())
     {
-        if (pt.mass() == 0)
+        if (pt.second.mass() == 0)
         {
             continue;
         }
-        auto line = pt.id().id();
+        auto line = pt.second.id().id();
         for(const auto &st : subtypes)
         {
-            if (pt.hasOption(st))
+            if (pt.second.hasOption(st))
             {
                 line.append(gmx::formatString(" & %s",
-                                              pt.optionValue(st).c_str()));
+                                              pt.second.optionValue(st).c_str()));
             }
             else
             {
@@ -179,15 +179,16 @@ void alexandria_charge_table(FILE           *fp,
     lt.printHeader();
     for (const auto &ptype : pd->particleTypesConst())
     {
-        if (ptype.hasParameter(qq))
+
+        if (ptype.second.hasParameter(qq))
         {
-            auto pp = ptype.parameterConst(qq);
+            auto pp = ptype.second.parameterConst(qq);
             if ((pp.mutability() == Mutability::Free ||
                  pp.mutability() == Mutability::Bounded) &&
                 pp.ntrain() > 0)
             {
                 auto line = gmx::formatString("%s & %.4f & %.4f & %d",
-                                              ptype.id().id().c_str(),
+                                              ptype.second.id().id().c_str(),
                                               pp.value(), pp.uncertainty(),
                                               pp.ntrain());
                 lt.printLine(line);

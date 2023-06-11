@@ -429,25 +429,4 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
     return CommunicationStatus::OK;
 }
 
-bool operator==(const Identifier &a, const Identifier &b)
-{
-    // TODO check implementation
-    bool equal = a.id() == b.id();
-    if (!equal && a.ids_.size() == 2)
-    {
-        equal = a.ids_[1] == b.id();
-    }
-    else if (!equal && b.ids_.size() == 2)
-    {
-        equal = a.id() == b.ids_[1];
-    }
-    return equal;
-}
-
-bool operator<(const Identifier &a, const Identifier &b)
-{
-    // TODO check implementation
-    return a.id() < b.id();
-}
-
 } // namespace alexandria

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -635,14 +635,14 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     for (const auto &aType : pd->particleTypesConst())
     {
         auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
-        add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.id().id().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), ptype_str[aType.gmxParticleType()]);
-        add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.description().c_str());
-        for(const auto &opt: aType.optionsConst())
+        add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.second.id().id().c_str());
+        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), ptype_str[aType.second.gmxParticleType()]);
+        add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.second.description().c_str());
+        for(const auto &opt: aType.second.optionsConst())
         {
             addOption(grandchild, opt.first, opt.second);
         }
-        for(const auto &param : aType.parametersConst())
+        for(const auto &param : aType.second.parametersConst())
         {
             addParameter(grandchild, param.first, param.second);
         }

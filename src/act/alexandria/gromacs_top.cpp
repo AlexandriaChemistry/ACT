@@ -325,15 +325,15 @@ void print_top_header(FILE                    *fp,
         auto vdw = pd->findForcesConst(InteractionType::VDW);
         for (const auto &aType : pd->particleTypesConst())
         {
-            gt_type    = aType.id().id();
+            gt_type    = aType.second.id().id();
             std::string bType;
-            if (aType.hasInteractionType(InteractionType::BONDS))
+            if (aType.second.hasInteractionType(InteractionType::BONDS))
             {
-                bType = aType.interactionTypeToIdentifier(InteractionType::BONDS).id();
+                bType = aType.second.interactionTypeToIdentifier(InteractionType::BONDS).id();
             }
             if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
             {
-                auto vdwtype = aType.interactionTypeToIdentifier(InteractionType::VDW);
+                auto vdwtype = aType.second.interactionTypeToIdentifier(InteractionType::VDW);
                 double sigma = 0, epsilon = 0, gamma = 0;
                 if (!vdwtype.id().empty() && vdw.parameterExists(vdwtype))
                 {
@@ -345,13 +345,13 @@ void print_top_header(FILE                    *fp,
                 fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f %s %g %g %g\n",
                         gt_type.c_str(), 
                         !bType.empty() ? bType.c_str() : gt_type.c_str(), 
-                        aType.atomnumber(), 
-                        aType.mass(), 0.0,
-                        ptype_str[aType.gmxParticleType()],
+                        aType.second.atomnumber(), 
+                        aType.second.mass(), 0.0,
+                        ptype_str[aType.second.gmxParticleType()],
                         sigma, epsilon, gamma);
                 if (false && bPol)
                 {
-                    auto sgt_type= aType.interactionTypeToIdentifier(InteractionType::POLARIZATION);
+                    auto sgt_type= aType.second.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                     if (strcasecmp(ff.c_str(), "LJ") == 0)
                     {
                         fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
@@ -377,16 +377,16 @@ void print_top_header(FILE                    *fp,
             fprintf(fp, "[ distributed_charges ]\n");
             for (const auto &atype : pd->particleTypesConst())
             {
-                auto ztype     = atype.interactionTypeToIdentifier(InteractionType::COULOMB);
+                auto ztype     = atype.second.interactionTypeToIdentifier(InteractionType::COULOMB);
                 auto eep       = eem.findParametersConst(ztype);
                 if (ChargeType::Slater == iChargeType)
                 {
-                    fprintf(fp, "%-7s  2  %d  %g\n", atype.id().id().c_str(),
-                            atype.row(), eep["zeta"].value());
+                    fprintf(fp, "%-7s  2  %d  %g\n", atype.second.id().id().c_str(),
+                            atype.second.row(), eep["zeta"].value());
                 }
                 else if (ChargeType::Gaussian == iChargeType)
                 {
-                    fprintf(fp, "%-7s  1  %g\n", atype.id().id().c_str(),
+                    fprintf(fp, "%-7s  1  %g\n", atype.second.id().id().c_str(),
                             eep["zeta"].value());
                 }
             }

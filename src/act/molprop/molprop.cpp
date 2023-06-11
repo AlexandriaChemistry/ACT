@@ -623,10 +623,6 @@ const GenericProperty *MolProp::expProperty(MolPropObservable  mpo,
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus                cs = CommunicationStatus::OK;
-    BondIterator                       bi;
-    MolecularCompositionIterator       mci;
-    std::vector<std::string>::iterator si;
-    ExperimentIterator                 ei;
 
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))

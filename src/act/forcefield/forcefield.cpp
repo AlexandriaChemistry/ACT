@@ -132,14 +132,13 @@ gmx_bool ForceField::strcasestrStart(std::string needle, std::string haystack)
 
 const std::string ForceField::ztype2elem(const std::string &ztype) const
 {
-    size_t i;
     if (ztype.size() != 0)
     {
-        for (i = 0; i < alexandria_.size(); i++)
+        for (auto i : alexandria_)
         {
-            if (alexandria_[i].interactionTypeToIdentifier(InteractionType::COULOMB).id() == ztype)
+            if (i.second.interactionTypeToIdentifier(InteractionType::COULOMB).id() == ztype)
             {
-                return alexandria_[i].element();
+                return i.second.element();
             }
         }
     }
@@ -214,7 +213,7 @@ bool ForceField::atypeToPtype(const std::string &atype,
                            std::string       *ptype) const
 {
     auto ai = findParticleType(atype);
-    if (ai != alexandria_.end())
+    if (ai)
     {
         ptype->assign(ai->interactionTypeToIdentifier(InteractionType::POLARIZATION).id());
         return true;
@@ -268,35 +267,8 @@ void ForceField::addParticleType(const ParticleType &ptp)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Trying to add the same particle type %s twice", ptp.id().id().c_str()).c_str()));
     }
-    alexandria_.push_back(ptp);
+    alexandria_.insert({ptp.id(), ptp});
 }
-
-ParticleTypeConstIterator ForceField::findParticleType(InteractionType    itype,
-                                                    const std::string &subtype) const
-{
-    std::string btype("bondtype");
-    std::string vdwtype("vdwtype");
-
-    std::map<InteractionType, const std::string> i2s = {
-        { InteractionType::BONDS,              btype },
-        { InteractionType::ANGLES,             btype },
-        { InteractionType::LINEAR_ANGLES,      btype },
-        { InteractionType::PROPER_DIHEDRALS,   btype },
-        { InteractionType::IMPROPER_DIHEDRALS, btype },
-        { InteractionType::VDW,                vdwtype },
-        { InteractionType::COULOMB,            vdwtype }
-    };
-    auto mysubtype = i2s.find(itype);
-    auto atp       = alexandria_.end();
-    if (i2s.end() != mysubtype)
-    {
-        atp = std::find_if(alexandria_.begin(), alexandria_.end(),
-                           [&](ParticleType const &f)
-                           { return f.hasOption(mysubtype->second) && f.optionValue(mysubtype->second) == subtype; });
-    }
-    return atp;
-}
-    
 
 void ForceField::addForces(const std::string             &interaction,
                         const ForceFieldParameterList &forces)
@@ -315,7 +287,7 @@ bool ForceField::atypeToBtype(const std::string &atype,
 {
     auto ai    = findParticleType(atype);
     auto itype = InteractionType::BONDS;
-    if (ai != alexandria_.end() && ai->hasInteractionType(itype))
+    if (ai && ai->hasInteractionType(itype))
     {
         btype->assign(ai->interactionTypeToIdentifier(itype).id());
         return true;
@@ -327,7 +299,7 @@ bool ForceField::atypeToZtype(const std::string &atype,
                            std::string       *ztype) const
 {
     auto ai = findParticleType(atype);
-    if (ai != alexandria_.end())
+    if (ai)
     {
         ztype->assign(ai->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
         return true;
@@ -380,7 +352,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send_int(dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
         {
-            cs = alexandria.Send(cr, dest);
+            cs = alexandria.second.Send(cr, dest);
             if (CommunicationStatus::OK != cs)
             {
                 break;
@@ -459,7 +431,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         {
             for(auto &aa : alexandria_)
             {
-                aa.BroadCast(cr, root, comm);
+                aa.second.BroadCast(cr, root, comm);
             }
         }
         else
@@ -470,7 +442,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                 cs = pt.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
-                    alexandria_.push_back(pt);
+                    alexandria_.insert({pt.id(), pt});
                 }
             }
         }
@@ -575,7 +547,7 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
             cs = alexandria.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
             {
-                alexandria_.push_back(alexandria);
+                alexandria_.insert({alexandria.id(), alexandria});
             }
         }
         if (debug)
@@ -656,14 +628,14 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
         }
         for(auto &ax : alexandria_)
         {
-            for(auto &p : ax.parametersConst())
+            for(auto &p : ax.second.parametersConst())
             {
                 auto mut = p.second.mutability();
                 if (Mutability::Free    == mut ||
                     Mutability::Bounded == mut)
                 {
                     cr->send_int(dest, 1);
-                    cr->send_str(dest, &ax.id().id());
+                    cr->send_str(dest, &ax.second.id().id());
                     cr->send_str(dest, &p.first);
                     cr->send_double(dest, p.second.value());
                 }
@@ -852,11 +824,11 @@ void ForceField::checkConsistency(FILE *fp) const
     auto eem = findForcesConst(itype);
     for (const auto &atp : alexandria_)
     {
-        if (!atp.hasInteractionType(itype))
+        if (!atp.second.hasInteractionType(itype))
         {
             continue;
         }
-        auto acmtype = atp.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         // Check whether zeta types are present
         if (!eem.parameterExists(acmtype))
         {

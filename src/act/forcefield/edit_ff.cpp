@@ -174,7 +174,7 @@ static void setMinMaxMut(FILE *fp,
 }
 
 static void modifyParticle(const std::string &paramType,
-                           ParticleTypeIterator particle,
+                           ParticleType      *particle,
                            bool bSetMin, double pmin,
                            bool bSetVal, double pval,
                            bool bSetMax, double pmax,
@@ -296,7 +296,7 @@ static void modifyForceField(ForceField *pd,
         }
         else
         {
-            std::vector<ParticleTypeIterator> myParticles;
+            std::vector<ParticleType *> myParticles;
             if (!particle.empty())
             {
                 for (const auto &s : gmx::splitString(particle))
@@ -309,14 +309,13 @@ static void modifyForceField(ForceField *pd,
             }
             else
             {
-                auto particleTypes = pd->particleTypes();
-                for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
+                for (auto &pt : *pd->particleTypes())
                 {
-                    myParticles.push_back(pt);
+                    myParticles.push_back(&pt.second);
                 }
             }
             // A particle?
-            for (auto p : myParticles)
+            for (auto &p : myParticles)
             {
                 modifyParticle(paramType, p,
                                bSetMin, pmin,

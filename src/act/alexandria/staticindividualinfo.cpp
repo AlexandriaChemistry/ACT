@@ -388,11 +388,11 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         }
         for(auto &pt : pd_.particleTypesConst())
         {
-            for(auto &p : pt.parametersConst())
+            for(auto &p : pt.second.parametersConst())
             {
                 if (p.second.isMutable() && mg->fit(p.first) && p.second.ntrain() > 0)
                 {
-                    optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
+                    optIndex_.push_back(OptimizationIndex(pt.second.id().id(), p.first));
                 }
             }
         }

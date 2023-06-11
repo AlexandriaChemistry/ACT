@@ -1140,6 +1140,10 @@ static void fillParams(InteractionType                iType,
                        std::vector<double>           *param)
 {
     auto myBtype = btype;
+    if (param->empty())
+    {
+        param->resize(nr, 0);
+    }
     for (int i = 0; i < nr; i++)
     {
         if (!fs.parameterExists(myBtype))
@@ -1169,7 +1173,7 @@ static void fillParams(InteractionType                iType,
             {
                 value = fp->second.internalValue();
             }
-            param->push_back(value);
+            (*param)[i] = value;
         }
     }
 }

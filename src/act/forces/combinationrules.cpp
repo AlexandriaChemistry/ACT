@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -196,7 +196,7 @@ static void generateVdwParameterPairs(ForceField *pd)
     int  comb_rule = getCombinationRule(*forcesVdw);
 
     // We temporarily store the new parameters here
-    ForceFieldParameterList newParams;
+    ForceFieldParameterListMap *parm = forcesVdw->parameters();;
     
     // Fudge unit
     std::string unit("kJ/mol");
@@ -224,7 +224,8 @@ static void generateVdwParameterPairs(ForceField *pd)
                 continue;
             }
             auto jparam = jvdw.second;
-            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            // File the parameters, potential dependent
+            ForceFieldParameterMap pmap;
             switch (ftypeVdW)
             {
             case F_LJ:
@@ -238,19 +239,15 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double c6 = 0, c12 = 0;
                     CombineLJ(comb_rule, isigma, jsigma,
                               iepsilon, jepsilon, &c6, &c12);
-                    ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6, 
-                                               mutd, true, true);
-                    ForceFieldParameter c12parm(unit, c12, 0, 1, c12, c12, 
-                                                mutd, true, true);
-                    newParams.addParameter(pairID, lj_name[ljC6_IJ], c6parm);
-                    newParams.addParameter(pairID, lj_name[ljC12_IJ], c12parm);
+                    pmap.insert({lj_name[ljC6_IJ], ForceFieldParameter(unit, c6, 0, 1, c6, c6, 
+                                                                       mutd, true, true)});
+                    pmap.insert({lj_name[ljC12_IJ], ForceFieldParameter(unit, c12, 0, 1, c12, c12, 
+                                                                        mutd, true, true)});
                     // Add some dummy parameters
-                    newParams.addParameter(pairID, csigma,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true));
+                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                            mutd, true, true)});
+                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                              mutd, true, true)});
                 }
                 break;
             case F_BHAM:
@@ -269,28 +266,22 @@ static void generateVdwParameterPairs(ForceField *pd)
                                 iepsilon, jepsilon, 
                                 igamma, jgamma, &sigmaij,
                                 &epsilonij, &gammaij);
-                    ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
-                                                sigmaij, sigmaij,
-                                                mutd, true, true);
-                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
-                                                epsilonij, epsilonij,
-                                                mutd, true, true);
-                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
-                                                gammaij, gammaij,
-                                                mutd, true, true);
-                    newParams.addParameter(pairID, wbh_name[wbhSIGMA_IJ], sigparm);
-                    newParams.addParameter(pairID, wbh_name[wbhEPSILON_IJ], epsparm);
-                    newParams.addParameter(pairID, wbh_name[wbhGAMMA_IJ], gamparm);
+                    pmap.insert({wbh_name[wbhSIGMA_IJ], ForceFieldParameter(unit, sigmaij, 0, 1,
+                                                                           sigmaij, sigmaij,
+                                                                            mutd, true, true)});
+                    pmap.insert({wbh_name[wbhEPSILON_IJ], ForceFieldParameter(unit, epsilonij, 0, 1,
+                                                                              epsilonij, epsilonij,
+                                                                              mutd, true, true)});
+                    pmap.insert({wbh_name[wbhGAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
+                                                                            gammaij, gammaij,
+                                                                            mutd, true, true)});
                     // Add some dummy parameters
-                    newParams.addParameter(pairID, csigma,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cgamma, 
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
-                                                               mutd, true, true));
+                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                             mutd, true, true)});
+                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true)});
+                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                             mutd, true, true)});
                 }
                 break;
             case F_GBHAM:
@@ -311,56 +302,51 @@ static void generateVdwParameterPairs(ForceField *pd)
                     CombineGBham(comb_rule, irmin, jrmin, iepsilon, jepsilon, 
                                  igamma, jgamma, idelta, jdelta, &rminij,
                                  &epsilonij, &gammaij, &deltaij);
-                    ForceFieldParameter sigparm(unit, rminij, 0, 1,
-                                                rminij, rminij,
-                                                mutd, true, true);
-                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
-                                                epsilonij, epsilonij,
-                                                mutd, true, true);
-                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
-                                                gammaij, gammaij,
-                                                mutd, true, true);
-                    ForceFieldParameter delparm(unit, deltaij, 0, 1,
-                                                deltaij, deltaij,
-                                                mutd, true, true);
-                    newParams.addParameter(pairID, gbh_name[gbhRMIN_IJ], sigparm);
-                    newParams.addParameter(pairID, gbh_name[gbhEPSILON_IJ], epsparm);
-                    newParams.addParameter(pairID, gbh_name[gbhGAMMA_IJ], gamparm);
-                    newParams.addParameter(pairID, gbh_name[gbhDELTA_IJ], delparm);
+                    pmap.insert({gbh_name[gbhRMIN_IJ], ForceFieldParameter(unit, rminij, 0, 1,
+                                                                          rminij, rminij,
+                                                                           mutd, true, true)});
+                    pmap.insert({gbh_name[gbhEPSILON_IJ],ForceFieldParameter(unit, epsilonij, 0, 1,
+                                                                             epsilonij, epsilonij,
+                                                                             mutd, true, true)});
+                    pmap.insert({gbh_name[gbhGAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
+                                                                            gammaij, gammaij,
+                                                                            mutd, true, true)});
+                    pmap.insert({gbh_name[gbhDELTA_IJ], ForceFieldParameter(unit, deltaij, 0, 1,
+                                                                            deltaij, deltaij,
+                                                                            mutd, true, true)});
                     // Add some dummy parameters
-                    newParams.addParameter(pairID, crmin,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cgamma, 
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cdelta, 
-                                           ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
-                                                               mutd, true, true));
+                    pmap.insert({crmin, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                            mutd, true, true)});
+                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true)});
+                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                             mutd, true, true)});
+                    pmap.insert({cdelta, ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
+                                                             mutd, true, true)});
                 }
                 break;
             default:
                 fprintf(stderr, "Invalid van der waals type %s\n",
                         interaction_function[ftypeVdW].longname);
             }
+            parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
+                                   std::move(pmap));
+            
         }
     }
     // Finally add the new parameters to the existing list
-    auto fold = forcesVdw->parameters();
-    for(const auto &np : newParams.parametersConst())
-    {
-        // Remove old copy if it exists
-        auto oldfp = fold->find(np.first);
-        if (oldfp != fold->end())
-        {
-            fold->erase(oldfp);
-        }
-        // Now add the new one
-        fold->insert({ np.first, np.second });
-    }
+    //auto fold = forcesVdw->parameters();
+    //for(const auto &np : newParams.parametersConst())
+    // {
+    //   // Remove old copy if it exists
+    //   auto oldfp = fold->find(np.first);
+    //   if (oldfp != fold->end())
+    //   {
+    //       fold->erase(oldfp);
+    //   }
+    //   // Now add the new one
+    //   fold->insert({ np.first, np.second });
+    //}
     // Phew, we're done!
 }
 
@@ -433,9 +419,9 @@ static void generateShellForceConstants(ForceField *pd)
     // Loop over particles
     for(const auto &part : pd->particleTypesConst())
     {
-        if (part.hasOption("poltype"))
+        if (part.second.hasOption("poltype"))
         {
-            auto shellType = part.optionValue("poltype");
+            auto shellType = part.second.optionValue("poltype");
             if (ffpl->find(shellType) == ffpl->end())
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing polarization term for %s", shellType.c_str()).c_str()));

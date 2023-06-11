@@ -74,7 +74,7 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
             ForceField *mypd     = getForceField("ACM-g");
             for (const auto &iter : mypd->particleTypesConst())
             {
-                atomNames.push_back(iter.id().id());
+                atomNames.push_back(iter.second.id().id());
             }
         }
 

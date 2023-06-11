@@ -229,12 +229,6 @@ class ParticleType
     ForceFieldParameterMap             parameterMap_;
 };
 
-//! Iterator over vector of these
-using ParticleTypeIterator      = std::vector<ParticleType>::iterator;
-
-//! Const iterator over vector of these
-using ParticleTypeConstIterator = std::vector<ParticleType>::const_iterator;
-
 } // namespace
 
 #endif

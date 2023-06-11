@@ -92,18 +92,18 @@ static void generate_bcc(ForceField *pd,
     auto itpbond = InteractionType::BONDS;
     for (auto &ai : ptypes)
     {
-        if (!ai.hasInteractionType(itpbond))
+        if (!ai.second.hasInteractionType(itpbond))
         {
             continue;
         }
-        auto bi = ai.interactionTypeToIdentifier(itpbond).id();
+        auto bi = ai.second.interactionTypeToIdentifier(itpbond).id();
         for (auto &aj : ptypes)
         {
-            if (!aj.hasInteractionType(itpbond))
+            if (!aj.second.hasInteractionType(itpbond))
             {
                 continue;
             }
-            auto bj = aj.interactionTypeToIdentifier(itpbond).id();
+            auto bj = aj.second.interactionTypeToIdentifier(itpbond).id();
             const double bondorders[] = { 1, 1.5, 2, 3 };
             const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
             for(size_t bb = 0; bb < nBondorder; bb++)
@@ -112,8 +112,8 @@ static void generate_bcc(ForceField *pd,
                 if (bonds.parameterExists(bondId))
                 {
                     auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    auto zi = ai.interactionTypeToIdentifier(entype).id();
-                    auto zj = aj.interactionTypeToIdentifier(entype).id();
+                    auto zi = ai.second.interactionTypeToIdentifier(entype).id();
+                    auto zj = aj.second.interactionTypeToIdentifier(entype).id();
                     if (!zi.empty() && !zj.empty())
                     {
                         Identifier bccId1({ zi, zj }, { bondorders[bb] }, bcc->canSwap());

@@ -783,7 +783,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                                                   &forces[current], &newEnergies[current]);
                 if (!firstStep)
                 {
-                    int    i      = 0;
                     double teller = 0, noemer = 0;
                     for(auto atomI : theAtoms)
                     {
@@ -794,7 +793,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                             teller    += (newCoords[current][atomI][m]-newCoords[next][atomI][m])*df;
                             //teller    += (deltaX[current][i]-deltaX[next][i])*df;
                             noemer    += df*df;
-                            i         += 1;
                         }
                     }
                     if (noemer > 0)

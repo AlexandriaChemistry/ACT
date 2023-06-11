@@ -258,7 +258,7 @@ int ForceComputer::ftype(const ForceField   *pd,
 }
 
 void ForceComputer::plot(const ForceField  *pd,
-                         InteractionType itype) const
+                         InteractionType    itype) const
 {
     if (!pd->interactionPresent(itype))
     {
@@ -266,6 +266,18 @@ void ForceComputer::plot(const ForceField  *pd,
                 interactionTypeToString(itype).c_str());
         return;
     }
+    std::string btype("bondtype");
+    std::string vdwtype("vdwtype");
+
+    std::map<InteractionType, const std::string> i2s = {
+        { InteractionType::BONDS,              btype },
+        { InteractionType::ANGLES,             btype },
+        { InteractionType::LINEAR_ANGLES,      btype },
+        { InteractionType::PROPER_DIHEDRALS,   btype },
+        { InteractionType::IMPROPER_DIHEDRALS, btype },
+        { InteractionType::VDW,                vdwtype },
+        { InteractionType::COULOMB,            vdwtype }
+    };
     auto &fs = pd->findForcesConst(itype);
     // The function we need to do the math
     auto bfc = getBondForceComputer(fs.gromacsType());
@@ -313,14 +325,22 @@ void ForceComputer::plot(const ForceField  *pd,
             Topology               top(bbb);
             std::vector<gmx::RVec> forces;
             gmx::RVec rvnul = { 0, 0, 0 };
-            for(const auto &atomname : f.first.atoms())
+            
+            auto subtype = i2s.find(itype);
+            if (i2s.end() != subtype)
             {
-                auto p = pd->findParticleType(itype, atomname);
-                if (p != pd->particleTypesConst().end())
+                for(const auto &atomname : f.first.atoms())
                 {
-                    ActAtom a(*p);
-                    a.setCharge(1);
-                    top.addAtom(a);
+                    if (pd->hasParticleType(atomname))
+                    {
+                        auto p = pd->findParticleType(atomname);
+                        if (p->hasOption(subtype->second))
+                        {
+                            ActAtom a(*p);
+                            a.setCharge(1);
+                            top.addAtom(a);
+                        }
+                    }
                 }
             }
             if (top.nAtoms() < 2)

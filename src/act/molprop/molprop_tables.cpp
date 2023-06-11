@@ -151,7 +151,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                                     iMolSelect            ims)
 {
     std::vector<MolProp>::iterator     mpi;
-    std::vector<std::string>::iterator si;
     real                               rms, R, a, da, b, db, chi2;
     char                               buf[256];
     gmx_stats                          lsq;
