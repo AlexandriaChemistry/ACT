@@ -401,27 +401,14 @@ void MolGen::checkDataSufficiency(FILE        *fp,
             };
             for (const auto &atype : atypes)
             {
-                if (fp && InteractionType::VSITE2 == atype)
-                {
-                    fprintf(fp, "Looking for vsite2 in force field\n");
-                }
                 if (optimize(atype) && pd->interactionPresent(atype))
                 {
                     auto angles = pd->findForces(atype);
-                    if (fp && InteractionType::VSITE2 == atype)
-                    {
-                        fprintf(fp, "Looking for vsite2 in molecular tpology\n");
-                        top->dump(fp);
-                    }
                     if (top->hasEntry(atype))
                     {
                         for (const auto &topentry : top->entry(atype))
                         {
                             // TODO check multiple ids
-                            if (fp && InteractionType::VSITE2 == atype)
-                            {
-                                fprintf(fp, "Looking for vsite2 %s\n", topentry->id().id().c_str());
-                            }
                             for (auto &ff : *(angles->findParameters(topentry->id())))
                             {
                                 if (fp && InteractionType::VSITE2 == atype)
