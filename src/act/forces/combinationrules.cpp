@@ -421,11 +421,7 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double jgamma   = jvdw.second[cgamma].internalValue();
-<<<<<<< HEAD
                     double jdelta   = ivdw.second[cdelta].internalValue();
-=======
-		    double jdelta   = jvdw.second[cdelta].internalValue();
->>>>>>> 011a0e919 (147  commit openmm)
                     double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
                     CombineLJ_147(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon,
