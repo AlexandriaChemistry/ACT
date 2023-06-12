@@ -1132,41 +1132,21 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(InteractionType                iType,
-                       const ForceFieldParameterList &fs,
+static void fillParams(const ForceFieldParameterList &fs,
                        const Identifier              &btype,
                        int                            nr,
                        const char                    *param_names[],
                        std::vector<double>           *param)
 {
-    auto myBtype = btype;
     if (param->empty())
     {
         param->resize(nr, 0);
     }
-    for (int i = 0; i < nr; i++)
+    auto ff = fs.findParameterMapConst(btype);
+    if (!ff.empty())
     {
-        if (!fs.parameterExists(myBtype))
+        for (int i = 0; i < nr; i++)
         {
-            myBtype = Identifier(iType, btype.swapped(), btype.canSwap());
-            printf("Created swapped is %s, original %s\n", myBtype.id().c_str(),
-                   btype.id().c_str());
-            if (!fs.parameterExists(myBtype))
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameters for %s (%s) and topid %s", 
-                                                               interactionTypeToString(iType).c_str(), 
-                                                               fs.function().c_str(), 
-                                                               myBtype.id().c_str()).c_str()));
-            }
-        }
-        else
-        {
-            // If a particular parameter is missing, we set it to zero.
-            // This is needed in particular to deal with combination rules, where
-            // some force fields have the atomic sigma, epsilon, etc. while others
-            // store the combined values, but not atomic ones (because that would
-            // not make sense).
-            auto ff      = fs.findParametersConst(myBtype);
             auto fp      = ff.find(param_names[i]);
             double value = 0;
             if (ff.end() != fp)
@@ -1191,55 +1171,55 @@ void Topology::fillParameters(const ForceField *pd)
             switch (fs.gromacsType())
             {
             case F_LJ:
-                fillParams(entry.first, fs, topID, ljNR, lj_name, &param);
+                fillParams(fs, topID, ljNR, lj_name, &param);
                 break;
             case F_BHAM:
-                fillParams(entry.first, fs, topID, wbhNR, wbh_name, &param);
+                fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
             case F_GBHAM:
-                fillParams(entry.first, fs, topID, gbhNR, gbh_name, &param);
+                fillParams(fs, topID, gbhNR, gbh_name, &param);
                 break;
             case F_COUL_SR:
-                fillParams(entry.first, fs, topID, coulNR, coul_name, &param);
+                fillParams(fs, topID, coulNR, coul_name, &param);
                 break;
             case F_MORSE:
-                fillParams(entry.first, fs, topID, morseNR, morse_name, &param);
+                fillParams(fs, topID, morseNR, morse_name, &param);
                 break;
             case F_CUBICBONDS:
-                fillParams(entry.first, fs, topID, cubicNR, cubic_name, &param);
+                fillParams(fs, topID, cubicNR, cubic_name, &param);
                 break;
             case F_BONDS:
-                fillParams(entry.first, fs, topID, bondNR, bond_name, &param);
+                fillParams(fs, topID, bondNR, bond_name, &param);
                 break;
             case F_ANGLES:
-                fillParams(entry.first, fs, topID, angleNR, angle_name, &param);
+                fillParams(fs, topID, angleNR, angle_name, &param);
                 break;
             case F_UREY_BRADLEY:
-                fillParams(entry.first, fs, topID, ubNR, ub_name, &param);
+                fillParams(fs, topID, ubNR, ub_name, &param);
                 break;
             case F_LINEAR_ANGLES:
-                fillParams(entry.first, fs, topID, linangNR, linang_name, &param);
+                fillParams(fs, topID, linangNR, linang_name, &param);
                 break;
             case F_IDIHS:
-                fillParams(entry.first, fs, topID, idihNR, idih_name, &param);
+                fillParams(fs, topID, idihNR, idih_name, &param);
                 break;
             case F_FOURDIHS:
-                fillParams(entry.first, fs, topID, fdihNR, fdih_name, &param);
+                fillParams(fs, topID, fdihNR, fdih_name, &param);
                 break;
             case F_POLARIZATION:
-                fillParams(entry.first, fs, topID, polNR, pol_name, &param);
+                fillParams(fs, topID, polNR, pol_name, &param);
                 break;
             case F_PDIHS:
-                fillParams(entry.first, fs, topID, pdihNR, pdih_name, &param);
+                fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
             case F_VSITE2:
-                fillParams(entry.first, fs, topID, vsite2NR, vsite2_name, &param);
+                fillParams(fs, topID, vsite2NR, vsite2_name, &param);
                 break;
             case F_VSITE3OUT:
-                fillParams(entry.first, fs, topID, vsite3outNR, vsite3out_name, &param);
+                fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
                 break;
             case F_VSITE3FAD:
-                fillParams(entry.first, fs, topID, vsite3fadNR, vsite3fad_name, &param);
+                fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
                 break;
             default:
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.gromacsType()].name).c_str()));

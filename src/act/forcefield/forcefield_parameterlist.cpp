@@ -121,7 +121,20 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     }
 }
 
-const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findParametersConst(const Identifier &identifier) const
+static ForceFieldParameterMap EmptyForceFieldParameterMap{};
+
+const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(const Identifier &identifier) const
+{
+    auto iter = parameters_.find(identifier);
+    if (parameters_.end() == iter)
+    {
+        return EmptyForceFieldParameterMap;
+    }
+    
+    return iter->second;
+}
+
+const ForceFieldParameterMap &ForceFieldParameterList::findParametersConst(const Identifier &identifier) const
 {
     auto iter = parameters_.find(identifier);
     if (parameters_.end() == iter)
