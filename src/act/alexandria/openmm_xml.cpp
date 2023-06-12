@@ -511,6 +511,28 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;
+            case F_LJ_147:
+                // TODO: optimize values
+                sigma   = param[wbh_name[lj_147SIGMA]].internalValue();
+                epsilon = param[wbh_name[lj_147EPSILON]].internalValue();
+                if (0 == epsilon)
+                {
+                    add_xml_double(grandchild3, lj_147_name[lj_147SIGMA], 0.001);
+                    add_xml_double(grandchild3, lj_147_name[lj_147EPSILON], 0.001);
+                    add_xml_double(grandchild3, lj_147_name[lj_147GAMMA], 7);
+                    add_xml_double(grandchild3, lj_147_name[lj_147DELTA], 1);
+                }
+                else
+                {
+                    for(size_t j = 0; j < param.size(); j++)
+                    {
+                        if (Mutability::Dependent != param[gbh_name[j]].mutability())
+                        {
+                            add_xml_double(grandchild3, gbh_name[j], param[gbh_name[j]].internalValue());
+                        }
+                    }
+                }
+                break;		
             case F_LJ:
                 if (nullptr == fsPtr)
                 {

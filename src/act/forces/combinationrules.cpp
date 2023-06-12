@@ -142,7 +142,7 @@ void CombineLJ_147(int     CombinationRule,
                  double *sigmaIJ,
                  double *epsilonIJ,
                  double *gammaIJ,
-		 double *deltaIJ)
+                 double *deltaIJ)
 
 {
     switch (CombinationRule)
@@ -151,26 +151,25 @@ void CombineLJ_147(int     CombinationRule,
             *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
             *gammaIJ = std::sqrt(gammaI * gammaJ);
-	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;
         case eCOMB_ARITHMETIC:
             *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
             *gammaIJ = 0.5 * (gammaI + gammaJ);
-	    *deltaIJ = 0.5 * (deltaI + deltaJ);
+            *deltaIJ = 0.5 * (deltaI + deltaJ);
             break;
         case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
             *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
             *gammaIJ = 0.5 * (gammaI + gammaJ);
-	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;
         case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. but has WH rule for gamma, as is the winner for WBH
             *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-//            *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
             *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
-	    *deltaIJ = std::sqrt(deltaI * deltaJ);
+            *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;
         case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
             *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
@@ -178,7 +177,6 @@ void CombineLJ_147(int     CombinationRule,
             *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
             *deltaIJ = std::sqrt(deltaI * deltaJ);
             break;	    
-
     case eCOMB_NONE:
         break;
     default:
@@ -237,7 +235,6 @@ void CombineBham(int     CombinationRule,
         case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi
             *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-//            *gammaIJ = (pow(gammaI,3) + pow(gammaJ,3))/(pow(gammaI,2) + pow(gammaJ,2));
             *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
             break;    
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
@@ -437,7 +434,7 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double jgamma   = jvdw.second[cgamma].internalValue();
-		    double jdelta   = ivdw.second[cdelta].internalValue();
+		    double jdelta   = jvdw.second[cdelta].internalValue();
                     double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
                     CombineLJ_147(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon,
