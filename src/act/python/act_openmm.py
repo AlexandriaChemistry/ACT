@@ -290,7 +290,7 @@ class ActOpenMMSim:
         defout = "output"
         parser.add_argument("-odir", "--outputdir", help="Directory to write output to, default: "+defout, type=str, default=defout)
         defvdw = "WBH"
-        parser.add_argument("-vdw", "--vdw", help="Van der Waals potential function. LJ for Lennard-Jones, WBH for modified Buckingham (Default), GWBH for generalized 4-parameter Buckingham"+defvdw, type=str, default=defvdw)
+        parser.add_argument("-vdw", "--vdw", help="Van der Waals potential function. LJ for Lennard-Jones, 14_7 for 14-7 potential of Qi 2016, WBH for modified Buckingham (Default), GWBH for generalized 4-parameter Buckingham"+defvdw, type=str, default=defvdw)
         defmDrude = "0.1"
         parser.add_argument("-mDrude", "--Drude_mass", help="The mass of drude particles. Make sure it is consistent with the mass in your forcefield"+defmDrude, type=float, default=defmDrude)
         parser.add_argument("-emonomer", "--emonomer", help="Energy of monomer will be subtracted when printing energies", type=float, default=None)
@@ -301,7 +301,7 @@ class ActOpenMMSim:
         if args.debug:
             args.verbose = True
         # Do some checking
-        if args.vdw != "LJ" and args.vdw != "WBH" and args.vdw != "GWBH":
+        if args.vdw != "LJ" and args.vdw != "WBH" and args.vdw != "GWBH" and args.vdw != "14_7":
             sys.exit("Unrecognized form of VDW potential. Use either LJ or WBH or GWBH keywords")
 
         if None == args.pdb_file and None == pdbfile:
@@ -569,7 +569,11 @@ class ActOpenMMSim:
             elif self.args.vdw == "GWBH":
                 [vdW, rmin, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
                 if self.args.debug:
-                    print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {self.customnb.getParticleParameters(index)}")
+                    print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {self.nb_correction.getParticleParameters(index)}")
+            elif self.args.vdw == "14_7":
+                [vdW, sigma, epsilon, gamma, delta, charge, zeta] = self.nb_correction.getParticleParameters(index)
+                if self.args.debug:
+                    print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {self.nb_correction.getParticleParameters(index)}")
             else:
                 sys.exit("Not implemented what to do")
             self.charges.append(charge)
@@ -682,9 +686,9 @@ class ActOpenMMSim:
             self.vdw_correction.setUseLongRangeCorrection(self.nonbondedforce.getUseDispersionCorrection())
 
             for index in range(self.nonbondedforce.getNumParticles()):
-                [charge_LJ, sigma_LJ, epsilon_LJ] = self.nonbondedforce.getParticleParameters(index)
+                [charge_LJ, sigma_LJ, epsilon_LJ] = self.nb_openmm.getParticleParameters(index)
                 [vdW, rmin, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
-                self.vdw_correction.addParticle([sigma, epsilon, gamma, delta, vdW, sigma_LJ, epsilon_LJ])
+                self.vdw_correction.addParticle([rmin, epsilon, gamma, delta, vdW, sigma_LJ, epsilon_LJ])
                 if self.args.debug:
                     print("index %d rmin %g, epsilon %g, gamma %g, delta %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, rmin, epsilon, gamma, delta, vdW, sigma_LJ._value, epsilon_LJ._value ))
             for index in range(self.nonbondedforce.getNumExceptions()):
@@ -695,6 +699,67 @@ class ActOpenMMSim:
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
         self.count_forces("Direct space 8")
+
+#################################################
+
+
+
+        elif self.args.vdw == "14_7":
+            expression = 'U_14_7-U_LJ;'
+            expression += LJ_expression
+
+#            self.vdw_expression =('vdW*(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
+#            self.vdw_expression =('vdW*(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           );')
+            self.vdw_expression =( 'vdW*(        epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) );'                                            )
+            expression += ( 'U_14_7 = %s;' % self.vdw_expression )
+            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+            expression += ( 'sigma    = %s;' % csigma )
+            expression += ( 'epsilon  = %s;' % cepsilon )
+            expression += ( 'gamma    = %s;' % cgamma )
+            expression += ( 'delta    = %s;' % cdelta )
+            expression += 'vdW = vdW1*vdW2;'
+            ############TODO put vdw correction in one block except for unique parameters?
+            self.vdw_correction = openmm.CustomNonbondedForce(expression)
+            self.vdw_correction.setName("VanderWaalsCorrection")
+            self.vdw_correction.addPerParticleParameter("sigma")
+            self.vdw_correction.addPerParticleParameter("epsilon")
+            self.vdw_correction.addPerParticleParameter("gamma")
+            self.vdw_correction.addPerParticleParameter("delta")
+            self.vdw_correction.addPerParticleParameter("vdW")
+            self.vdw_correction.addPerParticleParameter("sigma_LJ")
+            self.vdw_correction.addPerParticleParameter("epsilon_LJ")
+            self.vdw_correction.setUseSwitchingFunction(self.use_switching_function)
+
+            if self.nonbondedMethod == NoCutoff:
+                self.vdw_correction.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+            else:
+                self.vdw_correction.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+            self.vdw_correction.setCutoffDistance(cutoff_distance)
+
+            self.vdw_correction.setSwitchingDistance(switch_distance)
+            self.vdw_correction.setUseLongRangeCorrection(self.nb_openmm.getUseDispersionCorrection())
+
+            for index in range(self.nb_openmm.getNumParticles()):
+                [charge_LJ, sigma_LJ, epsilon_LJ] = self.nb_openmm.getParticleParameters(index)
+                [vdW, sigma, epsilon, gamma, delta, charge, zeta] = self.nb_correction.getParticleParameters(index)
+                self.vdw_correction.addParticle([sigma, epsilon, gamma, delta, vdW, sigma_LJ, epsilon_LJ])
+                if self.args.debug:
+                    print("index %d sigma %g, epsilon %g, gamma %g, delta %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, delta, vdW, sigma_LJ._value, epsilon_LJ._value ))
+            for index in range(self.nb_openmm.getNumExceptions()):
+                [iatom, jatom, chargeprod, sigma, epsilon] = self.nb_openmm.getExceptionParameters(index)
+                self.vdw_correction.addExclusion(iatom, jatom)
+                if self.args.debug:
+                    print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+            self.add_force_group(self.vdw_correction)
+            self.system.addForce(self.vdw_correction)
+
+
+
+
+
+
+
+
 
 #################################################
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
@@ -727,14 +792,14 @@ class ActOpenMMSim:
         vdwname = "VanderWaalsExclusionCorrection"
         vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
         vdw_excl_corr.setName(vdwname)
-        if self.args.vdw == "WBH":
+        if self.args.vdw == "WBH" or self.args.vdw == "14_7":
             vdw_excl_corr.addPerBondParameter("sigma")
-        else:
+        if self.args.vdw == "GWBH":
             vdw_excl_corr.addPerBondParameter("rmin")
         vdw_excl_corr.addPerBondParameter("epsilon")
         vdw_excl_corr.addPerBondParameter("gamma")
         vdw_excl_corr.addPerBondParameter("vdW")
-        if self.args.vdw == "GWBH":
+        if self.args.vdw == "GWBH" or self.args.vdw == "14_7":
             vdw_excl_corr.addPerBondParameter("delta")
         qq_excl_corr = openmm.CustomBondForce(self.qq_expression)
         qq_excl_corr.setName("CoulombExclusionCorrection")
@@ -748,6 +813,9 @@ class ActOpenMMSim:
             csigma, cepsilon, cgamma = self.comb.combStrings()
         elif self.args.vdw == "GWBH":
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings()
+        if self.args.vdw == "14_7":
+            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+
         if self.args.debug:
             if self.args.vdw == "GWBH":
                 print("crmin   = %s" % crmin)
@@ -756,6 +824,8 @@ class ActOpenMMSim:
                 print("csigma   = %s" % csigma)
             print("cepsilon = %s" % cepsilon)
             print("cgamma   = %s" % cgamma)
+            if self.args.vdw == "14_7":
+                print("cgamma   = %s" % cdelta)
         if self.args.vdw == "WBH":
 
             for index in range(self.nonbondedforce.getNumExceptions()):
@@ -831,8 +901,43 @@ class ActOpenMMSim:
                         vdw_excl_corr.addBond(iatom, jatom, [rmin, epsilon, gamma, delta, vdW])
                         if self.args.debug:
                             print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, rmin, epsilon, gamma, delta))
+        elif self.args.vdw == "14_7":
+            for index in range(self.nb_openmm.getNumExceptions()):
+                # Just get the excluded atoms from the regular NB force
+                [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nb_openmm.getExceptionParameters(index)
+                # Check for shell exclusions first
+                if (self.args.polarizable and
+                    ((jatom,iatom) in self.core_shell or ((iatom,jatom) in self.core_shell))):
+                    continue
+                # And get the parameters from the Custom NB force
+                [vdW1, sigma1, epsilon1, gamma1, delta1, charge1, zeta1] = self.nb_correction.getParticleParameters(iatom)
+                [vdW2, sigma2, epsilon2, gamma2, delta1, charge2, zeta2] = self.nb_correction.getParticleParameters(jatom)
+                if self.args.debug:
+                    print(f" custom nonbonded force i {self.nb_correction.getParticleParameters(iatom)}")
+                    print(f" custom nonbonded force j {self.nb_correction.getParticleParameters(jatom)}")
+
+                # Coulomb part
+                if not self.real_exclusion(nexclqq, iatom, jatom):
+                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
+                    qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
+                    if self.args.debug:
+                        print("Adding Coul excl i %d j %d q1 %g q2 %g zeta %g" % ( iatom, jatom, charge1, charge2, zeta))
+
+                # Van der Waals part
+                if (not self.real_exclusion(nexclvdw, iatom, jatom) and
+                    epsilon1 > 0 and epsilon2 > 0):
+                    gamma   = eval(cgamma)
+                    epsilon = eval(cepsilon)
+                    sigma   = eval(csigma)
+                    delta   = eval(cdelta)
+                    vdW     = vdW1*vdW2
+                    if vdW != 0:
+                        vdw_excl_corr.addBond(iatom, jatom, [sigma, epsilon, gamma, delta, vdW])
+                        if self.args.debug:
+                            print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, sigma, epsilon, gamma, delta))
         else:
             print("Unsupported Van der Waals potential %s" % self.args.vdw)
+
 
         # Finish off. Did we add any exclusion correction?
         if 0 < qq_excl_corr.getNumBonds():        
@@ -844,6 +949,16 @@ class ActOpenMMSim:
             self.system.addForce(vdw_excl_corr)
             self.count_forces("Excl corr 2")
         self.count_forces("Excl corr 3")
+
+
+####################
+          
+#        self.add_force_group(qq_excl_corr)
+#        self.system.addForce(qq_excl_corr)
+#        self.add_force_group(vdw_excl_corr)
+#        self.system.addForce(vdw_excl_corr)
+#        # Now we do not need the original CustomNonbondedForce anymore
+#        self.del_force(self.nb_correction)
    
     def add_bonded_forces(self):
         self.bonds    = []

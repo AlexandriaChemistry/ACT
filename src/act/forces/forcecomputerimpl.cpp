@@ -287,6 +287,10 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
             real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
             real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) + 
                                         ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/2.;
+            if (debug)
+             {
+                 fprintf(debug, "vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", eedisp + eerep, epsilon, gamma, rmin, delta);
+             }
 
             erep     += eerep;
             edisp    += eedisp;
