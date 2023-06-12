@@ -702,10 +702,10 @@ class ActOpenMMSim:
                 print("cdelta   = %s" % cdelta)
             else:
                 print("csigma   = %s" % csigma)
-            print("cepsilon = %s" % cepsilon)
-            print("cgamma   = %s" % cgamma)
+                print("cepsilon = %s" % cepsilon)
+                print("cgamma   = %s" % cgamma)
             if self.args.vdw == "14_7":
-                print("cgamma   = %s" % cdelta)
+                print("cdelta   = %s" % cdelta)
         if self.args.vdw == "WBH":
 
             for index in range(self.nb_openmm.getNumExceptions()):
