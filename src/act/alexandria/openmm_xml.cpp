@@ -414,11 +414,23 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
         auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
+        if (fs.gromacsType() == F_BHAM || fs.gromacsType() == F_LJ_147)
+        {
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
+        }
+        else
+        {
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "rmin");
+        }
         auto grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
         auto grandchild4 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
+        if (fs.gromacsType() == F_GBHAM || fs.gromacsType() == F_LJ_147)
+        {
+            auto grandchild9 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+            add_xml_char(grandchild9, exml_names(xmlEntryOpenMM::NAME), "delta");
+        }
         
         auto grandchild5 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
@@ -502,7 +514,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 }
                 else
                 {
-                    for(size_t j = 0; j < param.size(); j++)
+                    for(size_t j = 0; j < gbhNR; j++)
                     {
                         if (Mutability::Dependent != param[gbh_name[j]].mutability())
                         {
