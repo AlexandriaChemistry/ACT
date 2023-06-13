@@ -514,7 +514,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 }
                 else
                 {
-                    for(size_t j = 0; j < gbhNR; j++)
+//                    for(size_t j = 0; j < gbhNR; j++)
+                    for(size_t j = 0; j < param.size(); j++)
                     {
                         if (Mutability::Dependent != param[gbh_name[j]].mutability())
                         {
