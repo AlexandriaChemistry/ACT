@@ -847,8 +847,8 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
 void ACTMol::CalcPolarizability(const ForceField    *pd,
                                 const ForceComputer *forceComp)
 {
-    auto natoms = atomsConst().size();
-    std::vector<gmx::RVec> coordinates(natoms);
+    std::vector<gmx::RVec> coordinates = xOriginal();
+    GMX_RELEASE_ASSERT(coordinates.size() == atomsConst().size(), "Mismatch in number of atoms");
     forceComp->calcPolarizability(pd, topology_, &coordinates,
                                   qTypeProps(qType::Calc));
 }
