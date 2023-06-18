@@ -315,9 +315,9 @@ static void spread_vsite2(const t_iatom ia[], real a,
     ivec    di;
     int     siv, sij;
 
-    av = ia[1];
-    ai = ia[2];
-    aj = ia[3];
+    av = ia[3];
+    ai = ia[1];
+    aj = ia[2];
 
     svmul(1 - a, f[av], fi);
     svmul(    a, f[av], fj);
