@@ -198,7 +198,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     energies->insert({ InteractionType::EPOT, epot });
 }
 
-void ForceComputer::calcPolarizability(const ForceField          *pd,
+void ForceComputer::calcPolarizability(const ForceField       *pd,
                                        const Topology         *top,
                                        std::vector<gmx::RVec> *coordinates,
                                        QtypeProps             *qtp) const
