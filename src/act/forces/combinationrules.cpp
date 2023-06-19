@@ -356,19 +356,15 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double c6 = 0, c8 = 0;
                     CombineLJ(comb_rule, isigma, jsigma,
                               iepsilon, jepsilon, &c6, &c8);
-                    ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6,
-                                               mutd, true, true);
-                    ForceFieldParameter c8parm(unit, c8, 0, 1, c8, c8,
-                                                mutd, true, true);
-                    newParams.addParameter(pairID, lj_name[lj_C6_IJ], c6parm);
-                    newParams.addParameter(pairID, lj_name[lj_C8_IJ], c8parm);
+                    pmap.insert({lj_name[lj_C6_IJ], ForceFieldParameter(unit, c6, 0, 1, c6, c6,
+                                                                        mutd, true, true)});
+                    pmap.insert({lj_name[lj_C8_IJ], ForceFieldParameter(unit, c8, 0, 1, c8, c8,
+                                                                        mutd, true, true)});
                     // Add some dummy parameters
-                    newParams.addParameter(pairID, csigma,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3,
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0,
-                                                               mutd, true, true));
+                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                            mutd, true, true)});
+                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                              mutd, true, true)});
                 }
                 break;	
             case F_BHAM:
@@ -414,8 +410,8 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double isigma   = ivdw.second[csigma].internalValue();
                     double iepsilon = ivdw.second[cepsilon].internalValue();
                     double igamma   = ivdw.second[cgamma].internalValue();
-		    double idelta   = ivdw.second[cdelta].internalValue();
-		    double jdelta   = ivdw.second[cdelta].internalValue();
+                    double idelta   = ivdw.second[cdelta].internalValue();
+                    double jdelta   = ivdw.second[cdelta].internalValue();
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double jgamma   = jvdw.second[cgamma].internalValue();
@@ -424,36 +420,28 @@ static void generateVdwParameterPairs(ForceField *pd)
                                 iepsilon, jepsilon,
                                 igamma, jgamma, idelta, jdelta, &sigmaij,
                                 &epsilonij, &gammaij, &deltaij);
-                    ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
-                                                sigmaij, sigmaij,
-                                                mutd, true, true);
-                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
-                                                epsilonij, epsilonij,
-                                                mutd, true, true);
-                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
-                                                gammaij, gammaij,
-                                                mutd, true, true);
-		    ForceFieldParameter delparm(unit, deltaij, 0, 1,
-                                                deltaij, deltaij,
-                                                mutd, true, true);
-                    newParams.addParameter(pairID, lj_147_name[lj_147SIGMA_IJ], sigparm);
-                    newParams.addParameter(pairID, lj_147_name[lj_147EPSILON_IJ], epsparm);
-                    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], gamparm);
-		    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], delparm);
+                    pmap.insert({lj_147_name[lj_147SIGMA_IJ], ForceFieldParameter(unit, sigmaij, 0, 1,
+                                                                                  sigmaij, sigmaij,
+                                                                                  mutd, true, true)});
+                    pmap.insert({lj_147_name[lj_147EPSILON_IJ], ForceFieldParameter(unit, epsilonij, 0, 1,
+                                                                                    epsilonij, epsilonij,
+                                                                                    mutd, true, true)});
+                    pmap.insert({lj_147_name[lj_147GAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
+                                                                                  gammaij, gammaij,
+                                                                                  mutd, true, true)});
+                    pmap.insert({lj_147_name[lj_147DELTA_IJ], ForceFieldParameter(unit, deltaij, 0, 1,
+                                                                                  deltaij, deltaij,
+                                                                                  mutd, true, true)});
 
                     // Add some dummy parameters
-                    newParams.addParameter(pairID, csigma,
-                                           ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3,
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cepsilon,
-                                           ForceFieldParameter(unit, 0, 0, 1, 0, 0,
-                                                               mutd, true, true));
-                    newParams.addParameter(pairID, cgamma,
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
-                                                               mutd, true, true));
-		    newParams.addParameter(pairID, cdelta,
-                                           ForceFieldParameter(unit, 10, 0, 1, 10, 10,
-                                                               mutd, true, true));
+                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
+                                                            mutd, true, true)});
+                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
+                                                               mutd, true, true)});
+                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
+                                                             mutd, true, true)});
+                    pmap.insert({cdelta, ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
+                                                             mutd, true, true)});
                 }
                 break;
             case F_GBHAM:

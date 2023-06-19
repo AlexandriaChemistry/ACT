@@ -825,11 +825,14 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     {
         return;
     }
-    auto &plist = entry(itype);
-    for(auto pl = plist.begin(); pl < plist.end(); ++pl)
+    if (!hasEntry(itype))
+    {
+        return;
+    }
+    for(const auto &pl : entry(itype))
     {
         fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
-                (*pl)->atomIndex(0), (*pl)->atomIndex(1));
+                pl->atomIndex(0), pl->atomIndex(1));
     }
 }
 

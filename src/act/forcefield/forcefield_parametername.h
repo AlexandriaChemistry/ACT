@@ -49,7 +49,7 @@ namespace alexandria
     
     extern const char *wbh_name[wbhNR];
 
-    enum { lj_147SIGMA = 0, lj_147EPSILON = 1, lj_147GAMMA = 2, lj_147DELTA = 3, lj_147SIGMA_IJ = 4, lj_147EPSILON_IJ = 5, lj_147GAMMA_IJ = 6, lj_147DELTA_IJ = 7, lj_NR_147 = 9 };
+    enum { lj_147SIGMA = 0, lj_147EPSILON = 1, lj_147GAMMA = 2, lj_147DELTA = 3, lj_147SIGMA_IJ = 4, lj_147EPSILON_IJ = 5, lj_147GAMMA_IJ = 6, lj_147DELTA_IJ = 7, lj_NR_147 = 8 };
 
     extern const char *lj_147_name[lj_NR_147];
     
