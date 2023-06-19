@@ -762,6 +762,67 @@ class ActOpenMMSim:
 
 
 #################################################
+
+
+
+        elif self.args.vdw == "14_7":
+            expression = 'U_14_7-U_LJ;'
+            expression += LJ_expression
+
+#            self.vdw_expression =('vdW*(((((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* (((3/(gamma+3))*(exp(gamma*(1-(r/sigma)))))-1))));')
+#            self.vdw_expression =('vdW*(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           );')
+            self.vdw_expression =( 'vdW*(        epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) );'                                            )
+            expression += ( 'U_14_7 = %s;' % self.vdw_expression )
+            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+            expression += ( 'sigma    = %s;' % csigma )
+            expression += ( 'epsilon  = %s;' % cepsilon )
+            expression += ( 'gamma    = %s;' % cgamma )
+            expression += ( 'delta    = %s;' % cdelta )
+            expression += 'vdW = vdW1*vdW2;'
+            ############TODO put vdw correction in one block except for unique parameters?
+            self.vdw_correction = openmm.CustomNonbondedForce(expression)
+            self.vdw_correction.setName("VanderWaalsCorrection")
+            self.vdw_correction.addPerParticleParameter("sigma")
+            self.vdw_correction.addPerParticleParameter("epsilon")
+            self.vdw_correction.addPerParticleParameter("gamma")
+            self.vdw_correction.addPerParticleParameter("delta")
+            self.vdw_correction.addPerParticleParameter("vdW")
+            self.vdw_correction.addPerParticleParameter("sigma_LJ")
+            self.vdw_correction.addPerParticleParameter("epsilon_LJ")
+            self.vdw_correction.setUseSwitchingFunction(self.use_switching_function)
+
+            if self.nonbondedMethod == NoCutoff:
+                self.vdw_correction.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
+            else:
+                self.vdw_correction.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
+            self.vdw_correction.setCutoffDistance(cutoff_distance)
+
+            self.vdw_correction.setSwitchingDistance(switch_distance)
+            self.vdw_correction.setUseLongRangeCorrection(self.nb_openmm.getUseDispersionCorrection())
+
+            for index in range(self.nb_openmm.getNumParticles()):
+                [charge_LJ, sigma_LJ, epsilon_LJ] = self.nb_openmm.getParticleParameters(index)
+                [vdW, sigma, epsilon, gamma, delta, charge, zeta] = self.nb_correction.getParticleParameters(index)
+                self.vdw_correction.addParticle([sigma, epsilon, gamma, delta, vdW, sigma_LJ, epsilon_LJ])
+                if self.args.debug:
+                    print("index %d sigma %g, epsilon %g, gamma %g, delta %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, delta, vdW, sigma_LJ._value, epsilon_LJ._value ))
+            for index in range(self.nb_openmm.getNumExceptions()):
+                [iatom, jatom, chargeprod, sigma, epsilon] = self.nb_openmm.getExceptionParameters(index)
+                self.vdw_correction.addExclusion(iatom, jatom)
+                if self.args.debug:
+                    print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+            self.add_force_group(self.vdw_correction)
+            self.system.addForce(self.vdw_correction)
+
+
+
+
+
+
+
+
+
+#################################################
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
         if nexcl == 0:
             return False
@@ -949,6 +1010,45 @@ class ActOpenMMSim:
             self.system.addForce(vdw_excl_corr)
             self.count_forces("Excl corr 2")
         self.count_forces("Excl corr 3")
+
+####################
+
+
+        if self.args.vdw == "14_7":
+            for index in range(self.nb_openmm.getNumExceptions()):
+                # Just get the excluded atoms from the regular NB force
+                [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nb_openmm.getExceptionParameters(index)
+                # Check for shell exclusions first
+                if (self.args.polarizable and
+                    ((jatom,iatom) in self.core_shell or ((iatom,jatom) in self.core_shell))):
+                    continue
+                # And get the parameters from the Custom NB force
+                [vdW1, sigma1, epsilon1, gamma1, delta1, charge1, zeta1] = self.nb_correction.getParticleParameters(iatom)
+                [vdW2, sigma2, epsilon2, gamma2, delta1, charge2, zeta2] = self.nb_correction.getParticleParameters(jatom)
+                if self.args.debug:
+                    print(f" custom nonbonded force i {self.nb_correction.getParticleParameters(iatom)}")
+                    print(f" custom nonbonded force j {self.nb_correction.getParticleParameters(jatom)}")
+
+                # Coulomb part
+                if not self.real_exclusion(nexclqq, iatom, jatom):
+                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
+                    qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
+                    if self.args.debug:
+                        print("Adding Coul excl i %d j %d q1 %g q2 %g zeta %g" % ( iatom, jatom, charge1, charge2, zeta))
+
+                # Van der Waals part
+                if (not self.real_exclusion(nexclvdw, iatom, jatom) and
+                    epsilon1 > 0 and epsilon2 > 0):
+                    gamma   = eval(cgamma)
+                    epsilon = eval(cepsilon)
+                    sigma   = eval(csigma)
+                    delta   = eval(cdelta)
+                    vdW     = vdW1*vdW2
+                    if vdW != 0:
+                        vdw_excl_corr.addBond(iatom, jatom, [sigma, epsilon, gamma, delta, vdW])
+                        if self.args.debug:
+                            print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, sigma, epsilon, gamma, delta))
+
 
 
 ####################

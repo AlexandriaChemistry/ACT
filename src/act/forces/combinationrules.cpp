@@ -451,6 +451,57 @@ static void generateVdwParameterPairs(ForceField *pd)
                                                              mutd, true, true)});
                 }
                 break;
+            case F_LJ_147:
+                {
+                    auto csigma     = lj_147_name[lj_147SIGMA];
+                    auto cepsilon   = lj_147_name[lj_147EPSILON];
+                    auto cgamma     = lj_147_name[lj_147GAMMA];
+                    auto cdelta     = lj_147_name[lj_147DELTA];
+                    double isigma   = ivdw.second[csigma].internalValue();
+                    double iepsilon = ivdw.second[cepsilon].internalValue();
+                    double igamma   = ivdw.second[cgamma].internalValue();
+                    double idelta   = ivdw.second[cdelta].internalValue();
+                    double jsigma   = jvdw.second[csigma].internalValue();
+                    double jepsilon = jvdw.second[cepsilon].internalValue();
+                    double jgamma   = jvdw.second[cgamma].internalValue();
+                    double jdelta   = jvdw.second[cdelta].internalValue();
+                    double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
+                    CombineLJ_147(comb_rule, isigma, jsigma,
+                                  iepsilon, jepsilon,
+                                  igamma, jgamma, idelta, jdelta, &sigmaij,
+                                  &epsilonij, &gammaij, &deltaij);
+                    ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
+                                                sigmaij, sigmaij,
+                                                mutd, true, true);
+                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
+                                                epsilonij, epsilonij,
+                                                mutd, true, true);
+                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
+                                                gammaij, gammaij,
+                                                mutd, true, true);
+                    ForceFieldParameter delparm(unit, deltaij, 0, 1,
+                                                deltaij, deltaij,
+                                                mutd, true, true);
+                    newParams.addParameter(pairID, lj_147_name[lj_147SIGMA_IJ], sigparm);
+                    newParams.addParameter(pairID, lj_147_name[lj_147EPSILON_IJ], epsparm);
+                    newParams.addParameter(pairID, lj_147_name[lj_147GAMMA_IJ], gamparm);
+                    newParams.addParameter(pairID, lj_147_name[lj_147DELTA_IJ], delparm);
+
+                    // Add some dummy parameters
+                    newParams.addParameter(pairID, csigma,
+                                           ForceFieldParameter(unit, 0.3, 0, 0, 0.3, 0.3,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cepsilon,
+                                           ForceFieldParameter(unit, 0, 0, 0, 0, 0,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cgamma,
+                                           ForceFieldParameter(unit, 10, 0, 0, 10, 10,
+                                                               mutd, true, true));
+                    newParams.addParameter(pairID, cdelta,
+                                           ForceFieldParameter(unit, 10, 0, 0, 10, 10,
+                                                               mutd, true, true));
+                }
+                break;
             case F_GBHAM:
                 {
                     auto crmin      = gbh_name[gbhRMIN];
