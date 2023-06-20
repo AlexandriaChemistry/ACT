@@ -183,7 +183,7 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
 	real f147       = (epsilon * (std::pow( ((delta + 1 )/( (rstar) + delta)   ), 7) )* ( ((1 + gamma)/( (std::pow((rstar), 7)) + gamma )) -2 )              ); 
         if (debug)
         {    
-            fprintf(debug, "ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", ai, aj, f147, epsilon, gamma, sigma, delta);
+            fprintf(debug, "ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta);
         }
         erep     += eerep;
         edisp    += eedisp;
