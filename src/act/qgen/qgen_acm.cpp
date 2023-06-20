@@ -572,7 +572,7 @@ void QgenAcm::checkSupport(const ForceField *pd)
     }
 }
 
-int QgenAcm::solveEEM(FILE *fp)
+void QgenAcm::solveEEM(FILE *fp)
 {
     std::vector<double> q;
     size_t              nelem = nonFixed_.size();
@@ -609,7 +609,10 @@ int QgenAcm::solveEEM(FILE *fp)
                     qtot, qtotal_, nelem, rhs_[nelem]);
         }
     }
-    return info;
+    else
+    {
+        eQGEN_ = eQgen::MATRIXSOLVER;
+    }    
 }
 
 void QgenAcm::getBccParams(const ForceField *pd,
@@ -628,7 +631,8 @@ void QgenAcm::getBccParams(const ForceField *pd,
     {
         if (CanSwap::Yes == fs.canSwap())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find identifier %s in list %s", bccId.id().c_str(), interactionTypeToString(itype).c_str()).c_str()));
+            eQGEN_ = eQgen::NOSUPPORT;
+            return;
         }
         else
         {
@@ -638,6 +642,11 @@ void QgenAcm::getBccParams(const ForceField *pd,
             swapped = true;
         }
     }
+    if (!fs.parameterExists(bccId))
+    {
+        eQGEN_ = eQgen::NOSUPPORT;
+        return;
+    }
     *delta_chi = fs.findParameterTypeConst(bccId, "delta_chi").value();
     if (swapped)
     {
@@ -646,7 +655,7 @@ void QgenAcm::getBccParams(const ForceField *pd,
     *delta_eta = fs.findParameterTypeConst(bccId, "delta_eta").value();
 }
 
-int QgenAcm::solveSQE(FILE                    *fp,
+void QgenAcm::solveSQE(FILE                    *fp,
                       const ForceField        *pd,
                       const std::vector<Bond> &bonds)
 {
@@ -668,6 +677,10 @@ int QgenAcm::solveSQE(FILE                    *fp,
             double delta_chi = 0, delta_eta = 0;
             getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
                          &delta_chi, &delta_eta);
+            if (eQgen::OK != eQGEN_)
+            {
+                return;
+            }
             if (debug)
             {
                 fprintf(debug, "Delta_chi %10g Delta_Eta %10g\n",
@@ -744,7 +757,8 @@ int QgenAcm::solveSQE(FILE                    *fp,
         info = lhs.solve(rhs, &pij);
         if (info > 0)
         {
-            return info;
+            eQGEN_ = eQgen::MATRIXSOLVER;
+            return;
         }
         if (fp)
         {
@@ -803,7 +817,6 @@ int QgenAcm::solveSQE(FILE                    *fp,
             fprintf(fp, "qtot = %g, it should be %d\n", qtot, qtotal_);
         }
     }
-    return info;
 }
 
 eQgen QgenAcm::generateCharges(FILE                         *fp,
@@ -824,7 +837,6 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     }
     checkSupport(pd);
-    int info = 0;
     if (eQgen::OK == eQGEN_)
     {
         updateParameters(pd, *atoms);
@@ -833,23 +845,20 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
-            info = solveSQE(fp, pd, bonds);
+            solveSQE(fp, pd, bonds);
         }
         else
         {
             calcRhs(epsilonr_);
-            info = solveEEM(fp);
+            solveEEM(fp);
         }
-        if (info == 0)
+        if (eQgen::OK == eQGEN_)
         {
             copyChargesToAtoms(atoms);
             dump(fp, atoms);
         }
-        else
-        {
-            eQGEN_ = eQgen::MATRIXSOLVER;
-        }
     }
     return eQGEN_;
 }
-}
+
+} // namespace
