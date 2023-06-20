@@ -267,20 +267,20 @@ private:
     
     /*! \brief Solve the matrix equation to determine charges
      * \param[in] fp File pointer for optional outptu
-     * \return 0 if all is OK, > 0 if not.
+     * If something goes wrong, eQGEN_ will be set.
      */
-    int solveEEM(FILE *fp);
+    void solveEEM(FILE *fp);
     
     /*! \brief Perform the split charge equilibration algorithm
      *
      * \param[in] fp    File for logging
      * \param[in] pd    Force field information
      * \param[in] bonds List of bonds in the compound
-     * \return 0 if all is OK, > 0 if not.
+     * If something goes wrong, eQGEN_ will be set.
      */
-    int solveSQE(FILE                    *fp,
-                 const ForceField           *pd,
-                 const std::vector<Bond> &bonds);
+    void solveSQE(FILE                    *fp,
+                  const ForceField        *pd,
+                  const std::vector<Bond> &bonds);
     
     /*! \brief update the positions
      * \param[in] x The new coordinates
