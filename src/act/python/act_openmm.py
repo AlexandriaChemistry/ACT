@@ -393,6 +393,8 @@ class ActOpenMMSim:
             if self.platform.supportsDoublePrecision():
                 print("Setting precision to double")
 #                self.platform.setPropertyValue("Precision", "double")
+        print("Using OpenMM version %s" % self.platform.getOpenMMVersion())
+
 
     def start_output(self):
         # OUTPUT
