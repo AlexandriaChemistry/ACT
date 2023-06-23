@@ -293,9 +293,20 @@ void CombineBham(int     CombinationRule,
             *gammaIJ = 0.5 * (gammaI + gammaJ);
             break;
         case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+            {
+                double s2 = pow(sigmaI,3) + pow(sigmaJ,3);
+                if (s2 > 0)
+                {
+                    *sigmaIJ = s2/(pow(sigmaI,2) + pow(sigmaJ,2));
+                    *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+                }
+                else
+                {
+                    *sigmaIJ = 0;
+                    *epsilonIJ = 0;
+                }
+                *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+            }
             break;    
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
             *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
@@ -331,8 +342,15 @@ void CombineGBham(int     CombinationRule,
     // This is just a quick hack!
     CombineBham(CombinationRule, rminI, rminJ, epsilonI, epsilonJ,
                 gammaI, gammaJ, rminIJ, epsilonIJ, gammaIJ);
-//    *deltaIJ = (deltaI+deltaJ)/2;
-      *deltaIJ = ((deltaI * deltaJ) *  (deltaI + deltaJ))/ (pow(deltaI,2) + pow(deltaJ,2));
+    double d2 = (deltaI * deltaJ)*(deltaI + deltaJ);
+    if (d2 != 0)
+    {
+        *deltaIJ = d2/(pow(deltaI,2) + pow(deltaJ,2));
+    }
+    else
+    {
+        *deltaIJ = 0;
+    }
 }
 
 int getCombinationRule(const ForceFieldParameterList &vdw)
