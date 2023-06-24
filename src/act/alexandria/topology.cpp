@@ -727,6 +727,8 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto bid    = mybond->id();
         auto batoms = bid.atoms();
         auto border = bid.bondOrders();
+        int  ai     = mybond->aI();
+        int  aj     = mybond->aJ();
         if (debug)
         {
             fprintf(debug, "Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
@@ -739,9 +741,21 @@ int Topology::makeVsite2s(const ForceField *pd,
             }
             auto vsatoms = fvs.first.atoms();
             auto vsbo    = fvs.first.bondOrders();
+            bool found   = false;
+            if (border[0] == vsbo[0])
+            {
+                if (batoms[0] == vsatoms[0] && batoms[1] == vsatoms[1])
+                {
+                    found = true;
+                }
+                else if (batoms[1] == vsatoms[0] && batoms[0] == vsatoms[1])
+                {
+                    found   = true;
+                    int tmp = ai; ai = aj; aj = tmp;
+                }
+            }
             // Make dummmy bond identifier using just the two atoms and the real bond order.
-            Identifier btest({vsatoms[0], vsatoms[1]}, {vsbo[0]}, CanSwap::Yes);
-            if (btest == bid)
+            if (found)
             {
                 auto vsname = vsatoms[vsatoms.size()-1];
                 if (!pd->hasParticleType(vsname))
@@ -756,16 +770,6 @@ int Topology::makeVsite2s(const ForceField *pd,
                     ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                     ptype->gmxParticleType(), 
                                     0, ptype->mass(), ptype->charge());
-                    // We need to add the number of previous vsites to get the
-                    // corect numbers here. Let's first check to see whether we need to swap the atoms though.
-                    int        ai = mybond->aI(), aj = mybond->aJ();
-                    Identifier v2test({ atoms_[ai].element(), atoms_[aj].element(), newatom.element() },
-                                      { border[0], 9 }, CanSwap::No);
-                    if (!ff_vs2.parameterExists(v2test))
-                    {
-                        aj  = mybond->aI();
-                        ai  = mybond->aJ();
-                    }
                     // Put virtual site straight after the last atom.
                     int vs2 = atomList->size();
                     newatom.addCore(ai);
