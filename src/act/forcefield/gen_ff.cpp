@@ -172,7 +172,7 @@ static void add_vsites(const char *vsfile,
         double minmax = std::abs(a)+0.5;
         ForceFieldParameter vs2param("", a, 0, 0, -minmax, minmax,
                                      Mutability::Bounded, false, false);
-        vsite2.addParameter(vs, "a", vs2param);
+        vsite2.addParameter(vs, vsite2_name[vsite2A], vs2param);
         lineno += 1;
     }
     pd->addForces(interactionTypeToString(itypeVS2), vsite2);
