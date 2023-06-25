@@ -779,7 +779,12 @@ int Topology::makeVsite2s(const ForceField *pd,
                 else
                 {
                     auto ptype = pd->findParticleType(vsname);
-                    std::string vstype = ptype->optionValue("bondtype");
+                    if (!ptype->hasOption(bondtype))
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", vsname.c_str()).c_str()));
+
+                    }
+                    std::string vstype = ptype->optionValue(bondtype);
                     ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                     ptype->gmxParticleType(), 
                                     0, ptype->mass(), ptype->charge());
