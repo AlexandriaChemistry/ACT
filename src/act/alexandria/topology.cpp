@@ -720,6 +720,7 @@ int Topology::makeVsite2s(const ForceField *pd,
     // that should be augmented with a virtual site.
     // Since we insert atoms and coordinates, the bonds array needs to be
     // interpreted with care.
+    std::string bondtype("bondtype");
     for(size_t i = 0; i < bonds.size(); i++)
     {
         auto mybond = static_cast<const Bond *>(bonds[i]->self());
@@ -728,8 +729,18 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto border = bid.bondOrders();
         int  ai     = mybond->aI();
         int  aj     = mybond->aJ();
-        auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
-        auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
+        auto pti    = pd->findParticleType(atoms_[ai].ffType());
+        auto ptj    = pd->findParticleType(atoms_[aj].ffType());
+        if (!pti->hasOption(bondtype))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", atoms_[ai].ffType().c_str()).c_str()));
+        }
+        else if (!ptj->hasOption(bondtype))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", atoms_[aj].ffType().c_str()).c_str()));
+        }
+        auto bai    = pti->optionValue("bondtype");
+        auto baj    = ptj->optionValue("bondtype");
         
         if (debug)
         {
