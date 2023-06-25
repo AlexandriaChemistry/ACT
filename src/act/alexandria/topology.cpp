@@ -696,7 +696,7 @@ int Topology::makeVsite2s(const ForceField *pd,
     {
         if (debug)
         {
-            fprintf(debug, "Force field does contain vsites, but it is empty!\n");
+            fprintf(debug, "Force field has zero vsite2 interactions!\n");
         }
         return 0;
     }
@@ -725,13 +725,15 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto mybond = static_cast<const Bond *>(bonds[i]->self());
         mybond->check(2);
         auto bid    = mybond->id();
-        auto batoms = bid.atoms();
         auto border = bid.bondOrders();
         int  ai     = mybond->aI();
         int  aj     = mybond->aJ();
+        auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
+        auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
+        
         if (debug)
         {
-            fprintf(debug, "Found bond %s %s\n", batoms[0].c_str(), batoms[1].c_str());
+            fprintf(debug, "Found bond %s %s\n", bai.c_str(), baj.c_str());
         }
         for(auto &fvs : ffvs.parametersConst())
         {
@@ -744,11 +746,11 @@ int Topology::makeVsite2s(const ForceField *pd,
             bool found   = false;
             if (border[0] == vsbo[0])
             {
-                if (batoms[0] == vsatoms[0] && batoms[1] == vsatoms[1])
+                if (bai == vsatoms[0] && baj == vsatoms[1])
                 {
                     found = true;
                 }
-                else if (batoms[1] == vsatoms[0] && batoms[0] == vsatoms[1])
+                else if (baj == vsatoms[0] && bai == vsatoms[1])
                 {
                     found   = true;
                     int tmp = ai; ai = aj; aj = tmp;
@@ -1180,7 +1182,7 @@ void Topology::fillParameters(const ForceField *pd)
             case F_LJ:
                 fillParams(fs, topID, ljNR, lj_name, &param);
                 break;
-	    case F_LJ_86:
+            case F_LJ_86:
                 fillParams(fs, topID, lj_NR_86, lj_86_name, &param);
                 break;
             case F_LJ_147:

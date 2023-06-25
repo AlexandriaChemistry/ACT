@@ -77,6 +77,26 @@ TEST(Vsite2, HF)
     EXPECT_TRUE(param_fh->internalValue() == param_hf->internalValue());
 }
 
+TEST(Vsite2, HFCanSwapNo)
+{
+    std::string forcefield("ACS-pg-vs2");
+    // Get forcefield
+    auto pd  = getForceField(forcefield);
+    
+    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::No); 
+    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    EXPECT_FALSE(fh == hf);
+    auto itype = InteractionType::VSITE2;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(fh));
+    auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
+    EXPECT_TRUE(param_fh->internalValue() == 1.05);
+    EXPECT_FALSE(fs.parameterExists(hf));
+}
+
 }  // namespace
 
 }  // namespace gmx

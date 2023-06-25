@@ -707,7 +707,7 @@ size_t MolGen::Read(FILE                                *fp,
                 }
                 actmol.Merge(&(*mpi));
                 imm = actmol.GenerateTopology(fp, pd,
-                                             missingParameters::Error);
+                                              missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -724,7 +724,7 @@ size_t MolGen::Read(FILE                                *fp,
                 std::vector<double> dummy;
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                 imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                            qtype, dummy, &coords, &forces);
+                                             qtype, dummy, &coords, &forces);
 
                 if (immStatus::OK != imm)
                 {
