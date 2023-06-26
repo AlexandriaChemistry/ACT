@@ -91,7 +91,7 @@ MANPATH=${ACTMAN}:${MANPATH}
 
 # export should be separate, so /bin/sh understands it
 export ACTBIN ACTLDLIB ACTMAN ACTDATA #LD_LIBRARY_PATH PATH MANPATH
-export PKG_CONFIG_PATH BABEL_LIBDIR
+export PKG_CONFIG_PATH BABEL_LIBDIR PYTHONPATH
 
 IFS="$old_IFS"
 unset old_IFS
