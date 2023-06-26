@@ -1,4 +1,4 @@
-v2|VSITE2|h~f|1.05
-v2|VSITE2|h~cl|1.05
-v2|VSITE2|h~br|1.05
-v2|VSITE2|h~i|1.05
+v2|VSITE2|f_b~h_b|1|2
+v2|VSITE2|cl_b~h_b|1|2
+v2|VSITE2|br_b~h_b|1|2
+v2|VSITE2|i_b~h_b|1|2

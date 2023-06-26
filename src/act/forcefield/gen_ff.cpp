@@ -168,9 +168,9 @@ static void add_vsites(const char *vsfile,
         }
         std::string myId = ptr[2] + "!" + ptr[0];
         Identifier vs(itype, myId, CanSwap::Vsite2);
-        double a = my_atof(ptr[3], "vsite_parameter");
-        double minmax = std::abs(a)+0.5;
-        ForceFieldParameter vs2param("", a, 0, 0, -minmax, minmax,
+        double amin = my_atof(ptr[3], "vsite_parameter_min");
+        double amax = my_atof(ptr[4], "vsite_parameter_max");
+        ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
                                      Mutability::Bounded, false, false);
         vsite2.addParameter(vs, vsite2_name[vsite2A], vs2param);
         lineno += 1;
