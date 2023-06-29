@@ -90,13 +90,13 @@ class CombinationRules:
         return ("sqrt(%s*%s)" % ( vara, varb ))
         
     def geometric(self, vara:float, varb:float)->float:
-        return eval(self.geomString(str(vara), str(varb)))
+        return eval(self.geometricString(str(vara), str(varb)))
         
     def arithmeticString(self, vara:str, varb:str)->str:
         return ("0.5*(%s+%s)" % ( vara, varb ))
 
     def arithmetic(self, vara:float, varb:float)->float:
-        return eval(self.geomString(str(vara), str(varb)))
+        return eval(self.arithmeticString(str(vara), str(varb)))
 
     def combStrings(self):
         if "Hogervorst" == self.comb:
@@ -214,6 +214,7 @@ class ActOpenMMSim:
         fgnumber = force.getForceGroup()
         if nonbond and self.nonbondedMethod != NoCutoff:
             # Remove direct space nonbondeds and add them to the local book-keeping
+            print("Will add direct and reciprocal part for nonbonded")
             directname = fcname + ' (direct space)'
             self.force_group[fgnumber] = directname
             self.fgnumber[directname]  = fgnumber
@@ -223,7 +224,7 @@ class ActOpenMMSim:
             recipname = fcname + ' (reciprocal space)'
             self.force_group[new_fgnumber] = recipname
             self.fgnumber[recipname]       = new_fgnumber
-            force.setReciprocalSpaceForceGroup(fgnumber)
+            force.setReciprocalSpaceForceGroup(new_fgnumber)
         elif newfg:
             new_fgnumber += 1
             self.force_group[new_fgnumber] = fcname
@@ -304,10 +305,9 @@ class ActOpenMMSim:
         args = parser.parse_args()
         if args.debug:
             args.verbose = True
-        print(args)
         # Do some checking
-        if args.vdw != "LJ" and args.vdw != "WBH" and args.vdw != "GWBH" and args.vdw != "14_7":
-            sys.exit("Unrecognized form of VDW potential. Use either LJ or WBH or GWBH keywords")
+        if not args.vdw in [ "LJ", "WBH", "GWBH", "14_7" ]:
+            sys.exit("Unrecognized form of VDW potential '%s'. Use either LJ, WBH, GWBH or 14_7." % args.vdw)
 
         if None == args.pdb_file and None == pdbfile:
             sys.exit("Please pass a pdb file")
@@ -354,10 +354,9 @@ class ActOpenMMSim:
         self.dt                 = self.sim_params.getFloat('dt')
         self.equilibrationSteps = self.sim_params.getInt('equilibrationSteps')
         self.steps              = self.sim_params.getInt('steps')
-        self.save               = self.sim_params.getInt('save')
         
-        nbmethod                        = { 'LJPME':LJPME, 'PME':PME, 'Ewald':Ewald, 
-                                            'CutoffPeriodic':CutoffPeriodic, 'NoCutoff':NoCutoff }
+        nbmethod                        = { 'LJPME': LJPME, 'PME': PME, 'Ewald': Ewald,
+                                            'CutoffPeriodic': CutoffPeriodic, 'NoCutoff': NoCutoff }
         self.nonbondedMethod           = nbmethod[self.sim_params.getStr('nonbondedMethod')]
         self.use_switching_function    = self.sim_params.getBool('use_switching_function')
         self.switch_width              = self.sim_params.getFloat('switch_width')
@@ -400,9 +399,12 @@ class ActOpenMMSim:
     def start_output(self):
         # OUTPUT
         ################################################
-        save              = self.sim_params.getInt('save')
-        self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
-        self.dataReporter = StateDataReporter(self.logfile, save, totalSteps=self.steps,
+        save = self.sim_params.getInt('saveDcd')
+        self.dcdReporter = None
+        if save > 0:
+            self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
+        self.dataReporter = StateDataReporter(self.logfile, self.sim_params.getInt('saveEnergy'),
+                                              totalSteps=self.steps,
                                               step=self.sim_params.getBool('outStep'),
                                               time=self.sim_params.getBool('outTime'),
                                               speed=self.sim_params.getBool('outSpeed'),
@@ -413,8 +415,14 @@ class ActOpenMMSim:
                                               volume=self.sim_params.getBool('outVolume'),
                                               density=self.sim_params.getBool('outDensity'),
                                               separator=self.sim_params.getStr('outSeparator'))
-        self.chkReporter = CheckpointReporter(self.args.outputdir+'/checkpnt.chk', save)
-        self.pdbReporter = PDBReporter(self.args.outputdir+'/output.pdb', save)
+        save = self.sim_params.getInt('checkPoint')
+        self.chkReporter = None
+        if save > 0:
+            self.chkReporter = CheckpointReporter(self.args.outputdir+'/checkpnt.chk', save)
+        save = self.sim_params.getInt('savePdb')
+        self.pdbReporter = None
+        if save > 0:
+            self.pdbReporter = PDBReporter(self.args.outputdir+'/output.pdb', save)
         
     def make_system(self):
         # TOPOLOGY
@@ -474,10 +482,10 @@ class ActOpenMMSim:
     ################################################
     def add_direct_space_force(self): 
         """
-        Create a CustomNonbondedForce to calculate the direct-space force of WBK-LJ and gaussian Coulomb-point Coulomb,
+        Create a CustomNonbondedForce to calculate the direct-space force of WBH-LJ and gaussian Coulomb-point Coulomb,
         placing it in specified force group.
         The LJ and point charge is necessary for both the dispersion correction and for the LJPME, and for using PME
-        Create a CustomBondForce to calculate the direct space force of WBK and gaussian Coulomb for interactions 
+        Create a CustomBondForce to calculate the direct space force of WBH and gaussian Coulomb for interactions 
         that are excluded (besides core-shell interactions).
         """
         cnbname       = "CustomNonbondedForce"
@@ -529,14 +537,14 @@ class ActOpenMMSim:
 
         self.count_forces("Direct space 3")
 
-        # TODO: Only for pbc simulations
-        cutoff_distance = self.nonbondedforce.getCutoffDistance()
-        switch_distance = self.nonbondedforce.getSwitchingDistance()
-    
         if not self.customnb:
             return
-        self.count_forces("Direct space 4")
             
+        #if self.nonbondedMethod != NoCutoff:
+        cutoff_distance = self.nonbondedforce.getCutoffDistance()
+        switch_distance = self.nonbondedforce.getSwitchingDistance()
+        self.count_forces("Direct space 4")
+    
         # Electrostatics is our screened Coulomb minus the point charge based potential
         expression = 'Coulomb_gauss - Coulomb_point;'
         self.qq_expression = ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
@@ -555,39 +563,56 @@ class ActOpenMMSim:
         self.qq_correction.addPerParticleParameter("charge")
         self.qq_correction.addPerParticleParameter("zeta")
         self.qq_correction.setUseSwitchingFunction(self.use_switching_function)
+        # We do not use self.nonbondedMethod because the exclusion correction
+        # is in real space only. However, we do have to distinguish between
+        # periodic and vacuum systems.
         if self.nonbondedMethod == NoCutoff:
             self.qq_correction.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
-        else:    
-            # TODO: why not use self.nonbondedMethod
+        else:
             self.qq_correction.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
-        self.qq_correction.setCutoffDistance(cutoff_distance)
-        self.qq_correction.setSwitchingDistance(switch_distance)
+            self.qq_correction.setCutoffDistance(cutoff_distance)
+        # TODO: Check whether we need this, likely not.
+        # self.qq_correction.setSwitchingDistance(switch_distance)
         # Don't use dispersion correction for coulomb, it does not converge, see:
         # https://github.com/openmm/openmm/issues/3162
         self.qq_correction.setUseLongRangeCorrection(False)
         self.count_forces("Direct space 5")
 
         self.charges = []
+        if self.args.verbose:
+            print("There are %d particles in the nonbondedforce" % self.nonbondedforce.getNumParticles())
         for index in range(self.nonbondedforce.getNumParticles()):
+            myparams = self.customnb.getParticleParameters(index)
             if self.args.vdw == "WBH":
-                [vdW, sigma, epsilon, gamma, charge, zeta] = self.customnb.getParticleParameters(index)
+                [_, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
-                    print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {self.customnb.getParticleParameters(index)}")
+                    print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {myparams}")
             elif self.args.vdw == "GWBH":
-                [vdW, rmin, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
+                [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
-                    print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {self.customnb.getParticleParameters(index)}")
+                    print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {myparams}")
             elif self.args.vdw == "14_7":
-                [vdW, sigma, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
+                [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
-                    print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {self.customnb.getParticleParameters(index)}")
+                    print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {myparams}")
             else:
                 sys.exit("Not implemented what to do")
             self.charges.append(charge)
-            self.qq_correction.addParticle([charge,zeta])
-            
+            self.qq_correction.addParticle([charge, zeta])
+
+        if self.args.debug and self.args.vdw == "WBH":
+            np = self.nonbondedforce.getNumParticles()
+            for i in range(np):
+                [_, sigma1, epsilon1, gamma1, _, _] = self.customnb.getParticleParameters(i)
+                for j in range(i,np):
+                    [_, sigma2, epsilon2, gamma2, _, _] = self.customnb.getParticleParameters(j)
+                    s12 = self.comb.geometric(sigma1, sigma2)
+                    e12 = self.comb.geometric(epsilon1, epsilon2)
+                    g12 = self.comb.geometric(gamma1, gamma2)
+                    print("i %d j %d sigma %10g epsilon %10g gamma %10g" % ( i, j, s12, e12, g12 ))
+                    
         for index in range(self.nonbondedforce.getNumExceptions()):
-            [iatom, jatom, chargeprod, sigma, epsilon] = self.nonbondedforce.getExceptionParameters(index)
+            [iatom, jatom, _, _, _] = self.nonbondedforce.getExceptionParameters(index)
             self.qq_correction.addExclusion(iatom, jatom)
             if self.args.debug:
                 print("Coulomb excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
@@ -596,29 +621,30 @@ class ActOpenMMSim:
         self.system.addForce(self.qq_correction)
         self.count_forces("Direct space 7")
 
-        print("Using %s for Van der Waals interactions" % self.args.vdw)
-        
         # Van der Waals, is our custom potential minus the default LJ.
         LJ_expression = 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
         if self.args.vdw == "WBH":
-            expression = 'U_WKB-U_LJ;'
+            expression = 'U_WBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
             else:
                 expression += LJ_expression
+            # Note that sigma really is 1/sigma, to prevent division by zero.
+            self.vdw_expression =('vdW*(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(sigma*r)^6)) * ((3/(gamma+3))*exp(gamma*(1-(sigma*r)))-1));')
+            #self.vdw_expression = ('vdW*(((2*epsilon)/(gamma3)) * (1.0/(1.0+(sigma*r)^6)) * ((3/(gamma+3))*(gamma*(1-(sigma*r)))-1));')
+            #self.vdw_expression =('vdW(((2.0*epsilon)/(1.0-(3.0/(gamma+3.0)))) * ((sigma^6)/(sigma^6+r^6))* ((3.0/(gamma+3.0))*exp(gamma*(1.0-(r/sigma)))-1.0));')
             
-            self.vdw_expression =('vdW*(((2*epsilon)/(1-(3/(gamma+3)))) * ((sigma^6)/(sigma^6+r^6))* ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1));')
-            
-            expression += ( 'U_WKB = %s;' % self.vdw_expression )
+            expression += ( 'U_WBH = %s;' % self.vdw_expression )
             csigma, cepsilon, cgamma = self.comb.combStrings()
             # The statements have to be in this order! They are evaluated in the reverse order apparently.
+            expression += ( 'gamma3   = (gamma/(3+gamma));')
             expression += ( 'sigma    = %s;' % csigma )
             expression += ( 'epsilon  = %s;' % cepsilon )
             expression += ( 'gamma    = %s;' % cgamma )
-            expression += 'vdW = vdW1*vdW2;'
+            expression += 'vdW = (vdW1*vdW2);'
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             if self.nonbondedMethod == NoCutoff:
                 self.vdw_correction.setName("VanderWaals"+self.args.vdw)
@@ -628,6 +654,7 @@ class ActOpenMMSim:
                 self.vdw_correction.addPerParticleParameter(pp)
 
             self.vdw_correction.setUseSwitchingFunction(self.use_switching_function)
+            # See comment above at qq_correction.
             if self.nonbondedMethod == NoCutoff:
                 self.vdw_correction.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
             else:    
@@ -642,6 +669,8 @@ class ActOpenMMSim:
                     self.nonbondedforce.setParticleParameters(index, sigma=sigma_LJ, epsilon=0, charge=0)
 #                print(self.customnb.getParticleParameters(index))
                 [vdW, sigma, epsilon, gamma, charge, zeta] = self.customnb.getParticleParameters(index)
+                if sigma > 0:
+                    sigma = 1.0/sigma
                 self.vdw_correction.addParticle([sigma, epsilon, gamma, vdW, sigma_LJ, epsilon_LJ])
                 if self.args.debug:
                     print("index %d sigma %g, epsilon %g, gamma %g, vdW %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, vdW, sigma_LJ._value, epsilon_LJ._value ))
@@ -654,14 +683,14 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
 #################################################
         elif self.args.vdw == "GWBH":
-            expression = 'U_GWKB-U_LJ;'
+            expression = 'U_GWBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
             else:
                 expression += LJ_expression
 
             self.vdw_expression =('vdW*(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           );')
-            expression += ( 'U_GWKB = %s;' % self.vdw_expression )
+            expression += ( 'U_GWBH = %s;' % self.vdw_expression )
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings()
             expression += ( 'rmin    = %s;' % crmin )
             expression += ( 'epsilon  = %s;' % cepsilon )
@@ -772,14 +801,14 @@ class ActOpenMMSim:
         vdwname = "VanderWaalsExclusionCorrection"
         vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
         vdw_excl_corr.setName(vdwname)
-        if self.args.vdw == "WBH" or self.args.vdw == "14_7":
+        if self.args.vdw in [ "WBH", "14_7"]:
             vdw_excl_corr.addPerBondParameter("sigma")
         if self.args.vdw == "GWBH":
             vdw_excl_corr.addPerBondParameter("rmin")
         vdw_excl_corr.addPerBondParameter("epsilon")
         vdw_excl_corr.addPerBondParameter("gamma")
         vdw_excl_corr.addPerBondParameter("vdW")
-        if self.args.vdw == "GWBH" or self.args.vdw == "14_7":
+        if self.args.vdw in [ "GWBH", "14_7"]:
             vdw_excl_corr.addPerBondParameter("delta")
         qq_excl_corr = openmm.CustomBondForce(self.qq_expression)
         qq_excl_corr.setName("CoulombExclusionCorrection")
@@ -791,21 +820,24 @@ class ActOpenMMSim:
         nexclqq  = self.sim_params.getInt("nexclqq")
         if self.args.vdw == "WBH":
             csigma, cepsilon, cgamma = self.comb.combStrings()
-        if self.args.vdw == "GWBH":
+        elif self.args.vdw == "GWBH":
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings()
-        if self.args.vdw == "14_7":
+        elif self.args.vdw == "14_7":
             csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+        else:
+            sys.exit("Do not know how to treat Van der Waals function '%s'" % args.vdw)
 
         if self.args.debug:
             if self.args.vdw == "GWBH":
                 print("crmin   = %s" % crmin)
-                print("cdelta   = %s" % cdelta)
             else:
                 print("csigma   = %s" % csigma)
                 print("cepsilon = %s" % cepsilon)
-                print("cgamma   = %s" % cgamma)
-            if self.args.vdw == "14_7":
+                if not self.args.vdw in [ "LJ" ]:
+                    print("cgamma   = %s" % cgamma)
+            if self.args.vdw in [ "GWBH", "14_7"]:
                 print("cdelta   = %s" % cdelta)
+
         if self.args.vdw == "WBH":
 
             for index in range(self.nonbondedforce.getNumExceptions()):
@@ -972,10 +1004,6 @@ class ActOpenMMSim:
 
 ####################
           
-#        self.add_force_group(qq_excl_corr)
-#        self.system.addForce(qq_excl_corr)
-#        self.add_force_group(vdw_excl_corr)
-#        self.system.addForce(vdw_excl_corr)
 #        # Now we do not need the original CustomNonbondedForce anymore
 #        self.del_force(self.nb_correction)
    
@@ -1133,6 +1161,7 @@ class ActOpenMMSim:
             # Remove the default Non-Bonded with OpenMM
             print("Will remove standard NonBonded")
             self.del_force(self.nonbondedforce, False)
+        # TODO check whether this if statement should be flipped.
         if self.args.vdw != "LJ":
             self.del_force(self.customnb)
         
@@ -1164,10 +1193,9 @@ class ActOpenMMSim:
             print('Performing energy minimization...')
         enertol = Quantity(value=1e-8, unit=kilojoule/mole)
         print(enertol, maxIter)
-#        positions = self.simulation.context.getState(getPositions=True).getPositions()
-#        print(positions)
-        self.simulation.minimizeEnergy(tolerance=enertol,maxIterations=maxIter)
-#        self.simulation.minimizeEnergy(maxIterations=maxIter)
+        if self.args.debug:
+            print(self.simulation.context.getState(getPositions=True).getPositions())
+        self.simulation.minimizeEnergy(tolerance=enertol, maxIterations=maxIter)
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
     def equilibrate(self):
@@ -1179,10 +1207,14 @@ class ActOpenMMSim:
         if self.args.verbose:
             simtime = self.sim_params.getFloat('dt')*self.sim_params.getInt('steps')
             print('Simulating %g ps...' % simtime )
-        self.simulation.reporters.append(self.dcdReporter)
-        self.simulation.reporters.append(self.dataReporter)
-        self.simulation.reporters.append(self.pdbReporter)
-        self.simulation.reporters.append(self.chkReporter)
+        if None != self.dcdReporter:
+            self.simulation.reporters.append(self.dcdReporter)
+        if None != self.dataReporter:
+            self.simulation.reporters.append(self.dataReporter)
+        if None != self.pdbReporter:
+            self.simulation.reporters.append(self.pdbReporter)
+        if None != self.chkReporter:
+            self.simulation.reporters.append(self.chkReporter)
         self.simulation.currentStep = 0
         self.simulation.step(self.steps)
 
