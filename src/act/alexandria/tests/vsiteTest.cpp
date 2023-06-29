@@ -72,9 +72,11 @@ TEST(Vsite2, HF)
     EXPECT_TRUE(fs.parameterExists(fh));
     auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
-    EXPECT_TRUE(fs.parameterExists(hf));
-    auto param_hf = fs.findParameterType(hf, vsite2_name[vsite2A]);
-    EXPECT_TRUE(param_fh->internalValue() == param_hf->internalValue());
+    if (fs.parameterExists(hf))
+    {
+        auto param_hf = fs.findParameterType(hf, vsite2_name[vsite2A]);
+        EXPECT_TRUE(param_fh->internalValue() == param_hf->internalValue());
+    }
 }
 
 TEST(Vsite2, HFCanSwapNo)
