@@ -147,96 +147,87 @@ void CombineLJ_147(int     CombinationRule,
 {
     switch (CombinationRule)
     {
-        case eCOMB_GEOMETRIC:
-            *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-            *gammaIJ = std::sqrt(gammaI * gammaJ);
-            *deltaIJ = std::sqrt(deltaI * deltaJ);
-            break;
-        case eCOMB_ARITHMETIC:
-            *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-            *gammaIJ = 0.5 * (gammaI + gammaJ);
-            *deltaIJ = 0.5 * (deltaI + deltaJ);
-            break;
-        case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon.
-                   if (sigmaI == 0 and sigmaJ == 0)
-	   	   {
-                         *sigmaIJ = 0;
-        	   }
-		   else
-		   {
-	                 *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-		   }
-                   if (epsilonI == 0 and epsilonJ == 0)
-                   {
-                         *epsilonIJ = 0;
-                   }
-                   else
-                   {
-			  *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-                   }
-
- 
-            *gammaIJ = 0.5 * (gammaI + gammaJ);
-            *deltaIJ = std::sqrt(deltaI * deltaJ);
-            break;
-        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. but has WH rule for gamma, as is the winner for WBH
-                   if (sigmaI == 0 and sigmaJ == 0)
-                   {
-                         *sigmaIJ = 0;
-                   }
-                   else
-                   {
-                         *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-                   }
-                   if (epsilonI == 0 and epsilonJ == 0)
-                   {
-                         *epsilonIJ = 0;
-                   }
-                   else
-                   {
-                          *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-                   }
-
-//            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-//            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
-            *deltaIJ = std::sqrt(deltaI * deltaJ);
-            break;
-        case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
-                   if (sigmaI == 0 and sigmaJ == 0)
-                   {
-                         *sigmaIJ = 0;
-                   }
-                   else
-                   {
-                         *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-                   }
-
-                   if (epsilonI == 0 and epsilonJ == 0)
-                   {
-                         *epsilonIJ = 0;
-                   }
-                   else
-                   {
-                          *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-                   }
-//now somehow there needs to be or, since for core shell interactions it would be n/a
-                   if (gammaI == 0 or gammaJ == 0)
-                   {
-                         *gammaIJ = 0;
-                   }
-                   else
-                   {
-			  *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-                   }
-
-//            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-//            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-//            *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-            *deltaIJ = std::sqrt(deltaI * deltaJ);
-            break;	    
+    case eCOMB_GEOMETRIC:
+        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+        *gammaIJ = std::sqrt(gammaI * gammaJ);
+        *deltaIJ = std::sqrt(deltaI * deltaJ);
+        break;
+    case eCOMB_ARITHMETIC:
+        *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+        *gammaIJ = 0.5 * (gammaI + gammaJ);
+        *deltaIJ = 0.5 * (deltaI + deltaJ);
+        break;
+    case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon.
+        if (sigmaI == 0 and sigmaJ == 0)
+        {
+            *sigmaIJ = 0;
+        }
+        else
+        {
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+        }
+        if (epsilonI == 0 and epsilonJ == 0)
+        {
+            *epsilonIJ = 0;
+        }
+        else
+        {
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+        }
+        *gammaIJ = 0.5 * (gammaI + gammaJ);
+        *deltaIJ = std::sqrt(deltaI * deltaJ);
+        break;
+    case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. but has WH rule for gamma, as is the winner for WBH
+        if (sigmaI == 0 and sigmaJ == 0)
+        {
+            *sigmaIJ = 0;
+        }
+        else
+        {
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+        }
+        if (epsilonI == 0 and epsilonJ == 0)
+        {
+            *epsilonIJ = 0;
+        }
+        else
+        {
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+        }
+        *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+        *deltaIJ = std::sqrt(deltaI * deltaJ);
+        break;
+    case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
+        if (sigmaI == 0 and sigmaJ == 0)
+        {
+            *sigmaIJ = 0;
+        }
+        else
+        {
+            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+        }
+        
+        if (epsilonI == 0 and epsilonJ == 0)
+        {
+            *epsilonIJ = 0;
+        }
+        else
+        {
+            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+        }
+        //now somehow there needs to be or, since for core shell interactions it would be n/a
+        if (gammaI == 0 or gammaJ == 0)
+        {
+            *gammaIJ = 0;
+        }
+        else
+        {
+            *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+        }
+        *deltaIJ = std::sqrt(deltaI * deltaJ);
+        break;	    
     case eCOMB_NONE:
         break;
     default:
@@ -258,70 +249,70 @@ void CombineBham(int     CombinationRule,
 {
     switch (CombinationRule)
     {
-        case eCOMB_GEOMETRIC:
-            *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-            *gammaIJ = std::sqrt(gammaI * gammaJ);
-            break;
-        case eCOMB_ARITHMETIC:
-            *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-            *gammaIJ = 0.5 * (gammaI + gammaJ);
-            break;
-        case eCOMB_KONG_MASON: // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential and the Morse Potential. J. Chem. Phys. 1973, 59.
-            *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-            *epsilonIJ = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-            *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-            break;
-        case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
-            {
-                *gammaIJ = 0.5 * (gammaI + gammaJ);  
-                *epsilonIJ = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-                double itmp = (epsilonI*gammaI*std::pow(sigmaI,6.0))/(gammaI-6.0);
-                double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6.0))/(gammaJ-6.0);
-                *sigmaIJ = std::pow(std::sqrt(itmp*jtmp)*(*gammaIJ - 6.0)/(*epsilonIJ * *gammaIJ), (1.0/6.0));
-            }
-            break;   
-        case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
-            *sigmaIJ = ((sigmaI * sigmaJ) *  (sigmaI + sigmaJ))/ (pow(sigmaI,2) + pow(sigmaJ,2));
+    case eCOMB_GEOMETRIC:
+        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+        *gammaIJ = std::sqrt(gammaI * gammaJ);
+        break;
+    case eCOMB_ARITHMETIC:
+        *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
+        *gammaIJ = 0.5 * (gammaI + gammaJ);
+        break;
+    case eCOMB_KONG_MASON: // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential and the Morse Potential. J. Chem. Phys. 1973, 59.
+        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
+        *epsilonIJ = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
+        *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+        break;
+    case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
+        {
+            *gammaIJ = 0.5 * (gammaI + gammaJ);  
             *epsilonIJ = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-            *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));   
-            break;
-        case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-            *gammaIJ = 0.5 * (gammaI + gammaJ);
-            break;
-        case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi
+            double itmp = (epsilonI*gammaI*std::pow(sigmaI,6.0))/(gammaI-6.0);
+            double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6.0))/(gammaJ-6.0);
+            *sigmaIJ = std::pow(std::sqrt(itmp*jtmp)*(*gammaIJ - 6.0)/(*epsilonIJ * *gammaIJ), (1.0/6.0));
+        }
+        break;   
+    case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
+        *sigmaIJ = ((sigmaI * sigmaJ) *  (sigmaI + sigmaJ))/ (pow(sigmaI,2) + pow(sigmaJ,2));
+        *epsilonIJ = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
+        *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));   
+        break;
+    case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon.
+        *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
+        *gammaIJ = 0.5 * (gammaI + gammaJ);
+        break;
+    case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi
+        {
+            double s2 = pow(sigmaI,3) + pow(sigmaJ,3);
+            if (s2 > 0)
             {
-                double s2 = pow(sigmaI,3) + pow(sigmaJ,3);
-                if (s2 > 0)
-                {
-                    *sigmaIJ = s2/(pow(sigmaI,2) + pow(sigmaJ,2));
-                    *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-                }
-                else
-                {
-                    *sigmaIJ = 0;
-                    *epsilonIJ = 0;
-                }
-                *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+                *sigmaIJ = s2/(pow(sigmaI,2) + pow(sigmaJ,2));
+                *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
             }
-            break;    
-        case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
-            *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
-            *gammaIJ = 0.5 * (gammaI + gammaJ);;
-            break;
+            else
+            {
+                *sigmaIJ = 0;
+                *epsilonIJ = 0;
+            }
+            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
+        }
+        break;    
+    case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993.
+        *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
+        *gammaIJ = 0.5 * (gammaI + gammaJ);;
+        break;
 	case eCOMB_QYQY: // Waldman & Hagler, J. Comp. Chem., Year: 1993. kriz changing to the best rule for GBHAM Qi, Yang, Qi (with the "yang" for delta)
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
-            *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));
-            break;
-        case eCOMB_NONE:
-            break;
-        case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
+        *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
+        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
+        *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));
+        break;
+    case eCOMB_NONE:
+        break;
+    case eCOMB_NR:
+        gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
     }
 }
 
