@@ -52,11 +52,6 @@ class SimParams:
             print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
             return default
 
-    def check_consist(self):
-        if "DrudeLangevinIntegrator" == self.getStr('integrator') and self.getBool('useAndersenThermostat'):
-            print("Warning, Andersen thermostat and Drude Langevin Integrators are used together. The Langevin integrator contains an in-built thermostat.")
-
-
     def getInt(self, key:str) -> int:
         if key in self.params and len(self.params[key]) > 0:
             try:
@@ -153,7 +148,7 @@ class ActOpenMMSim:
             os.makedirs(self.args.outputdir, exist_ok=True)
         self.force_group = None
         self.gen_ff()
-        
+    
     def gen_ff(self):
         if None != self.args.xml_file:
             self.forcefield  = ForceField(self.args.xml_file)
@@ -482,7 +477,8 @@ class ActOpenMMSim:
     ################################################
     def add_direct_space_force(self): 
         """
-        Create a CustomNonbondedForce to calculate the direct-space force of WBH-LJ and gaussian Coulomb-point Coulomb,
+        Create a CustomNonbondedForce to calculate the direct-space force of the Alexandria
+        Van der Waals potenti - Lennard-Jones and gaussian distributed charge Coulomb - point charge Coulomb,
         placing it in specified force group.
         The LJ and point charge is necessary for both the dispersion correction and for the LJPME, and for using PME
         Create a CustomBondForce to calculate the direct space force of WBH and gaussian Coulomb for interactions 
@@ -1085,7 +1081,7 @@ class ActOpenMMSim:
                 self.system.addForce(MonteCarloAnisotropicBarostat(self.pressvec,self.temperature_c,self.scaleX,self.scaleY,self.scaleZ,self.sim_params.getInt('barostatInterval'))) 
                 if self.args.verbose:
                     print(f"Monte Carlo ANISOTROPIC Barostat will be used. The dimensions that can change are: X = {self.scaleX} Y = {self.scaleY} Z = {self.scaleZ}")
-        if self.sim_params.getBool('useAndersenThermostat'):    
+        if self.useAndersenThermostat:
             self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
             if self.args.verbose:
                 print(f"Andersen Thermostat will be used with temperature {self.temperature_c}")
@@ -1094,27 +1090,36 @@ class ActOpenMMSim:
         friction_c    = self.sim_params.getFloat('friction_c')
         temperature_s = self.sim_params.getFloat('temperature_s')
         integrator    = self.sim_params.getStr('integrator')
-        if "NoseHooverIntegrator" == integrator:
-            self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
-        elif "DrudeLangevinIntegrator" == integrator:
-            self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, 
-                                                      self.sim_params.getFloat('friction_s'), self.dt)
-            print(DrudeLangevinIntegrator.getTemperature(self.integrator))
-        elif "DrudeNoseHooverIntegrator" == integrator:
-            self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, friction_c, temperature_s, 
-                                                        self.sim_params.getFloat('friction_s'), self.dt)
-        elif "DrudeSCFIntegrator" == integrator:
-            self.integrator = DrudeSCFIntegrator(self.dt)
-            self.integrator.setDrudeTemperature(temperature_s)
-        else:
-            sys.exit("Unknown integrator %s" % integrator)
         if self.args.polarizable:
-#            self.integrator.setMaxDrudeDistance(0.02*nanometer)
+            if "DrudeLangevinIntegrator" == integrator:
+                self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, 
+                                                          self.sim_params.getFloat('friction_s'), self.dt)
+                print(DrudeLangevinIntegrator.getTemperature(self.integrator))
+
+            elif "DrudeNoseHooverIntegrator" == integrator:
+                self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, friction_c, temperature_s, 
+                                                            self.sim_params.getFloat('friction_s'), self.dt)
+            elif "DrudeSCFIntegrator" == integrator:
+                self.integrator = DrudeSCFIntegrator(self.dt)
+                self.integrator.setDrudeTemperature(temperature_s)
+            else:
+                sys.exit("Unknown integrator %s for polarizable system" % integrator)
+            if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
+                print("Andersen thermostat will be turned off since %s contains a built-in thermostat." % self.integrator)
+                self.useAndersenThermostat = False
             self.integrator.setMaxDrudeDistance(self.MaxDrudeDist)
-            if self.args.verbose:
-                print("Core Temperature %g" % self.temperature_c)
+        else:
+            nhi = "NoseHooverIntegrator"
+            if nhi != integrator:
+                print("Unsupported integrator %s for non-polarizable system, will use %s instead" % ( integrator, nhi ))
+            self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
+
+        # Print some stuff yey.
+        if self.args.verbose:
+            print("Core Temperature %g" % self.temperature_c)
+            if self.args.polarizable:
                 print("Drude Temperature %g" % self.integrator.getDrudeTemperature()._value)
-                print("Step size %g" % self.integrator.getStepSize()._value)
+            print("Step size %g" % self.integrator.getStepSize()._value)
 
     def compute_dipole(self)->list:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
@@ -1220,7 +1225,6 @@ class ActOpenMMSim:
 
     def setup(self):
         self.set_params()
-        self.sim_params.check_consist()
         self.start_output()
         self.make_system()
         self.make_forces()

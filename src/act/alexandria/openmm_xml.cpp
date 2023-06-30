@@ -114,6 +114,7 @@ enum class xmlEntryOpenMM {
     HARMONICANGLEFORCE,
     ANGLE_CLASS,
     ANGLE_VALUE,
+    VSITE2_CLASS,
     AMOEBA_UB_FORCE,
     UREY_BRADLEY_FORCE,
     CUSTOMBONDFORCE,
@@ -177,6 +178,7 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "HarmonicAngleForce",        xmlEntryOpenMM::HARMONICANGLEFORCE },
     { "Angle",                     xmlEntryOpenMM::ANGLE_CLASS        },
     { "angle",                     xmlEntryOpenMM::ANGLE_VALUE        },
+    { "Vsite2",                    xmlEntryOpenMM::VSITE2_CLASS       },
     { "AmoebaUreyBradleyForce",    xmlEntryOpenMM::AMOEBA_UB_FORCE    },
     { "UreyBradley",               xmlEntryOpenMM::UREY_BRADLEY_FORCE },
     { "CustomBondForce",           xmlEntryOpenMM::CUSTOMBONDFORCE    },
@@ -236,8 +238,6 @@ static int tellme_RealAtom(int                         index,
 
 	for (size_t i = 0; i < myatoms.size(); i++)
     {
-        /////		std::cout << i << "aaa\n";	
-		
 		if (myatoms[i].pType() == eptAtom) 
 		{
 			realAtoms = realAtoms + 1;
@@ -314,20 +314,28 @@ public:
 
 void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
 {
-    if (eptAtom == aType.gmxParticleType())
+    switch (aType.gmxParticleType())
     {
-        add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
-                     aType.element().c_str());
-        double mAtom = aType.mass();
-        if (aType.hasOption("poltype"))
+    case eptAtom:
         {
-            mAtom -= mDrude_;
+            add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
+                         aType.element().c_str());
+            double mAtom = aType.mass();
+            if (aType.hasOption("poltype"))
+            {
+                mAtom -= mDrude_;
+            }
+            add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mAtom);
         }
-        add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mAtom);
-    }
-    else if (eptShell == aType.gmxParticleType())
-    {
+        break;
+    case eptShell:
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
+        break;
+    case eptVSite:
+        add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), aType.mass());
+        break;
+    default:
+        fprintf(stderr, "Don't know what to. Help!\n");
     }
 }
 
@@ -486,8 +494,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 epsilon = param[wbh_name[wbhEPSILON]].internalValue();
                 if (0 == epsilon)
                 {
-                    add_xml_double(grandchild3, wbh_name[wbhSIGMA], 0.001);
-                    add_xml_double(grandchild3, wbh_name[wbhEPSILON], 0.001);
+                    add_xml_double(grandchild3, wbh_name[wbhSIGMA], sigma);
+                    add_xml_double(grandchild3, wbh_name[wbhEPSILON], epsilon);
                     add_xml_double(grandchild3, wbh_name[wbhGAMMA], 7);
                 }
                 else
@@ -507,6 +515,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 epsilon = param[gbh_name[wbhEPSILON]].internalValue();
                 if (0 == epsilon)
                 {
+                    // TODO Check that these numbers are OK, see WBH.
                     add_xml_double(grandchild3, gbh_name[gbhRMIN], 0.001);
                     add_xml_double(grandchild3, gbh_name[gbhEPSILON], 0.001);
                     add_xml_double(grandchild3, gbh_name[gbhGAMMA], 7);
@@ -530,6 +539,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 epsilon = param[lj_147_name[lj_147EPSILON]].internalValue();
                 if (0 == epsilon)
                 {
+                    // TODO Check that these numbers are fine.
                     add_xml_double(grandchild3, lj_147_name[lj_147SIGMA], 0.001);
                     add_xml_double(grandchild3, lj_147_name[lj_147EPSILON], 0.001);
                     add_xml_double(grandchild3, lj_147_name[lj_147GAMMA], 7);
@@ -707,6 +717,10 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
+        case F_VSITE2:
+            fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
+            add_xml_double(fsPtr, "energy", 0);
+            break;
         case F_FOURDIHS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
@@ -790,6 +804,11 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case F_LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, linang_name, entry->params());
+                    break;
+                    
+                case F_VSITE2:
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
+                               atoms, vsite2_name, entry->params());
                     break;
                     
                 case F_FOURDIHS:
