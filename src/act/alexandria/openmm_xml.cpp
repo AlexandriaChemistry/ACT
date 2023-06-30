@@ -1010,29 +1010,60 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     }
                     if (myatoms[i].pType() == eptVSite)
                     {
-                        // Could be different vsite types, remember to implement those.
                         auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::VSITE_RES));
-                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), "average2");
-                        add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
-                        // TODO get data from topology instead of making stuff up.
-                        int ppp = 1;
-                        for(const auto &parent : myatoms[i].cores())
+                        // Could be different vsite types, remember to implement those.
+                        std::map<InteractionType, const char *> itypes = { 
+                            { InteractionType::VSITE2,    "average2"   },
+                            { InteractionType::VSITE3OUT, "OutOfPlane" },
+                            { InteractionType::VSITE3FAD, "average3"   }
+                        };
+                        for(const auto &itp : itypes)
                         {
-                            auto an = gmx::formatString("atomName%d", ppp);
-                            if (static_cast<size_t>(parent) < inames.size())
+                            if (!topologies[fff]->hasEntry(itp.first))
                             {
-                                add_xml_char(baby, an.c_str(), inames[parent].c_str());
+                                continue;
                             }
-                            else
+                            for(const auto &ee : topologies[fff]->entry(itp.first))
                             {
-                                add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
+                                auto indices = ee->atomIndices();
+                                // Check whether the present vsite is the last in the
+                                // atom indices. Let's ignore multiple vsite constructors
+                                // for the same vsite for now.
+                                if (static_cast<int>(i) == indices[indices.size()-1])
+                                {
+                                    add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), itp.second);
+                                    add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
+                                    
+                                    // TODO get data from topology instead of making stuff up.
+                                    int ppp = 1;
+                                    for(const auto &parent : myatoms[i].cores())
+                                    {
+                                        auto an = gmx::formatString("atomName%d", ppp);
+                                        if (static_cast<size_t>(parent) < inames.size())
+                                        {
+                                            add_xml_char(baby, an.c_str(), inames[parent].c_str());
+                                        }
+                                        else
+                                        {
+                                            add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
+                                        }
+                                        ppp += 1;
+                                    }
+                                    // TODO look up this number!
+                                    ppp = 1;
+                                    double ptot = 0;
+                                    for(auto &p : ee->params())
+                                    {
+                                        auto an = gmx::formatString("weight%d", ppp);
+                                        add_xml_double(baby, an.c_str(), p);
+                                        ptot += p;
+                                        ppp  += 1;
+                                    }
+                                    auto an = gmx::formatString("weight%d", ppp);
+                                    add_xml_double(baby, an.c_str(), 1-ptot);
+                                }
                             }
-                            ppp += 1;
                         }
-                        // TODO look up this number!
-                        double w1 = -0.5;
-                        add_xml_double(baby, "weight1", w1);
-                        add_xml_double(baby, "weight2", 1-w1);
                     }
                 }
             }
