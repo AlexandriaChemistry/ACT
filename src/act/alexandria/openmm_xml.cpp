@@ -87,6 +87,7 @@ enum class xmlEntryOpenMM {
     RESIDUES,
     RESIDUE,
     ATOM_RES,
+    VSITE_RES,
     CHARGE_RES,
     TYPE_RES,
     BOND_RES,
@@ -151,6 +152,7 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "Residues",                  xmlEntryOpenMM::RESIDUES         },
     { "Residue",                   xmlEntryOpenMM::RESIDUE          },
     { "Atom",                      xmlEntryOpenMM::ATOM_RES         },
+    { "VirtualSite",               xmlEntryOpenMM::VSITE_RES        },
     { "charge",                    xmlEntryOpenMM::CHARGE_RES       },
     { "type",                      xmlEntryOpenMM::TYPE_RES         },
     { "Bond",                      xmlEntryOpenMM::BOND_RES         },
@@ -332,7 +334,11 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
         break;
     case eptVSite:
-        add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), aType.mass());
+        if (0 != aType.mass())
+        {
+            fprintf(stderr, "Warning: mass should be zero for vsites in OpenMM, not %g. Setting it to zero.\n", aType.mass());
+        }
+        add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), 0.0);
         break;
     default:
         fprintf(stderr, "Don't know what to. Help!\n");
@@ -480,7 +486,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 {
                     add_xml_double(grandchild3, "vdW", 1.0); 
                 }
-                else if (eptShell == aType->gmxParticleType())
+                else
                 {
                     add_xml_double(grandchild3, "vdW", 0.0);
                 }
@@ -717,10 +723,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_VSITE2:
-            fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
-            add_xml_double(fsPtr, "energy", 0);
-            break;
         case F_FOURDIHS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
@@ -732,10 +734,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case F_IDIHS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
-            break;
-        case F_POLARIZATION:
-        case F_BHAM:
-            //add_xml_double(fsPtr, "energy", 0);
             break;
         default:
             // Do nothing
@@ -806,11 +804,6 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                                atoms, linang_name, entry->params());
                     break;
                     
-                case F_VSITE2:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, vsite2_name, entry->params());
-                    break;
-                    
                 case F_FOURDIHS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::RBTORSIONFORCE,
                                atoms, fdih_name, entry->params());
@@ -830,6 +823,7 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case F_LJ:
                 case F_BHAM:
                 case F_POLARIZATION:
+                case F_VSITE2:
                     break;
                 default:
                     fprintf(stderr, "Wanrning: no OpenMM support for %s is present or implemented.\n",
@@ -838,7 +832,7 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
             }
         }
     }
- }
+}
 
 void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     const ForceField          *pd,
@@ -910,6 +904,8 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             std::map<std::string, int> fftypeLocalMap;
             // Do we have copies of this atom type in the local map already?
             int  localIndex = 0;
+            // We need to keep track of the atom names within the molecule as well
+            std::vector<std::string> inames;
             
             for (size_t i = 0; i < myatoms.size(); i++)
             {
@@ -980,11 +976,12 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 }
                 int reali = tellme_RealAtom(i, myatoms);
 
-                if (myatoms[i].pType() == eptAtom)
+                if (myatoms[i].pType() == eptAtom || myatoms[i].pType() == eptVSite)
                 {
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME),
-                                 nameIndex(myatoms[i].name(), reali).c_str());
+                    auto iname = nameIndex(myatoms[i].name(), reali);
+                    inames.push_back(iname);
+                    add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), iname.c_str());
                     
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), openMMtype.c_str());
                     add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[i].charge()*epsr_fac);
@@ -1010,6 +1007,32 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                         add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), shellType.c_str());
                         add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge()*epsr_fac);
                         ishell += 1;
+                    }
+                    if (myatoms[i].pType() == eptVSite)
+                    {
+                        // Could be different vsite types, remember to implement those.
+                        auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::VSITE_RES));
+                        add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), "average2");
+                        add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
+                        // TODO get data from topology instead of making stuff up.
+                        int ppp = 1;
+                        for(const auto &parent : myatoms[i].cores())
+                        {
+                            auto an = gmx::formatString("atomName%d", ppp);
+                            if (static_cast<size_t>(parent) < inames.size())
+                            {
+                                add_xml_char(baby, an.c_str(), inames[parent].c_str());
+                            }
+                            else
+                            {
+                                add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
+                            }
+                            ppp += 1;
+                        }
+                        // TODO look up this number!
+                        double w1 = -0.5;
+                        add_xml_double(baby, "weight1", w1);
+                        add_xml_double(baby, "weight2", 1-w1);
                     }
                 }
             }
