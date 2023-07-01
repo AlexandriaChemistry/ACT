@@ -917,6 +917,12 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             
             for (size_t i = 0; i < myatoms.size(); i++)
             {
+                int reali = tellme_RealAtom(i, myatoms);
+                auto iname = nameIndex(myatoms[i].name(), reali);
+                inames.push_back(iname);
+            }
+            for (size_t i = 0; i < myatoms.size(); i++)
+            {
                 // First do atom type stuff
                 auto ffType            = myatoms[i].ffType();
                 std::string openMMtype = ffType;
@@ -988,7 +994,6 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 {
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     auto iname = nameIndex(myatoms[i].name(), reali);
-                    inames.push_back(iname);
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), iname.c_str());
                     
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), openMMtype.c_str());
@@ -1050,17 +1055,17 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                         if (static_cast<size_t>(parent) < inames.size())
                                         {
                                             add_xml_char(baby, an.c_str(), inames[parent].c_str());
+                                            // Add an (artificial) bond such that OpenMM will generate
+                                            // exclusions for this. See
+                                            // https://github.com/openmm/openmm/issues/811
+                                            addXmlResidueBond(residuePtr,
+                                                              inames[i].c_str(), inames[parent].c_str());
                                         }
                                         else
                                         {
                                             add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
                                         }
                                         ppp += 1;
-                                        // Add an (artificial) bond such that OpenMM will generate
-                                        // exclusions for this. See
-                                        // https://github.com/openmm/openmm/issues/811
-                                        addXmlResidueBond(residuePtr,
-                                                          inames[i].c_str(), inames[parent].c_str());
                                     }
                                     // TODO look up this number!
                                     ppp = 1;
