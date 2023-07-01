@@ -1143,14 +1143,16 @@ class ActOpenMMSim:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
         new_pos = []
         for index in range(self.system.getNumParticles()):
-            if (not self.args.polarizable or index in self.cores):
+            if (not self.args.polarizable or not index in self.shells):
                 new_pos_x = positions[index][0]
                 new_pos.append((new_pos_x,positions[index][1],positions[index][2]))
             if (self.args.polarizable and index in self.shells):
                 new_pos_x = positions[index][0]+0.001*nanometer
                 new_pos_y = positions[index][1]+0.001*nanometer
                 new_pos_z = positions[index][2]+0.001*nanometer
-                new_pos.append((new_pos_x,new_pos_y,new_pos_z)) 
+                new_pos.append((new_pos_x,new_pos_y,new_pos_z))
+        print("There are %d particles and %d new_pos" %
+              ( self.system.getNumParticles(), len(new_pos)))
         self.simulation.context.setPositions(new_pos)
         if self.args.debug:
             print(f"number of particles (incl. drudes):  {self.system.getNumParticles()}")
