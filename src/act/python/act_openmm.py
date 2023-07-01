@@ -768,6 +768,8 @@ class ActOpenMMSim:
 
     #################################################
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
+        if self.system.isVirtualSite(iatom) or self.system.isVirtualSite(jatom):
+            return True
         if nexcl == 0:
             return False
         elif nexcl == 1:

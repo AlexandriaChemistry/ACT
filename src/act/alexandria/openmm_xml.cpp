@@ -345,8 +345,18 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-
-void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr, 
+static void addXmlResidueBond(xmlNodePtr        residuePtr,
+                              const std::string &atom1,
+                              const std::string &atom2)
+{
+    auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::BOND_RES));
+    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), 
+                 atom1.c_str());
+    add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES),
+                 atom2.c_str()); 
+}
+                              
+void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
                                       const ForceField *pd, 
                                       const Topology   *topol)
 {
@@ -368,11 +378,9 @@ void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
                 //here also myatoms[i].ffType(); but for ai aj
                 auto name_ai = myatoms[ai].name();
                 auto name_aj = myatoms[aj].name();
-                auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::BOND_RES));
-                add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), 
-                             nameIndex(name_ai, reali).c_str());
-                add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES),
-                             nameIndex(name_aj, realj).c_str()); 
+                addXmlResidueBond(residuePtr,
+                                  nameIndex(name_ai, reali).c_str(),
+                                  nameIndex(name_aj, realj).c_str());
             }
         }
     }
@@ -1048,6 +1056,11 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                             add_xml_char(baby, an.c_str(), myatoms[parent].name().c_str());
                                         }
                                         ppp += 1;
+                                        // Add an (artificial) bond such that OpenMM will generate
+                                        // exclusions for this. See
+                                        // https://github.com/openmm/openmm/issues/811
+                                        addXmlResidueBond(residuePtr,
+                                                          inames[i].c_str(), inames[parent].c_str());
                                     }
                                     // TODO look up this number!
                                     ppp = 1;
