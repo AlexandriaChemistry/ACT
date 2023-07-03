@@ -517,15 +517,15 @@
     <String Name="name">Vanadium</String>
     <Int Name="atomnumber">23</Int>
   </element>
+  <element Name="VS">
+    <Real Name="mass">0</Real>
+    <String Name="name">Vsite</String>
+    <Int Name="atomnumber">0</Int>
+  </element>
   <element Name="W">
     <Real Name="mass">183.84</Real>
     <String Name="name">Tungsten</String>
     <Int Name="atomnumber">74</Int>
-  </element>
-  <element Name="X">
-    <Real Name="mass">0</Real>
-    <String Name="name">Vsite</String>
-    <Int Name="atomnumber">0</Int>
   </element>
   <element Name="Xe">
     <Real Name="mass">131.29300000000001</Real>
