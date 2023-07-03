@@ -1072,9 +1072,11 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     double ptot = 0;
                                     for(auto &p : ee->params())
                                     {
+                                        // TODO Check that the parameters are correct.
+                                        // should it be 1-p for other than vsite2 as well?
                                         auto an = gmx::formatString("weight%d", ppp);
-                                        add_xml_double(baby, an.c_str(), p);
-                                        ptot += p;
+                                        add_xml_double(baby, an.c_str(), 1-p);
+                                        ptot += 1-p;
                                         ppp  += 1;
                                     }
                                     auto an = gmx::formatString("weight%d", ppp);
