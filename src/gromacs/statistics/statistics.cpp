@@ -137,17 +137,17 @@ eStats gmx_stats::compute(int weight)
 {
     double yy, yx, xx, sx, sy, d2;
     double ssxx, ssyy, ssxy;
-    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2; //, dy2;
+    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
 
     int    N = x_.size();
 
+    if (N < 1)
+    {
+        return eStats::NO_POINTS;
+    }
+
     if (!computed_)
     {
-        if (N < 1)
-        {
-            return eStats::NO_POINTS;
-        }
-
         xx   = xx_nw = 0;
         yy   = yy_nw = 0;
         yx   = yx_nw = 0;
@@ -161,7 +161,7 @@ eStats gmx_stats::compute(int weight)
             double dd = y_[i]-x_[i];
             d2 += gmx::square(dd);
             
-            mae_ += fabs(dd);
+            mae_ += std::abs(dd);
             mse_ += dd;
             if ((dy_[i] != 0.0) && (weight == elsqWEIGHT_Y))
             {
@@ -195,10 +195,10 @@ eStats gmx_stats::compute(int weight)
         mse_        = mse_/N; 
         aver_       = sy_nw/N;
 
-        double dd = yy_nw/N - gmx::square(sy_nw/N);
-        if (dd > 0)
+        double variance = yy_nw/N - gmx::square(aver_);
+        if (variance > 0)
         {
-            sigma_aver_ = std::sqrt(dd);
+            sigma_aver_ = std::sqrt(variance);
         }
         else if (N == 1)
         {
