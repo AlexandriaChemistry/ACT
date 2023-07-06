@@ -91,20 +91,20 @@
     <Atom type="c2_2" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
     <Atom type="c2_3" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
     <Atom type="c2_4" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
-    <Atom type="c2_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="c2_s_2" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="c2_s_3" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="c2_s_4" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
+    <Atom type="c2_s_1" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="c2_s_2" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="c2_s_3" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="c2_s_4" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
     <Atom type="h_1" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
     <Atom type="h_2" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
     <Atom type="h_3" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
     <Atom type="h_4" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
-    <Atom type="h_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="h_s_2" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="h_s_3" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
-    <Atom type="h_s_4" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
+    <Atom type="h_s_1" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="h_s_2" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="h_s_3" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="h_s_4" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
     <Atom type="o2_1" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_s_1" vdW="0" sigma="0.001" epsilon="0.001" gamma="7" zeta="6"/>
+    <Atom type="o2_s_1" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
