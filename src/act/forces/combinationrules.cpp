@@ -622,8 +622,8 @@ static void generateCoulombParameterPairs(ForceField *pd)
             auto jparam = jcoul.second;
             double jzeta  = jcoul.second["zeta"].internalValue();
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
-            ForceFieldParameter pi(unit, izeta, 0, 1, izeta, izeta, mutd, true, true);
-            ForceFieldParameter pj(unit, jzeta, 0, 1, jzeta, jzeta, mutd, true, true);
+            ForceFieldParameter pi(unit, izeta, 0, 0, izeta, izeta, mutd, true, true);
+            ForceFieldParameter pj(unit, jzeta, 0, 0, jzeta, jzeta, mutd, true, true);
             newParams.addParameter(pairID, coul_name[coulZETAI], pi);
             newParams.addParameter(pairID, coul_name[coulZETAJ], pj);
         }

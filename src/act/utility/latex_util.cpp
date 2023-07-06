@@ -40,11 +40,12 @@
 namespace alexandria
 {
 
-LongTable::LongTable(FILE *fp, bool bLandscape, const char *font)
+LongTable::LongTable(FILE *fp, bool bLandscape, const char *font, bool spacing)
 {
     fp_         = fp;
     bLandscape_ = bLandscape;
     font_       = font;
+    spacing_    = spacing;
     if (nullptr == fp_)
     {
         GMX_THROW(gmx::FileIOError("File not open"));
@@ -81,6 +82,35 @@ void LongTable::setColumns(int nColumns)
     }
 }
 
+void LongTable::printLine(const std::string &line)
+{
+    std::string myline;
+    bool underscore = false;
+    for(auto &c : line)
+    {
+        if (c == '_' || c == '#')
+        {
+            myline.append("\\_{");
+            underscore = true;
+        }
+        else if (underscore && std::isspace(c))
+        {
+            myline += "}";
+            myline += c;
+            underscore = false;
+        }
+        else
+        {
+            myline += c;
+        }
+    }
+    if (underscore)
+    {
+        myline += "}";
+    }
+    fprintf(fp_, "%s\\\\\n", myline.c_str());
+}
+
 void LongTable::printHeader()
 {
     if (bLandscape_)
@@ -91,21 +121,26 @@ void LongTable::printHeader()
     {
         fprintf(fp_, "\\begin{%s}\n", font_);
     }
-    fprintf(fp_, "\\begin{spacing}{1}\n");
+    if (spacing_)
+    {
+        fprintf(fp_, "\\begin{spacing}{1}\n");
+    }
     fprintf(fp_, "\\begin{longtable}{%s}\n", columns_.c_str());
     fprintf(fp_, "\\caption{%s}\n",          caption_.c_str());
     fprintf(fp_, "\\label{%s}\\\\\n",        label_.c_str());
     printHLine();
     for (unsigned int i = 0; (i < headLines_.size()); i++)
     {
-        fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
+        printLine(headLines_[i]);
+        //fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
     }
     printHLine();
     fprintf(fp_, "\\endfirsthead\n");
     printHLine();
     for (unsigned int i = 0; (i < headLines_.size()); i++)
     {
-        fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
+        printLine(headLines_[i]);
+        //fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
     }
     printHLine();
     fprintf(fp_, "\\endhead\n");
@@ -116,7 +151,10 @@ void LongTable::printHeader()
 void LongTable::printFooter()
 {
     fprintf(fp_, "\\end{longtable}\n");
-    fprintf(fp_, "\\end{spacing}\n");
+    if (spacing_)
+    {
+        fprintf(fp_, "\\end{spacing}\n");
+    }
     if (nullptr != font_)
     {
         fprintf(fp_, "\\end{%s}\n", font_);
@@ -126,21 +164,6 @@ void LongTable::printFooter()
         fprintf(fp_, "\\end{landscape}\n");
     }
     fflush(fp_);
-}
-
-void LongTable::printLine(const std::string &line)
-{
-    std::string myline;
-    
-    for(auto &c : line)
-    {
-        if (c == '_' || c == '#')
-        {
-            myline.append("\\");
-        }
-        myline += c;
-    }
-    fprintf(fp_, "%s\\\\\n", myline.c_str());
 }
 
 void LongTable::printColumns(const std::vector<std::string> &columns)

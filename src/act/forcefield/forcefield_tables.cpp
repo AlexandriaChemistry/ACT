@@ -89,9 +89,10 @@ void alexandria_subtype_table(FILE          *fp,
     lt.printFooter();
 }
 
-static void alexandria_itype_table(FILE           *fp,
-                                   const ForceField  *pd,
-                                   InteractionType itype)
+static void alexandria_itype_table(FILE             *fp,
+                                   const ForceField *pd,
+                                   InteractionType   itype,
+                                   int               min_ntrain)
 {
     LongTable  lt(fp, false, nullptr);
     lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$.", 
@@ -112,7 +113,7 @@ static void alexandria_itype_table(FILE           *fp,
         for (const auto &fp : ep.second)
         {
             // Round upwards the sigma values.
-            if (fp.second.ntrain() > 0)
+            if (fp.second.ntrain() >= min_ntrain)
             {
                 line += gmx::formatString(" & %.2f(%d, %.2f)",
                                           fp.second.value(),
@@ -137,7 +138,7 @@ static void alexandria_itype_table(FILE           *fp,
             lt.printHeader();
             first = false;
         }
-        if (ntrain > 0)
+        if (ntrain >= min_ntrain)
         {
             lt.printLine(line);
         }
@@ -145,8 +146,9 @@ static void alexandria_itype_table(FILE           *fp,
     lt.printFooter();
 }
 
-void alexandria_eemprops_table(FILE           *fp,
-                               const ForceField  *pd)
+void alexandria_eemprops_table(FILE             *fp,
+                               const ForceField *pd,
+                               int               ntrain)
 {
     std::vector<InteractionType> itypes = {
         InteractionType::ELECTRONEGATIVITYEQUALIZATION,
@@ -161,14 +163,15 @@ void alexandria_eemprops_table(FILE           *fp,
             auto fs = pd->findForcesConst(itype);
             if (fs.numberOfParameters() > 0)
             {
-                alexandria_itype_table(fp, pd, itype);
+                alexandria_itype_table(fp, pd, itype, ntrain);
             }
         }
     }
 }
 
-void alexandria_charge_table(FILE           *fp,
-                             const ForceField  *pd)
+void alexandria_charge_table(FILE             *fp,
+                             const ForceField *pd,
+                             int               ntrain)
 {
     LongTable   lt(fp, false, nullptr);
     std::string qq("charge");
@@ -185,7 +188,7 @@ void alexandria_charge_table(FILE           *fp,
             auto pp = ptype.second.parameterConst(qq);
             if ((pp.mutability() == Mutability::Free ||
                  pp.mutability() == Mutability::Bounded) &&
-                pp.ntrain() > 0)
+                pp.ntrain() >= ntrain)
             {
                 auto line = gmx::formatString("%s & %.4f & %.4f & %d",
                                               ptype.second.id().id().c_str(),

@@ -47,9 +47,11 @@ namespace alexandria
      *
      * \param[out] fp   File pointer to write to
      * \param[in]  pd   Force field data
+     * \param[in]  ntrain Minimum number of training points to include
      */
-    void alexandria_charge_table(FILE            *fp, 
-                                 const ForceField   *pd);  
+    void alexandria_charge_table(FILE             *fp, 
+                                 const ForceField *pd,
+                                 int               ntrain);  
                                
     /*! \brief
      * Generates a LaTeX table containing the chi and eta values 
@@ -57,9 +59,11 @@ namespace alexandria
      *
      * \param[out] fp   File pointer to write to
      * \param[in]  pd   Force field data
+     * \param[in]  ntrain Minimum number of training points to include
      */
-    void alexandria_eemprops_table(FILE            *fp, 
-                                   const ForceField   *pd);  
+    void alexandria_eemprops_table(FILE             *fp, 
+                                   const ForceField *pd,
+                                   int               ntrain);  
                                
     /*! \brief
      * Generates a LaTeX table containing the delta_chi and 
@@ -67,9 +71,11 @@ namespace alexandria
      *
      * \param[out] fp   File pointer to write to
      * \param[in]  pd   Force field data
+     * \param[in]  ntrain Minimum number of training points to include
      */
-    void alexandria_eemprops_corr(const ForceField  *pd,
-                                  FILE           *fp);                             
+    void alexandria_eemprops_corr(const ForceField *pd,
+                                  FILE             *fp,
+                                  int               ntrain);                             
     /*! \brief
      * Generates a LaTeX table containing the subtypes
      * for particle types
@@ -77,8 +83,8 @@ namespace alexandria
      * \param[out] fp   File pointer to write to
      * \param[in]  pd   Force field data
      */
-    void alexandria_subtype_table(FILE           *fp,
-                                  const ForceField  *pd);
+    void alexandria_subtype_table(FILE             *fp,
+                                  const ForceField *pd);
              
 } //namespace
 

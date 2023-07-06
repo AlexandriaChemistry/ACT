@@ -51,6 +51,8 @@ private:
     FILE                    *fp_ = nullptr;
     //! Whether or not the file was opened by us
     bool                     openedFile_ = false;
+    //! Whether or not use spacing commands
+    bool                     spacing_ = false;
     //! Font type to use
     const char              *font_ = nullptr;
     //! Caption text
@@ -69,7 +71,7 @@ public:
      * \param[in] bLandscape Whether or not to print in landscape orientation
      * \param[in] font       The font to use
      */
-    LongTable(FILE *fp, bool bLandscape, const char *font);
+    LongTable(FILE *fp, bool bLandscape, const char *font, bool spacing=false);
     
     /*! Constructor with a file name
      * \param[in] fn         The file name to write to

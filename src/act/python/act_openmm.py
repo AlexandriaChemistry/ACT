@@ -20,8 +20,24 @@ from simtk.unit import *
 from simtk import openmm, unit
 import numpy as np
 import argparse, math, sys, shutil
+from enum import Enum
 
 ONE_4PI_EPS0 = "138.93544561"
+
+# To distinguish 
+class VdW(Enum):
+    LJ8_6  = 1
+    LJ12_6 = 2
+    LJ14_7 = 3
+    WBH    = 4
+    GBHAM  = 5
+
+# Map strings to VdW entries.    
+VdWdict = { 'LJ8_6':VdW.LJ8_6, 'LJ12_6': VdW.LJ12_6, 'LJ14_7': VdW.LJ14_7, 'WBH': VdW.WBH, 'GBHAM': VdW.GBHAM }
+# Make reverse map as well.
+dictVdW = {}
+for key in VdWdict:
+    dictVdW[VdWdict[key]] = key
 
 class SimParams:
     def __init__(self, filename:str):
@@ -93,16 +109,16 @@ class CombinationRules:
     def arithmetic(self, vara:float, varb:float)->float:
         return eval(self.arithmeticString(str(vara), str(varb)))
 
-    def combStrings(self):
+    def combStrings(self, vdw:VdW):
         if "Hogervorst" == self.comb:
             cepsilon = "((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))"
             cgamma   = "((gamma1 + gamma2)/2)"
 
-            if self.args.vdw == "WBH":
+            if vdw == VdW.WBH:
                 csigma   = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
                 return csigma, cepsilon, cgamma 
             
-            elif self.args.vdw == "GWBH":
+            elif vdw == VdW.GBHAM:
                 crmin   = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
                 #This combination rule is likely wrong for GWBH 4 parameter one
                 print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
@@ -111,17 +127,19 @@ class CombinationRules:
         elif "Geometric" == self.comb:
             cepsilon = "(sqrt(epsilon1*epsilon2))"
             cgamma   = "(sqrt(gamma1*gamma2))"
-            if self.args.vdw == "WBH":
+            if vdw == VdW.WBH:
                 csigma   = "(sqrt(sigma1*sigma2))"
                 return csigma, cepsilon, cgamma
-            elif self.args.vdw == "GWBH":
+            elif vdw == VdW.GBHAM:
                rmin   = "(sqrt(rmin11*rmin22))"
                cdelta = "(sqrt(delta1*delta2))"
                return crmin, cepsilon, cgamma, cdelta
-            elif self.args.vdw == "14_7":
+            elif vdw == VdW.LJ14_7:
                csigma   = "(sqrt(sigma1*sigma2))"
                cdelta = "(sqrt(delta1*delta2))"
                return csigma, cepsilon, cgamma, cdelta
+            else:
+                sys.exit("No support for %s" % dictVdW[vdw])
         else:
             sys.exit("Unknown combination rule '%s'" % self.comb)
             
@@ -137,37 +155,66 @@ class ActForce:
         self.fgnumber = fgnumber
 
 class ActOpenMMSim:
-    def __init__(self, pdbfile:str=None, xmlfile:str=None, datfile:str=None, actfile:str=None, polarizable:bool=None):
-        self.args        = self.argParser(pdbfile, xmlfile, datfile, actfile, polarizable)
+    def __init__(self, pdbfile:str=None, xmlfile:str=None, datfile:str=None, actfile:str=None,
+                 txtfile=None, pdbtraj=None, dcdtraj=None, polarizable:bool=None):
+        self.txt         = None
+        self.args        = self.argParser(pdbfile, xmlfile, datfile, actfile, txtfile, pdbtraj, dcdtraj, polarizable)
         self.pdb         = PDBFile(self.args.pdb_file)
         self.sim_params  = SimParams(self.args.dat_file)
         self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
                                             self.sim_params.getStr("combination_rule"), self.args)
-        self.logfile     = self.args.outputdir+'/'+self.args.log_file
-        if not os.path.isdir(self.args.outputdir):
-            os.makedirs(self.args.outputdir, exist_ok=True)
         self.force_group = None
+        vdwopt           = 'vanderwaals'
+        vdw              = self.sim_params.getStr(vdwopt)
+        if not vdw in VdWdict:
+            sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.args.dat_file ))
+        
+        self.vdw         = VdWdict[vdw]
+        self.txt_header()
         self.gen_ff()
     
+    def __del__(self):
+        if None != self.txt:
+            print("Please check output in %s" % self.args.txt_file )
+            print("Energies are in %s" % self.args.ene_file )
+            if None != self.args.dcd_traj:
+                print("DCD trajectory is in %s" % self.args.dcd_traj )
+            if None != self.args.pdb_traj:
+                print("PDB trajectory in %s" % self.args.pdb_traj )
+            self.txt.close()
+        
+    def txt_header(self):
+        self.txt = open(self.args.txt_file, "w")
+        self.txt.write("Starting OpenMM calculation using the ActOpenMMSim interface.\n")
+        self.txt.write("input pdbfile:         %s\n" % self.args.pdb_file)
+        self.txt.write("simulation parameters: %s\n" % self.args.dat_file)
+        self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
+        self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
+
     def gen_ff(self):
         if None != self.args.xml_file:
             self.forcefield  = ForceField(self.args.xml_file)
+            self.txt.write("force field            %s\n" % self.args.xml_file)
         elif None != self.args.act_file:
             # Run alexandria gentop, but first check whether we have alexandria
             if None == shutil.which("alexandria"):
                 sys.exit("You provided and ACT force field file, but the alexandria program is not in your PATH")
-            xmloutfile = self.args.outputdir+"/"+"act.xml"
-            if os.path.exists(xmloutfile):
-                os.unlink(xmloutfile)
+            self.xmloutfile = "act.xml"
+            if os.path.exists(self.xmloutfile):
+                if self.args.verbose:
+                    print("Removing existing OpenMM force field file %s" % self.xmloutfile)
+                os.unlink(self.xmloutfile)
             mycmd = ("alexandria gentop -ff %s -f %s -openmm %s" % ( self.args.act_file, 
                                                                      self.args.pdb_file,
-                                                                     xmloutfile ))
+                                                                     self.xmloutfile ))
             os.system(mycmd)
-            if not os.path.exists(xmloutfile):
+            if not os.path.exists(self.xmloutfile):
                 sys.exit("Failed running '%s'" % mycmd)
-            if self.args.verbose:
-                print("Succesfully generated an OpenMM force field file")
-            self.forcefield = ForceField(xmloutfile)
+            self.txt.write("Succesfully generated an OpenMM force field file %s from ACT force field %s" % (self.xmloutfile, self.args.act_file))
+            self.forcefield = ForceField(self.xmloutfile)
+
+    def xmlOutFile(self):
+        return self.xmloutfile
         
     def init_force_groups(self)->int:
         self.force_group = {}
@@ -209,7 +256,7 @@ class ActOpenMMSim:
         fgnumber = force.getForceGroup()
         if nonbond and self.nonbondedMethod != NoCutoff:
             # Remove direct space nonbondeds and add them to the local book-keeping
-            print("Will add direct and reciprocal part for nonbonded")
+            self.txt.write("Will add direct and reciprocal part for nonbonded forces.\n")
             directname = fcname + ' (direct space)'
             self.force_group[fgnumber] = directname
             self.fgnumber[directname]  = fgnumber
@@ -271,28 +318,37 @@ class ActOpenMMSim:
             for force in self.system.getForces():
                 print("DBG: fcname %s fgnumber %d" % ( force.getName(), force.getForceGroup()))
 
-    def argParser(self, pdbfile:str, xmlfile:str, datfile:str, actfile:str, polarizable:bool):
+    def argParser(self, pdbfile:str, xmlfile:str, datfile:str, actfile:str, txtfile:str, pdbtraj:str, dcdtraj:str, polarizable:bool):
         mydesc = '''
         Run an OpenMM simulation based on an Alexandria force field generated by the
         Alexandria Chemistry Toolkit. Alternatively, you can reuse an existing OpenMM
         force field file generated previously. You also need to provide a pdb file with
-        atomic coordinates and a simulation parameter file. A couple other flags are
-        available as shown below.
+        atomic coordinates and CONECT records to indicate the bonds and a simulation parameter file.
+        
+        Note that the options selected for polarizability, Van der Waals potential etc. should match
+        the force field or incorrect results will be produced. The following Van der Waals potentials
+        are more or less supported:
+        LJ12_6 for normalLennard-Jones,
+        LJ8_6 for Lennard-Jones with softer repuslion,
+        LJ14_7 for 14-7 potential of Qi 2016,
+        WBH for modified Buckingham (Default), 
+        GBHAM for generalized 4-parameter Buckingham.
+        A couple other flags are available as shown below.
         '''
         parser = argparse.ArgumentParser(description=mydesc)
         parser.add_argument("-pdb", "--pdb_file", help="Input coordinates .pdb file", default=None)
         parser.add_argument("-act", "--act_file", help="Alexandria force field file, specify either this one or an OpenMM force field file", default=None)
         parser.add_argument("-xml", "--xml_file", help="OpenMM force field .xml file", default=None)
         parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file", default=None)
-        deflog = "log.csv"
-        parser.add_argument("-log", "--log_file", help="Log file for energies, default +"+deflog, default=deflog)
+        defene = "energy.csv"
+        parser.add_argument("-ene", "--ene_file", help="File for storing energies, default +"+defene, default=defene)
+        deflog = "output.txt"
+        parser.add_argument("-txt", "--txt_file", help="File for simulation information, default +"+deflog, default=deflog)
+        pdbtraj = "trajectory.pdb"
+        parser.add_argument("-pdbtraj", "--pdb_traj", help="Trajectory in pdb format, can become large, default "+pdbtraj, default=pdbtraj)
+        dcdtraj = "trajectory.dcd"
+        parser.add_argument("-dcdtraj", "--dcd_traj", help="Trajectory in dcd format, default "+dcdtraj, default=dcdtraj)
         parser.add_argument("-pol", "--polarizable", help="Turn on support for polarization", action="store_true")
-        defout = "output"
-        parser.add_argument("-odir", "--outputdir", help="Directory to write output to, default: "+defout, type=str, default=defout)
-        defvdw = "WBH"
-        parser.add_argument("-vdw", "--vdw", help="Van der Waals potential function. LJ for Lennard-Jones, 14_7 for 14-7 potential of Qi 2016, WBH for modified Buckingham (Default), GWBH for generalized 4-parameter Buckingham"+defvdw, type=str, default=defvdw)
-        defmDrude = "0.1"
-        parser.add_argument("-mDrude", "--Drude_mass", help="The mass of drude particles. Make sure it is consistent with the mass in your forcefield"+defmDrude, type=float, default=defmDrude)
         parser.add_argument("-emonomer", "--emonomer", help="Energy of monomer will be subtracted when printing energies", type=float, default=None)
         parser.add_argument("-v", "--verbose", help="Print more stuff", action="store_true")
         parser.add_argument("-dbg", "--debug", help="Print debug stuff", action="store_true")
@@ -300,9 +356,13 @@ class ActOpenMMSim:
         args = parser.parse_args()
         if args.debug:
             args.verbose = True
-        # Do some checking
-        if not args.vdw in [ "LJ", "WBH", "GWBH", "14_7" ]:
-            sys.exit("Unrecognized form of VDW potential '%s'. Use either LJ, WBH, GWBH or 14_7." % args.vdw)
+
+        if None != txtfile:
+            args.txt_file = txtfile
+        if None != pdbtraj:
+            args.pdb_traj = pdbtraj
+        if None != dcdtraj:
+            args.dcd_traj = dcdtraj
 
         if None == args.pdb_file and None == pdbfile:
             sys.exit("Please pass a pdb file")
@@ -358,7 +418,7 @@ class ActOpenMMSim:
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
         self.use_dispersion_correction = self.sim_params.getBool('use_dispersion_correction')
         self.col_freq                  = self.sim_params.getFloat('collision_frequency', 0.1) 
-        self.MaxDrudeDist              = self.sim_params.getFloat('MaxDrudeDistance', 0.02)
+        self.maxDrudeDist              = self.sim_params.getFloat('maxDrudeDistance', 0.02)
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
         self.useMonteCarloBarostat     = self.sim_params.getBool('useMonteCarloBarostat')
@@ -386,19 +446,22 @@ class ActOpenMMSim:
             self.usePrecisionCuda = self.sim_params.getStr('usePrecisionCuda')
         else:
             if self.platform.supportsDoublePrecision():
-                print("Setting precision to double")
+                self.txt.write("Setting precision to double\n")
 #                self.platform.setPropertyValue("Precision", "double")
-        print("Using OpenMM version %s" % self.platform.getOpenMMVersion())
-
+        self.txt.write("Using OpenMM version %s\n" % self.platform.getOpenMMVersion())
+        self.txt.write("Integration time step %g ps\n" % self.dt)
 
     def start_output(self):
         # OUTPUT
         ################################################
+        # Do not open files unnecessarily
         save = self.sim_params.getInt('saveDcd')
         self.dcdReporter = None
-        if save > 0:
-            self.dcdReporter  = DCDReporter(self.args.outputdir+'/trajectory.dcd', save)
-        self.dataReporter = StateDataReporter(self.logfile, self.sim_params.getInt('saveEnergy'),
+        if save > 0 and self.steps >= save:
+            self.dcdReporter  = DCDReporter(self.args.dcd_traj, save)
+        else:
+            self.args.dcd_file = None
+        self.dataReporter = StateDataReporter(self.args.ene_file, self.sim_params.getInt('saveEnergy'),
                                               totalSteps=self.steps,
                                               step=self.sim_params.getBool('outStep'),
                                               time=self.sim_params.getBool('outTime'),
@@ -410,14 +473,18 @@ class ActOpenMMSim:
                                               volume=self.sim_params.getBool('outVolume'),
                                               density=self.sim_params.getBool('outDensity'),
                                               separator=self.sim_params.getStr('outSeparator'))
+        # Do not open files unnecessarily
         save = self.sim_params.getInt('checkPoint')
         self.chkReporter = None
-        if save > 0:
-            self.chkReporter = CheckpointReporter(self.args.outputdir+'/checkpnt.chk', save)
+        if save > 0 and self.steps > save:
+            self.chkReporter = CheckpointReporter('checkpnt.chk', save)
+        # Do not open files unnecessarily
         save = self.sim_params.getInt('savePdb')
         self.pdbReporter = None
-        if save > 0:
-            self.pdbReporter = PDBReporter(self.args.outputdir+'/output.pdb', save)
+        if save > 0 and self.steps >= save:
+            self.pdbReporter = PDBReporter(self.args.pdb_traj, save)
+        else:
+            self.args.pdb_traj = None
         
     def make_system(self):
         # TOPOLOGY
@@ -428,7 +495,7 @@ class ActOpenMMSim:
         self.modeller.addExtraParticles(self.forcefield)
         self.topology  = self.modeller.topology
         self.positions = self.modeller.positions
-        myDrudeMass    = self.args.Drude_mass
+        myDrudeMass    = self.sim_params.getFloat('drudeMass')
         myEwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance')
         self.rigidWater = False
         rmcom           = True
@@ -471,7 +538,28 @@ class ActOpenMMSim:
             if hasattr(force, 'setUseDispersionCorrection'):
                 force.setUseDispersionCorrection(self.use_dispersion_correction)
         self.count_forces("Initial")
-                
+    
+    def find_shells_cores(self, drudeforce):
+        self.cores = []
+        self.shells = []
+        self.core_shell = []
+        self.my_core  = {}
+        self.my_shell = {}
+        for index in range(drudeforce.getNumParticles()):
+            if self.args.debug:
+                print(f"Polforce {drudeforce.getParticleParameters(index)}")
+            [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = drudeforce.getParticleParameters(index)
+            self.shells.append(particle) # particle  = shell
+            self.cores.append(particle1) # particle1 = core
+            self.my_core[particle] = particle1
+            self.my_shell[particle1] = particle
+            self.core_shell.append((particle,particle1))
+        if self.args.debug:
+            # Checking correct atom/shell pairing
+            print(f"cores      {self.cores}")
+            print(f"shells     {self.shells}")
+            print(f"core_shell {self.core_shell}")
+            print("########################")
                 
     # CODE FOR ALEXANDRIA NONBONDED FORCES
     ################################################
@@ -510,27 +598,7 @@ class ActOpenMMSim:
         self.count_forces("Direct space 2")
         if self.args.polarizable:
             self.add_force_group(drudeforce, False, False)
-            self.cores = []
-            self.shells = []
-            self.core_shell = []
-            self.my_core  = {}
-            self.my_shell = {}
-            for index in range(drudeforce.getNumParticles()):
-                if self.args.debug:
-                    print(f"Polforce {drudeforce.getParticleParameters(index)}")
-                [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = drudeforce.getParticleParameters(index)
-                self.shells.append(particle) # particle  = shell
-                self.cores.append(particle1) # particle1 = core
-                self.my_core[particle] = particle1
-                self.my_shell[particle1] = particle
-                self.core_shell.append((particle,particle1))
-            if self.args.debug:
-                # Checking correct atom/shell pairing
-                print(f"cores      {self.cores}")
-                print(f"shells     {self.shells}")
-                print(f"core_shell {self.core_shell}")
-                print("########################")
-
+            self.find_shells_cores(drudeforce)
         self.count_forces("Direct space 3")
 
         if not self.customnb:
@@ -577,17 +645,18 @@ class ActOpenMMSim:
         self.charges = []
         if self.args.verbose:
             print("There are %d particles in the nonbondedforce" % self.nonbondedforce.getNumParticles())
+        vdw = self.sim_params.getStr("vanderwaals")
         for index in range(self.nonbondedforce.getNumParticles()):
             myparams = self.customnb.getParticleParameters(index)
-            if self.args.vdw == "WBH":
+            if vdw == "WBH":
                 [_, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {myparams}")
-            elif self.args.vdw == "GWBH":
+            elif vdw == "GWBH":
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {myparams}")
-            elif self.args.vdw == "14_7":
+            elif vdw == "14_7":
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {myparams}")
@@ -596,7 +665,7 @@ class ActOpenMMSim:
             self.charges.append(charge)
             self.qq_correction.addParticle([charge, zeta])
 
-        if self.args.debug and self.args.vdw == "WBH":
+        if self.args.debug and vdw == "WBH":
             np = self.nonbondedforce.getNumParticles()
             for i in range(np):
                 [_, sigma1, epsilon1, gamma1, _, _] = self.customnb.getParticleParameters(i)
@@ -622,7 +691,7 @@ class ActOpenMMSim:
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
-        if self.args.vdw == "WBH":
+        if vdw == "WBH":
             expression = 'U_WBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
@@ -634,7 +703,7 @@ class ActOpenMMSim:
             #self.vdw_expression =('vdW(((2.0*epsilon)/(1.0-(3.0/(gamma+3.0)))) * ((sigma^6)/(sigma^6+r^6))* ((3.0/(gamma+3.0))*exp(gamma*(1.0-(r/sigma)))-1.0));')
             
             expression += ( 'U_WBH = %s;' % self.vdw_expression )
-            csigma, cepsilon, cgamma = self.comb.combStrings()
+            csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
             # The statements have to be in this order! They are evaluated in the reverse order apparently.
             expression += ( 'gamma3   = (gamma/(3+gamma));')
             expression += ( 'sigma    = %s;' % csigma )
@@ -643,9 +712,9 @@ class ActOpenMMSim:
             expression += 'vdW = (vdW1*vdW2);'
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             if self.nonbondedMethod == NoCutoff:
-                self.vdw_correction.setName("VanderWaals"+self.args.vdw)
+                self.vdw_correction.setName("VanderWaals"+vdw)
             else:
-                self.vdw_correction.setName("VanderWaalsCorrection"+self.args.vdw)
+                self.vdw_correction.setName("VanderWaalsCorrection"+vdw)
             for pp in [ "sigma", "epsilon", "gamma", "vdW", "sigma_LJ", "epsilon_LJ" ]:
                 self.vdw_correction.addPerParticleParameter(pp)
 
@@ -678,7 +747,7 @@ class ActOpenMMSim:
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
 #################################################
-        elif self.args.vdw == "GWBH":
+        elif vdw == "GWBH":
             expression = 'U_GWBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
@@ -687,7 +756,7 @@ class ActOpenMMSim:
 
             self.vdw_expression =('vdW*(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           );')
             expression += ( 'U_GWBH = %s;' % self.vdw_expression )
-            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings()
+            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'rmin    = %s;' % crmin )
             expression += ( 'epsilon  = %s;' % cepsilon )
             expression += ( 'gamma    = %s;' % cgamma )
@@ -724,13 +793,13 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
             self.count_forces("Direct space 8")
 #################################################
-        elif self.args.vdw == "14_7":
+        elif vdw == "14_7":
             expression = 'U_14_7-U_LJ;'
             expression += LJ_expression
 
             self.vdw_expression =( 'vdW*( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) );')
             expression += ( 'U_14_7 = %s;' % self.vdw_expression )
-            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'sigma    = %s;' % csigma )
             expression += ( 'epsilon  = %s;' % cepsilon )
             expression += ( 'gamma    = %s;' % cgamma )
@@ -799,14 +868,14 @@ class ActOpenMMSim:
         vdwname = "VanderWaalsExclusionCorrection"
         vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
         vdw_excl_corr.setName(vdwname)
-        if self.args.vdw in [ "WBH", "14_7"]:
+        if self.vdw in [ VdW.WBH, VdW.LJ14_7 ]:
             vdw_excl_corr.addPerBondParameter("sigma")
-        if self.args.vdw == "GWBH":
+        if self.vdw == VdW.GBHAM:
             vdw_excl_corr.addPerBondParameter("rmin")
         vdw_excl_corr.addPerBondParameter("epsilon")
         vdw_excl_corr.addPerBondParameter("gamma")
         vdw_excl_corr.addPerBondParameter("vdW")
-        if self.args.vdw in [ "GWBH", "14_7"]:
+        if self.vdw in [ VdW.GBHAM, VdW.LJ14_7 ]:
             vdw_excl_corr.addPerBondParameter("delta")
         qq_excl_corr = openmm.CustomBondForce(self.qq_expression)
         qq_excl_corr.setName("CoulombExclusionCorrection")
@@ -816,27 +885,27 @@ class ActOpenMMSim:
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
         nexclqq  = self.sim_params.getInt("nexclqq")
-        if self.args.vdw == "WBH":
-            csigma, cepsilon, cgamma = self.comb.combStrings()
-        elif self.args.vdw == "GWBH":
-            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings()
-        elif self.args.vdw == "14_7":
-            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings()
+        if self.vdw == VdW.WBH:
+            csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
+        elif self.vdw == VdW.GBHAM:
+            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
+        elif self.vdw == VdW.LJ14_7:
+            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
         else:
-            sys.exit("Do not know how to treat Van der Waals function '%s'" % args.vdw)
+            sys.exit("Do not know how to treat Van der Waals function '%s'" % dictVdW[self.vdw])
 
         if self.args.debug:
-            if self.args.vdw == "GWBH":
+            if self.vdw == VdW.GBHAM:
                 print("crmin   = %s" % crmin)
             else:
                 print("csigma   = %s" % csigma)
                 print("cepsilon = %s" % cepsilon)
-                if not self.args.vdw in [ "LJ" ]:
+                if not self.args.vdw in [ VdW.LJ12_6 ]:
                     print("cgamma   = %s" % cgamma)
-            if self.args.vdw in [ "GWBH", "14_7"]:
+            if self.vdw in [ VdW.GBHAM, VdW.LJ14_7 ]:
                 print("cdelta   = %s" % cdelta)
 
-        if self.args.vdw == "WBH":
+        if self.vdw == VdW.WBH:
 
             for index in range(self.nonbondedforce.getNumExceptions()):
                 # Just get the excluded atoms from the regular NB force
@@ -963,7 +1032,7 @@ class ActOpenMMSim:
 ####################
 
 
-        if self.args.vdw == "14_7":
+        if self.vdw == VdW.LJ14_7:
             for index in range(self.nonbondedforce.getNumExceptions()):
                 # Just get the excluded atoms from the regular NB force
                 [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nonbondedforce.getExceptionParameters(index)
@@ -1075,18 +1144,18 @@ class ActOpenMMSim:
         if self.nonbondedMethod != NoCutoff:
             if self.sim_params.getBool('useMonteCarloBarostat'):
                 if self.args.verbose:
-                    print("Monte Carlo Barostat will be used.")
+                    self.txt.write("Monte Carlo Barostat will be used.\n")
                 self.system.addForce(MonteCarloBarostat(self.sim_params.getFloat('pressure'),
                                                         self.temperature_c,
                                                         self.sim_params.getInt('barostatInterval')))
             elif self.sim_params.getBool('useMonteCarloAnisotropicBarostat'):
                 self.system.addForce(MonteCarloAnisotropicBarostat(self.pressvec,self.temperature_c,self.scaleX,self.scaleY,self.scaleZ,self.sim_params.getInt('barostatInterval'))) 
                 if self.args.verbose:
-                    print(f"Monte Carlo ANISOTROPIC Barostat will be used. The dimensions that can change are: X = {self.scaleX} Y = {self.scaleY} Z = {self.scaleZ}")
+                    self.txt.write(f"Monte Carlo ANISOTROPIC Barostat will be used. The dimensions that can change are: X = {self.scaleX} Y = {self.scaleY} Z = {self.scaleZ}\n")
         if self.useAndersenThermostat:
             self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
             if self.args.verbose:
-                print(f"Andersen Thermostat will be used with temperature {self.temperature_c}")
+                self.txt.write(f"Andersen Thermostat will be used with temperature {self.temperature_c}\n")
 
         #### Integrator ####
         friction_c    = self.sim_params.getFloat('friction_c')
@@ -1109,7 +1178,7 @@ class ActOpenMMSim:
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
                 print("Andersen thermostat will be turned off since %s contains a built-in thermostat." % self.integrator)
                 self.useAndersenThermostat = False
-            self.integrator.setMaxDrudeDistance(self.MaxDrudeDist)
+            self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
         else:
             nhi = "NoseHooverIntegrator"
             if nhi != integrator:
@@ -1130,6 +1199,8 @@ class ActOpenMMSim:
         for index in range(self.system.getNumParticles()):
             for m in range(3):
                 dip[m] += positions[index][m]._value * self.charges[index] * enm2Debye
+        self.txt.write("\nDipole [ %g %g %g ] total %g\n" % ( dip[0], dip[1], dip[2], 
+                                                              math.sqrt(dip[0]**2+dip[1]**2+dip[2]**2)))
         return dip
 
     def init_simulation(self):
@@ -1151,8 +1222,7 @@ class ActOpenMMSim:
                 new_pos_y = positions[index][1]+0.001*nanometer
                 new_pos_z = positions[index][2]+0.001*nanometer
                 new_pos.append((new_pos_x,new_pos_y,new_pos_z))
-        print("There are %d particles and %d new_pos" %
-              ( self.system.getNumParticles(), len(new_pos)))
+
         self.simulation.context.setPositions(new_pos)
         if self.args.debug:
             print(f"number of particles (incl. drudes):  {self.system.getNumParticles()}")
@@ -1168,54 +1238,49 @@ class ActOpenMMSim:
         self.nonbondedforce.updateParametersInContext(self.simulation.context)
         if self.nonbondedMethod == NoCutoff:
             # Remove the default Non-Bonded with OpenMM
-            print("Will remove standard NonBonded")
+            self.txt.write("Will remove standard NonBonded forces\n")
             self.del_force(self.nonbondedforce, False)
         # TODO check whether this if statement should be flipped.
-        if self.args.vdw != "LJ":
+        if self.vdw != VdW.LJ12_6:
             self.del_force(self.customnb)
         
     def print_energy(self, title:str):
-        print("%s:" % title)
+        self.txt.write("\n%s:\n" % title)
         etot = 0.0
         self.count_forces("Print energy")
         if self.args.verbose:
             for myforce in self.system.getForces():
-                print(myforce.getName())
+                self.text.write("%s\n" % myforce.getName())
         for group in self.force_group:
             eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
             etot += eterm
-            print('%-40s %2d %16.4f kJ/mol' % (self.force_group[group], group, eterm))
+            self.txt.write('%-40s %2d %16.4f kJ/mol\n' % (self.force_group[group], group, eterm))
         potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
-        print('Potential energy = %.2f kJ/mol. potE-etot %.2f' % (potE, potE-etot))
+        self.txt.write('Potential energy = %.2f kJ/mol. potE-etot %.2f\n' % (potE, potE-etot))
         if None != self.args.emonomer:
             nmol = self.topology.getNumResidues()
             relener = potE/nmol - self.args.emonomer
-            print('Interaction energy for %d-mer %g' % ( nmol, relener ))
+            self.txt.write('Interaction energy for %d-mer %g\n' % ( nmol, relener ))
             kB = 1.380649e-23 * 6.02214e23 / 1000
-            print('Delta H vap %g kJ/mol' % ( kB*self.temperature_c - relener ))
+            self.txt.write('Delta H vap %g kJ/mol\n' % ( kB*self.temperature_c - relener ))
         if abs(potE-etot) > 1e-3:
-            print("sum of the above %.2f" % (etot))
+            self.txt.write("sum of the above %.2f\n" % (etot))
         
     def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####
-        if self.args.verbose:
-            print('Performing energy minimization...')
+        self.txt.write('\nPerforming energy minimization using maxIter = %d.\n' % maxIter)
         enertol = Quantity(value=1e-8, unit=kilojoule/mole)
-        print(enertol, maxIter)
-        if self.args.debug:
-            print(self.simulation.context.getState(getPositions=True).getPositions())
         self.simulation.minimizeEnergy(tolerance=enertol, maxIterations=maxIter)
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
     def equilibrate(self):
-        print('Equilibrating...')
+        self.txt.write('\nEquilibrating for %d steps at T = %g K.\n' % ( self.equilibrationSteps, self.temperature_c) )
         self.simulation.context.setVelocitiesToTemperature(self.temperature_c)
         self.simulation.step(self.equilibrationSteps)
     
     def production(self):
-        if self.args.verbose:
-            simtime = self.sim_params.getFloat('dt')*self.sim_params.getInt('steps')
-            print('Simulating %g ps...' % simtime )
+        simtime = self.sim_params.getFloat('dt')*self.sim_params.getInt('steps')
+        self.txt.write('\nSimulating %g ps at %g K...\n' % (simtime, self.temperature_c ))
         if None != self.dcdReporter:
             self.simulation.reporters.append(self.dcdReporter)
         if None != self.dataReporter:
@@ -1250,7 +1315,7 @@ class ActOpenMMSim:
                                outf)
     def run(self):
         self.setup()
-        self.minimize()
+        self.minimize(maxIter=100)
         self.equilibrate()
         self.print_energy("After equilibration")
         self.production()

@@ -192,16 +192,19 @@ int merge_ff(int argc, char *argv[])
     };
     int         NFILE       = asize(fnm);;
     
-    gmx_bool   bcompress   = false;    
+    gmx_bool    bcompress   = false;    
     //! String for command line to harvest the options to fit
     char       *mergeString = nullptr;
+    int         ntrain      = 1;
 
     t_pargs     pa[]        =
     {
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML files" },
         { "-merge", FALSE, etSTR, {&mergeString},
-          "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." }
+          "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." },
+        { "-ntrain", FALSE, etINT, {&ntrain},
+          "Include only variables that have their ntrain values larger or equal to this number." }
     };
     std::vector<alexandria::ForceField> pds;
     alexandria::ForceField              pdout;
@@ -222,7 +225,7 @@ int merge_ff(int argc, char *argv[])
     {
         return 0;
     }
-    std::string allParams("alpha chi eta zeta delta_eta delta_chi charge");
+    std::string allParams("alpha chi eta zeta delta_eta delta_chi charge vs2a");
     if (nullptr == mergeString)
     {
         mergeString = strdup(allParams.c_str());
@@ -264,8 +267,9 @@ int merge_ff(int argc, char *argv[])
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
         alexandria_subtype_table(tp, &pdout);
-        alexandria_charge_table(tp, &pdout);
-        alexandria_eemprops_table(tp, &pdout);
+        alexandria_charge_table(tp, &pdout, ntrain);
+        alexandria_eemprops_table(tp, &pdout, ntrain);
+        //alexandria_eemprops_corr(tp, &pdout, ntrain);
         gmx_ffclose(tp);
     }           
     
