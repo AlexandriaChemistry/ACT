@@ -509,6 +509,20 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
 * BEGIN: ForceEnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
+double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
+{
+    double beta = 0;
+    if (boltzmannTemperature_.find(ermsi) != boltzmannTemperature_.end())
+    {
+        double T = boltzmannTemperature_[ermsi];
+        if (T > 0)
+        {
+            beta = 1.0/(BOLTZ*T);
+        }
+    }
+    return beta;
+}
+
 void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *forceComputer,
                                            ACTMol                            *actmol,
                                            gmx_unused std::vector<gmx::RVec> *coords,
@@ -536,9 +550,19 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             }
         }
     }
-    auto te = targets->find(eRMS::EPOT);
+    auto ermse = eRMS::EPOT;
+    auto te = targets->find(ermse);
     if (te != targets->end() && !energyMap.empty())
     {
+        auto beta = computeBeta(ermse);
+        double eqmMin = 1e8;
+        if (beta > 0)
+        {
+            for(const auto &ff : energyMap)
+            {
+                eqmMin = std::min(eqmMin, ff.eqm());
+            }
+        }
         for(const auto &ff : energyMap)
         {
             if (std::isnan(ff.eact()))
@@ -549,13 +573,14 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             {
                 // TODO Double check if the atomizationEnergy is needed.
                 // auto enerexp = actmol->atomizationEnergy() + ff.first;
-                double mydev2 = gmx::square(ff.eqm()-ff.eact());
-                if (mydev2 == 0)
+                double eqm    = ff.eqm();
+                double mydev2 = gmx::square(eqm-ff.eact());
+                double weight = 1;
+                if (beta > 0)
                 {
-                    printf("Energy difference exactly zero for %s. Ref ener %g\n",
-                           actmol->getMolname().c_str(), ff.eqm());
+                    weight = exp(-beta*(eqm-eqmMin));
                 }
-                te->second.increase(1, mydev2);
+                te->second.increase(weight, mydev2);
             }
         }
     }
@@ -563,15 +588,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     auto ti = targets->find(ermsi);
     if (ti != targets->end() && !interactionEnergyMap.empty())
     {
-        double beta = 0;
-        if (boltzmannTemperature_.find(ermsi) != boltzmannTemperature_.end())
-        {
-            double T = boltzmannTemperature_[ermsi];
-            if (T > 0)
-            {
-                beta = 1.0/(BOLTZ*T);
-            }
-        }
+        auto beta = computeBeta(ermsi);
         double eqmMin = 1e8;
         if (beta > 0)
         {

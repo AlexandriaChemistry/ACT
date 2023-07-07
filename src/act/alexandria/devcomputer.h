@@ -301,6 +301,12 @@ class ForceEnergyDevComputer : public DevComputer
 private:
     //! Whether or not to use Boltzmann weighting of energies and forces
     std::map<eRMS, double> boltzmannTemperature_;
+
+    /*! \brief Compute Boltzmann weighting factor for this eRMS
+     * \param[in] ermsi Which energy or force
+     * \return The corresponding beta or zero if no temperature was given
+     */
+    double computeBeta(eRMS ermsi);
 public:
 
     /*! \brief Create a new ForceEnergyDevComputer
