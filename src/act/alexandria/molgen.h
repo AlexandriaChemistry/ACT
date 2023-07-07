@@ -263,6 +263,8 @@ private:
     bool                            loadBalance_ = true;
     //! Difference between core and shell zeta to count as unphysical
     double                          zetaDiff_ = 2;    
+    //! Boltzmann weighting temperature of energies, if larger than zero
+    double                          ener_boltz_temp_ = 0;
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
@@ -354,6 +356,9 @@ public:
 
     //! Zeta difference
     double zetaDiff() const { return zetaDiff_; }
+
+    //! Boltzmann weighting temperature for energies
+    double enerBoltzTemp() const { return ener_boltz_temp_; }
 
     //! Tell the user whether this interaction type needs optimization
     bool optimize(InteractionType itype) const

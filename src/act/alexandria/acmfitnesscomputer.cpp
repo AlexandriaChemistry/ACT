@@ -307,7 +307,13 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
         sii_->target(iMolSelect::Train, eRMS::Interaction)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
     {
-        devComputers_.push_back(new ForceEnergyDevComputer(logfile_, verbose));
+        auto T = molgen_->enerBoltzTemp();
+        std::map<eRMS, double> boltzmann = {
+            { eRMS::EPOT, T },
+            { eRMS::Interaction, T },
+            { eRMS::Force2, T }
+        };
+        devComputers_.push_back(new ForceEnergyDevComputer(logfile_, verbose, boltzmann));
     }
     if (sii_->target(iMolSelect::Train, eRMS::FREQUENCY)->weight() > 0)
     {

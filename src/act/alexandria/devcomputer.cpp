@@ -559,12 +559,37 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             }
         }
     }
-    auto ti = targets->find(eRMS::Interaction);
+    auto ermsi = eRMS::Interaction;
+    auto ti = targets->find(ermsi);
     if (ti != targets->end() && !interactionEnergyMap.empty())
     {
+        double beta = 0;
+        if (boltzmannTemperature_.find(ermsi) != boltzmannTemperature_.end())
+        {
+            double T = boltzmannTemperature_[ermsi];
+            if (T > 0)
+            {
+                beta = 1.0/(BOLTZ*T);
+            }
+        }
+        double eqmMin = 1e8;
+        if (beta > 0)
+        {
+            for(const auto &ff : interactionEnergyMap)
+            {
+                eqmMin = std::min(eqmMin, ff.first);
+            }
+        }
         for(const auto &ff : interactionEnergyMap)
         {
-            ti->second.increase(1, gmx::square(ff.first-ff.second.find(InteractionType::EPOT)->second));
+            auto eqm  = ff.first;
+            auto eact = ff.second.find(InteractionType::EPOT)->second;
+            double weight = 1;
+            if (beta > 0)
+            {
+                weight = exp(-beta*(eqm-eqmMin));
+            }
+            ti->second.increase(weight, gmx::square(eqm-eact));
         }
     }
 }

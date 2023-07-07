@@ -288,7 +288,7 @@ public:
                                      ACTMol                         *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+                               const ForceField                    *forcefield);
 
 };
 
@@ -298,17 +298,24 @@ public:
  */
 class ForceEnergyDevComputer : public DevComputer
 {
-
+private:
+    //! Whether or not to use Boltzmann weighting of energies and forces
+    std::map<eRMS, double> boltzmannTemperature_;
 public:
 
     /*! \brief Create a new ForceEnergyDevComputer
-     * @param logfile   pointer to log file
-     * @param verbose   whether we are in verbose mode
+     * \param[in] logfile              pointer to log file
+     * \param[in] verbose              whether we are in verbose mode
+     * \param[in] boltzmannTemperature Map from the different eRMS terms to a number
+     *                                 indicating whether (>0) or not (0) Boltzmann weighting
+     *                                 of energies and forces should be done.
      */
-    ForceEnergyDevComputer(      FILE *logfile,
-                      const bool  verbose)
+    ForceEnergyDevComputer(      FILE                   *logfile,
+                           const bool                    verbose,
+                                 std::map<eRMS, double>  boltzmannTemperature)
     : DevComputer(logfile, verbose)
     {
+        boltzmannTemperature_ = boltzmannTemperature;
     }
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,

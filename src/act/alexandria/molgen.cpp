@@ -148,6 +148,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
+        { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
+          "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
 }
