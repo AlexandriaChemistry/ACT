@@ -111,7 +111,7 @@ int min_complex(int argc, char *argv[])
         fprintf(logFile, "Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa);
+    print_header(logFile, pa, fnm);
     
     std::vector<MolProp> mps;
     MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);

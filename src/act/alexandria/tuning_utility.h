@@ -144,13 +144,15 @@ public:
 
 /*! \brief Print header and command line arguments
  *
- * \param[in] fp    File pointer, if nullptr the function returns 
- *                  without doing anything
- * \param[in] pargs The command line arguments
+ * \param[in] fp      File pointer, if nullptr the function returns 
+ *                    without doing anything
+ * \param[in] pargs   The command line arguments
+ * \param[in] filenms The filenms used
  */
-void print_header(FILE                       *fp, 
-                  const std::vector<t_pargs> &pargs);
-
+void print_header(FILE                        *fp, 
+                  const std::vector<t_pargs>  &pargs,
+                  const std::vector<t_filenm> &filenms);
+                  
 /*! \brief Do an analysis of frequencies compared to reference if present.
  * \param[in]    pd           The force field
  * \param[in]    mol          Molecule data

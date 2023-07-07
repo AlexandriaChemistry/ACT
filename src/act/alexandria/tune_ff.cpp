@@ -754,7 +754,8 @@ int tune_ff(int argc, char *argv[])
     {
         opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
         print_memory_usage(debug);
-        print_header(opt.logFile(), pargs);
+        print_header(opt.logFile(), pargs, filenms);
+
         gms.read(opt2fn_null("-sel", filenms.size(), filenms.data()));
         fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
                 gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),

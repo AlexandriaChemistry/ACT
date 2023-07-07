@@ -1627,8 +1627,9 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
     }
 }
 
-void print_header(FILE                       *fp, 
-                  const std::vector<t_pargs> &pargs)
+void print_header(FILE                        *fp, 
+                  const std::vector<t_pargs>  &pargs,
+                  const std::vector<t_filenm> &filenms)
 {
     if (!fp)
     {
@@ -1697,6 +1698,52 @@ void print_header(FILE                       *fp,
                     wrapper.wrapToString(toWrap).c_str());
         }
     }
+    if (filenms.size() > 0)
+    {
+        fprintf(fp, "\nFiles used:\n");
+    }
+    std::map<int, const char *> fmap = {
+        { ffREAD,  "R"   }, 
+        { ffWRITE, "W"   },
+        { ffSET,   "set" },
+        { ffOPT,   "optional" }
+    };
+    for(const auto &f : filenms)
+    {
+        std::string flag;
+        for(auto fm : fmap)
+        {
+            if ((fm.first & f.flag) == fm.first)
+            {
+                if (!flag.empty())
+                {
+                    flag += ",";
+                }
+                flag += fm.second;
+            }
+        }
+        fprintf(fp, "Option: %s, Description: %s,", f.opt, ftp2desc(f.ftp));
+        if (!flag.empty())
+        {
+            fprintf(fp, " Properties: %s, Filename(s)", flag.c_str());
+        }
+        if ((f.flag & ffMULT) == ffMULT)
+        {
+            for(auto &fnm : f.filenames)
+            {
+                fprintf(fp, " %s", fnm.c_str());
+            }
+        }
+        else
+        {
+            if (nullptr != f.fn)
+            {
+                fprintf(fp, " %s", f.fn);
+            }
+        }
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "\n");
 }
 
 } // namespace alexandria

@@ -129,7 +129,7 @@ int nma(int argc, char *argv[])
         printf("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa);
+    print_header(logFile, pa, fnm);
     
     JsonTree jtree("simulate");
     if (verbose)

@@ -840,7 +840,7 @@ int b2(int argc, char *argv[])
     const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
     FILE *logFile   = gmx_ffopen(logFileName, "w");
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa);
+    print_header(logFile, pa, fnm);
     
     JsonTree jtree("SecondVirialCoefficient");
     if (verbose)
