@@ -1702,7 +1702,7 @@ void print_header(FILE                        *fp,
     {
         fprintf(fp, "\nFiles used:\n");
     }
-    std::map<int, const char *> fmap = {
+    std::map<unsigned int, const char *> fmap = {
         { ffREAD,  "R"   }, 
         { ffWRITE, "W"   },
         { ffSET,   "set" },
