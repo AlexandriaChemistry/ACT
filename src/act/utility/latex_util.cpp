@@ -93,7 +93,7 @@ void LongTable::printLine(const std::string &line)
             myline.append("\\_{");
             underscore = true;
         }
-        else if (underscore && std::isspace(c))
+        else if (underscore && !std::isalnum(c) )
         {
             myline += "}";
             myline += c;

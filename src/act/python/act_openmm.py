@@ -1310,9 +1310,12 @@ class ActOpenMMSim:
         
     def write_coordinates(self, outfile:str):
         with open(outfile, "w") as outf:
+            vecs = self.simulation.context.getState().getPeriodicBoxVectors()
+            self.topology.setPeriodicBoxVectors(vecs)
             self.pdb.writeFile(self.topology,
-                               self.simulation.context.getState(getPositions=True).getPositions(),
+                               self.simulation.context.getState(getPositions=True, enforcePeriodicBox=True, getParameters=True).getPositions(),
                                outf)
+
     def run(self):
         self.setup()
         self.minimize(maxIter=100)
@@ -1322,7 +1325,7 @@ class ActOpenMMSim:
         self.print_energy("After production")
 
     def log_to_xvg(self, xvg:str, ytargets:list):
-        if None == self.logfile or not os.path.exists(self.logfile):
+        if None == self.args.ene_file or not os.path.exists(self.args.ene_file):
             print("Could not find any log file")
         else:
             xtarget  = "Time (ps)"
@@ -1330,7 +1333,7 @@ class ActOpenMMSim:
             iy = []
             with open(xvg, "w") as outf:
                 outf.write("@ xaxis label \"%s\"\n" % xtarget)
-                with open(self.logfile, "r") as inf:
+                with open(self.args.ene_file, "r") as inf:
                     for line in inf:
                         words = line.strip().split(";")
                         if line.find("#") >= 0:
@@ -1348,5 +1351,39 @@ class ActOpenMMSim:
                                     outf.write("  %10g" % (float(words[ii])))
                                 outf.write("\n")
                             except ValueError:
-                                print("Incomprehensible line in logfile")
+                                print("Incomprehensible line in ene_file %s" % self.args.ene_file)
                                 
+    def log_to_average(self, ytargets:list)->list:
+        if None == self.args.ene_file or not os.path.exists(self.args.ene_file):
+            print("Could not find any log file")
+            return []
+        else:
+            myaver  = []
+            for i in ytargets:
+                myaver.append(0.0)
+            naver   = 0
+            xtarget = "Time (ps)"
+            ix      = -1
+            iy      = []
+            with open(self.args.ene_file, "r") as inf:
+                for line in inf:
+                    words = line.strip().split(";")
+                    if line.find("#") >= 0:
+                        for i in range(len(words)):
+                            if words[i].find(xtarget) >= 0:
+                                ix = i
+                            else:
+                                for j in range(len(ytargets)):
+                                    if words[i].find(ytargets[j]) >= 0:
+                                        iy.append(i)
+                    elif ix >= 0 and len(iy) > 0:
+                        try:
+                            for ii in range(len(iy)):
+                                myaver[ii] += float(words[iy[ii]])
+                            naver += 1
+                        except ValueError:
+                            print("Incomprehensible line in ene_file %s" % self.args.ene_file)
+            if naver > 0:
+                for i in range(len(myaver)):
+                    myaver[i] /= naver
+            return myaver
