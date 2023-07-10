@@ -134,7 +134,9 @@ class GeneralCouplingTheory:
             niter:int, polarize:bool, pfraction:float):
         # Loop over the iterations
         coords = bulk_pdb
-        outf = open("rho.xvg", "w")
+        outf   = []
+        for t in targets:
+            outf.append(open(("%s.xvg" % t["observable"]), "w"))
         for myiter in range(niter):
             # Set all the parameter change steps to 0
             self.reset_step()
@@ -144,6 +146,7 @@ class GeneralCouplingTheory:
             self.update_ff(myiter)
             # And print stuff!
             self.print_convergence(myiter)
-            outf.write("%5d  %10g\n" % ( myiter, observations[0] ))
-            outf.flush()
+            for t in range(len(observations)):
+                outf[t].write("%5d  %10g\n" % ( myiter, observations[t] ))
+                outf[t].flush()
         outf.close()
