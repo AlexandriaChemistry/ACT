@@ -65,57 +65,85 @@ class GeneralCouplingTheory:
         for t in self.targets:
             self.log.write("Target %s value %s\n" % ( t["observable"], t["value"] ))
 
+    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, polarize:bool, iter:int, pfraction:float):
+        # It is much faster to convert the ACT force field file for a monomer
+        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, polarizable=polarize)
+        sim1.setup()
+        # Now let's do the bulk
+        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml", polarizable=polarize)
+        sim.run()
+        # Store coordinates in new file
+        coords = ("bulk%d.pdb" % iter )
+        sim.write_coordinates(coords)
+        # Extract target properties
+        tmap = { "rho": "Density (g/mL)", "epot": "Potential Energy (kJ/mole)"  }
+        averlist = []
+        for t in self.targets:
+            averlist.append(tmap[t["observable"]])
+        observations = sim.log_to_average(averlist)
+        deviations = {}
+        it = 0
+        for t in self.targets:
+            deviation = observations[it]-t["value"]
+            it += 1
+            # Pick parameter to change for this observable
+            myobs  = t["observable"]
+            # TODO move this check out of this loop
+            if not myobs in self.couple_types:
+                sys.exit("Do not know how to optimize %s" % myobs)
+            # Randomly pick which atom to update
+            atypelist = list(self.couple_types[myobs].keys())
+            pindex    = random.randint(0, len(atypelist)-1)
+            pkey      = atypelist[pindex]
+            # Update force field
+            for param in self.couple_types[myobs][pkey].keys():
+                myparam = self.couple_types[myobs][pkey][param]
+                pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+                myparam["step"] = pstep
+        return coords, observations
+
+    def reset_step(self):
+        for obs in self.couple_types.keys():
+            for atom in self.couple_types[obs].keys():
+                for param in self.couple_types[obs][atom].keys():
+                    self.couple_types[obs][atom][param]["step"] = 0
+
+    def update_ff(self, myiter:int):
+        for obs in self.couple_types.keys():
+            for atom in self.couple_types[obs].keys():
+                for param in self.couple_types[obs][atom].keys():
+                    myparam = self.couple_types[obs][atom][param]
+                    oldval = myparam["value"]
+                    myparam["value"] += myparam["step"]
+                    myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
+                    if oldval != myparam["value"]:
+                        self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
+                                       ( myiter, obs, atom, param, oldval, myparam["value"]))
+                        self.log.flush()
+                        os.system("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
+                                                                                            myparam["value"], atom ))
+
+    def print_convergence(self, myiter:int):
+        for obs in self.couple_types.keys():
+            for atom in self.couple_types[obs].keys():
+                for param in self.couple_types[obs][atom].keys():
+                    pp = self.couple_types[obs][atom][param]
+                    self.conv[obs][atom][param].write("%5d  %10g\n" % ( myiter, pp["value"] ))
+
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
             niter:int, polarize:bool, pfraction:float):
         # Loop over the iterations
         coords = bulk_pdb
-        for iter in range(niter):
-            # It is much faster to convert the ACT force field file for a monomer
-            sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, polarizable=polarize)
-            sim1.setup()
-            # Now let's do the bulk
-            sim = ActOpenMMSim(pdbfile=coords, datfile=bulk_dat, xmlfile="act.xml", polarizable=polarize)
-            sim.run()
-            # Store coordinates in new file
-            coords = ("bulk%d.pdb" % iter )
-            sim.write_coordinates(coords)
-            # Extract target properties
-            tmap = { "rho": "Density (g/mL)", "epot": "Potential Energy (kJ/mole)"  }
-            averlist = []
-            for t in self.targets:
-                averlist.append(tmap[t["observable"]])
-            observations = sim.log_to_average(averlist)
-            deviations = {}
-            it = 0
-            for t in self.targets:
-                deviation = observations[it]-t["value"]
-                it += 1
-                # Pick parameter to change for this observable
-                myobs  = t["observable"]
-                # TODO move this check out of this loop
-                if not myobs in self.couple_types:
-                    sys.exit("Do not know how to optimize %s" % myobs)
-                # Randomly pick which atom to update
-                atypelist = list(self.couple_types[myobs].keys())
-                pindex    = random.randint(0, len(atypelist)-1)
-                pkey      = atypelist[pindex]
-                # Update force field
-                for param in self.couple_types[myobs][pkey].keys():
-                    myparam = self.couple_types[myobs][pkey][param]
-                    print(myparam)
-                    pstep = random.random()*pfraction*(myparam["max"] - myparam["min"])
-                    # Since dependence of the observable on parameter may vary, multiply by slope as well.
-                    oldval = myparam["value"]
-                    myparam["value"] += pstep*deviation*myparam["slope"]
-                    myparam["value"] = max(myparam["min"], min(myparam["value"], myparam["max"]))
-                    self.log.write("Iter %d obs %s deviation %g Changing %s %s from %g to %g\n" %
-                                   ( iter, myobs, deviation, pkey, param, oldval, myparam["value"]))
-                    self.log.flush()
-                    os.system("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
-                                                                                        myparam["value"], pkey ))
-            for obs in self.couple_types.keys():
-                for atom in self.couple_types[obs].keys():
-                    for param in self.couple_types[obs][atom].keys():
-                        pp = self.couple_types[obs][atom][param]
-                        self.conv[obs][atom][param].write("%5d  %10g\n" % ( iter, pp["value"] ))
-        
+        outf = open("rho.xvg", "w")
+        for myiter in range(niter):
+            # Set all the parameter change steps to 0
+            self.reset_step()
+            # Do a simulation and collect data afterwards
+            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, polarize, myiter, pfraction)
+            # Update the force field
+            self.update_ff(myiter)
+            # And print stuff!
+            self.print_convergence(myiter)
+            outf.write("%5d  %10g\n" % ( myiter, observations[0] ))
+            outf.flush()
+        outf.close()
