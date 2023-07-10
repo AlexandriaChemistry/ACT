@@ -69,23 +69,30 @@ class GeneralCouplingTheory:
         # It is much faster to convert the ACT force field file for a monomer
         sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, polarizable=polarize)
         sim1.setup()
+        emonomer = sim1.minimize()
         # Now let's do the bulk
         sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml", polarizable=polarize)
+        sim.set_monomer_energy(emonomer)
         sim.run()
         # Store coordinates in new file
         coords = ("bulk%d.pdb" % iter )
         sim.write_coordinates(coords)
         # Extract target properties
-        tmap = { "rho": "Density (g/mL)", "epot": "Potential Energy (kJ/mole)"  }
-        averlist = []
+        tmap = { "rho": "Density (g/mL)", 
+                 "dhvap": "Potential Energy (kJ/mole)"  }
+        # Prepare to extract values from the energy file
+        observations = sim.log_to_average(tmap)
+        # Now loop over the fitting targets
         for t in self.targets:
-            averlist.append(tmap[t["observable"]])
-        observations = sim.log_to_average(averlist)
-        deviations = {}
-        it = 0
-        for t in self.targets:
-            deviation = observations[it]-t["value"]
-            it += 1
+            myobs = t["observable"]
+            myval = observations[myobs]
+            if "dhvap" == myobs:
+                observations[myobs] = sim.dhvap(myval)
+                deviation =  observations[myobs] - t["value"]
+            elif "rho" == myobs:
+                deviation = myval-t["value"]
+            else:
+                sys.exit("Unknown observable %s" % myobs)
             # Pick parameter to change for this observable
             myobs  = t["observable"]
             # TODO move this check out of this loop
@@ -134,9 +141,10 @@ class GeneralCouplingTheory:
             niter:int, polarize:bool, pfraction:float):
         # Loop over the iterations
         coords = bulk_pdb
-        outf   = []
-        for t in targets:
-            outf.append(open(("%s.xvg" % t["observable"]), "w"))
+        outf   = {}
+        for t in self.targets:
+            myobs = t["observable"]
+            outf[myobs] = open(("%s.xvg" % myobs), "w")
         for myiter in range(niter):
             # Set all the parameter change steps to 0
             self.reset_step()
@@ -146,7 +154,10 @@ class GeneralCouplingTheory:
             self.update_ff(myiter)
             # And print stuff!
             self.print_convergence(myiter)
-            for t in range(len(observations)):
-                outf[t].write("%5d  %10g\n" % ( myiter, observations[t] ))
-                outf[t].flush()
-        outf.close()
+            for t in self.targets:
+                myobs = t["observable"]
+                outf[myobs].write("%5d  %10g\n" % ( myiter, observations[myobs] ))
+                outf[myobs].flush()
+        for t in self.targets:
+            myobs = t["observable"]
+            outf[myobs].close()

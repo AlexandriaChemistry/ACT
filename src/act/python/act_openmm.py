@@ -400,6 +400,12 @@ class ActOpenMMSim:
             
         return args
 
+    def nmol(self)->int:
+        return self.topology.getNumResidues()
+ 
+    def temperature(self)->float:
+        return self.temperature_c
+ 
     def set_monomer_energy(self, emonomer:float):
         self.args.emonomer = emonomer
 
@@ -1244,6 +1250,12 @@ class ActOpenMMSim:
         if self.vdw != VdW.LJ12_6:
             self.del_force(self.customnb)
         
+    def dhvap(self, epot:float)->float:
+        nmol    = self.topology.getNumResidues()
+        relener = epot/nmol - self.args.emonomer
+        kB      = 1.380649e-23 * 6.02214e23 / 1000
+        return kB*self.temperature_c - relener
+    
     def print_energy(self, title:str):
         self.txt.write("\n%s:\n" % title)
         etot = 0.0
@@ -1261,8 +1273,7 @@ class ActOpenMMSim:
             nmol = self.topology.getNumResidues()
             relener = potE/nmol - self.args.emonomer
             self.txt.write('Interaction energy for %d-mer %g\n' % ( nmol, relener ))
-            kB = 1.380649e-23 * 6.02214e23 / 1000
-            self.txt.write('Delta H vap %g kJ/mol\n' % ( kB*self.temperature_c - relener ))
+            self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(potE) ) )
         if abs(potE-etot) > 1e-3:
             self.txt.write("sum of the above %.2f\n" % (etot))
         
@@ -1353,18 +1364,19 @@ class ActOpenMMSim:
                             except ValueError:
                                 print("Incomprehensible line in ene_file %s" % self.args.ene_file)
                                 
-    def log_to_average(self, ytargets:list)->list:
+    def log_to_average(self, ytargets:dict)->dict:
         if None == self.args.ene_file or not os.path.exists(self.args.ene_file):
             print("Could not find any log file")
             return []
         else:
-            myaver  = []
-            for i in ytargets:
-                myaver.append(0.0)
+            myaver  = {}
+            for i in ytargets.keys():
+                myaver[i] = 0
             naver   = 0
             xtarget = "Time (ps)"
             ix      = -1
-            iy      = []
+            iy      = {}
+            iy_rev  = {}
             with open(self.args.ene_file, "r") as inf:
                 for line in inf:
                     words = line.strip().split(";")
@@ -1373,17 +1385,18 @@ class ActOpenMMSim:
                             if words[i].find(xtarget) >= 0:
                                 ix = i
                             else:
-                                for j in range(len(ytargets)):
+                                for j in ytargets.keys():
                                     if words[i].find(ytargets[j]) >= 0:
-                                        iy.append(i)
-                    elif ix >= 0 and len(iy) > 0:
+                                        iy[j]     = i
+                                        iy_rev[i] = j
+                    elif ix >= 0 and len(iy.keys()) > 0:
                         try:
-                            for ii in range(len(iy)):
-                                myaver[ii] += float(words[iy[ii]])
+                            for ii in iy.keys():
+                                myaver[iy_rev[iy[ii]]] += float(words[iy[ii]])
                             naver += 1
                         except ValueError:
                             print("Incomprehensible line in ene_file %s" % self.args.ene_file)
             if naver > 0:
-                for i in range(len(myaver)):
+                for i in myaver.keys():
                     myaver[i] /= naver
             return myaver
