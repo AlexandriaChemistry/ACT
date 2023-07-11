@@ -75,7 +75,9 @@ public:
     virtual void mutate(Genome *genome,
                         Genome *bestGenome,
                         double  prMut) = 0;
-    
+
+    virtual void sensitivityAnalysis(Genome *bestGenome, iMolSelect ims) = 0;
+
     virtual bool foundMinimum() = 0;
 };
 

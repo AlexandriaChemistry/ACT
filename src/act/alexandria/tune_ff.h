@@ -106,7 +106,9 @@ private:
     ForceComputer        *forceComp_   = nullptr;
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer   *fitComp_     = nullptr;
-
+    //! Storing the mutator used
+    ga::Mutator          *mutator_     = nullptr;
+    
     /*!
      * \brief Print to log file (if it exists), the estimated number of times
      * we will call calcDeviation per dataset
