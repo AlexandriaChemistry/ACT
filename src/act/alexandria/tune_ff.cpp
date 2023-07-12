@@ -218,13 +218,11 @@ void OptACM::initMaster()
     // Initializer
     auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
-    // Create and initialize the mutator
-    ga::Mutator *mutator;
     // TODO remove this for nooptimize
     sii_->makeIndividualDir();  // We need to call this before opening working files!
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
+        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
     }
     else
     {
@@ -236,7 +234,7 @@ void OptACM::initMaster()
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
-        mutator = mut;
+        mutator_ = mut;
     }
 
     // Selector
@@ -322,14 +320,14 @@ void OptACM::initMaster()
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator, sii_, &gach_);
+        ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator_, sii_, &gach_);
     }
     else
     {
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(
             logFile(), initializer, fitComp_, probComputer, selector, crossover,
-            mutator, terminators, penalizers, sii_, &gach_, dis(gen)
+            mutator_, terminators, penalizers, sii_, &gach_, dis(gen)
         );
     }
     if (logFile())
@@ -536,7 +534,7 @@ bool OptACM::runMaster(bool optimize,
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
-        // mut->sensitivityAnalysis(&bestGenome, iMolSelect::Train);
+        mutator_->sensitivityAnalysis(&bestGenome[iMolSelect::Train], iMolSelect::Train);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)

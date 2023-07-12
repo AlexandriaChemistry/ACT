@@ -32,6 +32,7 @@
 #ifndef ALEXANDRIA_PERCENT_MUTATOR
 #define ALEXANDRIA_PERCENT_MUTATOR
 
+#include "act/ga/genome.h"
 #include "act/ga/mutator.h"
 
 #include "acmindividual.h"
@@ -72,6 +73,8 @@ public:
     virtual void mutate(ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
+
+    virtual void sensitivityAnalysis(ga::Genome *bestGenome, iMolSelect ims) {}
     
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }
