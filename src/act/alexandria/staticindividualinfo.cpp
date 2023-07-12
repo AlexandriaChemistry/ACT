@@ -212,20 +212,20 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         for (auto &ft : targets_[ims])
         {
             auto chi2 = ft.second.chiSquared();
-            auto ndp = ft.second.numberOfDatapoints();
-            if (ndp > 0 && debug)
+            auto tw = ft.second.totalWeight();
+            if (tw > 0 && debug)
             {
-                fprintf(debug, "node %d %s before sum chi2 %g ndp %d weighted %g\n",
-                        cr_->rank(), rmsName(ft.first), chi2, ndp, ft.second.chiSquaredWeighted());
+                fprintf(debug, "node %d %s before sum chi2 %g tw %g weighted %g\n",
+                        cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted());
             }
             cr_->sumd_helpers(1, &chi2);
             ft.second.setChiSquared(chi2);
-            cr_->sumi_helpers(1, &ndp);
-            ft.second.setNumberOfDatapoints(ndp);
-            if (ndp > 0 && debug)
+            cr_->sumd_helpers(1, &tw);
+            ft.second.setTotalWeight(tw);
+            if (tw > 0 && debug)
             {
-                fprintf(debug, "node %d %s after sum chi2 %g ndp %d weighted %g\n",
-                        cr_->rank(), rmsName(ft.first), chi2, ndp, ft.second.chiSquaredWeighted());
+                fprintf(debug, "node %d %s after sum chi2 %g tw %g weighted %g\n",
+                        cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted());
             }
         }
     }
@@ -247,10 +247,11 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
             }
         }
         // Weighting is already included.
-        etot->second.setNumberOfDatapoints(1);
+        etot->second.setTotalWeight(1);
         if (debug)
         {
-            fprintf(debug, "node %d %s after sum chi2 %g ndp %d\n", cr_->rank(), rmsName(eRMS::TOT), etot->second.chiSquared(), 1);
+            fprintf(debug, "node %d %s after sum chi2 %g tw %g\n", cr_->rank(), rmsName(eRMS::TOT),
+                    etot->second.chiSquared(), etot->second.totalWeight());
         }
     }
 }
@@ -577,17 +578,8 @@ void StaticIndividualInfo::makeIndividualDir()
 {
     if (!prefix_.empty())
     {
-        // struct stat info;
-
-        // if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
-        // {
-        //     printf("%s is already a directory (maybe was created by another node)\n", prefix_.c_str());
-        // }
-        // else
-        // {
         std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
         system(command.c_str());
-        // }
     }
 }
 

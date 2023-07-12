@@ -103,8 +103,8 @@ private:
     iMolSelect ims_;
     //! The weighting factor in the total chi squared
     real       weight_             = 0;
-    //! The number of data points for this property
-    int        numberOfDatapoints_ = 0;
+    //! The total weight corresponding to all data points
+    real       totalWeight_ = 0;
     //! The unweighted chi squared for this property
     real       chiSquared_         = 0;
 
@@ -136,10 +136,10 @@ public:
     /*! \brief Set number of data points
      * \param[in] n The new number of data points
      */
-    void setNumberOfDatapoints(int n) { numberOfDatapoints_ = n; }
+    void setTotalWeight(real n) { totalWeight_ = n; }
     
     //! \return the number of data points
-    int numberOfDatapoints() const { return numberOfDatapoints_; }
+    real totalWeight() const { return totalWeight_; }
     
     /*! \brief Set new value for chi squared
      * \param[in] chi2 The new chi squared
@@ -152,9 +152,9 @@ public:
     //! \return the weighted chi squared
     real chiSquaredWeighted() const 
     { 
-        if (chiSquared_ > 0 && numberOfDatapoints_ > 0)
+        if (chiSquared_ > 0 && totalWeight_ > 0)
         { 
-            return chiSquared_*weight_/numberOfDatapoints_;
+            return chiSquared_*weight_/totalWeight_;
         }
         else
         {
@@ -167,17 +167,17 @@ public:
      * \param[in] ndata Number of data points
      * \param[in] delta Change in chiSquared
      */
-    void increase(int ndata, real delta)
+    void increase(real weight, real delta)
     {
-        numberOfDatapoints_ += ndata;
-        chiSquared_         += delta;
+        totalWeight_ += weight;
+        chiSquared_  += delta;
     }
     
     //! \brief Rest the number of data points and chi squared to zero.
     void reset()
     {
-        numberOfDatapoints_ = 0;
-        chiSquared_         = 0;
+        totalWeight_ = 0;
+        chiSquared_  = 0;
     }
   
     /*! \brief Print if non zero

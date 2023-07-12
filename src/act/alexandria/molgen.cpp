@@ -87,10 +87,10 @@ const char *rmsName(eRMS e)
 
 void FittingTarget::print(FILE *fp) const
 {
-  if (fp != nullptr && chiSquared_ > 0 && numberOfDatapoints_ > 0)
+  if (fp != nullptr && chiSquared_ > 0 && totalWeight_ > 0)
     {
-      fprintf(fp, "%-10s  %12.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
-              rmsName(erms_), chiSquared_, numberOfDatapoints_,
+      fprintf(fp, "%-10s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
+              rmsName(erms_), chiSquared_, totalWeight_,
               weight_, chiSquaredWeighted(),
               iMolSelectName(ims_));
     }

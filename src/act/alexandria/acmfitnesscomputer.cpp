@@ -217,9 +217,9 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             if (debug)
             {
-                fprintf(debug, "rank %d mol %s #energies %zu ndp %d\n",
+                fprintf(debug, "rank %d mol %s #energies %zu tw %g\n",
                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
-                        targets->find(eRMS::EPOT)->second.numberOfDatapoints());
+                        targets->find(eRMS::EPOT)->second.totalWeight());
             }
         }
     }
