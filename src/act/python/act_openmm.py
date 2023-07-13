@@ -1262,7 +1262,7 @@ class ActOpenMMSim:
         self.count_forces("Print energy")
         if self.args.verbose:
             for myforce in self.system.getForces():
-                self.text.write("%s\n" % myforce.getName())
+                self.txt.write("%s\n" % myforce.getName())
         for group in self.force_group:
             eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
             etot += eterm
