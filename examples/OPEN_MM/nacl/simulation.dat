@@ -6,10 +6,15 @@
 dt                 = 0.0002*picoseconds
 equilibrationSteps = 0
 steps              = 2500
+maxDrudeDistance   = 0
 
 # OPTIONS FOR OUTPUT
 ################################################
 save               = 50
+saveDcd            = 50
+saveEnergy         = 50
+savePdb            = 500
+checkPoint         = 500
 outStep            = True
 outTime            = True
 outSpeed           = True
@@ -24,7 +29,8 @@ outSeparator       = ;
 # OPTIONS FOR ELECTROSTATICS AND VDW
 ################################################
 #LJPME; PME; Ewald; CutoffPeriodic; NoCutoff; use LJPME with disperion correction off, and PME with dispersion correction on; use 1nm cutoff for NaCl
-nonbondedMethod        = LJPME           
+nonbondedMethod        = LJPME
+vanderwaals            = WBH
 use_switching_function = False
 switch_width           = 0*nanometers
 nonbondedCutoff        = 1*nanometers
@@ -44,6 +50,7 @@ temperature_c          = 298.15*kelvin
 temperature_s          = 1*kelvin
 # pressure coupling;   friction coefficients in /picosecond; pressure in atomsphers
 useMonteCarloBarostat  = False
+useMonteCarloAnisotropicBarostat = False
 friction_c             = 5.0/picosecond
 friction_s             = 20/picosecond
 pressure               = 1.0*atmospheres

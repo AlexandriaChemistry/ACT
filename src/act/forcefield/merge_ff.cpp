@@ -59,9 +59,10 @@ namespace alexandria
 {
 
 static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
-                            alexandria::InteractionType             iType,
-                            const std::string                      &parameter,
-                            alexandria::ForceField                    *pdout)
+                            alexandria::InteractionType                iType,
+                            const std::string                         &parameter,
+                            alexandria::ForceField                    *pdout,
+                            double                                     limits)
 {  
     std::vector<gmx_stats> lsq;
     std::vector<int>       ntrain;
@@ -139,6 +140,11 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             pp.second.setValue(average);
                             pp.second.setUncertainty(sigma);
                             pp.second.setNtrain(ntrain[j]/pds.size());
+                            if (limits > 0)
+                            {
+                                pp.second.setMinimum(average-limits*sigma);
+                                pp.second.setMaximum(average+limits*sigma);
+                            }
                         }
                     }
                     j++;
@@ -167,6 +173,11 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             ppar.second.setValue(average);
                             ppar.second.setUncertainty(sigma);
                             ppar.second.setNtrain(ntrain[j]/pds.size());
+                            if (limits > 0)
+                            {
+                                ppar.second.setMinimum(average-limits*sigma);
+                                ppar.second.setMaximum(average+limits*sigma);
+                            }
                         }
                     }
                     j++;
@@ -196,7 +207,7 @@ int merge_ff(int argc, char *argv[])
     //! String for command line to harvest the options to fit
     char       *mergeString = nullptr;
     int         ntrain      = 1;
-
+    real        limits      = 0;
     t_pargs     pa[]        =
     {
         { "-compress", FALSE, etBOOL, {&bcompress},
@@ -204,7 +215,9 @@ int merge_ff(int argc, char *argv[])
         { "-merge", FALSE, etSTR, {&mergeString},
           "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." },
         { "-ntrain", FALSE, etINT, {&ntrain},
-          "Include only variables that have their ntrain values larger or equal to this number." }
+          "Include only variables that have their ntrain values larger or equal to this number." },
+        { "-limits", FALSE, etREAL, {&limits},
+          "Change the boundaries for parameters that have 1) mutability Bounded, 2) ntrain large enough (see previous option) and 3) have a standard deviation larger than zero. If limits equals zero nothing will be done, else the boundaries will be changed to +/- limits times the standard deviation, taking into account whether parameters should be non-negative." }
     };
     std::vector<alexandria::ForceField> pds;
     alexandria::ForceField              pdout;
@@ -253,7 +266,7 @@ int merge_ff(int argc, char *argv[])
         alexandria::InteractionType itype;
         if (pdout.typeToInteractionType(type, &itype))
         {
-            merge_parameter(pds, itype, type, &pdout);
+            merge_parameter(pds, itype, type, &pdout, limits);
         }
         else
         {
