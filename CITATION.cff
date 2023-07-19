@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "van der Spoel"
+  given-names: "David"
+  orcid: "https://orcid.org/0000-0002-7659-8526"
+- family-names: "Marrades"
+  given-names: "Julian"
+- family-names: "van Maaren"
+  given-names: "Paul J."
+  orcid: "https://orcid.org/0000-0002-6068-4585"
+- family-names: "Walz"
+  given-names: "Marie-Madeleine"
+  orcid: "https://orcid.org/0000-0002-3932-5780"
+- family-names: "Ghahremanpour"
+  given-names: "Mohammad M."
+  orcid: "https://orcid.org/0000-0002-1129-6041"
+title: "Alexandria Chemistry Tookit"
+version: 0.98
+doi: 10.5281/zenodo.6363016
+date-released: 2023-09-01
+url: "https://github.com/dspoel/ACT"
