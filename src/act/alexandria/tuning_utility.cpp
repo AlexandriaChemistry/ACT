@@ -934,7 +934,7 @@ static void low_print_stats(std::vector<std::string> *tcout,
     {
         stats->get_corr_coeff(&R);
     }
-    tcout->push_back(gmx::formatString("%s RMSD %8.1f MSE %8.1f (kJ/mol) R %4.1f%% #points = %zu",
+    tcout->push_back(gmx::formatString("%s RMSD %8.2f MSE %8.2f (kJ/mol) R %4.1f%% #points = %zu",
                                        label, rmsd, mse, 100*R, stats->get_npoints()));
 }
 
