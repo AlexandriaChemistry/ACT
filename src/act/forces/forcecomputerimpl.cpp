@@ -605,11 +605,9 @@ static void computeMorse(const TopologyEntryVector             &bonds,
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
         auto dr         = std::sqrt(dr2);
-        auto temp       = std::exp(-beta*(dr-bondlength));
-        auto omtemp     = 1.0-temp;
-        auto cbomtemp   = De*omtemp;
-        auto vbond      = D0+cbomtemp*omtemp;
-        auto fbond      = -2.0*beta*temp*cbomtemp/dr;
+        auto expterm    = std::exp(-beta*(dr-bondlength));
+        auto vbond      = De*expterm*(expterm - 2) + D0;
+        auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
         ebond          += vbond;
 
         for (int m = 0; (m < DIM); m++)

@@ -61,9 +61,9 @@
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>
     <PerBondParameter name="bondlength"/>
-    <Bond class1="c2_b" class2="h_b" beta="20" De="400" D0="-400" bondlength="0.1082"/>
-    <Bond class1="c2_b" class2="c2_b" beta="20" De="400" D0="-400" bondlength="0.1393"/>
-    <Bond class1="c2_b" class2="o2_b" beta="20" De="400" D0="-400" bondlength="0.1343"/>
+    <Bond class1="c2_b" class2="h_b" beta="20" De="400" D0="0" bondlength="0.1082"/>
+    <Bond class1="c2_b" class2="c2_b" beta="20" De="400" D0="0" bondlength="0.1393"/>
+    <Bond class1="c2_b" class2="o2_b" beta="20" De="400" D0="0" bondlength="0.1343"/>
   </CustomBondForce>
   <HarmonicAngleForce energy="0">
     <Angle class1="c2_b" class2="c2_b" class3="h_b" k="300" angle="2.1101"/>
