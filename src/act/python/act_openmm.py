@@ -518,7 +518,7 @@ class ActOpenMMSim:
                                                        rigidWater=self.rigidWater,
                                                        drudeMass=myDrudeMass*unit.amu)
             if self.args.verbose:
-                print("The force field is polarizable and the drude mass is %g.\nMake sure it is consistent with your force field file." % self.args.Drude_mass)
+                print("The force field is polarizable and the drude mass is %g.\nMake sure it is consistent with your force field file." % myDrudeMass)
         else:
             self.system = self.forcefield.createSystem(self.topology,
                                                        nonbondedMethod=self.nonbondedMethod,

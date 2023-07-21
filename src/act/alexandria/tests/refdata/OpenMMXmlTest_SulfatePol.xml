@@ -40,7 +40,7 @@
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>
     <PerBondParameter name="bondlength"/>
-    <Bond class1="o2_b" class2="s3_b" beta="20" De="400" D0="-400" bondlength="0.1496"/>
+    <Bond class1="o2_b" class2="s3_b" beta="20" De="400" D0="0" bondlength="0.1496"/>
   </CustomBondForce>
   <HarmonicAngleForce energy="0">
     <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.96175"/>
