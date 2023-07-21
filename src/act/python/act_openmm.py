@@ -658,11 +658,11 @@ class ActOpenMMSim:
                 [_, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {myparams}")
-            elif vdw == "GWBH":
+            elif vdw == "GBHAM":
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {myparams}")
-            elif vdw == "14_7":
+            elif vdw == "LJ14_7":
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {myparams}")
@@ -753,7 +753,7 @@ class ActOpenMMSim:
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
 #################################################
-        elif vdw == "GWBH":
+        elif vdw == "GBHAM":
             expression = 'U_GWBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
@@ -799,7 +799,7 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
             self.count_forces("Direct space 8")
 #################################################
-        elif vdw == "14_7":
+        elif vdw == "LJ14_7":
             expression = 'U_14_7-U_LJ;'
             expression += LJ_expression
 
@@ -952,7 +952,7 @@ class ActOpenMMSim:
                         if self.args.debug:
                             print("Adding VDW excl corr i %d j %d sigma %g epsilon %g gamma %g" % ( iatom, jatom, sigma, epsilon, gamma))
 ###########################
-        elif self.args.vdw == "GWBH":
+        elif self.vdw == VdW.GBHAM:
             for index in range(self.nonbondedforce.getNumExceptions()):
                 # Just get the excluded atoms from the regular NB force
                 [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nonbondedforce.getExceptionParameters(index)
@@ -986,7 +986,7 @@ class ActOpenMMSim:
                         vdw_excl_corr.addBond(iatom, jatom, [rmin, epsilon, gamma, delta, vdW])
                         if self.args.debug:
                             print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, rmin, epsilon, gamma, delta))
-        elif self.args.vdw == "14_7":
+        elif self.vdw == VdW.LJ14_7:
             for index in range(self.nonbondedforce.getNumExceptions()):
                 # Just get the excluded atoms from the regular NB force
                 [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nonbondedforce.getExceptionParameters(index)
@@ -1036,42 +1036,42 @@ class ActOpenMMSim:
         self.count_forces("Excl corr 3")
 
 ####################
-
-
-        if self.vdw == VdW.LJ14_7:
-            for index in range(self.nonbondedforce.getNumExceptions()):
-                # Just get the excluded atoms from the regular NB force
-                [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nonbondedforce.getExceptionParameters(index)
-                # Check for shell exclusions first
-                if (self.args.polarizable and
-                    ((jatom,iatom) in self.core_shell or ((iatom,jatom) in self.core_shell))):
-                    continue
-                # And get the parameters from the Custom NB force
-                [vdW1, sigma1, epsilon1, gamma1, delta1, charge1, zeta1] = self.nb_correction.getParticleParameters(iatom)
-                [vdW2, sigma2, epsilon2, gamma2, delta1, charge2, zeta2] = self.nb_correction.getParticleParameters(jatom)
-                if self.args.debug:
-                    print(f" custom nonbonded force i {self.nb_correction.getParticleParameters(iatom)}")
-                    print(f" custom nonbonded force j {self.nb_correction.getParticleParameters(jatom)}")
-
-                # Coulomb part
-                if not self.real_exclusion(nexclqq, iatom, jatom):
-                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
-                    qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
-                    if self.args.debug:
-                        print("Adding Coul excl i %d j %d q1 %g q2 %g zeta %g" % ( iatom, jatom, charge1, charge2, zeta))
-
-                # Van der Waals part
-                if (not self.real_exclusion(nexclvdw, iatom, jatom) and
-                    epsilon1 > 0 and epsilon2 > 0):
-                    gamma   = eval(cgamma)
-                    epsilon = eval(cepsilon)
-                    sigma   = eval(csigma)
-                    delta   = eval(cdelta)
-                    vdW     = vdW1*vdW2
-                    if vdW != 0:
-                        vdw_excl_corr.addBond(iatom, jatom, [sigma, epsilon, gamma, delta, vdW])
-                        if self.args.debug:
-                            print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, sigma, epsilon, gamma, delta))
+#THIS MIGHT BE A DUPLICATE
+#
+#        if self.vdw == VdW.LJ14_7:
+#            for index in range(self.nonbondedforce.getNumExceptions()):
+#                # Just get the excluded atoms from the regular NB force
+#                [iatom, jatom, chargeprod_except, sigma_except, epsilon_except] = self.nonbondedforce.getExceptionParameters(index)
+#                # Check for shell exclusions first
+#                if (self.args.polarizable and
+#                    ((jatom,iatom) in self.core_shell or ((iatom,jatom) in self.core_shell))):
+#                    continue
+#                # And get the parameters from the Custom NB force
+#                [vdW1, sigma1, epsilon1, gamma1, delta1, charge1, zeta1] = self.nb_correction.getParticleParameters(iatom)
+#                [vdW2, sigma2, epsilon2, gamma2, delta1, charge2, zeta2] = self.nb_correction.getParticleParameters(jatom)
+#                if self.args.debug:
+#                    print(f" custom nonbonded force i {self.nb_correction.getParticleParameters(iatom)}")
+#                    print(f" custom nonbonded force j {self.nb_correction.getParticleParameters(jatom)}")
+#
+#                # Coulomb part
+#                if not self.real_exclusion(nexclqq, iatom, jatom):
+#                    zeta = ((zeta1 * zeta2)/(np.sqrt(zeta1**2 + zeta2**2)))
+#                    qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
+#                    if self.args.debug:
+#                        print("Adding Coul excl i %d j %d q1 %g q2 %g zeta %g" % ( iatom, jatom, charge1, charge2, zeta))
+#
+#                # Van der Waals part
+#                if (not self.real_exclusion(nexclvdw, iatom, jatom) and
+#                    epsilon1 > 0 and epsilon2 > 0):
+#                    gamma   = eval(cgamma)
+#                    epsilon = eval(cepsilon)
+#                    sigma   = eval(csigma)
+#                    delta   = eval(cdelta)
+#                    vdW     = vdW1*vdW2
+#                    if vdW != 0:
+#                        vdw_excl_corr.addBond(iatom, jatom, [sigma, epsilon, gamma, delta, vdW])
+#                        if self.args.debug:
+#                            print("Adding VDW excl i %d j %d sigma %g epsilon %g gamma %g delta %g" % ( iatom, jatom, sigma, epsilon, gamma, delta))
 
 
 
