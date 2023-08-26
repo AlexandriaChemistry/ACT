@@ -131,7 +131,7 @@ class CombinationRules:
                 csigma   = "(sqrt(sigma1*sigma2))"
                 return csigma, cepsilon, cgamma
             elif vdw == VdW.GBHAM:
-               rmin   = "(sqrt(rmin11*rmin22))"
+               crmin   = "(sqrt(rmin1*rmin2))"
                cdelta = "(sqrt(delta1*delta2))"
                return crmin, cepsilon, cgamma, cdelta
             elif vdw == VdW.LJ14_7:

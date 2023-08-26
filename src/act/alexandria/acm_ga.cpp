@@ -126,13 +126,6 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         pool.genomePtr(i)->setFitness(imstr, fitness);
     }
 
-    // Fetch the best genomes
-    for (size_t i = 1; i < pool.popSize(); i++)
-    {
-        int src = cr->middlemen()[i-1];
-        pool.genomePtr(i)->Receive(cr, src);
-    }
-
     // Print the genomes to the logfile
     pool.print(logFile_);
 
