@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -281,7 +281,8 @@ private:
     real  anneal_            = 1;
     //! Evaluate on test set during the MCMC run
     bool  evaluate_testset_  = false;
-
+    //! Checkpointing on or not?
+    bool checkPoint_         = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -310,6 +311,9 @@ public:
      * \param[in] temperature the new temperature
      */
     void setTemperature(const real temperature) { temperature_ = temperature; }
+
+    //! \return whether or not to checkpoint
+    bool checkPoint() const { return checkPoint_; }
 
     //! \return the seed
     int seed() const { return seed_; }

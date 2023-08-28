@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -126,7 +126,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
         {
             // Do the step!
             stepMCMC(genome, bestGenome, &prevEval,
-                     pp, iter, iterOffset, &beta0);
+                     pp, iter, iterOffset, bch_->checkPoint(), &beta0);
 
             // For the second half of the optimization, collect data 
             // to find the mean and standard deviation of each
@@ -168,6 +168,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                            size_t                        pp,
                            int                           iter,
                            int                           iterOffset,
+			   bool                          checkPoint,
                            double                       *beta0)
 {
     // Pick a random parameter index
@@ -247,7 +248,10 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             {
                 bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
             }
-            sii_->saveState(false);
+            if (checkPoint)
+            {
+                sii_->saveState(false);
+            }
         }
         prevEval->find(imstr)->second = currEval[imstr];
         genome->setFitness(imstr, currEval[imstr]);

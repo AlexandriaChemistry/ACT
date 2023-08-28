@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -146,6 +146,7 @@ private:
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
      * \param[in] iterOffset        total iteration number in all generations prior to this one
+     * \param[in] checkPoint        whether or not to checkpoint during optimization
      * \param[in] beta0             pointer to beta for annealing
      */
     void stepMCMC(ga::Genome                   *genome,
@@ -154,6 +155,7 @@ private:
                   size_t                        pp,
                   int                           iter,
                   int                           iterOffset,
+                  bool                          checkPoint,
                   double                       *beta0);
 
 public:
