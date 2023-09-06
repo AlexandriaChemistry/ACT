@@ -798,6 +798,12 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             {
                 exper_[n].BroadCast(cr, root, comm);
             }
+            if (debug)
+            {
+                fprintf(debug, "Broadcast %zu experiments for mol %s\n",
+                        exper_.size(), getMolname().c_str());
+                fflush(debug);
+            }
         }
         else
         {
@@ -810,15 +816,12 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                     AddExperiment(ex);
                 }
             }
-        }
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received %zu experiments from %d for mol %s\n",
-                    exper_.size(), 0, getMolname().c_str());
-            fprintf(debug, "Received MolProp %s, status %s\n",
-                    getMolname().c_str(), cs_name(cs));
-            fflush(debug);
+            if (nullptr != debug)
+            {
+                fprintf(debug, "Received %zu experiments from %d for mol %s\n",
+                        exper_.size(), root, getMolname().c_str());
+                fflush(debug);
+            }
         }
     }
     return cs;

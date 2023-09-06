@@ -77,11 +77,9 @@ private:
     /*! \brief Compute multipole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
      * @param actmol     the molecule
-     * @param coords    The coordinates to use
      */
     void computeMultipoles(std::map<eRMS, FittingTarget> *targets,
-                           ACTMol                         *actmol,
-                           const std::vector<gmx::RVec>  &coords);
+                           ACTMol                        *actmol);
 
     /*!
      * \brief Fill the devComputers vector according to the needs of the user

@@ -198,54 +198,6 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     energies->insert({ InteractionType::EPOT, epot });
 }
 
-void ForceComputer::calcPolarizability(const ForceField       *pd,
-                                       const Topology         *top,
-                                       std::vector<gmx::RVec> *coordinates,
-                                       QtypeProps             *qtp) const
-{
-    std::vector<gmx::RVec>            forces(coordinates->size());
-    std::map<InteractionType, double> energies;
-    gmx::RVec                         field = { 0, 0, 0 };
-
-    compute(pd, top, coordinates, &forces, &energies, field);
-    std::vector<double> q;
-    for (auto &at : top->atoms())
-    {
-        q.push_back(at.charge());
-    }
-    qtp->setQ(q);
-    qtp->setX(*coordinates);
-    qtp->calcMoments();
-    auto mpo = MolPropObservable::DIPOLE;
-    if (!qtp->hasMultipole(mpo))
-    {
-        GMX_THROW(gmx::InternalError("No dipole to compute."));
-    }
-    auto mu_ref = qtp->getMultipole(mpo);
-    // Convert from e nm2/V to cubic nm
-    double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
-
-    tensor alpha  = { { 0 } };
-    double efield = 0.1; // Units are not relevant since they drop out!
-    for (int m = 0; m < DIM; m++)
-    {
-        field[m] = efield;
-        compute(pd, top, coordinates, &forces, &energies, field);
-        qtp->setX(*coordinates);
-        field[m] = 0;
-        qtp->calcMoments();
-        auto qmu = qtp->getMultipole(mpo);
-        for (int n = 0; n < DIM; n++)
-        {
-            alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
-        }
-    }
-    // Store the tensor
-    qtp->setPolarizabilityTensor(alpha);
-    // Reset energies etc.
-    compute(pd, top, coordinates, &forces, &energies, field);
-}
-
 int ForceComputer::ftype(const ForceField   *pd,
                          InteractionType  itype) const
 {

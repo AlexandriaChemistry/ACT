@@ -506,7 +506,7 @@ static void mp_process_tree(FILE                              *fp,
                 {
                     mpt = &(molprops->back());
                 }
-                Experiment *last = nullptr;
+                Experiment             *last = nullptr;
                 if (nullptr != mpt)
                 {
                     last = mpt->LastExperiment();
@@ -631,14 +631,19 @@ static void mp_process_tree(FILE                              *fp,
                             };
                             if (xmlFound(xbuf, clean2))
                             {
-                                ElectrostaticPotential ep((*xbuf)[MolPropXml::X_UNIT],
-                                                          (*xbuf)[MolPropXml::V_UNIT],
-                                                          atoi((*xbuf)[MolPropXml::ESPID].c_str()),
-                                                          xbuf_atof(xbuf, MolPropXml::dX, true),
-                                                          xbuf_atof(xbuf, MolPropXml::dY, true),
-                                                          xbuf_atof(xbuf, MolPropXml::dZ, true),
-                                                          xbuf_atof(xbuf, MolPropXml::dV, true));
-                                last->AddPotential(ep);
+                                auto mpo = MolPropObservable::POTENTIAL;
+                                if (!last->hasProperty(mpo))
+                                {
+                                    last->addProperty(mpo, new ElectrostaticPotential((*xbuf)[MolPropXml::X_UNIT],
+                                                                                      (*xbuf)[MolPropXml::V_UNIT]));
+                                }
+                                // TODO make this more rigorous and less ugly.
+                                auto myesp = static_cast<ElectrostaticPotential *>(*last->property(mpo)->begin());
+                                myesp->addPoint(atoi((*xbuf)[MolPropXml::ESPID].c_str()),
+                                                xbuf_atof(xbuf, MolPropXml::dX, true),
+                                                xbuf_atof(xbuf, MolPropXml::dY, true),
+                                                xbuf_atof(xbuf, MolPropXml::dZ, true),
+                                                xbuf_atof(xbuf, MolPropXml::dV, true));
                                 clean_xbuf(xbuf, clean2);
                             }
                             clean_xbuf(xbuf, clean1);
@@ -872,8 +877,8 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     print_memory_usage(debug);
 }
 
-static void add_exper_properties(xmlNodePtr        exp,
-                                 const Experiment &exper)
+static void add_properties(xmlNodePtr        exp,
+                           const Experiment &exper)
 {
     xmlNodePtr child;
 
@@ -978,38 +983,36 @@ static void add_exper_properties(xmlNodePtr        exp,
                     break;
                 }
             case MolPropObservable::POTENTIAL:
+                {
+                    auto eprop = static_cast<ElectrostaticPotential *>(prop);
+                    auto x_unit = eprop->getXYZunit();
+                    auto v_unit = eprop->getVunit();
+                    auto espid  = eprop->espid();
+                    auto xyz    = eprop->xyz();
+                    auto V      = eprop->V();
+
+                    std::string x_unitOut("pm");
+                    std::string V_unitOut("Hartree/e");
+                    double xfac = convertFromGromacs(1.0, x_unitOut);
+                    double Vfac = convertFromGromacs(1.0, V_unitOut);
+                    
+                    for(size_t i = 0; i < espid.size(); i++)
+                    {
+                        xmlNodePtr child = add_xml_child(exp, rmap[MolPropXml::POTENTIAL]);
+                        add_xml_char(child, rmap[MolPropXml::X_UNIT], x_unitOut.c_str());
+                        add_xml_char(child, rmap[MolPropXml::V_UNIT], V_unitOut.c_str());
+                        add_xml_int(child, rmap[MolPropXml::ESPID], espid[i]);
+                        add_xml_child_val(child, rmap[MolPropXml::dX], gmx::formatString("%g", xfac*xyz[i][XX]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::dY], gmx::formatString("%g", xfac*xyz[i][YY]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::dZ], gmx::formatString("%g", xfac*xyz[i][ZZ]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::dV], gmx::formatString("%g", Vfac*V[i]).c_str());
+                    }
+                }
+                break;
             case MolPropObservable::CHARGE:
             case MolPropObservable::COORDINATES:
                 break;
             }
-        }
-    }
-}
-
-static void add_calc_properties(xmlNodePtr                    exp,
-                                const Experiment &calc)
-{
-    for (auto &ep : calc.electrostaticPotentialConst())
-    {
-        std::string x_unit, v_unit;
-        double      x, y, z, V;
-        int         espid;
-
-        ep.get(&x_unit, &v_unit, &espid, &x, &y, &z, &V);
-        std::string x_unitOut("pm");
-        std::string V_unitOut("Hartree/e");
-        double xfac = convertFromGromacs(1.0, x_unitOut);
-        double Vfac = convertFromGromacs(1.0, V_unitOut);
-        xmlNodePtr child = add_xml_child(exp, rmap[MolPropXml::POTENTIAL]);
-        add_xml_char(child, rmap[MolPropXml::X_UNIT], x_unitOut.c_str());
-        add_xml_char(child, rmap[MolPropXml::V_UNIT], V_unitOut.c_str());
-        add_xml_int(child, rmap[MolPropXml::ESPID], espid);
-        if ((x != 0) || (y != 0) || (z != 0) || (V != 0))
-        {
-            add_xml_child_val(child, rmap[MolPropXml::dX], gmx::formatString("%g", xfac*x).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dY], gmx::formatString("%g", xfac*y).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dZ], gmx::formatString("%g", xfac*z).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dV], gmx::formatString("%g", Vfac*V).c_str());
         }
     }
 }
@@ -1061,8 +1064,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
             add_xml_string(child, rmap[MolPropXml::DATAFILE], me.getDatafile());
         }
 
-        add_exper_properties(child, me);
-        add_calc_properties(child, me);
+        add_properties(child, me);
 
         for (auto &ca : me.calcAtomConst())
         {

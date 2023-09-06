@@ -131,7 +131,14 @@ protected:
 
         mp.symmetrizeCharges(pd, qSymm, nullptr);
         std::vector<gmx::RVec> coords = mp.xOriginal();
-        mp.initQgenResp(pd, coords, 0.0, 100);
+        
+        //auto qprops = mp.qProps();
+        //qprops->push_back(ACTQprop(mp.topology()->atoms(), coords));
+        std::map<MolPropObservable, iqmType> iqm = {
+            { MolPropObservable::POTENTIAL, iqmType::QM }
+        };
+        mp.getExpProps(pd, iqm, 0, 0, 100);
+
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
         mp.GenerateCharges(pd, forceComp, ChargeGenerationAlgorithm::ESP,

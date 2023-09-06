@@ -183,15 +183,19 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
     int i = 0;
     const auto &myatoms = actmol->atomsConst();
     std::vector<double> qcm5;
-    QtypeProps *qp = actmol->qTypeProps(qType::CM5);
-    if (qp)
+    auto qProps = actmol->qPropsConst();
+    for(auto qp = qProps.begin(); qp < qProps.end(); ++qp)
     {
-        qcm5 = qp->charge();
-        if (debug)
+        auto qqm = qp->qPqmConst();
+        if (qType::CM5 == qqm.qtype())
         {
-            for (size_t j = 0; j < myatoms.size(); j++)
+            qcm5 = qqm.charge();
+            if (debug)
             {
-                fprintf(debug, "Charge %lu. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms[j].charge());
+                for (size_t j = 0; j < myatoms.size(); j++)
+                {
+                    fprintf(debug, "Charge %lu. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms[j].charge());
+                }
             }
         }
     }
@@ -237,7 +241,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         default:
             break;
         }
-        if (qp &&
+        if (!qcm5.empty() &&
             qparm.mutability() != Mutability::Fixed &&
             (*targets).find(eRMS::CM5)->second.weight() > 0)
         {
@@ -246,8 +250,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         }
         i += 1;
     }
-    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - actmol->totalCharge()));
-
+    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - actmol->totalCharge()));            
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -258,43 +261,58 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 * BEGIN: EspDevComputer                    *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EspDevComputer::calcDeviation(gmx_unused const ForceComputer *forceComputer,
-                                   ACTMol                         *actmol,
-                                   std::vector<gmx::RVec>         *coords,
-                                   std::map<eRMS, FittingTarget>  *targets,
-                                   const ForceField               *forcefield)
+void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceComputer,
+                                   ACTMol                            *actmol,
+                                   gmx_unused std::vector<gmx::RVec> *coords,
+                                   std::map<eRMS, FittingTarget>     *targets,
+                                   const ForceField                  *forcefield)
 {
     real rrms     = 0;
     real cosangle = 0;
-    QgenResp *qgr = actmol->qTypeProps(qType::Calc)->qgenResp();
-    if (actmol->haveShells())
+    auto qProps   = actmol->qProps();
+    auto topology = actmol->topology();
+    std::vector<gmx::RVec> forces(topology->atoms().size());
+    std::map<InteractionType, double> energies;
+    bool doForce = forcefield->polarizable() || topology->hasEntry(InteractionType::VSITE2);
+    // Loop over zero or more ESP data sets.
+    for(auto qc = qProps->begin(); qc < qProps->end(); qc++)
     {
-        qgr->updateAtomCoords(*coords);
+        QgenResp *qgr = qc->qgenResp();
+        if (qgr->nEsp() == 0)
+        {
+            continue;
+        }
+        if (fitZeta_)
+        {
+            qgr->updateZeta(actmol->atomsConst(), forcefield);
+        }
+        auto coords = qgr->coords();
+        qgr->updateAtomCharges(actmol->atomsConst());
+        // Need to call the force routine to update shells and/or vsites
+        if (doForce)
+        {
+            forceComputer->compute(forcefield, topology, &coords, &forces, &energies);
+            qgr->updateAtomCoords(coords);
+        }
+        dumpQX(logfile_, actmol, coords, "ESP");
+        double epsilonr;
+        if (!ffOption(*forcefield, InteractionType::COULOMB, "epsilonr", &epsilonr))
+        {
+            epsilonr = 1;
+        }
+        qgr->calcPot(epsilonr);
+        real   mae, mse;
+        real   rms   = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+        double myRms = convertToGromacs(rms, "Hartree/e");
+        size_t nEsp  = qgr->nEsp();
+        (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
+        if (debug)
+        {
+            fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
+                    actmol->getMolname().c_str(),
+                    myRms, cosangle);
+        }
     }
-    if (fit_)
-    {
-        qgr->updateZeta(actmol->atomsConst(), forcefield);
-    }
-    dumpQX(logfile_, actmol, *coords, "ESP");
-    qgr->updateAtomCharges(actmol->atomsConst());
-    double epsilonr;
-    if (!ffOption(*forcefield, InteractionType::COULOMB, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    qgr->calcPot(epsilonr);
-    real mae, mse;
-    real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
-    double myRms = convertToGromacs(rms, "Hartree/e");
-    size_t nEsp = qgr->nEsp();
-    (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
-    if (debug)
-    {
-        fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                actmol->getMolname().c_str(),
-                myRms, cosangle);
-    }
-
 }
 
 void EspDevComputer::dumpQX(FILE                         *fp,
@@ -349,23 +367,32 @@ void PolarDevComputer::calcDeviation(const ForceComputer               *forceCom
                                      std::map<eRMS, FittingTarget>     *targets,
                                      const ForceField                  *forcefield)
 {
-    actmol->CalcPolarizability(forcefield, forceComputer);
-    auto aelec = actmol->qTypeProps(qType::Elec)->polarizabilityTensor();
-    auto acalc = actmol->qTypeProps(qType::Calc)->polarizabilityTensor();
+    auto qProps = actmol->qProps();
+    int    ndiff = 0;
     double diff2 = 0;
-    for(int i = 0; i < DIM; i++)
+    for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
     {
-        for(int j = 0; j < DIM; j++)
+        auto &qref = qp->qPqmConst();
+        auto *qact = qp->qPact();
+        if (qref.hasPolarizability() && qact->hasPolarizability())
         {
-            diff2 += gmx::square(convert_*(aelec[i][j]-acalc[i][j]));
+            tensor aelec;
+            copy_mat(qref.polarizabilityTensor(), aelec);
+            qact->setQ(actmol->topology()->atoms());
+            qact->calcPolarizability(forcefield, actmol->topology(), forceComputer);
+            auto acalc = qact->polarizabilityTensor();
+            for(int i = 0; i < DIM; i++)
+            {
+                for(int j = 0; j < DIM; j++)
+                {
+                    diff2 += gmx::square(convert_*(aelec[i][j]-acalc[i][j]));
+                }
+            }
+            ndiff += 1;
         }
     }
     
-    if (false && logfile_)
-    {
-        fprintf(logfile_, "DIFF %s %g\n", actmol->getMolname().c_str(), diff2);
-    }
-    (*targets).find(eRMS::Polar)->second.increase(1, diff2);
+    (*targets).find(eRMS::Polar)->second.increase(ndiff, diff2);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -376,23 +403,29 @@ void PolarDevComputer::calcDeviation(const ForceComputer               *forceCom
 * BEGIN: MultiPoleDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         ACTMol                                *actmol,
-                                         gmx_unused std::vector<gmx::RVec>    *coords,
-                                         std::map<eRMS, FittingTarget>        *targets,
-                                         gmx_unused const ForceField             *forcefield)
+void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *forceComputer,
+                                         ACTMol                             *actmol,
+                                         gmx_unused std::vector<gmx::RVec>  *coords,
+                                         std::map<eRMS, FittingTarget>      *targets,
+                                         gmx_unused const ForceField        *forcefield)
 {
-    if (!(actmol->qTypeProps(qType::Elec)->hasMultipole(mpo_) &&
-          actmol->qTypeProps(qType::Calc)->hasMultipole(mpo_)))
+    auto   qProps = actmol->qProps();
+    int    ndiff  = 0;
+    double delta  = 0;
+    for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
     {
-        return;
-    }
-    auto qelec = actmol->qTypeProps(qType::Elec)->getMultipole(mpo_);
-    auto qcalc = actmol->qTypeProps(qType::Calc)->getMultipole(mpo_);
-    double delta = 0;
-    for (size_t mm = 0; mm < qelec.size(); mm++)
-    {
-        delta += gmx::square(qcalc[mm] - qelec[mm]);
+        auto qqm  = qp->qPqm();
+        auto qact = qp->qPact();
+        if (qqm->hasMultipole(mpo_) && qact->hasMultipole(mpo_))
+        {
+            auto qelec = qqm->getMultipole(mpo_);
+            auto qcalc = qact->getMultipole(mpo_);
+            for (size_t mm = 0; mm < qelec.size(); mm++)
+            {
+                delta += gmx::square(qcalc[mm] - qelec[mm]);
+            }
+            ndiff += 1;
+        }
     }
     eRMS rms;
     switch (mpo_)
@@ -413,7 +446,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         GMX_THROW(gmx::InternalError(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str()));
     }
     
-    (*targets).find(rms)->second.increase(1, delta);
+    (*targets).find(rms)->second.increase(ndiff, delta);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

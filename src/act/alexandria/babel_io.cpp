@@ -133,25 +133,6 @@ BabelFileIterator BabelFiles::findBabelFile(const std::string &fn)
                         });
 }
 
-static void merge_electrostatic_potential(alexandria::MolProp                             *mpt,
-                                          std::vector<alexandria::ElectrostaticPotential> &espv,
-                                          int                                              natom,
-                                          int                                              maxPotential)
-{
-    maxPotential = std::max(0, std::min(maxPotential, 100));
-    int npot   = espv.size() - natom;
-    int maxpot = (npot * maxPotential)/100;
-    int mod    = npot / maxpot;
-    int i      = 0;
-    for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
-    {
-        if ((i < natom) || (((i-natom) % mod) == 0))
-        {
-            mpt->LastExperiment()->AddPotential(*esi);
-        }
-    }
-}
-
 static bool isGzipFile(const std::string &fileName,
                        std::string       *strippedFileName)
 {
@@ -735,17 +716,14 @@ static bool babel2ACT(const ForceField                         *pd,
         OpenBabel::OBFreeGridPoint                     *fgp;
         OpenBabel::OBFreeGridPointIterator              fgpi;
         int                                             espid  = 0;
-        std::vector<alexandria::ElectrostaticPotential> espv;
+        auto espv = new ElectrostaticPotential("Angstrom", "Hartree/e");
         
         fgpi = espptr->BeginPoints();
         for (fgp = espptr->BeginPoint(fgpi); (nullptr != fgp); fgp = espptr->NextPoint(fgpi))
         {
-            alexandria::ElectrostaticPotential ep("Angstrom", "Hartree/e", ++espid,
-                                                  fgp->GetX(), fgp->GetY(), fgp->GetZ(),
-                                                  fgp->GetV());
-            espv.push_back(ep);
+            espv->addPoint(++espid, fgp->GetX(), fgp->GetY(), fgp->GetZ(), fgp->GetV());
         }
-        merge_electrostatic_potential(mpt, espv, mol->NumAtoms(), maxPotential);
+        mpt->LastExperiment()->addProperty(MolPropObservable::POTENTIAL, espv);
     }
     return true;
 }

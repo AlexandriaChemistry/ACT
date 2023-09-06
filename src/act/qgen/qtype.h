@@ -45,8 +45,11 @@ namespace alexandria
 {
 
 class ActAtom;
+class ForceField;
+class ForceComputer;
 class QgenResp;
-
+class Topology;
+ 
 /*! \brief Enumerated type to differentiate the charge types 
  * and properties derived from the charges.
  */
@@ -84,10 +87,6 @@ qType stringToQtype(const std::string &type);
  */
 const std::map<qType, std::string> &qTypes();
 
-//! typedef for hexadecapole
-//typedef std::array<Octupole, DIM> Hexadecapole;
-
-
 /*! Class to hold electrostatic properties.
  * To compare the properties of different models we have this class
  * to hold electrostatic moments and charges, and indeed a grid 
@@ -97,12 +96,12 @@ class QtypeProps
 {
  private:
     //! Identity
-    qType                  qtype_;
+    qType                  qtype_      = qType::Calc;
     //! Electrostatic moments
     std::map<MolPropObservable, std::vector<double> > multipoles_;
     //! Polarizability tensor
-    bool                   hasAlpha_ = false;
-    tensor                 alpha_ = { { 0 } };
+    bool                   hasAlpha_   = false;
+    tensor                 alpha_      = { { 0 } };
     //! Polarizability anisotropy
     double                 anisotropy_ = 0;
     //! Polarizability isotropic value
@@ -113,17 +112,34 @@ class QtypeProps
     rvec                   coc_        = { 0 };
     //! Atomic charges
     std::vector<double>    q_;
-    //! Resp calculation structure
-    QgenResp               *QgenResp_   = nullptr;
+    //! Atomic numbers
+    std::vector<int>       atomNumber_;
     //! Reset all the calc moments to zero
     void resetMoments();
-
+    //! Recompute the center of charge
+    void computeCoC();
+    
+    
  public:
+    //! Empty constructor
+    QtypeProps() {}
     /*! \brief Constructor
      * \param[in] qtype  My own identity
+     * \param[in] atoms  The atoms in this compound
+     * \param[in] coords and their coordinates
      */
-    QtypeProps(qType qtype);
-    
+    QtypeProps(qType                         qtype,
+               const std::vector<ActAtom>   &atoms,
+               const std::vector<gmx::RVec> &coords);
+
+    //! Return my qType
+    qType qtype() const { return qtype_; }
+
+    /*! Set my qType
+     * \param[in] qtype The type
+     */
+    void setQtype(qType qtype) { qtype_ = qtype; }
+
     //! Initialize variables for multipoles
     void initializeMoments();
 
@@ -132,21 +148,27 @@ class QtypeProps
      * \param[in] q The charges
      * \param[in] x The coordinates
      */
-    void setQandX(const std::vector<double>        &q,
+    void setQandX(const std::vector<double>    &q,
                   const std::vector<gmx::RVec> &x);
     
-    /*! \brief Set charges.
+    /*! \brief Set charges and coordinates.
      *
-     * \param[in] atoms An ActAtoms vector
+     * \param[in] atoms The atoms
+     * \param[in] x     The coordinates
      */
-    void setQ(const std::vector<ActAtom> &atoms);
+    void setQandX(const std::vector<ActAtom>   &atoms,
+                  const std::vector<gmx::RVec> &x);
     
     /*! \brief Set charges.
      *
      * \param[in] q The charges
      */
     void setQ(const std::vector<double> &q);
-    
+    /*! \brief Set charges.
+     *
+     * \param[in] atoms An ActAtoms vector
+     */
+    void setQ(const std::vector<ActAtom> &atoms);
     /*! \brief Set coordinates.
      *
      * \param[in] x The coordinates
@@ -175,11 +197,21 @@ class QtypeProps
     /*! \brief Return polarizability tensor
      */
     const tensor &polarizabilityTensor() const { return alpha_; }
-    
+
     /*! \brief Set the polarizability tensor
-     * \param[in] alpha The new tensor
+     * \param[in] alpha The tensor
      */
     void setPolarizabilityTensor(const tensor &alpha);
+
+    /*! \brief Compute the polarizability tensor for the system.
+     * The result is stored internally
+     * \param[in] pd        The force field
+     * \param[in] top       The molecular topology
+     * \param[in] forceComp The force computer    
+     */
+    void calcPolarizability(const ForceField    *pd,
+                            const Topology      *top,
+                            const ForceComputer *forceComp);
     
     /*! \brief Return isotropic polarizability
      */
@@ -212,18 +244,6 @@ class QtypeProps
      */
     const std::vector<double> &charge() const { return q_; };
 
-    /*! \brief Return internal structure
-     * \return the QgenResp_ data structure
-     */
-    QgenResp *qgenResp();
-    
-    /*! \brief Return internal structure
-     * \return the QgenResp_ data structure
-     */
-    const QgenResp *qgenRespConst();
-
-    //! Copy back the charges from Resp
-    void copyRespQ();
 };
  
 } // namespace alexandria
