@@ -141,12 +141,12 @@ void pdbWriter(FILE                           *out,
     int               i;
     int               resind, resnr;
     enum PDB_record   type;
-    unsigned char     ch;
+    //unsigned char     ch;
     char              altloc;
     real              occup, bfac;
     bool              bOccup = false;
-    const char       *p_restype;
-    const char       *p_lastrestype;
+    //const char       *p_restype;
+    //const char       *p_lastrestype;
 
     if (title)
     {
@@ -160,7 +160,7 @@ void pdbWriter(FILE                           *out,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    p_restype         = nullptr;
+    //p_restype         = nullptr;
 
     std::map<int, int> reverseIndex;
     if (renumberAtoms)
@@ -185,9 +185,9 @@ void pdbWriter(FILE                           *out,
         }
         resind        = atoms[i].residueNumber();
         resnr         = resind;
-        p_lastrestype = p_restype;
+        //p_lastrestype = p_restype;
 
-        ch = 0;
+        //ch = 0;
         if (resnr >= 10000)
         {
             resnr = resnr % 10000;

@@ -661,7 +661,7 @@ public:
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class ElectrostaticPotential
+class ElectrostaticPotential : public GenericProperty
 {
 private:
     //! Internal coordinate unit
@@ -672,25 +672,22 @@ private:
     std::string vUnit_;
     //! Input potential unit
     std::string vInputUnit_;
-    //! Electrostatic potential id
-    int         espID_;
-    //! X coordinate
-    double      x_;
-    //! Y coordinate
-    double      y_;
-    //! Z coordinate
-    double      z_;
-    //! Potential value
-    double      V_;
+    //! Electrostatic potential ids
+    std::vector<int>       espID_;
+    //! Grid coordinates
+    std::vector<gmx::RVec> xyz_;
+    //! Potential values
+    std::vector<double>    V_;
 public:
     //! Default constructor
     ElectrostaticPotential() {}
     
-    //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
+    /*! Constructor that set the units of coordinates and potential
+     * \param[in] xyzInputUnit Unit of the coordinate
+     * \param[in] vInputUnit   Unit of the potential
+     */
     ElectrostaticPotential(const std::string &xyzInputUnit,
-                           const std::string &vInputUnit,
-                           int espid, double x, double y, double z, double V)
-    { set(xyzInputUnit, vInputUnit, espid, x, y, z, V); };
+                           const std::string &vInputUnit);
     
     ~ElectrostaticPotential() {}
     
@@ -699,68 +696,41 @@ public:
     ElectrostaticPotential(ElectrostaticPotential &&) = default;
     ElectrostaticPotential& operator=(ElectrostaticPotential &&) = default;
     
+    double getValue() const { crash(); }
+    
+    double getError() const { crash(); }
+
+    const std::vector<double> &getVector() const { crash(); }
+
     /*! Fill the contents of the ESP
-     * Set the units of coordinates and potential, the ESP id,
-     * the coordinates and the potential itself.
-     * \param[in] xyzInputUnit Input unit for coordinates
-     * \param[in] vInputUnit   Input unit for the potential
+     * Set the ESP id, the coordinates and the potential itself.
      * \param[in] espid        Unique id
      * \param[in] x            X coordinate
      * \param[in] y            Y coordinate
      * \param[in] z            Z coordinate
      * \param[in] V            Potential
      */
-    void set(const std::string &xyzInputUnit,
-             const std::string &vInputUnit,
-             int                espid, 
-             double             x,
-             double             y,
-             double             z,
-             double             V);
+    void addPoint(int                espid, 
+                  double             x,
+                  double             y,
+                  double             z,
+                  double             V);
 
-    /*! \brief Return ESP data
-     * Return the units of coordinates and potential, the ESP id,
-     * the coordinates and the potential itself.
-     * \param[out] xyz_unit Unit for coordinates
-     * \param[out] V_unit   Unit for the potential
-     * \param[out] espid    Unique id
-     * \param[out] x        X coordinate
-     * \param[out] y        Y coordinate
-     * \param[out] z        Z coordinate
-     * \param[out] V        Potential
-     */
-    void get(std::string *xyz_unit,
-             std::string *V_unit,
-             int         *espid,
-             double      *x,
-             double      *y,
-             double      *z,
-             double *V) const;
-    
     //! Return the unit of the coordinates
     const std::string &getXYZunit() const { return xyzUnit_; }
     
     //! Return the unit of the potential
     const std::string &getVunit() const { return vUnit_; }
     
-    //! Return the ESP id from the original calculation
-    int getEspid() const { return espID_; }
+    //! Return the ESP ida from the original calculation
+    const std::vector<int> &espid() const { return espID_; }
     
-    //! Return the X coordinate of the ESP point
-    double getX() const { return x_; }
-    
-    //! Return the Y coordinate of the ESP point
-    double getY() const { return y_; }
-    
-    //! Return the Z coordinate of the ESP point
-    double getZ() const { return z_; }
+    //! Return the coordinate of the ESP points
+    const std::vector<gmx::RVec> &xyz() const { return xyz_; }
     
     //! Return the electrostatic potential at this point in space
-    double getV() const { return V_; }
+    const std::vector<double> V() const { return V_; }
 
-    //! Set the potential for this instance of the class
-    void SetV(double V) { V_ = V; }
-    
     /*! \brief
      * Sends this object over an MPI connection
      *

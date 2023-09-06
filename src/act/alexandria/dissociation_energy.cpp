@@ -340,7 +340,7 @@ double getDissociationEnergy(FILE                *fplog,
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto actmol = &((*molset)[i]);
-        if (immStatus::OK == actmol->getExpProps(myprops, tmap[iqm]))
+        if (immStatus::OK == actmol->getExpProps(pd, myprops, tmap[iqm]))
         {
             double deltaE0;
             if (actmol->energy(MolPropObservable::DELTAE0, &deltaE0))

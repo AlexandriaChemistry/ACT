@@ -334,7 +334,7 @@ void CommunicationRecord::bcast(std::string *str, MPI_Comm comm, int root) const
     check_init_done();
     int ssize = str->size();
     check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
-    if (0 != rank_)
+    if (root != rank_)
     {
         str->resize(ssize);
     }
@@ -368,7 +368,7 @@ void CommunicationRecord::bcast(std::vector<double> *d,
     check_init_done();
     int ssize = d->size(); 
     check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
-    if (0 != rank_)
+    if (root != rank_)
     {
         d->resize(ssize);
     }

@@ -197,7 +197,7 @@ class EspDevComputer : public DevComputer
 private:
 
     //! Whether we fit zeta parameters
-    bool fit_;
+    bool fitZeta_;
 
     /*! \brief Dump charges to a file
      * Debugging routine
@@ -221,10 +221,10 @@ public:
      */
     EspDevComputer(      FILE *logfile,
                    const bool  verbose,
-                   const bool  fit)
+                   const bool  fitZeta)
     : DevComputer(logfile, verbose)
     {
-        fit_ = fit;
+        fitZeta_ = fitZeta;
     }
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,

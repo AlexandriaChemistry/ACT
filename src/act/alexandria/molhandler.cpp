@@ -1040,7 +1040,7 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %10g %10g %10g\n", ekin, ekin+epot, temp);
 }
 
-static void initArrays(const ACTMol            *mol,
+static void initArrays(const ACTMol           *mol,
                        std::vector<gmx::RVec> *coordinates, 
                        std::vector<gmx::RVec> *velocities, 
                        std::vector<gmx::RVec> *forcesCur,
@@ -1048,7 +1048,7 @@ static void initArrays(const ACTMol            *mol,
                        std::vector<double>    *inv2mass,
                        std::vector<double>    *mass_2)
 {
-    auto &xmol = mol->xOriginal();
+    auto xmol = mol->xOriginal();
     coordinates->resize(xmol.size());
     velocities->resize(xmol.size());
     forcesPrev->resize(xmol.size());
