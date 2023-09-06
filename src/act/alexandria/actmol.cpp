@@ -36,11 +36,13 @@
 
 #include <cstdio>
 
+#include <algorithm>
 #include <map>
 #include <random>
 #include <string>
 
 #include "act/alexandria/pdbwriter.h"
+#include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -63,6 +65,38 @@
 namespace alexandria
 {
 
+ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
+                   const std::vector<gmx::RVec> &x)
+{
+    qPqm_.setQandX(atoms, x);
+    qPact_.setQandX(atoms, x);
+    qPact_.initializeMoments();
+    for(const auto &aa : atoms)
+    {
+        bool b = (eptAtom == aa.pType());
+        isAtom_.push_back(b);
+    }
+}
+
+void ACTQprop::copyRespQ()
+{
+    if (QgenResp_.nEsp() > 0)
+    {
+        std::vector<double> q = qPqm_.charge();
+        int j = 0;
+        for(size_t i = 0; i < isAtom_.size(); i++)
+        {
+            if (isAtom_[i])
+            {
+                GMX_RELEASE_ASSERT(j < QgenResp_.natoms(), "Atom index out of range copying charges from RESP to Qprops");
+                q[i] = QgenResp_.getCharge(j++);
+            }
+        }
+        qPqm_.setQ(q);
+        qPact_.setQ(q);
+    }
+}
+
 ACTMol::ACTMol()
 {
     clear_mat(box_);
@@ -70,61 +104,6 @@ ACTMol::ACTMol()
     {
         box_[m][m] = 10.0;
     }
-}
-
-bool ACTMol::IsSymmetric(real toler) const
-{
-    real  tm;
-    rvec  com, test;
-    bool  bSymmAll;
-    std::vector<bool> bSymm;
-    
-    clear_rvec(com);
-    tm = 0;
-    const auto &myatoms = topology_->atoms();
-    std::vector<gmx::RVec> myx = optimizedCoordinates_;
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        real mm  = myatoms[i].mass();
-        tm += mm;
-        for (int m = 0; (m < DIM); m++)
-        {
-            com[m] += mm*myx[i][m];
-        }
-    }
-    if (tm > 0)
-    {
-        for (int m = 0; m < DIM; m++)
-        {
-            com[m] /= tm;
-        }
-    }
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        rvec_dec(myx[i], com);
-    }
-
-    bSymm.resize(myatoms.size());
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        bSymm[i] = (norm(myx[i]) < toler);
-        for (size_t j = i+1; (j < myatoms.size()) && !bSymm[i]; j++)
-        {
-            rvec_add(myx[i], myx[j], test);
-            if (norm(test) < toler)
-            {
-                bSymm[i] = true;
-                bSymm[j] = true;
-            }
-        }
-    }
-    bSymmAll = true;
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        bSymmAll = bSymmAll && bSymm[i];
-    }
-
-    return bSymmAll;
 }
 
 void ACTMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
@@ -229,6 +208,61 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
     return immStatus::OK;
 }
 
+static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
+                                          const std::vector<ActAtom>   &myatoms)
+{
+    gmx::RVec fzero = { 0, 0, 0 };
+    std::vector<gmx::RVec> coords(myatoms.size(), fzero);
+    int j = 0;
+    for(size_t i = 0; i < myatoms.size(); i++)
+    {
+        if (myatoms[i].pType() == eptAtom)
+        {
+            // Read coords from the experimental structure without shells
+            copy_rvec(xxx[j], coords[i]);
+            j += 1;
+        }
+    }
+    // We need to split the loop to do all the atoms first
+    // since we cannot be sure about the order of atoms and shells.
+    for(size_t i = 0; i < myatoms.size(); i++)
+    {
+        switch (myatoms[i].pType())
+        {
+        case eptAtom:
+            // Do nothing
+            break;
+        case eptShell:
+        case eptVSite:
+            {
+                auto cores = myatoms[i].cores();
+                GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
+                copy_rvec(coords[cores[0]], coords[i]);
+            }
+            break;
+        default:
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+            }
+        }
+    }
+    return coords;
+}
+
+std::vector<gmx::RVec> ACTMol::xOriginal() const
+{
+    auto exper = findExperimentConst(JobType::OPT);
+    if (nullptr == exper)
+    {
+        exper = findExperimentConst(JobType::TOPOLOGY);
+    }
+    if (nullptr == exper)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No calculation for %s with jobtype %s or %s", getMolname().c_str(), jobType2string(JobType::OPT), jobType2string(JobType::TOPOLOGY)).c_str()));
+    }
+    return experCoords(exper->getCoordinates(), topology_->atoms());
+}
+
 void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
                              const ForceComputer                                                 *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >               *forceMap,
@@ -241,46 +275,10 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     energyMap->clear();
     interactionEnergyMap->clear();
     energyComponentMap->clear();
+    gmx::RVec fzero = { 0, 0, 0 };
     for (auto &ei : experimentConst())
     {
-        gmx::RVec fzero = { 0, 0, 0 };
-        // TODO: no need to recompute the energy if we just have
-        // done that. Check for OPT being the first calculation.
-        const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
-        std::vector<gmx::RVec> coords(myatoms.size(), fzero);
-        int j = 0;
-        for(size_t i = 0; i < myatoms.size(); i++)
-        {
-            if (myatoms[i].pType() == eptAtom)
-            {
-                // Read coords from the experimental structure without shells
-                copy_rvec(xxx[j], coords[i]);
-                j += 1;
-            }
-        }
-        // We need to split the loop to do all the atoms first
-        // since we cannot be sure about the order of atoms and shells.
-        for(size_t i = 0; i < myatoms.size(); i++)
-        {
-            switch (myatoms[i].pType())
-            {
-            case eptAtom:
-                // Do nothing
-                break;
-            case eptShell:
-            case eptVSite:
-                {
-                    auto cores = myatoms[i].cores();
-                    GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
-                    copy_rvec(coords[cores[0]], coords[i]);
-                }
-                break;
-            default:
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
-                }
-            }
-        }
+        auto coords = experCoords(ei.getCoordinates(), myatoms);
         // We compute either interaction energies or normal energies for one experiment
         if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
         {
@@ -359,6 +357,37 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     }
 }
 
+static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
+                             const std::vector<gmx::RVec> &coords)
+{
+    std::vector<int> core;
+    for(size_t i = 0; i < myatoms.size(); i++)
+    {
+        if (myatoms[i].pType() == eptAtom)
+        {
+            core.push_back(i);
+        }
+    }
+    if (core.size() <= 2)
+    {
+        return true;
+    }
+    t_pbc *pbc    = nullptr;
+    real th_toler = 175; // Degrees
+    bool linear   = true;
+    for(size_t c = 2; c < core.size(); c++)
+    {
+        linear = linear && is_linear(coords[core[c-2]],
+                                     coords[core[c-1]], 
+                                     coords[core[c]], pbc, th_toler);
+        if (!linear)
+        {
+            break;
+        }
+    }
+    return linear;
+}
+
 immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
                                    const ForceField  *pd,
                                    missingParameters  missing)
@@ -380,9 +409,12 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     {
         topology_ = new Topology(*bonds());
     }
+    // Get the coordinates.
+    std::vector<gmx::RVec> coords = xOriginal();
+
     if (immStatus::OK == imm)
     {
-        imm = topology_->GenerateAtoms(pd, this,  &optimizedCoordinates_);
+        imm = topology_->GenerateAtoms(pd, this,  &coords);
     }
     if (immStatus::OK == imm)
     {
@@ -391,7 +423,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     // Create fragments before adding shells!
     if (immStatus::OK == imm)
     {
-        fraghandler_ = new FragmentHandler(pd, optimizedCoordinates_, topology_->atoms(),
+        fraghandler_ = new FragmentHandler(pd, coords, topology_->atoms(),
                                            bondsConst(), fragmentPtr(), missing);
         // Finally, extract frequencies etc.
         getHarmonics();
@@ -399,35 +431,11 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     
     if (immStatus::OK == imm)
     {
-        topology_->build(pd, &optimizedCoordinates_, 175.0, 5.0, missing);
+        topology_->build(pd, &coords, 175.0, 5.0, missing);
     }
+    auto myatoms = topology()->atoms();
     if (immStatus::OK == imm)
     {
-        qProps_.insert({ qType::Calc, QtypeProps(qType::Calc) });
-        qProps_.insert({ qType::Elec, QtypeProps(qType::Elec) });
-        qProps_.find(qType::Calc)->second.initializeMoments();
-    }
-    if (immStatus::OK == imm)
-    {
-        /* Center of charge */
-        auto atntot = 0;
-        rvec coc    = { 0 };
-        auto myatoms = topology_->atoms();
-        for (size_t i = 0; i < myatoms.size(); i++)
-        {
-            auto atn = myatoms[i].atomicNumber();
-            atntot  += atn;
-            for (auto m = 0; m < DIM; m++)
-            {
-                coc[m] += optimizedCoordinates_[i][m]*atn;
-            }
-        }
-        /* Center of charge */
-        svmul((1.0/atntot), coc, CenterOfCharge_);
-        for (auto &qp : qProps_)
-        {
-            qp.second.setCenterOfCharge(CenterOfCharge_);
-        }
         realAtoms_.clear();
         for(size_t i = 0; i < myatoms.size(); i++)
         {
@@ -456,38 +464,8 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
+    isLinear_ = isLinearMolecule(myatoms, coords);
     return imm;
-}
-
-bool ACTMol::linearMolecule() const
-{
-    const auto myatoms = topology_->atoms();
-    std::vector<int> core;
-    for(size_t i = 0; i < myatoms.size(); i++)
-    {
-        if (myatoms[i].pType() == eptAtom)
-        {
-            core.push_back(i);
-        }
-    }
-    if (core.size() <= 2)
-    {
-        return true;
-    }
-    t_pbc *pbc    = nullptr;
-    real th_toler = 175; // Degrees
-    bool linear   = true;
-    for(size_t c = 2; c < core.size(); c++)
-    {
-        linear = linear && is_linear(optimizedCoordinates_[core[c-2]],
-                                     optimizedCoordinates_[core[c-1]], 
-                                     optimizedCoordinates_[core[c]], pbc, th_toler);
-        if (!linear)
-        {
-            break;
-        }
-    }
-    return linear;
 }
 
 double ACTMol::bondOrder(int ai, int aj) const
@@ -640,9 +618,11 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     {
         (*myatoms)[i].setCharge(qold[i]);
     }
-    auto qcalc = qTypeProps(qType::Calc);
-    qcalc->setQ(atomsConst());
-    qcalc->setX(*coords);
+    // Loop over qtype properties
+    for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
+    {
+        qp->qPact()->setQandX(atomsConst(), *coords);
+    }
     return imm;
 }
 
@@ -708,9 +688,12 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                                       forces, &energies);
             if (haveShells())
             {
-                auto qcalc = qTypeProps(qType::Calc);
-                qcalc->setQ(*myatoms);
-                qcalc->setX(*coords);
+                for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
+                {
+                    auto qcalc = qp->qPact();
+                    qcalc->setQ(*myatoms);
+                    qcalc->setX(*coords);
+                }
             }
             
             return immStatus::OK;
@@ -782,56 +765,56 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             int    iter    = 0;
             
             // Init Qgresp should be called before this!
-            auto qcalc   = qTypeProps(qType::Calc);
-            GMX_RELEASE_ASSERT(qcalc != nullptr, "qType::Calc is not initialized");
-            double epsilonr;
-            if (!ffOption(*pd, InteractionType::COULOMB, 
-                          "epsilonr", &epsilonr))
+            for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
             {
-                epsilonr = 1;
-            }
-
-            qcalc->qgenResp()->optimizeCharges(epsilonr);
-            qcalc->qgenResp()->calcPot(epsilonr);
-            qcalc->copyRespQ();
-            
-            if (debug)
-            {
-                fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
-            }
-            do
-            {
-                auto qq = qcalc->charge();
-                GMX_RELEASE_ASSERT(myatoms->size() == qq.size(),
-                                   gmx::formatString("Number of particles (%lu) differs from number of charges (%lu)", 
-                                                     myatoms->size(),
-                                                     qq.size()).c_str());
-                for (size_t i = 0; i < myatoms->size(); i++)
+                auto qresp = qp->qgenResp();
+                if (qresp->nEsp() == 0)
                 {
-                    (*myatoms)[i].setCharge(qq[i]);
+                    continue;
                 }
-                // Copy charges to topology
-                chi2[cur] = forceComp->compute(pd, topology_, coords, forces, &energies);
-                qcalc->setX(*coords);
-                qcalc->qgenResp()->optimizeCharges(epsilonr);
-                qcalc->qgenResp()->calcPot(epsilonr);
-                qcalc->copyRespQ();
+                double epsilonr;
+                if (!ffOption(*pd, InteractionType::COULOMB, "epsilonr", &epsilonr))
+                {
+                    epsilonr = 1;
+                }
+                qresp->updateAtomCoords(*coords);                
+                qresp->optimizeCharges(epsilonr);
+                qresp->calcPot(epsilonr);
+                qp->copyRespQ();
+                    
                 if (debug)
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
                 }
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < qTolerance_) || !pd->polarizable();
-                cur       = 1-cur;
-                iter++;
+                do
+                {
+                    for (size_t i = 0; i < myatoms->size(); i++)
+                    {
+                        // TODO what about shells?
+                        (*myatoms)[i].setCharge(qresp->getCharge(i));
+                    }
+                    // Copy charges to topology
+                    chi2[cur] = forceComp->compute(pd, topology_, coords, forces, &energies);
+                    qresp->updateAtomCoords(*coords);
+                    qresp->optimizeCharges(epsilonr);
+                    qresp->calcPot(epsilonr);
+                    qp->copyRespQ();
+                    if (debug)
+                    {
+                        fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
+                    }
+                    converged = (fabs(chi2[cur] - chi2[1-cur]) < qTolerance_) || !pd->polarizable();
+                    cur       = 1-cur;
+                    iter++;
+                }
+                while ((!converged) && (iter < maxiter));
+                for (size_t i = 0; i < myatoms->size(); i++)
+                {
+                    (*myatoms)[i].setCharge(qresp->getCharge(i));
+                }
+                // Copy charges to fragments
+                fraghandler_->setCharges(*myatoms);
             }
-            while ((!converged) && (iter < maxiter));
-            auto qq = qcalc->charge();
-            for (size_t i = 0; i < myatoms->size(); i++)
-            {
-                (*myatoms)[i].setCharge(qq[i]);
-            }
-            // Copy charges to fragments
-            fraghandler_->setCharges(*myatoms);
         }
         break;
     case ChargeGenerationAlgorithm::EEM:
@@ -842,15 +825,6 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
         break;
     }
     return imm;
-}
-
-void ACTMol::CalcPolarizability(const ForceField    *pd,
-                                const ForceComputer *forceComp)
-{
-    std::vector<gmx::RVec> coordinates = xOriginal();
-    GMX_RELEASE_ASSERT(coordinates.size() == atomsConst().size(), "Mismatch in number of atoms");
-    forceComp->calcPolarizability(pd, topology_, &coordinates,
-                                  qTypeProps(qType::Calc));
 }
 
 void ACTMol::PrintConformation(const char                   *fn,
@@ -916,9 +890,9 @@ static void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
-void ACTMol::PrintTopology(const char                   *fn,
+void ACTMol::PrintTopology(const char                  *fn,
                           bool                          bVerbose,
-                          const ForceField                *pd,
+                          const ForceField             *pd,
                           const ForceComputer          *forceComp,
                           const CommunicationRecord    *cr,
                           const std::vector<gmx::RVec> &coords,
@@ -960,76 +934,75 @@ void ACTMol::PrintTopology(const char                   *fn,
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n",
              chargeTypeName(iChargeType).c_str());
     commercials.push_back(buf);
-    
-    auto qcalc = qTypeProps(qType::Calc);
-    auto qelec = qTypeProps(qType::Elec);
-    qcalc->setQ(atomsConst());
-    qcalc->setX(coords);
-    qcalc->initializeMoments();
-    qcalc->calcMoments();
-    
-    T = -1;
-    for(auto &mpo : mpoMultiPoles)
-    {
-        auto gp = qmProperty(mpo, T, JobType::OPT);
-        if (gp)
+
+    for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
+    {    
+        auto qcalc = qp->qPact();
+        auto qelec = qp->qPqm();
+        qcalc->setQ(atomsConst());
+        qcalc->setX(coords);
+        qcalc->initializeMoments();
+        qcalc->calcMoments();
+        
+        T = -1;
+        for(auto &mpo : mpoMultiPoles)
         {
-            auto vec = gp->getVector();
-            qelec->setMultipole(mpo, vec);
-            auto mymu = qelec->getMultipole(mpo);
-            commercials.push_back(gmx::formatString("%s %s (%s)\n",
-                                                    mylot.c_str(), mpo_name(mpo), gp->getUnit()));
-            for(auto &fmp : formatMultipole(mpo, mymu))
+            auto gp = qmProperty(mpo, T, JobType::OPT);
+            if (gp)
             {
-                commercials.push_back(fmp);
-            }
-            if (qcalc->hasMultipole(mpo))
-            {
-                auto mymu = qcalc->getMultipole(mpo);
-                commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
+                auto vec = gp->getVector();
+                qelec->setMultipole(mpo, vec);
+                auto mymu = qelec->getMultipole(mpo);
+                commercials.push_back(gmx::formatString("%s %s (%s)\n",
+                                                        mylot.c_str(), mpo_name(mpo), gp->getUnit()));
                 for(auto &fmp : formatMultipole(mpo, mymu))
                 {
                     commercials.push_back(fmp);
                 }
+                if (qcalc->hasMultipole(mpo))
+                {
+                    auto mymu = qcalc->getMultipole(mpo);
+                    commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
+                    for(auto &fmp : formatMultipole(mpo, mymu))
+                    {
+                        commercials.push_back(fmp);
+                    }
+                }
             }
         }
-    }
-
-    if (nullptr != cr)
-    {
-        CalcPolarizability(pd, forceComp);
-        auto qcalc = qTypeProps(qType::Calc);
-        auto acalc = qcalc->polarizabilityTensor();
-        std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
-                                   acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
-        auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
-        add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
-        
-        snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n",
-                 qcalc->isotropicPolarizability());
-        commercials.push_back(buf);
-        
-        snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n",
-                 qcalc->anisotropicPolarizability());
-        commercials.push_back(buf);
-        
-        T = -1;
-        auto gp = qmProperty(MolPropObservable::POLARIZABILITY,
-                             T, JobType::OPT);
-        if (gp)
+    
+        if (nullptr != cr)
         {
-            auto qelec = qTypeProps(qType::Elec);
-            auto aelec = qelec->polarizabilityTensor();
-            std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
-                                       aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
-            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-            add_tensor(&commercials, buf, unit, ae);
-            snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
-                     mylot.c_str(), qelec->isotropicPolarizability());
+            qcalc->calcPolarizability(pd, topology(), forceComp);
+            auto acalc = qcalc->polarizabilityTensor();
+            std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
+                                       acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
+            auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
+            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
+            
+            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n",
+                     qcalc->isotropicPolarizability());
             commercials.push_back(buf);
-            snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
-                     mylot.c_str(), qelec->anisotropicPolarizability());
+        
+            snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n",
+                     qcalc->anisotropicPolarizability());
             commercials.push_back(buf);
+        
+            T = -1;
+            if (qelec->hasPolarizability())
+            {
+                auto aelec = qelec->polarizabilityTensor();
+                std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
+                                           aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
+                snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
+                add_tensor(&commercials, buf, unit, ae);
+                snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
+                         mylot.c_str(), qelec->isotropicPolarizability());
+                commercials.push_back(buf);
+                snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
+                         mylot.c_str(), qelec->anisotropicPolarizability());
+                commercials.push_back(buf);
+            }
         }
     }
 
@@ -1084,130 +1057,79 @@ void ACTMol::GenerateCube(const ForceField             *pd,
 
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
-        char     *act_version = (char *)"act v0.99b";
-        auto qc = qProps_.find(qType::Calc);
-        GMX_RELEASE_ASSERT(qc != qProps_.end(), "Cannot find alexandria charge information");
-        qc->second.setQ(atomsConst());
-        qc->second.setX(coords);
-        double epsilonr;
+        char   *act_version = (char *)"act v0.99b";
+        double  epsilonr;
         if (!ffOption(*pd, InteractionType::COULOMB, 
                       "epsilonr", &epsilonr))
         {
             epsilonr = 1;
         }
-        qc->second.qgenResp()->calcPot(epsilonr);
-        qc->second.qgenResp()->potcomp(pcfn, atomsConst(),
-                                       as_rvec_array(coords.data()),
-                                       pdbdifffn, oenv);
-
-        /* This has to be done before the grid is f*cked up by
-           writing a cube file */
-        QgenResp qCalc(*qc->second.qgenResp());
-        QgenResp grref(*qc->second.qgenResp());
-
-        if (reffn)
+        for(auto qc = qProps_.begin(); qc < qProps_.end(); ++qc)
         {
-            grref.setAtomInfo(atomsConst(), pd, coords, totalCharge());
-            grref.setAtomSymmetry(symmetric_charges_);
-            grref.readCube(reffn, FALSE);
-        }
-        else
-        {
-            qCalc.makeGrid(spacing, border, coords);
-        }
-        if (rhofn)
-        {
-            std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
-                                                act_version,
-                                                chargeTypeName(iChargeType).c_str());
-            qCalc.calcRho();
-            qCalc.writeRho(rhofn, buf, oenv);
-        }
-        if (potfn)
-        {
-            std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
-                                                act_version,
-                                                chargeTypeName(iChargeType).c_str());
-            qCalc.calcPot(epsilonr);
-            qCalc.writeCube(potfn, buf, oenv);
-        }
-        if (hisfn)
-        {
-            std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
-                                                act_version,
-                                                chargeTypeName(iChargeType).c_str());
-            qCalc.writeHisto(hisfn, buf, oenv);
-        }
-        if (difffn || diffhistfn)
-        {
-            std::string buf = gmx::formatString("Potential difference generated by %s based on %s charges",
-                                                act_version,
-                                                chargeTypeName(iChargeType).c_str());
-
-            qCalc.writeDiffCube(&grref, difffn, diffhistfn, buf, oenv, 0);
-        }
-    }
-}
-
-void ACTMol::calcEspRms(const ForceField             *pd,
-                        const std::vector<gmx::RVec> *coords)
-{
-    int   natoms  = 0;
-    double epsilonr;
-    if (!ffOption(*pd, InteractionType::COULOMB, 
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    auto &myatoms = atomsConst();
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        if (myatoms[i].pType() == eptAtom)
-        {
-            natoms++;
-        }
-    }
-    std::vector<gmx::RVec> myx(nRealAtoms());
-    std::vector<ActAtom> realAtoms;
-    size_t ii = 0;
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        if (myatoms[i].pType() == eptAtom)
-        {
-            realAtoms.push_back(myatoms[i]);
-            copy_rvec((*coords)[i], myx[ii]);
-            ii++;
-        }
-    }
-    
-    auto qcalc   = qTypeProps(qType::Calc);
-    auto qgrcalc = qcalc->qgenResp();
-    for(auto &i : qProps_)
-    {
-        auto qi = i.first;
-        if (qType::Calc == qi)
-        {
-            qgrcalc->updateAtomCharges(atomsConst());
-            qgrcalc->updateAtomCoords(*coords);
-            qgrcalc->calcPot(epsilonr);
-        }
-        else if (qType::Elec != qi)
-        {
-            QgenResp *qgr = i.second.qgenResp();
-            qgr->setChargeType(ChargeType::Point);
-            qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
-            qgr->updateAtomCharges(i.second.charge());
-            for (size_t j = realAtoms.size(); j < qgrcalc->nEsp(); j++)
+            auto qref  = qc->qPqmConst();
+            auto qresp = qc->qgenResp();
+            if (0 < qresp->nEsp())
             {
-                auto &ep = qgrcalc->espPoint(j);
-                auto &r  = ep.esp();
-                qgr->addEspPoint(r[XX], r[YY], r[ZZ], ep.v());
+                // We have ESP data!
+                auto qcalc = qc->qPact();
+                // This code will overwrite files if there are more than one ESP data set
+                qcalc->setQ(atomsConst());
+                qcalc->setX(coords);
+                qresp->calcPot(epsilonr);
+                qresp->potcomp(pcfn, atomsConst(), as_rvec_array(coords.data()), pdbdifffn, oenv);
+            
+                /* This has to be done before the grid is f*cked up by
+                   writing a cube file */
+                QgenResp qCalc(*qresp);
+                QgenResp grref(*qresp);
+            
+                if (reffn)
+                {
+                    grref.setAtomInfo(atomsConst(), pd, totalCharge());
+                    grref.updateAtomCoords(coords);
+                    grref.setAtomSymmetry(symmetric_charges_);
+                    grref.readCube(reffn, FALSE);
+                }
+                else
+                {
+                    qCalc.makeGrid(spacing, border, coords);
+                }
+                if (rhofn)
+                {
+                    std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
+                                                        act_version,
+                                                        chargeTypeName(iChargeType).c_str());
+                    qCalc.calcRho();
+                    qCalc.writeRho(rhofn, buf, oenv);
+                }
+                if (potfn)
+                {
+                    std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
+                                                        act_version,
+                                                        chargeTypeName(iChargeType).c_str());
+                    qCalc.calcPot(epsilonr);
+                    qCalc.writeCube(potfn, buf, oenv);
+                }
+                if (hisfn)
+                {
+                    std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
+                                                        act_version,
+                                                        chargeTypeName(iChargeType).c_str());
+                    qCalc.writeHisto(hisfn, buf, oenv);
+                }
+                if (difffn || diffhistfn)
+                {
+                    std::string buf = gmx::formatString("Potential difference generated by %s based on %s charges",
+                                                        act_version,
+                                                        chargeTypeName(iChargeType).c_str());
+                    
+                    qCalc.writeDiffCube(&grref, difffn, diffhistfn, buf, oenv, 0);
+                }
             }
-            qgr->calcPot(epsilonr);
         }
     }
 }
-
+        
 void ACTMol::getHarmonics()
 {
     for(auto &mpo : { MolPropObservable::FREQUENCY, 
@@ -1239,10 +1161,12 @@ void ACTMol::getHarmonics()
     }
 }
 
-immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                             double                                      T)
+immStatus ACTMol::getExpProps(const ForceField                           *pd,
+                              const std::map<MolPropObservable, iqmType> &iqm,
+                              double                                      T,
+                              real                                        watoms,
+                              int                                         maxESP)
 {
-    int                 natom = 0;
     std::vector<double> vec;
     std::string         myref;
     std::string         mylot;
@@ -1251,98 +1175,119 @@ immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     auto &myatoms = atomsConst();
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
-    // Make a copy of the coordinates without shells
-    std::vector<gmx::RVec> xatom(myatoms.size());
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        if (myatoms[i].pType() == eptAtom ||
-            myatoms[i].pType() == eptNucleus)
-        {
-            copy_rvec(xOriginal()[i], xatom[natom]);
-            natom++;
-        }
-    }
-    xatom.resize(natom);
     bool foundNothing = true;
-    for (const auto &miq : iqm)
+    for (const auto &myexp : experimentConst())
     {
-        auto mpo = miq.first;
-        switch (mpo)
+        bool     qprop = false;
+        ACTQprop actq;
+        auto     qelec = actq.qPqm();
+        auto     qcalc = actq.qPact();
+        auto     props = myexp.propertiesConst();
+        auto     xatom = experCoords(myexp.getCoordinates(), topology_->atoms());
+        for (auto prop : props)
         {
-        case MolPropObservable::CHARGE:
-        case MolPropObservable::POTENTIAL:
+            // Check whether this property is in the "Wanted" list
+            auto iter = iqm.find(prop.first);
+            if (iqm.end() == iter)
             {
-                std::string conf;
-                auto ei = findExperimentConst(JobType::OPT);
-                if (!ei)
+                continue;
+            }
+            switch (prop.first)
+            {
+            case MolPropObservable::CHARGE:
                 {
-                    ei = findExperimentConst(JobType::TOPOLOGY);
-                }
-                if (ei)
-                {
-                    for(auto &i : qTypes())
+                    std::string         reference;
+                    std::string         lot;
+                    std::vector<double> q;
+                    if (myexp.getCharges(&q, qType::Calc, &reference, &lot))
                     {
-                        qType               qi = i.first;
-                        std::string         reference;
-                        std::string         lot;
-                        std::vector<double> q;
-                        if (ei->getCharges(&q, qi, &reference, &lot))
+                        qelec->setQandX(q, xatom);
+                        qelec->calcMoments();
+                        qcalc->setQandX(q, xatom);
+                        qcalc->calcMoments();
+                        qprop = true;
+                    }
+                    break;
+                }
+            case MolPropObservable::POTENTIAL:
+                {
+                    auto qgr         = actq.qgenResp();
+                    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
+                    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
+                    qgr->setChargeType(iChargeType);
+                    qgr->setAtomInfo(atomsConst(), pd, totalCharge());
+                    qgr->updateAtomCoords(xatom);
+                    qgr->setAtomSymmetry(symmetric_charges_);
+                    qgr->summary(debug);
+                    int natoms = nRealAtoms();
+                        
+                    std::random_device               rd;
+                    std::mt19937                     gen(rd());  
+                    std::uniform_real_distribution<> uniform(0.0, 1.0);
+                    double                           cutoff = 0.01*maxESP;
+
+                    auto eee = prop.second;
+                    for (size_t k = 0; k < eee.size(); k++)
+                    {
+                        auto esp = static_cast<const ElectrostaticPotential *>(eee[k]);
+                        auto xyz = esp->xyz();
+                        auto V   = esp->V();
+                        for(size_t ll = 0; ll < V.size(); ll++)
                         {
-                            auto qp = qProps_.find(qi);
-                            if (qp == qProps_.end())
+                            auto val = uniform(gen);
+                            if ((ll >= static_cast<size_t>(natoms) || watoms > 0) && val <= cutoff)
                             {
-                                qProps_.insert(std::pair<qType, QtypeProps>(qi, QtypeProps(qi)));
-                                qp = qProps_.find(qi);
-                                GMX_RELEASE_ASSERT(qp != qProps_.end(), "Could not insert a new QtypeProps in qProps_");
+                                qgr->addEspPoint(xyz[ll][XX], xyz[ll][YY], xyz[ll][ZZ], V[ll]);
                             }
-                            qp->second.setQ(q);
-                            qp->second.setX(xatom);
-                            qp->second.calcMoments();
                         }
                     }
-                    foundNothing = false;
+                    qprop = true;
                 }
-            }
-            break;
-        case MolPropObservable::DELTAE0:
-        case MolPropObservable::DHFORM:
-        case MolPropObservable::DGFORM:
-        case MolPropObservable::ZPE:
-            {
-                auto gp = static_cast<const MolecularEnergy *>(qmProperty(mpo, T, JobType::OPT));
-                if (gp)
+                break;
+            case MolPropObservable::DIPOLE:
+            case MolPropObservable::QUADRUPOLE:
+            case MolPropObservable::OCTUPOLE:
+            case MolPropObservable::HEXADECAPOLE:
                 {
-                    energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
-                    foundNothing = false;
+                    auto gp = static_cast<const MolecularMultipole *>(qmProperty(prop.first, T, JobType::OPT));
+                    if (gp)
+                    {
+                        qelec->setMultipole(prop.first, gp->getVector());
+                        qprop = true;
+                    }
                 }
-            }
-            break;
-        case MolPropObservable::DIPOLE:
-        case MolPropObservable::QUADRUPOLE:
-        case MolPropObservable::OCTUPOLE:
-        case MolPropObservable::HEXADECAPOLE:
-            {
-                auto gp = static_cast<const MolecularMultipole *>(qmProperty(mpo, T, JobType::OPT));
-                if (gp)
+                break;
+            case MolPropObservable::POLARIZABILITY:
                 {
-                    qProps_.find(qType::Elec)->second.setMultipole(mpo, gp->getVector());
-                    foundNothing = false; 
+                    auto gp = static_cast<const MolecularPolarizability *>(qmProperty(prop.first, T, JobType::OPT));
+                    if (gp)
+                    {
+                        qelec->setPolarizabilityTensor(gp->getTensor());
+                        qprop = true;
+                    }
                 }
-            }
-            break;
-        case MolPropObservable::POLARIZABILITY:
-            {
-                auto gp = static_cast<const MolecularPolarizability *>(qmProperty(mpo, T, JobType::OPT));
-                if (gp)
+                break;
+            case MolPropObservable::DELTAE0:
+            case MolPropObservable::DHFORM:
+            case MolPropObservable::DGFORM:
+            case MolPropObservable::ZPE:
                 {
-                    auto qelec = qTypeProps(qType::Elec);
-                    qelec->setPolarizabilityTensor(gp->getTensor());
-                    foundNothing = false;
+                    auto gp = static_cast<const MolecularEnergy *>(qmProperty(prop.first, T, JobType::OPT));
+                    if (gp)
+                    {
+                        energy_.insert(std::pair<MolPropObservable, double>(prop.first, gp->getValue()));
+                        foundNothing = false;
+                    }
                 }
+                break;
+            default:
+                break;
             }
-            break;
-        default:
-            break;
+        }
+        if (qprop)
+        {
+            qProps_.push_back(std::move(actq));
+            foundNothing = false;
         }
     }
     if (foundNothing)
@@ -1350,97 +1295,6 @@ immStatus ACTMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         imm = immStatus::NoData;
     }
     return imm;
-}
-
-void ACTMol::initQgenResp(const ForceField             *pd,
-                          const std::vector<gmx::RVec> &coords,
-                          real                          watoms,
-                          int                           maxESP)
-{
-    std::string        mylot;
-    auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
-    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
-    auto qp          = qTypeProps(qType::Calc);
-    QgenResp *qgr = qp->qgenResp();
-    qgr->setChargeType(iChargeType);
-    qgr->setAtomInfo(atomsConst(), pd, coords, totalCharge());
-    qp->setQ(atomsConst());
-    qp->setX(coords);
-    qgr->setAtomSymmetry(symmetric_charges_);
-    qgr->summary(debug);
-
-    int natoms = nRealAtoms();
-
-    std::random_device               rd;
-    std::mt19937                     gen(rd());  
-    std::uniform_real_distribution<> uniform(0.0, 1.0);
-    double                           cutoff = 0.01*maxESP;
- 
-    auto ci = findExperimentConst(JobType::OPT);
-    if (ci)
-    {
-        int iesp = 0;
-        for (auto &epi : ci->electrostaticPotentialConst())
-        {
-            auto val = uniform(gen);
-            if ((iesp >= natoms || watoms > 0) && val <= cutoff)
-            {
-                auto xu = epi.getXYZunit();
-                auto vu = epi.getVunit();
-                qgr->addEspPoint(convertToGromacs(epi.getX(), xu),
-                                 convertToGromacs(epi.getY(), xu),
-                                 convertToGromacs(epi.getZ(), xu),
-                                 convertToGromacs(epi.getV(), vu));
-            }
-            iesp++;
-        }
-        if (debug)
-        {
-            fprintf(debug, "%s added %zu out of %zu ESP points to the RESP structure.\n",
-                    getMolname().c_str(), qgr->nEsp(),
-                    ci->electrostaticPotentialConst().size());
-        }
-    }
-}
-
-QtypeProps *ACTMol::qTypeProps(qType qt)
-{
-    auto qp = qProps_.find(qt);
-    if (qp != qProps_.end())
-    {
-        return &qp->second;
-    }
-    return nullptr;
-}
-
-const QtypeProps *ACTMol::qTypeProps(qType qt) const
-{
-    const auto qp = qProps_.find(qt);
-    if (qp != qProps_.end())
-    {
-        return &qp->second;
-    }
-    return nullptr;
-}
-
-void ACTMol::plotEspCorrelation(const ForceField             *pd,
-                                const std::vector<gmx::RVec> &coords,
-                                const char                   *espcorr,
-                                const gmx_output_env_t       *oenv,
-                                const ForceComputer          *forceComp)
-{
-    if (espcorr && oenv)
-    {
-        auto qgr   = qTypeProps(qType::Calc)->qgenResp();
-        qgr->updateAtomCharges(atomsConst());
-        qgr->updateAtomCoords(coords);
-        std::vector<gmx::RVec> forces(atomsConst().size());
-        std::map<InteractionType, double> energies;
-        (void) forceComp->compute(pd, topology_, &optimizedCoordinates_,
-                                  &forces, &energies);
-        qgr->calcPot(1.0);
-        qgr->plotLsq(oenv, espcorr);
-    }
 }
 
 CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const

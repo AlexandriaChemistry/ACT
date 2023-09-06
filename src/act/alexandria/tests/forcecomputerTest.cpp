@@ -105,19 +105,22 @@ protected:
             }
             if (testPolarizability)
             {
-                auto qCalc = mp.qTypeProps(qType::Calc);
-                qCalc->initializeMoments();
-                fcomp->calcPolarizability(pd, mp.topology(), &coordinates, qCalc);
-                auto alpha = qCalc->polarizabilityTensor();
-                const char *xyz[DIM] = { "X", "Y", "Z" };
-                
-                for(int m = 0; m < DIM; m++)
+                for(auto qp = mp.qProps()->begin(); qp < mp.qProps()->end(); ++qp)
                 {
-                    for(int n = 0; n < DIM; n++)
+                    auto qCalc = qp->qPact();
+                    qCalc->initializeMoments();
+                    qCalc->calcPolarizability(pd, mp.topology(), fcomp);
+                    auto alpha = qCalc->polarizabilityTensor();
+                    const char *xyz[DIM] = { "X", "Y", "Z" };
+                
+                    for(int m = 0; m < DIM; m++)
                     {
-                        std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
-                        checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
-                                           label.c_str());
+                        for(int n = 0; n < DIM; n++)
+                        {
+                            std::string label = gmx::formatString("alpha[%s][%s]", xyz[m], xyz[n]);
+                            checker_.checkReal(convertFromGromacs(alpha[m][n], "A^3"),
+                                               label.c_str());
+                        }
                     }
                 }
             }

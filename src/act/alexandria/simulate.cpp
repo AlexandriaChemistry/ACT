@@ -228,19 +228,23 @@ int simulate(int argc, char *argv[])
         {
             // Make a copy since it maybe changed
             auto xx    = coords;
-            auto qCalc = actmol.qTypeProps(qType::Calc);
-            qCalc->initializeMoments();
-            forceComp->calcPolarizability(&pd, actmol.topology(), &xx, qCalc);
-            auto alpha = qCalc->polarizabilityTensor();
-            std::string unit("A^3");
-            double fac = convertFromGromacs(1, unit);
-            JsonTree poltree("Polarizability");
-            
-            poltree.addValueUnit("XX", gmx_ftoa(fac*alpha[XX][XX]), unit);
-            poltree.addValueUnit("YY", gmx_ftoa(fac*alpha[YY][YY]), unit);
-            poltree.addValueUnit("ZZ", gmx_ftoa(fac*alpha[ZZ][ZZ]), unit);
-            poltree.addValueUnit("Average", gmx_ftoa(fac*qCalc->isotropicPolarizability()), unit);
-            jtree.addObject(poltree);
+            auto qprops = actmol.qProps();
+            for(auto qp = qprops->begin(); qp < qprops->end(); ++qp)
+            {
+                auto qCalc = qp->qPact();
+                qCalc->initializeMoments();
+                qCalc->calcPolarizability(&pd, actmol.topology(), forceComp);
+                auto alpha = qCalc->polarizabilityTensor();
+                std::string unit("A^3");
+                double fac = convertFromGromacs(1, unit);
+                JsonTree poltree("Polarizability");
+                
+                poltree.addValueUnit("XX", gmx_ftoa(fac*alpha[XX][XX]), unit);
+                poltree.addValueUnit("YY", gmx_ftoa(fac*alpha[YY][YY]), unit);
+                poltree.addValueUnit("ZZ", gmx_ftoa(fac*alpha[ZZ][ZZ]), unit);
+                poltree.addValueUnit("Average", gmx_ftoa(fac*qCalc->isotropicPolarizability()), unit);
+                jtree.addObject(poltree);
+            }
         }
 
         if (debug)

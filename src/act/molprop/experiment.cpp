@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -232,16 +232,6 @@ int Experiment::Merge(const Experiment *src)
         }
         AddAtom(caa);
     }
-
-    for (auto &mep : src->electrostaticPotentialConst())
-    {
-        alexandria::ElectrostaticPotential ep(mep.getXYZunit(), mep.getVunit(),
-                                              mep.getEspid(),
-                                              mep.getX(), mep.getY(),
-                                              mep.getZ(), mep.getV());
-        AddPotential(ep);
-    }
-
     return nwarn;
 }
 
@@ -363,20 +353,6 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
             }
         }
         
-        //! Send Potentials
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send_int(dest, electrostaticPotentialConst().size());
-            for (auto &epi : electrostaticPotentialConst())
-            {
-                cs = epi.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
         //! Send Atoms
         if (CommunicationStatus::OK == cs)
         {
@@ -420,113 +396,120 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         std::string jobtype(jt);
         cr->bcast(&jobtype, comm);
         jobtype_  = string2jobType(jobtype);
-        //! BroadCast
-        int nprop = propertiesConst().size();
+        // BroadCast number of properties
+        int nprop = property_.size();
         cr->bcast(&nprop, comm);
-        if (cr->rank() == root)
+        if (debug && cr->rank() == root)
         {
-            for (auto &p : *properties())
+            for (auto &p : property_)
             {
                 std::string mpo_str(mpo_name(p.first));
-                cr->bcast(&mpo_str, comm);
-                if (!p.second.empty())
-                {
-                    for(auto &gp : p.second)
-                    {
-                        gp->BroadCast(cr, root, comm);
-                    }
-                }
+                fprintf(debug, "Will broadcast mpo_name '%s'\n", mpo_str.c_str());
             }
         }
-        else
+        auto thisProp = property_.begin();
+        for(int n = 0; n < nprop; n++)
         {
-            for (int n = 0; n < nprop; n++)
+            int np = 0;
+            if (root == cr->rank())
             {
-                std::string mpo_str;
-                cr->bcast(&mpo_str, comm);
-                MolPropObservable mpo;
-                if (!stringToMolPropObservable(mpo_str, &mpo))
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown string %s for a MolPropObservable", mpo_str.c_str()).c_str()));
-                }
+                np = thisProp->second.size();
+            }
+            cr->bcast(&np, comm);
+            if (0 == np)
+            {
+                continue;
+            }
+            std::string mpo_str;
+            if (root == cr->rank())
+            {
+                mpo_str = mpo_name(thisProp->first);
+            }
+            cr->bcast(&mpo_str, comm);
+            if (debug && root != cr->rank())
+            {
+                fprintf(debug, "Received broadcast string '%s' n = %d\n", mpo_str.c_str(), n);
+            }
+            MolPropObservable mpo;
+            if (!stringToMolPropObservable(mpo_str, &mpo))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown string '%s' for a MolPropObservable", mpo_str.c_str()).c_str()));
+            }
+            for(int propid = 0; propid < np; propid++)
+            {
                 GenericProperty *gp = nullptr;
-                switch (mpo)
+                if (root == cr->rank())
                 {
-                case MolPropObservable::DIPOLE:
-                case MolPropObservable::QUADRUPOLE:
-                case MolPropObservable::OCTUPOLE:
-                case MolPropObservable::HEXADECAPOLE:
+                    gp = thisProp->second[propid];
+                }
+                else
+                {
+                    switch (mpo)
                     {
-                       gp = new MolecularMultipole;
-                       break;
+                    case MolPropObservable::DIPOLE:
+                    case MolPropObservable::QUADRUPOLE:
+                    case MolPropObservable::OCTUPOLE:
+                    case MolPropObservable::HEXADECAPOLE:
+                        {
+                            gp = new MolecularMultipole;
+                            break;
+                        }
+                    case MolPropObservable::POLARIZABILITY:
+                        {
+                            gp = new MolecularPolarizability;
+                            break;
                     }
-                case MolPropObservable::POLARIZABILITY:
-                    {
-                        gp = new MolecularPolarizability;
-                        break;
-                    }
-                case MolPropObservable::FREQUENCY:
-                case MolPropObservable::INTENSITY:
-                    {
-                        gp = new Harmonics;
-                        break;
-                    }
-                case MolPropObservable::HF:
-                case MolPropObservable::DELTAE0:
-                case MolPropObservable::INTERACTIONENERGY:
-                case MolPropObservable::DHFORM:
-                case MolPropObservable::DGFORM:
-                case MolPropObservable::DSFORM:
-                case MolPropObservable::ENTROPY:
-                case MolPropObservable::STRANS:
-                case MolPropObservable::SROT:
-                case MolPropObservable::SVIB:
-                case MolPropObservable::CP:
-                case MolPropObservable::CV:
-                case MolPropObservable::ZPE:
-                    {
-                        gp = new MolecularEnergy;
-                        break;
-                    }
-                case MolPropObservable::POTENTIAL:
-                case MolPropObservable::CHARGE:
-                case MolPropObservable::COORDINATES:
-                    {
-                        gmx_fatal(FARGS, "Don't know what to do...");
+                    case MolPropObservable::FREQUENCY:
+                    case MolPropObservable::INTENSITY:
+                        {
+                            gp = new Harmonics;
+                            break;
+                        }
+                    case MolPropObservable::HF:
+                    case MolPropObservable::DELTAE0:
+                    case MolPropObservable::INTERACTIONENERGY:
+                    case MolPropObservable::DHFORM:
+                    case MolPropObservable::DGFORM:
+                    case MolPropObservable::DSFORM:
+                    case MolPropObservable::ENTROPY:
+                    case MolPropObservable::STRANS:
+                    case MolPropObservable::SROT:
+                    case MolPropObservable::SVIB:
+                    case MolPropObservable::CP:
+                    case MolPropObservable::CV:
+                    case MolPropObservable::ZPE:
+                        {
+                            gp = new MolecularEnergy;
+                            break;
+                        }
+                    case MolPropObservable::POTENTIAL:
+                        {
+                            gp = new ElectrostaticPotential;
+                            break;
+                        }
+                    case MolPropObservable::CHARGE:
+                    case MolPropObservable::COORDINATES:
+                        {
+                            gmx_fatal(FARGS, "Don't know what to do...");
+                        }
                     }
                 }
                 if (gp)
                 {
                     gp->BroadCast(cr, root, comm);
-                    addProperty(mpo, gp);
+                    if (root != cr->rank())
+                    {
+                        addProperty(mpo, gp);
+                    }
                 }
             }
-        } 
+            // Find next property to broadcast from the root.
+            if (root == cr->rank() && thisProp != property_.end())
+            {
+                thisProp++;
+            }
+        }
         
-        //! Receive Potentials
-        int Npotential = potential_.size();
-        cr->bcast(&Npotential, comm);
-        if (cr->rank() == root)
-        {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
-            {
-                cs = potential_[n].BroadCast(cr, root, comm);
-            }
-        }
-        else
-        {
-            potential_.clear();
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
-            {
-                ElectrostaticPotential ep;
-                cs = ep.BroadCast(cr, root, comm);
-                if (CommunicationStatus::OK == cs)
-                {
-                    AddPotential(ep);
-                }
-            }
-        }
-
         //! Broadcast Atoms
         int Natom = catom_.size();
         cr->bcast(&Natom, comm);
@@ -627,6 +610,10 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         break;
                     }
                 case MolPropObservable::POTENTIAL:
+                    {
+                        gp = new ElectrostaticPotential;
+                        break;
+                    }
                 case MolPropObservable::CHARGE:
                 case MolPropObservable::COORDINATES:
                     {
@@ -642,18 +629,6 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
             }
         } 
         
-        //! Receive Potentials
-        int Npotential = cr->recv_int(src);
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
-        {
-            ElectrostaticPotential ep;
-            cs = ep.Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                AddPotential(ep);
-            }
-        }
-
         //! Receive Atoms
         int Natom = cr->recv_int(src);
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)

@@ -134,18 +134,22 @@ class QgenResp
          * to what was there previously if anything. 
          * \param[in] atoms  The ACT atoms structure
          * \param[in] pd     The force field
-         * \param[in] x      The coordinates
          * \param[in] qtotal Total charge of the compound, needed when
          *                   generating charges
          */
         void setAtomInfo(const std::vector<ActAtom>   &atoms,
-                         const ForceField                *pd,
-                         const std::vector<gmx::RVec> &x,
+                         const ForceField             *pd,
                          const int                     qtotal);
 
         int natoms() const { return nAtom_; }
         
+        /*! \brief Copy input coordinates to internal ones
+         * \param[in] x Input coordinates
+         */
         void updateAtomCoords(const std::vector<gmx::RVec> &x);
+
+        //! \return internal coordinates
+        const std::vector<gmx::RVec> &coords() const { return x_; }
 
         /*! \brief Update the charges
          * \param[in] q Vector containing new charges

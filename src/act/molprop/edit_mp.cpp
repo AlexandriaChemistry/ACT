@@ -81,8 +81,10 @@ static void fetch_charges(const ForceField                            *pd,
             continue;
         }
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-
-        actmol.initQgenResp(pd, coords, 0.0, 100);
+        std::map<MolPropObservable, iqmType> iqm = {
+            { MolPropObservable::CHARGE, iqmType::QM }
+        };
+        actmol.getExpProps(pd, iqm, 0.0, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
@@ -122,12 +124,12 @@ static void fetch_charges(const ForceField                            *pd,
     }
 }
 
-static bool dump_molecule(FILE                                        *fp,
-                          ForceComputer                               *forceComp,
-                          stringCount                                 *atomTypeCount,
-                          stringCount                                 *bccTypeCount,
-                          const ForceField                            &pd,
-                          MolProp                                     *mp)
+static bool dump_molecule(FILE              *fp,
+                          ForceComputer     *forceComp,
+                          stringCount       *atomTypeCount,
+                          stringCount       *bccTypeCount,
+                          const ForceField  &pd,
+                          MolProp           *mp)
 {
     alexandria::ACTMol actmol;
     actmol.Merge(mp);
@@ -135,8 +137,12 @@ static bool dump_molecule(FILE                                        *fp,
     if (immStatus::OK == imm)
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
+        // TODO check whether this is needed.
         //actmol.symmetrizeCharges(pd, qsymm, nullptr);
-        actmol.initQgenResp(&pd, coords, 0.0, 100);
+        std::map<MolPropObservable, iqmType> iqm = {
+            { MolPropObservable::CHARGE, iqmType::QM }
+        };
+        actmol.getExpProps(&pd, iqm, 0.0, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
@@ -165,7 +171,7 @@ static bool dump_molecule(FILE                                        *fp,
         {
             f.dump(fp);
         }
-        actmol.getExpProps(iqm, -1);
+        actmol.getExpProps(&pd, iqm, -1);
         actmol.Dump(fp);
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
@@ -384,33 +390,37 @@ static void check_mp(FILE                 *mylog,
                 }
                 
                 auto Xcalc = ci.getCoordinates();
-                auto Esp   = ci.electrostaticPotentialConst();
-                if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
+                gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
+                if (gp)
                 {
-                    double msd = 0;
-                    auto xunit = Esp[0].getXYZunit();
-                    double fac = convertToGromacs(1.0, xunit);
-                    for(size_t i = 0; i < Xcalc.size(); i++)
+                    auto ep  = static_cast<const ElectrostaticPotential *>(gp);
+                    auto xyz = ep->xyz();
+                    if (xyz.size() >= Xcalc.size() && Xcalc.size() > 1)
                     {
-                        msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
-                                gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
-                                gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
-                    }
-                    double rmsd = std::sqrt(msd/Xcalc.size());
-                    if (rmsd != 0)
-                    {
-                        fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
-                                m->getMolname().c_str(), rmsd);
-                    }
-                    if (rmsd > 1e-3)
-                    {
+                        double msd = 0;
+                        auto xunit = ep->getXYZunit();
+                        double fac = convertToGromacs(1.0, xunit);
                         for(size_t i = 0; i < Xcalc.size(); i++)
                         {
-                            fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                                    static_cast<int>(i+1),
-                                    Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
-                                    fac*Esp[i].getX(), fac*Esp[i].getY(),
-                                    fac*Esp[i].getZ());
+                            msd += (gmx::square(Xcalc[i][XX]-fac*xyz[i][XX])+
+                                    gmx::square(Xcalc[i][YY]-fac*xyz[i][YY])+
+                                    gmx::square(Xcalc[i][ZZ]-fac*xyz[i][ZZ]));
+                        }
+                        double rmsd = std::sqrt(msd/Xcalc.size());
+                        if (rmsd != 0)
+                        {
+                            fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
+                                    m->getMolname().c_str(), rmsd);
+                        }
+                        if (rmsd > 1e-3)
+                        {
+                            for(size_t i = 0; i < Xcalc.size(); i++)
+                            {
+                                fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                                        static_cast<int>(i+1),
+                                        Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
+                                        fac*xyz[i][XX], fac*xyz[i][YY], fac*xyz[i][ZZ]);
+                            }
                         }
                     }
                 }
@@ -425,8 +435,8 @@ static void check_mp(FILE                 *mylog,
                 }
             }
             
-        if (dump_molecule(mylog, forceComp, &atomTypeCount,
-                          &bccTypeCount, pd, &(*m)))
+            if (dump_molecule(mylog, forceComp, &atomTypeCount,
+                              &bccTypeCount, pd, &(*m)))
         {
             numberOk++;
         }

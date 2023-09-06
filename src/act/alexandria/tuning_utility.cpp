@@ -200,127 +200,107 @@ static void print_polarizability(FILE              *fp,
     double fac = convertFromGromacs(1.0, "Angstrom3");
     if (!calc_name.empty())
     {
-        auto qelec = mol->qTypeProps(qType::Elec);
-        tensor aelec;
-        if (qelec->hasPolarizability())
+        auto qprops = mol->qPropsConst();
+        for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
         {
-            copy_mat(qelec->polarizabilityTensor(), aelec);
-            print_one_alpha(fp, "Electronic", aelec);
-        }
-        if (calc_name == qTypeName(qType::Calc))
-        {
-            auto qcalc = mol->qTypeProps(qType::Calc);
-            auto acalc = qcalc->polarizabilityTensor();
-
-            if (qelec->hasPolarizability())
-            {
-                m_sub(aelec, acalc, dalpha);
-                delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+
-                                 gmx::square(dalpha[XX][ZZ])+
-                                 gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
-                diso_pol   = fac*std::abs(qcalc->isotropicPolarizability()-
-                                          qelec->isotropicPolarizability());
-                daniso_pol = fac*std::abs(qcalc->anisotropicPolarizability()-
-                                          qelec->anisotropicPolarizability());
-                fprintf(fp,
-                        "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                        "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                        "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                        calc_name.c_str(),
-                        fac*acalc[XX][XX], fac*acalc[XX][YY], fac*acalc[XX][ZZ],
-                        fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
-                        "", fac*acalc[YY][YY], fac*acalc[YY][ZZ],
-                        "", fac*dalpha[YY][YY], fac*dalpha[YY][ZZ],
-                        "", "", fac*acalc[ZZ][ZZ],
-                        "", "", fac*dalpha[ZZ][ZZ]);
-                fprintf(fp,
-                        "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
-                        mol->getMolname().c_str(), 
-                        fac*qelec->isotropicPolarizability(),
-                        fac*qcalc->isotropicPolarizability(), 
-                        diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
-                fprintf(fp,
-                        "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
-                        mol->getMolname().c_str(), 
-                        fac*qelec->anisotropicPolarizability(),
-                        fac*qcalc->anisotropicPolarizability(), 
-                        daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
-            }
-            else
+            auto qcalc = qp->qPactConst();
+            auto acalc = qcalc.polarizabilityTensor();
+            auto qelec = qp->qPqmConst();
+            if (!qelec.hasPolarizability())
             {
                 print_one_alpha(fp, calc_name, acalc);
+                continue;
             }
+            tensor aelec;
+            copy_mat(qelec.polarizabilityTensor(), aelec);
+            print_one_alpha(fp, "Electronic", aelec);
+        
+            m_sub(aelec, acalc, dalpha);
+            delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+
+                             gmx::square(dalpha[XX][ZZ])+
+                             gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
+            diso_pol   = fac*std::abs(qcalc.isotropicPolarizability()-
+                                      qelec.isotropicPolarizability());
+            daniso_pol = fac*std::abs(qcalc.anisotropicPolarizability()-
+                                      qelec.anisotropicPolarizability());
+            fprintf(fp,
+                    "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
+                    "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                    "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
+                    calc_name.c_str(),
+                    fac*acalc[XX][XX], fac*acalc[XX][YY], fac*acalc[XX][ZZ],
+                    fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
+                    "", fac*acalc[YY][YY], fac*acalc[YY][ZZ],
+                    "", fac*dalpha[YY][YY], fac*dalpha[YY][ZZ],
+                    "", "", fac*acalc[ZZ][ZZ],
+                    "", "", fac*dalpha[ZZ][ZZ]);
+            fprintf(fp,
+                    "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
+                    mol->getMolname().c_str(), 
+                    fac*qelec.isotropicPolarizability(),
+                    fac*qcalc.isotropicPolarizability(), 
+                    diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
+            fprintf(fp,
+                    "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
+                    mol->getMolname().c_str(), 
+                    fac*qelec.anisotropicPolarizability(),
+                    fac*qcalc.anisotropicPolarizability(), 
+                    daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
         }
     }
 }
 
 static void analyse_multipoles(FILE                                                        *fp,
-                               const std::vector<alexandria::ACTMol>::iterator              &mol,
+                               const std::vector<alexandria::ACTMol>::iterator             &mol,
                                std::map<MolPropObservable, double>                          toler,
                                std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
 {
-    auto qelec = mol->qTypeProps(qType::Elec);
-    for (auto &j : qTypes())
+    auto qprops = mol->qPropsConst();
+    for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
     {
-        if (j.first != qType::Elec)
-        {
-            auto qcalc = mol->qTypeProps(j.first);
-            if (qcalc)
-            {
-                qcalc->initializeMoments();
-                qcalc->calcMoments();
-            }
-        }
-    }
-    for(auto &mpo : mpoMultiPoles)
-    {
-        const char *name   = mpo_name(mpo);
-        const char *unit   = mpo_unit2(mpo);
-        double      factor = convertFromGromacs(1, unit);
-        std::vector<double> Telec;
-        if (qelec->hasMultipole(mpo))
-        {
-            fprintf(fp, "Electronic %s (%s):\n", name, unit);
-            Telec = qelec->getMultipole(mpo);
-            printMultipole(fp, mpo, Telec);
-        }
-        for (auto &j : qTypes())
-        {
-            qType qt = j.first;
-            if (qt == qType::Elec)
-            {
-                continue;
-            }
-            auto qcalc = mol->qTypeProps(qt);
-            if (qcalc)
-            {
-                real delta = 0;
-                auto Tcalc = qcalc->getMultipole(mpo);
-                fprintf(fp, "%s %s (%s):\n",
-                        qTypeName(qt).c_str(), name, unit);
-                printMultipole(fp, mpo, Tcalc);
+        auto qelec = qp->qPqmConst();
+        auto qcalc = qp->qPact();
+        qcalc->initializeMoments();
+        qcalc->calcMoments();
 
-                std::vector<double> diff;
-                if (Telec.size() == Tcalc.size())
+        for(auto &mpo : mpoMultiPoles)
+        {
+            const char *name   = mpo_name(mpo);
+            const char *unit   = mpo_unit2(mpo);
+            double      factor = convertFromGromacs(1, unit);
+            std::vector<double> Telec;
+            if (qelec.hasMultipole(mpo))
+            {
+                fprintf(fp, "Electronic %s (%s):\n", name, unit);
+                Telec = qelec.getMultipole(mpo);
+                printMultipole(fp, mpo, Telec);
+            }
+            real delta = 0;
+            auto Tcalc = qcalc->getMultipole(mpo);
+            fprintf(fp, "Calc %s (%s):\n", name, unit);
+            printMultipole(fp, mpo, Tcalc);
+
+            std::vector<double> diff;
+            auto qt = qcalc->qtype();
+            if (Telec.size() == Tcalc.size())
+            {
+                for(size_t i = 0; i < Tcalc.size(); i++)
                 {
-                    for(size_t i = 0; i < Tcalc.size(); i++)
-                    {
-                        auto tc = Tcalc[i];
-                        auto te = Telec[i];
-                        diff.push_back(tc-te);
+                    auto tc = Tcalc[i];
+                    auto te = Telec[i];
+                    diff.push_back(tc-te);
                         delta += gmx::square(tc-te);
                         (*lsq)[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
-                    }
-                    double rms = std::sqrt(delta/Tcalc.size());
-                    std::string flag("");
-                    if (rms > toler[mpo])
-                    {
-                        flag = " MULTI";
-                    }
-                    fprintf(fp, "%s-Electronic Norm %g RMS = %g (%s)%s:\n",
-                            qTypeName(qt).c_str(), factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
-                    printMultipole(fp, mpo, diff);
                 }
+                double rms = std::sqrt(delta/Tcalc.size());
+                std::string flag("");
+                if (rms > toler[mpo])
+                {
+                    flag = " MULTI";
+                }
+                fprintf(fp, "%s-Electronic Norm %g RMS = %g (%s)%s:\n",
+                        qTypeName(qt).c_str(), factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
+                printMultipole(fp, mpo, diff);
             }
         }
     }
@@ -532,46 +512,55 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
                                                   qtStats             *lsq_anisoPol,
                                                   qtStats             *lsq_alpha)
 {
-    auto qelec = mol->qTypeProps(qType::Elec);
-    mol->CalcPolarizability(pd, forceComp);
-    auto qcalc = mol->qTypeProps(qType::Calc);
-    auto acalc = qcalc->polarizabilityTensor();
-    
-    fprintf(fp, "Polarizability:\n");
-    print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
-    if (qelec->hasPolarizability())
+    for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
     {
-        auto aelec = qelec->polarizabilityTensor();
-        (*lsq_isoPol)[qType::Calc].add_point(qelec->isotropicPolarizability(),
-                                             qcalc->isotropicPolarizability(),
-                                             0, 0);
-        (*lsq_anisoPol)[qType::Calc].add_point(qelec->anisotropicPolarizability(),
-                                               qcalc->anisotropicPolarizability(),
-                                               0, 0);
-        for (int mm = 0; mm < DIM; mm++)
+        auto qcalc = qp->qPact();
+        if (!qcalc->hasPolarizability())
         {
-            (*lsq_alpha)[qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
+            continue;
+        }
+        qcalc->calcPolarizability(pd, mol->topology(), forceComp);
+        auto acalc = qcalc->polarizabilityTensor();
+    
+        fprintf(fp, "Polarizability:\n");
+        print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
+        auto qelec = qp->qPqmConst();
+        if (qelec.hasPolarizability())
+        {
+            auto aelec = qelec.polarizabilityTensor();
+            (*lsq_isoPol)[qType::Calc].add_point(qelec.isotropicPolarizability(),
+                                                 qcalc->isotropicPolarizability(),
+                                                 0, 0);
+            (*lsq_anisoPol)[qType::Calc].add_point(qelec.anisotropicPolarizability(),
+                                                   qcalc->anisotropicPolarizability(),
+                                                   0, 0);
+            for (int mm = 0; mm < DIM; mm++)
+            {
+                (*lsq_alpha)[qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
+            }
         }
     }
 }
 
 void TuneForceFieldPrinter::printAtoms(FILE                         *fp,
-                                       alexandria::ACTMol            *mol,
+                                       alexandria::ACTMol           *mol,
                                        const std::vector<gmx::RVec> &coords,
                                        const std::vector<gmx::RVec> &forces)
 {
-    std::map<qType, std::vector<double> > qQM;
+    std::map<qType, const std::vector<double> > qQM;
     std::vector<qType>                    typeQM = { 
         qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken
     };
     for(auto &qt : typeQM)
     {
-        auto qp = mol->qTypeProps(qt);
-        if (qp)
+        for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
         {
-            std::vector<double> qqm;
-            qqm = qp->charge();
-            qQM.insert(std::pair<qType, std::vector<double>>(qt, qqm));
+            auto qelec = qp->qPqmConst();
+            if (qelec.qtype() == qt)
+            {
+                std::vector qq = qelec.charge();
+                qQM.insert({qt, std::move(qq)});
+            }
         }
     }
     fprintf(fp, "Atom   Type            ACM");
@@ -1354,35 +1343,40 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             mol->GenerateCharges(pd, forceComp, alg, qtype, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
-            mol->calcEspRms(pd, &coords);
             for (auto &i : qTypes())
             {
-                auto qi  = i.first;
-                if (qi == qType::Elec)
+                for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
                 {
-                    continue;
-                }
-                auto qp = mol->qTypeProps(qi);
-                if (nullptr == qp)
-                {
-                    continue;
-                }
-                real rms, rrms, cosesp, mae, mse;
-                rms = qp->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse);
-                rms = convertToGromacs(rms, "Hartree/e");
-                std::string warning;
-                if (rms > esp_toler_ || cosesp < 0.5)
-                {
-                    warning.assign(" EEE");
-                }
-                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) rrms: %8.3f CosAngle: %6.3f - %s%s\n",
-                        rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
-                if (mol->datasetType() == ims)
-                {
-                    auto ep = qp->qgenResp()->espPoints();
-                    for (size_t j = 0; j < ep.size(); j++)
+                    auto qi    = i.first;
+                    auto qresp = qp->qgenResp();
+                    if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
                     {
-                        lsq_esp[ims][qi].add_point(ep[j].v(), ep[j].vCalc(), 0, 0);
+                        real rms, rrms, cosesp, mae, mse;
+                        // Fetch coordinates and optimize shells if polarizable
+                        auto myx = qresp->coords();
+                        std::map<InteractionType, double> energies;
+                        (void) forceComp->compute(pd, mol->topology(), &myx,
+                                                  &forces, &energies);
+                        qresp->updateAtomCoords(myx);
+                        qresp->updateAtomCharges(mol->atomsConst());
+                        qresp->calcPot(1.0);
+                        rms = qresp->getStatistics(&rrms, &cosesp, &mae, &mse);
+                        rms = convertToGromacs(rms, "Hartree/e");
+                        std::string warning;
+                        if (rms > esp_toler_ || cosesp < 0.5)
+                        {
+                            warning.assign(" EEE");
+                        }
+                        fprintf(fp, "ESP rms: %8.3f (kJ/mol e) rrms: %8.3f CosAngle: %6.3f - %s%s\n",
+                                rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
+                        if (mol->datasetType() == ims)
+                        {
+                            auto ep = qresp->espPoints();
+                            for (size_t j = 0; j < ep.size(); j++)
+                            {
+                                lsq_esp[ims][qi].add_point(ep[j].v(), ep[j].vCalc(), 0, 0);
+                            }
+                        }
                     }
                 }
             }
@@ -1569,25 +1563,17 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
                 qTypeName(qType::Calc).c_str(), qTypeName(qType::ESP).c_str());
         for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
         {
-            real rms, rrms, cosesp, mae, mse;
-            auto qcalc = mol->qTypeProps(qType::Calc);
-            rms        = convertToGromacs(qcalc->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
-            if ((mol->support() != eSupport::No) && (rms > espMax))
+            for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
             {
-                fprintf(fp, "%-40s  %12.3f", mol->getMolname().c_str(), rms);
-                auto qesp = mol->qTypeProps(qType::ESP);
-                if (qesp)
+                real rms, rrms, cosesp, mae, mse;
+                auto qresp = qp->qgenResp();
+                rms        = convertToGromacs(qresp->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
+                if ((mol->support() != eSupport::No) && (rms > espMax))
                 {
-                    real rr, ce, mae, mse;
-                    fprintf(fp, "  %12.3f",
-                            convertToGromacs(qesp->qgenResp()->getStatistics(&rr, &ce, &mae, &mse), "Hartree/e"));
+                    fprintf(fp, "%-40s  %12.3f", mol->getMolname().c_str(), rms);
+                    fprintf(fp, "  %s\n", iMolSelectName(mol->datasetType()));
+                    nout++;
                 }
-                else
-                {
-                    fprintf(fp, "           N/A");
-                }
-                fprintf(fp, "  %s\n", iMolSelectName(mol->datasetType()));
-                nout++;
             }
         }
         if (nout)
