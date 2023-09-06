@@ -485,8 +485,8 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
           "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled). If turned on, this option will also generate thermochemistry values based on the force field." },
         { "-diatomics", FALSE, etBOOL, {&diatomic_},
           "Analyse diatomic compounds by plotting the reference energy minus the ACT Coulomb terms as a function of distance in one xvg file per compound." },
-        { "-dump_outliers", FALSE, etBOOL, {&dumpOutliers_},
-          "Dump XYZ files for outliers of the energy (DeltaE0) or interaction energy" }
+        { "-dump_outliers", FALSE, etREAL, {&dumpOutliers_},
+          "Dump XYZ files for outliers with deviation larger than this number times the standard deviation of the energy (DeltaE0) or interaction energy. If this number is less than zero, nothing will be dumped." }
     };
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
@@ -1183,13 +1183,13 @@ static void dump_xyz(const ACTMol    *mol,
 
 static void printOutliers(FILE              *fp, 
                           iMolSelect         ims,
-                          double             tolerance,
+                          double             sigma,
                           const std::string &label,
-                          bool               dumpExperiment,
+                          real               dumpFactor,
                           const std::vector<alexandria::ACTMol>                *actmol,
                           const std::map<std::string, std::vector<ACTEnergy> > &allEpot)
 {
-    double epotMax = tolerance;
+    double epotMax = 1.5*sigma;
     if (allEpot.size() > 0)
     {
         fprintf(fp, "\nOverview of %s %s outliers for %s (Diff > %.3f)\n",
@@ -1208,18 +1208,19 @@ static void printOutliers(FILE              *fp,
             {
                 for (auto ener : emm.second)
                 {
-                    if (std::abs(ener.eqm()-ener.eact()) > epotMax)
+                    double deltaE = std::abs(ener.eqm()-ener.eact());
+                    if (deltaE > epotMax)
                     {
                         fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
                                 ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
-                        if (dumpExperiment)
+                        noutlier++;
+                    }
+                    if (dumpFactor >= 0 && deltaE >= dumpFactor*sigma)
+                    {
+                        if (actmol->end() != actmolptr)
                         {
-                            if (actmol->end() != actmolptr)
-                            {
-                                dump_xyz(&(*actmolptr), ener);
-                            }
+                            dump_xyz(&(*actmolptr), ener);
                         }
-                    noutlier++;
                     }
                 }
             }
@@ -1607,7 +1608,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             if (lsq_epot[ims][qType::Calc].get_npoints() > 0)
             {
                 // List outliers based on the deviation in the Potential energy ...
-                printOutliers(fp, ims, 1.5*epotRmsd, "Epot", dumpOutliers_,
+                printOutliers(fp, ims, epotRmsd, "Epot", dumpOutliers_,
                               actmol, allEpot);
             }
         }
@@ -1620,7 +1621,7 @@ void TuneForceFieldPrinter::print(FILE                            *fp,
             if (lsq_eInter[ims][qType::Calc].get_npoints() > 0)
             {
                 // ... and the interaction energies.
-                printOutliers(fp, ims, 1.5*einterRmsd, "Einter", dumpOutliers_, 
+                printOutliers(fp, ims, einterRmsd, "Einter", dumpOutliers_, 
                               actmol, allEinter);
             }
         }
