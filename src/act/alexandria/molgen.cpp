@@ -685,14 +685,15 @@ size_t MolGen::Read(FILE                                *fp,
     }
     std::map<MolPropObservable, iqmType> iqmMap = 
         {
-            { MolPropObservable::DELTAE0,        iqmType::QM },
-            { MolPropObservable::POTENTIAL,      iqmType::QM },
-            { MolPropObservable::DIPOLE,         iqmType::QM },
-            { MolPropObservable::QUADRUPOLE,     iqmType::QM },
-            { MolPropObservable::OCTUPOLE,       iqmType::QM },
-            { MolPropObservable::HEXADECAPOLE,   iqmType::QM },
-            { MolPropObservable::POLARIZABILITY, iqmType::QM },
-            { MolPropObservable::CHARGE,         iqmType::QM }
+            { MolPropObservable::DELTAE0,           iqmType::QM },
+            { MolPropObservable::POTENTIAL,         iqmType::QM },
+            { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+            { MolPropObservable::DIPOLE,            iqmType::QM },
+            { MolPropObservable::QUADRUPOLE,        iqmType::QM },
+            { MolPropObservable::OCTUPOLE,          iqmType::QM },
+            { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
+            { MolPropObservable::POLARIZABILITY,    iqmType::QM },
+            { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
     auto alg   = pd->chargeGenerationAlgorithm();

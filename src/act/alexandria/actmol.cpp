@@ -1040,6 +1040,7 @@ void ACTMol::PrintTopology(const char                  *fn,
 
 void ACTMol::GenerateCube(const ForceField             *pd,
                           const std::vector<gmx::RVec> &coords,
+                          const ForceComputer          *forceComp,
                           real                          spacing,
                           real                          border,
                           const char                   *reffn,
@@ -1064,6 +1065,7 @@ void ACTMol::GenerateCube(const ForceField             *pd,
         {
             epsilonr = 1;
         }
+        int index = 0;
         for(auto qc = qProps_.begin(); qc < qProps_.end(); ++qc)
         {
             auto qref  = qc->qPqmConst();
@@ -1075,9 +1077,20 @@ void ACTMol::GenerateCube(const ForceField             *pd,
                 // This code will overwrite files if there are more than one ESP data set
                 qcalc->setQ(atomsConst());
                 qcalc->setX(coords);
+                // Relax shells, position vsites etc. etc.
+                auto myx = qresp->coords();
+                std::vector<gmx::RVec>            forces(atomsConst().size());
+                std::map<InteractionType, double> energies;
+                forceComp->compute(pd, topology(), &myx, &forces, &energies);
+                qresp->updateAtomCoords(myx);
+                qresp->updateAtomCharges(atomsConst());
                 qresp->calcPot(epsilonr);
-                qresp->potcomp(pcfn, atomsConst(), as_rvec_array(coords.data()), pdbdifffn, oenv);
-            
+                qresp->potcomp(pcfn, oenv);
+                if (pdbdifffn)
+                {
+                    std::string pdbx = gmx::formatString("%d_%s", index++, pdbdifffn);
+                    qresp->writePdbComparison(atomsConst(), pdbx);
+                }
                 /* This has to be done before the grid is f*cked up by
                    writing a cube file */
                 QgenResp qCalc(*qresp);
@@ -1267,6 +1280,20 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                     }
                 }
                 break;
+            case MolPropObservable::INTERACTIONENERGY:
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "Found interaction energy\n");
+                    }
+                    auto gp = static_cast<const MolecularEnergy *>(qmProperty(prop.first, T, JobType::SP));
+                    if (gp)
+                    {
+                        energy_.insert(std::pair<MolPropObservable, double>(prop.first, gp->getValue()));
+                        foundNothing = false;
+                    }
+                }
+                break;
             case MolPropObservable::DELTAE0:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:
@@ -1292,6 +1319,8 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
     }
     if (foundNothing)
     {
+        ACTQprop actq(topology()->atoms(), xOriginal());
+        qProps_.push_back(std::move(actq));
         imm = immStatus::NoData;
     }
     return imm;

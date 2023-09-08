@@ -58,11 +58,8 @@
 namespace alexandria
 {
 
-void QgenResp::potcomp(const char                 *potcomp,
-                       const std::vector<ActAtom> &atoms,
-                       const rvec                 *x,
-                       const char                 *pdbdiff,
-                       const gmx_output_env_t     *oenv)
+void QgenResp::potcomp(const char             *potcomp,
+                       const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     std::string unit("Hartree/e");
@@ -88,15 +85,21 @@ void QgenResp::potcomp(const char                 *potcomp,
         fprintf(fp, "&\n");
         fclose(fp);
     }
+}
+
+void QgenResp::writePdbComparison(const std::vector<ActAtom>   &atoms,
+                                  const std::string            &pdbdiff)
+{
     std::string potUnit("Hartree/e");
-    if (pdbdiff)
+    double xfac = convertFromGromacs(1, "Angstrom");
+    if (!pdbdiff.empty())
     {
-        fp = fopen(pdbdiff, "w");
+        FILE *fp = gmx_ffopen(pdbdiff.c_str(), "w");
         for (size_t i = 0; i < atoms.size(); i++)
         {
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4lu%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "ATOM", 1, atoms[i].name().c_str(), "MOL", 'A', i+1,
-                    ' ', 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 0.0, 0.0);
+                    ' ', xfac*x_[i][XX], xfac*x_[i][YY], xfac*x_[i][ZZ], 0.0, 0.0);
         }
         double ymin, ymax;
         ymin = ymax = ep_[0].esp()[YY];
@@ -105,7 +108,7 @@ void QgenResp::potcomp(const char                 *potcomp,
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "HETATM", 1, "HE", "QM", 'B', static_cast<int>(i+1),
-                    ' ', 10*esp[XX], 10*esp[YY], 10*esp[ZZ], 0.0, ep_[i].v());
+                    ' ', xfac*esp[XX], xfac*esp[YY], xfac*esp[ZZ], 0.0, ep_[i].v());
             ymin = std::min(ymin, esp[YY]);
             ymax = std::max(ymax, esp[YY]);
         }
@@ -115,17 +118,17 @@ void QgenResp::potcomp(const char                 *potcomp,
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "HETATM", 1, "HE", "AX", 'C', static_cast<int>(i+1),
-                    ' ', 10*esp[XX], 10*(esp[YY]-dy), 10*esp[ZZ], 0.0, ep_[i].vCalc());
+                    ' ', xfac*esp[XX], xfac*(esp[YY]-dy), xfac*esp[ZZ], 0.0, ep_[i].vCalc());
         }
         for (size_t i = 0; (i < nEsp()); i++)
         {
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "HETATM", 1, "HE", "DIF", 'D', static_cast<int>(i+1),
-                    ' ', 10*esp[XX], 10*(esp[YY]-2*dy), 10*esp[ZZ], 0.0, 
+                    ' ', xfac*esp[XX], xfac*(esp[YY]-2*dy), xfac*esp[ZZ], 0.0, 
                                          ep_[i].vCalc() - ep_[i].v());
         }
-        fclose(fp);
+        gmx_ffclose(fp);
     }
 }
 

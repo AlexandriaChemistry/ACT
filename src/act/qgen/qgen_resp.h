@@ -244,11 +244,18 @@ class QgenResp
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();
 
-        void potcomp(const char                 *potcomp,
-                     const std::vector<ActAtom> &atoms,
-                     const rvec                 *x,
-                     const char                 *pdbdiff,
-                     const gmx_output_env_t     *oenv);
+        void potcomp(const char             *potcomp,
+                     const gmx_output_env_t *oenv);
+
+        /*! \brief Generate a pdb file containing atoms and grid points
+         * The grid points are colored according to the ESP (b-factor field).
+         * Three copies of the grid are given, the QM grid, the ACT grid
+         * and the difference. The QM grid also has the atoms.
+         * \param[in] atoms      The atom name information
+         * \param[in] pdbdiff    The filename
+         */
+        void writePdbComparison(const std::vector<ActAtom>   &atoms,
+                                const std::string            &pdbdiff);
 
         real myWeight(int iatom) const;
     

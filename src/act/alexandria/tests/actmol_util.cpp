@@ -43,6 +43,19 @@ void initACTMol(const char          *molname,
                                                missingParameters::Error);
                 EXPECT_TRUE(immStatus::OK ==imm);
                 mm.symmetrizeCharges(pd, qSymm, nullptr);
+                std::map<MolPropObservable, iqmType> iqmMap = 
+                    {
+                        { MolPropObservable::DELTAE0,           iqmType::QM },
+                        { MolPropObservable::POTENTIAL,         iqmType::QM },
+                        { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+                        { MolPropObservable::DIPOLE,            iqmType::QM },
+                        { MolPropObservable::QUADRUPOLE,        iqmType::QM },
+                        { MolPropObservable::OCTUPOLE,          iqmType::QM },
+                        { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
+                        { MolPropObservable::POLARIZABILITY,    iqmType::QM },
+                        { MolPropObservable::CHARGE,            iqmType::QM }
+                    };
+                imm = mm.getExpProps(pd, iqmMap, 0);
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
                 mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces);

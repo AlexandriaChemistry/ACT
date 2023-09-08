@@ -330,8 +330,9 @@ int gentop(int argc, char *argv[])
         if (immStatus::OK == imm)
         {
             actmol.symmetrizeCharges(&pd, bQsym, symm_string);
-            maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
+            maxpot = 100; // Use 100 percent of the ESP read from QM file.
             std::map<MolPropObservable, iqmType> iqm = {
+                { MolPropObservable::POTENTIAL, iqmType::QM },
                 { MolPropObservable::CHARGE, iqmType::QM }
             };
             actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
@@ -359,8 +360,7 @@ int gentop(int argc, char *argv[])
         }
         if (immStatus::OK == imm)
         {
-            actmol.GenerateCube(&pd,
-                                coords,
+            actmol.GenerateCube(&pd, coords, forceComp,
                                 spacing, border,
                                 opt2fn_null("-ref",      NFILE, fnm),
                                 opt2fn_null("-pc",       NFILE, fnm),

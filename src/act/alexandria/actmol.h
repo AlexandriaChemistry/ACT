@@ -565,7 +565,6 @@ public:
      * \param[in] border      The amount of space around the molecule
      * \param[in] reffn
      * \param[in] pcfn
-     * \param[in] pdbdifffn
      * \param[in] potfn
      * \param[in] rhofn
      * \param[in] hisfn
@@ -573,8 +572,9 @@ public:
      * \param[in] diffhistfn
      * \param[in] oenv
      */
-    void GenerateCube(const ForceField          *pd,
+    void GenerateCube(const ForceField             *pd,
                       const std::vector<gmx::RVec> &coords,
+                      const ForceComputer          *forceComp,
                       real                    spacing,
                       real                    border,
                       const char             *reffn,
