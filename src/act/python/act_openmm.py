@@ -501,7 +501,7 @@ class ActOpenMMSim:
         self.modeller.addExtraParticles(self.forcefield)
         self.topology  = self.modeller.topology
         self.positions = self.modeller.positions
-        myDrudeMass    = self.sim_params.getFloat('drudeMass')
+        myDrudeMass    = self.sim_params.getFloat('drudeMass', 0.1)
         myEwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance')
         self.rigidWater = False
         rmcom           = True
