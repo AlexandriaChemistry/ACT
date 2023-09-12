@@ -829,7 +829,10 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                     
                 case F_COUL_SR:
                 case F_LJ:
+                case F_LJ_147:
+                case F_LJ_86:
                 case F_BHAM:
+                case F_GBHAM:
                 case F_POLARIZATION:
                 case F_VSITE2:
                     break;

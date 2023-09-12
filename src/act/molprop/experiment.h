@@ -171,8 +171,10 @@ public:
      */  
     void addProperty(MolPropObservable mpo, GenericProperty *gp);
     
-    const std::map<MolPropObservable, std::vector<GenericProperty *> > propertiesConst() const { return property_; }
+    //! \return map of properties for inspection only
+    const std::map<MolPropObservable, std::vector<GenericProperty *> > &propertiesConst() const { return property_; }
 
+    //! \return map of properties for editing
     std::map<MolPropObservable, std::vector<GenericProperty *> > *properties() { return &property_; }
 
     //! Return the molecular conformation
@@ -207,15 +209,6 @@ public:
     
     //! Return a complete forces array
     const std::vector<gmx::RVec> &getForces() const { return forces_; }
-    
-    //! Add ElectrostaticPotential element to the array
-    void AddPotential(ElectrostaticPotential ep) { potential_.push_back(ep); }
-    
-    //! Return the number of potential points
-    int NPotential() const { return potential_.size(); };
-    
-    //! Return const vector of electrostaticpotentials
-    const std::vector<ElectrostaticPotential> &electrostaticPotentialConst() const { return potential_; }
     
     //! Return the program used to perform the calculation
     const std::string &getProgram() const { return program_; }
@@ -307,7 +300,7 @@ private:
     int                                  id_ = 0;
     std::map<MolPropObservable, std::vector<GenericProperty *> > property_;
     
-    std::vector<ElectrostaticPotential>  potential_;
+    // std::vector<ElectrostaticPotential>  potential_;
     std::vector<gmx::RVec>               coordinates_;
     std::vector<gmx::RVec>               forces_;
 };

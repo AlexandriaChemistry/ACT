@@ -89,8 +89,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
         void testQtype(const std::string &model, inputFormat inputformat, 
                        const std::string &molname, bool qSymm,
                        double qtotal,
-                       std::vector<double> qcustom,
-                       bool useCenterOfCharge)
+                       std::vector<double> qcustom)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
@@ -192,13 +191,9 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 }
 
                 checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
-                QtypeProps qp(qType::Calc);
+                QtypeProps qp(qType::Calc, myatoms, coords);
                 qp.initializeMoments();
                 qp.setQandX(q, coords);
-                if (useCenterOfCharge)
-                {
-                    qp.setCenterOfCharge(actmol.centerOfCharge());
-                }
                 qp.calcMoments();
                 for(auto &mpo : mpoMultiPoles)
                 {
@@ -227,19 +222,19 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 TEST_F (QtypeTest, ButanolPDB)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, TwoMolsSDF)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::SDF, "two_mols", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::SDF, "two_mols", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, TwoMolsXYZ)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::XYZ, "two_mols", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::XYZ, "two_mols", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, CustomButanolPDB)
@@ -261,7 +256,7 @@ TEST_F (QtypeTest, CustomButanolPDB)
         0.10143430364294093,
         -0.34806032890043453,
         0.20074934111138645 };
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, ButanolPDBCoQ)
@@ -269,38 +264,38 @@ TEST_F (QtypeTest, ButanolPDBCoQ)
     // Since butanol is dipolar only, the center of charge should have
     // no effect on the dipole but higher moments may be off more.
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom, true);
+    testQtype("ACS-g", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, AcetatePDB)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom, false);
+    testQtype("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (QtypeTest, AcetatePDBCoQ)
 {
     // For the charged compound the center of charge should matter
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom, true);
+    testQtype("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDB)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCoQ)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, true);
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCustom)
 {
     std::vector<double> qcustom = { 0.33, -0.66, 0.33 };
-    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, false);
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom);
 }
 
 }

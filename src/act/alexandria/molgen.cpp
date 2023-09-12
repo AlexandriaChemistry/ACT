@@ -581,7 +581,18 @@ static double computeCost(const ACTMol                         *actmol,
             switch(tg.first)
             {
             case eRMS::ESP:
-                w += myexp.NPotential();
+                {
+                    auto mpo = MolPropObservable::POTENTIAL;
+                    if (myexp.hasProperty(mpo))
+                    {
+                        auto eee = myexp.propertyConst(mpo);
+                        for (size_t k = 0; k < eee.size(); k++)
+                        {
+                            auto esp = static_cast<const ElectrostaticPotential *>(eee[k]);
+                            w += esp->V().size();
+                        }
+                    }
+                }
                 break;
             case eRMS::EPOT:
                 // All versus all interactions
@@ -674,13 +685,15 @@ size_t MolGen::Read(FILE                                *fp,
     }
     std::map<MolPropObservable, iqmType> iqmMap = 
         {
-            { MolPropObservable::DELTAE0,        iqmType::QM },
-            { MolPropObservable::DIPOLE,         iqmType::QM },
-            { MolPropObservable::QUADRUPOLE,     iqmType::QM },
-            { MolPropObservable::OCTUPOLE,       iqmType::QM },
-            { MolPropObservable::HEXADECAPOLE,   iqmType::QM },
-            { MolPropObservable::POLARIZABILITY, iqmType::QM },
-            { MolPropObservable::CHARGE,         iqmType::QM }
+            { MolPropObservable::DELTAE0,           iqmType::QM },
+            { MolPropObservable::POTENTIAL,         iqmType::QM },
+            { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+            { MolPropObservable::DIPOLE,            iqmType::QM },
+            { MolPropObservable::QUADRUPOLE,        iqmType::QM },
+            { MolPropObservable::OCTUPOLE,          iqmType::QM },
+            { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
+            { MolPropObservable::POLARIZABILITY,    iqmType::QM },
+            { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
     auto alg   = pd->chargeGenerationAlgorithm();
@@ -722,12 +735,14 @@ size_t MolGen::Read(FILE                                *fp,
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
                 actmol.symmetrizeCharges(pd, qsymm_, nullptr);
-                actmol.initQgenResp(pd, coords, 0.0, 100);
-                std::vector<double> dummy;
-                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                             qtype, dummy, &coords, &forces);
-
+                imm = actmol.getExpProps(pd, iqmMap, 0.0, 0.0, 100);
+                if (immStatus::OK != imm)
+                {
+                    std::vector<double> dummy;
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                                 qtype, dummy, &coords, &forces);
+                }
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -737,7 +752,6 @@ size_t MolGen::Read(FILE                                *fp,
                     }
                     continue;
                 }
-                imm = actmol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -811,6 +825,10 @@ size_t MolGen::Read(FILE                                *fp,
                     cr_->bcast(&comm_index, mycomms[myindex]);
                     // Send the molecule
                     cs = actmol->BroadCast(cr_, root, mycomms[myindex]);
+                    if (CommunicationStatus::OK != cs)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not broadcast %s to middlemen", actmol->getMolname().c_str()).c_str()));
+                    }
                     comm_used.insert(myindex);
                 }
                 if (comm_index > 0)
@@ -819,6 +837,10 @@ size_t MolGen::Read(FILE                                *fp,
                     cr_->bcast(&bcint, mycomms[comm_index]);
                     cr_->bcast(&comm_index, mycomms[comm_index]);
                     cs = actmol->BroadCast(cr_, root, mycomms[comm_index]);
+                    if (CommunicationStatus::OK != cs)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not broadcast %s to helpers", actmol->getMolname().c_str()).c_str()));
+                    }
                     comm_used.insert(comm_index);
                     actmol->setSupport(eSupport::Remote);
                 }
@@ -885,19 +907,21 @@ size_t MolGen::Read(FILE                                *fp,
             }
             imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
 
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
             if (immStatus::OK == imm)
             {
-                std::vector<double> dummy;
-                std::vector<gmx::RVec> coords = actmol.xOriginal();
                 actmol.symmetrizeCharges(pd, qsymm_, nullptr);
-                actmol.initQgenResp(pd, coords, 0.0, 100);
-                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                            qtype, dummy, &coords, &forces);
             }
             if (immStatus::OK == imm)
             {
-                imm = actmol.getExpProps(iqmMap, 0);
+                imm = actmol.getExpProps(pd, iqmMap, 0);
+            }
+            if (immStatus::OK == imm)
+            {
+                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                std::vector<double> dummy;
+                imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                             qtype, dummy, &coords, &forces);
             }
             if (cr_->isMiddleMan())
             {
@@ -955,7 +979,7 @@ size_t MolGen::Read(FILE                                *fp,
                 if (cr_->isMiddleMan() && debug)
                 {
                     int nexp = actmol_.back().experimentConst().size();
-                    fprintf(debug, "Computing %s on %s nexepriment %d\n", actmol_.back().getMolname().c_str(),
+                    fprintf(debug, "Computing %s on %s nexperiment %d\n", actmol_.back().getMolname().c_str(),
                             eSupport::Local == actmol.support() ? "middleman" : "helper", nexp);
                 }
             }

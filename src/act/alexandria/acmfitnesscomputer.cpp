@@ -205,7 +205,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                 continue;
             }
 
-            computeMultipoles(targets, &(*actmol), coords);
+            computeMultipoles(targets, &(*actmol));
 
             if (devComputers_.size() == 0)
             {
@@ -240,18 +240,20 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,
-                                           ACTMol                         *actmol,
-                                           const std::vector<gmx::RVec>  &coords)
+                                           ACTMol                        *actmol)
 {
-    QtypeProps *qcalc = actmol->qTypeProps(qType::Calc);
     if (targets->find(eRMS::MU)->second.weight() > 0   ||
         targets->find(eRMS::QUAD)->second.weight() > 0 ||
         targets->find(eRMS::OCT)->second.weight() > 0  ||
         targets->find(eRMS::HEXADEC)->second.weight() > 0)
     {
-        qcalc->setQ(actmol->atomsConst());
-        qcalc->setX(coords);
-        qcalc->calcMoments();
+        auto qProps = actmol->qProps();
+        for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
+        {
+            auto qcalc = qp->qPact();
+            qcalc->setQ(actmol->atomsConst());
+            qcalc->calcMoments();
+        }
     }
 }
 

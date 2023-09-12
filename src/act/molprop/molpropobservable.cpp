@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -102,6 +102,11 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
 
 const char *mpo_name(MolPropObservable MPO)
 {
+    if (mpo_name_.find(MPO) == mpo_name_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Incorrect MolPropObservable %d", int(MPO)).c_str()));
+    }
+    
     return mpo_name_[MPO];
 }
 
@@ -499,7 +504,7 @@ CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to received Polarizability, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to broadcast Polarizability, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -529,7 +534,7 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to received Polarizability, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to broadcast Polarizability, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -605,6 +610,29 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
     return cs;
 }
 
+ElectrostaticPotential::ElectrostaticPotential(const std::string &xyzInputUnit,
+                                               const std::string &vInputUnit)
+{
+    xyzInputUnit_ = xyzInputUnit;
+    vInputUnit_   = vInputUnit;
+    xyzUnit_      = gromacsUnit(xyzInputUnit);
+    vUnit_        = gromacsUnit(vInputUnit);
+}
+
+void ElectrostaticPotential::addPoint(int    espid, 
+                                      double x,
+                                      double y,
+                                      double z,
+                                      double V)
+{
+    double xfac = convertToGromacs(1.0, xyzInputUnit_);
+    double Vfac = convertToGromacs(1.0, vInputUnit_);
+    espID_.push_back(espid);
+    gmx::RVec xyz = { x*xfac, y*xfac, z*xfac };
+    xyz_.push_back(xyz);
+    V_.push_back(V*Vfac);
+}
+
 CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -615,11 +643,19 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
         cr->recv_str(src, &vInputUnit_);
         cr->recv_str(src, &xyzUnit_);
         cr->recv_str(src, &vUnit_);
-        espID_ = cr->recv_int(src);
-        x_     = cr->recv_double(src);
-        y_     = cr->recv_double(src);
-        z_     = cr->recv_double(src);
-        V_     = cr->recv_double(src);
+        int nesp = cr->recv_int(src);
+        espID_.clear();
+        xyz_.clear();
+        V_.clear();
+        for(int i = 0; i < nesp; i++)
+        {
+            espID_.push_back(cr->recv_int(src));
+            std::vector<double> xyz;
+            cr->recv_double_vector(src, &xyz);
+            gmx::RVec xxx = { xyz[XX], xyz[YY], xyz[ZZ] };
+            xyz_.push_back(xxx);
+            V_.push_back(cr->recv_double(src));
+        }
     }
     else if (nullptr != debug)
     {
@@ -630,10 +666,10 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 }
 
 CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr,
-                                                      gmx_unused int             root,
+                                                      int                        root,
                                                       MPI_Comm                   comm)
 {
-    CommunicationStatus cs = cr->bcast_data(comm);
+    CommunicationStatus cs = GenericProperty::BroadCast(cr, root, comm);
 
     if (CommunicationStatus::OK == cs)
     {
@@ -641,11 +677,23 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
         cr->bcast(&vInputUnit_, comm);
         cr->bcast(&xyzUnit_, comm);
         cr->bcast(&vUnit_, comm);
-        cr->bcast(&espID_, comm);
-        cr->bcast(&x_, comm);
-        cr->bcast(&y_, comm);
-        cr->bcast(&z_, comm);
-        cr->bcast(&V_, comm);
+        int nesp = espID_.size();
+        cr->bcast(&nesp, comm);
+        if (cr->rank() != root)
+        {
+            espID_.resize(nesp);
+            xyz_.resize(nesp);
+            V_.resize(nesp);
+        }
+
+        for(size_t i = 0; i < espID_.size(); i++)
+        {
+            cr->bcast(&espID_[i], comm);
+            cr->bcast(&xyz_[i][XX], comm);
+            cr->bcast(&xyz_[i][YY], comm);
+            cr->bcast(&xyz_[i][ZZ], comm);
+            cr->bcast(&V_[i], comm);
+        }
     }
     else if (nullptr != debug)
     {
@@ -665,11 +713,14 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
         cr->send_str(dest, &vInputUnit_);
         cr->send_str(dest, &xyzUnit_);
         cr->send_str(dest, &vUnit_);
-        cr->send_int(dest, espID_);
-        cr->send_double(dest, x_);
-        cr->send_double(dest, y_);
-        cr->send_double(dest, z_);
-        cr->send_double(dest, V_);
+        cr->send_int(dest, espID_.size());
+        for(size_t i = 0; i < espID_.size(); i++)
+        {
+            cr->send_int(dest, espID_[i]);
+            std::vector<double> xyz = { xyz_[i][XX], xyz_[i][YY], xyz_[i][ZZ] };
+            cr->send_double_vector(dest, &xyz);
+            cr->send_double(dest, V_[i]);
+        }
     }
     else if (nullptr != debug)
     {
@@ -677,42 +728,6 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
         fflush(debug);
     }
     return cs;
-}
-
-void ElectrostaticPotential::set(const std::string &xyzInputUnit,
-                                 const std::string &vInputUnit,
-                                 int                espid, 
-                                 double             x,
-                                 double             y,
-                                 double             z,
-                                 double             V)
-{ 
-    xyzInputUnit_ = xyzInputUnit;
-    vInputUnit_   = vInputUnit;
-    espID_ = espid;
-    x_ = convertToGromacs(x, xyzInputUnit);
-    y_ = convertToGromacs(y, xyzInputUnit);
-    z_ = convertToGromacs(z, xyzInputUnit);
-    V_ = convertToGromacs(V, vInputUnit); 
-    xyzUnit_.assign("nm");
-    vUnit_.assign("kJ/mol e");
-}
-
-void ElectrostaticPotential::get(std::string *xyz_unit,
-                                 std::string *V_unit,
-                                 int         *espid,
-                                 double      *x,
-                                 double      *y,
-                                 double      *z,
-                                 double *V) const
-{
-    xyz_unit->assign(xyzUnit_);
-    V_unit->assign(vUnit_);
-    *espid = espID_;
-    *x = x_;
-    *y = y_;
-    *z = z_;
-    *V = V_;
 }
 
 } // namespace alexandria

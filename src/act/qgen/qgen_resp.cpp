@@ -63,8 +63,7 @@ namespace alexandria
 
 void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
 {
-    GMX_RELEASE_ASSERT(x.size()-nAtom_ == 0,
-                       gmx::formatString("Trying to set %d coordinates for %d atoms", static_cast<int>(x.size()), nAtom_).c_str());
+    x_.resize(nAtom_);
     for (int i = 0; i < nAtom_; i++)
     {
         x_[i] = x[i];
@@ -73,9 +72,10 @@ void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
 
 void QgenResp::updateAtomCharges(const std::vector<double> &q)
 {
-    GMX_RELEASE_ASSERT(nAtom_ - q.size() == 0,
-                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, q.size()).c_str());
-
+    if (static_cast<size_t>(nAtom_) != q.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %d and charge array entries %lu", nAtom_, q.size()).c_str()));
+    }
     for (int i = 0; i < nAtom_; i++)
     {
         q_[i] = q[i];
@@ -84,9 +84,10 @@ void QgenResp::updateAtomCharges(const std::vector<double> &q)
 
 void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 {
-    GMX_RELEASE_ASSERT(nAtom_ - atoms.size() == 0,
-                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, atoms.size()).c_str());
-
+    if (static_cast<size_t>(nAtom_) != atoms.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, atoms.size()).c_str()));
+    }
     for (int i = 0; i < nAtom_; i++)
     {
         q_[i] = atoms[i].charge();
@@ -94,8 +95,7 @@ void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 }
 
 void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
-                           const alexandria::ForceField    *pd,
-                           const std::vector<gmx::RVec> &x,
+                           const alexandria::ForceField *pd,
                            const int                     qtotal)
 {
     if (nAtom_ != 0)
@@ -106,13 +106,8 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
     GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ - atoms.size() == 0),
                        gmx::formatString("Changing the number of atoms from %d to %lu", nAtom_, atoms.size()).c_str());
     nAtom_   = atoms.size();
-    if (nAtom_ - x.size() != 0)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Number of coordinates %d does not match atoms structure %d", static_cast<int>(x.size()), nAtom_).c_str()));
-    }
     qtot_    = qtotal;
     qshell_  = 0;
-    x_       = x;
     auto zzz = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
     bool haveZeta = eqtModel != ChargeType::Point;

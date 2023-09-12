@@ -116,7 +116,6 @@ int gentop(int argc, char *argv[])
         { efXVG, "-his",      "pot-histo", ffOPTWR },
         { efXVG, "-pc",       "pot-comp",  ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
-        { efXVG, "-plot_esp", "ESPcorr",   ffOPTWR },
         { efLOG, "-g",        "errors",    ffWRITE }
     };
 
@@ -331,9 +330,12 @@ int gentop(int argc, char *argv[])
         if (immStatus::OK == imm)
         {
             actmol.symmetrizeCharges(&pd, bQsym, symm_string);
-            maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
-            
-            actmol.initQgenResp(&pd, coords, 0.0, maxpot);
+            maxpot = 100; // Use 100 percent of the ESP read from QM file.
+            std::map<MolPropObservable, iqmType> iqm = {
+                { MolPropObservable::POTENTIAL, iqmType::QM },
+                { MolPropObservable::CHARGE, iqmType::QM }
+            };
+            actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
             
             auto alg   = pd.chargeGenerationAlgorithm();
             auto qtype = qType::Calc;
@@ -356,28 +358,19 @@ int gentop(int argc, char *argv[])
             printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
             imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
-        /* Generate output file for debugging if requested */
         if (immStatus::OK == imm)
         {
-            actmol.plotEspCorrelation(&pd, coords,
-                                     opt2fn_null("-plot_esp", NFILE, fnm),
-                                     oenv, forceComp);
-        }
-        
-        if (immStatus::OK == imm)
-        {
-            actmol.GenerateCube(&pd,
-                               coords,
-                               spacing, border,
-                               opt2fn_null("-ref",      NFILE, fnm),
-                               opt2fn_null("-pc",       NFILE, fnm),
-                               opt2fn_null("-pdbdiff",  NFILE, fnm),
-                               opt2fn_null("-pot",      NFILE, fnm),
-                               opt2fn_null("-rho",      NFILE, fnm),
-                               opt2fn_null("-his",      NFILE, fnm),
-                               opt2fn_null("-diff",     NFILE, fnm),
-                               opt2fn_null("-diffhist", NFILE, fnm),
-                               oenv);
+            actmol.GenerateCube(&pd, coords, forceComp,
+                                spacing, border,
+                                opt2fn_null("-ref",      NFILE, fnm),
+                                opt2fn_null("-pc",       NFILE, fnm),
+                                opt2fn_null("-pdbdiff",  NFILE, fnm),
+                                opt2fn_null("-pot",      NFILE, fnm),
+                                opt2fn_null("-rho",      NFILE, fnm),
+                                opt2fn_null("-his",      NFILE, fnm),
+                                opt2fn_null("-diff",     NFILE, fnm),
+                                opt2fn_null("-diffhist", NFILE, fnm),
+                                oenv);
         }
         
         if (immStatus::OK == imm && actmol.errors().size() == 0)

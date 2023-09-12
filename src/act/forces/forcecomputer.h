@@ -126,17 +126,6 @@ private:
     void plot(const ForceField   *pd,
               InteractionType  itype) const;
 
-    /*! \brief Compute the polarizability tensor
-     * \param[in]  pd          Pointer to force field structure
-     * \param[in]  top         The topology
-     * \param[in]  coordinates The coordinates
-     * \param[out] qtp         The charge type properties
-     */
-    void calcPolarizability(const ForceField          *pd,
-                            const Topology         *top,
-                            std::vector<gmx::RVec> *coordinates,
-                            QtypeProps             *qtp) const;
-
 };
 
 } // namespace alexandria

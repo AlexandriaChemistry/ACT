@@ -490,7 +490,7 @@ static void generateVdwParameterPairs(ForceField *pd)
                     double jsigma   = jvdw.second[csigma].internalValue();
                     double jepsilon = jvdw.second[cepsilon].internalValue();
                     double jgamma   = jvdw.second[cgamma].internalValue();
-                    double jdelta   = ivdw.second[cdelta].internalValue();
+                    double jdelta   = jvdw.second[cdelta].internalValue();
                     double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
                     CombineLJ_147(comb_rule, isigma, jsigma,
                                 iepsilon, jepsilon,
@@ -538,6 +538,9 @@ static void generateVdwParameterPairs(ForceField *pd)
                     CombineGBham(comb_rule, irmin, jrmin, iepsilon, jepsilon, 
                                  igamma, jgamma, idelta, jdelta, &rminij,
                                  &epsilonij, &gammaij, &deltaij);
+                    if (debug)
+                    {
+                    }
                     pmap.insert({gbh_name[gbhRMIN_IJ], ForceFieldParameter(unit, rminij, 0, 1,
                                                                           rminij, rminij,
                                                                            mutd, true, true)});

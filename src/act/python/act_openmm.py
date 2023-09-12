@@ -177,6 +177,12 @@ class CombinationRules:
                 print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
                 cdelta = "(sqrt(delta1*delta2))"
                 return crmin, cepsilon, cgamma, cdelta
+            elif vdw == VdW.LJ14_7:
+                csigma  = "(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
+                #This combination rule is likely wrong for GWBH 4 parameter one
+                print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
+                cdelta = "(sqrt(delta1*delta2))"
+                return csigma, cepsilon, cgamma, cdelta
         elif "Geometric" == self.comb:
             cepsilon = "(sqrt(epsilon1*epsilon2))"
             cgamma   = "(sqrt(gamma1*gamma2))"
@@ -193,8 +199,7 @@ class CombinationRules:
                return csigma, cepsilon, cgamma, cdelta
             else:
                 sys.exit("No support for %s" % dictVdW[vdw])
-        else:
-            sys.exit("Unknown combination rule '%s'" % self.comb)
+        sys.exit("Unknown combination rule '%s' for Van der Waals %s" % (self.comb, dictVdW[vdw]))
             
     def zetaString(self)->str:
         if self.qdist == "Gaussian":
@@ -244,6 +249,7 @@ class ActOpenMMSim:
         self.txt.write("simulation parameters: %s\n" % self.args.dat_file)
         self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
         self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
+        self.txt.write("polarizable:           %s\n" % self.args.polarizable)
 
     def gen_ff(self):
         if None != self.args.xml_file:
@@ -264,7 +270,7 @@ class ActOpenMMSim:
             os.system(mycmd)
             if not os.path.exists(self.xmloutfile):
                 sys.exit("Failed running '%s'" % mycmd)
-            self.txt.write("Succesfully generated an OpenMM force field file %s from ACT force field %s" % (self.xmloutfile, self.args.act_file))
+            self.txt.write("Succesfully generated an OpenMM force field file %s from ACT force field %s\n" % (self.xmloutfile, self.args.act_file))
             self.forcefield = ForceField(self.xmloutfile)
 
     def xmlOutFile(self):
@@ -557,7 +563,7 @@ class ActOpenMMSim:
         self.modeller.addExtraParticles(self.forcefield)
         self.topology  = self.modeller.topology
         self.positions = self.modeller.positions
-        myDrudeMass    = self.sim_params.getFloat('drudeMass')
+        myDrudeMass    = self.sim_params.getFloat('drudeMass', 0.1)
         myEwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance')
         self.rigidWater = False
         rmcom           = True
@@ -711,18 +717,18 @@ class ActOpenMMSim:
         self.charges = []
         if self.args.verbose:
             print("There are %d particles in the nonbondedforce" % self.nonbondedforce.getNumParticles())
-        vdw = self.sim_params.getStr("vanderwaals")
+
         for index in range(self.nonbondedforce.getNumParticles()):
             myparams = self.customnb.getParticleParameters(index)
-            if vdw == "WBH":
+            if self.vdw == VdW.WBH:
                 [_, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, charge, zeta {myparams}")
-            elif vdw == "GBHAM":
+            elif self.vdw == VdW.GBHAM:
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw rmin, epsilon, gamma, delta, charge, zeta {myparams}")
-            elif vdw == "LJ14_7":
+            elif self.vdw == VdW.LJ14_7:
                 [_, _, _, _, _, charge, zeta] = myparams
                 if self.args.debug:
                     print(f"nonbonded vdw sigma, epsilon, gamma, delta, charge, zeta {myparams}")
@@ -731,7 +737,7 @@ class ActOpenMMSim:
             self.charges.append(charge)
             self.qq_correction.addParticle([charge, zeta])
 
-        if self.args.debug and vdw == "WBH":
+        if self.args.debug and self.vdw == VdW.WBH:
             np = self.nonbondedforce.getNumParticles()
             for i in range(np):
                 [_, sigma1, epsilon1, gamma1, _, _] = self.customnb.getParticleParameters(i)
@@ -757,7 +763,7 @@ class ActOpenMMSim:
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
-        if vdw == "WBH":
+        if self.vdw == VdW.WBH:
             expression = 'U_WBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
@@ -778,9 +784,9 @@ class ActOpenMMSim:
             expression += 'vdW = (vdW1*vdW2);'
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             if self.nonbondedMethod == NoCutoff:
-                self.vdw_correction.setName("VanderWaals"+vdw)
+                self.vdw_correction.setName("VanderWaals"+self.vdw)
             else:
-                self.vdw_correction.setName("VanderWaalsCorrection"+vdw)
+                self.vdw_correction.setName("VanderWaalsCorrection"+dictVdW[self.vdw])
             for pp in [ "sigma", "epsilon", "gamma", "vdW", "sigma_LJ", "epsilon_LJ" ]:
                 self.vdw_correction.addPerParticleParameter(pp)
 
@@ -813,7 +819,7 @@ class ActOpenMMSim:
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
 #################################################
-        elif vdw == "GBHAM":
+        elif self.vdw == VdW.GBHAM:
             expression = 'U_GWBH-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
@@ -859,7 +865,7 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
             self.count_forces("Direct space 8")
 #################################################
-        elif vdw == "LJ14_7":
+        elif self.vdw == VdW.LJ14_7:
             expression = 'U_14_7-U_LJ;'
             expression += LJ_expression
 

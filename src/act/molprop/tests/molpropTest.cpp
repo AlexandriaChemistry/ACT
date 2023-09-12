@@ -184,6 +184,8 @@ protected:
                                 }
                             }
                             break;
+                        case MolPropObservable::POTENTIAL:
+                            break;
                         default:
                             {
                                 myCheck.checkDouble(gp->getValue()*fac,

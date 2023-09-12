@@ -76,6 +76,8 @@ enum class eSupport {
     Remote
 };
 
+/*! \brief Class to hold corresponding QM (reference) and ACT energies
+ */
 class ACTEnergy
 {
 private:
@@ -86,13 +88,71 @@ private:
     //! ACT energy
     double eact_;
 public:
+    /*! \brief Constructor
+     * \param[in] experiment The id
+     * \param[in] eqm        The QM energy
+     * \param[in] eact       The ACT energy
+     */
     ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment), eqm_(eqm), eact_(eact) {}
     
+    //! \return The experiment ID
     int id() const { return experiment_; }
-    
+
+    //! \return The QM energy    
     double eqm() const { return eqm_; }
-    
+
+    //! \return The ACT energy
     double eact() const { return eact_; }
+};
+
+/*! \brief Class to hold corresponding QM (reference) adn ACT props
+ */
+class ACTQprop
+{
+private:
+    //! Whether or not a particle is a real atom
+    std::vector<bool>  isAtom_;
+    //! Reference Qprops
+    QtypeProps         qPqm_;
+    //! Calculated Qprops
+    QtypeProps         qPact_;
+    //! Resp calculation structure
+    QgenResp           QgenResp_;
+public:
+    //! Default constructor
+    ACTQprop() {}
+
+    /*! \brief Constructor initializing both QtypeProps
+     * \param[in] atoms The atoms
+     * \param[in] x     The coordinates
+     */
+    ACTQprop(const std::vector<ActAtom>   &atoms,
+             const std::vector<gmx::RVec> &x);
+
+    //! \return constant QM property    
+    const QtypeProps &qPqmConst() const { return qPqm_; }
+
+    //! \return constant ACT property    
+    const QtypeProps &qPactConst() const { return qPact_; }
+
+    //! \return QM property for editing
+    QtypeProps *qPqm() { return &qPqm_; }
+
+    //! \return ACT property for editing
+    QtypeProps *qPact() { return &qPact_; }
+
+    /*! \brief Return internal structure
+     * \return the QgenResp_ data structure
+     */
+    QgenResp *qgenResp() { return &QgenResp_; }
+    
+    /*! \brief Return internal structure
+     * \return the QgenResp_ data structure
+     */
+    const QgenResp &qgenRespConst() const { return QgenResp_; }
+
+    //! Copy the charges from Resp to the QtypeProps
+    void copyRespQ();
 };
 
 /*! \brief
@@ -112,7 +172,7 @@ private:
     // The energy storage
     std::map<InteractionType, double> energies_;
     // Optimized coordinates from the input.
-    std::vector<gmx::RVec>           optimizedCoordinates_;
+    //std::vector<gmx::RVec>           optimizedCoordinates_;
     // Older stuff
     bool                             bHaveShells_    = false;
     bool                             bHaveVSites_    = false;
@@ -126,13 +186,10 @@ private:
     std::map<int, int>               originalAtomIndex_;
     //! The job type corresponding to the coordinates
     JobType                          myJobType_        = JobType::UNKNOWN;
-    //! Map of charge type dependent properties
-    std::map<qType, QtypeProps>      qProps_;
-    //! Center of nuclear charge
-    gmx::RVec                        CenterOfCharge_ = { 0, 0, 0 };
-    //! Function that returns true if a molecule is symmetric
-    bool IsSymmetric(real toler) const;
-    
+    //! Vector of charge type dependent properties
+    std::vector<ACTQprop>            qProps_;
+    //! Is this a linear molecule? Will be checked first when generating a topology.
+    bool                             isLinear_ = false;
     /*! \brief
      * Add vsites on bonds to hos bond shell particles
      *
@@ -218,10 +275,11 @@ public:
     const real *energyTerms() const;
     
     /*! \brief
-     * Return the original coordinate vector of the molecule. If there are shell particles
-     * their position may have been optimized, but the atoms are as read from the input.
+     * Return a coordinate vector of the molecule corresponding to the first experiment
+     * with Jobtype Opt or Topology.
+     * \throws if not suitable experiment is present.
      */
-    const std::vector<gmx::RVec> &xOriginal() const { return optimizedCoordinates_; }
+    std::vector<gmx::RVec> xOriginal() const;
 
     /*! \brief
      * Constructor
@@ -242,7 +300,7 @@ public:
     bool haveShells() const { return bHaveShells_; }
     
     //! \return whether this is a linear molecule
-    bool linearMolecule() const;
+    bool linearMolecule() const { return isLinear_; }
     
     //! \return how this compound is supported on this processor
     eSupport support() const { return eSupp_; }
@@ -306,28 +364,20 @@ public:
     
     //! Return the reference intensities collected earlier
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
-    
-    //! \return the center of charge
-    const rvec &centerOfCharge() const { return CenterOfCharge_; }
-    
-    /*! \brief Return QtypeProps for a charge type
-     * \param[in] qt The charge type, e.g. qType::CM5
-     * \return the corresponding structure or nullptr 
-     */
-    QtypeProps *qTypeProps(qType qt);
-    
-    /*! \brief Return QtypeProps for a charge type
-     * \param[in] qt The charge type, e.g. qType::CM5
-     * \return the corresponding structure or nullptr 
-     */
-    const QtypeProps *qTypeProps(qType qt) const;
-    
+
+    //! Return accumulated list of errors.    
     const std::vector<std::string> &errors() const {return error_messages_;}
     
     /*! \brief
      * \return atoms data for editing
      */
     std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
+
+    //! \return the QtypeProps vector for editing
+    std::vector<ACTQprop> *qProps() { return &qProps_; }
+
+    //! \return the QtypeProps vector for reading
+    const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
 
     /*! \brief Return the fragment handler
      */
@@ -364,17 +414,6 @@ public:
     Topology *topologyPtr() { return topology_; }
     
     /*! \brief
-     *  Computes polarizability tensor in the presence of external
-     *  electric field. The result is stored in 
-     *  actmol->qTypeProps(qType::Calc).
-     *
-     * \param[in] pd        The force field
-     * \param[in] forceComp The force computer
-     */
-    void CalcPolarizability(const ForceField       *pd,
-                            const ForceComputer *forceComp);
-    
-    /*! \brief
      * Generate atomic partial charges
      *
      * \param[in]  pd        Data structure containing atomic properties
@@ -403,7 +442,7 @@ public:
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    The forces
      */
-    immStatus GenerateAcmCharges(const ForceField          *pd,
+    immStatus GenerateAcmCharges(const ForceField       *pd,
                                  const ForceComputer    *forceComp,
                                  std::vector<gmx::RVec> *coords,
                                  std::vector<gmx::RVec> *forces);
@@ -412,48 +451,31 @@ public:
      *
      * Initiates internal structure for atom charge symmetry
      * (e.g. CH3 with identical charges on H).
-     * Must be called before initQgenResp.
+     * Must be called before getExpProps.
      * \param[in] pd                 Data structure containing atomic properties
      * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
      * \param[in] symm_string        The type of molecular symmetry
      */
-    void symmetrizeCharges(const ForceField  *pd,
-                           bool            bSymmetricCharges,
-                           const char     *symm_string);
-    
-    /*! \brief Calculate the RMSD from ESP for QM charges
-     * \param[in] pd     ForceField structure
-     * \param[in] coords Coordinates
-     */
-    void calcEspRms(const ForceField                *pd,
-                    const std::vector<gmx::RVec> *coords);
-    
-    /*! \brief Make a ESP correlation plot
-     *
-     * Will compute the electrostatic potential around the compound
-     * and make a correlation plot between the QM potential and the
-     * Alexandria potential.
-     * \param[in] pd        Force field
-     * \param[in] coords    The coordinates
-     * \param[in] espcorr   File name to plot to
-     * \param[in] oenv      Gromacs output structure
-     * \param[in] forceComp Utility to compute forces
-     */
-    void plotEspCorrelation(const ForceField                *pd,
-                            const std::vector<gmx::RVec> &coords,
-                            const char                   *espcorr,
-                            const gmx_output_env_t       *oenv,
-                            const ForceComputer          *forceComp);
+    void symmetrizeCharges(const ForceField *pd,
+                           bool              bSymmetricCharges,
+                           const char       *symm_string);
     
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.
      *
-     * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
-     * \param[in] T        The temperature to use. -1 allows any T.
+     * \param[in] pd   The force field   
+     * \param[in] iqm  Determine whether to allow exp or QM results or both for each property
+     * \param[in] T    The temperature to use. -1 allows any T.
+     * \param[in]  watoms  Weight for the potential on the atoms in 
+     *                     doing the RESP fit. Should be 0 in most cases.
+     * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                          double             T);
+    immStatus getExpProps(const ForceField                           *pd,
+                          const std::map<MolPropObservable, iqmType> &iqm,
+                          double                                      T,
+                          real                                        watoms = 0,
+                          int                                         maxESP = 100);
     
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.
@@ -470,7 +492,7 @@ public:
      */
     void PrintTopology(const char                   *fn,
                        bool                          bVerbose,
-                       const ForceField                *pd,
+                       const ForceField             *pd,
                        const ForceComputer          *forceComp,
                        const CommunicationRecord    *cr,
                        const std::vector<gmx::RVec> &coords,
@@ -484,7 +506,7 @@ public:
     /*! \brief Calculate the forces and energies
      * For a polarizable model the shell positions are minimized.
      * This code is maintained only for comparing ACT native energies and forces
-     * to the gromacs code. Do not use inproduction code.
+     * to the gromacs code. Do not use in production code.
      * \param[in]  crtmp         Temporary communication record with one core only.
      * \param[in]  coordinates   The atomic coordinates
      * \param[out] forces        Force array
@@ -543,7 +565,6 @@ public:
      * \param[in] border      The amount of space around the molecule
      * \param[in] reffn
      * \param[in] pcfn
-     * \param[in] pdbdifffn
      * \param[in] potfn
      * \param[in] rhofn
      * \param[in] hisfn
@@ -551,8 +572,9 @@ public:
      * \param[in] diffhistfn
      * \param[in] oenv
      */
-    void GenerateCube(const ForceField          *pd,
+    void GenerateCube(const ForceField             *pd,
                       const std::vector<gmx::RVec> &coords,
+                      const ForceComputer          *forceComp,
                       real                    spacing,
                       real                    border,
                       const char             *reffn,
@@ -586,21 +608,6 @@ public:
     {
         return (this->getMolname() == mol.getMolname());
     }
-    
-    /*! \brief Init the class for the RESP algorithm.
-     * This must be called before generateCharges even if no RESP
-     * is used for charge generation, since ESP points can be used
-     * in analysis.
-     * \param[in]  pd      Data structure containing atomic properties
-     * \param[in]  coords  The coordinates
-     * \param[in]  watoms  Weight for the potential on the atoms in 
-     *                     doing the RESP fit. Should be 0 in most cases.
-     * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
-     */
-    void initQgenResp(const ForceField                *pd,
-                      const std::vector<gmx::RVec> &coords,
-                      real                          watoms,
-                      int                           maxESP);
     
     /*! \brief
      * Sends this object over an MPI connection
