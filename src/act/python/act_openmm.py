@@ -726,7 +726,7 @@ class ActOpenMMSim:
             if self.nonbondedMethod == NoCutoff:
                 self.vdw_correction.setName("VanderWaals"+self.vdw)
             else:
-                self.vdw_correction.setName("VanderWaalsCorrection"+self.vdw)
+                self.vdw_correction.setName("VanderWaalsCorrection"+dictVdW[self.vdw])
             for pp in [ "sigma", "epsilon", "gamma", "vdW", "sigma_LJ", "epsilon_LJ" ]:
                 self.vdw_correction.addPerParticleParameter(pp)
 
