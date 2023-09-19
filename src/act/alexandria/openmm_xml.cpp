@@ -71,7 +71,8 @@ namespace alexandria
  * exml_names returns string value upon calling function and submitting the key 
  * addSpecOption adds specific option for an atomtype 
  * addShell adds shell particle for a specific core atomtype
- * addXmlForceField creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
+ * addXmlForceField creates the xml tree ForceField, it consists of Atomtypes, 
+ * Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce, CustomBondForce and DrudeForce.
  * !!! The order of the parameters is in certain forces (e.g. CustomNonBondedForce) very important; reordering might break the force field in OpenMM!!!
  * writeOpenMM
  */
@@ -345,7 +346,7 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
     }
 }
 
-static void addXmlResidueBond(xmlNodePtr        residuePtr,
+static void addXmlResidueBond(xmlNodePtr         residuePtr,
                               const std::string &atom1,
                               const std::string &atom2)
 {
@@ -944,7 +945,8 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 if (fftypeGlobalMap.end() == ffGlobalPtr || 
                     (addNumbersToAtomTypes_ && localIndex > ffGlobalPtr->second))
                 {
-                    // Check whether this type exist in the force field
+                    // Check whether this type exist in the force field.
+                    // TODO: remove, this should not be necessary
                     if (!pd->hasParticleType(ffType))
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s",

@@ -122,6 +122,11 @@ TEST_F(OpenMMXmlTest, AcetonePol)
     testOpenMM("ACS-pg", "acetone.sdf", true);
 }
 
+TEST_F(OpenMMXmlTest, Merged)
+{
+    testOpenMM("ACS-g", "merged.pdb", true);
+}
+
 
 
 }

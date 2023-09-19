@@ -1,0 +1,19 @@
+AUTHOR    Rezac2020
+CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1
+HETATM    1  H   HF      1       5.030   4.970   4.099  1.00  0.00           H
+HETATM    2  F   HF      1       5.226   4.991   3.192  1.00  0.00           F
+HETATM    3  H   HCl     2       4.867   4.886   3.766  1.00  0.00           H
+HETATM    4 CL   HCl     2       4.811   5.011   2.487  1.00  0.00          Cl
+HETATM    5  H   HBr     3       4.853   4.905   3.683  1.00  0.00           H
+HETATM    6 BR   HBr     3       4.902   4.686   2.269  1.00  0.00          Br
+HETATM    7  H   HI      4       4.723   3.110   4.462  1.00  0.00           H
+HETATM    8  I   HI      4       5.466   3.681   3.145  1.00  0.00           I
+CONECT    1    2
+CONECT    2    1
+CONECT    3    4
+CONECT    4    3
+CONECT    5    6
+CONECT    6    5
+CONECT    7    8
+CONECT    8    7
+END
