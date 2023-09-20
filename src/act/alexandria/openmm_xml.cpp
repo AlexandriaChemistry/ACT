@@ -266,7 +266,7 @@ private:
     std::map<InteractionType, xmlNodePtr> xmlMap_;
     
     void addXmlElemMass(xmlNodePtr parent,
-                        const ParticleType &aType);
+                        const ParticleType *aType);
     
     void addXmlResidueBonds(xmlNodePtr           residuePtr,
                             const ForceField    *pd,
@@ -315,16 +315,16 @@ public:
                bool                       compress);
 };
 
-void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
+void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
 {
-    switch (aType.gmxParticleType())
+    switch (aType->gmxParticleType())
     {
     case eptAtom:
         {
             add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
-                         aType.element().c_str());
-            double mAtom = aType.mass();
-            if (aType.hasOption("poltype"))
+                         aType->element().c_str());
+            double mAtom = aType->mass();
+            if (aType->hasOption("poltype"))
             {
                 mAtom -= mDrude_;
             }
@@ -335,14 +335,14 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType &aType)
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
         break;
     case eptVSite:
-        if (0 != aType.mass())
+        if (0 != aType->mass())
         {
-            fprintf(stderr, "Warning: mass should be zero for vsites in OpenMM, not %g. Setting it to zero.\n", aType.mass());
+            fprintf(stderr, "Warning: mass should be zero for vsites in OpenMM, not %g. Setting it to zero.\n", aType->mass());
         }
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), 0.0);
         break;
     default:
-        fprintf(stderr, "Don't know what to. Help!\n");
+        GMX_THROW(gmx::InternalError("Don't know what to do. Help!\n"));
     }
 }
 
@@ -914,8 +914,6 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             // to a number index. It restarts from 1 for every molecule, then if we add a
             // new copy of the same force field type we increase the number.
             std::map<std::string, int> fftypeLocalMap;
-            // Do we have copies of this atom type in the local map already?
-            int  localIndex = 0;
             // We need to keep track of the atom names within the molecule as well
             std::vector<std::string> inames;
             
@@ -929,69 +927,62 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             {
                 // First do atom type stuff
                 auto ffType            = myatoms[i].ffType();
-                std::string openMMtype = ffType;
-                auto ffLocalPtr = fftypeLocalMap.find(ffType);
+                // Local index, default 1
+                int localIndex         = 1;
+                auto ffLocalPtr        = fftypeLocalMap.find(ffType);
                 if (fftypeLocalMap.end() != ffLocalPtr)
                 {
                     // Increase localPtr if needed and store it in variable
                     if (addNumbersToAtomTypes_)
                     {
                         ffLocalPtr->second++;
+                        localIndex = ffLocalPtr->second;
                     }
-                    localIndex = ffLocalPtr->second;
                 }
-                // First check whether this type is in the global map
-                auto ffGlobalPtr = fftypeGlobalMap.find(ffType);
-                if (fftypeGlobalMap.end() == ffGlobalPtr || 
-                    (addNumbersToAtomTypes_ && localIndex > ffGlobalPtr->second))
+                else
                 {
-                    // Check whether this type exist in the force field.
-                    // TODO: remove, this should not be necessary
-                    if (!pd->hasParticleType(ffType))
+                    fftypeLocalMap.insert({ffType, localIndex});
+                }
+                // Make OpenMM type
+                std::string openMMtype = ffType;
+                if (addNumbersToAtomTypes_)
+                {
+                    openMMtype += gmx::formatString("_%d", localIndex);
+                    if (debug)
                     {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("No such particle type %s in force field %s",
-                                                                       ffType.c_str(), pd->filename().c_str()).c_str()));
+                        fprintf(debug, "Adding openMMtype %s counter %d\n", openMMtype.c_str(), localIndex);
                     }
+                }
+                // Now check whether this type is in the global map
+                bool addGlobalAtomType = false;
+                auto ffGlobalPtr = fftypeGlobalMap.find(ffType);
+                if (fftypeGlobalMap.end() == ffGlobalPtr)
+                {
+                    // New global atomtype
+                    fftypeGlobalMap.insert({ ffType, 1});
+                    ffGlobalPtr = fftypeGlobalMap.find(ffType);
+
+                    addGlobalAtomType = true;
+                }
+                else if (addNumbersToAtomTypes_ && localIndex > ffGlobalPtr->second)
+                {
+                    ffGlobalPtr->second = localIndex;
+                    addGlobalAtomType = true;
+                }
+                if (addGlobalAtomType)
+                {
                     auto aType = pd->findParticleType(ffType);
-                    
-                    // New global atomtype?
-                    if (fftypeGlobalMap.end() == ffGlobalPtr)
-                    {
-                        fftypeGlobalMap.insert({ ffType, 0});
-                        ffGlobalPtr = fftypeGlobalMap.find(ffType);
-                        fftypeLocalMap.insert({ffType, 1});
-                        localIndex = 1;
-                    }
-                    // Make openMM type
-                    if (addNumbersToAtomTypes_)
-                    {
-                        if (localIndex > ffGlobalPtr->second)
-                        {
-                            ffGlobalPtr->second++;
-                        }
-                        openMMtype += gmx::formatString("_%d", ffGlobalPtr->second);
-                        // printf("openMMtype %s counter %d\n", openMMtype.c_str(), ffGlobalPtr->second);
-                    }
+                    // Make OpenMM class, that does not need the numbering.
                     std::string openMMclass = ffType;
                     std::string btype("bondtype");
                     if (aType->hasOption(btype))
                     {
                         openMMclass = aType->optionValue(btype);
                     }
-                    
                     auto newAtype = add_xml_child(xmlAtomTypePtr, exml_names(xmlEntryOpenMM::TYPE));
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::NAME), openMMtype.c_str());
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::CLASS), openMMclass.c_str());
-                    addXmlElemMass(newAtype, *aType);
-                }
-                else
-                {
-                    // Re-use an existing atomtype within this residue
-                    // Make openMM type
-                    if (addNumbersToAtomTypes_)
-                    {
-                        openMMtype = gmx::formatString("%s_%d", ffType.c_str(), localIndex);
-                    }
+                    addXmlElemMass(newAtype, aType);
                 }
                 int reali = tellme_RealAtom(i, myatoms);
 
