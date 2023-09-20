@@ -141,8 +141,7 @@ double sphereIntegrator(double r1, double r2, double val1, double val2)
 }
 
 void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
-                          std::vector<t_filenm> *filenm,
-                          bool                   b2code)
+                          std::vector<t_filenm> *filenm)
 {
     std::vector<t_pargs> pa = {
         { "-traj",   FALSE, etSTR,  {&trajname_},
@@ -159,7 +158,7 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
           "Optimize the bootstrapping by pre-calculating stuff" }
     };
     pargs->push_back(pa[0]);
-    if (b2code)
+    if (computeB2_)
     {
         for(size_t i = 1; i < pa.size(); i++)
         {
@@ -558,6 +557,7 @@ void ReRunner::rerun(FILE                        *logFile,
         {
             fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
                     dimers.size(), trajname_);
+            fflush(logFile);
         }
     }
     else
@@ -711,17 +711,25 @@ void ReRunner::rerun(FILE                        *logFile,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            auto EE = einter[InteractionType::EPOT];
+            fprintf(logFile, " r %g", rcom);
+            for (auto &EE: einter)
+            {
+                fprintf(logFile, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
+            }
             if (verbose)
             {
-                fprintf(logFile, " r %g Einter %g Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
-                        rcom, EE, f[0][XX], f[0][YY], f[0][ZZ],
+                fprintf(logFile, " Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
+                        f[0][XX], f[0][YY], f[0][ZZ],
                         torque[0][XX], torque[0][YY], torque[0][ZZ],
                         torque[1][XX], torque[1][YY], torque[1][ZZ],
                         torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
                         torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
             }
-            edist.add_point(rcom, EE, 0, 0);
+            else
+            {
+                fprintf(logFile, "\n");
+            }
+            edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
         else
         {
@@ -743,8 +751,14 @@ void ReRunner::rerun(FILE                        *logFile,
     {
         print_memory_usage(debug);
     }
-    if (eInter_)
+    if (computeB2_)
     {
+        auto info = gmx::formatString("Done with energy calculations, now time for second virial.");
+        printf("%s\n", info.c_str());
+        if (logFile)
+        {
+            fprintf(logFile, "%s\n", info.c_str());
+        }
         for(int kk = 0; kk < 2; kk++)
         {
             for(int m = 0; m < DIM; m++)
@@ -757,12 +771,6 @@ void ReRunner::rerun(FILE                        *logFile,
             actmol->fragmentHandler()->topologies()[0]->mass(),
             actmol->fragmentHandler()->topologies()[1]->mass()
         };
-        auto info = gmx::formatString("Done with energy calculations, now time for second virial.");
-        printf("%s\n", info.c_str());
-        if (logFile)
-        {
-            fprintf(logFile, "%s\n", info.c_str());
-        }
         computeB2(logFile, edist, ndist, masses, inertia,
                   forceMol, torqueMol, fnm);
     }
@@ -817,8 +825,8 @@ int b2(int argc, char *argv[])
     };
     DimerGenerator gendimers;
     gendimers.addOptions(&pa, &fnm);
-    ReRunner       rerun;
-    rerun.addOptions(&pa, &fnm, true);
+    ReRunner       rerun(true);
+    rerun.addOptions(&pa, &fnm);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),

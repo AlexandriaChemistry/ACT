@@ -98,6 +98,8 @@ private:
     int                 nbootStrap_  = 1;
     //! Whether to compute interaction energies and potentially B2
     bool                eInter_      = true;
+    //! Whether to compute the second virial
+    bool                computeB2_   = false;
     //! Optimize the bootstrapping by pre-calculating stuff
     bool                optimizedB2_ = false;
     //! The temperature array
@@ -122,7 +124,7 @@ private:
 
 
 public:
-    ReRunner() {}
+    ReRunner(bool computeB2) : computeB2_(computeB2) {}
     
     /*! \brief Make copies of utilities
      * \param[in] forceComp The force computer
@@ -141,11 +143,9 @@ public:
     /*! \brief Add command line options
      * \param[inout] pargs  Regular flags
      * \param[inout] filenm File options
-     * \param[in]    b2code Is this the b2 program calling?
      */
     void addOptions(std::vector<t_pargs>  *pargs,
-                    std::vector<t_filenm> *filenm,
-                    bool                   b2code = false);
+                    std::vector<t_filenm> *filenm);
     
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }

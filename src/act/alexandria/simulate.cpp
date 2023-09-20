@@ -115,7 +115,7 @@ int simulate(int argc, char *argv[])
     DimerGenerator           gendimers;
     // We do not want to see those options in simulate, just in b2.
     // gendimers.addOptions(&pa);
-    ReRunner                 rerun;
+    ReRunner                 rerun(false);
     rerun.addOptions(&pa, &fnm);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
