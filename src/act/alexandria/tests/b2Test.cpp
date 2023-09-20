@@ -104,7 +104,7 @@ protected:
         }
         if (LJ)
         {
-            ReRunner rerun;
+            ReRunner rerun(true);
             std::vector<t_filenm> fnm;
             rerun.setTemperatures(Temperature);
             std::vector<double> m2 = { mass, mass };
