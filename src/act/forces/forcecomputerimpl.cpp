@@ -149,7 +149,6 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
                           std::vector<gmx::RVec>                *forces,
                           std::map<InteractionType, double>     *energies)
 {
-    double ebond = 0;
     double erep  = 0;
     double edisp = 0;
 
@@ -189,7 +188,6 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
         erep     += eerep;
         edisp    += eedisp;
 
-        ebond      += erep+eedisp;
         real fbond  = f147*rinv;
         for (int m = 0; (m < DIM); m++)
         {
@@ -198,11 +196,6 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
             f[indices[1]][m] -= fij;
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "ACT vvdwtot: %10g \n", ebond);
-    }
-    energies->insert({InteractionType::VDW, ebond});
     energies->insert({InteractionType::REPULSION, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
