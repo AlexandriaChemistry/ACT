@@ -735,7 +735,7 @@ class ActOpenMMSim:
             expression += 'vdW = (vdW1*vdW2);'
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             if self.nonbondedMethod == NoCutoff:
-                self.vdw_correction.setName("VanderWaals"+self.vdw)
+                self.vdw_correction.setName("VanderWaals"+dictVdW[self.vdw])
             else:
                 self.vdw_correction.setName("VanderWaalsCorrection"+dictVdW[self.vdw])
             for pp in [ "sigma", "epsilon", "gamma", "vdW", "sigma_LJ", "epsilon_LJ" ]:
