@@ -212,11 +212,10 @@ class ActForce:
         self.fgnumber = fgnumber
 
 class ActOpenMMSim:
-    def __init__(self, pdbfile: str,              datfile: str,                  polarizable: bool,
+    def __init__(self, pdbfile: str,              datfile: str,
                        actfile: str=None,         xmlfile: str=None,             enefile: str='energy.csv',
                        txtfile: str='output.txt', pdbtraj: str='trajectory.pdb', dcdtraj: str='trajectory.dcd',
                        emonomer: float=None,      debug: bool=False,             verbose: bool=False):
-        self.polarizable = polarizable
         self.enefile     = enefile
         self.txtfile     = txtfile
         self.dcdtraj     = dcdtraj
@@ -284,7 +283,6 @@ class ActOpenMMSim:
         self.txt.write("simulation parameters: %s\n" % self.datfile)
         self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
         self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
-        self.txt.write("polarizable:           %s\n" % self.polarizable)
 
     def gen_ff(self):
         if None != self.xmlfile:
@@ -307,6 +305,8 @@ class ActOpenMMSim:
                 sys.exit("Failed running '%s'" % mycmd)
             self.txt.write("Succesfully generated an OpenMM force field file %s from ACT force field %s\n" % (self.xmloutfile, self.actfile))
             self.forcefield = ForceField(self.xmloutfile)
+        self.polarizable = any(isinstance(generator, openmm.app.forcefield.DrudeGenerator) for generator in self.forcefield.getGenerators())
+        self.txt.write("polarizable:           %s\n" % self.polarizable)
 
     def xmlOutFile(self):
         return self.xmloutfile
