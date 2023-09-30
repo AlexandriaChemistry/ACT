@@ -160,6 +160,10 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
         auto &params    = b->params();
         auto sigma      = params[lj_147SIGMA_IJ];
         auto epsilon    = params[lj_147EPSILON_IJ];
+        if (0 == epsilon)
+        {
+            continue;
+        }
         auto gamma      = params[lj_147GAMMA_IJ];
         auto delta      = params[lj_147DELTA_IJ];
         // Get the atom indices
@@ -216,6 +220,10 @@ static void computeWBH(const TopologyEntryVector             &pairs,
         auto &params    = b->params();
         auto sigma      = params[wbhSIGMA_IJ];
         auto epsilon    = params[wbhEPSILON_IJ];
+        if (0 == epsilon)
+        {
+            continue;
+        }
         auto gamma      = params[wbhGAMMA_IJ];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
