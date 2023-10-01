@@ -431,9 +431,6 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         auto uafr = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
-        auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "vdW");
-        
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
         auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -491,14 +488,6 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             {
                 grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                 add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
-                if (eptAtom == aType->gmxParticleType()) 
-                {
-                    add_xml_double(grandchild3, "vdW", 1.0); 
-                }
-                else
-                {
-                    add_xml_double(grandchild3, "vdW", 0.0);
-                }
             }
             double sigma = 0, epsilon = 0;
             switch (fs.gromacsType())

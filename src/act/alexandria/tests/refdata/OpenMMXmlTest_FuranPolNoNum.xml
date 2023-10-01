@@ -69,18 +69,17 @@
   </PeriodicTorsionForce>
   <CustomNonbondedForce energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
-    <PerParticleParameter name="vdW"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
-    <Atom type="c2" vdW="1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
-    <Atom type="c2_s" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
-    <Atom type="h" vdW="1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
-    <Atom type="h_s" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
-    <Atom type="o2" vdW="1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_s" vdW="0" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="c2" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
+    <Atom type="c2_s" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="h" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_s" sigma="0" epsilon="0" gamma="7" zeta="6"/>
+    <Atom type="o2" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
+    <Atom type="o2_s" sigma="0" epsilon="0" gamma="7" zeta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
