@@ -374,6 +374,8 @@ class ActOpenMMSim:
         self.count_forces("Add force group %d %s" % ( new_fgnumber, fcname))
 
     def del_force(self, force, nonbond:bool=False):
+        if None == force:
+            return
         fcname   = force.getName()
         fgnumber = force.getForceGroup()
         if self.verbose:
@@ -710,7 +712,7 @@ class ActOpenMMSim:
         self.count_forces("Direct space 7")
 
         # Van der Waals, is our custom potential minus the default LJ.
-        LJ_expression = 'U_LJ = 4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6);'
+        LJ_expression = 'U_LJ = select(epsilon,4*epsilon_LJ*((sigma_LJ/r)^12 -(sigma_LJ/r)^6),0);'
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
@@ -820,7 +822,7 @@ class ActOpenMMSim:
             expression = 'U_14_7-U_LJ;'
             expression += LJ_expression
 
-            self.vdw_expression =( 'select(vdW,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0);')
+            self.vdw_expression =( 'select(epsilon,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0);')
             expression += ( 'U_14_7 = %s;' % self.vdw_expression )
             csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'sigma    = %s;' % csigma )
@@ -1184,6 +1186,8 @@ class ActOpenMMSim:
             self.del_force(self.customnb)
         
     def dhvap(self, epot:float)->float:
+        if None == self.emonomer:
+            return None
         nmol    = self.topology.getNumResidues()
         relener = epot/nmol - self.emonomer
         kB      = 1.380649e-23 * 6.02214e23 / 1000
@@ -1204,8 +1208,8 @@ class ActOpenMMSim:
         self.txt.write('Potential energy = %.2f kJ/mol. potE-etot %.2f\n' % (potE, potE-etot))
         if None != self.emonomer:
             nmol = self.topology.getNumResidues()
-            relener = potE/nmol - self.emonomer
-            self.txt.write('Interaction energy for %d-mer %g\n' % ( nmol, relener ))
+            einter = potE - nmol*self.emonomer
+            self.txt.write('Interaction energy for %d-mer %g\n' % ( nmol, einter ))
             self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(potE) ) )
         if abs(potE-etot) > 1e-3:
             self.txt.write("sum of the above %.2f\n" % (etot))
