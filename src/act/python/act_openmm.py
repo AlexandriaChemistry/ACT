@@ -820,7 +820,7 @@ class ActOpenMMSim:
             expression = 'U_14_7-U_LJ;'
             expression += LJ_expression
 
-            self.vdw_expression =( 'vdW*( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) );')
+            self.vdw_expression =( 'select(vdW,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0);')
             expression += ( 'U_14_7 = %s;' % self.vdw_expression )
             csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'sigma    = %s;' % csigma )
