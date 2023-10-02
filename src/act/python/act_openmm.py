@@ -775,7 +775,7 @@ class ActOpenMMSim:
             else:
                 expression += LJ_expression
 
-            self.vdw_expression =('select(epsilon=0,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
+            self.vdw_expression =('select(epsilon,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
             expression += ( 'U_GWBH = %s;' % self.vdw_expression )
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'rmin    = %s;' % crmin )
