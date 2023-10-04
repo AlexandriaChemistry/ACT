@@ -20,6 +20,8 @@ H|0|B3LYP/aug-cc-pvtz|E0|0|-0.502260|2|Hartree|Unknown2023a||
 He|0|B3LYP/aug-cc-pvtz|E0|0|-2.914743|1|Hartree|Unknown2023a||
 I|0|B3LYP/aug-cc-pwcvtz-pp|E0|0|-295.783591|2|Hartree|Unknown2023a||
 I|-1|B3LYP/aug-cc-pwcvtz-pp|E0|0|-295.905705|1|Hartree|Unknown2023a||
+I|0|B3LYP/aug-cc-pvtz-pp|E0|0|-295.781703148|2|Hartree|Unknown2023a||
+I|-1|B3LYP/aug-cc-pvtz-pp|E0|0|-295.903062086|1|Hartree|Unknown2023a||
 K|0|B3LYP/def2-TZVPP|E0|0|-599.925226|2|Hartree|Unknown2023a||
 K|1|B3LYP/def2-TZVPP|E0|0|-599.760267|1|Hartree|Unknown2023a||
 Kr|0|B3LYP/aug-cc-pwcvtz-pp|E0|0|-463.659275|1|Hartree|Unknown2023a||

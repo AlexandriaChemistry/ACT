@@ -624,9 +624,11 @@ class GaussianReader:
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
                 lots = []
                 charges = []
+                ub = self.userbasis.upper()
                 for i in range(len(self.atomname)):
-                    if self.atomname[i] in self.special_basis:
-                        lots.append(self.special_basis[self.atomname[i]])
+                    if (ub in self.special_basis and
+                        self.atomname[i] in self.special_basis[ub]):
+                        lots.append(self.tcmap["Method"] + "/" + self.special_basis[ub][self.atomname[i]])
                     else:
                         lots.append(leveloftheory)
                     charges.append(0.0)
@@ -695,8 +697,9 @@ def read_basis_table(infile:str)->dict:
             with open(infile, "r") as inf:
                 for line in inf:
                     words = line.strip().split()
-                    if len(words) == 2:
-                        rbt[words[0]] = words[1]
+                    # Expect Atom Oldbasis Newbasis
+                    if len(words) == 3:
+                        rbt[words[1]] = { words[0]: words[2] }
         else:
             print("No such basisset_table file %s" % infile)
     return rbt

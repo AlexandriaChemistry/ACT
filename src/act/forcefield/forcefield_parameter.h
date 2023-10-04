@@ -200,7 +200,7 @@ class ForceFieldParameter
      */
     bool setMinimum(double minimum)
     { 
-        if (!nonNegative_ || minimum > 0)
+        if (!nonNegative_ || minimum >= 0)
         {
             minimum_ = minimum;
             return true;

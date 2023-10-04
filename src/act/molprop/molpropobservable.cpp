@@ -76,7 +76,7 @@ std::map<MolPropObservable, const char *> mpo_name_ =
 
 std::map<MolPropObservable, const char *> mpo_unit_ =
 {
-    { MolPropObservable::POTENTIAL,         "e/nm" }, 
+    { MolPropObservable::POTENTIAL,         "kJ/mol e" }, 
     { MolPropObservable::FREQUENCY,         "cm^-1" },
     { MolPropObservable::INTENSITY,         "nm/mol" },
     { MolPropObservable::DIPOLE,            "D" }, 

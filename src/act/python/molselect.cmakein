@@ -13,7 +13,15 @@ from actutils    import *
 from mol_csv_api import *
 from molutils    import *
 from datetime    import datetime
-import numpy as np
+try:
+  import numpy as np
+except:
+  pp = "PYTHONPATH"
+  if pp in os.environ:
+    print("NumPy not found. Check your %s environment variable, right now it is '%s'." % ( pp, os.environ[pp] ))
+  else:
+    print("NumPy not found and your %s environment variable is empty." % ( pp ))
+  sys.exit("Cannot continue")
 
 strained = [ "oxetane", "norborn", "spiropentane", "cycloprop", "cyclobut", "oxiran" ]
 
