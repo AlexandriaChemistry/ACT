@@ -72,6 +72,8 @@ def read_xvg(filename):
                 continue
             
             w = line.split()
+            if len(w) == 1:
+                w = line.split(",")
             if None == numwords:
                 numwords = len(w)
             if len(w) == numwords:
