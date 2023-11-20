@@ -65,13 +65,13 @@ class GeneralCouplingTheory:
         for t in self.targets:
             self.log.write("Target %s value %s\n" % ( t["observable"], t["value"] ))
 
-    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, polarize:bool, iter:int, pfraction:float):
+    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, iter:int, pfraction:float):
         # It is much faster to convert the ACT force field file for a monomer
-        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, polarizable=polarize)
+        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff)
         sim1.setup()
         emonomer = sim1.minimize()
         # Now let's do the bulk
-        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml", polarizable=polarize)
+        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml")
         sim.set_monomer_energy(emonomer)
         sim.run()
         # Store coordinates in new file
@@ -138,7 +138,7 @@ class GeneralCouplingTheory:
                     self.conv[obs][atom][param].write("%5d  %10g\n" % ( myiter, pp["value"] ))
 
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
-            niter:int, polarize:bool, pfraction:float):
+            niter:int, pfraction:float):
         # Loop over the iterations
         coords = bulk_pdb
         outf   = {}
@@ -149,7 +149,7 @@ class GeneralCouplingTheory:
             # Set all the parameter change steps to 0
             self.reset_step()
             # Do a simulation and collect data afterwards
-            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, polarize, myiter, pfraction)
+            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, myiter, pfraction)
             # Update the force field
             self.update_ff(myiter)
             # And print stuff!
