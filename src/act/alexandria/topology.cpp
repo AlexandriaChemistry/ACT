@@ -1196,13 +1196,13 @@ void Topology::fillParameters(const ForceField *pd)
             switch (fs.gromacsType())
             {
             case F_LJ:
-                fillParams(fs, topID, ljNR, lj_name, &param);
+                fillParams(fs, topID, lj12_6NR, lj12_6_name, &param);
                 break;
-            case F_LJ_86:
-                fillParams(fs, topID, lj_NR_86, lj_86_name, &param);
+            case F_LJ8_6:
+                fillParams(fs, topID, lj8_6NR, lj8_6_name, &param);
                 break;
-            case F_LJ_147:
-                fillParams(fs, topID, lj_NR_147, lj_147_name, &param);
+            case F_LJ14_7:
+                fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
                 break;
             case F_BHAM:
                 fillParams(fs, topID, wbhNR, wbh_name, &param);

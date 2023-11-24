@@ -41,7 +41,7 @@
 namespace alexandria
 {
 
-static void computeLJ(const TopologyEntryVector             &pairs,
+static void computeLJ12_6(const TopologyEntryVector             &pairs,
                       gmx_unused const std::vector<ActAtom> &atoms,
                       const std::vector<gmx::RVec>          *coordinates,
                       std::vector<gmx::RVec>                *forces,
@@ -55,8 +55,11 @@ static void computeLJ(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto c6         = params[ljC6_IJ];
-        auto c12        = params[ljC12_IJ];
+        auto sig_ij     = params[lj12_6SIGMA_IJ];
+        auto eps_ij     = params[lj12_6EPSILON_IJ];
+        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6         = 4*eps_ij*sig6;
+        auto c12        = c6*sig6;
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -91,7 +94,7 @@ static void computeLJ(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::VDW, ebond});
 }
 
-static void computeLJ_86(const TopologyEntryVector             &pairs,
+static void computeLJ8_6(const TopologyEntryVector             &pairs,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
@@ -105,8 +108,11 @@ static void computeLJ_86(const TopologyEntryVector             &pairs,
     {   
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto c6         = params[lj_C6_IJ];
-        auto c8         = params[lj_C8_IJ];
+        auto sig_ij     = params[lj8_6SIGMA_IJ];
+        auto eps_ij     = params[lj8_6EPSILON_IJ];
+        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6         = 4*eps_ij*sig6;
+        auto c8         = 0.75*c6*sig_ij*sig_ij;
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -143,7 +149,7 @@ static void computeLJ_86(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::VDW, ebond});
 } 
 
-static void computeLJ_147(const TopologyEntryVector             &pairs,
+static void computeLJ14_7(const TopologyEntryVector             &pairs,
                           gmx_unused const std::vector<ActAtom> &atoms,
                           const std::vector<gmx::RVec>          *coordinates,
                           std::vector<gmx::RVec>                *forces,
@@ -158,14 +164,14 @@ static void computeLJ_147(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[lj_147SIGMA_IJ];
-        auto epsilon    = params[lj_147EPSILON_IJ];
+        auto sigma      = params[lj14_7SIGMA_IJ];
+        auto epsilon    = params[lj14_7EPSILON_IJ];
         if (0 == epsilon)
         {
             continue;
         }
-        auto gamma      = params[lj_147GAMMA_IJ];
-        auto delta      = params[lj_147DELTA_IJ];
+        auto gamma      = params[lj14_7GAMMA_IJ];
+        auto delta      = params[lj14_7DELTA_IJ];
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -1041,9 +1047,9 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_CUBICBONDS,    computeCubic        },
     { F_ANGLES,        computeAngles       },
     { F_LINEAR_ANGLES, computeLinearAngles },
-    { F_LJ,            computeLJ           },
-    { F_LJ_86,         computeLJ_86        },
-    { F_LJ_147,        computeLJ_147       },
+    { F_LJ,            computeLJ12_6       },
+    { F_LJ8_6,         computeLJ8_6        },
+    { F_LJ14_7,        computeLJ14_7       },
     { F_BHAM,          computeWBH          },
     { F_GBHAM,         computeNonBonded    },
     { F_COUL_SR,       computeCoulomb      },

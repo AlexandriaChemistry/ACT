@@ -37,21 +37,21 @@
 namespace alexandria
 {
 
-    enum { ljSIGMA = 0, ljEPSILON = 1, ljC6_IJ = 2, ljC12_IJ = 3, ljNR = 4 };
+    enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6SIGMA_IJ = 2, lj12_6EPSILON_IJ = 3, lj12_6NR = 4 };
     
-    extern const char *lj_name[ljNR];
+    extern const char *lj12_6_name[lj12_6NR];
 
-    enum { lj_86SIGMA = 0, lj_86EPSILON = 1, lj_C6_IJ = 2, lj_C8_IJ = 3, lj_NR_86 = 4 };
+    enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6SIGMA_IJ = 2, lj8_6EPSILON_IJ = 3, lj8_6NR = 4 };
 
-    extern const char *lj_86_name[lj_NR_86];
+    extern const char *lj8_6_name[lj8_6NR];
     
     enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
     
     extern const char *wbh_name[wbhNR];
 
-    enum { lj_147SIGMA = 0, lj_147EPSILON = 1, lj_147GAMMA = 2, lj_147DELTA = 3, lj_147SIGMA_IJ = 4, lj_147EPSILON_IJ = 5, lj_147GAMMA_IJ = 6, lj_147DELTA_IJ = 7, lj_NR_147 = 8 };
+    enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3, lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };
 
-    extern const char *lj_147_name[lj_NR_147];
+    extern const char *lj14_7_name[lj14_7NR];
     
     enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
     

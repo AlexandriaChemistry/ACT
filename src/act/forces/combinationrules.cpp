@@ -39,342 +39,300 @@
 namespace alexandria
 {
 
-void CombineLJ(int     CombinationRule,
-               double  sigmaI,
-               double  sigmaJ,
-               double  epsilonI,
-               double  epsilonJ,
-               double *c6,
-               double *c12)
-{
-    switch (CombinationRule)
+#define sqr(x) (x*x)
+
+std::map<CombRule, const std::string> combRuleName = 
     {
-    case eCOMB_GEOMETRIC:
+        { CombRule::Geometric, "Geometric" },
+        { CombRule::Arithmetic, "Arithmetic" },
+        { CombRule::HogervorstEpsilon, "HogervorstEpsilon" },
+        { CombRule::HogervorstSigma, "HogervorstSigma" },
+        { CombRule::Yang, "Yang" },
+        { CombRule::WaldmanSigma, "WaldmanSigma" },
+        { CombRule::WaldmanEpsilon, "WaldmanEpsilon" },
+        { CombRule::QiSigma, "QiSigma" },
+        { CombRule::QiEpsilon, "QiEpsilon" },
+        { CombRule::MasonGamma, "MasonGamma" },
+        { CombRule::Volumetric, "Volumetric" },
+        { CombRule::InverseSquare, "InverseSquare" },
+        { CombRule::Matar, "Matar" }
+    };
+
+const std::string &combinationRuleName(CombRule c)
+{
+    if (combRuleName.find(c) == combRuleName.end())
+    {
+        GMX_THROW(gmx::InternalError("Unsupported combination rule"));
+    }
+    return combRuleName[c];
+}
+
+CombRule combinationRuleRule(const std::string &name)
+{
+    for(const auto &m : combRuleName)
+    {
+        if (m.second == name)
         {
-            double sig  = std::sqrt(sigmaI * sigmaJ);
-            double eps  = std::sqrt(epsilonI * epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
-            *c6  = 4*eps*sig6;
-            *c12 = *c6 * sig6;
+            return m.first;
         }
-        break;
-    case eCOMB_ARITHMETIC:
+    }
+    GMX_THROW(gmx::InternalError(gmx::formatString("No such combination rule %s", name.c_str()).c_str()));
+}
+
+double combineTwo(CombRule comb, double x1, double x2)
+{
+    switch (comb)
+    {
+    case CombRule::Geometric:
+        return std::sqrt(x1*x2);
+    case CombRule::Arithmetic:
+        return 0.5 * (x1 + x2);
+    case CombRule::HogervorstEpsilon:
+        return (2.0 * x1 * x2)/( x1 + x2 );
+    case CombRule::Yang:
+        return ( x1 * x2 ) * ( x1 + x2 ) / (sqr(x1) + sqr(x2) );
+    case CombRule::WaldmanSigma:
+        return std::pow(0.5*(std::pow(x1, 6) + std::pow(x2, 6)), (1.0/6.0));
+    case CombRule::WaldmanEpsilon:
         {
-            double sig  = 0.5 * (sigmaI + sigmaJ);
-            double eps  = 0.5 * (epsilonI + epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
-            *c6  = 4*eps*sig6;
-            *c12 = *c6 * sig6;
+            double x12 = sqr(x1);
+            double x22 = sqr(x2);
+            return ((x1*x12) + (x2*x22) )/ (x12 + x22);
         }
-        break;
-    case eCOMB_LORENTZ_BERTHELOT:
+    case CombRule::Volumetric:
+        // Kriz2024a Eqn. 20
+        return std::pow(0.5*(x1*x1*x1 + x2*x2*x2)/2, (1.0/3.0));
+    case CombRule::InverseSquare:
+        // Kriz2024a Eqn. 21
         {
-            double sig  = 0.5 * (sigmaI + sigmaJ);
-            double eps  = std::sqrt(epsilonI * epsilonJ);
-            double sig6 = std::pow(sig, 6.0);
-            *c6  = 4*eps*sig6;
-            *c12 = *c6 * sig6;
+            double denom = 1/sqr(x1) + 1/sqr(x2);
+            return std::sqrt(2/denom);
         }
-        break;
-    case eCOMB_NONE:
-        break;
+    case CombRule::QiSigma:
+        return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
+    case CombRule::Matar:
+        // Matar2004, Eqn. 9
+        return 4*x1*x2/sqr(std::sqrt(x1) + std::sqrt(x2));
     default:
-        gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", CombinationRule);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s", combRuleName[comb].c_str()).c_str()));
     }
+    return 0;
 }
 
-void CombineLJ_86(int     CombinationRule,
-               double  sigmaI,
-               double  sigmaJ,
-               double  epsilonI,
-               double  epsilonJ,
-               double *c6,
-               double *c8)
+double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
 {
-    switch (CombinationRule)
-    {
-    case eCOMB_GEOMETRIC:
-        {
-            double sig  = std::sqrt(sigmaI * sigmaJ);
-            double eps  = std::sqrt(epsilonI * epsilonJ);
-	    double sig6 = std::pow(sig, 6.0);
-            double sig2 = std::pow(sig, 2.0);
-            *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig2;
-        }
-        break;
-    case eCOMB_ARITHMETIC:
-        {
-            double sig  = 0.5 * (sigmaI + sigmaJ);
-            double eps  = 0.5 * (epsilonI + epsilonJ);
-            double sig2 = std::pow(sig, 2.0);
-	    double sig6 = std::pow(sig, 6.0);
-            *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig2;
-        }
-        break;
-    case eCOMB_LORENTZ_BERTHELOT:
-        {
-            double sig  = 0.5 * (sigmaI + sigmaJ);
-            double eps  = std::sqrt(epsilonI * epsilonJ);
-            double sig2 = std::pow(sig, 2.0);
-	    double sig6 = std::pow(sig, 6.0);
-            *c6  = 4*eps*sig6;
-            *c8 = *c6 * sig2;
-        }
-        break;
-    case eCOMB_NONE:
-        break;
-    default:
-        gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", CombinationRule);
-    }
+    double tempi = std::abs(e1 * g1 * (std::pow(s1, 6)) /(g1 - 6 ));
+    double tempj = std::abs(e2 * g2 * (std::pow(s2, 6)) /(g2 - 6  ));
+    double gam12 = combineTwo(CombRule::Arithmetic, g1, g2);
+    double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
+    return std::pow((std::sqrt( tempi * tempj ) )* abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-void CombineLJ_147(int     CombinationRule,
-                 double  sigmaI,
-                 double  sigmaJ,
-                 double  epsilonI,
-                 double  epsilonJ,
-                 double  gammaI,
-                 double  gammaJ,
-		 double  deltaI,
-		 double  deltaJ,
-                 double *sigmaIJ,
-                 double *epsilonIJ,
-                 double *gammaIJ,
-                 double *deltaIJ)
-
+double combineQiEpsilon(double e1, double e2, double s1, double s2)
 {
-    switch (CombinationRule)
-    {
-    case eCOMB_GEOMETRIC:
-        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-        *gammaIJ = std::sqrt(gammaI * gammaJ);
-        *deltaIJ = std::sqrt(deltaI * deltaJ);
-        break;
-    case eCOMB_ARITHMETIC:
-        *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-        *gammaIJ = 0.5 * (gammaI + gammaJ);
-        *deltaIJ = 0.5 * (deltaI + deltaJ);
-        break;
-    case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon.
-        if (sigmaI == 0 and sigmaJ == 0)
-        {
-            *sigmaIJ = 0;
-        }
-        else
-        {
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-        }
-        if (epsilonI == 0 and epsilonJ == 0)
-        {
-            *epsilonIJ = 0;
-        }
-        else
-        {
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-        }
-        *gammaIJ = 0.5 * (gammaI + gammaJ);
-        *deltaIJ = std::sqrt(deltaI * deltaJ);
-        break;
-    case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi. but has WH rule for gamma, as is the winner for WBH
-        if (sigmaI == 0 and sigmaJ == 0)
-        {
-            *sigmaIJ = 0;
-        }
-        else
-        {
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-        }
-        if (epsilonI == 0 and epsilonJ == 0)
-        {
-            *epsilonIJ = 0;
-        }
-        else
-        {
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-        }
-        *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
-        *deltaIJ = std::sqrt(deltaI * deltaJ);
-        break;
-    case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
-        if (sigmaI == 0 and sigmaJ == 0)
-        {
-            *sigmaIJ = 0;
-        }
-        else
-        {
-            *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-        }
-        
-        if (epsilonI == 0 and epsilonJ == 0)
-        {
-            *epsilonIJ = 0;
-        }
-        else
-        {
-            *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-        }
-        //now somehow there needs to be or, since for core shell interactions it would be n/a
-        if (gammaI == 0 or gammaJ == 0)
-        {
-            *gammaIJ = 0;
-        }
-        else
-        {
-            *gammaIJ = std::sqrt(sigmaI * sigmaJ) * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-        }
-        *deltaIJ = std::sqrt(deltaI * deltaJ);
-        break;	    
-    case eCOMB_NONE:
-        break;
-    default:
-        gmx_fatal(FARGS, "Unsupported combination rule %d for 14_7 Lennard Jones. Use Geometric, Arithmetic, Qi or Qi_2 (special for 14-7 with Kong-Mason gamma)", CombinationRule);
-    }
+    // Qi et al, proposed for epsilon
+    double s13 = s1*s1*s1;
+    double s23 = s2*s2*s2;
+    return std::sqrt( e1 * e2 ) * ( 2 * s13 * s23 / (sqr(s13) + sqr(s23)));
 }
 
-
-void CombineBham(int     CombinationRule,
-                 double  sigmaI,
-                 double  sigmaJ,
-                 double  epsilonI,
-                 double  epsilonJ,
-                 double  gammaI,
-                 double  gammaJ,
-                 double *sigmaIJ,
-                 double *epsilonIJ,
-                 double *gammaIJ)
+double combineMasonGamma(double g1, double g2, double s1, double s2)
 {
-    switch (CombinationRule)
-    {
-    case eCOMB_GEOMETRIC:
-        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-        *gammaIJ = std::sqrt(gammaI * gammaJ);
-        break;
-    case eCOMB_ARITHMETIC:
-        *sigmaIJ = 0.5 * (sigmaI + sigmaJ);
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ);
-        *gammaIJ = 0.5 * (gammaI + gammaJ);
-        break;
-    case eCOMB_KONG_MASON: // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential and the Morse Potential. J. Chem. Phys. 1973, 59.
-        *sigmaIJ = std::sqrt(sigmaI * sigmaJ);
-        *epsilonIJ = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-        *gammaIJ = *sigmaIJ * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
-        break;
-    case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
-        {
-            *gammaIJ = 0.5 * (gammaI + gammaJ);  
-            *epsilonIJ = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-            double itmp = (epsilonI*gammaI*std::pow(sigmaI,6.0))/(gammaI-6.0);
-            double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6.0))/(gammaJ-6.0);
-            *sigmaIJ = std::pow(std::sqrt(itmp*jtmp)*(*gammaIJ - 6.0)/(*epsilonIJ * *gammaIJ), (1.0/6.0));
-        }
-        break;   
-    case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
-        *sigmaIJ = ((sigmaI * sigmaJ) *  (sigmaI + sigmaJ))/ (pow(sigmaI,2) + pow(sigmaJ,2));
-        *epsilonIJ = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-        *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));   
-        break;
-    case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon.
-        *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-        *gammaIJ = 0.5 * (gammaI + gammaJ);
-        break;
-    case eCOMB_QI_2: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 2023 testing, Kriz. is almost the same asi Qi
-        {
-            double s2 = pow(sigmaI,3) + pow(sigmaJ,3);
-            if (s2 > 0)
-            {
-                *sigmaIJ = s2/(pow(sigmaI,2) + pow(sigmaJ,2));
-                *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3) * pow(sigmaJ,3))/(pow(sigmaI,6) + pow(sigmaJ,6)));
-            }
-            else
-            {
-                *sigmaIJ = 0;
-                *epsilonIJ = 0;
-            }
-            *gammaIJ = pow(((pow(gammaI,6.0)+pow(gammaJ,6.0))/2.0),(1.0/6.0));
-        }
-        break;    
-    case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993.
-        *sigmaIJ = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
-        *gammaIJ = 0.5 * (gammaI + gammaJ);;
-        break;
-	case eCOMB_QYQY: // Waldman & Hagler, J. Comp. Chem., Year: 1993. kriz changing to the best rule for GBHAM Qi, Yang, Qi (with the "yang" for delta)
-        *sigmaIJ = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
-        *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(sigmaI,3.0) * pow(sigmaJ,3.0))/(pow(sigmaI,6.0) + pow(sigmaJ,6.0)));
-        *gammaIJ = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));
-        break;
-    case eCOMB_NONE:
-        break;
-    case eCOMB_NR:
-        gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
-    }
+    double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
+    return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
+
 }
 
-void CombineGBham(int     CombinationRule,
-                  double  rminI,
-                  double  rminJ,
-                  double  epsilonI,
-                  double  epsilonJ,
-                  double  gammaI,
-                  double  gammaJ,
-                  double  deltaI,
-                  double  deltaJ,
-                  double *rminIJ,
-                  double *epsilonIJ,
-                  double *gammaIJ,
-                  double *deltaIJ)
+std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
+                                                         int                ftype)
 {
-    // This is just a quick hack!
-    CombineBham(CombinationRule, rminI, rminJ, epsilonI, epsilonJ,
-                gammaI, gammaJ, rminIJ, epsilonIJ, gammaIJ);
-    double d2 = (deltaI * deltaJ)*(deltaI + deltaJ);
-    if (d2 != 0)
-    {
-        *deltaIJ = d2/(pow(deltaI,2) + pow(deltaJ,2));
-    }
-    else
-    {
-        *deltaIJ = 0;
-    }
-}
-
-int getCombinationRule(const ForceFieldParameterList &vdw)
-{
-    auto combRule = vdw.optionValue("combination_rule");
+    std::map<const std::string, CombRule> myCombRule;
     int  i;
     for(i = 0; i < eCOMB_NR; i++)
     {
-        if (combRule.compare(ecomb_names[i]) == 0)
+        if (vdw_comb.compare(ecomb_names[i]) == 0)
         {
             break;
         }
     }
     GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
-                                                       combRule.c_str()).c_str());
-    return i;
+                                                       vdw_comb.c_str()).c_str());
+    const std::string csigma(lj14_7_name[lj14_7SIGMA]);
+    const std::string crmin(gbh_name[gbhRMIN]);
+    const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
+    const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
+    const std::string cdelta(lj14_7_name[lj14_7DELTA]);
+    bool haveDelta = F_GBHAM == ftype || F_LJ14_7 ==ftype;
+    bool haveGamma = haveDelta || F_BHAM == ftype;
+    switch (i)
+    {
+    case eCOMB_GEOMETRIC:
+        myCombRule.insert({ cepsilon, CombRule::Geometric });
+        if (F_GBHAM == ftype)
+        {
+            myCombRule.insert({ crmin,    CombRule::Geometric });
+        }
+        else
+        {
+            myCombRule.insert({ csigma,   CombRule::Geometric });
+        }
+        if (haveGamma)
+        {
+            myCombRule.insert({ cgamma,   CombRule::Geometric });
+        }
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta,   CombRule::Geometric });
+        }
+        break;
+    case eCOMB_ARITHMETIC:
+        myCombRule.insert({ cepsilon, CombRule::Arithmetic });
+        if (F_GBHAM == ftype)
+        {
+            myCombRule.insert({ crmin,    CombRule::Arithmetic });
+        }
+        else
+        {
+            myCombRule.insert({ csigma,   CombRule::Arithmetic });
+        }
+        if (haveGamma)
+        {
+            myCombRule.insert({ cgamma,   CombRule::Arithmetic });
+        }
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta,   CombRule::Arithmetic });
+        }
+        break;
+    case eCOMB_LORENTZ_BERTHELOT:
+        myCombRule.insert({ csigma,   CombRule::Arithmetic });
+        myCombRule.insert({ cepsilon, CombRule::Geometric });
+        break;
+    case eCOMB_KONG_MASON:
+        // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential
+        // and the Morse Potential. J. Chem. Phys. 1973, 59.
+        myCombRule.insert({ csigma,   CombRule::Geometric });
+        myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::MasonGamma });
+        break;
+    case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
+        myCombRule.insert({ csigma,   CombRule::HogervorstSigma });
+        myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::Geometric });
+        break;   
+    case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
+        myCombRule.insert({ csigma,   CombRule::Yang });
+        myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::Yang });
+        break;
+    case eCOMB_QI:
+        // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
+        // Cubic-mean for sigma, and Waldman-Hagler for epsilon.
+        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::Arithmetic });
+        break;
+    case eCOMB_QI_2:
+        // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
+        // Cubic-mean for sigma, and Waldman-Hagler for epsilon.
+        // 2023 testing, Kriz. is almost the same asi Qi.
+        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::WaldmanSigma });
+        break;    
+    case eCOMB_WALDMAN_HAGLER:
+        // Waldman & Hagler, J. Comp. Chem., Year: 1993.
+        myCombRule.insert({ csigma,   CombRule::WaldmanSigma });
+        myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
+        break;
+    case eCOMB_QYQY:
+        // Waldman & Hagler, J. Comp. Chem., Year: 1993.
+        // Kriz: changing to the best rule for GBHAM Qi, Yang, Qi (with the "yang" for delta)
+        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::Yang });
+        break;
+    default:
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s not supported anymore. Sorry.", ECOMBNAME(i)).c_str()));
+    }
+    return myCombRule;
 }
 
-static void generateVdwParameterPairs(ForceField *pd)
+std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw)
 {
-    auto forcesVdw = pd->findForces(InteractionType::VDW);
-    auto ftypeVdW  = forcesVdw->gromacsType();
-    int  comb_rule = getCombinationRule(*forcesVdw);
+    std::map<const std::string, CombRule> myCombRule;
+    const std::string oldCombRule = "combination_rule";
+    if (vdw.optionExists(oldCombRule))
+    {
+        return oldCombinationRule(vdw.optionValue(oldCombRule), vdw.gromacsType());
+    }
+    return myCombRule;
+}
 
-    // We temporarily store the new parameters here
-    ForceFieldParameterListMap *parm = forcesVdw->parameters();;
-    
+ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, CombRule> &combrule,
+                                           const ForceFieldParameterMap                &ivdw,
+                                           const ForceFieldParameterMap                &jvdw)
+{
     // Fudge unit
     std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
 
+    ForceFieldParameterMap pmap;
+
+    for(const auto &param : ivdw)
+    {
+        if (jvdw.end() == jvdw.find(param.first))
+        {
+            GMX_THROW(gmx::InternalError("Van der Waals parameters of different types cannot be combined"));
+        }
+        if (combrule.end() == combrule.find(param.first))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s not found in combination rule", param.first.c_str()).c_str()));
+        }
+        const std::string csigma(lj14_7_name[lj14_7SIGMA]);
+        const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
+        const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
+        auto ieps = ivdw.find(cepsilon)->second.value();
+        auto jeps = jvdw.find(cepsilon)->second.value();
+        auto igam = ivdw.find(cgamma)->second.value();
+        auto jgam = jvdw.find(cgamma)->second.value();
+        auto isig = ivdw.find(csigma)->second.value();
+        auto jsig = jvdw.find(csigma)->second.value();
+        double value    = 0;
+        auto   crule    = combrule.find(param.first)->second;
+        switch (crule)
+        {
+        case CombRule::HogervorstSigma:
+            value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
+            break;
+        case CombRule::QiEpsilon:
+            value = combineQiEpsilon(ieps, jeps, isig, jsig);
+            break;
+        case CombRule::MasonGamma:
+            value = combineMasonGamma(igam, jgam, isig, jsig);
+            break;
+        default:
+            value = combineTwo(crule,
+                               ivdw.find(param.first)->second.value(),
+                               jvdw.find(param.first)->second.value());
+            break;
+        }
+        std::string pij = gmx::formatString("%s_ij", param.first.c_str());
+        pmap.insert({ pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true)});
+    }
+    return pmap;
+}
+
+static void generateVdwParameterPairs(ForceField *pd)
+{
+    auto forcesVdw = pd->findForces(InteractionType::VDW);
+    auto comb_rule = getCombinationRule(*forcesVdw);
+
+    // We temporarily store the new parameters here
+    ForceFieldParameterListMap *parm = forcesVdw->parameters();;
+    
     // Now do the double loop
     for (auto &ivdw : *forcesVdw->parameters())
     {
@@ -395,197 +353,14 @@ static void generateVdwParameterPairs(ForceField *pd)
                 continue;
             }
             auto jparam = jvdw.second;
-            // File the parameters, potential dependent
-            ForceFieldParameterMap pmap;
-            switch (ftypeVdW)
-            {
-            case F_LJ:
-                {
-                    auto csigma     = lj_name[ljSIGMA];
-                    auto cepsilon   = lj_name[ljEPSILON];
-                    double isigma   = ivdw.second[csigma].internalValue();
-                    double iepsilon = ivdw.second[cepsilon].internalValue();
-                    double jsigma   = jvdw.second[csigma].internalValue();
-                    double jepsilon = jvdw.second[cepsilon].internalValue();
-                    double c6 = 0, c12 = 0;
-                    CombineLJ(comb_rule, isigma, jsigma,
-                              iepsilon, jepsilon, &c6, &c12);
-                    pmap.insert({lj_name[ljC6_IJ], ForceFieldParameter(unit, c6, 0, 1, c6, c6, 
-                                                                       mutd, true, true)});
-                    pmap.insert({lj_name[ljC12_IJ], ForceFieldParameter(unit, c12, 0, 1, c12, c12, 
-                                                                        mutd, true, true)});
-                    // Add some dummy parameters
-                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                            mutd, true, true)});
-                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                              mutd, true, true)});
-                }
-                break;	
-            case F_LJ_86:
-                {
-                    auto csigma     = lj_name[lj_86SIGMA];
-                    auto cepsilon   = lj_name[lj_86EPSILON];
-                    double isigma   = ivdw.second[csigma].internalValue();
-                    double iepsilon = ivdw.second[cepsilon].internalValue();
-                    double jsigma   = jvdw.second[csigma].internalValue();
-                    double jepsilon = jvdw.second[cepsilon].internalValue();
-                    double c6 = 0, c8 = 0;
-                    CombineLJ_86(comb_rule, isigma, jsigma,
-                              iepsilon, jepsilon, &c6, &c8);
-                    pmap.insert({lj_name[lj_C6_IJ], ForceFieldParameter(unit, c6, 0, 1, c6, c6,
-                                                                        mutd, true, true)});
-                    pmap.insert({lj_name[lj_C8_IJ], ForceFieldParameter(unit, c8, 0, 1, c8, c8,
-                                                                        mutd, true, true)});
-                    // Add some dummy parameters
-                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                            mutd, true, true)});
-                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                              mutd, true, true)});
-                }
-                break;	
-            case F_BHAM:
-                {
-                    auto csigma     = wbh_name[wbhSIGMA];
-                    auto cepsilon   = wbh_name[wbhEPSILON];
-                    auto cgamma     = wbh_name[wbhGAMMA];
-                    double isigma   = ivdw.second[csigma].internalValue();
-                    double iepsilon = ivdw.second[cepsilon].internalValue();
-                    double igamma   = ivdw.second[cgamma].internalValue();
-                    double jsigma   = jvdw.second[csigma].internalValue();
-                    double jepsilon = jvdw.second[cepsilon].internalValue();
-                    double jgamma   = jvdw.second[cgamma].internalValue();
-                    double sigmaij = 0, epsilonij = 0, gammaij = 0;
-                    CombineBham(comb_rule, isigma, jsigma,
-                                iepsilon, jepsilon, 
-                                igamma, jgamma, &sigmaij,
-                                &epsilonij, &gammaij);
-                    pmap.insert({wbh_name[wbhSIGMA_IJ], ForceFieldParameter(unit, sigmaij, 0, 1,
-                                                                           sigmaij, sigmaij,
-                                                                            mutd, true, true)});
-                    pmap.insert({wbh_name[wbhEPSILON_IJ], ForceFieldParameter(unit, epsilonij, 0, 1,
-                                                                              epsilonij, epsilonij,
-                                                                              mutd, true, true)});
-                    pmap.insert({wbh_name[wbhGAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
-                                                                            gammaij, gammaij,
-                                                                            mutd, true, true)});
-                    // Add some dummy parameters
-                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                             mutd, true, true)});
-                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true)});
-                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
-                                                             mutd, true, true)});
-                }
-                break;
-            case F_LJ_147:
-                {
-                    auto csigma     = lj_147_name[lj_147SIGMA];
-                    auto cepsilon   = lj_147_name[lj_147EPSILON];
-                    auto cgamma     = lj_147_name[lj_147GAMMA];
-                    auto cdelta     = lj_147_name[lj_147DELTA];
-                    double isigma   = ivdw.second[csigma].internalValue();
-                    double iepsilon = ivdw.second[cepsilon].internalValue();
-                    double igamma   = ivdw.second[cgamma].internalValue();
-                    double idelta   = ivdw.second[cdelta].internalValue();
-                    double jsigma   = jvdw.second[csigma].internalValue();
-                    double jepsilon = jvdw.second[cepsilon].internalValue();
-                    double jgamma   = jvdw.second[cgamma].internalValue();
-                    double jdelta   = jvdw.second[cdelta].internalValue();
-                    double sigmaij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
-                    CombineLJ_147(comb_rule, isigma, jsigma,
-                                iepsilon, jepsilon,
-                                igamma, jgamma, idelta, jdelta, &sigmaij,
-                                &epsilonij, &gammaij, &deltaij);
-                    pmap.insert({lj_147_name[lj_147SIGMA_IJ], ForceFieldParameter(unit, sigmaij, 0, 1,
-                                                                                  sigmaij, sigmaij,
-                                                                                  mutd, true, true)});
-                    pmap.insert({lj_147_name[lj_147EPSILON_IJ], ForceFieldParameter(unit, epsilonij, 0, 1,
-                                                                                    epsilonij, epsilonij,
-                                                                                    mutd, true, true)});
-                    pmap.insert({lj_147_name[lj_147GAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
-                                                                                  gammaij, gammaij,
-                                                                                  mutd, true, true)});
-                    pmap.insert({lj_147_name[lj_147DELTA_IJ], ForceFieldParameter(unit, deltaij, 0, 1,
-                                                                                  deltaij, deltaij,
-                                                                                  mutd, true, true)});
+            // Fill the parameters, potential dependent
+            auto pmap = evalCombinationRule(comb_rule, ivdw.second, jvdw.second);
 
-                    // Add some dummy parameters
-                    pmap.insert({csigma, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                            mutd, true, true)});
-                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true)});
-                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
-                                                             mutd, true, true)});
-                    pmap.insert({cdelta, ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
-                                                             mutd, true, true)});
-                }
-                break;
-            case F_GBHAM:
-                {
-                    auto crmin      = gbh_name[gbhRMIN];
-                    auto cepsilon   = gbh_name[gbhEPSILON];
-                    auto cgamma     = gbh_name[gbhGAMMA];
-                    auto cdelta     = gbh_name[gbhDELTA];
-                    double irmin    = ivdw.second[crmin].internalValue();
-                    double iepsilon = ivdw.second[cepsilon].internalValue();
-                    double igamma   = ivdw.second[cgamma].internalValue();
-                    double idelta   = ivdw.second[cdelta].internalValue();
-                    double jrmin    = jvdw.second[crmin].internalValue();
-                    double jepsilon = jvdw.second[cepsilon].internalValue();
-                    double jgamma   = jvdw.second[cgamma].internalValue();
-                    double jdelta   = jvdw.second[cdelta].internalValue();
-                    double rminij = 0, epsilonij = 0, gammaij = 0, deltaij = 0;
-                    CombineGBham(comb_rule, irmin, jrmin, iepsilon, jepsilon, 
-                                 igamma, jgamma, idelta, jdelta, &rminij,
-                                 &epsilonij, &gammaij, &deltaij);
-                    if (debug)
-                    {
-                    }
-                    pmap.insert({gbh_name[gbhRMIN_IJ], ForceFieldParameter(unit, rminij, 0, 1,
-                                                                          rminij, rminij,
-                                                                           mutd, true, true)});
-                    pmap.insert({gbh_name[gbhEPSILON_IJ],ForceFieldParameter(unit, epsilonij, 0, 1,
-                                                                             epsilonij, epsilonij,
-                                                                             mutd, true, true)});
-                    pmap.insert({gbh_name[gbhGAMMA_IJ], ForceFieldParameter(unit, gammaij, 0, 1,
-                                                                            gammaij, gammaij,
-                                                                            mutd, true, true)});
-                    pmap.insert({gbh_name[gbhDELTA_IJ], ForceFieldParameter(unit, deltaij, 0, 1,
-                                                                            deltaij, deltaij,
-                                                                            mutd, true, true)});
-                    // Add some dummy parameters
-                    pmap.insert({crmin, ForceFieldParameter(unit, 0.3, 0, 1, 0.3, 0.3, 
-                                                            mutd, true, true)});
-                    pmap.insert({cepsilon, ForceFieldParameter(unit, 0, 0, 1, 0, 0, 
-                                                               mutd, true, true)});
-                    pmap.insert({cgamma, ForceFieldParameter(unit, 10, 0, 1, 10, 10, 
-                                                             mutd, true, true)});
-                    pmap.insert({cdelta, ForceFieldParameter(unit, 6, 0, 1, 6, 6, 
-                                                             mutd, true, true)});
-                }
-                break;
-            default:
-                fprintf(stderr, "Invalid van der waals type %s\n",
-                        interaction_function[ftypeVdW].longname);
-            }
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
             
         }
     }
-    // Finally add the new parameters to the existing list
-    //auto fold = forcesVdw->parameters();
-    //for(const auto &np : newParams.parametersConst())
-    // {
-    //   // Remove old copy if it exists
-    //   auto oldfp = fold->find(np.first);
-    //   if (oldfp != fold->end())
-    //   {
-    //       fold->erase(oldfp);
-    //   }
-    //   // Now add the new one
-    //   fold->insert({ np.first, np.second });
-    //}
     // Phew, we're done!
 }
 
