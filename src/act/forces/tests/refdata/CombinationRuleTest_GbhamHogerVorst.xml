@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="epsilon">HogervorstEpsilon</String>
+  <String Name="gamma">Geometric</String>
+  <String Name="sigma">HogervorstSigma</String>
+  <Real Name="epsilon_ij-0">0.5</Real>
+  <Real Name="gamma_ij-0">10</Real>
+  <Real Name="sigma_ij-0">0.20000000000000004</Real>
+  <Real Name="epsilon_ij-1">0.5</Real>
+  <Real Name="gamma_ij-1">11.401754250991379</Real>
+  <Real Name="sigma_ij-1">0.20100471611642329</Real>
+  <Real Name="epsilon_ij-2">0.66666666666666663</Real>
+  <Real Name="gamma_ij-2">10</Real>
+  <Real Name="sigma_ij-2">0.20197271611064235</Real>
+  <Real Name="epsilon_ij-3">0.66666666666666663</Real>
+  <Real Name="gamma_ij-3">11.401754250991379</Real>
+  <Real Name="sigma_ij-3">0.20298734232541307</Real>
+  <Real Name="epsilon_ij-4">0.5</Real>
+  <Real Name="gamma_ij-4">10</Real>
+  <Real Name="sigma_ij-4">0.28284271247461906</Real>
+  <Real Name="epsilon_ij-5">0.5</Real>
+  <Real Name="gamma_ij-5">11.401754250991379</Real>
+  <Real Name="sigma_ij-5">0.28426359563279963</Real>
+  <Real Name="epsilon_ij-6">0.66666666666666663</Real>
+  <Real Name="gamma_ij-6">10</Real>
+  <Real Name="sigma_ij-6">0.28563255435300133</Real>
+  <Real Name="epsilon_ij-7">0.66666666666666663</Real>
+  <Real Name="gamma_ij-7">11.401754250991379</Real>
+  <Real Name="sigma_ij-7">0.28706745250666932</Real>
+</ReferenceData>
