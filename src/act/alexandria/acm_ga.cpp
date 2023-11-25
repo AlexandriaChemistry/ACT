@@ -83,8 +83,8 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     }
     GMX_RELEASE_ASSERT(static_cast<int>(pool.popSize()) == gach_->popSize(),
                        "The initial population does not match the specified population size...");
-    // Print the genomes to the logfile
-    pool.print(logFile_);
+    // Print the genomes to the debug stream if requested.
+    pool.print(debug);
 
     // Update best genome
     (*bestGenome)[imstr] = pool.getBest(imstr);
