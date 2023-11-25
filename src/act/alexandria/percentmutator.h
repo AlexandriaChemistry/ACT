@@ -74,7 +74,7 @@ public:
                         ga::Genome *bestGenome,
                         double      prMut);
 
-    virtual void sensitivityAnalysis(ga::Genome *bestGenome, iMolSelect ims) {}
+    virtual void sensitivityAnalysis(ga::Genome *, iMolSelect) {}
     
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }
