@@ -32,7 +32,7 @@
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
-#include "tune_ff.h"
+#include "train_ff.h"
 
 namespace ga
 {
@@ -105,7 +105,7 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // Now resend the bases
             cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::MUTATION);
+            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
             i += 1;
         }
     }
@@ -284,7 +284,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
                 // III.
                 // Tell the middleman to carry the MUTATION mode
-                cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::FITNESS);
+                cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
             }
             // Recompute my fitness
             fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, true);
@@ -412,7 +412,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             cr->send_double_vector(dest, pool[pnew]->genomePtr(i)->basesPtr());
             // III.
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::MUTATION);
+            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
         }
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)  // FIXME: can we just negate instead of comparing?

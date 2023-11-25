@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -32,8 +32,8 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-#ifndef ALEXANDRIA_TUNE_EEM_H
-#define ALEXANDRIA_TUNE_EEM_H
+#ifndef ALEXANDRIA_TRAIN_EEM_H
+#define ALEXANDRIA_TRAIN_EEM_H
 
 #include <cstdio>
 
@@ -219,4 +219,4 @@ public:
 }
 
 
-#endif //ALEXANDRIA_TUNE_EEM_H
+#endif //ALEXANDRIA_TRAIN_EEM_H

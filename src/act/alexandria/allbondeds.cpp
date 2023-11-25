@@ -35,7 +35,7 @@
 
 #include "gromacs/fileio/xvgr.h"
 
-#include "tuning_utility.h"
+#include "train_utility.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/units.h"
     

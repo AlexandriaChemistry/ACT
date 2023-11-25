@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2022
+#  Copyright (C) 2014-2023
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -66,8 +66,8 @@ target_sources(actLib
            symmetrize_charges.cpp
            thermochemistry.cpp
            topology.cpp
-           tune_ff.cpp
-           tuning_utility.cpp          
+           train_ff.cpp
+           train_utility.cpp          
            velocityhandler.cpp
 	)
 	

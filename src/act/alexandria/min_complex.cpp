@@ -37,7 +37,7 @@
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/tuning_utility.h"
+#include "act/alexandria/train_utility.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"

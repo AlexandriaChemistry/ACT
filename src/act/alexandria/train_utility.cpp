@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "tuning_utility.h"
+#include "train_utility.h"
 
 #include <cctype>
 #include <cmath>
@@ -439,7 +439,7 @@ static void write_q_histo(FILE                             *fplog,
     fprintf(fplog, "\n");
 }
 
-void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
+void TrainForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
@@ -471,7 +471,7 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
 
-void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
+void TrainForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 {
     std::vector<t_filenm> fnm = {
         { efXVG, "-qhisto",    "q_histo",       ffOPTWR },
@@ -504,13 +504,13 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
     }
 }
 
-void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
-                                                  const ForceField    *pd,
-                                                  alexandria::ACTMol  *mol,
-                                                  const ForceComputer *forceComp,
-                                                  qtStats             *lsq_isoPol,
-                                                  qtStats             *lsq_anisoPol,
-                                                  qtStats             *lsq_alpha)
+void TrainForceFieldPrinter::analysePolarisability(FILE                *fp,
+                                                   const ForceField    *pd,
+                                                   alexandria::ACTMol  *mol,
+                                                   const ForceComputer *forceComp,
+                                                   qtStats             *lsq_isoPol,
+                                                   qtStats             *lsq_anisoPol,
+                                                   qtStats             *lsq_alpha)
 {
     for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
     {
@@ -542,10 +542,10 @@ void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
     }
 }
 
-void TuneForceFieldPrinter::printAtoms(FILE                         *fp,
-                                       alexandria::ACTMol           *mol,
-                                       const std::vector<gmx::RVec> &coords,
-                                       const std::vector<gmx::RVec> &forces)
+void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
+                                        alexandria::ACTMol           *mol,
+                                        const std::vector<gmx::RVec> &coords,
+                                        const std::vector<gmx::RVec> &forces)
 {
     std::map<qType, const std::vector<double> > qQM;
     std::vector<qType>                    typeQM = { 
@@ -962,16 +962,16 @@ static void print_diatomics(const alexandria::ACTMol                            
     xvgrclose(fp);
 }
                                                 
-double TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                const ForceField         *pd,
-                                                const ForceComputer      *forceComp,
-                                                const AtomizationEnergy  &atomenergy,
-                                                alexandria::ACTMol       *mol,
-                                                gmx_stats                *lsq_rmsf,
-                                                qtStats                  *lsq_epot,
-                                                qtStats                  *lsq_eInter,
-                                                gmx_stats                *lsq_freq,
-                                                const gmx_output_env_t   *oenv)
+double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                                 const ForceField         *pd,
+                                                 const ForceComputer      *forceComp,
+                                                 const AtomizationEnergy  &atomenergy,
+                                                 alexandria::ACTMol       *mol,
+                                                 gmx_stats                *lsq_rmsf,
+                                                 qtStats                  *lsq_epot,
+                                                 qtStats                  *lsq_eInter,
+                                                 gmx_stats                *lsq_freq,
+                                                 const gmx_output_env_t   *oenv)
 {
     std::vector<ACTEnergy>                                  energyMap;
     std::vector<std::vector<std::pair<double, double> > >   forceMap;
@@ -1226,12 +1226,12 @@ static void printOutliers(FILE              *fp,
     }
 }
 
-void TuneForceFieldPrinter::print(FILE                            *fp,
-                                  std::vector<alexandria::ACTMol> *actmol,
-                                  const ForceField                *pd,
-                                  const gmx_output_env_t           *oenv,
-                                  const std::vector<t_filenm>      &filenm,
-                                  const char                       *chargeMethod)
+void TrainForceFieldPrinter::print(FILE                            *fp,
+                                   std::vector<alexandria::ACTMol> *actmol,
+                                   const ForceField                *pd,
+                                   const gmx_output_env_t           *oenv,
+                                   const std::vector<t_filenm>      &filenm,
+                                   const char                       *chargeMethod)
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,

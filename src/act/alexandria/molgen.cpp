@@ -51,7 +51,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "tuning_utility.h"
+#include "train_utility.h"
 
 namespace alexandria
 {
