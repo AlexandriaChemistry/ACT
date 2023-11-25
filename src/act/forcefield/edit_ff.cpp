@@ -74,7 +74,7 @@ static void setMinMaxMut(FILE *fp,
     }
     if (bSetMin && bSetMax)
     {
-        GMX_RELEASE_ASSERT(pmin < pmax, "Please choose minimum to be at most the maximum");
+        GMX_RELEASE_ASSERT(pmin <= pmax, "Please choose minimum to be at most the maximum");
     }
     if (bSetMin)
     {
