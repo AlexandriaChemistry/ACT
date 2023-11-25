@@ -195,11 +195,13 @@ int gen_ff(int argc, char*argv[])
         "Combination rules can be specified for all Van der Waals parameters separately, depending",
         "on the potential chosen. You can choose from:[BR]"
     };
-    for (const auto &cr : combRuleName)
+    for (auto cr : combRuleName)
     {
-        desc.push_back(gmx::formatString("%s[BR]", cr.second.c_str()).c_str());
+        std::string newstr = gmx::formatString("%s ", cr.second.c_str());
+        fprintf(stderr, "Newstr '%s'\n", newstr.c_str());
+        desc.push_back(strdup(newstr.c_str()));
     }
-    desc.push_back("Make sure to use the exact strings above including capitalization.");
+    desc.push_back("[PAR]Make sure to use the exact strings above including capitalization.");
     desc.push_back("Some of the rules that include parameter names should only be used for that parameter.");
     gmx_output_env_t *oenv;
     int               nexclqq  = 0;
@@ -218,8 +220,8 @@ int gen_ff(int argc, char*argv[])
         { efCSV, "-vs",  "vsites",    ffOPTRD },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
-    static char *cr_eps  = (char *)""; //combinationRuleName(CombRule::Geometric).c_str();
-    static char *cr_sig  = (char *)""; //"Volumetric";
+    static char *cr_eps  = (char *)"";
+    static char *cr_sig  = (char *)"";
     static char *cr_rmin = (char *)"";
     static char *cr_gam  = (char *)"";
     static char *cr_del  = (char *)"";
