@@ -295,7 +295,7 @@ int gen_ff(int argc, char*argv[])
                         cr2.second, cr2.first.c_str());
                 return 0;
             }
-            vdw.addOption(cr2.first, cr2.second);
+            vdw.addCombinationRule(cr2.first, cr2.second);
         }
     }
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));

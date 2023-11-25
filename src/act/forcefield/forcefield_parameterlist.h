@@ -122,6 +122,46 @@ class ForceFieldParameterList
     //! Return the options map
     const std::map<std::string, std::string> &option() const { return options_; }
 
+    /*! \brief Add function specific combination rule
+     *
+     * \param[in] param  Name of the parameter
+     * \param[in] rule   String for the rule
+     */
+    void addCombinationRule(const std::string &param, const std::string &rule)
+    {
+        combrules_.insert({param, rule});
+    }
+    
+    /*! \brief check whether a combination rule exists
+     *
+     * \param[in] param  Name of the parameter
+     * \return bool value 
+     */
+    bool combinationRuleExists(const std::string &param) const
+    {
+        return combrules_.find(param) != combrules_.end();
+    }
+
+    /*! \brief Extract the rule corresponding to an parameter
+     *
+     * \param[in] param Name of the parameter
+     * \return Value
+     * \throws gmx::InvalidInputError if the param is non-existent
+     */
+    const std::string &combinationRule(const std::string &param) const
+    {
+        auto ov = combrules_.find(param);
+        if (ov == combrules_.end())
+        {
+            auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
+            GMX_THROW(gmx::InvalidInputError(buf.c_str()));
+        }
+        return ov->second;
+    }
+
+    //! Return the combination rule map
+    const std::map<std::string, std::string> &combinationRules() const { return combrules_; }
+
     //! Return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
     
@@ -256,6 +296,9 @@ class ForceFieldParameterList
 
     //! Map structure for the options associated with the parameter list
     std::map<std::string, std::string> options_;
+        
+    //! Map structure for combination rules associated with the parameter list
+    std::map<std::string, std::string> combrules_;
         
     //! Map of parameters 
     ForceFieldParameterListMap parameters_;

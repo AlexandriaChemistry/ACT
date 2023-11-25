@@ -271,7 +271,7 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     }
     else
     {
-        for(const auto &opt : vdw.option())
+        for(const auto &opt : vdw.combinationRules())
         {
             CombRule cr;
             if (combinationRuleRule(opt.second, &cr))
