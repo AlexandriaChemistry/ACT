@@ -41,7 +41,7 @@ namespace alexandria
 
 #define sqr(x) (x*x)
 
-std::map<CombRule, const std::string> combRuleName = 
+const std::map<CombRule, const std::string> combRuleName = 
     {
         { CombRule::Geometric, "Geometric" },
         { CombRule::Arithmetic, "Arithmetic" },
@@ -60,23 +60,25 @@ std::map<CombRule, const std::string> combRuleName =
 
 const std::string &combinationRuleName(CombRule c)
 {
-    if (combRuleName.find(c) == combRuleName.end())
+    auto crfind = combRuleName.find(c);
+    if (crfind == combRuleName.end())
     {
         GMX_THROW(gmx::InternalError("Unsupported combination rule"));
     }
-    return combRuleName[c];
+    return crfind->second;
 }
 
-CombRule combinationRuleRule(const std::string &name)
+bool combinationRuleRule(const std::string &name, CombRule *cr)
 {
     for(const auto &m : combRuleName)
     {
         if (m.second == name)
         {
-            return m.first;
+            *cr = m.first;
+            return true;
         }
     }
-    GMX_THROW(gmx::InternalError(gmx::formatString("No such combination rule %s", name.c_str()).c_str()));
+    return false;
 }
 
 double combineTwo(CombRule comb, double x1, double x2)
@@ -114,7 +116,8 @@ double combineTwo(CombRule comb, double x1, double x2)
         // Matar2004, Eqn. 9
         return 4*x1*x2/sqr(std::sqrt(x1) + std::sqrt(x2));
     default:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s", combRuleName[comb].c_str()).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
+                                                       combRuleName.find(comb)->second.c_str()).c_str()));
     }
     return 0;
 }
@@ -265,6 +268,21 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     if (vdw.optionExists(oldCombRule))
     {
         return oldCombinationRule(vdw.optionValue(oldCombRule), vdw.gromacsType());
+    }
+    else
+    {
+        for(const auto &opt : vdw.option())
+        {
+            CombRule cr;
+            if (combinationRuleRule(opt.second, &cr))
+            {
+                myCombRule.insert({ opt.first, cr });
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", opt.second.c_str(), opt.first.c_str()).c_str()));
+            }
+        }
     }
     return myCombRule;
 }

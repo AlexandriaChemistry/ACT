@@ -46,11 +46,18 @@ namespace alexandria
             WaldmanSigma, WaldmanEpsilon, Matar, QiSigma, QiEpsilon, MasonGamma
             };
 
+    //! Map combination rules to strings            
+    extern const std::map<CombRule, const std::string> combRuleName;
+
     //! \return string corresponding to CombRule c
     const std::string &combinationRuleName(CombRule c);
 
-    //! \return CombRule corresponding to name
-    CombRule combinationRuleRule(const std::string &name);
+    /*! \brief Determine CombRule from name
+     * \param[in]  name The combination rule name
+     * \param[out] cr   The combination rule
+     * \return true if successful, false otherwise
+     */
+    bool combinationRuleRule(const std::string &name, CombRule *cr);
 
     /*! \brief Execute a simple combination rule
      * \param[in] comb The combination rule to apply
