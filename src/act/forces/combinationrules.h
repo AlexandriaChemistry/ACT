@@ -37,93 +37,93 @@
 
 namespace alexandria
 {
-/*! \brief Combine epsilon and sigma into c6 and c12 for LJ
- * \param[in]  CombinationRule The combination rule used
- * \param[in]  sigmaI          The first sigma
- * \param[in]  sigmaJ          The second sigma
- * \param[in]  epsilonI        The first epsilon
- * \param[in]  epsilonJ        The second epsilon
- * \param[out] c6              The LJ c6
- * \param[out] c12             The LJ c12
- */
-void CombineLJ(int     CombinationRule,
-               double  sigmaI,
-               double  sigmaJ,
-               double  epsilonI,
-               double  epsilonJ,
-               double *c6,
-               double *c12);
 
-void CombineLJ_86(int     CombinationRule,
-               double  sigmaI,
-               double  sigmaJ,
-               double  epsilonI,
-               double  epsilonJ,
-               double *c6,
-               double *c8);
+    //! \brief Class that defines the combination rules supported by ACT
+    enum class CombRule 
+    {
+        Geometric, Arithmetic, Volumetric, InverseSquare, 
+            HogervorstEpsilon, HogervorstSigma, Yang,
+            WaldmanSigma, WaldmanEpsilon, Matar, QiSigma, QiEpsilon, MasonGamma
+            };
 
+    //! Map combination rules to strings            
+    extern const std::map<CombRule, const std::string> combRuleName;
 
-/*! \brief Extract the GROMACS style combination rule
- * \param[in] vdw Van der Waals list of ff params
- * \return index in GROMACS list of comb rules
- */
-int getCombinationRule(const ForceFieldParameterList &vdw);
+    //! \return string corresponding to CombRule c
+    const std::string &combinationRuleName(CombRule c);
 
-/*! \brief Combine epsilon, sigma and gamm.
- * \param[in]  CombinationRule The combination rule used
- * \param[in]  sigmaI          The first sigma
- * \param[in]  sigmaJ          The second sigma
- * \param[in]  epsilonI        The first epsilon
- * \param[in]  epsilonJ        The second epsilon
- * \param[in]  gammaI          The first gamma
- * \param[in]  gammaJ          The second gamma
- * \param[out] sigmaIJ         The combined sigma
- * \param[out] epsilonIJ       The combined epsilon
- * \param[out] gammaIJ         The combined gamma
- */
-void CombineBham(int     CombinationRule,
-                 double  sigmaI,
-                 double  sigmaJ,
-                 double  epsilonI,
-                 double  epsilonJ,
-                 double  gammaI,
-                 double  gammaJ,
-                 double *sigmaIJ,
-                 double *epsilonIJ,
-                 double *gammaIJ);
-void CombineLJ_147(int     CombinationRule,
-                 double  sigmaI,
-                 double  sigmaJ,
-                 double  epsilonI,
-                 double  epsilonJ,
-                 double  gammaI,
-                 double  gammaJ,
-		 double  deltaI,
-		 double  deltaJ,
-                 double *sigmaIJ,
-                 double *epsilonIJ,
-                 double *gammaIJ,
-		 double *deltaIJ);
+    /*! \brief Determine CombRule from name
+     * \param[in]  name The combination rule name
+     * \param[out] cr   The combination rule
+     * \return true if successful, false otherwise
+     */
+    bool combinationRuleRule(const std::string &name, CombRule *cr);
 
-void CombineGBham(int     CombinationRule,
-                  double  rminI,
-                  double  rminJ,
-                  double  epsilonI,
-                  double  epsilonJ,
-                  double  gammaI,
-                  double  gammaJ,
-                  double  deltaI,
-                  double  deltaJ,
-                  double *rminIJ,
-                  double *epsilonIJ,
-                  double *gammaIJ,
-                  double *deltaIJ);
+    /*! \brief Execute a simple combination rule
+     * \param[in] comb The combination rule to apply
+     * \param[in] x1   First value
+     * \param[in] x2   Second value
+     * \return The combined value
+     */
+    double combineTwo(CombRule comb, double x1, double x2);
+    
+    /*! \brief Execute a combination rule according to Qi2016a http://dx.doi.org/10.1016/j.bmc.2016.07.062 
+     * \param[in] e1 First epsilon
+     * \param[in] e2 Second epsilon
+     * \param[in] s1 First sigma
+     * \param[in] s2 Second sigma
+     * \return The combined value
+     */
+    double combineQiEpsilon(double e1, double e2, double s1, double s2);
 
-/*! \brief Generate nonbonded parameters for pairs of atoms
- * as well as force constants force shells.
- * \param[inout] pd The force field structure
- */
-void generateDependentParameter(ForceField *pd);
+    /*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
+     * \param[in] e1 First epsilon
+     * \param[in] e2 Second epsilon
+     * \param[in] g1 First gamma
+     * \param[in] g2 Second gamma
+     * \param[in] s1 First sigma
+     * \param[in] s2 Second sigma
+     * \return The combined value
+     */
+    double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2);
+
+    /*! \brief Execute a combination rule according to Mason1955a https://doi.org/10.1063/1.1740561
+     * \param[in] g1 First gamma
+     * \param[in] g2 Second gamma
+     * \param[in] s1 First sigma
+     * \param[in] s2 Second sigma
+     * \return The combined value
+     */
+    double combineMasonGamma(double g1, double g2, double s1, double s2);
+
+    /*! \brief Extract a map of combination rules for each parameter
+     * \param[in] vdw_comb Old style string designating the combination rule
+     * \param[in] ftype    Gromacs function type
+     * \return the map
+     */
+    std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
+                                                             int                ftype);
+    /*! \brief Extract a map of combination rules for each parameter
+     * \param[in] vdw Van der Waals list of ff params
+     * \return the map
+     */
+    std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw);
+    
+    /*! \brief Generate combined force field parameter map
+     * \param[in] combrule Map of combination rules per parameter
+     * \param[in] ivdw     Parameters for particle i
+     * \param[in] jvdw     Parameters for particle j
+     * \return a Force Field Parameter Map with pair entries
+     */
+    ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, CombRule> &combrule,
+                                               const ForceFieldParameterMap                &ivdw,
+                                               const ForceFieldParameterMap                &jvdw);
+
+    /*! \brief Generate nonbonded parameters for pairs of atoms
+     * as well as force constants force shells.
+     * \param[inout] pd The force field structure
+     */
+    void generateDependentParameter(ForceField *pd);
 
 } // namespace alexandria
 

@@ -266,8 +266,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         // potential.
         auto itype_vdw  = InteractionType::VDW;
         auto forces_vdw = pd->findForces(itype_vdw);
-        int  comb_rule  = getCombinationRule(*forces_vdw);
-        if (comb_rule != eCOMB_NONE)
+        auto comb_rule  = getCombinationRule(*forces_vdw);
+        if (!comb_rule.empty())
         {
             atomicItypes.push_back(InteractionType::VDW);
         }
@@ -321,7 +321,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                         }
                     }
                 }
-                if (comb_rule == eCOMB_NONE && optimize(itype_vdw))
+                if (comb_rule.empty() && optimize(itype_vdw))
                 {
                     // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
                     for(size_t j = i+1; j < myatoms.size(); j++)

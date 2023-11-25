@@ -40,6 +40,7 @@
 #include "act/basics/atomprops.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
+#include "act/forces/combinationrules.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -189,9 +190,17 @@ int gen_ff(int argc, char*argv[])
         "with the [TT]-vs[tt] option. Default is not to add virtual sites.[PAR]"
         "In order to work the ACTDATA environment variable should point to",
         "the directory where some input files are located, namely:[BR]",
-        "atomprops.csv - containing properties for atoms[BR]",
-        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges[BR]"
+        "atomprops.csv - containing properties for atoms.[BR]",
+        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges.[PAR]",
+        "Combination rules can be specified for all Van der Waals parameters separately, depending",
+        "on the potential chosen. You can choose from:[BR]"
     };
+    for (const auto &cr : combRuleName)
+    {
+        desc.push_back(gmx::formatString("%s[BR]", cr.second.c_str()).c_str());
+    }
+    desc.push_back("Make sure to use the exact strings above including capitalization.");
+    desc.push_back("Some of the rules that include parameter names should only be used for that parameter.");
     gmx_output_env_t *oenv;
     int               nexclqq  = 0;
     int               nexclvdw = 0;
@@ -201,19 +210,19 @@ int gen_ff(int argc, char*argv[])
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", "LJ_86", "LJ_147", nullptr };
+    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", "LJ8_6", "LJ14_7", nullptr };
     std::vector<const char *> combrules = { nullptr };
-    int i = 0;
-    while(ecomb_names[i])
-    {
-        combrules.push_back(ecomb_names[i++]);
-    }
     combrules.push_back(nullptr);
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
         { efCSV, "-vs",  "vsites",    ffOPTRD },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
+    static char *cr_eps  = (char *)""; //combinationRuleName(CombRule::Geometric).c_str();
+    static char *cr_sig  = (char *)""; //"Volumetric";
+    static char *cr_rmin = (char *)"";
+    static char *cr_gam  = (char *)"";
+    static char *cr_del  = (char *)"";
     std::vector<t_pargs> pa =
     {
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
@@ -232,8 +241,16 @@ int gen_ff(int argc, char*argv[])
           "Function to use for proper dihedrals, can be either" },
         { "-vdwfn", FALSE, etENUM, {vdwfn},
           "Function to use for Van der Waals interactions, can be either" },
-        { "-comb", FALSE, etENUM, {combrules.data()},
-          "Combination rule to use in the force field, can be either" }
+        { "-cr_epsilon", FALSE, etSTR, {&cr_eps},
+          "Combination rule to use for Van der Waals interaction parameter epsilon" },
+        { "-cr_sigma", FALSE, etSTR, {&cr_sig},
+          "Combination rule to use for Van der Waals interaction parameter sigma" },
+        { "-cr_rmin", FALSE, etSTR, {&cr_rmin},
+          "Combination rule to use for Van der Waals interaction parameter rmin" },
+        { "-cr_gamma", FALSE, etSTR, {&cr_gam},
+          "Combination rule to use for Van der Waals interaction parameter gamma" },
+        { "-cr_delta", FALSE, etSTR, {&cr_del},
+          "Combination rule to use for Van der Waals interaction parameter delta" }
     };
 
     if (!parse_common_args(&argc, argv, 0, fnm.size(), fnm.data(), 
@@ -260,7 +277,25 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
-    vdw.addOption("combination_rule", combrules[0]);
+    std::map<std::string, const char *> cr2opt = {
+        { "epsilon", cr_eps }, { "sigma", cr_sig }, { "gamma", cr_gam },
+        { "delta", cr_del }, { "rmin", cr_rmin }
+    };
+    for(const auto &cr2 : cr2opt)
+    {
+        if (cr2.second && strlen(cr2.second) > 0)
+        {
+            // Will throw if incorrect string
+            CombRule cr;
+            if (!combinationRuleRule(cr2.second, &cr))
+            {
+                fprintf(stderr, "Invalid combination rule name %s for parameter %s\n",
+                        cr2.second, cr2.first.c_str());
+                return 0;
+            }
+            vdw.addOption(cr2.first, cr2.second);
+        }
+    }
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
     // Check for Point charges
@@ -356,10 +391,10 @@ int gen_ff(int argc, char*argv[])
             case F_LJ:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
-	   case F_LJ_86:
+            case F_LJ8_6:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
-           case F_LJ_147:  
+           case F_LJ14_7:  
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
             case F_BHAM:
