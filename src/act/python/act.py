@@ -131,11 +131,11 @@ class ACT:
         if not self.debug:
             os.system(cmd)
         
-    def tune_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
-                LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
+    def train_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
+                 LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
-        cmd = ( "alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
+        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
@@ -198,9 +198,9 @@ if __name__ == '__main__':
     ForceFieldFileIn  = "ACS-pg.xml"
     ACT.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "geometry.log", {})
     for target in Target:
-        ForceFieldFileOut = ( "tune_ff_%s.xml" % ( target.name ) )
-        LogFile           = ( "tune_ff_%s.log" % ( target.name ) )
-        act.tune_ff(ForceFieldFileIn, ForceFieldFileOut,
-                    LogFile, target, { "-max_generations": 5 })
+        ForceFieldFileOut = ( "train_ff_%s.xml" % ( target.name ) )
+        LogFile           = ( "train_ff_%s.log" % ( target.name ) )
+        act.train_ff(ForceFieldFileIn, ForceFieldFileOut,
+                     LogFile, target, { "-max_generations": 5 })
         ForceFieldFileIn  = ForceFieldFileOut
     

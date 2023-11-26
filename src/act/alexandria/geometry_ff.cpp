@@ -65,7 +65,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
-#include "tuning_utility.h"
+#include "train_utility.h"
 
 namespace alexandria
 {

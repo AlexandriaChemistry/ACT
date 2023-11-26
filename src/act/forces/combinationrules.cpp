@@ -111,6 +111,10 @@ double combineTwo(CombRule comb, double x1, double x2)
             return std::sqrt(2/denom);
         }
     case CombRule::QiSigma:
+        if (x1 == 0 && x2 == 0)
+        {
+            return 0;
+        }
         return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
     case CombRule::Matar:
         // Matar2004, Eqn. 9
@@ -136,6 +140,10 @@ double combineQiEpsilon(double e1, double e2, double s1, double s2)
     // Qi et al, proposed for epsilon
     double s13 = s1*s1*s1;
     double s23 = s2*s2*s2;
+    if (s13 == 0 && s23 == 0)
+    {
+        return 0;
+    }
     return std::sqrt( e1 * e2 ) * ( 2 * s13 * s23 / (sqr(s13) + sqr(s23)));
 }
 
@@ -255,6 +263,12 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
         break;
+    case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
+        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cepsilon, CombRule::QiEpsilon });
+        myCombRule.insert({ cgamma,   CombRule::MasonGamma });
+        myCombRule.insert({ cdelta,   CombRule::Geometric });
+        break;	    
     default:
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s not supported anymore. Sorry.", ECOMBNAME(i)).c_str()));
     }
@@ -271,7 +285,7 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     }
     else
     {
-        for(const auto &opt : vdw.option())
+        for(const auto &opt : vdw.combinationRules())
         {
             CombRule cr;
             if (combinationRuleRule(opt.second, &cr))

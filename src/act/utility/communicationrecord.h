@@ -64,11 +64,11 @@ enum CommunicationStatus {
 };
 
 /*!
- * \brief Operation modes of the middleman in tune_ff
+ * \brief Operation modes of the middleman in train_ff
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum class TuneFFMiddlemanMode {
+enum class TrainFFMiddlemanMode {
     FITNESS  = 1999,  // Compute fitness and send fitness back
     MUTATION = 2022   // Mutate, compute fitness, send parameters and fitness back
 };
@@ -334,18 +334,18 @@ public:
     bool recv_bool(int src) const;
 
     /*!
-     * \brief Send a tune_ff middleman mode to another processor
+     * \brief Send a train_ff middleman mode to another processor
      * \param[in] dest the destination processor
      * \param[in] mode the middleman mode to send
      */
-    void send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const;
+    void send_ff_middleman_mode(int dest, TrainFFMiddlemanMode mode) const;
 
     /*!
-     * \brief Receive a tune_ff middleman mode from another processor
+     * \brief Receive a train_ff middleman mode from another processor
      * \param[in] the source node
-     * \return the tune_ff middleman mode
+     * \return the train_ff middleman mode
      */
-    TuneFFMiddlemanMode recv_ff_middleman_mode(int src) const;
+    TrainFFMiddlemanMode recv_ff_middleman_mode(int src) const;
  
     /*! Send an iMolSelect to another processor.
      * \param[in] dest The destination processor

@@ -118,8 +118,8 @@ void ACTMiddleMan::run()
         
         // III.
         // Receive assignment from master.  
-        TuneFFMiddlemanMode mode = cr->recv_ff_middleman_mode(master);
-        if (mode == TuneFFMiddlemanMode::MUTATION)
+        TrainFFMiddlemanMode mode = cr->recv_ff_middleman_mode(master);
+        if (mode == TrainFFMiddlemanMode::MUTATION)
         {
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
             
@@ -156,7 +156,7 @@ void ACTMiddleMan::run()
                 }
             }
         }
-        else if (mode == TuneFFMiddlemanMode::FITNESS)
+        else if (mode == TrainFFMiddlemanMode::FITNESS)
         {
             fitComp_->compute(ind_->genomePtr(), ims);
             cr->send_double(master, ind_->genome().fitness(ims));

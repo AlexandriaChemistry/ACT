@@ -51,7 +51,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "tuning_utility.h"
+#include "train_utility.h"
 
 namespace alexandria
 {
@@ -380,7 +380,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                                 bccId = Identifier({jPType, iPType}, topentry->bondOrders(), bcc->canSwap());
                                 if (!bcc->parameterExists(bccId))
                                 {
-                                    GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
+                                    GMX_THROW(gmx::InternalError(gmx::formatString("Unknown bondcorrection %s", bccId.id().c_str()).c_str()));
                                 }
                             }
                             for(auto &ff : *(bcc->findParameters(bccId)))

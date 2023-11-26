@@ -35,7 +35,7 @@
 
 #include "actpre.h"
 
-#include "tune_ff.h"
+#include "train_ff.h"
 
 #include <cctype>
 #include <cmath>
@@ -67,7 +67,7 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "tuning_utility.h"
+#include "train_utility.h"
 #include "act/utility/units.h"
 
 namespace alexandria
@@ -568,7 +568,7 @@ bool OptACM::runMaster(bool optimize,
                 gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_
             );
         }
-        // FIXME: resetting the train parameters for the TuneFFPrinter. We may have to work on that if we want to show the best test parameters too
+        // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
         std::set<int> changed;
         sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
     }
@@ -614,13 +614,13 @@ bool OptACM::runMaster(bool optimize,
 }
 
 
-int tune_ff(int argc, char *argv[])
+int train_ff(int argc, char *argv[])
 {
     static const char          *desc[] = {
-        "tune_ff reads a series of molecules and corresponding physico-chemical",
+        "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
         "experimental data or from quantum chemistry calculations.",
-        "The program then tunes empirical force field parameters using",
+        "The program then trains empirical force field parameters using",
         "one of a series of algorithms",
         "until the experimental properties are reproduced reasonably.",
         "The properties include the electrostatic potential and multipole",
@@ -631,7 +631,7 @@ int tune_ff(int argc, char *argv[])
         "enforcement is not possible, but unrealistic charges can be",
         "penalized with a harmonic force for  which the force constant",
         "can be set explicitly on the command line.[PAR]",
-        "The algorithmes available for tuning are:[PAR]", 
+        "The algorithmes available for training are:[PAR]", 
         "1) a Monte Carlo algorithm",
         "that can be combined with simulated annealing.", 
         "Choose [TT]-optimizer MCMC[tt] to select this option,[PAR]", 
@@ -674,7 +674,7 @@ int tune_ff(int argc, char *argv[])
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
-    TuneForceFieldPrinter       printer;  // TODO: pargs is a ConfigHandler, maybe we could inherit the superclass?
+    TrainForceFieldPrinter      printer;  // TODO: pargs is a ConfigHandler, maybe we could inherit the superclass?
 
     std::vector<t_pargs>        pargs;
     {
@@ -700,9 +700,9 @@ int tune_ff(int argc, char *argv[])
     {
         { efXML, "-mp",   "allmols",     ffREAD   },
         { efXML, "-ff",   "aff",         ffRDMULT },
-        { efXML, "-o",    "tune_ff",     ffWRITE  },
+        { efXML, "-o",    "train_ff",    ffWRITE  },
         { efDAT, "-sel",  "molselect",   ffREAD   },
-        { efLOG, "-g",    "tune_ff",     ffWRITE  },
+        { efLOG, "-g",    "train_ff",    ffWRITE  },
         { efXVG, "-conv", "param_conv" , ffWRITE  },
         { efXVG, "-chi2", "chi_squared", ffWRITE  }
     };

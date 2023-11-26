@@ -43,7 +43,7 @@ int simulate(int argc, char *argv[]);
 int min_complex(int argc, char *argv[]);
 int b2(int argc, char *argv[]);
 int nma(int argc, char *argv[]);
-int tune_ff(int argc, char *argv[]);
+int train_ff(int argc, char *argv[]);
 int edit_ff(int argc, char *argv[]);
 int gen_ff(int argc, char *argv[]);
 int geometry_ff(int argc, char *argv[]);
