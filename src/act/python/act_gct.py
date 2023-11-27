@@ -105,7 +105,16 @@ class GeneralCouplingTheory:
             # Update force field
             for param in self.couple_types[myobs][pkey].keys():
                 myparam = self.couple_types[myobs][pkey][param]
-                pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+                if deviation > 0:
+           #         print("POSITIVE")
+                    pstep   = -(random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"])
+           #         print(f"AAAAAAAAAAA {pstep}")
+                 #remove   print("function has beeen changedi, down")
+                else:
+           #         print("NEGATIVE")
+                    pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+           #         print(f"BBBBBBBBBBB {pstep}")
+                #remove    print("function has beeen changedi,up")
                 myparam["step"] = pstep
         return coords, observations
 
@@ -121,14 +130,18 @@ class GeneralCouplingTheory:
                 for param in self.couple_types[obs][atom].keys():
                     myparam = self.couple_types[obs][atom][param]
                     oldval = myparam["value"]
+           #         print("the step is now %g" %(myparam["step"]))
                     myparam["value"] += myparam["step"]
                     myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
                     if oldval != myparam["value"]:
                         self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
                                        ( myiter, obs, atom, param, oldval, myparam["value"]))
                         self.log.flush()
+                        Atom = atom.capitalize()
                         os.system("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
-                                                                                            myparam["value"], atom ))
+                                                                                            myparam["value"], Atom ))
+           #remove this             print(" XXX alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
+                      #                                                                      myparam["value"], atom ))
 
     def print_convergence(self, myiter:int):
         for obs in self.couple_types.keys():
