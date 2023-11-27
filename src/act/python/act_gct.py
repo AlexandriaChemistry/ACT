@@ -65,13 +65,13 @@ class GeneralCouplingTheory:
         for t in self.targets:
             self.log.write("Target %s value %s\n" % ( t["observable"], t["value"] ))
 
-    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, polarize:bool, iter:int, pfraction:float):
+    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, iter:int, pfraction:float):
         # It is much faster to convert the ACT force field file for a monomer
-        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, polarizable=polarize)
+        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff)
         sim1.setup()
         emonomer = sim1.minimize()
         # Now let's do the bulk
-        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml", polarizable=polarize)
+        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml")
         sim.set_monomer_energy(emonomer)
         sim.run()
         # Store coordinates in new file
@@ -105,7 +105,16 @@ class GeneralCouplingTheory:
             # Update force field
             for param in self.couple_types[myobs][pkey].keys():
                 myparam = self.couple_types[myobs][pkey][param]
-                pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+                if deviation > 0:
+           #         print("POSITIVE")
+                    pstep   = -(random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"])
+           #         print(f"AAAAAAAAAAA {pstep}")
+                 #remove   print("function has beeen changedi, down")
+                else:
+           #         print("NEGATIVE")
+                    pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+           #         print(f"BBBBBBBBBBB {pstep}")
+                #remove    print("function has beeen changedi,up")
                 myparam["step"] = pstep
         return coords, observations
 
@@ -121,14 +130,18 @@ class GeneralCouplingTheory:
                 for param in self.couple_types[obs][atom].keys():
                     myparam = self.couple_types[obs][atom][param]
                     oldval = myparam["value"]
+           #         print("the step is now %g" %(myparam["step"]))
                     myparam["value"] += myparam["step"]
                     myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
                     if oldval != myparam["value"]:
                         self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
                                        ( myiter, obs, atom, param, oldval, myparam["value"]))
                         self.log.flush()
+                        Atom = atom.capitalize()
                         os.system("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
-                                                                                            myparam["value"], atom ))
+                                                                                            myparam["value"], Atom ))
+           #remove this             print(" XXX alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
+                      #                                                                      myparam["value"], atom ))
 
     def print_convergence(self, myiter:int):
         for obs in self.couple_types.keys():
@@ -138,7 +151,7 @@ class GeneralCouplingTheory:
                     self.conv[obs][atom][param].write("%5d  %10g\n" % ( myiter, pp["value"] ))
 
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
-            niter:int, polarize:bool, pfraction:float):
+            niter:int, pfraction:float):
         # Loop over the iterations
         coords = bulk_pdb
         outf   = {}
@@ -149,7 +162,7 @@ class GeneralCouplingTheory:
             # Set all the parameter change steps to 0
             self.reset_step()
             # Do a simulation and collect data afterwards
-            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, polarize, myiter, pfraction)
+            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, myiter, pfraction)
             # Update the force field
             self.update_ff(myiter)
             # And print stuff!
