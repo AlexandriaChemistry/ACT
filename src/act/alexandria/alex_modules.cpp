@@ -76,8 +76,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Compute second virial coefficient as a function of temperature.");
     registerModule(manager, &alexandria::nma, "nma",
                    "Perform normal mode analysis and compute thermochemistry properties.");
-    registerModule(manager, &alexandria::tune_ff, "tune_ff",
-                   "Optimize force field parameters.");
+    registerModule(manager, &alexandria::train_ff, "train_ff",
+                   "Train a force field to reproduce reference data.");
     registerModule(manager, &alexandria::geometry_ff, "geometry_ff",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and add those to a force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
@@ -110,7 +110,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("geometry_ff");
         group.addModule("edit_ff");
         group.addModule("merge_ff");
-        group.addModule("tune_ff");
+        group.addModule("train_ff");
         group.addModule("analyze");
         group.addModule("edit_mp");
     }

@@ -487,16 +487,16 @@ bool CommunicationRecord::recv_bool(int src) const
     return b;
 }
 
-void CommunicationRecord::send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const
+void CommunicationRecord::send_ff_middleman_mode(int dest, TrainFFMiddlemanMode mode) const
 {
     check_init_done();
     send_int(dest, static_cast<int>(mode));
 }
 
-TuneFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
+TrainFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
 {
     check_init_done();
-    return static_cast<TuneFFMiddlemanMode>( recv_int(src) );
+    return static_cast<TrainFFMiddlemanMode>( recv_int(src) );
 }
 
 std::map<iMolSelect, int> imsInt = 

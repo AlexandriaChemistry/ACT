@@ -103,6 +103,8 @@ enum class xmlEntry {
     ATYPE,
     VALUE,
     OPTION,
+    COMBINATIONRULE,
+    RULE,
     PARAMETERLIST,
     PARAMETER,
     UNCERTAINTY,
@@ -164,6 +166,8 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "atype",                     xmlEntry::ATYPE            },
     { "value",                     xmlEntry::VALUE            },
     { "option",                    xmlEntry::OPTION           },
+    { "combinationrule",           xmlEntry::COMBINATIONRULE  },
+    { "rule",                      xmlEntry::RULE             },
     { "uncertainty",               xmlEntry::UNCERTAINTY      },
     { "minimum",                   xmlEntry::MINIMUM          },
     { "maximum",                   xmlEntry::MAXIMUM          },
@@ -350,6 +354,22 @@ static void processAttr(FILE       *fp,
             else if (xmlEntry::PARTICLETYPE == parentEntry)
             {
                 pd->findParticleType(myIdentifier)->setOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
+            }
+        }
+        break;
+    case xmlEntry::COMBINATIONRULE:
+        if (NNobligatory(xbuf, xmlEntry::PARAMETER) &&
+            NNobligatory(xbuf, xmlEntry::RULE))
+        {
+            if (xmlEntry::INTERACTION == parentEntry)
+            {
+                auto fpl = pd->findForces(currentItype);
+                fpl->addCombinationRule(xbufString(xmlEntry::PARAMETER),
+                                        xbufString(xmlEntry::RULE));
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError("Combination rule data found in the wrong place"));
             }
         }
         break;
@@ -596,6 +616,15 @@ static void addOption(xmlNodePtr         parent,
     add_xml_char(baby, exml_names(xmlEntry::VALUE), value.c_str());
 }
 
+static void addCombRule(xmlNodePtr         parent,
+                        const std::string &parameter,
+                        const std::string &rule)
+{
+    auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
+    add_xml_char(baby, exml_names(xmlEntry::PARAMETER), parameter.c_str());
+    add_xml_char(baby, exml_names(xmlEntry::RULE), rule.c_str());
+}
+
 static void addParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param)
 {
@@ -678,6 +707,10 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
         for (auto &option : fs.second.option())
         {
             addOption(child, option.first, option.second);
+        }
+        for (auto &cr : fs.second.combinationRules())
+        {
+            addCombRule(child, cr.first, cr.second);
         }
         for (auto &params : fs.second.parametersConst())
         {

@@ -434,7 +434,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
         auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        if (fs.gromacsType() == F_BHAM || fs.gromacsType() == F_LJ_147)
+        if (fs.gromacsType() == F_BHAM || fs.gromacsType() == F_LJ14_7)
         {
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
         }
@@ -446,7 +446,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
         auto grandchild4 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
-        if (fs.gromacsType() == F_GBHAM || fs.gromacsType() == F_LJ_147)
+        if (fs.gromacsType() == F_GBHAM || fs.gromacsType() == F_LJ14_7)
         {
             auto grandchild9 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild9, exml_names(xmlEntryOpenMM::NAME), "delta");
@@ -516,15 +516,15 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;
-            case F_LJ_147:
+            case F_LJ14_7:
                 // TODO: optimize values
-                sigma   = param[lj_147_name[lj_147SIGMA]].internalValue();
-                epsilon = param[lj_147_name[lj_147EPSILON]].internalValue();
+                sigma   = param[lj14_7_name[lj14_7SIGMA]].internalValue();
+                epsilon = param[lj14_7_name[lj14_7EPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[lj_147_name[j]].mutability())
+                    if (Mutability::Dependent != param[lj14_7_name[j]].mutability())
                     {
-                        add_xml_double(grandchild3, lj_147_name[j], param[lj_147_name[j]].internalValue());
+                        add_xml_double(grandchild3, lj14_7_name[j], param[lj14_7_name[j]].internalValue());
                     }
                 }
                 break;		
@@ -534,13 +534,13 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     // If we use "native" Lennard Jones we need to do this here:
                     auto ljchild = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     add_xml_char(ljchild, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
-                    sigma   = param[lj_name[ljSIGMA]].internalValue();
-                    epsilon = param[lj_name[ljEPSILON]].internalValue();
+                    sigma   = param[lj12_6_name[lj12_6SIGMA]].internalValue();
+                    epsilon = param[lj12_6_name[lj12_6EPSILON]].internalValue();
                     for(size_t j = 0; j < param.size(); j++)
                     {
-                        if (Mutability::Dependent != param[lj_name[j]].mutability())
+                        if (Mutability::Dependent != param[lj12_6_name[j]].mutability())
                         {
-                            add_xml_double(ljchild, lj_name[j], param[lj_name[j]].internalValue());
+                            add_xml_double(ljchild, lj12_6_name[j], param[lj12_6_name[j]].internalValue());
                         }
                     }
                 }
@@ -779,8 +779,8 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                     
                 case F_COUL_SR:
                 case F_LJ:
-                case F_LJ_147:
-                case F_LJ_86:
+                case F_LJ14_7:
+                case F_LJ8_6:
                 case F_BHAM:
                 case F_GBHAM:
                 case F_POLARIZATION:

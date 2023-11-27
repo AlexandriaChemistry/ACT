@@ -31,11 +31,11 @@
 namespace alexandria
 {
 
-const char *lj_name[ljNR] = { "sigma", "epsilon", "c6_ij", "c12_ij" };
+const char *lj12_6_name[lj12_6NR] = { "sigma", "epsilon", "sigma_ij", "epsilon_ij" };
 
-const char *lj_86_name[lj_NR_86] = { "sigma", "epsilon", "c6_ij", "c8_ij" };
+const char *lj8_6_name[lj8_6NR] = { "sigma", "epsilon", "sigma_ij", "epsilon_ij" };
 
-const char *lj_147_name[lj_NR_147] = { "sigma", "epsilon", "gamma", "delta", "sigma_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
+const char *lj14_7_name[lj14_7NR] = { "sigma", "epsilon", "gamma", "delta", "sigma_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
 
 const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilon_ij", "gamma_ij" };
     

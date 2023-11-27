@@ -134,6 +134,7 @@ const t_sandr sandrTty[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
+    { "[BR]",  "\n" },
     { "[GRK]", "" },
     { "[grk]", "" }
 };

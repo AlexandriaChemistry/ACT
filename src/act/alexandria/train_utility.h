@@ -32,8 +32,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef TUNING_UTILITY_H
-#define TUNING_UTILITY_H
+#ifndef TRAIN_UTILITY_H
+#define TRAIN_UTILITY_H
 
 #include <cstdio>
 
@@ -61,9 +61,9 @@ namespace alexandria
 using qtStats = std::map<qType, gmx_stats>;
 
 
-/*! \brief Class to managa output from force field tuning
+/*! \brief Class to managa output from force field training
  */
-class TuneForceFieldPrinter
+class TrainForceFieldPrinter
 {
 private:
     //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
@@ -122,7 +122,7 @@ private:
                              gmx_stats                *lsq_freq,
                              const gmx_output_env_t   *oenv);
 public:
-    TuneForceFieldPrinter() {}
+    TrainForceFieldPrinter() {}
     
     /*! \brief Add my options to the list of command line arguments
      * \param[out] pargs The vector to add to
