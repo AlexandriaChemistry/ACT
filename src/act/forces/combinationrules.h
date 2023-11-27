@@ -43,7 +43,8 @@ namespace alexandria
     {
         Geometric, Arithmetic, Volumetric, InverseSquare, 
             HogervorstEpsilon, HogervorstSigma, Yang,
-            WaldmanSigma, WaldmanEpsilon, Matar, QiSigma, QiEpsilon, MasonGamma
+            WaldmanSigma, WaldmanEpsilon, HalgrenEpsilon,
+            QiSigma, QiEpsilon, MasonGamma
             };
 
     //! Map combination rules to strings            

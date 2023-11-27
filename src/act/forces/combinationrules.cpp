@@ -55,7 +55,7 @@ const std::map<CombRule, const std::string> combRuleName =
         { CombRule::MasonGamma, "MasonGamma" },
         { CombRule::Volumetric, "Volumetric" },
         { CombRule::InverseSquare, "InverseSquare" },
-        { CombRule::Matar, "Matar" }
+        { CombRule::HalgrenEpsilon, "HalgrenEpsilon" }
     };
 
 const std::string &combinationRuleName(CombRule c)
@@ -115,9 +115,10 @@ double combineTwo(CombRule comb, double x1, double x2)
         {
             return 0;
         }
+        // Qi2016a Eqn. 2 
         return (x1*x1*x1+x2*x2*x2)/(x1*x1+x2*x2);
-    case CombRule::Matar:
-        // Matar2004, Eqn. 9
+    case CombRule::HalgrenEpsilon:
+        // Halgren1992a, Eqn. 14
         return 4*x1*x2/sqr(std::sqrt(x1) + std::sqrt(x2));
     default:
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
@@ -137,7 +138,7 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
 
 double combineQiEpsilon(double e1, double e2, double s1, double s2)
 {
-    // Qi et al, proposed for epsilon
+    // Qi2106 Eqn 3.
     double s13 = s1*s1*s1;
     double s23 = s2*s2*s2;
     if (s13 == 0 && s23 == 0)
@@ -226,12 +227,14 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
         break;
-    case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
+    case eCOMB_HOGERVORST:
+        // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
         myCombRule.insert({ csigma,   CombRule::HogervorstSigma });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Geometric });
         break;   
-    case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
+    case eCOMB_YANG:
+        // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
         myCombRule.insert({ csigma,   CombRule::Yang });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
@@ -263,7 +266,8 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
         break;
-    case eCOMB_QKmQG: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
+    case eCOMB_QKmQG:
+        // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
         myCombRule.insert({ csigma,   CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::QiEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
