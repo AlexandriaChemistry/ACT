@@ -104,9 +104,14 @@ double combineTwo(CombRule comb, double x1, double x2)
         return std::pow(0.5*(std::pow(x1, 6) + std::pow(x2, 6)), (1.0/6.0));
     case CombRule::Volumetric:
         // Kriz2024a Eqn. 20
-        return std::pow(0.5*(x1*x1*x1 + x2*x2*x2)/2, (1.0/3.0));
+        return std::pow(0.5*(x1*x1*x1 + x2*x2*x2), (1.0/3.0));
     case CombRule::InverseSquare:
         // Kriz2024a Eqn. 21
+        if (x1 == 0 || x2 == 0)
+        {
+            return 0;
+        }
+        else
         {
             double denom = 1/sqr(x1) + 1/sqr(x2);
             return std::sqrt(2/denom);
@@ -130,10 +135,18 @@ double combineTwo(CombRule comb, double x1, double x2)
 
 double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
 {
+    if (g1 <= 6 || g2 <= 6)
+    {
+        GMX_THROW(gmx::InvalidInputError("Combination rule HogervorstSigma not defined if gamma1 or gamma2 <= 6"));
+    }
     double tempi = std::abs(e1 * g1 * (std::pow(s1, 6)) /(g1 - 6 ));
     double tempj = std::abs(e2 * g2 * (std::pow(s2, 6)) /(g2 - 6  ));
     double gam12 = combineTwo(CombRule::Arithmetic, g1, g2);
     double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
+    if (0 == eps12)
+    {
+        return 0;
+    }
     return std::pow((std::sqrt( tempi * tempj ) )* abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 

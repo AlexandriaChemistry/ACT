@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="x1">1</Real>
+  <Real Name="x2">2</Real>
+  <Real Name="HalgrenEpsilon">2.0896309997099318</Real>
+</ReferenceData>

@@ -41,6 +41,14 @@ VdWdict = {
     'GBHAM':  VdW.GBHAM
     }
 
+NameNumberVdWparams = {
+    'LJ8_6':  [ "sigma", "epsilon" ],
+    'LJ12_6': [ "sigma", "epsilon" ],
+    'LJ14_7': [ "sigma", "epsilon", "gamma", "delta" ],
+    'WBHAM':  [ "sigma", "epsilon", "gamma" ],
+    'GBHAM':  [ "rmin",  "epsilon", "gamma", "delta" ]
+}
+
 # Make reverse map as well.
 dictVdW = {}
 for key in VdWdict:
@@ -142,10 +150,20 @@ class SimParams:
             sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
         
 class CombinationRules:
-    def __init__(self, qdist:str, comb:str):
+    def __init__(self, qdist:str, comb:str, vdw:VdW):
         self.qdist = qdist
-        self.comb  = comb
-
+        self.vdw   = VdW
+        self.comb  = {}
+        www = comb.split()
+        if 2*len(NameVdWparams[vdw]) != len(www):
+            sys.exit("Expected separate combination rules for %d parameters but found '%s'" % ( len(NameVdWparams[vdw]), comb ) )
+        for i in range(len(www), 2):
+            param = www[2*i]
+            self.comb[param] = www[2*i+1]
+        for np in NameVdWparams.keys():
+            if not np in self.comb:
+                sys.exit("No combination rule provided for %s on '%s'" % ( np, comb) )
+ 
     def geometricString(self, vara:str, varb:str)->str:
         return ("sqrt(%s*%s)" % ( vara, varb ))
         
@@ -158,44 +176,54 @@ class CombinationRules:
     def arithmetic(self, vara:float, varb:float)->float:
         return eval(self.arithmeticString(str(vara), str(varb)))
 
-    def combStrings(self, vdw:VdW):
-        if "Hogervorst" == self.comb:
-            cepsilon = "((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))"
-            cgamma   = "((gamma1 + gamma2)/2)"
+    def combTwoString(self, rule:str, vara:str, varb:str)->str:
+        myrule = rule.lower()
+        if "geometric" == myrule:
+            return self.geometricString(vara, varb)
+        elif "arithmetic" == myrule:
+            return self.arithmeticString(vara, varb)
+        elif "yang" == myrule:
+            return ("(%s*%s)*(%s+%s)/(%s*%s+%s*%s)" % ( vara, varb, vara, varb, vara, vara, varb, varb ))
+        elif "waldmansigma" == myrule:
+            return ("(0.5*(%s**6 + %s**6))**(1.0/6.0)" % ( vara, varb ))
+        elif "volumetric" == myrule:
+            return ("(0.5*(%s**3 + %s**3))**(1.0/3.0)" % ( vara, varb ))
+        elif "inversesquare" == myrule:
+            return ("sqrt(2/(%s**(-2) + %s**(-2)))" % (vara, varb) )
+        elif "qisigma" == myrule:
+            return ("select(%s+%s,(%s**3+%s**3)/(%s**2+%s**2),0)" % ( vara, varb, vara, varb, vara, varb ))
+        elif "halgrenepsilon" == myrule:
+            return ("select(%s**2+%s**2,(4*%s*%s/(sqrt(%s)+sqrt(%s))**2),0)" % ( vara, varb, vara, varb, vara, varb ))
+        else:
+            sys.exit("Unknown combination rule '%s'" % rule)
 
-            if vdw == VdW.WBHAM:
-                csigma   = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
-                return csigma, cepsilon, cgamma 
-            
-            elif vdw == VdW.GBHAM:
-                crmin   = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
-                #This combination rule is likely wrong for GBHAM 4 parameter one
-                print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
-                cdelta = "(sqrt(delta1*delta2))"
-                return crmin, cepsilon, cgamma, cdelta
-            elif vdw == VdW.LJ14_7:
-                csigma  = "(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
-                #This combination rule is likely wrong for GBHAM 4 parameter one
-                print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
-                cdelta = "(sqrt(delta1*delta2))"
-                return csigma, cepsilon, cgamma, cdelta
-        elif "Geometric" == self.comb:
-            cepsilon = "(sqrt(epsilon1*epsilon2))"
-            cgamma   = "(sqrt(gamma1*gamma2))"
-            if vdw == VdW.WBHAM:
-                csigma   = "(sqrt(sigma1*sigma2))"
-                return csigma, cepsilon, cgamma
-            elif vdw == VdW.GBHAM:
-               crmin   = "(sqrt(rmin1*rmin2))"
-               cdelta = "(sqrt(delta1*delta2))"
-               return crmin, cepsilon, cgamma, cdelta
-            elif vdw == VdW.LJ14_7:
-               csigma   = "(sqrt(sigma1*sigma2))"
-               cdelta = "(sqrt(delta1*delta2))"
-               return csigma, cepsilon, cgamma, cdelta
+    def combStrings(self)->dict:
+        mydict = {}
+        for param in self.comb.keys():
+            hvs = "hogervorstsigma"
+            wme = "waldmanepsilon"
+            mng = "masongamma"
+            if hvs == self.comb[param]:
+                if self.vdw == VdW.WBHAM and "sigma" == param:
+                    mydict["sigma"]  = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
+                elif self.vdw == VdW.GBHAM and "rmin" == param:
+                    mydict["rmin"] = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
+                else:
+                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
+            elif wme == self.comb[param]:
+                if "epsilon" == param:
+                    mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*sigma1**3*sigma2**3/(sigma1**6+sigma2**6)")
+                else:
+                    sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
+            elif mng == self.comb[param]:
+                if "gamma" == param:
+                    sigmaIJ = combTwoString("geometric", "sigma1", "sigma2")
+                    mydict["gamma"] = ("%s*(0.5*(gamma1/sigma1+gamma2/sigma2))" % sigmaIJ)
+                else:
+                    sys.exit("Combination rule %s not supported for param %s" % ( mng, param ))
             else:
-                sys.exit("No support for %s" % dictVdW[vdw])
-        sys.exit("Unknown combination rule '%s' for Van der Waals %s" % (self.comb, dictVdW[vdw]))
+                mydict[param] = self.combTwoString(self.comb[param], param+"1", param+"2")
+        return mydict
             
     def zetaString(self)->str:
         if self.qdist == "Gaussian":
@@ -251,14 +279,15 @@ class ActOpenMMSim:
         self.txt         = None
         self.pdb         = PDBFile(self.pdbfile)
         self.sim_params  = SimParams(self.datfile)
-        self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
-                                            self.sim_params.getStr("combination_rule"))
-        self.force_group = None
         vdwopt           = 'vanderwaals'
         vdw              = self.sim_params.getStr(vdwopt)
         if not vdw in VdWdict:
             sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.datfile ))
         self.vdw         = VdWdict[vdw]
+        self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
+                                            self.sim_params.getStr("combination_rule"),
+                                            self.vdw)
+        self.force_group = None
         self.txt_header()
         self.gen_ff()
     
@@ -687,17 +716,6 @@ class ActOpenMMSim:
             self.charges.append(charge)
             self.qq_correction.addParticle([charge, zeta])
 
-        if self.debug and self.vdw == VdW.WBHAM:
-            np = self.nonbondedforce.getNumParticles()
-            for i in range(np):
-                [_, sigma1, epsilon1, gamma1, _, _] = self.customnb.getParticleParameters(i)
-                for j in range(i,np):
-                    [_, sigma2, epsilon2, gamma2, _, _] = self.customnb.getParticleParameters(j)
-                    s12 = self.comb.geometric(sigma1, sigma2)
-                    e12 = self.comb.geometric(epsilon1, epsilon2)
-                    g12 = self.comb.geometric(gamma1, gamma2)
-                    print("i %d j %d sigma %10g epsilon %10g gamma %10g" % ( i, j, s12, e12, g12 ))
-                    
         for index in range(self.nonbondedforce.getNumExceptions()):
             [iatom, jatom, _, _, _] = self.nonbondedforce.getExceptionParameters(index)
             self.qq_correction.addExclusion(iatom, jatom)
@@ -713,24 +731,23 @@ class ActOpenMMSim:
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
+        combdict    `   = self.comb.combStrings()
+        expression = 'U_VDW-U_LJ;'
+        if self.nonbondedMethod == NoCutoff:
+            expression += 'U_LJ = 0;'
+        else:
+            expression += LJ_expression
         if self.vdw == VdW.WBHAM:
-            expression = 'U_WBHAM-U_LJ;'
-            if self.nonbondedMethod == NoCutoff:
-                expression += 'U_LJ = 0;'
-            else:
-                expression += LJ_expression
             # Note that sigma really is 1/sigma, to prevent division by zero.
             self.vdw_expression =('select(epsilon,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(sigma*r)^6)) * ((3/(gamma+3))*exp(gamma*(1-(sigma*r)))-1)),0);')
-            #self.vdw_expression = ('vdW*(((2*epsilon)/(gamma3)) * (1.0/(1.0+(sigma*r)^6)) * ((3/(gamma+3))*(gamma*(1-(sigma*r)))-1));')
-            #self.vdw_expression =('vdW(((2.0*epsilon)/(1.0-(3.0/(gamma+3.0)))) * ((sigma^6)/(sigma^6+r^6))* ((3.0/(gamma+3.0))*exp(gamma*(1.0-(r/sigma)))-1.0));')
             
-            expression += ( 'U_WBHAM = %s;' % self.vdw_expression )
-            csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
+            expression += ( 'U_VDW = %s;' % self.vdw_expression )
             # The statements have to be in this order! They are evaluated in the reverse order apparently.
             expression += ( 'gamma3   = (gamma/(3+gamma));')
-            expression += ( 'sigma    = %s;' % csigma )
-            expression += ( 'epsilon  = %s;' % cepsilon )
-            expression += ( 'gamma    = %s;' % cgamma )
+
+            expression += ( 'sigma    = %s;' % combdict["sigma"] )
+            expression += ( 'epsilon  = %s;' % combdict["epsilon"] )
+            expression += ( 'gamma    = %s;' % combdict["gamma"] )
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             if self.nonbondedMethod == NoCutoff:
                 self.vdw_correction.setName("VanderWaals"+dictVdW[self.vdw])
@@ -769,19 +786,12 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
 #################################################
         elif self.vdw == VdW.GBHAM:
-            expression = 'U_GBHAM-U_LJ;'
-            if self.nonbondedMethod == NoCutoff:
-                expression += 'U_LJ = 0;'
-            else:
-                expression += LJ_expression
-
             self.vdw_expression =('select(epsilon,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
-            expression += ( 'U_GBHAM = %s;' % self.vdw_expression )
-            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
-            expression += ( 'rmin    = %s;' % crmin )
-            expression += ( 'epsilon  = %s;' % cepsilon )
-            expression += ( 'gamma    = %s;' % cgamma )
-            expression += ( 'delta    = %s;' % cdelta )
+            expression += ( 'U_VDW = %s;' % self.vdw_expression )
+            expression += ( 'rmin    = %s;' % combdict["rmin"] )
+            expression += ( 'epsilon  = %s;' % combdict["epsilon"] )
+            expression += ( 'gamma    = %s;' % combdict["gamma"] )
+            expression += ( 'delta    = %s;' % combdict["delta"] )
             ############TODO put vdw correction in one block except for unique parameters?
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             self.vdw_correction.setName("VanderWaalsCorrection")
@@ -814,16 +824,12 @@ class ActOpenMMSim:
             self.count_forces("Direct space 8")
 #################################################
         elif self.vdw == VdW.LJ14_7:
-            expression = 'U_14_7-U_LJ;'
-            expression += LJ_expression
-
             self.vdw_expression =( 'select(epsilon,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0);')
-            expression += ( 'U_14_7 = %s;' % self.vdw_expression )
-            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
-            expression += ( 'sigma    = %s;' % csigma )
-            expression += ( 'epsilon  = %s;' % cepsilon )
-            expression += ( 'gamma    = %s;' % cgamma )
-            expression += ( 'delta    = %s;' % cdelta )
+            expression += ( 'U_VDW = %s;' % self.vdw_expression )
+            expression += ( 'sigma    = %s;' % combdict["sigma"] )
+            expression += ( 'epsilon  = %s;' % combdict["epsilon"] )
+            expression += ( 'gamma    = %s;' % combdict["gamma"] )
+            expression += ( 'delta    = %s;' % combdict["delta"] )
             ############TODO put vdw correction in one block except for unique parameters?
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
             self.vdw_correction.setName("VanderWaalsCorrection")
@@ -903,27 +909,13 @@ class ActOpenMMSim:
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
         nexclqq  = self.sim_params.getInt("nexclqq")
-        if self.vdw == VdW.WBHAM:
-            csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
-        elif self.vdw == VdW.GBHAM:
-            crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
-        elif self.vdw == VdW.LJ14_7:
-            csigma, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
-        else:
-            sys.exit("Do not know how to treat Van der Waals function '%s'" % dictVdW[self.vdw])
+        combdict = self.comb.combStrings()
 
         if self.debug:
-            if self.vdw == VdW.GBHAM:
-                print("crmin   = %s" % crmin)
-            else:
-                print("csigma   = %s" % csigma)
-                print("cepsilon = %s" % cepsilon)
-                if not self.vdw in [ VdW.LJ12_6 ]:
-                    print("cgamma   = %s" % cgamma)
-            if self.vdw in [ VdW.GBHAM, VdW.LJ14_7 ]:
-                print("cdelta   = %s" % cdelta)
+            for param in combdict:
+                print("%s   = %s" % ( param, combdict[param] ))
 
-        if self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]: # TODO: Feel free to add more in the future!
+        if self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
 
             for index in range(self.nonbondedforce.getNumExceptions()):
 

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="epsilon1">3</Real>
+  <Real Name="epsilon2">4</Real>
+  <Real Name="sigma1">1</Real>
+  <Real Name="sigma2">0</Real>
+  <Real Name="WaldmanEpsilon">0</Real>
+</ReferenceData>

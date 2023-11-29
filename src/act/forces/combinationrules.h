@@ -33,6 +33,8 @@
 #ifndef ACT_COMBINATIONRULES_H
 #define ACT_COMBINATIONRULES_H
 
+#include <map>
+
 #include "act/forcefield/forcefield.h"
 
 namespace alexandria
