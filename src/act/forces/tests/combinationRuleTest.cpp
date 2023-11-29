@@ -198,6 +198,21 @@ TEST_F (CombinationRuleTest, BhamQi)
     test(eCOMB_QI, F_BHAM);
 }
 
+TEST_F (CombinationRuleTest, BhamQi2)
+{
+    test(eCOMB_QI_2, F_BHAM);
+}
+
+TEST_F (CombinationRuleTest, BhamQyQy)
+{
+    test(eCOMB_QYQY, F_BHAM);
+}
+
+TEST_F (CombinationRuleTest, BhamQKmQG)
+{
+    test(eCOMB_QKmQG, F_BHAM);
+}
+
 TEST_F (CombinationRuleTest, BhamWaldmanHagler)
 {
     test(eCOMB_WALDMAN_HAGLER, F_BHAM);
@@ -233,9 +248,74 @@ TEST_F (CombinationRuleTest, GbhamQi)
     test(eCOMB_QI, F_GBHAM);
 }
 
+TEST_F (CombinationRuleTest, GbhamQi2)
+{
+    test(eCOMB_QI_2, F_GBHAM);
+}
+
+TEST_F (CombinationRuleTest, GbhamQyQy)
+{
+    test(eCOMB_QYQY, F_GBHAM);
+}
+
+TEST_F (CombinationRuleTest, GbhamQKmQG)
+{
+    test(eCOMB_QKmQG, F_GBHAM);
+}
+
 TEST_F (CombinationRuleTest, GbhamWaldmanHagler)
 {
     test(eCOMB_WALDMAN_HAGLER, F_GBHAM);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7Geometric)
+{
+    test(eCOMB_GEOMETRIC, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7Arithmetic)
+{
+    test(eCOMB_ARITHMETIC, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7KongMason)
+{
+    test(eCOMB_KONG_MASON, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7HogerVorst)
+{
+    test(eCOMB_HOGERVORST, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7Yang)
+{
+    test(eCOMB_YANG, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7Qi)
+{
+    test(eCOMB_QI, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7Qi2)
+{
+    test(eCOMB_QI_2, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7QyQy)
+{
+    test(eCOMB_QYQY, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7QKmQG)
+{
+    test(eCOMB_QKmQG, F_LJ14_7);
+}
+
+TEST_F (CombinationRuleTest, LJ14_7WaldmanHagler)
+{
+    test(eCOMB_WALDMAN_HAGLER, F_LJ14_7);
 }
 
 } // namespace

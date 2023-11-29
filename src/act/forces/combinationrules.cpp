@@ -92,15 +92,16 @@ double combineTwo(CombRule comb, double x1, double x2)
     case CombRule::HogervorstEpsilon:
         return (2.0 * x1 * x2)/( x1 + x2 );
     case CombRule::Yang:
-        return ( x1 * x2 ) * ( x1 + x2 ) / (sqr(x1) + sqr(x2) );
+        if (x1*x2 == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return ( x1 * x2 ) * ( x1 + x2 ) / (sqr(x1) + sqr(x2) );
+        }
     case CombRule::WaldmanSigma:
         return std::pow(0.5*(std::pow(x1, 6) + std::pow(x2, 6)), (1.0/6.0));
-    case CombRule::WaldmanEpsilon:
-        {
-            double x12 = sqr(x1);
-            double x22 = sqr(x2);
-            return ((x1*x12) + (x2*x22) )/ (x12 + x22);
-        }
     case CombRule::Volumetric:
         // Kriz2024a Eqn. 20
         return std::pow(0.5*(x1*x1*x1 + x2*x2*x2)/2, (1.0/3.0));
@@ -136,7 +137,7 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
     return std::pow((std::sqrt( tempi * tempj ) )* abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-double combineQiEpsilon(double e1, double e2, double s1, double s2)
+double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 {
     // Qi2106 Eqn 3.
     double s13 = s1*s1*s1;
@@ -226,18 +227,30 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ csigma,   CombRule::Geometric });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta, CombRule::Yang });
+        }
         break;
     case eCOMB_HOGERVORST:
         // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
         myCombRule.insert({ csigma,   CombRule::HogervorstSigma });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
-        myCombRule.insert({ cgamma,   CombRule::Geometric });
+        myCombRule.insert({ cgamma,   CombRule::Arithmetic });
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta, CombRule::Yang });
+        }
         break;   
     case eCOMB_YANG:
         // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
         myCombRule.insert({ csigma,   CombRule::Yang });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta, CombRule::Yang });
+        }
         break;
     case eCOMB_QI:
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
@@ -245,6 +258,17 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ csigma,   CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Arithmetic });
+        if (haveDelta)
+        {
+            if (F_GBHAM == ftype)
+            {
+               myCombRule.insert({ cdelta, CombRule::Yang });
+            }
+            else if (F_LJ14_7 == ftype)
+            {
+                myCombRule.insert({ cdelta, CombRule::Geometric });
+            }
+        }
         break;
     case eCOMB_QI_2:
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
@@ -253,11 +277,30 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ csigma,   CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::WaldmanSigma });
+        if (haveDelta)
+        {
+            if (F_GBHAM == ftype)
+            {
+                myCombRule.insert({ cdelta, CombRule::Yang });
+            }
+            else if (F_LJ14_7 == ftype)
+            {
+                myCombRule.insert({ cdelta, CombRule::Geometric });
+            }
+        }
         break;    
     case eCOMB_WALDMAN_HAGLER:
         // Waldman & Hagler, J. Comp. Chem., Year: 1993.
         myCombRule.insert({ csigma,   CombRule::WaldmanSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
+        if (haveGamma)
+        {
+            myCombRule.insert({ cgamma, CombRule::Yang });
+        }
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta, CombRule::Yang });
+        }
         break;
     case eCOMB_QYQY:
         // Waldman & Hagler, J. Comp. Chem., Year: 1993.
@@ -265,11 +308,15 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ csigma,   CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
+        if (haveDelta)
+        {
+            myCombRule.insert({ cdelta, CombRule::Yang });
+        }
         break;
     case eCOMB_QKmQG:
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
         myCombRule.insert({ csigma,   CombRule::QiSigma });
-        myCombRule.insert({ cepsilon, CombRule::QiEpsilon });
+        myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
         myCombRule.insert({ cdelta,   CombRule::Geometric });
         break;	    
@@ -343,8 +390,8 @@ ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, Com
         case CombRule::HogervorstSigma:
             value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
             break;
-        case CombRule::QiEpsilon:
-            value = combineQiEpsilon(ieps, jeps, isig, jsig);
+        case CombRule::WaldmanEpsilon:
+            value = combineWaldmanEpsilon(ieps, jeps, isig, jsig);
             break;
         case CombRule::MasonGamma:
             value = combineMasonGamma(igam, jgam, isig, jsig);

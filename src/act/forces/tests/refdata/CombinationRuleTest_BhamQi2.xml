@@ -2,30 +2,30 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="epsilon">WaldmanEpsilon</String>
-  <String Name="gamma">Arithmetic</String>
+  <String Name="gamma">WaldmanSigma</String>
   <String Name="sigma">QiSigma</String>
   <Real Name="epsilon_ij-0">0.5</Real>
-  <Real Name="gamma_ij-0">10</Real>
+  <Real Name="gamma_ij-0">9.9999999999999982</Real>
   <Real Name="sigma_ij-0">0.20000000000000001</Real>
   <Real Name="epsilon_ij-1">0.5</Real>
-  <Real Name="gamma_ij-1">11.5</Real>
+  <Real Name="gamma_ij-1">11.950886755398949</Real>
   <Real Name="sigma_ij-1">0.20000000000000001</Real>
   <Real Name="epsilon_ij-2">0.70710678118654757</Real>
-  <Real Name="gamma_ij-2">10</Real>
+  <Real Name="gamma_ij-2">9.9999999999999982</Real>
   <Real Name="sigma_ij-2">0.20000000000000001</Real>
   <Real Name="epsilon_ij-3">0.70710678118654757</Real>
-  <Real Name="gamma_ij-3">11.5</Real>
+  <Real Name="gamma_ij-3">11.950886755398949</Real>
   <Real Name="sigma_ij-3">0.20000000000000001</Real>
   <Real Name="epsilon_ij-4">0.12307692307692308</Real>
-  <Real Name="gamma_ij-4">10</Real>
+  <Real Name="gamma_ij-4">9.9999999999999982</Real>
   <Real Name="sigma_ij-4">0.36000000000000004</Real>
   <Real Name="epsilon_ij-5">0.12307692307692308</Real>
-  <Real Name="gamma_ij-5">11.5</Real>
+  <Real Name="gamma_ij-5">11.950886755398949</Real>
   <Real Name="sigma_ij-5">0.36000000000000004</Real>
   <Real Name="epsilon_ij-6">0.1740570538305348</Real>
-  <Real Name="gamma_ij-6">10</Real>
+  <Real Name="gamma_ij-6">9.9999999999999982</Real>
   <Real Name="sigma_ij-6">0.36000000000000004</Real>
   <Real Name="epsilon_ij-7">0.1740570538305348</Real>
-  <Real Name="gamma_ij-7">11.5</Real>
+  <Real Name="gamma_ij-7">11.950886755398949</Real>
   <Real Name="sigma_ij-7">0.36000000000000004</Real>
 </ReferenceData>

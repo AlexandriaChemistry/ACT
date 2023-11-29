@@ -68,14 +68,14 @@ namespace alexandria
      */
     double combineTwo(CombRule comb, double x1, double x2);
     
-    /*! \brief Execute a combination rule according to Qi2016a http://dx.doi.org/10.1016/j.bmc.2016.07.062 
+    /*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
      * \param[in] e1 First epsilon
      * \param[in] e2 Second epsilon
      * \param[in] s1 First sigma
      * \param[in] s2 Second sigma
      * \return The combined value
      */
-    double combineQiEpsilon(double e1, double e2, double s1, double s2);
+    double combineWaldmanEpsilon(double e1, double e2, double s1, double s2);
 
     /*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
      * \param[in] e1 First epsilon
