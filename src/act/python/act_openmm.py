@@ -32,27 +32,19 @@ class VdW(Enum):
     WBHAM  = 4
     GBHAM  = 5
 
-# Map strings to VdW entries.    
+# Map strings to VdW entries.
 VdWdict = {
-    'LJ8_6':  VdW.LJ8_6,
-    'LJ12_6': VdW.LJ12_6,
-    'LJ14_7': VdW.LJ14_7,
-    'WBHAM':  VdW.WBHAM,
-    'GBHAM':  VdW.GBHAM
+    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
+    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
+    'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
+    'WBHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
+    'GBHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] }
     }
-
-NameNumberVdWparams = {
-    'LJ8_6':  [ "sigma", "epsilon" ],
-    'LJ12_6': [ "sigma", "epsilon" ],
-    'LJ14_7': [ "sigma", "epsilon", "gamma", "delta" ],
-    'WBHAM':  [ "sigma", "epsilon", "gamma" ],
-    'GBHAM':  [ "rmin",  "epsilon", "gamma", "delta" ]
-}
 
 # Make reverse map as well.
 dictVdW = {}
 for key in VdWdict:
-    dictVdW[VdWdict[key]] = key
+    dictVdW[VdWdict[key]["func"]] = key
 
 nbmethod = {
     'LJPME':          LJPME,
@@ -152,15 +144,16 @@ class SimParams:
 class CombinationRules:
     def __init__(self, qdist:str, comb:str, vdw:VdW):
         self.qdist = qdist
-        self.vdw   = VdW
+        self.vdw   = vdw
+        vdwstr     = dictVdW[self.vdw]
         self.comb  = {}
         www = comb.split()
-        if 2*len(NameVdWparams[vdw]) != len(www):
-            sys.exit("Expected separate combination rules for %d parameters but found '%s'" % ( len(NameVdWparams[vdw]), comb ) )
-        for i in range(len(www), 2):
+        if 2*len(VdWdict[vdwstr]["params"]) != len(www):
+            sys.exit("Expected separate combination rules for %d parameters but found '%s'" % ( len(VdWdict[vdwstr]["params"]), comb ) )
+        for i in range(int(len(www)/2)):
             param = www[2*i]
             self.comb[param] = www[2*i+1]
-        for np in NameVdWparams.keys():
+        for np in VdWdict[vdwstr]["params"]:
             if not np in self.comb:
                 sys.exit("No combination rule provided for %s on '%s'" % ( np, comb) )
  
@@ -185,15 +178,15 @@ class CombinationRules:
         elif "yang" == myrule:
             return ("(%s*%s)*(%s+%s)/(%s*%s+%s*%s)" % ( vara, varb, vara, varb, vara, vara, varb, varb ))
         elif "waldmansigma" == myrule:
-            return ("(0.5*(%s**6 + %s**6))**(1.0/6.0)" % ( vara, varb ))
+            return ("(0.5*(%s^6 + %s^6))^(1.0/6.0)" % ( vara, varb ))
         elif "volumetric" == myrule:
-            return ("(0.5*(%s**3 + %s**3))**(1.0/3.0)" % ( vara, varb ))
+            return ("(0.5*(%s^3 + %s^3))^(1.0/3.0)" % ( vara, varb ))
         elif "inversesquare" == myrule:
-            return ("sqrt(2/(%s**(-2) + %s**(-2)))" % (vara, varb) )
+            return ("sqrt(2/(%s^(-2) + %s^(-2)))" % (vara, varb) )
         elif "qisigma" == myrule:
-            return ("select(%s+%s,(%s**3+%s**3)/(%s**2+%s**2),0)" % ( vara, varb, vara, varb, vara, varb ))
+            return ("select(%s+%s,(%s^3+%s^3)/(%s^2+%s^2),0)" % ( vara, varb, vara, varb, vara, varb ))
         elif "halgrenepsilon" == myrule:
-            return ("select(%s**2+%s**2,(4*%s*%s/(sqrt(%s)+sqrt(%s))**2),0)" % ( vara, varb, vara, varb, vara, varb ))
+            return ("select(%s^2+%s^2,(4*%s*%s/(sqrt(%s)+sqrt(%s))^2),0)" % ( vara, varb, vara, varb, vara, varb ))
         else:
             sys.exit("Unknown combination rule '%s'" % rule)
 
@@ -283,7 +276,7 @@ class ActOpenMMSim:
         vdw              = self.sim_params.getStr(vdwopt)
         if not vdw in VdWdict:
             sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.datfile ))
-        self.vdw         = VdWdict[vdw]
+        self.vdw         = VdWdict[vdw]["func"]
         self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
                                             self.sim_params.getStr("combination_rule"),
                                             self.vdw)
@@ -731,7 +724,7 @@ class ActOpenMMSim:
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
-        combdict    `   = self.comb.combStrings()
+        combdict   = self.comb.combStrings()
         expression = 'U_VDW-U_LJ;'
         if self.nonbondedMethod == NoCutoff:
             expression += 'U_LJ = 0;'
