@@ -1204,7 +1204,7 @@ void Topology::fillParameters(const ForceField *pd)
             case F_LJ14_7:
                 fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
                 break;
-            case F_BHAM:
+            case F_WBHAM:
                 fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
             case F_GBHAM:

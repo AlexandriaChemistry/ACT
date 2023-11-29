@@ -281,7 +281,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     int            nw, nqlj, nq, nlj;
     double         fq, fqlj, flj, fqljw, fqw;
 
-    bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+    bBHAM = (mtop->ffparams.functype[0] == F_WBHAM);
 
     bLJcut = ((ir->vdwtype == evdwCUT) && !bBHAM);
 

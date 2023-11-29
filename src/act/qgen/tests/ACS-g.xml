@@ -7388,7 +7388,7 @@
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="3" mutability="Fixed" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="BHAM" canswap="true">
+  <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded" nonnegative="yes"/>

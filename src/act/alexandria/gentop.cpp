@@ -93,16 +93,19 @@ int gentop(int argc, char *argv[])
         "uses polarizable or non-polarizable Gaussian charges. [PAR]",
         "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
         "that can be used to run a simulation of the system using the OpenMM",
-        "software."
+        "software. In addition, a selection of parameters for the OpenMM simulation",
+        "will be written to a [TT].dat[tt] file the name of which can be specified",
+        "with the [TT]-openmm_sim[tt] flag."
     };
     gmx_output_env_t *oenv;
     gmx_atomprop_t    aps;
     immStatus         imm;
 
     t_filenm          fnm[] = {
-        { efXML, "-ff",       "aff",       ffREAD  },
-        { efTOP, "-p",        "out",       ffOPTWR },
-        { efXML, "-openmm",   "out",       ffOPTWR },
+        { efXML, "-ff",         "aff",       ffREAD  },
+        { efTOP, "-p",          "out",       ffOPTWR },
+        { efXML, "-openmm",     "out",       ffOPTWR },
+        { efDAT, "-openmm_sim", "sim",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
         { efPDB, "-c",        "out",       ffWRITE },
         { efNDX, "-n",        "renum",     ffOPTWR },
@@ -410,9 +413,10 @@ int gentop(int argc, char *argv[])
         }
         mp_index++;
     }
-    if (opt2bSet("-openmm", NFILE, fnm))
+    if (opt2bSet("-openmm", NFILE, fnm) || opt2bSet("-openmm_sim", NFILE, fnm))
     {
-        writeOpenMM(opt2fn("-openmm", NFILE, fnm), &pd, actmols, mDrude, 0, addNumbersToAtoms);
+        writeOpenMM(opt2fn("-openmm", NFILE, fnm), 
+                    opt2fn("-openmm_sim", NFILE, fnm), &pd, actmols, mDrude, addNumbersToAtoms);
     }
     return status;
 }

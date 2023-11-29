@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="4e50c182964ef00c5f92669eadd5ea94" timestamp="2023-06-11 19:50:51"/>
+  <version checksum="729892ee1b1172e34fbc69fe4f52f2e3" timestamp="2023-11-29 13:51:26"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -14204,7 +14204,7 @@
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="3" mutability="Fixed" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="BHAM" canswap="true">
+  <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
     <option key="nexcl" value="0"/>
     <parameterlist identifier="Be2+">

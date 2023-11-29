@@ -5,7 +5,7 @@
   <Real Name="Angle before">1.6749064998308829</Real>
   <Real Name="Proper Dih. before">15.062394391986754</Real>
   <Real Name="Improper Dih. before">0</Real>
-  <Real Name="LJ (SR) before">-1.7472008376964434e-05</Real>
+  <Real Name="LJ12_6 (SR) before">-1.7472008376964434e-05</Real>
   <Real Name="Coulomb (SR) before">-34.189294492696483</Real>
   <Real Name="Potential before">-17.270782130759162</Real>
   <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
@@ -15,7 +15,7 @@
   <Real Name="Angle after">0.37494644571782887</Real>
   <Real Name="Proper Dih. after">8.0390624484355921</Real>
   <Real Name="Improper Dih. after">8.0901440902471401e-15</Real>
-  <Real Name="LJ (SR) after">-1.7787580894401528e-05</Real>
+  <Real Name="LJ12_6 (SR) after">-1.7787580894401528e-05</Real>
   <Real Name="Coulomb (SR) after">-34.52472358518019</Real>
   <Real Name="Potential after">-26.08501657584798</Real>
   <Sequence Name="Equilibrium force">

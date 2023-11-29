@@ -739,7 +739,7 @@
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="BHAM" canswap="true">
+  <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
     <option key="nexcl" value="0"/>
     <parameterlist identifier="Ar">

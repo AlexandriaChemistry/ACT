@@ -1769,7 +1769,7 @@ init_interaction_const(FILE                       *fp,
     ic->rvdw            = cutoff_inf(ir->rvdw);
     ic->rvdw_switch     = ir->rvdw_switch;
     ic->ljpme_comb_rule = ir->ljpme_combination_rule;
-    ic->useBuckingham   = (mtop->ffparams.functype[0] == F_BHAM);
+    ic->useBuckingham   = (mtop->ffparams.functype[0] == F_WBHAM);
     if (ic->useBuckingham)
     {
         ic->buckinghamBMax = calcBuckinghamBMax(fp, mtop);
@@ -2054,7 +2054,7 @@ void init_forcerec(FILE                             *fp,
         }
     }
 
-    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+    fr->bBHAM = (mtop->ffparams.functype[0] == F_WBHAM);
 
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir, FALSE, nullptr, nullptr);

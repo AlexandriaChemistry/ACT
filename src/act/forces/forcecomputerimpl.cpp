@@ -1050,7 +1050,7 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_LJ,            computeLJ12_6       },
     { F_LJ8_6,         computeLJ8_6        },
     { F_LJ14_7,        computeLJ14_7       },
-    { F_BHAM,          computeWBH          },
+    { F_WBHAM,          computeWBH          },
     { F_GBHAM,         computeNonBonded    },
     { F_COUL_SR,       computeCoulomb      },
     { F_POLARIZATION,  computePolarization },

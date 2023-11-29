@@ -29,7 +29,7 @@ class VdW(Enum):
     LJ8_6  = 1
     LJ12_6 = 2
     LJ14_7 = 3
-    WBH    = 4
+    WBHAM  = 4
     GBHAM  = 5
 
 # Map strings to VdW entries.    
@@ -37,7 +37,7 @@ VdWdict = {
     'LJ8_6':  VdW.LJ8_6,
     'LJ12_6': VdW.LJ12_6,
     'LJ14_7': VdW.LJ14_7,
-    'WBH':    VdW.WBH,
+    'WBHAM':  VdW.WBHAM,
     'GBHAM':  VdW.GBHAM
     }
 
@@ -62,7 +62,7 @@ constrmethod = {
 
 # indices (XML files have to follow this order)
 parameter_indices = {
-    VdW.WBH: {
+    VdW.WBHAM: {
         'sigma':   0,
         'epsilon': 1,
         'gamma':   2,
@@ -163,26 +163,26 @@ class CombinationRules:
             cepsilon = "((2 * epsilon1 * epsilon2)/(epsilon1 + epsilon2))"
             cgamma   = "((gamma1 + gamma2)/2)"
 
-            if vdw == VdW.WBH:
+            if vdw == VdW.WBHAM:
                 csigma   = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
                 return csigma, cepsilon, cgamma 
             
             elif vdw == VdW.GBHAM:
                 crmin   = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
-                #This combination rule is likely wrong for GWBH 4 parameter one
+                #This combination rule is likely wrong for GBHAM 4 parameter one
                 print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
                 cdelta = "(sqrt(delta1*delta2))"
                 return crmin, cepsilon, cgamma, cdelta
             elif vdw == VdW.LJ14_7:
                 csigma  = "(((sqrt(((epsilon1*gamma1*sigma1^6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
-                #This combination rule is likely wrong for GWBH 4 parameter one
+                #This combination rule is likely wrong for GBHAM 4 parameter one
                 print("WARNING, Hogervorst combination rule and 4-parameter generalized Wang-Buckingham potential has likely no basis for their usage together...")
                 cdelta = "(sqrt(delta1*delta2))"
                 return csigma, cepsilon, cgamma, cdelta
         elif "Geometric" == self.comb:
             cepsilon = "(sqrt(epsilon1*epsilon2))"
             cgamma   = "(sqrt(gamma1*gamma2))"
-            if vdw == VdW.WBH:
+            if vdw == VdW.WBHAM:
                 csigma   = "(sqrt(sigma1*sigma2))"
                 return csigma, cepsilon, cgamma
             elif vdw == VdW.GBHAM:
@@ -591,7 +591,7 @@ class ActOpenMMSim:
         Van der Waals potenti - Lennard-Jones and gaussian distributed charge Coulomb - point charge Coulomb,
         placing it in specified force group.
         The LJ and point charge is necessary for both the dispersion correction and for the LJPME, and for using PME
-        Create a CustomBondForce to calculate the direct space force of WBH and gaussian Coulomb for interactions 
+        Create a CustomBondForce to calculate the direct space force of WBHAM and gaussian Coulomb for interactions 
         that are excluded (besides core-shell interactions).
         """
         cnbname       = "CustomNonbondedForce"
@@ -670,7 +670,7 @@ class ActOpenMMSim:
 
         for index in range(self.nonbondedforce.getNumParticles()):
             myparams = self.customnb.getParticleParameters(index)
-            if self.vdw == VdW.WBH:
+            if self.vdw == VdW.WBHAM:
                 [_, _, _, charge, zeta] = myparams
                 if self.debug:
                     print(f"nonbonded sigma, epsilon, gamma, charge, zeta {myparams}")
@@ -687,7 +687,7 @@ class ActOpenMMSim:
             self.charges.append(charge)
             self.qq_correction.addParticle([charge, zeta])
 
-        if self.debug and self.vdw == VdW.WBH:
+        if self.debug and self.vdw == VdW.WBHAM:
             np = self.nonbondedforce.getNumParticles()
             for i in range(np):
                 [_, sigma1, epsilon1, gamma1, _, _] = self.customnb.getParticleParameters(i)
@@ -713,8 +713,8 @@ class ActOpenMMSim:
         LJ_expression += ('epsilon_LJ   = %s;' % self.comb.geometricString("epsilon_LJ1", "epsilon_LJ2"))
         LJ_expression += ('sigma_LJ     = %s;' % self.comb.arithmeticString("sigma_LJ1", "sigma_LJ2"))
         LJ_expression += ('sigma_LJ_rec = %s;' % self.comb.geometricString("sigma_LJ1", "sigma_LJ2"))
-        if self.vdw == VdW.WBH:
-            expression = 'U_WBH-U_LJ;'
+        if self.vdw == VdW.WBHAM:
+            expression = 'U_WBHAM-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
             else:
@@ -724,7 +724,7 @@ class ActOpenMMSim:
             #self.vdw_expression = ('vdW*(((2*epsilon)/(gamma3)) * (1.0/(1.0+(sigma*r)^6)) * ((3/(gamma+3))*(gamma*(1-(sigma*r)))-1));')
             #self.vdw_expression =('vdW(((2.0*epsilon)/(1.0-(3.0/(gamma+3.0)))) * ((sigma^6)/(sigma^6+r^6))* ((3.0/(gamma+3.0))*exp(gamma*(1.0-(r/sigma)))-1.0));')
             
-            expression += ( 'U_WBH = %s;' % self.vdw_expression )
+            expression += ( 'U_WBHAM = %s;' % self.vdw_expression )
             csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
             # The statements have to be in this order! They are evaluated in the reverse order apparently.
             expression += ( 'gamma3   = (gamma/(3+gamma));')
@@ -769,14 +769,14 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
 #################################################
         elif self.vdw == VdW.GBHAM:
-            expression = 'U_GWBH-U_LJ;'
+            expression = 'U_GBHAM-U_LJ;'
             if self.nonbondedMethod == NoCutoff:
                 expression += 'U_LJ = 0;'
             else:
                 expression += LJ_expression
 
             self.vdw_expression =('select(epsilon,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
-            expression += ( 'U_GWBH = %s;' % self.vdw_expression )
+            expression += ( 'U_GBHAM = %s;' % self.vdw_expression )
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
             expression += ( 'rmin    = %s;' % crmin )
             expression += ( 'epsilon  = %s;' % cepsilon )
@@ -887,7 +887,7 @@ class ActOpenMMSim:
         vdwname = "VanderWaalsExclusionCorrection"
         vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
         vdw_excl_corr.setName(vdwname)
-        if self.vdw in [ VdW.WBH, VdW.LJ14_7 ]:
+        if self.vdw in [ VdW.WBHAM, VdW.LJ14_7 ]:
             vdw_excl_corr.addPerBondParameter("sigma")
         if self.vdw == VdW.GBHAM:
             vdw_excl_corr.addPerBondParameter("rmin")
@@ -903,7 +903,7 @@ class ActOpenMMSim:
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
         nexclqq  = self.sim_params.getInt("nexclqq")
-        if self.vdw == VdW.WBH:
+        if self.vdw == VdW.WBHAM:
             csigma, cepsilon, cgamma = self.comb.combStrings(self.vdw)
         elif self.vdw == VdW.GBHAM:
             crmin, cepsilon, cgamma, cdelta = self.comb.combStrings(self.vdw)
@@ -923,7 +923,7 @@ class ActOpenMMSim:
             if self.vdw in [ VdW.GBHAM, VdW.LJ14_7 ]:
                 print("cdelta   = %s" % cdelta)
 
-        if self.vdw in [VdW.WBH, VdW.GBHAM, VdW.LJ14_7]: # TODO: Feel free to add more in the future!
+        if self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]: # TODO: Feel free to add more in the future!
 
             for index in range(self.nonbondedforce.getNumExceptions()):
 

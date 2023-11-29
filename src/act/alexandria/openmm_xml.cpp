@@ -52,6 +52,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_low.h"
+#include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
 #include "actmol.h"
 #include "act/utility/xml_util.h"
@@ -307,12 +308,21 @@ public:
     {
     }
     
-    /*! \brief Do the writing
+    /*! \brief Do the writing of the force field file
+     * \param[in] fileName The name of the file
+     * \param[in] pd       The ACT force field
+     * \param[in] actmols  The ACT molecules
      */
-    void write(const std::string         &fileName,
-               const ForceField          *pd,
-               const std::vector<ACTMol> &actmols,
-               bool                       compress);
+    void writeXml(const std::string         &fileName,
+                  const ForceField          *pd,
+                  const std::vector<ACTMol> &actmols);
+
+    /*! \brief Do the writing of the parameter file
+     * \param[in] fileName The name of the file
+     * \param[in] pd       The ACT force field
+     */
+    void writeDat(const std::string         &fileName,
+                  const ForceField          *pd);
 };
 
 void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
@@ -434,7 +444,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
         auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        if (fs.gromacsType() == F_BHAM || fs.gromacsType() == F_LJ14_7)
+        if (fs.gromacsType() == F_WBHAM || fs.gromacsType() == F_LJ14_7)
         {
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
         }
@@ -492,7 +502,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             double sigma = 0, epsilon = 0;
             switch (fs.gromacsType())
             {
-            case F_BHAM:
+            case F_WBHAM:
                 // TODO: optimize values
                 sigma   = param[wbh_name[wbhSIGMA]].internalValue();
                 epsilon = param[wbh_name[wbhEPSILON]].internalValue();
@@ -781,7 +791,7 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case F_LJ:
                 case F_LJ14_7:
                 case F_LJ8_6:
-                case F_BHAM:
+                case F_WBHAM:
                 case F_GBHAM:
                 case F_POLARIZATION:
                 case F_VSITE2:
@@ -1042,10 +1052,9 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
     addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
 }
 
-void OpenMMWriter::write(const std::string         &fileName,
-                         const ForceField          *pd,
-                         const std::vector<ACTMol> &actmols,
-                         bool                       compress)
+void OpenMMWriter::writeXml(const std::string         &fileName,
+                            const ForceField          *pd,
+                            const std::vector<ACTMol> &actmols)
 {
     xmlDocPtr   doc;
     xmlDtdPtr   dtd;
@@ -1076,7 +1085,8 @@ void OpenMMWriter::write(const std::string         &fileName,
     /* Add molecule definitions */
     addXmlForceField(myroot, pd, actmols);
 
-    xmlSetDocCompressMode(doc, compress ? 1 : 0);
+    // Do not compress the OpenMM file.
+    xmlSetDocCompressMode(doc, 0);
     xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
     {
@@ -1085,18 +1095,78 @@ void OpenMMWriter::write(const std::string         &fileName,
     xmlFreeDoc(doc);
 }
 
+static void writeCombinationRules(FILE *fp,
+                                  const std::map<const std::string, CombRule> cmap)
+{
+    fprintf(fp, "combination_rule =");
+    for(const auto &cm : cmap)
+    {
+        fprintf(fp, " %s %s", cm.first.c_str(), combinationRuleName(cm.second).c_str());
+    }
+    fprintf(fp, "\n");
+}
+
+void OpenMMWriter::writeDat(const std::string &fileName,
+                            const ForceField  *pd)
+{
+    std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
+        { InteractionType::COULOMB, 
+          { { "chargetype", "charge_distribution" },
+            { "epsilonr", "dielectric_constant" },
+            { "nexcl", "nexclqq" } } },
+        { InteractionType::VDW,
+          { {  "nexcl", "nexclvdw" } } }
+    };
+
+    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
+    fprintf(fp, "rigidWater  = False\n");
+    fprintf(fp, "constraints = None\n");
+    for(const auto &a2o : act2omm)
+    {
+        if (pd->interactionPresent(a2o.first))
+        {
+            auto fs = pd->findForcesConst(a2o.first);
+            for(const auto &opt : a2o.second)
+            {
+                if (fs.optionExists(opt.first))
+                {
+                    fprintf(fp, "%s = %s\n", opt.second.c_str(),
+                            fs.optionValue(opt.first).c_str());
+                }
+            }
+            if (InteractionType::VDW == a2o.first)
+            {
+                fprintf(fp, "vanderwaals = %s\n", 
+                        interaction_function[fs.gromacsType()].name);
+                const std::string crule("combination_rule");
+                if (fs.optionExists(crule))
+                {
+                    writeCombinationRules(fp, oldCombinationRule(fs.optionValue(crule),
+                                                                 fs.gromacsType()));
+                }
+                else
+                {
+                    writeCombinationRules(fp, getCombinationRule(fs));
+                }
+            }
+        }
+    }
+    
+    gmx_ffclose(fp);
+}
 
 void writeOpenMM(const std::string         &fileName,
+                 const std::string         &simParams,
                  const ForceField          *pd,
                  const std::vector<ACTMol> &actmols,
                  double                     mDrude,
-                 bool                       compress,
                  bool                       addNumbersToAtoms)
 {
     rmapyyyOpenMM.clear();
     
     OpenMMWriter writer(mDrude, addNumbersToAtoms);
-    writer.write(fileName, pd, actmols, compress);
+    writer.writeXml(fileName, pd, actmols);
+    writer.writeDat(simParams, pd);
 }
 
 } // namespace alexandria

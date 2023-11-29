@@ -399,7 +399,7 @@ int gen_ff(int argc, char*argv[])
            case F_LJ14_7:  
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
-            case F_BHAM:
+            case F_WBHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
                 break;
             case F_GBHAM:

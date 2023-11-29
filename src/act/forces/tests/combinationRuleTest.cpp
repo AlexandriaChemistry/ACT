@@ -170,52 +170,52 @@ TEST_F (CombinationRuleTest, LjLorentzBerthelot)
 
 TEST_F (CombinationRuleTest, BhamGeometric)
 {
-    test(eCOMB_GEOMETRIC, F_BHAM);
+    test(eCOMB_GEOMETRIC, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamArithmetic)
 {
-    test(eCOMB_ARITHMETIC, F_BHAM);
+    test(eCOMB_ARITHMETIC, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamKongMason)
 {
-    test(eCOMB_KONG_MASON, F_BHAM);
+    test(eCOMB_KONG_MASON, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamHogerVorst)
 {
-    test(eCOMB_HOGERVORST, F_BHAM);
+    test(eCOMB_HOGERVORST, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamYang)
 {
-    test(eCOMB_YANG, F_BHAM);
+    test(eCOMB_YANG, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQi)
 {
-    test(eCOMB_QI, F_BHAM);
+    test(eCOMB_QI, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQi2)
 {
-    test(eCOMB_QI_2, F_BHAM);
+    test(eCOMB_QI_2, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQyQy)
 {
-    test(eCOMB_QYQY, F_BHAM);
+    test(eCOMB_QYQY, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQKmQG)
 {
-    test(eCOMB_QKmQG, F_BHAM);
+    test(eCOMB_QKmQG, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamWaldmanHagler)
 {
-    test(eCOMB_WALDMAN_HAGLER, F_BHAM);
+    test(eCOMB_WALDMAN_HAGLER, F_WBHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamGeometric)

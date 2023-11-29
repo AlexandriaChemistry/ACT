@@ -73,9 +73,9 @@ protected:
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName+".xml");
         auto pd      = getForceField(fileName);
         auto orig    = pd->checkSum();
+        checker_.checkString(orig, "ForceField checksum");
         auto sumpd   = forcefieldCheckSum(pd);
         EXPECT_TRUE(orig == sumpd);
-        checker_.checkString(sumpd, "ForceField checksum");
     }
 };
 

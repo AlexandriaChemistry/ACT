@@ -5,7 +5,7 @@
   <String Name="atom1">c2</String>
   <String Name="atom2">h3</String>
   <Real Name="IntermediateValue">0.25</Real>
-  <Real Name="MaxValue">0.4</Real>
+  <Real Name="MaxValue">0.40000000000000002</Real>
   <Real Name="Before">12</Real>
   <Real Name="After">24</Real>
   <Real Name="Original">12</Real>

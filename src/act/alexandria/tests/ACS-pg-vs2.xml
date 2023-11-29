@@ -21612,7 +21612,7 @@
       <parameter type="kimp" unit="kJ/mol" value="1" uncertainty="0" minimum="0.5" maximum="2" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="BHAM" canswap="true">
+  <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
     <option key="nexcl" value="1"/>
     <parameterlist identifier="Ar">
