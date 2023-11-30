@@ -212,7 +212,7 @@ int gen_ff(int argc, char*argv[])
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    const char *vdwfn[]   = { nullptr, "BHAM", "GBHAM", "LJ_SR", "LJ8_6", "LJ14_7", nullptr };
+    const char *vdwfn[]   = { nullptr, "WBHAM", "GBHAM", "LJ12_6", "LJ8_6", "LJ14_7", nullptr };
     std::vector<const char *> combrules = { nullptr };
     combrules.push_back(nullptr);
     std::vector<t_filenm> fnm = {
