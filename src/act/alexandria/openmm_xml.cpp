@@ -654,7 +654,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 // The Morse bonds potential is written as a string here:
-                auto energy = gmx::formatString("(%s*(1 - exp(-%s*(r-%s)))^2)+%s;", 
+                auto energy = gmx::formatString("(%s*(1 - exp(-%s*(r-%s)))^2-1)+%s;", 
                                                 morse_name[morseDE], morse_name[morseBETA],
                                                 morse_name[morseLENGTH], morse_name[morseD0]);
                 add_xml_char(fsPtr, "energy", energy.c_str());

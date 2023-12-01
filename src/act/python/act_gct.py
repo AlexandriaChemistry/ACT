@@ -6,12 +6,14 @@ class GeneralCouplingTheory:
     '''
     Class to facilitate force field optimization in the liquid phase.
     '''
-    def __init__(self, coupleTypes:str, logfile:str, actff:str):
+    def __init__(self, coupleTypes:str, logfile:str, actff:str, verbose:bool=False, debug:bool=False):
         self.log = None
         if not os.path.exists(coupleTypes):
             sys.exit("File %s does not exist", coupleTypes)
-        self.actff = actff
-        self.log = open(logfile, "w")
+        self.actff   = actff
+        self.verbose = verbose
+        self.debug   = debug
+        self.log     = open(logfile, "w")
         self.log.write("Welcome to the return of the son of General Coupling Theory!\n")
         self.log.write("Will update ACT force field file %s\n" % self.actff)
         self.get_couple_types(coupleTypes)
@@ -56,8 +58,8 @@ class GeneralCouplingTheory:
                 self.conv[obs][atom] = {}
                 for param in self.couple_types[obs][atom].keys():
                     pp = self.couple_types[obs][atom][param]
-                    self.log.write("Will adapt %s for %s to fit %s within %g and %g current %g\n" %
-                                   ( param, atom, obs, pp["min"], pp["max"], pp["value"]))
+                    self.log.write("Will adapt %s for %s to fit %s within %g and %g current value %g, slope %g\n" %
+                                   ( param, atom, obs, pp["min"], pp["max"], pp["value"], pp["slope"]))
                     self.conv[obs][atom][param] = open("%s-%s-%s.xvg" % ( obs, atom, param ), "w")
 
     def setTargets(self, targets:list):
@@ -67,11 +69,13 @@ class GeneralCouplingTheory:
 
     def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, iter:int, pfraction:float):
         # It is much faster to convert the ACT force field file for a monomer
-        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff)
+        sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, verbose=self.verbose)
         sim1.setup()
         emonomer = sim1.minimize()
         # Now let's do the bulk
-        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml")
+        sim = ActOpenMMSim(pdbfile=bulk_pdb, datfile=bulk_dat, xmlfile="act.xml", verbose=self.verbose)
+        # Remove spurious file to prevent reaching max-backup
+        os.unlink("sim.dat")
         sim.set_monomer_energy(emonomer)
         sim.run()
         # Store coordinates in new file
@@ -84,37 +88,26 @@ class GeneralCouplingTheory:
         observations = sim.log_to_average(tmap)
         # Now loop over the fitting targets
         for t in self.targets:
-            myobs = t["observable"]
-            myval = observations[myobs]
-            if "dhvap" == myobs:
-                observations[myobs] = sim.dhvap(myval)
-                deviation =  observations[myobs] - t["value"]
-            elif "rho" == myobs:
-                deviation = myval-t["value"]
-            else:
-                sys.exit("Unknown observable %s" % myobs)
-            # Pick parameter to change for this observable
-            myobs  = t["observable"]
+            target_obs   = t["observable"]
+            target_value = t["value"]
+            myval        = observations[target_obs]
+            if "dhvap" == target_obs:
+                myval     = sim.dhvap(myval)
+            deviation = myval - target_value
+
             # TODO move this check out of this loop
-            if not myobs in self.couple_types:
-                sys.exit("Do not know how to optimize %s" % myobs)
+            if not target_obs in self.couple_types:
+                sys.exit("Do not know how to optimize %s" % target_obs)
             # Randomly pick which atom to update
-            atypelist = list(self.couple_types[myobs].keys())
+            atypelist = list(self.couple_types[target_obs].keys())
             pindex    = random.randint(0, len(atypelist)-1)
             pkey      = atypelist[pindex]
             # Update force field
-            for param in self.couple_types[myobs][pkey].keys():
-                myparam = self.couple_types[myobs][pkey][param]
-                if deviation > 0:
-           #         print("POSITIVE")
-                    pstep   = -(random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"])
-           #         print(f"AAAAAAAAAAA {pstep}")
-                 #remove   print("function has beeen changedi, down")
-                else:
-           #         print("NEGATIVE")
-                    pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
-           #         print(f"BBBBBBBBBBB {pstep}")
-                #remove    print("function has beeen changedi,up")
+            for param in self.couple_types[target_obs][pkey].keys():
+                myparam = self.couple_types[target_obs][pkey][param]
+                pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+                if self.verbose:
+                    self.log.write("%s value %.2f, target %.2f, step %g for param %s\n" % ( target_obs, myval, target_value, pstep, param ))
                 myparam["step"] = pstep
         return coords, observations
 
@@ -130,18 +123,18 @@ class GeneralCouplingTheory:
                 for param in self.couple_types[obs][atom].keys():
                     myparam = self.couple_types[obs][atom][param]
                     oldval = myparam["value"]
-           #         print("the step is now %g" %(myparam["step"]))
                     myparam["value"] += myparam["step"]
                     myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
                     if oldval != myparam["value"]:
                         self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
                                        ( myiter, obs, atom, param, oldval, myparam["value"]))
+                        edit_cmd = ("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s -force" % ( self.actff, self.actff, param,
+                                                                                                     myparam["value"], atom ))
+                        os.system(edit_cmd)
+                        if self.debug:
+                            self.log.write("edit_cmd '%s'\n" % edit_cmd)
                         self.log.flush()
-                        Atom = atom.capitalize()
-                        os.system("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
-                                                                                            myparam["value"], Atom ))
-           #remove this             print(" XXX alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s" % ( self.actff, self.actff, param,
-                      #                                                                      myparam["value"], atom ))
+
 
     def print_convergence(self, myiter:int):
         for obs in self.couple_types.keys():
@@ -156,8 +149,8 @@ class GeneralCouplingTheory:
         coords = bulk_pdb
         outf   = {}
         for t in self.targets:
-            myobs = t["observable"]
-            outf[myobs] = open(("%s.xvg" % myobs), "w")
+            target_obs = t["observable"]
+            outf[target_obs] = open(("%s.xvg" % target_obs), "w")
         for myiter in range(niter):
             # Set all the parameter change steps to 0
             self.reset_step()
@@ -168,9 +161,9 @@ class GeneralCouplingTheory:
             # And print stuff!
             self.print_convergence(myiter)
             for t in self.targets:
-                myobs = t["observable"]
-                outf[myobs].write("%5d  %10g\n" % ( myiter, observations[myobs] ))
-                outf[myobs].flush()
+                target_obs = t["observable"]
+                outf[target_obs].write("%5d  %10g\n" % ( myiter, observations[target_obs] ))
+                outf[target_obs].flush()
         for t in self.targets:
-            myobs = t["observable"]
-            outf[myobs].close()
+            target_obs = t["observable"]
+            outf[target_obs].close()

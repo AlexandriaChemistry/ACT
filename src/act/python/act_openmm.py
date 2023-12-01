@@ -118,7 +118,7 @@ class SimParams:
             print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
             return default
 
-    def getInt(self, key:str) -> int:
+    def getInt(self, key:str, default:int=0) -> int:
         if key in self.params and len(self.params[key]) > 0:
             try:
                 words = self.params[key].split("*")
@@ -127,19 +127,22 @@ class SimParams:
                 sys.exit("Incorrect integer value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
             return value
         else:
-            sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
+            print("Unknown or empty key '%s' in %s, using default value = %d" % ( key, self.filename, default ))
+            return default
         
-    def getStr(self, key:str) -> str:
+    def getStr(self, key:str, default:str="") -> str:
         if key in self.params and len(self.params[key]) > 0:
             return self.params[key]
         else:
-            sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
+            print("Unknown or empty key '%s' in %s, using default value = '%s'" % ( key, self.filename, default ))
+            return default
         
-    def getBool(self, key:str) -> bool:
+    def getBool(self, key:str, default:bool=False) -> bool:
         if key in self.params and len(self.params[key]) > 0:
             return self.params[key] in [ "True", "true" ]
         else:
-            sys.exit("Unknown or empty key '%s' in %s" % ( key, self.filename ))
+            print("Unknown or empty key '%s' in %s, using default value = '%s'" % ( key, self.filename, str(default) ))
+            return default
         
 class CombinationRules:
     def __init__(self, qdist:str, comb:str, vdw:VdW):
@@ -505,12 +508,12 @@ class ActOpenMMSim:
                                               totalSteps=self.steps,
                                               step=self.sim_params.getBool('outStep'),
                                               time=self.sim_params.getBool('outTime'),
-                                              speed=self.sim_params.getBool('outSpeed'),
-                                              progress=self.sim_params.getBool('outProgress'),
+                                              speed=self.sim_params.getBool('outSpeed', False),
+                                              progress=self.sim_params.getBool('outProgress', False),
                                               potentialEnergy=self.sim_params.getBool('outPotentialEnergy'),
                                               kineticEnergy=self.sim_params.getBool('outKineticEnergy'),
                                               temperature=self.sim_params.getBool('outTemperature'),
-                                              volume=self.sim_params.getBool('outVolume'),
+                                              volume=self.sim_params.getBool('outVolume', False),
                                               density=self.sim_params.getBool('outDensity'),
                                               separator=self.sim_params.getStr('outSeparator'))
         # Do not open files unnecessarily
