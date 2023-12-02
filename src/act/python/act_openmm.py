@@ -190,6 +190,8 @@ class CombinationRules:
             return ("select(%s+%s,(%s^3+%s^3)/(%s^2+%s^2),0)" % ( vara, varb, vara, varb, vara, varb ))
         elif "halgrenepsilon" == myrule:
             return ("select(%s^2+%s^2,(4*%s*%s/(sqrt(%s)+sqrt(%s))^2),0)" % ( vara, varb, vara, varb, vara, varb ))
+        elif "hogervorstepsilon" == myrule:
+            return ("select(%s+%s,((2.0 * %s * %s)/( %s + %s )),0)" %  ( vara, varb, vara, varb, vara, varb ))
         else:
             sys.exit("Unknown combination rule '%s'" % rule)
 
@@ -199,21 +201,21 @@ class CombinationRules:
             hvs = "hogervorstsigma"
             wme = "waldmanepsilon"
             mng = "masongamma"
-            if hvs == self.comb[param]:
+            if hvs == self.comb[param].lower():
                 if self.vdw == VdW.WBHAM and "sigma" == param:
                     mydict["sigma"]  = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
                 elif self.vdw == VdW.GBHAM and "rmin" == param:
                     mydict["rmin"] = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
                 else:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
-            elif wme == self.comb[param]:
+            elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*sigma1**3*sigma2**3/(sigma1**6+sigma2**6)")
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
-            elif mng == self.comb[param]:
+            elif mng == self.comb[param].lower():
                 if "gamma" == param:
-                    sigmaIJ = combTwoString("geometric", "sigma1", "sigma2")
+                    sigmaIJ = self.combTwoString("geometric", "sigma1", "sigma2")
                     mydict["gamma"] = ("%s*(0.5*(gamma1/sigma1+gamma2/sigma2))" % sigmaIJ)
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( mng, param ))

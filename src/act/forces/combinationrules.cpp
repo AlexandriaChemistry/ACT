@@ -166,7 +166,6 @@ double combineMasonGamma(double g1, double g2, double s1, double s2)
 {
     double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
-
 }
 
 std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
