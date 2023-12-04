@@ -202,10 +202,11 @@ class CombinationRules:
             wme = "waldmanepsilon"
             mng = "masongamma"
             if hvs == self.comb[param].lower():
+                #double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
                 if self.vdw == VdW.WBHAM and "sigma" == param:
-                    mydict["sigma"]  = "(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
+                    mydict["sigma"]  = ("(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2"))
                 elif self.vdw == VdW.GBHAM and "rmin" == param:
-                    mydict["rmin"] = "(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))"
+                    mydict["rmin"] = ("(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2"))
                 else:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
             elif wme == self.comb[param].lower():
