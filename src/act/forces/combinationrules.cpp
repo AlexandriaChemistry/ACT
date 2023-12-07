@@ -371,7 +371,8 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     return myCombRule;
 }
 
-ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, CombRule> &combrule,
+ForceFieldParameterMap evalCombinationRule(int                                          ftype,
+                                           const std::map<const std::string, CombRule> &combrule,
                                            const ForceFieldParameterMap                &ivdw,
                                            const ForceFieldParameterMap                &jvdw)
 {
@@ -394,6 +395,7 @@ ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, Com
             GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s not found in combination rule", param.first.c_str()).c_str()));
         }
         const std::string csigma(lj14_7_name[lj14_7SIGMA]);
+        const std::string crmin(gbh_name[gbhRMIN]);
         const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
         const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
         auto ieps = ivdw.find(cepsilon)->second.value();
@@ -402,6 +404,11 @@ ForceFieldParameterMap evalCombinationRule(const std::map<const std::string, Com
         auto jgam = jvdw.find(cgamma)->second.value();
         auto isig = ivdw.find(csigma)->second.value();
         auto jsig = jvdw.find(csigma)->second.value();
+        if (F_GBHAM == ftype)
+        {
+            isig = ivdw.find(crmin)->second.value();
+            jsig = jvdw.find(crmin)->second.value();
+        }
         double value    = 0;
         auto   crule    = combrule.find(param.first)->second;
         switch (crule)
@@ -456,7 +463,8 @@ static void generateVdwParameterPairs(ForceField *pd)
             }
             auto jparam = jvdw.second;
             // Fill the parameters, potential dependent
-            auto pmap = evalCombinationRule(comb_rule, ivdw.second, jvdw.second);
+            auto pmap = evalCombinationRule(forcesVdw->gromacsType(),
+                                            comb_rule, ivdw.second, jvdw.second);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
