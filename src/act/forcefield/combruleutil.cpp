@@ -82,12 +82,13 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
     }
 }
 
-void CombRuleUtil::extract(ForceFieldParameterList *vdw)
+int CombRuleUtil::extract(ForceFieldParameterList *vdw)
 {
+    int changed = 0;
     size_t i = 0;
     for(const auto &mm : mycr)
     {
-        if (strlen(cr_flag_[i]) > 0)
+        if (cr_flag_[i] && strlen(cr_flag_[i]) > 0)
         {
             // Will throw if incorrect string
             CombRule cr;
@@ -95,10 +96,30 @@ void CombRuleUtil::extract(ForceFieldParameterList *vdw)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", cr_flag_[i], mm.second).c_str()));
             }
-            vdw->addCombinationRule(mm.first, cr_flag_[i]);
+            bool doChange = true;
+            if (vdw->combinationRuleExists(mm.second))
+            {
+                auto oldRule = vdw->combinationRule(mm.second);
+                if (oldRule != cr_flag_[i])
+                {
+                    printf("Changing combination rule for %s from %s to %s\n",
+                           mm.second, oldRule.c_str(),
+                           cr_flag_[i]);
+                }
+                else
+                {
+                    doChange = false;
+                }
+            }
+            if (doChange)
+            {
+                vdw->addCombinationRule(mm.second, cr_flag_[i]);
+                changed += 1;
+            }
         }
         i += 1;
     }
+    return changed;
 }
 
 } // namespace alexandria

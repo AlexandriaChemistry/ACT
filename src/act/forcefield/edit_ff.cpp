@@ -865,10 +865,11 @@ int edit_ff(int argc, char*argv[])
     }
     // Fetch new combination rules if necessary
     auto vdw = InteractionType::VDW;
+    int nRuleChanged = 0;
     if (pd.interactionPresent(vdw))
     {
-        auto fsvdw = pd.findForces(vdw);
-        crule.extract(fsvdw);
+        auto fsvdw   = pd.findForces(vdw);
+        nRuleChanged = crule.extract(fsvdw);
     }
     if (opt2bSet("-o", NFILE, fnm))
     {

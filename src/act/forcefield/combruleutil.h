@@ -62,8 +62,9 @@ namespace alexandria
 
         /*! \brief Utility to convert strings to combination rules in the FF
          * \param[inout] vdw     The parameter list
+         * \return the number of rules that were changed.
          */
-        void extract(ForceFieldParameterList *vdw);
+        int extract(ForceFieldParameterList *vdw);
     };
 
 } // namespace aleaxndria
