@@ -44,7 +44,7 @@
       <Bond atomName1="C_7" atomName2="O_9"/>
     </Residue>
   </Residues>
-  <CustomBondForce energy="(De*(1 - exp(-beta*(r-bondlength)))^2)+D0;">
+  <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0);">
     <PerBondParameter name="beta"/>
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>
