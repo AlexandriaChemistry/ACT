@@ -192,5 +192,11 @@ class Symcharges
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;
 using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator;
 
+
+/*! \brief Utility to make command line information about combrules
+ * \param[inout] crinfo Array of strings to be edited
+ */
+void add_comb_rule_info(std::vector<const char *> *crinfo);
+
 } // namespace aleaxndria
 #endif

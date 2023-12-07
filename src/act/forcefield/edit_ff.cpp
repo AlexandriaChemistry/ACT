@@ -42,6 +42,7 @@
 #include "act/basics/mutability.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
+#include "act/forcefield/combruleutil.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield.h"
@@ -685,7 +686,7 @@ static void addBondEnergy(ForceField *pd)
 
 int edit_ff(int argc, char*argv[])
 {
-    static const char               *desc[] =
+    std::vector<const char *> desc =
     {
         "edit_ff reads a force field file and can do a number of things.[PAR]",
         "If the flag [TT]-ana[TT] is set it will analyze the file and print",
@@ -701,6 +702,8 @@ int edit_ff(int argc, char*argv[])
         "or the maximum is to be changed, the actual value may be set to the",
         "new minmum or maximum if it falls outside the new bounds.",
     };
+    CombRuleUtil crule;
+    crule.addInfo(&desc);
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
         { efXML, "-ff",   "aff_in" , ffREAD  },
@@ -728,7 +731,7 @@ int edit_ff(int argc, char*argv[])
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
     static char *analyze    = (char *)"";
-    t_pargs      pa[]       =
+    std::vector<t_pargs> pa =
     {
         { "-p",      FALSE, etSTR,  {&parameter},
           "Type of parameter to change, e.g. zeta." },
@@ -769,17 +772,16 @@ int edit_ff(int argc, char*argv[])
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
-    int                 npargs = asize(pa);
-    int                 NFILE  = asize(fnm);
-    alexandria::ForceField pd;
-    
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    int NFILE  = asize(fnm);
+    crule.addPargs(&pa);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, pa.size(), pa.data(),
+                           desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }
     CommunicationRecord cr;
     cr.init(cr.size());
+    ForceField pd;
     if (cr.isMaster())
     {
         try 
@@ -841,7 +843,7 @@ int edit_ff(int argc, char*argv[])
         }
         else
         {
-            bool bLimits = opt2parg_bSet("-limits", npargs, pa);
+            bool bLimits = opt2parg_bSet("-limits", pa.size(), pa.data());
             if (limits <= 0)
             {
                 fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
@@ -853,14 +855,20 @@ int edit_ff(int argc, char*argv[])
                 limits = 1.0/limits;
             }
             modifyForceField(&pd, parameter, particle,
-                          opt2parg_bSet("-min", npargs, pa), pmin,
-                          opt2parg_bSet("-val", npargs, pa), pval,
-                          opt2parg_bSet("-max", npargs, pa), pmax,
-                          opt2parg_bSet("-mut", npargs, pa), mutability,
-                          opt2parg_bSet("-scale", npargs, pa), scale,
-                          force, stretch,
-                          bLimits, limits);
+                             opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
+                             opt2parg_bSet("-val", pa.size(), pa.data()), pval,
+                             opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
+                             opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
+                             opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
+                             force, stretch, bLimits, limits);
         }
+    }
+    // Fetch new combination rules if necessary
+    auto vdw = InteractionType::VDW;
+    if (pd.interactionPresent(vdw))
+    {
+        auto fsvdw = pd.findForces(vdw);
+        crule.extract(fsvdw);
     }
     if (opt2bSet("-o", NFILE, fnm))
     {
