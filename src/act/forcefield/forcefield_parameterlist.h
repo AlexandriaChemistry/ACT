@@ -34,6 +34,7 @@
 #ifndef FORCEFIELDPARAMETERLIST_H
 #define FORCEFIELDPARAMETERLIST_H
 
+#include <algorithm>
 #include <map>
 
 #include "gromacs/utility/exceptions.h"
@@ -100,6 +101,19 @@ class ForceFieldParameterList
     bool optionExists(const std::string &option) const
     {
         return options_.find(option) != options_.end();
+    }
+
+    /*! \brief Remove an option if it exists
+     *
+     * \param[in] option  Name of the option
+     */
+    void removeOption(const std::string &option)
+    {
+        auto myopt = options_.find(option);
+        if (myopt != options_.end())
+        {
+            options_.erase(myopt);
+        }
     }
 
     /*! \brief Extract the value corresponding to an option

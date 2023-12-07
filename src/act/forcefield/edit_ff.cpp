@@ -870,6 +870,7 @@ int edit_ff(int argc, char*argv[])
     {
         auto fsvdw   = pd.findForces(vdw);
         nRuleChanged = crule.extract(fsvdw);
+        fsvdw->removeOption("combination_rule");
     }
     if (opt2bSet("-o", NFILE, fnm))
     {
@@ -918,7 +919,7 @@ int edit_ff(int argc, char*argv[])
         else
         {
             std::string checkSum = forcefieldCheckSum(&pd);
-            if (checkSum == pd.checkSum() && !forceWrite)
+            if (checkSum == pd.checkSum() && !forceWrite && nRuleChanged == 0)
             {
                 printf("No changes to forcefield structure, not writing a new file.");
             }
