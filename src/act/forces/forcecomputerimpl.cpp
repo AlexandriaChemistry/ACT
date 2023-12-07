@@ -297,7 +297,8 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
                                         ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/2.;
             if (debug)
              {
-                 fprintf(debug, "vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", eedisp + eerep, epsilon, gamma, rmin, delta);
+                 fprintf(debug, "vrep: %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n",
+                         eerep, eedisp, epsilon, gamma, rmin, delta);
              }
 
             erep     += eerep;
@@ -396,6 +397,12 @@ static void computeCoulomb(const TopologyEntryVector         &pairs,
         auto dr2        = iprod(dx, dx);
         real velec, felec;
         coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
+        if (debug)
+        {
+            auto r1 = std::sqrt(dr2);
+            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, 
+                    atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
+        }
         ebond += velec;
         if (dr2 > 0)
         {
