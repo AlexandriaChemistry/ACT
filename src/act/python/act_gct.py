@@ -90,9 +90,9 @@ class GeneralCouplingTheory:
         for t in self.targets:
             target_obs   = t["observable"]
             target_value = t["value"]
-            myval        = observations[target_obs]
             if "dhvap" == target_obs:
-                myval     = sim.dhvap(myval)
+                observations[target_obs] = sim.dhvap(observations[target_obs])
+            myval     = observations[target_obs]
             deviation = myval - target_value
 
             # TODO move this check out of this loop
