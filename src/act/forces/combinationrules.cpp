@@ -286,7 +286,14 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
         // Cubic-mean for sigma, and Waldman-Hagler for epsilon.
         // 2023 testing, Kriz. is almost the same asi Qi.
-        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        if (F_GBHAM == ftype)
+        {
+            myCombRule.insert({ crmin,   CombRule::QiSigma });
+        }
+        else
+        {
+            myCombRule.insert({ csigma,   CombRule::QiSigma });
+        }
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::WaldmanSigma });
         if (haveDelta)
