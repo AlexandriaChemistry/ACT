@@ -1516,28 +1516,30 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                   &lsqt[iMolSelect::Train], oenv,
                   &(lsq_charge[iMolSelect::Train]), useOffset_);
 
+    const char *alex  = "Alexandria";
+    const char *qmref = "QM Reference";
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
         std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
-                   title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
+                   title.c_str(), qmref, alex, lsq_multi[mpo], oenv);
     }
     print_corr(opt2fn_null("-epotcorr", filenm.size(), filenm.data()),
-               "Potential energy (kJ/mol)", "Reference", "Empirical",
+               "Potential energy (kJ/mol)", qmref, alex,
                lsq_epot, oenv);
     print_corr(opt2fn_null("-eintercorr", filenm.size(), filenm.data()),
-               "Interaction energy (kJ/mol)", "Reference", "Empirical",
+               "Interaction energy (kJ/mol)", qmref, alex,
                lsq_eInter, oenv);
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
-               "Forces (kJ/mol nm)", "Reference", "Empirical",
+               "Forces (kJ/mol nm)", qmref, alex,
                lsq_rmsf, oenv);
     print_corr(opt2fn_null("-freqcorr", filenm.size(), filenm.data()),
-               "Frequencies (cm^-1)", "Reference", "Empirical",
+               "Frequencies (cm^-1)", qmref, alex,
                lsq_freq, oenv);
     print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
-               "Electrostatic Potential (Hartree/e)", "Electronic", "Calc",
+               "Electrostatic Potential (Hartree/e)", qmref, alex,
                lsq_esp, oenv);
     print_corr(opt2fn_null("-qcorr", filenm.size(), filenm.data()),
                "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
@@ -1545,11 +1547,11 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     if (bPolar)
     {
         print_corr(opt2fn_null("-alphacorr", filenm.size(), filenm.data()),
-                   "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
+                   "Pricipal Components of Polarizability Tensor (A\\S3\\N)", qmref, alex, lsq_alpha, oenv);
         print_corr(opt2fn_null("-isopol", filenm.size(), filenm.data()),
-                   "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
+                   "Isotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_isoPol, oenv);
         print_corr(opt2fn_null("-anisopol", filenm.size(), filenm.data()),
-                   "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
+                   "Anisotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_anisoPol, oenv);
     }
     // List outliers based on the deviation in the Electrostatic Potential
     real espAver;

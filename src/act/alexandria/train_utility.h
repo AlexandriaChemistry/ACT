@@ -85,7 +85,7 @@ private:
     //! Fit regression analysis of results to y = ax+b instead of y = ax
     bool useOffset_           = false;
     //! Print all information from all SP calculation
-    bool printSP_             = false;
+    bool printSP_             = true;
     //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
     bool calcFrequencies_     = false;
     //! Do special analysis of diatomic compounds
