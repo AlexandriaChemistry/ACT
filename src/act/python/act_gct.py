@@ -79,8 +79,7 @@ class GeneralCouplingTheory:
         sim.set_monomer_energy(emonomer)
         sim.run()
         # Store coordinates in new file
-        coords = ("bulk%d.pdb" % iter )
-        sim.write_coordinates(coords)
+        sim.write_coordinates('new.pdb')
         # Extract target properties
         tmap = { "rho": "Density (g/mL)", 
                  "dhvap": "Potential Energy (kJ/mole)"  }
@@ -109,7 +108,7 @@ class GeneralCouplingTheory:
                 if self.verbose:
                     self.log.write("%s value %.2f, target %.2f, step %g for param %s\n" % ( target_obs, myval, target_value, pstep, param ))
                 myparam["step"] = pstep
-        return coords, observations
+        return observations
 
     def reset_step(self):
         for obs in self.couple_types.keys():
@@ -146,7 +145,6 @@ class GeneralCouplingTheory:
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
             niter:int, pfraction:float):
         # Loop over the iterations
-        coords = bulk_pdb
         outf   = {}
         for t in self.targets:
             target_obs = t["observable"]
@@ -155,7 +153,7 @@ class GeneralCouplingTheory:
             # Set all the parameter change steps to 0
             self.reset_step()
             # Do a simulation and collect data afterwards
-            coords, observations = self.do_iter(monomer_pdb, coords, monomer_dat, bulk_dat, myiter, pfraction)
+            observations = self.do_iter(monomer_pdb, bulk_pdb, monomer_dat, bulk_dat, myiter, pfraction)
             # Update the force field
             self.update_ff(myiter)
             # And print stuff!
