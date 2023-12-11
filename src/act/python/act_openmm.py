@@ -236,10 +236,11 @@ class ActForce:
         self.fgnumber = fgnumber
 
 class ActOpenMMSim:
-    def __init__(self, pdbfile: str,              datfile: str,
-                       actfile: str=None,         xmlfile: str=None,             enefile: str='energy.csv',
-                       txtfile: str='output.txt', pdbtraj: str='trajectory.pdb', dcdtraj: str='trajectory.dcd',
-                       emonomer: float=None,      debug: bool=False,             verbose: bool=False):
+    def __init__(self, pdbfile: str,                  datfile: str,                  actfile: str=None,         
+                       xmlfile: str=None,             enefile: str='energy.csv',     txtfile: str='output.txt',
+                       chkfile: str='checkpoint.chk', pdbtraj: str='trajectory.pdb', dcdtraj: str='trajectory.dcd',
+                       emonomer: float=None,          debug:   bool=False,           verbose: bool=False):
+        self.chkfile     = chkfile
         self.enefile     = enefile
         self.txtfile     = txtfile
         self.dcdtraj     = dcdtraj
@@ -522,8 +523,8 @@ class ActOpenMMSim:
         # Do not open files unnecessarily
         save = self.sim_params.getInt('checkPoint')
         self.chkReporter = None
-        if save > 0 and self.steps > save:
-            self.chkReporter = CheckpointReporter('checkpnt.chk', save)
+        if save > 0 and self.steps >= save:
+            self.chkReporter = CheckpointReporter(self.chkfile, save)
         # Do not open files unnecessarily
         save = self.sim_params.getInt('savePdb')
         self.pdbReporter = None
@@ -1200,6 +1201,7 @@ class ActOpenMMSim:
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
     def equilibrate(self):
+        self.txt.write('Equilibration skipped. Checkpoint file found.\n')
         self.txt.write('\nEquilibrating for %d steps at T = %g K.\n' % ( self.equilibrationSteps, self.temperature_c) )
         self.simulation.context.setVelocitiesToTemperature(self.temperature_c)
         self.simulation.step(self.equilibrationSteps)
@@ -1244,9 +1246,14 @@ class ActOpenMMSim:
 
     def run(self):
         self.setup()
-        self.minimize(maxIter=100)
-        self.equilibrate()
-        self.print_energy("After equilibration")
+        if os.path.isfile(self.chkfile):
+            with open(self.chkfile, 'rb') as chk:
+                self.simulation.context.loadCheckpoint(chk.read())
+            self.print_energy("After loading checkpoint")
+        else:
+            self.minimize(maxIter=100)
+            self.equilibrate()
+            self.print_energy("After equilibration")
         self.production()
         self.print_energy("After production")
 
