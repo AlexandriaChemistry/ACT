@@ -1197,6 +1197,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
         auto     qcalc = actq.qPact();
         auto     props = myexp.propertiesConst();
         auto     xatom = experCoords(myexp.getCoordinates(), topology_->atoms());
+        std::vector<double> q;
         for (auto prop : props)
         {
             // Check whether this property is in the "Wanted" list
@@ -1211,13 +1212,8 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                 {
                     std::string         reference;
                     std::string         lot;
-                    std::vector<double> q;
                     if (myexp.getCharges(&q, qType::Calc, &reference, &lot))
                     {
-                        qelec->setQandX(q, xatom);
-                        qelec->calcMoments();
-                        qcalc->setQandX(q, xatom);
-                        qcalc->calcMoments();
                         qprop = true;
                     }
                     break;
@@ -1313,6 +1309,20 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
         }
         if (qprop)
         {
+            if (q.empty())
+            {
+                q.resize(xatom.size(), 0.0);
+                qelec->setQandX(atomsConst(), xatom);
+                qcalc->setQandX(atomsConst(), xatom);
+            }
+            else
+            {
+                qelec->setQandX(q, xatom);
+                qcalc->setQandX(q, xatom);
+            }
+            qelec->calcMoments();
+            qcalc->initializeMoments();
+            qcalc->calcMoments();
             qProps_.push_back(std::move(actq));
             foundNothing = false;
         }

@@ -101,7 +101,11 @@ QtypeProps::QtypeProps(qType                         qtype,
 
 void QtypeProps::computeCoC()
 {
-    GMX_RELEASE_ASSERT(atomNumber_.size() == x_.size(), "Mismatch in array sizes");
+    if (atomNumber_.size() != x_.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu x %zu elements.",
+                                                       atomNumber_.size(), x_.size()).c_str()));
+    }
     int atntot = 0;
     clear_rvec(coc_);
     for (size_t i = 0; i < atomNumber_.size(); i++)
