@@ -374,7 +374,7 @@ void PolarDevComputer::calcDeviation(const ForceComputer               *forceCom
     {
         auto &qref = qp->qPqmConst();
         auto *qact = qp->qPact();
-        if (qref.hasPolarizability() && qact->hasPolarizability())
+        if (qref.hasPolarizability())
         {
             tensor aelec;
             copy_mat(qref.polarizabilityTensor(), aelec);

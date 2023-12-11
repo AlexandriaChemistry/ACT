@@ -101,7 +101,11 @@ QtypeProps::QtypeProps(qType                         qtype,
 
 void QtypeProps::computeCoC()
 {
-    GMX_RELEASE_ASSERT(atomNumber_.size() == x_.size(), "Mismatch in array sizes");
+    if (atomNumber_.size() != x_.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu x %zu elements.",
+                                                       atomNumber_.size(), x_.size()).c_str()));
+    }
     int atntot = 0;
     clear_rvec(coc_);
     for (size_t i = 0; i < atomNumber_.size(); i++)
@@ -262,7 +266,8 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     // Convert from e nm2/V to cubic nm
     double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
 
-    clear_mat(alpha_);
+    tensor alpha;
+    clear_mat(alpha);
     // Units are not relevant since they drop out!
     // However, a field that is too large may lead to strange shell displacements.
     double efield = 0.1;
@@ -276,9 +281,10 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
         auto qmu = getMultipole(mpo);
         for (int n = 0; n < DIM; n++)
         {
-            alpha_[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
+            alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
         }
     }
+    setPolarizabilityTensor(alpha);
 }
 
 void QtypeProps::calcMoments()
