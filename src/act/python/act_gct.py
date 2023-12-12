@@ -46,7 +46,8 @@ class GeneralCouplingTheory:
                 self.couple_types[observable][atom][param] = { "min": float(row[3]),
                                                                "max": float(row[4]),
                                                                "value": float(row[5]),
-                                                               "slope": float(row[6]) }
+                                                               "slope": float(row[6]),
+                                                               "step": 0 }
             except ValueError:
                 sys.exit("Could not interpret line %d in %s" % ( lineno, coupleTypes ) )
             lineno += 1
@@ -124,7 +125,7 @@ class GeneralCouplingTheory:
                     oldval = myparam["value"]
                     myparam["value"] += myparam["step"]
                     myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
-                    if oldval != myparam["value"]:
+                    if oldval != myparam["value"] or myiter == 0:
                         self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
                                        ( myiter, obs, atom, param, oldval, myparam["value"]))
                         edit_cmd = ("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s -force" % ( self.actff, self.actff, param,
@@ -141,6 +142,7 @@ class GeneralCouplingTheory:
                 for param in self.couple_types[obs][atom].keys():
                     pp = self.couple_types[obs][atom][param]
                     self.conv[obs][atom][param].write("%5d  %10g\n" % ( myiter, pp["value"] ))
+                    self.conv[obs][atom][param].flush()
 
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
             niter:int, pfraction:float):
@@ -149,7 +151,8 @@ class GeneralCouplingTheory:
         for t in self.targets:
             target_obs = t["observable"]
             outf[target_obs] = open(("%s.xvg" % target_obs), "w")
-        for myiter in range(niter):
+        self.update_ff(0)
+        for myiter in range(1, niter+1):
             # Set all the parameter change steps to 0
             self.reset_step()
             # Do a simulation and collect data afterwards
