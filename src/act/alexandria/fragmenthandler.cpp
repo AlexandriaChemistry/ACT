@@ -111,11 +111,11 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         // ID
         ids_.push_back(f->id());
         // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), f->charge()));
+        QgenAcm_.push_back(std::move(QgenAcm(pd, top->atoms(), f->charge())));
         // Total number of atoms
         natoms_ += top->atoms().size();
         // Extend topologies_ array
-        topologies_.push_back(top);
+        topologies_.push_back(std::move(top));
         // Increase counter
         ff += 1;
     }

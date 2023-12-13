@@ -45,6 +45,9 @@ class ACT:
     def set_debug(self, debug:bool):
         self.debug = debug
 
+    def set_molprop(self, filename:str):
+        self.molpropfile = filename
+
     def analyze_nodes(self):
         scpt = "SLURM_CPUS_PER_TASK"
         if scpt in os.environ:
@@ -98,7 +101,7 @@ class ACT:
             return ( "%s -n %d -oversubscribe " % ( runit, nprocs ))
         return ""
 
-    def set_charges(ff:str, xmlref:str, xmlin:str, xmlout:str)->bool:
+    def set_charges(self, ff:str, xmlref:str, xmlin:str, xmlout:str)->bool:
         if not os.path.exists(ff):
             print("No force field file %s" % ff)
         elif not os.path.exists(xmlref):

@@ -218,7 +218,7 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
     {
         if (myatoms[i].pType() == eptAtom)
         {
-            // Read coords from the experimental structure without shells
+            // Read coords from the experimental structure without shells or vsites
             copy_rvec(xxx[j], coords[i]);
             j += 1;
         }
@@ -258,7 +258,17 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     }
     if (nullptr == exper)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No calculation for %s with jobtype %s or %s", getMolname().c_str(), jobType2string(JobType::OPT), jobType2string(JobType::TOPOLOGY)).c_str()));
+        exper = findExperimentConst(JobType::SP);
+        if (nullptr == exper)
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("No structure at all for %s", getMolname().c_str()).c_str()));
+        }
+        else
+        {
+            fprintf(stderr, "Warning: No calculation for %s with jobtype %s or %s, using first %s calc.\n",
+                    getMolname().c_str(), jobType2string(JobType::OPT), jobType2string(JobType::TOPOLOGY),
+                    jobType2string(JobType::SP));
+        }
     }
     return experCoords(exper->getCoordinates(), topology_->atoms());
 }

@@ -733,11 +733,15 @@ int Topology::makeVsite2s(const ForceField *pd,
         auto ptj    = pd->findParticleType(atoms_[aj].ffType());
         if (!pti->hasOption(bondtype))
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", atoms_[ai].ffType().c_str()).c_str()));
+            GMX_THROW(gmx::InternalError(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
+                                                           atoms_[ai].ffType().c_str(),
+                                                           atoms_[aj].ffType().c_str()).c_str()));
         }
         else if (!ptj->hasOption(bondtype))
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", atoms_[aj].ffType().c_str()).c_str()));
+            GMX_THROW(gmx::InternalError(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
+                                                           atoms_[aj].ffType().c_str(),
+                                                           atoms_[ai].ffType().c_str()).c_str()));
         }
         auto bai    = pti->optionValue("bondtype");
         auto baj    = ptj->optionValue("bondtype");
