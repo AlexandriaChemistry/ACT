@@ -35,6 +35,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace alexandria
 {
@@ -182,8 +183,15 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     }
     GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
                                                        vdw_comb.c_str()).c_str());
-    const std::string csigma(lj14_7_name[lj14_7SIGMA]);
-    const std::string crmin(gbh_name[gbhRMIN]);
+    std::string cdist;
+    if (F_GBHAM == ftype)
+    {
+        cdist = gbh_name[gbhRMIN];
+    }
+    else
+    {
+        cdist = lj14_7_name[lj14_7SIGMA];
+    }
     const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
     const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
     const std::string cdelta(lj14_7_name[lj14_7DELTA]);
@@ -193,14 +201,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     {
     case eCOMB_GEOMETRIC:
         myCombRule.insert({ cepsilon, CombRule::Geometric });
-        if (F_GBHAM == ftype)
-        {
-            myCombRule.insert({ crmin,    CombRule::Geometric });
-        }
-        else
-        {
-            myCombRule.insert({ csigma,   CombRule::Geometric });
-        }
+        myCombRule.insert({ cdist,    CombRule::Geometric });
         if (haveGamma)
         {
             myCombRule.insert({ cgamma,   CombRule::Geometric });
@@ -212,14 +213,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         break;
     case eCOMB_ARITHMETIC:
         myCombRule.insert({ cepsilon, CombRule::Arithmetic });
-        if (F_GBHAM == ftype)
-        {
-            myCombRule.insert({ crmin,    CombRule::Arithmetic });
-        }
-        else
-        {
-            myCombRule.insert({ csigma,   CombRule::Arithmetic });
-        }
+        myCombRule.insert({ cdist,    CombRule::Arithmetic });
         if (haveGamma)
         {
             myCombRule.insert({ cgamma,   CombRule::Arithmetic });
@@ -230,13 +224,13 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         }
         break;
     case eCOMB_LORENTZ_BERTHELOT:
-        myCombRule.insert({ csigma,   CombRule::Arithmetic });
+        myCombRule.insert({ cdist,    CombRule::Arithmetic });
         myCombRule.insert({ cepsilon, CombRule::Geometric });
         break;
     case eCOMB_KONG_MASON:
         // Kong, C. L. Combining Rules for Intermolecular Potential Parameters. II. Rules for the Lennard-Jones (12−6) Potential
         // and the Morse Potential. J. Chem. Phys. 1973, 59.
-        myCombRule.insert({ csigma,   CombRule::Geometric });
+        myCombRule.insert({ cdist,    CombRule::Geometric });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
         if (haveDelta)
@@ -246,7 +240,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         break;
     case eCOMB_HOGERVORST:
         // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
-        myCombRule.insert({ csigma,   CombRule::HogervorstSigma });
+        myCombRule.insert({ cdist,    CombRule::HogervorstSigma });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Arithmetic });
         if (haveDelta)
@@ -256,7 +250,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         break;   
     case eCOMB_YANG:
         // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
-        myCombRule.insert({ csigma,   CombRule::Yang });
+        myCombRule.insert({ cdist,    CombRule::Yang });
         myCombRule.insert({ cepsilon, CombRule::HogervorstEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
         if (haveDelta)
@@ -267,7 +261,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     case eCOMB_QI:
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
         // Cubic-mean for sigma, and Waldman-Hagler for epsilon.
-        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cdist,    CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Arithmetic });
         if (haveDelta)
@@ -286,14 +280,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7.
         // Cubic-mean for sigma, and Waldman-Hagler for epsilon.
         // 2023 testing, Kriz. is almost the same asi Qi.
-        if (F_GBHAM == ftype)
-        {
-            myCombRule.insert({ crmin,   CombRule::QiSigma });
-        }
-        else
-        {
-            myCombRule.insert({ csigma,   CombRule::QiSigma });
-        }
+        myCombRule.insert({ cdist,    CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::WaldmanSigma });
         if (haveDelta)
@@ -306,11 +293,16 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
             {
                 myCombRule.insert({ cdelta, CombRule::Geometric });
             }
+            else
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle delta for function type %s",
+                                                               interaction_function[ftype].name).c_str()));
+            }
         }
         break;    
     case eCOMB_WALDMAN_HAGLER:
         // Waldman & Hagler, J. Comp. Chem., Year: 1993.
-        myCombRule.insert({ csigma,   CombRule::WaldmanSigma });
+        myCombRule.insert({ cdist,    CombRule::WaldmanSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         if (haveGamma)
         {
@@ -324,7 +316,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     case eCOMB_QYQY:
         // Waldman & Hagler, J. Comp. Chem., Year: 1993.
         // Kriz: changing to the best rule for GBHAM Qi, Yang, Qi (with the "yang" for delta)
-        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cdist,    CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::Yang });
         if (haveDelta)
@@ -334,7 +326,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         break;
     case eCOMB_QKmQG:
         // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. The best combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. Qi /WH for epsilon, KM for gamma (but with geometric sigmaIJ), qi for sigma and geometric for delta
-        myCombRule.insert({ csigma,   CombRule::QiSigma });
+        myCombRule.insert({ cdist,    CombRule::QiSigma });
         myCombRule.insert({ cepsilon, CombRule::WaldmanEpsilon });
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
         myCombRule.insert({ cdelta,   CombRule::Geometric });
@@ -394,21 +386,28 @@ ForceFieldParameterMap evalCombinationRule(int                                  
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s not found in combination rule", param.first.c_str()).c_str()));
         }
-        const std::string csigma(lj14_7_name[lj14_7SIGMA]);
-        const std::string crmin(gbh_name[gbhRMIN]);
+        std::string cdist;
+        if (F_GBHAM == ftype)
+        {
+            cdist = gbh_name[gbhRMIN];
+        }
+        else
+        {
+            cdist = lj14_7_name[lj14_7SIGMA];
+        }
         const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
         const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
         auto ieps = ivdw.find(cepsilon)->second.value();
         auto jeps = jvdw.find(cepsilon)->second.value();
         auto igam = ivdw.find(cgamma)->second.value();
         auto jgam = jvdw.find(cgamma)->second.value();
-        auto isig = ivdw.find(csigma)->second.value();
-        auto jsig = jvdw.find(csigma)->second.value();
-        if (F_GBHAM == ftype)
+        double isig = 0, jsig = 0;
+        if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
         {
-            isig = ivdw.find(crmin)->second.value();
-            jsig = jvdw.find(crmin)->second.value();
+            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing", cdist.c_str()).c_str()));
         }
+        isig = ivdw.find(cdist)->second.value();
+        jsig = jvdw.find(cdist)->second.value();
         double value    = 0;
         auto   crule    = combrule.find(param.first)->second;
         switch (crule)

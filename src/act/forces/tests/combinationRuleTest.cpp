@@ -133,7 +133,7 @@ protected:
                                             (haveGamma && !sigEpsGamDone) ||
                                             (!sigEpsDone))
                                         {
-                                            auto pmap = evalCombinationRule(CombinationRule, ivdw, jvdw);
+                                            auto pmap = evalCombinationRule(ftype, CombinationRule, ivdw, jvdw);
                                             for(const auto &pm : pmap)
                                             {
                                                 myCheckReal(&checker_, pm.second.value(), pm.first.c_str(), index);
