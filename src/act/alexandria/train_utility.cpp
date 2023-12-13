@@ -515,10 +515,6 @@ void TrainForceFieldPrinter::analysePolarisability(FILE                *fp,
     for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
     {
         auto qcalc = qp->qPact();
-        if (!qcalc->hasPolarizability())
-        {
-            continue;
-        }
         qcalc->calcPolarizability(pd, mol->topology(), forceComp);
         auto acalc = qcalc->polarizabilityTensor();
     

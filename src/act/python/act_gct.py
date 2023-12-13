@@ -43,10 +43,12 @@ class GeneralCouplingTheory:
                 sys.exit("Inconsistency in %s, atom % with param %s occurs multiple times for observable %s" %
                          ( coupleTypes, atom, param, observable ))
             try:
-                self.couple_types[observable][atom][param] = { "min": float(row[3]),
-                                                               "max": float(row[4]),
-                                                               "value": float(row[5]),
-                                                               "slope": float(row[6]) }
+                self.couple_types[observable][atom][param] = { "min":       float(row[3]),
+                                                               "max":       float(row[4]),
+                                                               "value":     float(row[5]),
+                                                               "slope":     float(row[6]),
+                                                               "pfraction": float(row[7]),
+                                                               "step":      0 }
             except ValueError:
                 sys.exit("Could not interpret line %d in %s" % ( lineno, coupleTypes ) )
             lineno += 1
@@ -67,7 +69,7 @@ class GeneralCouplingTheory:
         for t in self.targets:
             self.log.write("Target %s value %s\n" % ( t["observable"], t["value"] ))
 
-    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, iter:int, pfraction:float):
+    def do_iter(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str, iter:int):
         # It is much faster to convert the ACT force field file for a monomer
         sim1 = ActOpenMMSim(pdbfile=monomer_pdb, datfile=monomer_dat, actfile=self.actff, verbose=self.verbose)
         sim1.setup()
@@ -104,7 +106,7 @@ class GeneralCouplingTheory:
             # Update force field
             for param in self.couple_types[target_obs][pkey].keys():
                 myparam = self.couple_types[target_obs][pkey][param]
-                pstep   = random.random()*pfraction*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
+                pstep   = random.random()*myparam["pfraction"]*(myparam["max"] - myparam["min"])*deviation*myparam["slope"]
                 if self.verbose:
                     self.log.write("%s value %.2f, target %.2f, step %g for param %s\n" % ( target_obs, myval, target_value, pstep, param ))
                 myparam["step"] = pstep
@@ -124,9 +126,13 @@ class GeneralCouplingTheory:
                     oldval = myparam["value"]
                     myparam["value"] += myparam["step"]
                     myparam["value"]  = max(myparam["min"], min(myparam["value"], myparam["max"]))
-                    if oldval != myparam["value"]:
-                        self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
-                                       ( myiter, obs, atom, param, oldval, myparam["value"]))
+                    if oldval != myparam["value"] or myiter == 0:
+                        if myiter == 0:
+                            self.log.write("Iter %d obs %s Setting %s %s to %g\n" %
+                                           ( myiter, obs, atom, param, myparam["value"]))
+                        else:
+                            self.log.write("Iter %d obs %s Changing %s %s from %g to %g\n" %
+                                           ( myiter, obs, atom, param, oldval, myparam["value"]))
                         edit_cmd = ("alexandria edit_ff -ff %s -o %s -p %s -val %g -a %s -force" % ( self.actff, self.actff, param,
                                                                                                      myparam["value"], atom ))
                         os.system(edit_cmd)
@@ -141,19 +147,21 @@ class GeneralCouplingTheory:
                 for param in self.couple_types[obs][atom].keys():
                     pp = self.couple_types[obs][atom][param]
                     self.conv[obs][atom][param].write("%5d  %10g\n" % ( myiter, pp["value"] ))
+                    self.conv[obs][atom][param].flush()
 
     def run(self, monomer_pdb:str, bulk_pdb:str, monomer_dat:str, bulk_dat:str,
-            niter:int, pfraction:float):
+            niter:int):
         # Loop over the iterations
         outf   = {}
         for t in self.targets:
             target_obs = t["observable"]
             outf[target_obs] = open(("%s.xvg" % target_obs), "w")
-        for myiter in range(niter):
+        self.update_ff(0)
+        for myiter in range(1, niter+1):
             # Set all the parameter change steps to 0
             self.reset_step()
             # Do a simulation and collect data afterwards
-            observations = self.do_iter(monomer_pdb, bulk_pdb, monomer_dat, bulk_dat, myiter, pfraction)
+            observations = self.do_iter(monomer_pdb, bulk_pdb, monomer_dat, bulk_dat, myiter)
             # Update the force field
             self.update_ff(myiter)
             # And print stuff!

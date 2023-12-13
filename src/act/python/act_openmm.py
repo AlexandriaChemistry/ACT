@@ -1201,7 +1201,6 @@ class ActOpenMMSim:
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
     def equilibrate(self):
-        self.txt.write('Equilibration skipped. Checkpoint file found.\n')
         self.txt.write('\nEquilibrating for %d steps at T = %g K.\n' % ( self.equilibrationSteps, self.temperature_c) )
         self.simulation.context.setVelocitiesToTemperature(self.temperature_c)
         self.simulation.step(self.equilibrationSteps)
