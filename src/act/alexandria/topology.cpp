@@ -875,13 +875,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     }
     if (!ci)
     {
-        ci = mol->findExperimentConst(JobType::SP);
-        if (ci)
-        {
-            fprintf(stderr, "Warning: No calculation with jobtype %s or %s, using first %s calc.\n",
-                    jobType2string(JobType::OPT), jobType2string(JobType::TOPOLOGY),
-                    jobType2string(JobType::SP));
-        }
+        return immStatus::Topology;
     }
     if (ci)
     {

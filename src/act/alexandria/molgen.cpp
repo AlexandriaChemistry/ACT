@@ -1001,7 +1001,7 @@ size_t MolGen::Read(FILE                                *fp,
         nCount.insert({iMolSelect::Test, 0});
         for(const auto &m : actmol_)
         {
-            if (m.support() == eSupport::Remote)
+            if (m.support() == eSupport::Local)
             {
                 auto ims = m.datasetType();
                 nCount[ims] += 1;
