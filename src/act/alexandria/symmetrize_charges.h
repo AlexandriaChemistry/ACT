@@ -47,18 +47,22 @@ namespace alexandria
 {
 
 /*! Generate a list of symmetry-related charges.
- * If appropriate, symmetrize the charges in the topology.
- * \param[in]  bQsym       If false, make an identity list
  * \param[in]  topology    The molecular topology
  * \param[in]  pd          The force field, containing symmetrization info
  * \param[in]  symm_string Optional (may be nullptr) user provided list
  * \param[out] sym_charges The final list
  */
-void symmetrize_charges(bool              bQsym,
-                        Topology         *topology,
-                        const ForceField    *pd,
-                        const char       *symm_string,
-                        std::vector<int> *sym_charges);
+void get_symmetrized_charges(Topology         *topology,
+                             const ForceField *pd,
+                             const char       *symm_string,
+                             std::vector<int> *sym_charges);
+
+/*! Symmetrize the charges in the topology.
+ * \param[in]  topology    The molecular topology
+ * \param[out] sym_charges The list of charges identities
+ */
+void apply_symmetrized_charges(Topology               *topology,
+                               const std::vector<int> &sym_charges);
 
 } // namespace alexandria
 

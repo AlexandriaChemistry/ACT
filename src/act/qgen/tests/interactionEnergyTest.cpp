@@ -88,7 +88,6 @@ protected:
     void testAcm(const std::string               &model, 
                  inputFormat                      inputformat, 
                  const std::string               &molname, 
-                 bool                             qSymm,
                  std::vector<double>              qtotal,
                  const std::vector<double>       &qcustom,
                  bool                             useHF)
@@ -183,7 +182,6 @@ protected:
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
-            mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
@@ -246,49 +244,49 @@ protected:
 TEST_F (InteractionEnergyTest, WaterDimerACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, false);
+    testAcm("ACS-g", inputFormat::PDB, "water_dimer", {0,0}, qcustom, false);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::LOG, "water_I", true, {0,-1}, qcustom, true);
+    testAcm("ACS-g", inputFormat::LOG, "water_I", {0,-1}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, WaterDimerACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", true, {0,0}, qcustom, false);
+    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", {0,0}, qcustom, false);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, {0, -1}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::LOG, "water_I", {0, -1}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, true);
+    testAcm("ACS-g", inputFormat::SDF, "methanol-water", {0,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", true, {0,0}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", {0,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, true);
+    testAcm("ACS-g", inputFormat::SDF, "acetate-water", {-1,0}, qcustom, true);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", true, {-1,0}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom, true);
 }
 
 }

@@ -734,9 +734,8 @@ size_t MolGen::Read(FILE                                *fp,
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                actmol.symmetrizeCharges(pd, qsymm_, nullptr);
                 imm = actmol.getExpProps(pd, iqmMap, 0.0, 0.0, 100);
-                if (immStatus::OK != imm)
+                if (immStatus::OK == imm)
                 {
                     std::vector<double> dummy;
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
@@ -908,10 +907,6 @@ size_t MolGen::Read(FILE                                *fp,
             imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
 
             std::vector<gmx::RVec> coords = actmol.xOriginal();
-            if (immStatus::OK == imm)
-            {
-                actmol.symmetrizeCharges(pd, qsymm_, nullptr);
-            }
             if (immStatus::OK == imm)
             {
                 imm = actmol.getExpProps(pd, iqmMap, 0);

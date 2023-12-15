@@ -128,7 +128,6 @@ protected:
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
-        bool                   qSymm = false;
         if (readOK)
         {
             for(auto &molprop: molprops)
@@ -147,7 +146,6 @@ protected:
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.symmetrizeCharges(pd, qSymm, nullptr);
                 mm.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
                 mps.push_back(mm);
             }

@@ -112,7 +112,7 @@ protected:
      * \param[in] qdist The charge distribution type
      * \param[in] qSymm Whether or not to use charge symmetry
      */
-    void testResp(const std::string &qdist, bool qSymm)
+    void testResp(const std::string &qdist)
     {
         //Generate charges and topology
         std::string   method("B3LYP");
@@ -129,7 +129,6 @@ protected:
         
         EXPECT_FALSE(ChargeType::Slater  == ct);
 
-        mp.symmetrizeCharges(pd, qSymm, nullptr);
         std::vector<gmx::RVec> coords = mp.xOriginal();
         
         //auto qprops = mp.qProps();
@@ -165,22 +164,17 @@ protected:
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp("ESP-p", false);
+    testResp("ESP-p");
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp("ESP-pg", false);
-}
-
-TEST_F (RespTest, AXpSymmetricCharges)
-{
-    testResp("ESP-p", true);
+    testResp("ESP-pg");
 }
 
 TEST_F (RespTest, AXgSymmetricPolarCharges)
 {
-    testResp("ESP-pg", true);
+    testResp("ESP-pg");
 }
 
 }

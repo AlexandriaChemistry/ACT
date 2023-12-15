@@ -141,7 +141,6 @@ int gentop(int argc, char *argv[])
     static char                     *filename       = (char *)"";
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = false;
-    static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
     static gmx_bool                  bUsePDBcharge  = false;
     static gmx_bool                  bVerbose       = false;
@@ -192,8 +191,6 @@ int gentop(int argc, char *argv[])
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-addh",   FALSE, etBOOL, {&addHydrogens},
           "Add hydrogen atoms to the compound - useful for PDB files." },
-        { "-qsymm",  FALSE, etBOOL, {&bQsym},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-qcustom", FALSE, etSTR, {&qcustom}, 
@@ -332,7 +329,6 @@ int gentop(int argc, char *argv[])
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         if (immStatus::OK == imm)
         {
-            actmol.symmetrizeCharges(&pd, bQsym, symm_string);
             maxpot = 100; // Use 100 percent of the ESP read from QM file.
             std::map<MolPropObservable, iqmType> iqm = {
                 { MolPropObservable::POTENTIAL, iqmType::QM },

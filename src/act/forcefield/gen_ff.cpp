@@ -200,7 +200,7 @@ int gen_ff(int argc, char*argv[])
     int               nexclqq  = 0;
     int               nexclvdw = 0;
     double            epsilonr = 1;
-    
+    bool              qsymm    = true;
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
@@ -220,6 +220,8 @@ int gen_ff(int argc, char*argv[])
           "Number of exclusions for Van der Waals interactions." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
+        { "-qsymm", FALSE, etBOOL, {&qsymm},
+          "Implement symmetrization of charges in the force field" },
         { "-qdist", FALSE, etENUM, {qdn2},
           "Charge distribution type, can be either" },
         { "-bondfn", FALSE, etENUM, {bondfn},
@@ -416,7 +418,10 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION), eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
-    add_symm_charges(&pd);
+    if (qsymm)
+    {
+        add_symm_charges(&pd);
+    }
     pd.updateTimeStamp();
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);

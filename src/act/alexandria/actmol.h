@@ -447,19 +447,6 @@ public:
                                  std::vector<gmx::RVec> *coords,
                                  std::vector<gmx::RVec> *forces);
     
-    /*! \brief Implement charge symmetrization
-     *
-     * Initiates internal structure for atom charge symmetry
-     * (e.g. CH3 with identical charges on H).
-     * Must be called before getExpProps.
-     * \param[in] pd                 Data structure containing atomic properties
-     * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
-     * \param[in] symm_string        The type of molecular symmetry
-     */
-    void symmetrizeCharges(const ForceField *pd,
-                           bool              bSymmetricCharges,
-                           const char       *symm_string);
-    
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.

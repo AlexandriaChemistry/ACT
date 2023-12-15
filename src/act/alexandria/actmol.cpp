@@ -475,6 +475,9 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
         }
     }
     isLinear_ = isLinearMolecule(myatoms, coords);
+    // Symmetrize the atoms
+    get_symmetrized_charges(topology_, pd, nullptr, &symmetric_charges_);
+
     return imm;
 }
 
@@ -555,26 +558,6 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     }
 }
 
-void ACTMol::symmetrizeCharges(const ForceField  *pd,
-                               bool               bSymmetricCharges,
-                               const char        *symm_string)
-{
-    if (bSymmetricCharges)
-    {
-        symmetric_charges_.clear();
-        symmetrize_charges(bSymmetricCharges, topology_,
-                           pd, symm_string, &symmetric_charges_);
-    }
-    else
-    {
-        auto natoms = atomsConst().size();
-        for (size_t i = 0; i < natoms; i++)
-        {
-            symmetric_charges_.push_back(i);
-        }
-    }
-}
-
 immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
                                      const ForceComputer    *forceComp,
                                      std::vector<gmx::RVec> *coords,
@@ -598,6 +581,7 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
         if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
                                                        *coords, pd, atoms()))
         {
+            apply_symmetrized_charges(topology_, symmetric_charges_);
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
             EemRms = 0;
             std::vector<double> qnew;
@@ -782,6 +766,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 {
                     continue;
                 }
+                qresp->setAtomSymmetry(symmetric_charges_);
                 double epsilonr;
                 if (!ffOption(*pd, InteractionType::COULOMB, "epsilonr", &epsilonr))
                 {

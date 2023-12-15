@@ -27,7 +27,6 @@ void initACTMol(const char          *molname,
         // Charge gen params
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
-        bool qSymm = false;
         matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
@@ -42,7 +41,6 @@ void initACTMol(const char          *molname,
                 auto imm = mm.GenerateTopology(stdout, pd,
                                                missingParameters::Error);
                 EXPECT_TRUE(immStatus::OK ==imm);
-                mm.symmetrizeCharges(pd, qSymm, nullptr);
                 std::map<MolPropObservable, iqmType> iqmMap = 
                     {
                         { MolPropObservable::DELTAE0,           iqmType::QM },
