@@ -7,17 +7,17 @@
     <Real>-0.30432725929156479</Real>
     <Real>0.19457282486245669</Real>
     <Real>-0.29718737611564083</Real>
-    <Real>0.13190270293022707</Real>
-    <Real>0.13192160680856141</Real>
-    <Real>0.1431175008059605</Real>
-    <Real>0.24454365614834861</Real>
+    <Real>0.13564727018158299</Real>
+    <Real>0.13564727018158299</Real>
+    <Real>0.13564727018158299</Real>
+    <Real>0.24475684320169355</Real>
     <Real>-0.4895136864033871</Real>
-    <Real>0.24497003025503852</Real>
+    <Real>0.24475684320169355</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">2.7755575615628914e-17</Real>
-  <Real Name="Molecule 2 charge">2.7755575615628914e-17</Real>
-  <Real Name="InteractionEnergy">-0.9767508565028038</Real>
-  <Real Name="Coulomb">-7.8338776795894773</Real>
+  <Real Name="Molecule 1 charge">5.5511151231257827e-17</Real>
+  <Real Name="Molecule 2 charge">0</Real>
+  <Real Name="InteractionEnergy">-0.84618448814239855</Real>
+  <Real Name="Coulomb">-7.7033113112292995</Real>
   <Real Name="Polarization">0</Real>
   <Real Name="Dispersion">-3.2051297045727578</Real>
   <Real Name="Repulsion">10.06225652765977</Real>

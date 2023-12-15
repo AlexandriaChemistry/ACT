@@ -45,8 +45,6 @@ void get_symmetrized_charges(Topology         *topology,
                              std::vector<int> *sym_charges)
 {
     std::string  central, attached;
-    int          nrq;
-    double       qaver, qsum;
 
     auto atoms = topology->atomsPtr();
     
@@ -117,35 +115,44 @@ void get_symmetrized_charges(Topology         *topology,
     }
 }
 
-
-void apply_symmetrized_charges(Topology               *topology,
+void apply_symmetrized_charges(std::vector<double>    *q,
                                const std::vector<int> &sym_charges)
 {
-    auto atoms = topology->atomsPtr();
-    
-    for (size_t i = 0; i < atoms->size(); i++)
-    { 
-        double qsum = (*atoms)[i].charge();
+    if (q->size() != sym_charges.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Found %zu charges but only %zu symmetry information entries",
+                                                       q->size(), sym_charges.size()).c_str()));
+    }
+    std::vector<bool> done(sym_charges.size(), false);
+    for (size_t i = 0; i < q->size(); i++)
+    {
+        if (done[i])
+        {
+            continue;
+        }
+        double qsum = (*q)[i];
         int    nrq  = 1;
-        for (size_t j = i+1; j < atoms->size(); j++)
+        for (size_t j = i+1; j < q->size(); j++)
         {
             if (sym_charges[j] == sym_charges[i])
             {
-                qsum += (*atoms)[j].charge();
+                qsum += (*q)[j];
                 nrq++;
             }
         }
         if (1 < nrq)
         {
             double qaver = qsum/nrq;
-            for (size_t j = 0; j < atoms->size(); j++)
+            for (size_t j = 0; j < q->size(); j++)
             {
                 if (sym_charges[j] == sym_charges[i])
                 {
-                    (*atoms)[j].setCharge(qaver);
+                    (*q)[j] = qaver;
+                    done[j] = true;
                 }
             }
         }
+        done[i] = true;
     }
 }
 

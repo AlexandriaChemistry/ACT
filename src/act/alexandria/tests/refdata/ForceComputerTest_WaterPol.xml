@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS_act">-799.99014184846351</Real>
+  <Real Name="BONDS_act">-799.99014184846362</Real>
   <Real Name="ANGLES_act">0.00062492073723482847</Real>
   <Real Name="DISPERSION_act">-2.7018806070515495</Real>
   <Real Name="REPULSION_act">972.27536570167695</Real>
-  <Real Name="COULOMB_act">-78.722849233795898</Real>
-  <Real Name="POLARIZATION_act">0.23100641675754469</Real>
+  <Real Name="COULOMB_act">-78.722849233795785</Real>
+  <Real Name="POLARIZATION_act">0.2310064167575413</Real>
   <Real Name="EPOT_act">91.092125349860765</Real>
   <Real Name="o3-1_act fX">0</Real>
   <Real Name="o3-1_act fY">0</Real>
-  <Real Name="o3-1_act fZ">43322.627731983819</Real>
+  <Real Name="o3-1_act fZ">43322.627731983805</Real>
   <Real Name="h-3_act fX">0</Real>
   <Real Name="h-3_act fY">29335.067811232369</Real>
   <Real Name="h-3_act fZ">-21661.313793906542</Real>

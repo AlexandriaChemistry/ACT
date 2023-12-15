@@ -57,11 +57,12 @@ void get_symmetrized_charges(Topology         *topology,
                              const char       *symm_string,
                              std::vector<int> *sym_charges);
 
-/*! Symmetrize the charges in the topology.
- * \param[in]  topology    The molecular topology
+/*! Symmetrize the charges in an array.
+ * \param[in]  q           array of charges
  * \param[out] sym_charges The list of charges identities
+ * \throws if arrays are not equally long.
  */
-void apply_symmetrized_charges(Topology               *topology,
+void apply_symmetrized_charges(std::vector<double>    *q,
                                const std::vector<int> &sym_charges);
 
 } // namespace alexandria

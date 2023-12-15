@@ -5,11 +5,11 @@
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">7</Int>
     <Real>-0.44861545822229115</Real>
-    <Real>0.19713819563225615</Real>
-    <Real>-0.42209406556718082</Real>
-    <Real>-0.42209313534367715</Real>
-    <Real>0.033029338343155967</Real>
-    <Real>0.029607695636294007</Real>
-    <Real>0.033027429521442997</Real>
+    <Real>0.19713819563225604</Real>
+    <Real>-0.42209406556718077</Real>
+    <Real>-0.42209313534367704</Real>
+    <Real>0.031888154500297645</Real>
+    <Real>0.031888154500297645</Real>
+    <Real>0.031888154500297645</Real>
   </Sequence>
 </ReferenceData>

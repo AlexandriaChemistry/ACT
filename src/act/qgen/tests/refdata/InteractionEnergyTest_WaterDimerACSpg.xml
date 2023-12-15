@@ -6,9 +6,9 @@
     <Int Name="Length">12</Int>
     <Real>0.8032086490937399</Real>
     <Real>-1.2</Real>
-    <Real>0.99840966484679772</Real>
+    <Real>0.9983956754531299</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99838168605946209</Real>
+    <Real>0.9983956754531299</Real>
     <Real>-0.80000000000000004</Real>
     <Real>0.80319994493791036</Real>
     <Real>-1.2</Real>
@@ -19,9 +19,9 @@
   </Sequence>
   <Real Name="Molecule 1 charge">-3.3306690738754696e-16</Real>
   <Real Name="Molecule 2 charge">-2.2204460492503131e-16</Real>
-  <Real Name="InteractionEnergy">13.290738007011896</Real>
-  <Real Name="Coulomb">-0.92353668964585722</Real>
-  <Real Name="Polarization">-0.37003914171131391</Real>
+  <Real Name="InteractionEnergy">13.290640216705469</Real>
+  <Real Name="Coulomb">-0.92361413808771431</Real>
+  <Real Name="Polarization">-0.37005948357512353</Real>
   <Real Name="Dispersion">-3.738431425616739</Real>
   <Real Name="Repulsion">18.322745263983961</Real>
 </ReferenceData>
