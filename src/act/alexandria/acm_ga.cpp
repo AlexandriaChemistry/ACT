@@ -129,9 +129,6 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     // Print the genomes to the logfile
     pool.print(logFile_);
 
-    // Save the last genome of the master
-    sii_->saveState(true, sii_->outputFileLast());
-
     // Check if a better genome was found, and update if so
     const auto tmpGenome = pool.getBest(imstr);
     const auto tmpBest   = bestGenome->find(imstr)->second;
@@ -497,9 +494,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     }
     while (!terminate(pool[pold], generation));
 
-    // Save the last genome of the master
-    sii_->saveState(true, sii_->outputFileLast());
-    
     // Close surveillance files for fitness
     closeFitnessFiles();
     

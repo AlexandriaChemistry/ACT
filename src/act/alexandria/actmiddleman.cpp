@@ -66,8 +66,6 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,
                                       false, forceComp_);
     
-    // Create and initialize the mutator
-    sii->makeIndividualDir();  // We need to call this before opening working files!
     if (gach->optimizer() == OptimizerAlg::GA)
     {
         mutator_ = new alexandria::PercentMutator(sii, dis(gen),
@@ -167,7 +165,7 @@ void ACTMiddleMan::run()
     // Stop my helpers too.
     stopHelpers();
     // Save the last genome
-    sii_->saveState(true, sii_->outputFileLast());
+    // sii_->saveState(true, sii_->outputFileLast());
 }
 
 void ACTMiddleMan::printStatistics(FILE *logFile)

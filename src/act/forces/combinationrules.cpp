@@ -28,6 +28,8 @@
 #include "combinationrules.h"
 
 #include <cmath>
+#include <cstring>
+#include <string>
 
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parametername.h"
@@ -340,7 +342,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
 std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw)
 {
     std::map<const std::string, CombRule> myCombRule;
-    const std::string oldCombRule = "combination_rule";
+    std::string oldCombRule("combination_rule");
     if (vdw.optionExists(oldCombRule))
     {
         return oldCombinationRule(vdw.optionValue(oldCombRule), vdw.gromacsType());

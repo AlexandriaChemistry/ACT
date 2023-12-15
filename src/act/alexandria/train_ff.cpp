@@ -210,8 +210,11 @@ void OptACM::initMaster()
     // Initializer
     auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
-    // TODO remove this for nooptimize
-    sii_->makeIndividualDir();  // We need to call this before opening working files!
+    // Do this only when explicitly requested.
+    if (bch_.checkPoint())
+    {
+        sii_->makeIndividualDir();  // We need to call this before opening working files!
+    }
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
         mutator_ = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
