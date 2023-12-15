@@ -870,7 +870,17 @@ int edit_ff(int argc, char*argv[])
     {
         auto fsvdw   = pd.findForces(vdw);
         nRuleChanged = crule.extract(fsvdw);
-        fsvdw->removeOption("combination_rule");
+        if (nRuleChanged > 0)
+        {
+            printf("Inserted %d new style combination rules from command line.\n", nRuleChanged);
+            fsvdw->removeOption("combination_rule");
+        }
+        else
+        {
+            nRuleChanged = crule.convert(fsvdw);
+            printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
+            fsvdw->removeOption("combination_rule");
+        }
     }
     if (opt2bSet("-o", NFILE, fnm))
     {

@@ -65,6 +65,12 @@ namespace alexandria
          * \return the number of rules that were changed.
          */
         int extract(ForceFieldParameterList *vdw);
+
+        /*! \brief Utility to convert old-style combination rule to new
+         * \param[inout] vdw     The parameter list
+         * \return the number of rules that were changed.
+         */
+        int convert(ForceFieldParameterList *vdw);
     };
 
 } // namespace aleaxndria

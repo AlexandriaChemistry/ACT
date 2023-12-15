@@ -122,4 +122,20 @@ int CombRuleUtil::extract(ForceFieldParameterList *vdw)
     return changed;
 }
 
+int CombRuleUtil::convert(ForceFieldParameterList *vdw)
+{
+    int changed = 0;
+    std::string crule("combination_rule");
+    if (vdw->optionExists(crule))
+    {
+        for(auto &crule : getCombinationRule(*vdw))
+        {
+            vdw->addCombinationRule(crule.first, combinationRuleName(crule.second));
+            changed += 1;
+        }
+    }
+        
+    return changed;
+}
+
 } // namespace alexandria
