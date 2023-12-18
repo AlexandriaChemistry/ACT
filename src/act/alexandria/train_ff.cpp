@@ -518,7 +518,7 @@ bool OptACM::runMaster(bool optimize,
             printNumCalcDevEstimate();
             fflush(logFile());
         }
-        // Optimize!
+        // Train the force field!
         bMinimum = ga_->evolve(&bestGenome);
         if (logFile())
         {
@@ -565,11 +565,9 @@ bool OptACM::runMaster(bool optimize,
         {
             std::set<int> changed;
             sii_->updateForceField(changed, pair.second.bases());
-            // sii_->setFinalOutputFile(baseOutputFileName_);
-            sii_->saveState(
-                true,
-                gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_
-            );
+            auto myfilenm = gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_;
+            fprintf(logFile(), "Will save best force field to %s\n", myfilenm.c_str());
+            sii_->saveState(true, myfilenm);
         }
         // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
         std::set<int> changed;
