@@ -159,8 +159,8 @@ public:
      * \param[in] sensitivity If true, a sensitivity analysis will be done
      * \return true if better parameters were found.
      */
-    bool runMaster(bool optimize,
-                   bool sensitivity);
+    bool runMaster(bool        optimize,
+                   bool        sensitivity);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *
@@ -168,8 +168,9 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
+     * \param[in] fitnessFile Name of the genetic algorithm files
      */
-    void initMaster();
+    void initMaster(const char *fitnessFile);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

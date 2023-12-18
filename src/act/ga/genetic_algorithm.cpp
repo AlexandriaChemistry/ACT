@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -93,11 +93,20 @@ bool GeneticAlgorithm::penalize(      GenePool *pool,
     return penalized;
 }
 
-void GeneticAlgorithm::openFitnessFiles()
+void GeneticAlgorithm::openFitnessFiles(const std::string &filename)
 {
     for(const auto &im : iMolSelectNames())
     {
-        std::string fn = gmx::formatString("ga_fitness_%s.txt", im.second);
+        std::string defname("ga_fitness");
+        if (!filename.empty())
+        {
+            auto rpos = filename.rfind(".");
+            if (std::string::npos != rpos)
+            {
+                defname = filename.substr(0, rpos);
+            }
+        }
+        std::string fn = defname + gmx::formatString("_%s.dat", im.second);
         fileFitness_.insert({im.first, gmx_fio_fopen(fn.c_str(), "w")});
         GMX_RELEASE_ASSERT(fileFitness_[im.first] != NULL, "Could not open file");
     }

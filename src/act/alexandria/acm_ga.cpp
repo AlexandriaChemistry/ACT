@@ -177,7 +177,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fflush(logFile_);
     }
     // Open surveillance files for fitness
-    openFitnessFiles();
+    openFitnessFiles(fitnessFile_);
     
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
