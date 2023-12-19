@@ -107,10 +107,9 @@ if(GMX_MPI)
               NO_SYSTEM_ENVIRONMENT_PATH
               NO_CMAKE_SYSTEM_PATH)
     if (MPI_INFO_BIN)
-      exec_program(${MPI_INFO_BIN}
-        ARGS -v ompi full
+      execute_process(COMMAND ${MPI_INFO_BIN}
         OUTPUT_VARIABLE OPENMPI_TYPE
-        RETURN_VALUE OPENMPI_EXEC_RETURN)
+        RESULTS_VARIABLE OPENMPI_EXEC_RETURN)
       if(OPENMPI_EXEC_RETURN EQUAL 0)
         string(REGEX REPLACE ".*Open MPI: \([0-9]+\\.[0-9]*\\.?[0-9]*\).*" "\\1" OPENMPI_VERSION ${OPENMPI_TYPE})
         if(OPENMPI_VERSION VERSION_LESS "1.4.1")

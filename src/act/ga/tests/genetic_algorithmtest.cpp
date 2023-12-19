@@ -254,7 +254,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     ga = new ga::HybridGAMC(stdout, initializer, fitComp,
                                             probComputer, selector, crossover,
                                             mut, &terminators, penalizers,
-                                            &sii, &gach, bch.seed());
+                                            &sii, &gach, "test.dat",
+                                            bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
                 checker_.checkReal(gach.prCross(), "Probability for Crossover");

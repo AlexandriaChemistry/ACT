@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -244,6 +244,12 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
             cr->send_str(dest, &x.first);
             cr->send_str(dest, &x.second);
         }
+        cr->send_int(dest, combrules_.size());
+        for(auto const &x : combrules_)
+        {
+            cr->send_str(dest, &x.first);
+            cr->send_str(dest, &x.second);
+        }
         cr->send_int(dest, parameters_.size());
         for(auto const &x : parameters_)
         {
@@ -291,9 +297,18 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         fType_ = ftype;
         int noptions = options_.size();
         cr->bcast(&noptions, comm);
+        int ncrule = combrules_.size();
+        cr->bcast(&ncrule, comm);
         if (cr->rank() == root)
         {
             for(const auto &opt : options_)
+            {
+                std::string key   = opt.first;
+                std::string value = opt.second;
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+            }
+            for(const auto &opt : combrules_)
             {
                 std::string key   = opt.first;
                 std::string value = opt.second;
@@ -310,6 +325,14 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 cr->bcast(&key, comm);
                 cr->bcast(&value, comm);
                 options_.insert({key, value});
+            }
+            combrules_.clear();
+            for(int i = 0; i < ncrule; i++)
+            {
+                std::string key, value;
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+                combrules_.insert({key, value});
             }
         }
         if (debug)
@@ -398,12 +421,21 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
         fType_       = cr->recv_int(src);
         int noptions = cr->recv_int(src);
         options_.clear();
+        int ncrule = cr->recv_int(src);
+        combrules_.clear();
         for(int i = 0; i < noptions; i++)
         {
             std::string key, value;
             cr->recv_str(src, &key);
             cr->recv_str(src, &value);
             options_.insert({key, value});
+        }
+        for(int i = 0; i < ncrule; i++)
+        {
+            std::string key, value;
+            cr->recv_str(src, &key);
+            cr->recv_str(src, &value);
+            combrules_.insert({key, value});
         }
         if (debug)
         {
