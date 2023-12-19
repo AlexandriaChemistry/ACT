@@ -236,7 +236,7 @@ void OptACM::initMaster(const char *fitnessFile)
     auto *selector = new ga::RouletteSelector(dis(gen));
 
     // Crossover
-    if (gach_.nCrossovers() < static_cast<int>(sii_->nParam()))
+    if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
     {
         fprintf(logFile(), "The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
                 gach_.nCrossovers(), sii_->nParam());
