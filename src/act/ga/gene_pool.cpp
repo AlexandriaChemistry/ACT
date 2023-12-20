@@ -1,4 +1,5 @@
-/*
+
+    /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2014-2022
@@ -50,9 +51,10 @@ void GenePool::print(FILE *fp) const
         int i = 0;
         for (auto &ind : genomes_)
         {
-            auto istr = gmx::formatString(" %3d ", i++);
+            auto istr = gmx::formatString("Individual %3d", i++);
             ind.print(istr.c_str(), fp);
         }
+        fflush(fp);
     }
 }
 

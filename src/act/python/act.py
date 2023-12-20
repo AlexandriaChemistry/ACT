@@ -138,6 +138,9 @@ class ACT:
                  LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
+        psize = "-pop_size"
+        if psize in options:
+            self.popsize = int(options[psize])
         cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )

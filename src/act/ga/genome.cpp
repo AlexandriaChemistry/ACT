@@ -44,7 +44,7 @@ void Genome::print(const char *name, FILE *fp) const
     {
         return;
     }
-    fprintf(fp, "genome_%s: [ ", name);
+    fprintf(fp, "%s.\nGenome: [ ", name);
     for (auto &ele : genome_)
     {
         fprintf(fp, "%8g ", ele);

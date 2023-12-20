@@ -74,7 +74,6 @@ JobType string2jobType(const std::string &str)
 
 CalcAtomIterator Experiment::searchAtom(CalcAtom ca)
 {
-    CalcAtomIterator cai;
     for (auto cai = catom_.begin(); (cai < catom_.end()); ++cai)
     {
         if (cai->Equal(ca))
@@ -128,7 +127,6 @@ Experiment::Experiment(const Experiment& other)// = default;
         for(auto &gp : op.second)
         {
             property_[op.first].push_back(gp);
-            //gp = nullptr;
         }
     }
 }
@@ -167,25 +165,20 @@ void Experiment::Dump(FILE *fp) const
             fprintf(fp, "datafile   = %s\n", datafile_.c_str());
             for (auto &cai : calcAtomConst())
             {
-                double   x, y, z;
+                double   x, y, z, fx, fy, fz;
                 cai.coords(&x, &y, &z);
-                fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
+                cai.forces(&fx, &fy, &fz);
+                fprintf(fp, "%-3s  %-3s  %3d X: %10.3f  %10.3f  %10.3f F: %10.3f  %10.3f  %10.3f\n",
                         cai.getName().c_str(), cai.getObtype().c_str(),
-                        cai.getAtomid(), x, y, z);
-                cai.forces(&x, &y, &z);
-                fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
-                        "", "", cai.getAtomid(), x, y, z);
+                        cai.getAtomid(), x, y, z, fx, fy, fz);
             }
         }
         for(const auto &p : property_)
         {
-            fprintf(fp, "Property %s\n", mpo_name(p.first));
+            fprintf(fp, "Property %s.\n", mpo_name(p.first));
             for (const auto &gp : p.second)
             {
-                fprintf(fp, "Type: %s Unit: %s T: %g K Phase: %s\n",
-                        gp->getType(), gp->getUnit(),
-                        gp->getTemperature(),
-                        phase2string(gp->getPhase()).c_str());
+                gp->Dump(fp);
             }
         }
     }

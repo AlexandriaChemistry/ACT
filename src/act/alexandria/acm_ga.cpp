@@ -134,10 +134,8 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     const auto tmpBest   = bestGenome->find(imstr)->second;
     if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
     {
-        tmpBest.print("\nA new best individual has been found!\nPrevious best:\n",
-                      logFile_);
         (*bestGenome)[imstr] = tmpGenome;
-        tmpGenome.print("New best:\n", logFile_);
+        tmpGenome.print("New best for train", logFile_);
         fprintf(logFile_, "\nMCMC Statistics for the master node only\n");
         auto mymut = reinterpret_cast<alexandria::MCMCMutator *>(mutator());
         mymut->printMonteCarloStatistics(logFile_, ind->initialGenome(),
@@ -196,8 +194,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     int generation = 0;
     if (logFile_)
     {
-        fprintf(logFile_, "\nGeneration %i\n", generation);
-    
         // Initialize the population and compute fitness
         fprintf(logFile_, "Initializing individuals and computing initial fitness...\n");
     }
@@ -217,7 +213,8 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
-    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Maybe not really needed but just to print the components
+    // Maybe not really needed but just to print the components
+    fitnessComputer()->compute(ind->genomePtr(), imste, true);
     if (logFile_)
     {
         fprintf(logFile_, "\n");
@@ -250,6 +247,9 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
+    
+    fprintf(logFile_, "\nStarting %d generations of force field training.\n",
+            gach_->maxGenerations());
     // Iterate and create new generation
     do
     {
@@ -307,10 +307,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
         // Increase generation counter
         generation++;
-        if (debug)
-        {
-            fprintf(debug, "\nGeneration %i\n", generation);
-        }
         
         // Normalize the fitness into a probability
         if (debug)
@@ -475,8 +471,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         const auto tmpBest     = (*bestGenome)[imstr];
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            tmpGenome.print("New best individual (for train)\n", logFile_);
-            (*bestGenome)[imstr] = tmpGenome; 
+            auto mess = gmx::formatString("Generation %d/%d. New best individual for train",
+                                          generation, gach_->maxGenerations());
+            tmpGenome.print(mess.c_str(), logFile_);
+            (*bestGenome)[imstr] = tmpGenome;
             bMinimum = true;
             fflush(logFile_);
         }
@@ -485,10 +483,11 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             const auto tmpBestTest = (*bestGenome)[imste];
             if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
             { 
-                tmpBestTest.print("The best individual in the population has outperformed the best test loss!\nPrevious best:\n",
-                                  logFile_);
+                auto mess = gmx::formatString("Generation %d/%d. New best individual for test",
+                                              generation, gach_->maxGenerations());
                 (*bestGenome)[imste] = tmpGenome;
-                tmpGenome.print("New best:\n", logFile_);
+                tmpGenome.print(mess.c_str(), logFile_);
+                fflush(logFile_);
             }
         }
     }
@@ -506,11 +505,12 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         (*bestGenome)[imste].print("Best (Test): ", logFile_);
     }
+    fflush(logFile_);
 
     // Save last population
     lastPop_ = *(pool[pold]);
 
-    return bMinimum;    
+    return bMinimum;
 }
 
 } // namespace ga
