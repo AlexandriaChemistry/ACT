@@ -869,7 +869,6 @@ int train_ff(int argc, char *argv[])
             ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
                                    opt.verbose(), opt.oenv(), opt.verbose());
             middleman.run();
-            fprintf(stderr, "Middlemen stopped succesfully.\n");
         }
     }
     else if (bOptimize || bSensitivity)
@@ -878,7 +877,6 @@ int train_ff(int argc, char *argv[])
         {
             ACTHelper helper(opt.sii(), opt.mg());
             helper.run();
-            fprintf(stderr, "Helpers stopped succesfully.\n");
         }
     }
     return 0;
