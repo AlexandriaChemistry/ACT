@@ -156,12 +156,6 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
 bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 {
-    // FIXME: This is already checked in GAConfigHandler::check_pargs()
-    if (gach_->popSize() < 2)
-    {
-        fprintf(stderr, "Need at least two individuals in the population.\n");
-        return false;
-    }
     auto cr = sii_->commRec();
     // FIXME: have we already checked that the number of processors is the correct one?
     if (cr->nmiddlemen() < 2)

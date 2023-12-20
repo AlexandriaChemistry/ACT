@@ -524,6 +524,7 @@ bool OptACM::runMaster(bool        optimize,
             fprintf(logFile(), "\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
+        fflush(logFile());
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
@@ -868,6 +869,7 @@ int train_ff(int argc, char *argv[])
             ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
                                    opt.verbose(), opt.oenv(), opt.verbose());
             middleman.run();
+            fprintf(stderr, "Middlemen stopped succesfully.\n");
         }
     }
     else if (bOptimize || bSensitivity)
@@ -876,6 +878,7 @@ int train_ff(int argc, char *argv[])
         {
             ACTHelper helper(opt.sii(), opt.mg());
             helper.run();
+            fprintf(stderr, "Helpers stopped succesfully.\n");
         }
     }
     return 0;

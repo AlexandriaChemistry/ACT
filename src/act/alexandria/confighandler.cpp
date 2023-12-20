@@ -266,7 +266,7 @@ void GAConfigHandler::check_pargs()
     GMX_RELEASE_ASSERT(popSize_ > 0, "-pop_size must be positive.");
     if (popSize_ % 2 != 0)  // If popSize is odd
     {
-        GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == optAlg_, "With odd population sizes, only the MCMC optimizer will do.");
+        GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == optAlg_, "With odd population sizes, only the MCMC optimizer will work.");
     }
 
     // If MCMC is selected, change the probability of mutation to 1
