@@ -34,8 +34,8 @@ class VdW(Enum):
 
 # Map strings to VdW entries.
 VdWdict = {
-    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
-    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
+#    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
+#    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
     'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
     'WBHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
     'GBHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] }
@@ -813,6 +813,8 @@ class ActOpenMMSim:
             for index in range(self.nonbondedforce.getNumParticles()):
                 [charge_LJ, sigma_LJ, epsilon_LJ] = self.nonbondedforce.getParticleParameters(index)
                 [rmin, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
+                if self.nonbondedMethod == NoCutoff:
+                    self.nonbondedforce.setParticleParameters(index, sigma=sigma_LJ, epsilon=0, charge=0)
                 self.vdw_correction.addParticle([rmin, epsilon, gamma, delta, sigma_LJ, epsilon_LJ])
                 if self.debug:
                     self.txt.write("index %d rmin %g, epsilon %g, gamma %g, delta %g, sigma_LJ %g, epsilon_LJ %g\n" %  (index, rmin, epsilon, gamma, delta, sigma_LJ._value, epsilon_LJ._value ))
