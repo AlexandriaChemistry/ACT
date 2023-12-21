@@ -414,12 +414,12 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
     double delta  = 0;
     for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
     {
-        auto qqm  = qp->qPqm();
-        auto qact = qp->qPact();
-        if (qqm->hasMultipole(mpo_) && qact->hasMultipole(mpo_))
+        auto qqm  = qp->qPqmConst();
+        auto qact = qp->qPactConst();
+        if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
         {
-            auto qelec = qqm->getMultipole(mpo_);
-            auto qcalc = qact->getMultipole(mpo_);
+            auto qelec = qqm.getMultipole(mpo_);
+            auto qcalc = qact.getMultipole(mpo_);
             for (size_t mm = 0; mm < qelec.size(); mm++)
             {
                 delta += gmx::square(qcalc[mm] - qelec[mm]);

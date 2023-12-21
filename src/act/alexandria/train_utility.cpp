@@ -1344,6 +1344,8 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             {
                 for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
                 {
+                    // For multipoles, further down.
+                    qp->qPact()->setQandX(mol->topology()->atoms(), coords);
                     auto qi    = i.first;
                     auto qresp = qp->qgenResp();
                     if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
