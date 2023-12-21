@@ -101,6 +101,9 @@ class SimParams:
                 except:
                     continue
 
+    def setText(self, txt):
+        self.txt = txt
+
     def getFloat(self, key:str, default=0) -> float:
         if key in self.params and len(self.params[key]) > 0:
             try:
@@ -115,7 +118,7 @@ class SimParams:
                 sys.exit("Incorrect float value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
             return value
         else:
-            print("Unknown or empty key '%s' in %s, using default value = %g" % ( key, self.filename, default ))
+            self.txt.write("Unknown or empty key '%s' in %s, using default value = %g\n" % ( key, self.filename, default ))
             return default
 
     def getInt(self, key:str, default:int=0) -> int:
@@ -127,21 +130,21 @@ class SimParams:
                 sys.exit("Incorrect integer value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
             return value
         else:
-            print("Unknown or empty key '%s' in %s, using default value = %d" % ( key, self.filename, default ))
+            self.txt.write("Unknown or empty key '%s' in %s, using default value = %d\n" % ( key, self.filename, default ))
             return default
         
     def getStr(self, key:str, default:str="") -> str:
         if key in self.params and len(self.params[key]) > 0:
             return self.params[key]
         else:
-            print("Unknown or empty key '%s' in %s, using default value = '%s'" % ( key, self.filename, default ))
+            self.txt.write("Unknown or empty key '%s' in %s, using default value = '%s'\n" % ( key, self.filename, default ))
             return default
         
     def getBool(self, key:str, default:bool=False) -> bool:
         if key in self.params and len(self.params[key]) > 0:
             return self.params[key] in [ "True", "true" ]
         else:
-            print("Unknown or empty key '%s' in %s, using default value = '%s'" % ( key, self.filename, str(default) ))
+            self.txt.write("Unknown or empty key '%s' in %s, using default value = '%s'\n" % ( key, self.filename, str(default) ))
             return default
         
 class CombinationRules:
@@ -289,6 +292,7 @@ class ActOpenMMSim:
                                             self.vdw)
         self.force_group = None
         self.txt_header()
+        self.sim_params.setText(self.txt)
         self.gen_ff()
     
     def __del__(self):
@@ -321,7 +325,7 @@ class ActOpenMMSim:
             self.xmloutfile = "act.xml"
             if os.path.exists(self.xmloutfile):
                 if self.verbose:
-                    print("Removing existing OpenMM force field file %s" % self.xmloutfile)
+                    self.txt.write("Removing existing OpenMM force field file %s\n" % self.xmloutfile)
                 os.unlink(self.xmloutfile)
             mycmd = ("alexandria gentop -ff %s -f %s -openmm %s" % ( self.actfile,
                                                                      self.pdbfile,
@@ -363,9 +367,9 @@ class ActOpenMMSim:
         self.count_forces("Init force group 3")
         if self.verbose:
             for force in self.system.getForces():
-                print("System: %s group %d" % ( force.getName(), force.getForceGroup()))
+                self.txt.write("System: %s group %d\n" % ( force.getName(), force.getForceGroup()))
             for group in self.force_group:
-                print("Self: %s group %d" % ( self.force_group[group], group ))
+                self.txt.write("Self: %s group %d\n" % ( self.force_group[group], group ))
         return len(self.force_group.keys())
 
     def add_force_group(self, force, nonbond:bool, newfg:bool):
@@ -405,7 +409,7 @@ class ActOpenMMSim:
         fcname   = force.getName()
         fgnumber = force.getForceGroup()
         if self.verbose:
-            print('Will try to delete force %s group %d' % (fcname, fgnumber))
+            self.txt.write('Will try to delete force %s group %d\n' % (fcname, fgnumber))
         if not nonbond:
             # Find the index belonging to the force to be deleted
             # rather than using the force group number.
@@ -428,18 +432,17 @@ class ActOpenMMSim:
         elif nonbond:
             fnumber = [ 0, 1 ]
         else:
-            print("Cannot find force '%s'" % fcname)
-            print(self.fgnumber)
+            self.txt.write("Cannot find force '%s' number %s\n" % (fcname, str(self.fgnumber)))
             
         for fnum in fnumber:
             fcname  = self.force_group[fnum]
         
     def count_forces(self, label:str):
         if self.verbose:
-            print("%s: there are %d forces"  % (label, len(self.system.getForces())))
+            self.txt.write("%s: there are %d forces\n"  % (label, len(self.system.getForces())))
         if self.debug:
             for force in self.system.getForces():
-                print("DBG: fcname %s fgnumber %d" % ( force.getName(), force.getForceGroup()))
+                self.txt.write("DBG: fcname %s fgnumber %d\n" % ( force.getName(), force.getForceGroup()))
 
     def nmol(self)->int:
         return self.topology.getNumResidues()
@@ -549,7 +552,7 @@ class ActOpenMMSim:
         if self.nonbondedMethod == NoCutoff:
             rmcom = False
         if self.verbose:
-            print("Using flexible water (if present).")
+            self.txt.write("Using flexible water (if present).\n")
         if self.polarizable:
             self.system = self.forcefield.createSystem(self.topology,
                                                        nonbondedMethod=self.nonbondedMethod,
@@ -560,7 +563,7 @@ class ActOpenMMSim:
                                                        rigidWater=self.rigidWater,
                                                        drudeMass=myDrudeMass*unit.amu)
             if self.verbose:
-                print("The force field is polarizable and the drude mass is %g.\nMake sure it is consistent with your force field file." % myDrudeMass)
+                self.txt.write("The force field is polarizable and the drude mass is %g.\nMake sure it is consistent with your force field file.\n" % myDrudeMass)
         else:
             self.system = self.forcefield.createSystem(self.topology,
                                                        nonbondedMethod=self.nonbondedMethod,
@@ -570,7 +573,7 @@ class ActOpenMMSim:
                                                        constraints=self.constraints,
                                                        rigidWater=self.rigidWater)
             if self.verbose:
-                print("The force field is NOT polarizable.")
+                self.txt.write("The force field is NOT polarizable.\n")
 
         # INITIAL SETTINGS FOR FORCES
         ################################################
@@ -598,7 +601,7 @@ class ActOpenMMSim:
         self.my_shell = {}
         for index in range(drudeforce.getNumParticles()):
             if self.debug:
-                print(f"Polforce {drudeforce.getParticleParameters(index)}")
+                self.txt.write(f"Polforce {drudeforce.getParticleParameters(index)}\n")
             [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = drudeforce.getParticleParameters(index)
             self.shells.append(particle) # particle  = shell
             self.cores.append(particle1) # particle1 = core
@@ -607,10 +610,10 @@ class ActOpenMMSim:
             self.core_shell.append((particle,particle1))
         if self.debug:
             # Checking correct atom/shell pairing
-            print(f"cores      {self.cores}")
-            print(f"shells     {self.shells}")
-            print(f"core_shell {self.core_shell}")
-            print("########################")
+            self.txt.write(f"cores      {self.cores}\n")
+            self.txt.write(f"shells     {self.shells}\n")
+            self.txt.write(f"core_shell {self.core_shell}\n")
+            self.txt.write("########################\n")
                 
     # CODE FOR ALEXANDRIA NONBONDED FORCES
     ################################################
@@ -631,7 +634,7 @@ class ActOpenMMSim:
         for force in self.system.getForces():
             fname = force.getName()
             if self.debug:
-                print("Found force %s" % fname)
+                self.txt.write("Found force %s\n" % fname)
             forces[fname] = force
             if cnbname == fname:
                 self.customnb = forces[cnbname]
@@ -644,8 +647,8 @@ class ActOpenMMSim:
         if drudeforce and not self.polarizable:
             sys.exit("There are drudes in the system but you forgot the -pol flag")
         if self.verbose:
-            print("***************************")
-            print(f"Number of particles (incl. drudes):  {self.system.getNumParticles()}")
+            self.txt.write("***************************\n")
+            self.txt.write(f"Number of particles (incl. drudes):  {self.system.getNumParticles()}\n")
         self.count_forces("Direct space 2")
         if self.polarizable:
             self.add_force_group(drudeforce, False, False)
@@ -695,22 +698,22 @@ class ActOpenMMSim:
 
         self.charges = []
         if self.verbose:
-            print("There are %d particles in the nonbondedforce" % self.nonbondedforce.getNumParticles())
+            self.txt.write("There are %d particles in the nonbondedforce\n" % self.nonbondedforce.getNumParticles())
 
         for index in range(self.nonbondedforce.getNumParticles()):
             myparams = self.customnb.getParticleParameters(index)
             if self.vdw == VdW.WBHAM:
                 [_, _, _, charge, zeta] = myparams
                 if self.debug:
-                    print(f"nonbonded sigma, epsilon, gamma, charge, zeta {myparams}")
+                    self.txt.write(f"nonbonded sigma, epsilon, gamma, charge, zeta {myparams}\n")
             elif self.vdw == VdW.GBHAM:
                 [_, _, _, _, charge, zeta] = myparams
                 if self.debug:
-                    print(f"nonbonded rmin, epsilon, gamma, delta, charge, zeta {myparams}")
+                    self.txt.write(f"nonbonded rmin, epsilon, gamma, delta, charge, zeta {myparams}\n")
             elif self.vdw == VdW.LJ14_7:
                 [_,  _, _, _, charge, zeta] = myparams
                 if self.debug:
-                    print(f"nonbonded sigma, epsilon, gamma, delta, charge, zeta {myparams}")
+                    self.txt.write(f"nonbonded sigma, epsilon, gamma, delta, charge, zeta {myparams}\n")
             else:
                 sys.exit("Not implemented what to do")
             self.charges.append(charge)
@@ -720,7 +723,7 @@ class ActOpenMMSim:
             [iatom, jatom, _, _, _] = self.nonbondedforce.getExceptionParameters(index)
             self.qq_correction.addExclusion(iatom, jatom)
             if self.debug:
-                print("Coulomb excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+                self.txt.write("Coulomb excl %d iatom %d jatom %d\n" % ( index, iatom, jatom ))
         self.count_forces("Direct space 6")
         self.add_force_group(self.qq_correction, False, True)
         self.system.addForce(self.qq_correction)
@@ -770,18 +773,17 @@ class ActOpenMMSim:
                 [charge_LJ, sigma_LJ, epsilon_LJ] = self.nonbondedforce.getParticleParameters(index)
                 if self.nonbondedMethod == NoCutoff:
                     self.nonbondedforce.setParticleParameters(index, sigma=sigma_LJ, epsilon=0, charge=0)
-#                print(self.customnb.getParticleParameters(index))
                 [sigma, epsilon, gamma, charge, zeta] = self.customnb.getParticleParameters(index)
                 if sigma > 0:
                     sigma = 1.0/sigma
                 self.vdw_correction.addParticle([sigma, epsilon, gamma, sigma_LJ, epsilon_LJ])
                 if self.debug:
-                    print("index %d sigma %g, epsilon %g, gamma %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, sigma_LJ._value, epsilon_LJ._value ))
+                    self.txt.write("index %d sigma %g, epsilon %g, gamma %g, sigma_LJ %g, epsilon_LJ %g\n" %  (index, sigma, epsilon, gamma, sigma_LJ._value, epsilon_LJ._value ))
             for index in range(self.nonbondedforce.getNumExceptions()):
                 [iatom, jatom, chargeprod, sigma, epsilon] = self.nonbondedforce.getExceptionParameters(index)
                 self.vdw_correction.addExclusion(iatom, jatom)
                 if self.debug:
-                    print("VDW excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+                    self.txt.write("VDW excl %d iatom %d jatom %d\n" % ( index, iatom, jatom ))
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
 #################################################
@@ -813,12 +815,12 @@ class ActOpenMMSim:
                 [rmin, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
                 self.vdw_correction.addParticle([rmin, epsilon, gamma, delta, sigma_LJ, epsilon_LJ])
                 if self.debug:
-                    print("index %d rmin %g, epsilon %g, gamma %g, delta %g, sigma_LJ %g, epsilon_LJ %g" %  (index, rmin, epsilon, gamma, delta, sigma_LJ._value, epsilon_LJ._value ))
+                    self.txt.write("index %d rmin %g, epsilon %g, gamma %g, delta %g, sigma_LJ %g, epsilon_LJ %g\n" %  (index, rmin, epsilon, gamma, delta, sigma_LJ._value, epsilon_LJ._value ))
             for index in range(self.nonbondedforce.getNumExceptions()):
                 [iatom, jatom, chargeprod, sigma, epsilon] = self.nonbondedforce.getExceptionParameters(index)
                 self.vdw_correction.addExclusion(iatom, jatom)
                 if self.debug:
-                    print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+                    self.txt.write("excl %d iatom %d jatom %d\n" % ( index, iatom, jatom ))
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
             self.count_forces("Direct space 8")
@@ -851,12 +853,12 @@ class ActOpenMMSim:
                 [sigma, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
                 self.vdw_correction.addParticle([sigma, epsilon, gamma, delta, sigma_LJ, epsilon_LJ])
                 if self.debug:
-                    print("index %d sigma %g, epsilon %g, gamma %g, delta %g, sigma_LJ %g, epsilon_LJ %g" %  (index, sigma, epsilon, gamma, delta, sigma_LJ._value, epsilon_LJ._value ))
+                    self.txt.write("index %d sigma %g, epsilon %g, gamma %g, delta %g, sigma_LJ %g, epsilon_LJ %g\n" %  (index, sigma, epsilon, gamma, delta, sigma_LJ._value, epsilon_LJ._value ))
             for index in range(self.nonbondedforce.getNumExceptions()):
                 [iatom, jatom, chargeprod, sigma, epsilon] = self.nonbondedforce.getExceptionParameters(index)
                 self.vdw_correction.addExclusion(iatom, jatom)
                 if self.debug:
-                    print("excl %d iatom %d jatom %d" % ( index, iatom, jatom ))
+                    self.txt.write("excl %d iatom %d jatom %d\n" % ( index, iatom, jatom ))
             self.add_force_group(self.vdw_correction, False, True)
             self.system.addForce(self.vdw_correction)
 
@@ -913,7 +915,7 @@ class ActOpenMMSim:
 
         if self.debug:
             for param in combdict:
-                print("%s   = %s" % ( param, combdict[param] ))
+                self.txt.write("%s   = %s\n" % ( param, combdict[param] ))
 
         if self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
 
@@ -922,7 +924,7 @@ class ActOpenMMSim:
                 # Just get the excluded atoms from the regular NB force
                 iatom, jatom, *_ = self.nonbondedforce.getExceptionParameters(index)
                 if self.debug:
-                    print("iatom %d jatom %d" % ( iatom, jatom ))
+                    self.txt.write("iatom %d jatom %d\n" % ( iatom, jatom ))
 
                 # Check for shell exclusions first
                 if (self.polarizable and ((jatom, iatom) in self.core_shell or ((iatom, jatom) in self.core_shell))):
@@ -949,15 +951,15 @@ class ActOpenMMSim:
                     else:
                         sys.exit(f"Parameter '{parameter}' is yet to be implemented")
                 if self.debug:
-                    print(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}")
-                    print(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}")
+                    self.txt.write(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
+                    self.txt.write(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
 
                 # Coulomb part
                 if not self.real_exclusion(nexclqq, iatom, jatom):
                     zeta = ((zeta1 * zeta2)/(math.sqrt(zeta1**2 + zeta2**2)))
                     qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
                     if self.debug:
-                        print("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g" % ( iatom, jatom, charge1, charge2, zeta))
+                        self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g\n" % ( iatom, jatom, charge1, charge2, zeta))
 
                 # Van der Waals part
                 if (not self.real_exclusion(nexclvdw, iatom, jatom) and epsilon1 > 0 and epsilon2 > 0):
@@ -967,19 +969,19 @@ class ActOpenMMSim:
                         if parameter in ['epsilon', 'gamma', 'delta']:
                             vdW_parameters      += [eval(eval(f"c{parameter}"))]
                             vdW_parameter_names += [parameter]
-                            print(f"{parameter}_ij = {vdW_parameters[-1]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}")
+                            self.txt.write(f"{parameter}_ij = {vdW_parameters[-1]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
                         elif parameter in ['sigma', 'rmin']:
                             vdW_parameters      = [eval(eval(f"c{parameter}".replace('^', '**')))] + vdW_parameters
                             vdW_parameter_names = [parameter] + vdW_parameter_names
-                            print(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}")
+                            self.txt.write(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
                     vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
                     if self.debug:
                         msg = "Adding VDW excl i %d j %d" % (iatom, jatom)
                         for parameter, name in zip(vdW_parameters, vdW_parameter_names):
                             msg += " %s %g" % (name, parameter)
-                        print(msg)
+                        self.txt.write("%s\n" % msg)
         else:
-            print("Unsupported Van der Waals potential %s" % self.vdw)
+            self.txt.write("Unsupported Van der Waals potential %s\n" % self.vdw)
 
 
         # Finish off. Did we add any exclusion correction?
@@ -1002,7 +1004,7 @@ class ActOpenMMSim:
         for cb_force in self.system.getForces():
             if 'CustomBondForce' == cb_force.getName():
                 if self.verbose:
-                    print("Found CustomBondForce")
+                    self.txt.write("Found CustomBondForce\n")
                 cb_force.setName("AlexandriaBonds")
                 self.count_forces("Add Bondeds")
                 self.add_force_group(cb_force, False, False)
@@ -1012,7 +1014,8 @@ class ActOpenMMSim:
                     self.bonds.append((iatom, jatom))
                 self.cb_force = cb_force
         if self.debug:
-            print(self.bonds)
+            self.txt.write(self.bonds)
+            self.txt.write("\n")
 
     def make_forces(self):
         # Create a new CustomNonbondedForce to mimic the direct space 
@@ -1031,35 +1034,36 @@ class ActOpenMMSim:
 
     def print_force_settings(self):
         for force in self.system.getForces():
-            print("----------------------------")
-            print("%s Group: %d, PBC: %s" % ( force.getName(), 
-                                              force.getForceGroup(),
-                                              str(force.usesPeriodicBoundaryConditions())))
+            self.txt.write("----------------------------\n")
+            self.txt.write("%s Group: %d, PBC: %s\n" % ( force.getName(), 
+                                                         force.getForceGroup(),
+                                                         str(force.usesPeriodicBoundaryConditions())))
             if self.customnb and force.getName() == self.customnb.getName():
-                print('"Cutoff?" {0}'.format(force.getCutoffDistance()))
-                print('"SwitchingDistance?" {0}'.format(force.getSwitchingDistance ()))
-                print('"CustomNonbondedMethod?" {0}'.format(force.getNonbondedMethod()))
-                print('"SwitchingFunction?" {0}'.format(force.getUseSwitchingFunction()))
+                self.txt.write('"Cutoff?" {0}\n'.format(force.getCutoffDistance()))
+                self.txt.write('"SwitchingDistance?" {0}\n'.format(force.getSwitchingDistance ()))
+                self.txt.write('"CustomNonbondedMethod?" {0}\n'.format(force.getNonbondedMethod()))
+                self.txt.write('"SwitchingFunction?" {0}\n'.format(force.getUseSwitchingFunction()))
             elif force.getName() == self.nonbondedforce.getName():
-                print('"Cutoff?" {0}'.format(force.getCutoffDistance()))
-                print('"SwitchingDistance?" {0}'.format(force.getSwitchingDistance ()))
-                print('"NonbondedMethod?" {0}'.format(force.getNonbondedMethod()))
-                print('"SwitchingFunction?" {0}'.format(force.getUseSwitchingFunction()))
-                print('"Disp. Corr.?" {0}'.format(force.getUseDispersionCorrection()))
-                print('"Reciprocal Force Group?" {0}'.format(force.getReciprocalSpaceForceGroup()))
+                self.txt.write('"Cutoff?" {0}\n'.format(force.getCutoffDistance()))
+                self.txt.write('"SwitchingDistance?" {0}\n'.format(force.getSwitchingDistance ()))
+                self.txt.write('"NonbondedMethod?" {0}\n'.format(force.getNonbondedMethod()))
+                self.txt.write('"SwitchingFunction?" {0}\n'.format(force.getUseSwitchingFunction()))
+                self.txt.write('"Disp. Corr.?" {0}\n'.format(force.getUseDispersionCorrection()))
+                self.txt.write('"Reciprocal Force Group?" {0}\n'.format(force.getReciprocalSpaceForceGroup()))
             elif force.getName() in [ "CustomBondForce", "AlexandriaBonds" ]:
-                print("Number of bonds/pairs %d" % ( force.getNumBonds() ) )
+                self.txt.write("Number of bonds/pairs %d\n" % ( force.getNumBonds() ) )
                 if self.debug:
                     for bond_index in range(force.getNumBonds()):
                         # Print atoms and parameters.
-                        print(force.getBondParameters(bond_index))
+                        self.txt.write(force.getBondParameters(bond_index))
+                        self.txt.write("\n")
             elif force.getName() in [ "CustomNonbondedForce", "DrudeForce", "CoulombCorrection", "VanderWaalsCorrection" ]:
-                print("Number of particles %d" % force.getNumParticles())
+                self.txt.write("Number of particles %d\n" % force.getNumParticles())
             elif force.getName() in [ "CustomAngleForce", "HarmonicAngleForce" ]:
-                print("Angle force %s with %d angles" % (force.getName(), force.getNumAngles()))
+                self.txt.write("Angle force %s with %d angles\n" % (force.getName(), force.getNumAngles()))
             
                
-        print("----------------------------")
+        self.txt.write("----------------------------\n")
 
     def set_algorithms(self):
         #### ethermostat / Barostat ####
@@ -1096,21 +1100,23 @@ class ActOpenMMSim:
             else:
                 sys.exit("Unknown integrator %s for polarizable system" % integrator)
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
-                print("Andersen thermostat will be turned off since %s contains a built-in thermostat." % self.integrator)
+                self.txt.write("Andersen thermostat will be turned off since %s contains a built-in thermostat.\n"
+                               % self.integrator)
                 self.useAndersenThermostat = False
             self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
         else:
             nhi = "NoseHooverIntegrator"
             if nhi != integrator:
-                print("Unsupported integrator %s for non-polarizable system, will use %s instead" % ( integrator, nhi ))
+                self.txt.write("Unsupported integrator %s for non-polarizable system, will use %s instead\n"
+                               % ( integrator, nhi ))
             self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
 
         # Print some stuff yey.
         if self.verbose:
-            print("Core Temperature %g" % self.temperature_c)
+            self.txt.write("Core Temperature %g\n" % self.temperature_c)
             if self.polarizable:
-                print("Drude Temperature %g" % self.integrator.getDrudeTemperature()._value)
-            print("Step size %g" % self.integrator.getStepSize()._value)
+                self.txt.write("Drude Temperature %g\n" % self.integrator.getDrudeTemperature()._value)
+            self.txt.write("Step size %g\n" % self.integrator.getStepSize()._value)
 
     def compute_dipole(self)->list:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
@@ -1145,9 +1151,9 @@ class ActOpenMMSim:
 
         self.simulation.context.setPositions(new_pos)
         if self.debug:
-            print(f"number of particles (incl. drudes):  {self.system.getNumParticles()}")
+            self.txt.write(f"number of particles (incl. drudes):  {self.system.getNumParticles()}\n")
             for np in new_pos:
-                print("%10.5f  %10.5f  %10.5f" % ( np[0]._value, np[1]._value, np[2]._value ))
+                self.txt.write("%10.5f  %10.5f  %10.5f\n" % ( np[0]._value, np[1]._value, np[2]._value ))
         if self.customnb:
             self.qq_correction.updateParametersInContext(self.simulation.context)
             self.vdw_correction.updateParametersInContext(self.simulation.context)
