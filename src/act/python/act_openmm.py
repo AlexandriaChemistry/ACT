@@ -1196,7 +1196,7 @@ class ActOpenMMSim:
     def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####
         self.txt.write('\nPerforming energy minimization using maxIter = %d.\n' % maxIter)
-        enertol = Quantity(value=1e-8, unit=kilojoule/mole)
+        enertol = Quantity(value=1e-8, unit=kilojoule/(nanometer*mole))
         self.simulation.minimizeEnergy(tolerance=enertol, maxIterations=maxIter)
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
 
