@@ -834,7 +834,10 @@ class ActOpenMMSim:
             expression += ( 'delta    = %s;' % combdict["delta"] )
             ############TODO put vdw correction in one block except for unique parameters?
             self.vdw_correction = openmm.CustomNonbondedForce(expression)
-            self.vdw_correction.setName("VanderWaalsCorrection")
+            if self.nonbondedMethod == NoCutoff:
+                self.vdw_correction.setName("VanderWaals"+dictVdW[self.vdw])
+            else:
+                self.vdw_correction.setName("VanderWaalsCorrection"+dictVdW[self.vdw])
             for pp in [ "sigma", "epsilon", "gamma", "delta", "sigma_LJ", "epsilon_LJ" ]:
                 self.vdw_correction.addPerParticleParameter(pp)
             self.vdw_correction.setUseSwitchingFunction(self.use_switching_function)
@@ -850,6 +853,8 @@ class ActOpenMMSim:
 
             for index in range(self.nonbondedforce.getNumParticles()):
                 [charge_LJ, sigma_LJ, epsilon_LJ] = self.nonbondedforce.getParticleParameters(index)
+                if self.nonbondedMethod == NoCutoff:
+                    self.nonbondedforce.setParticleParameters(index, sigma=sigma_LJ, epsilon=0, charge=0)
                 [sigma, epsilon, gamma, delta, charge, zeta] = self.customnb.getParticleParameters(index)
                 self.vdw_correction.addParticle([sigma, epsilon, gamma, delta, sigma_LJ, epsilon_LJ])
                 if self.debug:
@@ -995,9 +1000,6 @@ class ActOpenMMSim:
             self.count_forces("Excl corr 2")
         self.count_forces("Excl corr 3")
 
-#        # Now we do not need the original CustomNonbondedForce anymore
-#        self.del_force(self.nb_correction)
-   
     def add_bonded_forces(self):
         self.bonds    = []
         self.cb_force = None
@@ -1178,6 +1180,16 @@ class ActOpenMMSim:
         kB      = 1.380649e-23 * 6.02214e23 / 1000
         return kB*self.temperature_c - relener
     
+    def dump_forces(self):
+        self.txt.write("DBG: Checking spurious energies\n")
+        for force in self.system.getForces():
+            fcname   = force.getName()
+            fgnumber = force.getForceGroup()
+            self.txt.write("DBG: Force %s number %d\n" % ( fcname, fgnumber ))
+        for group in range(16):
+            eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
+            self.txt.write('DBG: group %2d energy %16.4f kJ/mol\n' % (group, eterm))
+
     def print_energy(self, title:str):
         self.txt.write("\n%s:\n" % title)
         etot = 0.0
@@ -1190,7 +1202,10 @@ class ActOpenMMSim:
             etot += eterm
             self.txt.write('%-40s %2d %16.4f kJ/mol\n' % (self.force_group[group], group, eterm))
         potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
-        self.txt.write('Potential energy = %.2f kJ/mol. potE-etot %.2f\n' % (potE, potE-etot))
+        ener_diff = potE-etot
+        self.txt.write('Potential energy = %.2f kJ/mol. potE-etot %.2f\n' % (potE, ener_diff))
+        if abs(ener_diff) > 0.001:
+            self.dump_forces()
         if None != self.emonomer:
             nmol = self.topology.getNumResidues()
             einter = potE - nmol*self.emonomer
@@ -1230,9 +1245,9 @@ class ActOpenMMSim:
         self.start_output()
         self.make_system()
         self.make_forces()
+        self.set_algorithms()
         if self.verbose:
             self.print_force_settings()
-        self.set_algorithms()
         self.init_simulation()
         self.print_energy("Initial energies")
 
