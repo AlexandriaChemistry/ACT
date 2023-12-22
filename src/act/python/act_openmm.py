@@ -309,6 +309,7 @@ class ActOpenMMSim:
         self.txt.write("simulation parameters: %s\n" % self.datfile)
         self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
         self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
+        self.txt.flush()
 
     def gen_ff(self):
         if None != self.xmlfile:
@@ -1192,6 +1193,7 @@ class ActOpenMMSim:
             self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(potE) ) )
         if abs(potE-etot) > 1e-3:
             self.txt.write("sum of the above %.2f\n" % (etot))
+        self.txt.flush()
         
     def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####
