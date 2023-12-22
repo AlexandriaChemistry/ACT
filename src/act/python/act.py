@@ -40,7 +40,6 @@ class ACT:
         self.pop_size = self.node_count
         self.set_algorithm(Alg.HYBRID, self.pop_size)
         self.debug = False
-        self.popsize = 4
     
     def set_debug(self, debug:bool):
         self.debug = debug
@@ -138,6 +137,7 @@ class ACT:
                  LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
+
         cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
@@ -174,7 +174,6 @@ class ACT:
                        "-fc_force": "0.1",
                        "-fc_freq":  "0.1",
                        "-fit":      fit_params }
-
 
         for opt in myopts:
             # Check for negated booleans as well in user options

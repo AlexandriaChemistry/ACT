@@ -933,7 +933,7 @@ void ACTMol::PrintTopology(const char                  *fn,
     for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
     {    
         auto qcalc = qp->qPact();
-        auto qelec = qp->qPqm();
+        auto qelec = qp->qPqmConst();
         qcalc->setQ(atomsConst());
         qcalc->setX(coords);
         qcalc->initializeMoments();
@@ -945,9 +945,9 @@ void ACTMol::PrintTopology(const char                  *fn,
             auto gp = qmProperty(mpo, T, JobType::OPT);
             if (gp)
             {
-                auto vec = gp->getVector();
-                qelec->setMultipole(mpo, vec);
-                auto mymu = qelec->getMultipole(mpo);
+                //auto vec = gp->getVector();
+                //qelec->setMultipole(mpo, vec);
+                auto mymu = qelec.getMultipole(mpo);
                 commercials.push_back(gmx::formatString("%s %s (%s)\n",
                                                         mylot.c_str(), mpo_name(mpo), gp->getUnit()));
                 for(auto &fmp : formatMultipole(mpo, mymu))
@@ -984,18 +984,18 @@ void ACTMol::PrintTopology(const char                  *fn,
             commercials.push_back(buf);
         
             T = -1;
-            if (qelec->hasPolarizability())
+            if (qelec.hasPolarizability())
             {
-                auto aelec = qelec->polarizabilityTensor();
+                auto aelec = qelec.polarizabilityTensor();
                 std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
                                            aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
                 snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
                 add_tensor(&commercials, buf, unit, ae);
                 snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
-                         mylot.c_str(), qelec->isotropicPolarizability());
+                         mylot.c_str(), qelec.isotropicPolarizability());
                 commercials.push_back(buf);
                 snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
-                         mylot.c_str(), qelec->anisotropicPolarizability());
+                         mylot.c_str(), qelec.anisotropicPolarizability());
                 commercials.push_back(buf);
             }
         }
@@ -1307,15 +1307,12 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             if (q.empty())
             {
                 q.resize(xatom.size(), 0.0);
-                qelec->setQandX(atomsConst(), xatom);
                 qcalc->setQandX(atomsConst(), xatom);
             }
             else
             {
-                qelec->setQandX(q, xatom);
                 qcalc->setQandX(q, xatom);
             }
-            qelec->calcMoments();
             qcalc->initializeMoments();
             qcalc->calcMoments();
             qProps_.push_back(std::move(actq));

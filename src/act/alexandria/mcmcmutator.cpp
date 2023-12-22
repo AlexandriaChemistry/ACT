@@ -455,6 +455,7 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     std::set<int> changed;
     sii_->updateForceField(changed, genome->bases());
     auto cdc    = CalcDev::Compute;
+    fitComp_->distributeTasks(cdc);
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {
@@ -474,12 +475,15 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
         changed.insert(i);
         (*param)[i]     = pmin;
         sii_->updateForceField(changed, *param);
+        fitComp_->distributeTasks(cdc);
         s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = p_0;
         sii_->updateForceField(changed, *param);
+        fitComp_->distributeTasks(cdc);
         s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pmax;
         sii_->updateForceField(changed, *param);
+        fitComp_->distributeTasks(cdc);
         s.add((*param)[i],  fitComp_->calcDeviation(cdc, ims));
         (*param)[i]     = pstore;
         sii_->updateForceField(changed, *param);

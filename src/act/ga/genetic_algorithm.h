@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -137,8 +137,10 @@ public:
     //! \return the population size
     int populationSize() const { return popSize_; }
 
-    //! Open fitness output
-    void openFitnessFiles();
+    /*! Open fitness output
+     * \param[in] filename Name for output files (data set will be inserted in file name)
+     */
+    void openFitnessFiles(const std::string &filename);
 
     //! And close them when the time is due
     void closeFitnessFiles();

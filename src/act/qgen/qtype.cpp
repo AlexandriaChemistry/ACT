@@ -239,6 +239,7 @@ void QtypeProps::setMultipole(MolPropObservable mpo, const std::vector<double> &
     }
     else
     {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Multipole %s already set before", mpo_name(mpo)).c_str()));
         multipoles_[mpo] = mult;
     }
 }

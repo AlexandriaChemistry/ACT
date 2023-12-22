@@ -155,7 +155,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster()
+void OptACM::initMaster(const char *fitnessFile)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -236,8 +236,12 @@ void OptACM::initMaster()
     auto *selector = new ga::RouletteSelector(dis(gen));
 
     // Crossover
-    GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
-                       gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Please adjust -n_crossovers.", gach_.nCrossovers(), sii_->nParam()).c_str() );
+    if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
+    {
+        fprintf(logFile(), "The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
+                gach_.nCrossovers(), sii_->nParam());
+        gach_.setCrossovers(1);
+    }
 
     auto *crossover = new ga::NPointCrossover(sii_->nParam(),
                                               gach_.nCrossovers(),
@@ -260,10 +264,7 @@ void OptACM::initMaster()
     {
         if (logFile())
         {
-            fprintf(
-                logFile(),
-                "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
-            );
+            fprintf(logFile(), "Appending a VolumeFractionPenalizer to the list of penalizers...\n");
         }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
@@ -276,10 +277,7 @@ void OptACM::initMaster()
     {
         if (logFile())
         {
-            fprintf(
-                logFile(),
-                "Appending a CatastrophePenalizer to the list of penalizers...\n"
-            );
+            fprintf(logFile(), "Appending a CatastrophePenalizer to the list of penalizers...\n");
         }
         penalizers->push_back(
             new ga::CatastrophePenalizer(logFile(), dis(gen),
@@ -322,7 +320,8 @@ void OptACM::initMaster()
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(
             logFile(), initializer, fitComp_, probComputer, selector, crossover,
-            mutator_, terminators, penalizers, sii_, &gach_, dis(gen)
+            mutator_, terminators, penalizers, sii_, &gach_, 
+            fitnessFile, dis(gen)
         );
     }
     if (logFile())
@@ -501,8 +500,8 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     }
 }
 
-bool OptACM::runMaster(bool optimize,
-                       bool sensitivity)
+bool OptACM::runMaster(bool        optimize,
+                       bool        sensitivity)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -518,13 +517,14 @@ bool OptACM::runMaster(bool optimize,
             printNumCalcDevEstimate();
             fflush(logFile());
         }
-        // Optimize!
+        // Train the force field!
         bMinimum = ga_->evolve(&bestGenome);
         if (logFile())
         {
             fprintf(logFile(), "\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
+        fflush(logFile());
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
@@ -565,11 +565,9 @@ bool OptACM::runMaster(bool optimize,
         {
             std::set<int> changed;
             sii_->updateForceField(changed, pair.second.bases());
-            // sii_->setFinalOutputFile(baseOutputFileName_);
-            sii_->saveState(
-                true,
-                gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_
-            );
+            auto myfilenm = gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_;
+            fprintf(logFile(), "Will save best force field to %s\n", myfilenm.c_str());
+            sii_->saveState(true, myfilenm);
         }
         // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
         std::set<int> changed;
@@ -707,7 +705,8 @@ int train_ff(int argc, char *argv[])
         { efDAT, "-sel",  "molselect",   ffREAD   },
         { efLOG, "-g",    "train_ff",    ffWRITE  },
         { efXVG, "-conv", "param_conv" , ffWRITE  },
-        { efXVG, "-chi2", "chi_squared", ffWRITE  }
+        { efXVG, "-chi2", "chi_squared", ffWRITE  },
+        { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
     printer.addFileOptions(&filenms);
@@ -834,7 +833,7 @@ int train_ff(int argc, char *argv[])
         bool bMinimum = false;
         if (opt.sii()->nParam() > 0)
         {
-            opt.initMaster();
+            opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
 
             // Master only
             bMinimum = opt.runMaster(bOptimize, bSensitivity);

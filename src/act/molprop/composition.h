@@ -318,12 +318,14 @@ public:
     bool Equal(CalcAtom ca);
     
     /*! \brief Add an AtomicCharge element to the atom
+     * If a charge of the type is present already, it will be
+     * overwritten.
      * \param[in] type Charge type
      * \param[in] q    The charge
      */
     void AddCharge(qType type, double q)
     {
-        q_.insert(std::pair<qType, double>(type, q));
+        q_.insert_or_assign(type, q);
     }
     
     /*! \brief Return whether the charge type is present

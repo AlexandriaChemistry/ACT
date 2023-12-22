@@ -128,6 +128,27 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
     return false;
 }
 
+static void print_values(FILE *fp, const std::vector<double> values, double factor)
+{
+    fprintf(fp, "  Values:");
+    for(const auto v : values)
+    {
+        fprintf(fp, " %g", v*factor);
+    }
+    fprintf(fp, "\n");
+}
+
+void GenericProperty::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "  Type: %s Unit: %s T: %g K Phase: %s\n",
+            getType(), inputUnit_.c_str(), getTemperature(),
+            phase2string(getPhase()).c_str());
+}
+
 CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -226,6 +247,18 @@ bool MolecularMultipole::hasId(const std::string &myid)
     return (multipoleIndex(myid, &index) ||
             myid.compare("average") == 0 ||
             myid.compare("error") == 0);
+}
+
+void MolecularMultipole::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    GenericProperty::Dump(fp);
+    fprintf(fp, "  Average %g Error %g\n", average_, error_);
+    double factor = convertFromGromacs(1, getInputUnit());
+    print_values(fp, values_, factor);
 }
 
 void MolecularMultipole::setValue(const std::string &myid, double value)
@@ -346,6 +379,17 @@ void Harmonics::addValue(double value)
     values_.push_back(convertToGromacs(value, getInputUnit()));
 }
 
+void Harmonics::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    GenericProperty::Dump(fp);
+    double factor = convertFromGromacs(1, getInputUnit());
+    print_values(fp, values_, factor);
+}
+
 CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
@@ -454,6 +498,27 @@ void MolecularPolarizability::Set(double xx, double yy, double zz, double xy, do
     alpha_[YY][ZZ] = convertToGromacs(yz, unit);
 };
 
+void MolecularPolarizability::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    GenericProperty::Dump(fp);
+    double factor = convertFromGromacs(1, getInputUnit());
+    fprintf(fp, "  Average %g Error %g\n", average_*factor, error_*factor);
+    fprintf(fp, "  Alpha:\n");
+    for(int m = 0; m < DIM; m++)
+    {
+        fprintf(fp, "  ");
+        for(int n = 0; n < DIM; n++)
+        {
+            fprintf(fp, " %10g", alpha_[m][n]*factor);
+        }
+        fprintf(fp, "\n");
+    }
+}
+
 CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
@@ -553,6 +618,16 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
     setUnit(gromacsUnit(inputUnit));
 }
 
+void MolecularEnergy::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    GenericProperty::Dump(fp);
+    fprintf(fp, "  Average %g Error %g\n", average_, error_);
+}
+
 CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
                                                int                        root,
                                                MPI_Comm                   comm)
@@ -631,6 +706,22 @@ void ElectrostaticPotential::addPoint(int    espid,
     gmx::RVec xyz = { x*xfac, y*xfac, z*xfac };
     xyz_.push_back(xyz);
     V_.push_back(V*Vfac);
+}
+
+void ElectrostaticPotential::Dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    GenericProperty::Dump(fp);
+    double factor = convertFromGromacs(1, getInputUnit());
+    fprintf(fp, "  %4s  %8s  %8s  %8s  %12s\n", "ID", "x", "y", "z", "V");
+    for(size_t i = 0; i < espID_.size(); i++)
+    {
+        fprintf(fp, "  %4d  %8.3f  %8.3f  %8.3f  %12.3f\n", espID_[i],xyz_[i][XX],
+                xyz_[i][YY], xyz_[i][ZZ], factor*V_[i]);
+    }
 }
 
 CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)

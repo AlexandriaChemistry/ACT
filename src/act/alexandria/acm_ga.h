@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2023
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -65,6 +65,8 @@ private:
     alexandria::ForceComputer        *forceComp_;
     //! logFile
     FILE                             *logFile_;
+    //! Output filename for fitness files
+    std::string                       fitnessFile_;
     //! seed for random numbers
     int                               seed_;
 public:
@@ -82,10 +84,11 @@ public:
                std::vector<Penalizer*>             *penalizers,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach,
+               const std::string                   &fitnessFileName,
                int                                  seed)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
                        mutator, terminators, penalizers, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), seed_(seed)
+      sii_(sii), gach_(gach), logFile_(logFile), fitnessFile_(fitnessFileName), seed_(seed)
     {
         forceComp_ = new alexandria::ForceComputer();
     }
