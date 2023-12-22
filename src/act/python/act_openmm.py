@@ -620,7 +620,7 @@ class ActOpenMMSim:
     def add_direct_space_force(self): 
         """
         Create a CustomNonbondedForce to calculate the direct-space force of the Alexandria
-        Van der Waals potenti - Lennard-Jones and gaussian distributed charge Coulomb - point charge Coulomb,
+        Van der Waals potential - Lennard-Jones and gaussian distributed charge Coulomb - point charge Coulomb,
         placing it in specified force group.
         The LJ and point charge is necessary for both the dispersion correction and for the LJPME, and for using PME
         Create a CustomBondForce to calculate the direct space force of WBHAM and gaussian Coulomb for interactions 
@@ -1203,18 +1203,21 @@ class ActOpenMMSim:
             eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
             etot += eterm
             self.txt.write('%-40s %2d %16.4f kJ/mol\n' % (self.force_group[group], group, eterm))
-        potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
-        ener_diff = potE-etot
-        self.txt.write('Potential energy = %.2f kJ/mol. potE-etot %.2f\n' % (potE, ener_diff))
+        self.potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
+        ener_diff = self.potE-etot
+        self.txt.write('Potential energy = %.5f kJ/mol. potE-etot %.5f\n' % (self.potE, ener_diff))
         if abs(ener_diff) > 0.001:
             self.dump_forces()
         if None != self.emonomer:
             nmol = self.topology.getNumResidues()
-            einter = potE - nmol*self.emonomer
+            einter = self.potE - nmol*self.emonomer
             self.txt.write('Interaction energy for %d-mer %g\n' % ( nmol, einter ))
-            self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(potE) ) )
-        if abs(potE-etot) > 1e-3:
-            self.txt.write("sum of the above %.2f\n" % (etot))
+            self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(self.potE) ) )
+        if abs(self.potE-etot) > 1e-3:
+            self.txt.write("sum of the above %.5f\n" % (etot))
+
+    def potential_energy(self)->float:
+        return self.potE
         
     def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####

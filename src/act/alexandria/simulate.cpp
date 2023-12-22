@@ -297,7 +297,7 @@ int simulate(int argc, char *argv[])
                         std::map<InteractionType, double> einter;
                         std::vector<gmx::RVec>            interactionForces;
                         actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
-                                                          &interactionForces, &coords);
+                                                          &interactionForces, &xmin);
                         for(const auto &ei : einter)
                         {
                             fprintf(logFile, "Interaction energy %s: %g\n",
