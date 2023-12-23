@@ -418,7 +418,10 @@ void OpenMMWriter::addXmlBond(xmlNodePtr                      parent,
     addBondAtoms(grandchild3, atoms);
     for(size_t i = 0; i < params.size(); i++)
     {
-        add_xml_double(grandchild3, param_names[i], params[i]);
+        if (param_names[i])
+        {
+            add_xml_double(grandchild3, param_names[i], params[i]);
+        }
     }
 }
 
@@ -742,7 +745,7 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 {
                 case F_BONDS:
                     {
-                        const char *omm_bonds[] = { "k", "length", "De" };
+                        const char *omm_bonds[] = { "k", "length", nullptr };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                    atoms, omm_bonds, entry->params());
                     }

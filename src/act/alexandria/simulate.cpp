@@ -193,6 +193,10 @@ int simulate(int argc, char *argv[])
             {
                 fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
             }
+            if (mps.size() == 0)
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename).c_str()));
+            }
             actmol.Merge(&mps[0]);
         }
     }

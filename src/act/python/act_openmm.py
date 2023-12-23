@@ -87,6 +87,43 @@ parameter_indices = {
         }
     }
 
+def write_g96(outf, topology, positions, vecs):
+    outf.write("TITLE\n")
+    outf.write("Coordinates\n")
+    outf.write("END\n")
+    outf.write("POSITION\n")
+    myunit = unit.nanometer
+    for res in topology.residues():
+        print(res)
+        for atom in res.atoms():
+            print(atom)
+            i = atom.index
+            outf.write("%5d  %5s  %5s  %5d" % ( res.index+1, res.name, atom.name, i+1 ) )
+            outf.write("  %15.10f  %15.10f  %15.10f\n" %
+                       ( positions[i][0].value_in_unit(myunit), 
+                         positions[i][1].value_in_unit(myunit), 
+                         positions[i][2].value_in_unit(myunit) ))
+    outf.write("END\n")
+    outf.write("BOX\n")
+    outf.write("%15.10f  %15.10f  %15.10f\n" %
+               ( vecs[0][0].value_in_unit(myunit),
+                 vecs[1][1].value_in_unit(myunit),
+                 vecs[2][2].value_in_unit(myunit) ))
+    outf.write("END\n")
+
+def write_xyz(outf, topology, positions):
+    outf.write("%5d\n" % len(positions))
+    outf.write("Coordinates\n")
+    myunit = unit.angstrom
+    for res in topology.residues():
+        for atom in res.atoms():
+            i = atom.index
+            outf.write("%5s %15.10f  %15.10f  %15.10f\n" %
+                       ( atom.element.symbol,
+                         positions[i][0].value_in_unit(myunit), 
+                         positions[i][1].value_in_unit(myunit), 
+                         positions[i][2].value_in_unit(myunit) ))
+
 class SimParams:
 
     def __init__(self, filename:str) -> None:
@@ -197,6 +234,26 @@ class CombinationRules:
             return ("select(%s+%s,((2.0 * %s * %s)/( %s + %s )),0)" %  ( vara, varb, vara, varb, vara, varb ))
         else:
             sys.exit("Unknown combination rule '%s'" % rule)
+
+    def combTwoFloats(self, param:str, vara:float, varb:float)->float:
+        myrule = self.comb[param].lower()
+        if "qisigma" == myrule:
+            if (vara+varb) == 0:
+                return 0
+            else:
+                return (vara**3+varb**3)/(vara**2+varb**2)
+        elif "halgrenepsilon" == myrule:
+            if (vara**2+varb**2) == 0:
+                return 0
+            else:
+                return (4*vara*varb/(math.sqrt(vara)+math.sqrt(varb))**2)
+        elif "hogervorstepsilon" == myrule:
+            if (vara+varb) == 0:
+                return 0
+            else:
+                return (2.0 * vara * varb)/( vara + varb )
+        else:
+            return eval(self.geometricString(vara, varb))
 
     def combStrings(self)->dict:
         mydict = {}
@@ -904,7 +961,7 @@ class ActOpenMMSim:
         vdw_excl_corr.setName(vdwname)
         if self.vdw in [ VdW.WBHAM, VdW.LJ14_7 ]:
             vdw_excl_corr.addPerBondParameter("sigma")
-        if self.vdw == VdW.GBHAM:
+        elif self.vdw == VdW.GBHAM:
             vdw_excl_corr.addPerBondParameter("rmin")
         vdw_excl_corr.addPerBondParameter("epsilon")
         vdw_excl_corr.addPerBondParameter("gamma")
@@ -963,6 +1020,7 @@ class ActOpenMMSim:
 
                 # Coulomb part
                 if not self.real_exclusion(nexclqq, iatom, jatom):
+                    print("No Coulomb bond between %d and %d" % ( iatom, jatom ))
                     zeta = ((zeta1 * zeta2)/(math.sqrt(zeta1**2 + zeta2**2)))
                     qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
                     if self.debug:
@@ -970,17 +1028,27 @@ class ActOpenMMSim:
 
                 # Van der Waals part
                 if (not self.real_exclusion(nexclvdw, iatom, jatom) and epsilon1 > 0 and epsilon2 > 0):
+                    print("No VDW bond between %d and %d" % ( iatom, jatom ))
                     vdW_parameters      = []
                     vdW_parameter_names = []
                     for parameter in parameter_indices[self.vdw]:
                         if parameter in ['epsilon', 'gamma', 'delta']:
-                            vdW_parameters      += [eval(eval(f"c{parameter}"))]
+                            vdW_parameters      += [self.comb.combTwoFloats(parameter, eval(parameter+'1'), eval(parameter+'2'))] #[eval(combdict[parameter])]
                             vdW_parameter_names += [parameter]
                             self.txt.write(f"{parameter}_ij = {vdW_parameters[-1]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
                         elif parameter in ['sigma', 'rmin']:
-                            vdW_parameters      = [eval(eval(f"c{parameter}".replace('^', '**')))] + vdW_parameters
+                            vdW_parameters      = [eval(combdict[parameter].replace('^', '**'))] + vdW_parameters
                             vdW_parameter_names = [parameter] + vdW_parameter_names
                             self.txt.write(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
+#                        if "charge" == parameter:
+#                            vdW_parameters.append(eval(parameter+'1')*eval(parameter+'2'))
+#                            continue
+#                        elif "zeta" == parameter:
+#                            vdW_parameters.append(zeta)
+#                        else:
+#                            vdW_parameters.append(self.comb.combTwoFloats(parameter, eval(parameter+'1'), eval(parameter+'2')))
+#                        vdW_parameter_names.append(parameter)
+#                        self.txt.write(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
                     vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
                     if self.debug:
                         msg = "Adding VDW excl i %d j %d" % (iatom, jatom)
@@ -1003,20 +1071,23 @@ class ActOpenMMSim:
         self.count_forces("Excl corr 3")
 
     def add_bonded_forces(self):
-        self.bonds    = []
-        self.cb_force = None
+        self.bonds      = []
+        self.bond_force = None
+        cbfname = 'CustomBondForce'
+        hbfname = 'HarmonicBondForce'
         for cb_force in self.system.getForces():
-            if 'CustomBondForce' == cb_force.getName():
+            if  cb_force.getName() in [ cbfname, hbfname ]:
                 if self.verbose:
-                    self.txt.write("Found CustomBondForce\n")
-                cb_force.setName("AlexandriaBonds")
+                    self.txt.write("Found %s\n" % cb_force.getName())
+                if cbfname == cb_force.getName():
+                    cb_force.setName("AlexandriaBonds")
                 self.count_forces("Add Bondeds")
                 self.add_force_group(cb_force, False, False)
                 for bond_index in range(cb_force.getNumBonds()):
                     # Retrieve atoms (and parameters but we just want the bonds now).
-                    [iatom, jatom, params ] = cb_force.getBondParameters(bond_index)
-                    self.bonds.append((iatom, jatom))
-                self.cb_force = cb_force
+                    bondinfo = cb_force.getBondParameters(bond_index)
+                    self.bonds.append((bondinfo[0], bondinfo[1]))
+                self.bond_force = cb_force
         if self.debug:
             self.txt.write(self.bonds)
             self.txt.write("\n")
@@ -1161,9 +1232,9 @@ class ActOpenMMSim:
         if self.customnb:
             self.qq_correction.updateParametersInContext(self.simulation.context)
             self.vdw_correction.updateParametersInContext(self.simulation.context)
-        if self.cb_force:
+        if self.bond_force:
             # Make sure the name change trickles up in the system
-            self.cb_force.updateParametersInContext(self.simulation.context)
+            self.bond_force.updateParametersInContext(self.simulation.context)
 
         self.nonbondedforce.updateParametersInContext(self.simulation.context)
         if self.nonbondedMethod == NoCutoff:
@@ -1202,7 +1273,7 @@ class ActOpenMMSim:
         for group in self.force_group:
             eterm = self.simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole
             etot += eterm
-            self.txt.write('%-40s %2d %16.4f kJ/mol\n' % (self.force_group[group], group, eterm))
+            self.txt.write('%-40s %2d %16.5f kJ/mol\n' % (self.force_group[group], group, eterm))
         self.potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
         ener_diff = self.potE-etot
         self.txt.write('Potential energy = %.5f kJ/mol. potE-etot %.5f\n' % (self.potE, ener_diff))
@@ -1262,12 +1333,17 @@ class ActOpenMMSim:
         return epot
         
     def write_coordinates(self, outfile:str):
+        format = outfile[-3:]
         with open(outfile, "w") as outf:
             vecs = self.simulation.context.getState().getPeriodicBoxVectors()
             self.topology.setPeriodicBoxVectors(vecs)
-            self.pdb.writeFile(self.topology,
-                               self.simulation.context.getState(getPositions=True, enforcePeriodicBox=True, getParameters=True).getPositions(),
-                               outf)
+            positions = self.simulation.context.getState(getPositions=True, enforcePeriodicBox=True, getParameters=True).getPositions()
+            if "pdb" == format:
+                self.pdb.writeFile(self.topology, positions, outf)
+            elif "xyz" == format:
+                write_xyz(outf, self.topology, positions)
+            else:
+                write_g96(outf, self.topology, positions, vecs)
 
     def run(self):
         self.setup()
