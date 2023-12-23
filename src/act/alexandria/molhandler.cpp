@@ -589,11 +589,17 @@ static void printEnergies(FILE *logFile, int myIter,
     }
     fprintf(logFile, "Iter %5d msAtomForce %10g msShellForce %10g fcur.fprev %10g gamma %10g\n    ",
             myIter, msAtomForce, msShellForce, fcurprev, gamma);
+    double evdw = 0;
     for(const auto &ee : energies)
     {
         fprintf(logFile, "  %s %.5f", interactionTypeToString(ee.first).c_str(), ee.second);
+        if (InteractionType::DISPERSION == ee.first || 
+            InteractionType::REPULSION == ee.first)
+        {
+            evdw += ee.second;
+        }
     }
-    fprintf(logFile, "\n");
+    fprintf(logFile," (VANDERWAALS %.5f)\n", evdw);
 }
 
 static double msForce(const std::vector<int>       &theAtoms,
