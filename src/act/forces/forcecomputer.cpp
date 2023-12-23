@@ -80,7 +80,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     auto itype = InteractionType::POLARIZATION;
     if (!pd->polarizable() || !top->hasEntry(itype))
     {
-        return (*energies)[InteractionType::EPOT];
+        return 0;
     }
     // Is this particle a shell?
     std::vector<bool>   isShell;
