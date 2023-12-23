@@ -1348,7 +1348,7 @@ class ActOpenMMSim:
         epot = self.minimize_energy(maxIter)
         self.print_energy("After minimization")
         return epot
-        
+    
     def write_coordinates(self, outfile:str):
         format = outfile[-3:]
         with open(outfile, "w") as outf:
@@ -1374,6 +1374,12 @@ class ActOpenMMSim:
             self.print_energy("After equilibration")
         self.production()
         self.print_energy("After production")
+
+    def dump_charges(self)->str:
+        charges = ""
+        for i in range(len(self.charges)):
+            charges += " " + str(self.charges[i])
+        return charges
 
     def log_to_xvg(self, xvg:str, ytargets:list):
         if None == self.enefile or not os.path.exists(self.enefile):
