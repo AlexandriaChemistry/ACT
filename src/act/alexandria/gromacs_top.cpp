@@ -309,7 +309,13 @@ void print_top_header(FILE                    *fp,
         {
             ff.assign("LJ");
         }
-        auto combRule = pd->findForcesConst(InteractionType::VDW).optionValue("combination_rule");
+        auto myfs = pd->findForcesConst(InteractionType::VDW);
+        const char *crule = "combination_rule";
+        std::string combRule("unknown");
+        if (myfs.optionExists(crule))
+        {
+            combRule = myfs.optionValue(crule);
+        }
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
                 combRule.c_str(),

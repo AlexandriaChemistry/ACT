@@ -294,6 +294,8 @@ class CombinationRules:
     def zetaString(self)->str:
         if self.qdist == "Gaussian":
             return ("(zeta1*zeta2/sqrt(zeta1^2+zeta2^2))")
+        elif "Point" == self.qdist:
+            return "1"
         else:
             sys.exit("No support for charge distribution type %s" % self.qdist)
 
@@ -351,7 +353,8 @@ class ActOpenMMSim:
         if not vdw in VdWdict:
             sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.datfile ))
         self.vdw         = VdWdict[vdw]["func"]
-        self.comb        = CombinationRules(self.sim_params.getStr("charge_distribution"),
+        self.qdist       = self.sim_params.getStr("charge_distribution")
+        self.comb        = CombinationRules(self.qdist,
                                             self.sim_params.getStr("combination_rule"),
                                             self.vdw)
         self.force_group = None
@@ -728,16 +731,21 @@ class ActOpenMMSim:
         switch_distance = self.nonbondedforce.getSwitchingDistance()
         self.count_forces("Direct space 4")
     
-        # Electrostatics is our screened Coulomb minus the point charge based potential
-        expression = 'Coulomb_gauss - Coulomb_point;'
-        self.qq_expression = ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
-        expression += ( 'Coulomb_gauss = %s;' % self.qq_expression )
-        if self.nonbondedMethod == NoCutoff:
-            expression += 'Coulomb_point = 0;'
-        else:
-            expression += ( 'Coulomb_point = (%s*charge1*charge2/r);' % ONE_4PI_EPS0 )
-        expression += ( "zeta = %s;" % self.comb.zetaString())
-            
+        if "Gaussian" == self.qdist:
+            # Electrostatics is our screened Coulomb minus the point charge based potential
+            expression = 'Coulomb_gauss - Coulomb_point;'
+            self.qq_expression = ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ONE_4PI_EPS0 )
+            expression += ( 'Coulomb_gauss = %s;' % self.qq_expression )
+            if self.nonbondedMethod == NoCutoff:
+                expression += 'Coulomb_point = 0;'
+            else:
+                expression += ( 'Coulomb_point = (%s*charge1*charge2/r);' % ONE_4PI_EPS0 )
+            expression += ( "zeta = %s;" % self.comb.zetaString())
+        elif "Point" == self.qdist:
+            # Or a simple point charge
+            self.qq_expression = ( '(%s*charge1*charge2/r);' % ONE_4PI_EPS0 )
+            expression = self.qq_expression
+
         self.qq_correction = openmm.CustomNonbondedForce(expression)
         if self.nonbondedMethod == NoCutoff:
             self.qq_correction.setName("Coulomb"+self.comb.qdist)

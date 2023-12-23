@@ -94,6 +94,7 @@ int simulate(int argc, char *argv[])
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
     bool                      json       = false;
+    static char              *qcustom    = (char *)"";
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -103,6 +104,8 @@ int simulate(int argc, char *argv[])
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
+        { "-qcustom", FALSE, etSTR, {&qcustom}, 
+          "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -219,7 +222,16 @@ int simulate(int argc, char *argv[])
         std::vector<double> myq;
         auto alg   = pd.chargeGenerationAlgorithm();
         auto qtype = qType::Calc;
-        if (strlen(qqm) > 0)
+        if (strlen(qcustom) > 0)
+        {
+            auto mycharges = gmx::splitString(qcustom);
+            for(auto &q : mycharges)
+            {
+                myq.push_back(my_atof(q.c_str(), "custom q"));
+            }
+            alg = ChargeGenerationAlgorithm::Custom;
+        }
+        else if (strlen(qqm) > 0)
         {
             alg   = ChargeGenerationAlgorithm::Read;
             qtype = stringToQtype(qqm);
