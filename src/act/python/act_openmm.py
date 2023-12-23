@@ -370,6 +370,7 @@ class ActOpenMMSim:
         self.txt.write("simulation parameters: %s\n" % self.datfile)
         self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
         self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
+        self.txt.flush()
 
     def gen_ff(self):
         if None != self.xmlfile:
@@ -1286,6 +1287,7 @@ class ActOpenMMSim:
             self.txt.write('Delta H vap %g kJ/mol\n' % ( self.dhvap(self.potE) ) )
         if abs(self.potE-etot) > 1e-3:
             self.txt.write("sum of the above %.5f\n" % (etot))
+        self.txt.flush()
 
     def potential_energy(self)->float:
         return self.potE
