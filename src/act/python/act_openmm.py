@@ -112,17 +112,24 @@ def write_g96(outf, topology, positions, vecs):
     outf.write("END\n")
 
 def write_xyz(outf, topology, positions):
-    outf.write("%5d\n" % len(positions))
+    # First count real atoms
+    natom = 0
+    for res in topology.residues():
+        for atom in res.atoms():
+            if atom.element:
+                natom += 1
+    outf.write("%5d\n" % natom)
     outf.write("Coordinates\n")
     myunit = unit.angstrom
     for res in topology.residues():
         for atom in res.atoms():
             i = atom.index
-            outf.write("%5s %15.10f  %15.10f  %15.10f\n" %
-                       ( atom.element.symbol,
-                         positions[i][0].value_in_unit(myunit), 
-                         positions[i][1].value_in_unit(myunit), 
-                         positions[i][2].value_in_unit(myunit) ))
+            if atom.element:
+                outf.write("%5s %15.10f  %15.10f  %15.10f\n" %
+                           ( atom.element.symbol,
+                             positions[i][0].value_in_unit(myunit), 
+                             positions[i][1].value_in_unit(myunit), 
+                             positions[i][2].value_in_unit(myunit) ))
 
 class SimParams:
 
