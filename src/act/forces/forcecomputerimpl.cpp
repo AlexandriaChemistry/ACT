@@ -243,6 +243,11 @@ static void computeWBH(const TopologyEntryVector             &pairs,
             wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
             erep     += eerep;
             edisp    += eedisp;
+            if (debug)
+            {
+                fprintf(debug, "WBHAM ai %d aj %d sigma %g epsilon %g gamma %g erep: %g edisp: %g\n",
+                        indices[0], indices[1], sigma, epsilon, gamma, eerep, eedisp);
+            }
             real fbond  = fwbh*rinv;
             for (int m = 0; (m < DIM); m++)
             {

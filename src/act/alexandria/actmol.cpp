@@ -637,7 +637,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
     if (algorithm == ChargeGenerationAlgorithm::Custom)
     {
         GMX_RELEASE_ASSERT(atomsConst().size() == qcustom.size(),
-                           gmx::formatString("Number of custom charges %lu does not match the number of atoms %lu", qcustom.size(), atomsConst().size()).c_str());
+                           gmx::formatString("Number of particles (%lu) does not match the number of custom charges (%lu).", atomsConst().size(), qcustom.size()).c_str());
     }
     else if (algorithm == ChargeGenerationAlgorithm::NONE)
     {
