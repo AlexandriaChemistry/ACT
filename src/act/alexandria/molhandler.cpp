@@ -1039,11 +1039,11 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, "%10g", step*deltat);
     for(auto &e : energies)
     {
-        fprintf(exvg, "  %10g", e.second);
+        fprintf(exvg, "  %.5f", e.second);
     }
     auto epot = energies.find(InteractionType::EPOT)->second;
     auto temp = ekin*2/(3*nDOF*BOLTZ);
-    fprintf(exvg, " %10g %10g %10g\n", ekin, ekin+epot, temp);
+    fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
 static void initArrays(const ACTMol           *mol,

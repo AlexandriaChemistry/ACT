@@ -87,37 +87,65 @@ parameter_indices = {
         }
     }
 
-def write_g96(outf, topology, positions, vecs):
-    outf.write("TITLE\n")
-    outf.write("Coordinates\n")
-    outf.write("END\n")
-    outf.write("POSITION\n")
-    myunit = unit.nanometer
-    for res in topology.residues():
-        print(res)
-        for atom in res.atoms():
-            print(atom)
-            i = atom.index
-            outf.write("%5d  %5s  %5s  %5d" % ( res.index+1, res.name, atom.name, i+1 ) )
-            outf.write("  %15.10f  %15.10f  %15.10f\n" %
-                       ( positions[i][0].value_in_unit(myunit), 
-                         positions[i][1].value_in_unit(myunit), 
-                         positions[i][2].value_in_unit(myunit) ))
-    outf.write("END\n")
-    outf.write("BOX\n")
-    outf.write("%15.10f  %15.10f  %15.10f\n" %
-               ( vecs[0][0].value_in_unit(myunit),
-                 vecs[1][1].value_in_unit(myunit),
-                 vecs[2][2].value_in_unit(myunit) ))
-    outf.write("END\n")
-
-def write_xyz(outf, topology, positions):
+def count_atoms(topology)->int:
     # First count real atoms
     natom = 0
     for res in topology.residues():
         for atom in res.atoms():
             if atom.element:
                 natom += 1
+    return natom
+
+def write_sdf(outf, topology, positions, ffcharge, bonds):
+    outf.write("TITLE\n")
+    outf.write(" Coordinates\n")
+    outf.write("END\n")
+    natom = count_atoms(topology)
+    outf.write("%3d%3d  0  0  0  0  0  0  0  0999 V2000\n" % ( natom, len(bonds) ))
+    myunit = unit.angstrom
+    charges = []
+    count   = 1
+    remap   = {}
+    for res in topology.residues():
+        for atom in res.atoms():
+            i = atom.index
+            remap[i] = count
+            outf.write("%10.4f%10.4f%10.4f" %
+                       ( positions[i][0].value_in_unit(myunit),
+                         positions[i][1].value_in_unit(myunit),
+                         positions[i][2].value_in_unit(myunit) ))
+            nnn = 0
+            # Funky way to check for formal charge. 
+            qqq = ffcharge[i]
+            if 0 != qqq:
+                bonded = False
+                for n in bonds:
+                    if i == n[0] or i == n[1]:
+                        bonded = True
+                if not bonded:
+                    charges.append( { "count": count, "q": qqq } )
+                    if qqq > 0:
+                        nnn = 3
+                    else:
+                        nnn = 5
+            outf.write("%3s%3d%3d  0  0  0  0  0  0  0  0  0  0\n" %
+                       ( atom.element.symbol, 0, nnn ))
+            count += 1
+    for b in bonds:
+        # Assume bond order 1
+        order = 1
+        outf.write("%3d%3d%3d  0  0  0  0\n" % ( remap[b[0]], remap[b[1]], order ))
+
+    if len(charges) > 0:
+        outf.write("M  CHG%3d" % len(charges))
+        for q in charges:
+            outf.write("%4d%4d" % ( q["count"], q["q"] ))
+        outf.write("\n")
+    outf.write("M  END\n")
+    outf.write("$$$\n")
+
+def write_xyz(outf, topology, positions):
+    natom = count_atoms(topology)
     outf.write("%5d\n" % natom)
     outf.write("Coordinates\n")
     myunit = unit.angstrom
@@ -262,6 +290,46 @@ class CombinationRules:
         else:
             return eval(self.geometricString(vara, varb))
 
+    def combFloats(self, allParam:dict)->list:
+        mydict = {}
+        for param in self.comb.keys():
+            hvs = "hogervorstsigma"
+            wme = "waldmanepsilon"
+            mng = "masongamma"
+            epsilon1 = allParam["epsilon"][0]
+            epsilon2 = allParam["epsilon"][1]
+            if "sigma" in allParam:
+                sigma1 = allParam["sigma"][0]
+                sigma2 = allParam["sigma"][1]
+            elif "rmin" in allParams:
+                rmin1 = allParam["rmin"][0]
+                rmin2 = allParam["rmin"][1]
+            if "gamma" in allParam:
+                gamma1 = allParam["gamma"][0]
+                gamma2 = allParam["gamma"][1]
+            if hvs == self.comb[param].lower():
+                e12 = self.combineTwoFloat("hogervorstepsilon", epsilon1, epsilon2)
+                if self.vdw == VdW.WBHAM and "sigma" == param:
+                    mydict["sigma"]  = math.sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
+                elif self.vdw == VdW.GBHAM and "rmin" == param:
+                    mydict["rmin"]   = math.sqrt(((epsilon1*gamma1*rmin1**6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
+                else:
+                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
+            elif wme == self.comb[param].lower():
+                if "epsilon" == param:
+                    mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*sigma1**3*sigma2**3)/(sigma1**6+sigma2**6)
+                else:
+                    sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
+            elif mng == self.comb[param].lower():
+                if "gamma" == param:
+                    sigmaIJ = self.combTwoFloat("geometric", sigma1, sigma2)
+                    mydict["gamma"] = sigmaIJ*(0.5*(gamma1/sigma1+gamma2/sigma2))
+                else:
+                    sys.exit("Combination rule %s not supported for param %s" % ( mng, param ))
+            else:
+                mydict[param] = self.combTwoString(self.comb[param], allParam[param][0], allParam[param][1])
+        return mydict
+        
     def combStrings(self)->dict:
         mydict = {}
         for param in self.comb.keys():
@@ -269,11 +337,11 @@ class CombinationRules:
             wme = "waldmanepsilon"
             mng = "masongamma"
             if hvs == self.comb[param].lower():
-                #double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
+                e12 = self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2")
                 if self.vdw == VdW.WBHAM and "sigma" == param:
-                    mydict["sigma"]  = ("(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2"))
+                    mydict["sigma"]  = ("(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
                 elif self.vdw == VdW.GBHAM and "rmin" == param:
-                    mydict["rmin"] = ("(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2"))
+                    mydict["rmin"] = ("(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
                 else:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
             elif wme == self.comb[param].lower():
@@ -1013,31 +1081,18 @@ class ActOpenMMSim:
                 # And get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
+                allParam = {}
                 for parameter, idx in parameter_indices[self.vdw].items():
-                    if parameter == 'sigma':
-                        sigma1,   sigma2   = iparameters[idx], jparameters[idx]
-                    elif parameter == 'rmin':
-                        rmin1,    rmin2    = iparameters[idx], jparameters[idx]
-                    elif parameter == 'epsilon':
-                        epsilon1, epsilon2 = iparameters[idx], jparameters[idx]
-                    elif parameter == 'gamma':
-                        gamma1,   gamma2   = iparameters[idx], jparameters[idx]
-                    elif parameter == 'delta':
-                        delta1,   delta2   = iparameters[idx], jparameters[idx]
-                    elif parameter == 'charge':
-                        charge1,  charge2  = iparameters[idx], jparameters[idx]
-                    elif parameter == 'zeta':
-                        zeta1,    zeta2    = iparameters[idx], jparameters[idx]
-                    else:
-                        sys.exit(f"Parameter '{parameter}' is yet to be implemented")
+                    allParam[parameter] = [ iparameters[idx], jparameters[idx] ]
+
                 if self.debug:
                     self.txt.write(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
                     self.txt.write(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
 
                 # Coulomb part
                 if not self.real_exclusion(nexclqq, iatom, jatom):
-                    print("No Coulomb bond between %d and %d" % ( iatom, jatom ))
-                    zeta = ((zeta1 * zeta2)/(math.sqrt(zeta1**2 + zeta2**2)))
+                    zeta = ((allParam["zeta"][0] * allParam["zeta"][1])/
+                            (math.sqrt(allParam["zeta"][0]**2 + allParam["zeta"][1]**2)))
                     qq_excl_corr.addBond(iatom, jatom, [charge1, charge2, zeta])
                     if self.debug:
                         self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g\n" % ( iatom, jatom, charge1, charge2, zeta))
@@ -1045,26 +1100,14 @@ class ActOpenMMSim:
                 # Van der Waals part
                 if (not self.real_exclusion(nexclvdw, iatom, jatom) and epsilon1 > 0 and epsilon2 > 0):
                     print("No VDW bond between %d and %d" % ( iatom, jatom ))
+                    allXXX = self.comb.combFloats(allParam)
                     vdW_parameters      = []
                     vdW_parameter_names = []
                     for parameter in parameter_indices[self.vdw]:
                         if parameter in ['epsilon', 'gamma', 'delta']:
-                            vdW_parameters      += [self.comb.combTwoFloats(parameter, eval(parameter+'1'), eval(parameter+'2'))] #[eval(combdict[parameter])]
+                            vdW_parameters      += allXXX[parameter]
                             vdW_parameter_names += [parameter]
                             self.txt.write(f"{parameter}_ij = {vdW_parameters[-1]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
-                        elif parameter in ['sigma', 'rmin']:
-                            vdW_parameters      = [eval(combdict[parameter].replace('^', '**'))] + vdW_parameters
-                            vdW_parameter_names = [parameter] + vdW_parameter_names
-                            self.txt.write(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
-#                        if "charge" == parameter:
-#                            vdW_parameters.append(eval(parameter+'1')*eval(parameter+'2'))
-#                            continue
-#                        elif "zeta" == parameter:
-#                            vdW_parameters.append(zeta)
-#                        else:
-#                            vdW_parameters.append(self.comb.combTwoFloats(parameter, eval(parameter+'1'), eval(parameter+'2')))
-#                        vdW_parameter_names.append(parameter)
-#                        self.txt.write(f"{parameter}_ij = {vdW_parameters[0]} {parameter}_i = {eval(parameter+'1')} {parameter}_j = {eval(parameter+'2')}\n")
                     vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
                     if self.debug:
                         msg = "Adding VDW excl i %d j %d" % (iatom, jatom)
@@ -1360,7 +1403,7 @@ class ActOpenMMSim:
             elif "xyz" == format:
                 write_xyz(outf, self.topology, positions)
             else:
-                write_g96(outf, self.topology, positions, vecs)
+                write_sdf(outf, self.topology, positions, self.charges, self.bonds)
 
     def run(self):
         self.setup()
