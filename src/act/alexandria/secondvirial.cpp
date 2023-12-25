@@ -787,7 +787,7 @@ int b2(int argc, char *argv[])
         "of dimers as input for energy calculations or generate",
         "conformations of dimers. The",
         "corresponding molecule file, used for generating the topology",
-        "needs to be a molprop (xml) file and contain information about",
+        "needs to contain information about",
         "the compounds in the dimer. Based on dimer energies the second",
         "virial coefficient will be estimated. Mayer curves can optionally",
         "be plotted and the second virial can be plotted as a function",

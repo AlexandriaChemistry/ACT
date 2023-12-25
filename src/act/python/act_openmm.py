@@ -387,6 +387,7 @@ class ActOpenMMSim:
         self.dcdtraj     = dcdtraj
         self.pdbtraj     = pdbtraj
         self.emonomer    = emonomer
+        self.txt         = None
         self.debug = debug
         if self.debug:
             self.verbose = True
@@ -417,7 +418,6 @@ class ActOpenMMSim:
                 self.xmlfile = xmlfile
         else:
             sys.exit("Please pass an ACT (actfile) or OpenMM force field file (xmlfile) using the optional arguments")
-        self.txt         = None
         self.pdb         = PDBFile(self.pdbfile)
         self.sim_params  = SimParams(self.datfile)
         vdwopt           = 'vanderwaals'
@@ -442,9 +442,8 @@ class ActOpenMMSim:
                 print("DCD trajectory is in %s" % self.dcdtraj )
             if None != self.pdbtraj:
                 print("PDB trajectory in %s" % self.pdbtraj )
-        else:
             self.txt.close()
-        
+
     def txt_header(self):
         self.txt = open(self.txtfile, "w")
         self.txt.write("Starting OpenMM calculation using the ActOpenMMSim interface.\n")
@@ -637,7 +636,7 @@ class ActOpenMMSim:
         else:
             if self.platform.supportsDoublePrecision():
                 self.txt.write("Setting precision to double\n")
-#                self.platform.setPropertyValue("Precision", "double")
+                self.platform.setPropertyValue("Precision", "double")
         self.txt.write("Using OpenMM version %s\n" % self.platform.getOpenMMVersion())
         self.txt.write("Integration time step %g ps\n" % self.dt)
 
@@ -1342,9 +1341,12 @@ class ActOpenMMSim:
             self.txt.write('%-40s %2d %16.5f kJ/mol\n' % (self.force_group[group], group, eterm))
         self.potE = self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
         ener_diff = self.potE-etot
-        self.txt.write('Potential energy = %.5f kJ/mol. potE-etot %.5f\n' % (self.potE, ener_diff))
+        self.txt.write('Potential energy = %.5f kJ/mol.' % self.potE )
         if abs(ener_diff) > 0.001:
+            self.txt.write(' WARNING: potE-etot %.5f\n' % (ener_diff))
             self.dump_forces()
+        else:
+            self.txt.write("\n")
         if None != self.emonomer:
             nmol = self.topology.getNumResidues()
             einter = self.potE - nmol*self.emonomer
@@ -1356,13 +1358,36 @@ class ActOpenMMSim:
 
     def potential_energy(self)->float:
         return self.potE
-        
+
     def minimize_energy(self, maxIter:int)->float:
         #### Minimize and Equilibrate ####
         self.txt.write('\nPerforming energy minimization using maxIter = %d.\n' % maxIter)
         enertol = Quantity(value=1e-8, unit=kilojoule/(nanometer*mole))
         self.simulation.minimizeEnergy(tolerance=enertol, maxIterations=maxIter)
         return self.simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole
+
+    def set_positions(self, positions:list):
+        self.simulation.context.setPositions(positions)
+
+    def get_positions(self)->list:
+        return self.simulation.context.getState(getPositions=True).getPositions()
+
+    def minimize_shells(self)->float:
+        # Store atom masses
+        oldmass = {}
+        for res in self.topology.residues():
+            for atom in res.atoms():
+                if atom.element:
+                    oldmass[atom.index] = self.system.getParticleMass(atom.index)
+                    self.system.setParticleMass(atom.index, 0)
+        # Compute energy after just minimizing shells
+        ener = self.minimize_energy(0)
+        # Restore atom masses
+        for res in self.topology.residues():
+            for atom in res.atoms():
+                if atom.element:
+                    self.system.setParticleMass(atom.index, oldmass[atom.index])
+        return ener
 
     def equilibrate(self):
         self.txt.write('\nEquilibrating for %d steps at T = %g K.\n' % ( self.equilibrationSteps, self.temperature_c) )
