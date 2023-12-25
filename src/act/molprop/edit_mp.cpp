@@ -64,66 +64,6 @@ namespace alexandria
 
 typedef std::map<const std::string, int> stringCount;
 
-static void fetch_charges(const ForceField                            *pd,
-                          ForceComputer                               *forceComp,
-                          const char                                  *charge_fn,
-                          std::map<std::string, std::vector<double> > *qmap)
-{
-    std::vector<MolProp> mps;
-    MolPropRead(charge_fn, &mps);
-    for(auto mp = mps.begin(); mp < mps.end(); mp++)
-    {
-        alexandria::ACTMol actmol;
-        actmol.Merge(&(*mp));
-        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
-        if (immStatus::OK != imm)
-        {
-            continue;
-        }
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
-        std::map<MolPropObservable, iqmType> iqm = {
-            { MolPropObservable::CHARGE, iqmType::QM }
-        };
-        actmol.getExpProps(pd, iqm, 0.0, 0.0, 100);
-        auto fhandler = actmol.fragmentHandler();
-        if (fhandler->topologies().size() == 1)
-        {
-            std::vector<double> dummy;
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(pd, forceComp, pd->chargeGenerationAlgorithm(),
-                                         qType::ACM, dummy, &coords, &forces);
-            if (immStatus::OK == imm)
-            {
-                // Add ACM charges
-                auto myexp = mp->findExperiment(JobType::OPT);
-                if (nullptr == myexp)
-                {
-                    myexp = mp->findExperiment(JobType::TOPOLOGY);
-                }
-                if (nullptr != myexp)
-                {
-                    auto ca       = myexp->calcAtom();
-                    auto topatoms = actmol.topology()->atoms();
-                    size_t index  = 0;
-                    std::vector<double> newq;
-                    for(auto atom = ca->begin(); atom < ca->end(); atom++)
-                    {
-                        // TODO this is not general!
-                        double qq = topatoms[index++].charge();
-                        if (pd->polarizable())
-                        {
-                            qq += topatoms[index++].charge();
-                        }
-                        newq.push_back(qq);
-                        atom->AddCharge(qType::ACM, qq);
-                    }
-                    qmap->insert({fhandler->ids()[0], newq});
-                }
-            }
-        }
-    }
-}
-
 static bool dump_molecule(FILE              *fp,
                           ForceComputer     *forceComp,
                           stringCount       *atomTypeCount,
@@ -461,8 +401,7 @@ static void check_mp(FILE                 *mylog,
     if (charge_fn)
     {
         // Copy charges from monomers
-        std::map<std::string, std::vector<double> > qmap;
-        fetch_charges(&pd, forceComp, charge_fn, &qmap);
+        auto qmap = fetchCharges(&pd, forceComp, charge_fn);
         monomer2cluster(mylog, mp, qmap);
     }
 }

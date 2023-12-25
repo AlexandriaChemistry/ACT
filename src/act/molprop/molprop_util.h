@@ -188,6 +188,22 @@ int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
                         char                             *doubles,
                         bool                              bForceMerge);
 
+/*! \brief Generate charges for all compounds in a molprop file.
+ *
+ * Will create a map containing for each compound, identified by the first fragment,
+ * the charges on all the real atoms. For polarizable models the charge of
+ * the shell is added to the atom.
+ *
+ * \todo This should be made more general. The algorithm should return an array of charges per fragment.
+ *
+ * \param[in] pd        The force field structure
+ * \param[in] forceComp A force computer
+ * \param[in] charge_fn The name of a molprop file
+ * \return the map.
+ */
+std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
+                                                         ForceComputer    *forceComp,
+                                                         const char       *charge_fn);
 } // namespace alexandria
 
 /*! \brief Utility to split a user-provided lot
