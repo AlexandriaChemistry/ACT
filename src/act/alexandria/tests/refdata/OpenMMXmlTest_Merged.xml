@@ -35,10 +35,10 @@
     </Residue>
   </Residues>
   <HarmonicBondForce>
-    <Bond class1="f_b" class2="h_b" k="300000" length="0.0924" De="0"/>
-    <Bond class1="cl_b" class2="h_b" k="289056" length="0.1283" De="0"/>
-    <Bond class1="br_b" class2="h_b" k="300000" length="0.1424" De="0"/>
-    <Bond class1="h_b" class2="i_b" k="300000" length="0.1621" De="0"/>
+    <Bond class1="f_b" class2="h_b" k="300000" length="0.0924"/>
+    <Bond class1="cl_b" class2="h_b" k="289056" length="0.1283"/>
+    <Bond class1="br_b" class2="h_b" k="300000" length="0.1424"/>
+    <Bond class1="h_b" class2="i_b" k="300000" length="0.1621"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0"/>
   <CustomAngleForce energy="0"/>

@@ -41,9 +41,9 @@
     </Residue>
   </Residues>
   <HarmonicBondForce>
-    <Bond class1="c2_b" class2="o2_b" k="300000" length="0.1205" De="0"/>
-    <Bond class1="c3_b" class2="h_b" k="230000" length="0.1091" De="0"/>
-    <Bond class1="c2_b" class2="c3_b" k="300000" length="0.1509" De="0"/>
+    <Bond class1="c2_b" class2="o2_b" k="300000" length="0.1205"/>
+    <Bond class1="c3_b" class2="h_b" k="230000" length="0.1091"/>
+    <Bond class1="c2_b" class2="c3_b" k="300000" length="0.1509"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0">
     <Angle class1="c3_b" class2="c2_b" class3="o2_b" k="300" angle="2.17293"/>
