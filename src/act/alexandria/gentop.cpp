@@ -356,41 +356,37 @@ int gentop(int argc, char *argv[])
             size_t frag = 0;
             for(auto id : fragments->ids())
             {
-                auto alg   = pd.chargeGenerationAlgorithm();
                 auto qtype = qType::Calc;
                 std::vector<double> myq;
                 
-                // See what algorithm to use, or to read.
-                if (genCharges)
+                // In the first instance, always try and read from the database.
+                if (qmap.end() != qmap.find(id))
                 {
-                    fprintf(stderr, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
+                    // Copy database charges
+                    fragments->setCharges(frag, qmap[id]);
                 }
                 else if (qcustom)
                 {
+                    // Second, if there are charges on the command line
                     fprintf(stderr, "WARNING: you provided charges on the command line. There is no guarantee that those charges can be used together with other parts of the force field and provide reasonable values..\n");
                     auto mycharges = gmx::splitString(qcustom);
                     for(auto &q : mycharges)
                     {
                         myq.push_back(my_atof(q.c_str(), "custom q"));
                     }
-                    alg = ChargeGenerationAlgorithm::Custom;
+                    imm = actmol.GenerateCharges(&pd, forceComp, ChargeGenerationAlgorithm::Custom,
+                                                 qtype, myq, &coords, &forces);
+                }
+                else if (genCharges)
+                {
+                    // Finally generate charges
+                    auto alg   = pd.chargeGenerationAlgorithm();
+                    fprintf(stderr, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
+                    imm = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
                 }
                 else
                 {
-                    if (qmap.end() == qmap.find(id))
-                    {
-                        fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -genCharge flag.\n", actmol.getMolname().c_str());
-                    }
-                    else
-                    {
-                        // Copy database charges
-                        fragments->setCharges(frag, qmap[id]);
-                        alg = ChargeGenerationAlgorithm::Read;
-                    }
-                }
-                if (ChargeGenerationAlgorithm::Read != alg)
-                {
-                    imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+                    fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -generateCharges flag.\n", actmol.getMolname().c_str());
                 }
             }
         }
