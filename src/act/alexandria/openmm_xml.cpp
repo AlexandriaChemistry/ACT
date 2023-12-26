@@ -38,29 +38,28 @@
 #include <cstring>
 #include <cmath>
 
+#include <algorithm>
+#include <iostream>
+#include <list>
 #include <map>
 #include <set>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-
+#include "act/alexandria/actmol.h"
+#include "act/basics/allmols.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_low.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_low.h"
 #include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
-#include "actmol.h"
-#include "act/utility/xml_util.h"
 #include "act/utility/stringutil.h"
-
-#include <algorithm>
-#include <list>
-#include <iostream>
+#include "act/utility/xml_util.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {
@@ -836,7 +835,9 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             printf("Scaling charges to accomodate for epsilonr = %g\n", epsilonr);
         }
     }
-    
+
+    // For looking up InChi codes
+    AlexandriaMols amols;    
     // See comment below about fftypeLocalMap.
     std::map<std::string, int> fftypeGlobalMap;
     // List of compounds that we have encountered
@@ -874,7 +875,15 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), fragIds[fff].c_str());
+            auto amol  = amols.find(fragIds[fff]);
+            if (nullptr != amol)
+            {
+                add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), amol->iupac.c_str());
+            }
+            else
+            {
+                add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), fragIds[fff].c_str());
+            }
             InchiUsed.insert(fragIds[fff]);
             // If we need to add numbers to types to distinguish types within a compound,
             // then we need to store what we have used. The map is from force field type

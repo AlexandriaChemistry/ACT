@@ -439,7 +439,6 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            
             errors.insert({actmol.getMolname(), { imm, actmol.errors() } });
         }
         mp_index++;
