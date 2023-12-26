@@ -106,6 +106,13 @@ namespace alexandria
          */
         void setCharges(const std::vector<ActAtom> &atoms);
         
+        /*! \brief Copy charges from an array to a fragment
+         * \param[in] frag The fragment index
+         * \param[in] q    The charges
+         */
+        void setCharges(size_t                     frag,
+                        const std::vector<double> &q);
+        
         /*! \brief Set the charge generation algorithm to use
          * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
          */

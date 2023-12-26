@@ -572,17 +572,17 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     }
     immStatus imm       = immStatus::OK;
     int       iter      = 0;
-    bool      converged = false;
+    bool      converged = true;
     double    EemRms    = 0;
     auto      natom     = atomsConst().size();
     std::map<InteractionType, double> energies;
     do
     {
+        EemRms = 0;
         if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
                                                        *coords, pd, atoms()))
         {
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
-            EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
             apply_symmetrized_charges(&qnew, symmetric_charges_);
@@ -594,28 +594,31 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
             }
             EemRms   /= natom;
             converged = (EemRms < qTolerance_) || !haveShells();
-            iter++;
         }
         else
         {
             imm = immStatus::ChargeGeneration;
         }
+        iter++;
     }
     while (imm == immStatus::OK && (!converged) && (iter < maxQiter_));
-    if (!converged)
+    if (immStatus::OK == imm)
     {
-        printf("Alexandria Charge Model did not converge to %g. rms: %g\n",
-               qTolerance_, sqrt(EemRms));
-    }
-    auto myatoms = atoms();
-    for(size_t i = 0; i < natom; i++)
-    {
-        (*myatoms)[i].setCharge(qold[i]);
-    }
-    // Loop over qtype properties
-    for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
-    {
-        qp->qPact()->setQandX(atomsConst(), *coords);
+        if (!converged)
+        {
+            printf("Alexandria Charge Model did not converge to %g. rms: %g\n",
+                   qTolerance_, sqrt(EemRms));
+        }
+        auto myatoms = atoms();
+        for(size_t i = 0; i < natom; i++)
+        {
+            (*myatoms)[i].setCharge(qold[i]);
+        }
+        // Loop over qtype properties
+        for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
+        {
+            qp->qPact()->setQandX(atomsConst(), *coords);
+        }
     }
     return imm;
 }

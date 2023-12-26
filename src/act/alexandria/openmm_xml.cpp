@@ -847,6 +847,11 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
     for(auto &actmol : actmols)
     {
         auto fragmentHandler  = actmol.fragmentHandler();
+        if (!fragmentHandler)
+        {
+            printf("No complete information for %s, skipping conversion to OpenMM.\n", actmol.getMolname().c_str());
+            continue;
+        }
         auto fragIds          = fragmentHandler->ids();
         // First residue will be defined below.
         xmlNodePtr residuePtr = nullptr;

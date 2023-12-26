@@ -204,6 +204,17 @@ int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
 std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
                                                          ForceComputer    *forceComp,
                                                          const char       *charge_fn);
+/*! \brief Generate charges for all compounds in a molprop file.
+ * See above
+ * \param[in] pd        The force field structure
+ * \param[in] forceComp A force computer
+ * \param[in] mps       Vector of molprops
+ * \return the map.
+ */
+std::map<std::string, std::vector<double> > fetchCharges(const ForceField           *pd,
+                                                         ForceComputer              *forceComp,
+                                                         const std::vector<MolProp> &mps);
+
 } // namespace alexandria
 
 /*! \brief Utility to split a user-provided lot

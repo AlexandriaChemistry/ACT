@@ -215,6 +215,17 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
     return eqgen;
 }
 
+void FragmentHandler::setCharges(size_t                     frag,
+                                 const std::vector<double> &q)
+{
+    GMX_RELEASE_ASSERT(frag < topologies_.size(), gmx::formatString("Fragment index %lu too large, should be less than %lu", frag, topologies_.size()).c_str());
+    auto aptr = topologies_[frag]->atomsPtr();
+    for(size_t a = 0; a < aptr->size(); a++)
+    {
+        (*aptr)[a].setCharge(q[a]);
+    }
+}
+
 void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
 {
     for(size_t ff = 0; ff < topologies_.size(); ++ff)

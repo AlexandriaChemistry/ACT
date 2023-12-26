@@ -32,8 +32,20 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <ctype.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cstdlib>
+
+#include <algorithm>
+
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/babel_io.h"
+#include "act/alexandria/fill_inputrec.h"
+#include "act/alexandria/openmm_xml.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/utility/stringutil.h"
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -46,51 +58,29 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "alex_modules.h"
-#include "babel_io.h"
-#include "fill_inputrec.h"
-#include "act/molprop/molprop_util.h"
-#include "act/molprop/molprop_xml.h"
-#include "actmol.h"
-#include "openmm_xml.h"
-#include "act/forcefield/forcefield_xml.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
-
-static void print_errors(const char                     *fn,
-                         const std::vector<std::string> &errors,
-                         immStatus                       imm)
-{
-    FILE  *fp   = gmx_ffopen(fn, "w");
-    fprintf(fp, "The detected error is \"%s\"\n", alexandria::immsg(imm));
-    for (auto error : errors)
-    {
-        fprintf(fp, "Error: %s\n", error.c_str());
-    }
-    fclose(fp);
-}
 
 int gentop(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "gentop generates a topology from molecular coordinates",
-        "either from a file, from a database, or from a gaussian log file.",
+        "from a database or, optionally, from a coordinate file or",
+        " a gaussian log file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.[PAR]",
+        "Recommend usage is to supply a molprop database",
+        "with charges precalculate and then use the [TT]-db molecule[tt]",
+        "option to extract compounds from the molprop database.[PAR]"
         "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
         "instead of a [TT]top[tt] file.",
-        "With the [TT]-db molecule[tt] option a file is extracted from the",
-        "database from the QM calculations.",
-        "An alternative to the system-wide database [TT]molprops.xml[tt]",
-        "can be passed along using the [TT]-mp[tt] flag.[PAR]",
-        "Using the [TT]-ff[tt] flag, a force field file can be specified.",
+        "A force field file should be specified using the [TT]-ff[tt] flag.",
         "Depending on the selected force field file, the force field",
-        "uses polarizable or non-polarizable Gaussian charges. [PAR]",
+        "uses polarizable or non-polarizable charges or virtual sites.[PAR]",
         "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
         "that can be used to run a simulation of the system using the OpenMM",
         "software. In addition, a selection of parameters for the OpenMM simulation",
@@ -138,7 +128,7 @@ int gentop(int argc, char *argv[])
     static char                     *qqm            = (char *)"";
     static char                     *conf           = (char *)"minimum";
     static char                     *jobtype        = (char *)"Opt";
-    static char                     *filename       = (char *)"";
+    static char                     *molFile        = (char *)"";
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = false;
     static gmx_bool                  bITP           = false;
@@ -147,24 +137,27 @@ int gentop(int argc, char *argv[])
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
     static gmx_bool                  addNumbersToAtoms = true;
+    static gmx_bool                  genCharges      = false;
     static rvec                      mybox           = { 0, 0, 0 };
     //static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
     static const char               *qcustom        = nullptr;
 
     t_pargs                          pa[]     = 
     {
-        { "-f",      FALSE, etSTR,  {&filename},
+        { "-f",      FALSE, etSTR,  {&molFile},
            "Input file name" },
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-db",     FALSE, etSTR,  {&dbname},
-          "Read a molecule from the database rather than from a file" },
+          "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-iupac",   FALSE, etSTR,  {&iupac},
           "IUPAC Name of your molecule" },
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
+        { "-generateCharges", FALSE, etBOOL, {&genCharges},
+          "Generate charges for your compound using the Alexandria Charge Model." },
         { "-ws",     FALSE, etBOOL, {&writeShells},
           "Write coordinates of shell particles to trajectory and final coordinates as well." },
         { "-box",    FALSE, etRVEC, {mybox},
@@ -215,11 +208,7 @@ int gentop(int argc, char *argv[])
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-    // Check whether there is something to read
-    if (strlen(dbname) == 0 && strlen(filename) == 0)
-    {
-        gmx_fatal(FARGS, "Specify either the -db or the -f option. No output without input");
-    }
+
     const char *gentop_fnm = opt2fn_null("-ff", NFILE, fnm);
     if (nullptr == gentop_fnm)
     {
@@ -257,44 +246,15 @@ int gentop(int argc, char *argv[])
            my_pol.c_str(), gentop_fnm, qType.c_str());
     if (bVerbose)
     {
-        printf("Reading force field information. There are %d atomtypes.\n",
+        printf("Read force field information. There are %d atomtypes.\n",
                static_cast<int>(pd.getNatypes()));
     }
 
-    std::vector<ACTMol> actmols;
-    matrix box;
-    clear_mat(box);
-    if (strlen(dbname) > 0)
-    {
-        const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
-        if (!molpropDatabase || strlen(molpropDatabase) == 0)
-        {
-            gmx_fatal(FARGS, "Empty database file name");
-        }
-        if (bVerbose)
-        {
-            printf("Looking up %s in molecule database %s.\n",
-                   dbname, molpropDatabase);
-        }
-        MolPropIterator      mpi;
-        std::vector<MolProp> mps;
-        MolPropRead(molpropDatabase, &mps);
-        for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
-        {
-            if (strcasecmp(dbname, mpi->getMolname().c_str()) == 0)
-            {
-                break;
-            }
-        }
-        if (mpi == mps.end())
-        {
-            gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
-        }
-        ACTMol mm;
-        mm.Merge(&(*mpi));
-        actmols.push_back(mm);
-    }
-    else
+    std::vector<ACTMol>                         actmols;
+    matrix                                      box       = {{ 0 }};
+    auto                                        forceComp = new ForceComputer();
+    std::map<std::string, std::vector<double> > qmap;
+    if (strlen(molFile) > 0)
     {
         if (strlen(molnm) == 0)
         {
@@ -302,7 +262,7 @@ int gentop(int argc, char *argv[])
         }
         std::vector<MolProp>  mps;
         double qtot_babel = qtot;
-        if (readBabel(&pd, filename, &mps, molnm, iupac, conf, &method, &basis,
+        if (readBabel(&pd, molFile, &mps, molnm, iupac, conf, &method, &basis,
                       maxpot, nsymm, jobtype, &qtot_babel, addHydrogens, box))
         {
             for(auto &mp : mps)
@@ -314,12 +274,68 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            gmx_fatal(FARGS, "No input file has been specified.");
+            fprintf(stderr, "Could not read molecule(s) from  input file %s.\n", molFile);
+            return 1;
         }
     }
+    else
+    {
+        const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
+        if (!molpropDatabase || strlen(molpropDatabase) == 0)
+        {
+            fprintf(stderr, "Empty database file name\n");
+            return 1;
+        }
+        std::vector<MolProp> mps;
+        MolPropRead(molpropDatabase, &mps);
+        std::vector<std::string> mymols;
+        if (strlen(dbname) > 0)
+        {
+            if (bVerbose)
+            {
+                printf("Looking up %s in a molecule database %s.\n",
+                       dbname, molpropDatabase);
+            }
+            mymols = split(dbname, ' ');
+        }
+        if (mymols.empty())
+        {
+            for(const auto &mp : mps)
+            {
+                ACTMol mm;
+                mm.Merge(&(mp));
+                actmols.push_back(mm);
+            }
+        }
+        else
+        {
+            for(auto mymol : mymols)
+            {
+                const auto newmp = std::find_if(mps.begin(), mps.end(),
+                                                [&mymol](const MolProp &x)
+                                                { return x.getMolname() == mymol; });
+                if (newmp == mps.end())
+                {
+                    fprintf(stderr, "Molecule %s not found in database", mymol.c_str());
+                }
+                else
+                {
+                    ACTMol mm;
+                    mm.Merge(&(*newmp));
+                    actmols.push_back(mm);
+                }
+            }
+        }
+        if (actmols.empty())
+        {
+            fprintf(stderr, "Couldn't find any of the selected molecules\n");
+            return 0;
+        }
+        qmap = fetchCharges(&pd, forceComp, mps);
+    }
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
-    auto forceComp = new ForceComputer();
     int mp_index   = 1;
+    std::map<std::string, std::pair<immStatus, std::vector<std::string>>> errors;
     for(auto &actmol : actmols)
     {
         imm = actmol.GenerateTopology(stdout, &pd,
@@ -332,30 +348,51 @@ int gentop(int argc, char *argv[])
             maxpot = 100; // Use 100 percent of the ESP read from QM file.
             std::map<MolPropObservable, iqmType> iqm = {
                 { MolPropObservable::POTENTIAL, iqmType::QM },
-                { MolPropObservable::CHARGE, iqmType::QM }
+                { MolPropObservable::CHARGE,    iqmType::QM }
             };
             actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
-            
-            auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            std::vector<double> myq;
-            if (qcustom)
+            auto fragments  = actmol.fragmentHandler();
+            auto topologies = fragments->topologies();
+            size_t frag = 0;
+            for(auto id : fragments->ids())
             {
-                auto mycharges = gmx::splitString(qcustom);
-                for(auto &q : mycharges)
+                auto alg   = pd.chargeGenerationAlgorithm();
+                auto qtype = qType::Calc;
+                std::vector<double> myq;
+                
+                // See what algorithm to use, or to read.
+                if (genCharges)
                 {
-                    myq.push_back(my_atof(q.c_str(), "custom q"));
+                    fprintf(stderr, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
                 }
-                alg = ChargeGenerationAlgorithm::Custom;
+                else if (qcustom)
+                {
+                    fprintf(stderr, "WARNING: you provided charges on the command line. There is no guarantee that those charges can be used together with other parts of the force field and provide reasonable values..\n");
+                    auto mycharges = gmx::splitString(qcustom);
+                    for(auto &q : mycharges)
+                    {
+                        myq.push_back(my_atof(q.c_str(), "custom q"));
+                    }
+                    alg = ChargeGenerationAlgorithm::Custom;
+                }
+                else
+                {
+                    if (qmap.end() == qmap.find(id))
+                    {
+                        fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -genCharge flag.\n", actmol.getMolname().c_str());
+                    }
+                    else
+                    {
+                        // Copy database charges
+                        fragments->setCharges(frag, qmap[id]);
+                        alg = ChargeGenerationAlgorithm::Read;
+                    }
+                }
+                if (ChargeGenerationAlgorithm::Read != alg)
+                {
+                    imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+                }
             }
-            else if (strlen(qqm) > 0)
-            {
-                alg   = ChargeGenerationAlgorithm::Read;
-                qtype = stringToQtype(qqm);
-
-            }
-            printf("Using %s to generate charges\n", chargeGenerationAlgorithmName(alg).c_str());
-            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
         if (immStatus::OK == imm)
         {
@@ -402,10 +439,8 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            auto fn = opt2fn("-g", NFILE, fnm);
-            fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
-            print_errors(fn, actmol.errors(), imm);
-            status = 1;
+            
+            errors.insert({actmol.getMolname(), { imm, actmol.errors() } });
         }
         mp_index++;
     }
@@ -413,6 +448,23 @@ int gentop(int argc, char *argv[])
     {
         writeOpenMM(opt2fn("-openmm", NFILE, fnm), 
                     opt2fn("-openmm_sim", NFILE, fnm), &pd, actmols, mDrude, addNumbersToAtoms);
+    }
+    if (!errors.empty())
+    {
+        auto fn = opt2fn("-g", NFILE, fnm);
+        auto fp = gmx_ffopen(fn, "w");
+        fprintf(fp, "Errors encountered during processing:\n");
+        for(const auto &mess : errors)
+        {
+            fprintf(fp, "%s: %s\n", mess.first.c_str(), immsg(mess.second.first));
+            for(const auto &m : mess.second.second)
+            {
+                fprintf(fp, "    %s\n", m.c_str());
+            }
+        }
+        gmx_ffclose(fp);
+        fprintf(stderr, "\nPlease check the %s file for error messages.\n", fn);
+        status = 1;
     }
     return status;
 }

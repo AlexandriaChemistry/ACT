@@ -373,6 +373,11 @@ public:
      */
     std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
 
+    /*! \brief
+     * \return atoms data for reading only
+     */
+    const std::vector<ActAtom> &atomsConst() { return topology_->atoms(); }
+
     //! \return the QtypeProps vector for editing
     std::vector<ACTQprop> *qProps() { return &qProps_; }
 
@@ -381,7 +386,7 @@ public:
 
     /*! \brief Return the fragment handler
      */
-    const FragmentHandler *fragmentHandler() const { return fraghandler_; }
+    FragmentHandler *fragmentHandler() const { return fraghandler_; }
     
     /*! \brief
      * \return atoms data

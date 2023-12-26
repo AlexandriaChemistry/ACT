@@ -515,13 +515,11 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
     }
 }
 
-std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
-                                                         ForceComputer    *forceComp,
-                                                         const char       *charge_fn)
+std::map<std::string, std::vector<double> > fetchCharges(const ForceField           *pd,
+                                                         ForceComputer              *forceComp,
+                                                         const std::vector<MolProp> &mps)
 {
     std::map<std::string, std::vector<double> > qmap;
-    std::vector<MolProp> mps;
-    MolPropRead(charge_fn, &mps);
     for(auto mp = mps.begin(); mp < mps.end(); mp++)
     {
         alexandria::ACTMol actmol;
@@ -546,34 +544,25 @@ std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
             if (immStatus::OK == imm)
             {
                 // Add ACM charges
-                auto myexp = mp->findExperiment(JobType::OPT);
-                if (nullptr == myexp)
+                std::vector<double> newq;
+                for(auto atom: actmol.atomsConst())
                 {
-                    myexp = mp->findExperiment(JobType::TOPOLOGY);
+                    newq.push_back(atom.charge());
                 }
-                if (nullptr != myexp)
-                {
-                    auto ca       = myexp->calcAtom();
-                    auto topatoms = actmol.topology()->atoms();
-                    size_t index  = 0;
-                    std::vector<double> newq;
-                    for(auto atom = ca->begin(); atom < ca->end(); atom++)
-                    {
-                        // TODO this is not general!
-                        double qq = topatoms[index++].charge();
-                        if (pd->polarizable())
-                        {
-                            qq += topatoms[index++].charge();
-                        }
-                        newq.push_back(qq);
-                        atom->AddCharge(qType::ACM, qq);
-                    }
-                    qmap.insert({fhandler->ids()[0], newq});
-                }
+                qmap.insert({fhandler->ids()[0], newq});
             }
         }
     }
     return qmap;
+}
+
+std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
+                                                         ForceComputer    *forceComp,
+                                                         const char       *charge_fn)
+{
+    std::vector<MolProp> mps;
+    MolPropRead(charge_fn, &mps);
+    return fetchCharges(pd, forceComp, mps);
 }
 
 } // namespace alexandria
