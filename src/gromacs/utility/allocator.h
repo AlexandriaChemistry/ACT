@@ -117,6 +117,9 @@ class Allocator : public AllocationPolicy
 
         /*! \brief Do the actual memory allocation
          *
+         * See https://en.cppreference.com/w/cpp/memory/allocator/allocate
+         * for C++20 info.
+         *
          *  \param n    Number of elements of type T to allocate. n can be
          *              0 bytes, which will return a non-null properly aligned
          *              and padded pointer that should not be used.
@@ -127,7 +130,8 @@ class Allocator : public AllocationPolicy
          *  \throws std::bad_alloc if the allocation fails.
          */
         value_type*
-        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+        allocate(std::size_t n)
+        //, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
         {
             void *p = AllocationPolicy::malloc(n*sizeof(T));
 
