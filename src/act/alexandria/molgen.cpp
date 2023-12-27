@@ -103,8 +103,8 @@ MolGen::MolGen(const CommunicationRecord *cr)
 
 void MolGen::addFilenames(std::vector<t_filenm> *filenms)
 {
-    filenms->push_back({ efXML, "-mp",   "allmols",     ffREAD   });
-    filenms->push_back({ efXML, "-qmp",  "charges",     ffOPTRD  });
+    filenms->push_back({ efXML, "-mp",      "allmols", ffREAD   });
+    filenms->push_back({ efXML, "-charges", "charges", ffOPTRD  });
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
