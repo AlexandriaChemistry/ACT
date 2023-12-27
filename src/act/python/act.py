@@ -20,6 +20,7 @@ class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
     def __init__(self,
                  MolPropFile: str,
+                 ChargesFile: str,
                  SelectionFile: str, 
                  verbose: bool=False):
         try:
@@ -33,6 +34,7 @@ class ACT:
             if not os.path.exists(myfiletest):
                 sys.exit("File %s does not exist" % myfiletest)
         self.molpropfile   = MolPropFile
+        self.chargesfile   = ChargesFile
         self.selectionfile = SelectionFile
         self.analyze_nodes()
         self.analyze_selection()
@@ -138,9 +140,10 @@ class ACT:
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
 
-        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
+        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -qmp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
-                  self.molpropfile, self.selectionfile, LogFile ) )
+                  self.molpropfile, self.chargesfile,
+                  self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
         ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "phi0", "c1", "c2", "c3", "bondenergy" ]

@@ -255,8 +255,6 @@ private:
     char                           *fitString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
-    //! Which charge type to use
-    char                           *chargeMethod_ = nullptr;
     //! The molecules used in the optimization
     std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
@@ -301,10 +299,16 @@ public:
     
     /*! \brief Add options to the command line
      * \param[in] pargs   Vector of command line arguments
-     * \param[in] targets pointer to targets map for train dataset. Comes from sharedIndividualInfo
+     * \param[in] targets Pointer to targets map for train dataset. Comes from sharedIndividualInfo
      */
-    void addOptions(std::vector<t_pargs> *pargs, std::map<eRMS, FittingTarget> *targets);
+    void addOptions(std::vector<t_pargs>          *pargs,
+                    std::map<eRMS, FittingTarget> *targets);
     
+    /*! \brief Add options to the command line
+     * \param[in] filenms Vector of command line arguments for files
+     */
+    void addFilenames(std::vector<t_filenm> *filenms);
+
     /*! \brief Process options after parsing
      */
     void optionsFinished();
@@ -366,9 +370,6 @@ public:
         return iOpt_.find(itype) !=  iOpt_.end(); 
     }
     
-    //! Return which chargemethod was selectod
-    const char *chargeMethod() const { return chargeMethod_; }
-        
     //! Return the whole optimization map
     const std::map<InteractionType, bool> iopt() const { return iOpt_; }
     
@@ -379,16 +380,16 @@ public:
     int mindata() const { return mindata_; }
   
     /*! \brief Read the molecular property data file to generate molecules.
-     * \param[in] fp      File pointer for printing information, may be nullptr
-     * \param[in] fn      Filename for to read molecules from
-     * \param[in] pd      Pointer to ForceField object
-     * \param[in] gms     The molecule selection
-     * \param[in] verbose Whether or not to print extra information
+     * \param[in] fp       File pointer for printing information, may be nullptr
+     * \param[in] filenms  Information about filenames
+     * \param[in] pd       Pointer to ForceField object
+     * \param[in] gms      The molecule selection
+     * \param[in] verbose  Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
     size_t Read(FILE                                *fp,
-                const char                          *fn,
-                ForceField                             *pd,
+                const std::vector<t_filenm>         &filenms,
+                ForceField                          *pd,
                 const MolSelect                     &gms,
                 const std::map<eRMS, FittingTarget> &targets,
                 bool                                 verbose);

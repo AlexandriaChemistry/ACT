@@ -43,6 +43,7 @@ target_sources(actLib
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
+           fetch_charges.cpp
            fill_inputrec.cpp
            fragmenthandler.cpp
            gentop.cpp

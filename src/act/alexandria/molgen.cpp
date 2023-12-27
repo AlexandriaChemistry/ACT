@@ -40,18 +40,18 @@
 #include <set>
 #include <vector>
 
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/forces/combinationrules.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/utility/memory_check.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
-
-#include "alex_modules.h"
-#include "act/forces/combinationrules.h"
-#include "act/utility/memory_check.h"
-#include "act/molprop/molprop_util.h"
-#include "act/molprop/molprop_xml.h"
-#include "act/forcefield/forcefield_xml.h"
-#include "train_utility.h"
 
 namespace alexandria
 {
@@ -98,7 +98,13 @@ void FittingTarget::print(FILE *fp) const
 
 MolGen::MolGen(const CommunicationRecord *cr)
 {
-    cr_        = cr;
+    cr_ = cr;
+}
+
+void MolGen::addFilenames(std::vector<t_filenm> *filenms)
+{
+    filenms->push_back({ efXML, "-mp",   "allmols",     ffREAD   });
+    filenms->push_back({ efXML, "-qmp",  "charges",     ffOPTRD  });
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
@@ -110,8 +116,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
-        { "-qqm",    FALSE, etSTR,  {&chargeMethod_},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ACM, ESP, Hirshfeld, CM5 or Mulliken may be available., depending on your molprop file." },
         { "-zetadiff", FALSE, etREAL, {&zetaDiff_},
           "Difference between core and shell zeta to count as unphysical" },
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
@@ -628,9 +632,9 @@ static double computeCost(const ACTMol                         *actmol,
     }
     return w;
 }
-                     
+
 size_t MolGen::Read(FILE                                *fp,
-                    const char                          *fn,
+                    const std::vector<t_filenm>         &filenms,
                     ForceField                          *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
@@ -640,7 +644,7 @@ size_t MolGen::Read(FILE                                *fp,
     std::map<immStatus, int>         imm_count;
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
-    
+    std::map<std::string, std::vector<double> > qmap;
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
@@ -649,10 +653,23 @@ size_t MolGen::Read(FILE                                *fp,
     /* Reading Molecules from allmols.dat */
     if (cr_->isMaster())
     {
-        MolPropRead(fn, &mp);
+        auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
+        MolPropRead(molfn, &mp);
+        auto qmapfn = opt2fn_null("-qmp", filenms.size(), filenms.data());
+        if (qmapfn && strlen(qmapfn) > 0)
+        {
+            qmap = fetchChargeMap(pd, forceComp, qmapfn);
+        }
+        // Even if we did not read a file, we have to tell the other processors
+        // about it.
+        broadcastChargeMap(cr_, &qmap);
         if (fp)
         {
-            fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
+            fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), molfn);
+            if (qmap.size() > 0)
+            {
+                fprintf(fp, "Read chargemap containing %lu entries from %s\n", qmap.size(), qmapfn);
+            }
         }
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
@@ -676,6 +693,11 @@ size_t MolGen::Read(FILE                                *fp,
 
         print_memory_usage(debug);
     }
+    else
+    {
+        // Other processors receive the qmap from the master.
+        broadcastChargeMap(cr_, &qmap);
+    }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
     std::map<iMolSelect, int> nLocal;
@@ -698,11 +720,6 @@ size_t MolGen::Read(FILE                                *fp,
     int  root  = 0;
     auto alg   = pd->chargeGenerationAlgorithm();
     auto qtype = qType::Calc;
-    if (nullptr != chargeMethod_)
-    {
-        qtype = stringToQtype(chargeMethod_);
-        alg   = ChargeGenerationAlgorithm::Read;
-    }
     if (cr_->isMaster())
     {
         if (fp)
@@ -737,10 +754,20 @@ size_t MolGen::Read(FILE                                *fp,
                 imm = actmol.getExpProps(pd, iqmMap, 0.0, 0.0, 100);
                 if (immStatus::OK == imm)
                 {
-                    std::vector<double> dummy;
-                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                 qtype, dummy, &coords, &forces);
+                    auto fragments = actmol.fragmentHandler();
+                    if (!fragments->setCharges(qmap))
+                    {
+                        if (fp)
+                        {
+                            fprintf(fp, "WARNING: Could not find charges for %s in charge map, will generate them using %s.\n",
+                                    actmol.getMolname().c_str(),
+                                    chargeGenerationAlgorithmName(alg).c_str());
+                        }
+                        std::vector<double> dummy;
+                        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                        imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                                     qtype, dummy, &coords, &forces);
+                    }
                 }
                 if (immStatus::OK != imm)
                 {
@@ -913,10 +940,14 @@ size_t MolGen::Read(FILE                                *fp,
             }
             if (immStatus::OK == imm)
             {
-                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                std::vector<double> dummy;
-                imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                             qtype, dummy, &coords, &forces);
+                auto fragments = actmol.fragmentHandler();
+                if (!fragments->setCharges(qmap))
+                {
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    std::vector<double> dummy;
+                    imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                                 qtype, dummy, &coords, &forces);
+                }
             }
             if (cr_->isMiddleMan())
             {

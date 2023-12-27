@@ -199,74 +199,8 @@ static bool dump_molecule(FILE              *fp,
     return true;
 }
 
-static void monomer2cluster(FILE                                              *fp,
-                            std::vector<MolProp>                              *mp,
-                            const std::map<std::string, std::vector<double> > &qmap)
-{
-    // Premature optimization and all that
-    for(auto mm = mp->begin(); mm < mp->end(); )
-    {
-        // Add ACM charges
-        auto allexp  = mm->experiment();
-        bool keep_mp = true;
-        if (allexp->empty())
-        {
-            if (fp)
-            {
-                fprintf(fp, "No experiment for %s, removing it.\n",
-                        mm->getMolname().c_str());
-            }
-            mm = mp->erase(mm);
-            keep_mp = false;
-        }
-        for(auto myexp = allexp->begin(); keep_mp && myexp < allexp->end(); ++myexp)
-        {
-            auto ca    = myexp->calcAtom();
-            size_t idx = 0;
-            bool found = true;
-            for(const auto &ff : mm->fragments())
-            {
-                auto qm = qmap.find(ff.id());
-                found   = qmap.end() != qm;
-                if (!found)
-                {
-                    break;
-                }
-                for(size_t iq = 0; iq < qm->second.size(); iq++)
-                {
-                    if (idx == ca->size())
-                    {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Size of charge array (%lu) does not match number of atoms (%d) for %s", qm->second.size(), myexp->NAtom(), mm->getMolname().c_str()).c_str()));
-                    }
-                    (*ca)[idx].AddCharge(qType::ACM, qm->second[iq]);
-                    idx++;
-                }
-            }
-            if (!found)
-            {
-                // No support for this compound or complex, remove it.
-                if (fp)
-                {
-                    fprintf(fp, "No charge support for all fragments in %s, removing it.\n",
-                            mm->getMolname().c_str());
-                }
-                keep_mp = false;
-            }
-        }
-        if (keep_mp)
-        {
-            mm++;
-        }
-        else
-        {
-            mm = mp->erase(mm);
-        }
-    }
-}
-
 static void check_mp(FILE                 *mylog,
                      const char           *ffname,
-                     const char           *charge_fn,
                      std::vector<MolProp> *mp)
 {
     alexandria::ForceField pd;
@@ -398,12 +332,6 @@ static void check_mp(FILE                 *mylog,
             fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
         }
     }
-    if (charge_fn)
-    {
-        // Copy charges from monomers
-        auto qmap = fetchCharges(&pd, forceComp, charge_fn);
-        monomer2cluster(mylog, mp, qmap);
-    }
 }
 
 static void gen_ehist(FILE                       *mylog,
@@ -479,21 +407,12 @@ int edit_mp(int argc, char *argv[])
         "an MPI connection to one or more other processors to write. In this manner the MPI transfer",
         "software in ACT can be tested.[PAR]",
         "edit_mp can check calculations for missing hydrogens and inconsistent dipoles if a force field file is given.", 
-        "It also can try to make a topology and reports errors doing this. Output is to a log file.[PAR]",
-        "If the optional [TT]-charges[tt] flag is given, this program will generate",
-        "charges for all the monomeric compounds in a reference molprop file,",
-        "according to the input force field file and store them",
-        "in the output molprop file as ACM (Alexandria Charge Model) charges.",
-        "If there are clusters in the input molprop file they will get charges",
-        "from the monomers. Only compounds or clusters in the input molprop file that do",
-        "have a corresponding monomer in the reference molprop file will be stored in the",
-        "output file.[PAR]"
+        "It also can try to make a topology and reports errors doing this. Output is to a log file.[PAR]"
 
     };
     std::vector<t_filenm> fnm =
     {
         { efXML, "-mp",  "data",    ffOPTRDMULT },
-        { efXML, "-charges", "esp", ffOPTRD     },
         { efXML, "-o",   "allmols", ffWRITE     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
         { efLOG, "-g",   "check",   ffOPTWR     },
@@ -621,15 +540,7 @@ int edit_mp(int argc, char *argv[])
         {
             printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
         }
-        auto charge_fn = opt2fn_null("-charges", fnm.size(), fnm.data());
-        if (charge_fn)
-        {
-            printf("Will set ACM charges for monomeric compounds in %s,"
-                   "copy the charges to compounds and clusters in the input molprop\n"
-                   "and save those with charges to the output molprop file %s\n",
-                   charge_fn, molpropout);
-        }
-        check_mp(mylog, ffname, charge_fn, &mpt);
+        check_mp(mylog, ffname, &mpt);
     }
     if (energyHisto)
     {

@@ -82,16 +82,17 @@ void my_fclose(FILE *fp)
     }
 }
 
-void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
+void OptACM::add_pargs(std::vector<t_pargs>  *pargs)
+{
     t_pargs pa[] =
-        {
-            { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-              "Remove a molecule from training set if shell minimization does not converge."},
-            { "-flush",              FALSE, etBOOL, {&flush_},
-              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
-            { "-v",              FALSE, etBOOL, {&verbose_},
-              "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
-        };
+    {
+        { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
+          "Remove a molecule from training set if shell minimization does not converge."},
+        { "-flush",              FALSE, etBOOL, {&flush_},
+          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
+        { "-v",              FALSE, etBOOL, {&verbose_},
+          "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
+    };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
     }
@@ -621,7 +622,7 @@ int train_ff(int argc, char *argv[])
         "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
         "experimental data or from quantum chemistry calculations.",
-        "The program then trains empirical force field parameters using",
+        "The program then trains an empirical force field using",
         "one of a series of algorithms",
         "until the experimental properties are reproduced reasonably.",
         "The properties include the electrostatic potential and multipole",
@@ -647,7 +648,7 @@ int train_ff(int argc, char *argv[])
         "Each individual [TT]P[tt] (set with the [TT]-popSize[tt] flag) can use",
         "multiple ([TT]M[tt]) additional processor cores to compute the fitness. The total",
         "number of cores [TT]N[tt] should therefore be exactly equal to ",
-        "[TT]PxM[tt].[PAR]",
+        "[TT]P x M[tt].[PAR]",
         "If the [TT]-random_init[tt] flag is",
         "given a completely random set of parameters is generated at the start",
         "of each run, within the bounds given in the input force field file.[PAR]",
@@ -693,13 +694,8 @@ int train_ff(int argc, char *argv[])
             pargs.push_back(pa[i]);
         }
     }
-    alexandria::OptACM opt;
-    opt.add_pargs(&pargs);
-    printer.addOptions(&pargs);
-
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-mp",   "allmols",     ffREAD   },
         { efXML, "-ff",   "aff",         ffRDMULT },
         { efXML, "-o",    "train_ff",    ffWRITE  },
         { efDAT, "-sel",  "molselect",   ffREAD   },
@@ -709,6 +705,10 @@ int train_ff(int argc, char *argv[])
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
+    alexandria::OptACM opt;
+    opt.add_pargs(&pargs);
+    opt.mg()->addFilenames(&filenms);
+    printer.addOptions(&pargs);
     printer.addFileOptions(&filenms);
 
     if (!parse_common_args(&argc,
@@ -779,10 +779,7 @@ int train_ff(int argc, char *argv[])
     }
 
     // MolGen read being called here!
-    if (0 == opt.mg()->Read(fp,
-                            opt2fn("-mp", filenms.size(), filenms.data()),
-                            opt.sii()->forcefield(),
-                            gms,
+    if (0 == opt.mg()->Read(fp, filenms, opt.sii()->forcefield(), gms,
                             opt.sii()->fittingTargetsConst(iMolSelect::Train),
                             opt.verbose()))
     {
@@ -852,7 +849,7 @@ int train_ff(int argc, char *argv[])
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), tmpMg->actmolsPtr(),
                           opt.sii()->forcefield(),
-                          oenv, filenms, tmpMg->chargeMethod());
+                          oenv, filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)

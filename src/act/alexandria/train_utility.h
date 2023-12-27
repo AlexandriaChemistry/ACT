@@ -138,8 +138,7 @@ public:
                std::vector<alexandria::ACTMol> *actmol,
                const ForceField                *pd,
                const gmx_output_env_t          *oenv,
-               const std::vector<t_filenm>     &filenm,
-               const char                      *chargeMethod);
+               const std::vector<t_filenm>     &filenm);
 };
 
 /*! \brief Print header and command line arguments

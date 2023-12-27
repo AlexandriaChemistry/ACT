@@ -132,9 +132,14 @@ public:
         sii_ = new StaticIndividualInfo(&commRec_);
     }
 
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
-
-    virtual void check_pargs();
+    /*! \brief Add my options to the command line
+     * \param[inout] pargs   Flags
+     */
+    virtual void add_pargs(std::vector<t_pargs>  *pargs);
+    
+    /*! \brief Evaluate arguments after parsing.
+     */
+    void check_pargs();
 
     /*! \brief Routine to be called after processing options
      * \param[in] outputFile The force field target file

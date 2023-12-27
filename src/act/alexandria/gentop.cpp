@@ -40,6 +40,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/babel_io.h"
+#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/openmm_xml.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -96,20 +97,20 @@ int gentop(int argc, char *argv[])
         { efTOP, "-p",          "out",       ffOPTWR },
         { efXML, "-openmm",     "out",       ffOPTWR },
         { efDAT, "-openmm_sim", "sim",       ffOPTWR },
-        { efITP, "-oi",       "out",       ffOPTWR },
-        { efPDB, "-c",        "out",       ffWRITE },
-        { efNDX, "-n",        "renum",     ffOPTWR },
-        { efDAT, "-q",        "qout",      ffOPTWR },
-        { efXML, "-mp",       "molprops",  ffOPTRD },
-        { efCUB, "-pot",      "potential", ffOPTWR },
-        { efCUB, "-ref",      "refpot",    ffOPTRD },
-        { efCUB, "-diff",     "diffpot",   ffOPTWR },
-        { efCUB, "-rho",      "density",   ffOPTWR },
-        { efXVG, "-diffhist", "diffpot",   ffOPTWR },
-        { efXVG, "-his",      "pot-histo", ffOPTWR },
-        { efXVG, "-pc",       "pot-comp",  ffOPTWR },
-        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
-        { efLOG, "-g",        "errors",    ffWRITE }
+        { efITP, "-oi",         "out",       ffOPTWR },
+        { efPDB, "-c",          "out",       ffWRITE },
+        { efNDX, "-n",          "renum",     ffOPTWR },
+        { efDAT, "-q",          "qout",      ffOPTWR },
+        { efXML, "-charges",    "molprops",  ffOPTRD },
+        { efCUB, "-pot",        "potential", ffOPTWR },
+        { efCUB, "-ref",        "refpot",    ffOPTRD },
+        { efCUB, "-diff",       "diffpot",   ffOPTWR },
+        { efCUB, "-rho",        "density",   ffOPTWR },
+        { efXVG, "-diffhist",   "diffpot",   ffOPTWR },
+        { efXVG, "-his",        "pot-histo", ffOPTWR },
+        { efXVG, "-pc",         "pot-comp",  ffOPTWR },
+        { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR },
+        { efLOG, "-g",          "errors",    ffWRITE }
     };
 
     const  int                       NFILE          = asize(fnm);
@@ -280,7 +281,7 @@ int gentop(int argc, char *argv[])
     }
     else
     {
-        const char *molpropDatabase = opt2fn_null("-mp", NFILE, fnm);
+        const char *molpropDatabase = opt2fn_null("-charges", NFILE, fnm);
         if (!molpropDatabase || strlen(molpropDatabase) == 0)
         {
             fprintf(stderr, "Empty database file name\n");
@@ -331,7 +332,7 @@ int gentop(int argc, char *argv[])
             fprintf(stderr, "Couldn't find any of the selected molecules\n");
             return 0;
         }
-        qmap = fetchCharges(&pd, forceComp, mps);
+        qmap = fetchChargeMap(&pd, forceComp, mps);
     }
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     int mp_index   = 1;
@@ -353,19 +354,12 @@ int gentop(int argc, char *argv[])
             actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
             auto fragments  = actmol.fragmentHandler();
             auto topologies = fragments->topologies();
-            size_t frag = 0;
-            for(auto id : fragments->ids())
+            if (!fragments->setCharges(qmap))
             {
                 auto qtype = qType::Calc;
                 std::vector<double> myq;
                 
-                // In the first instance, always try and read from the database.
-                if (qmap.end() != qmap.find(id))
-                {
-                    // Copy database charges
-                    fragments->setCharges(frag, qmap[id]);
-                }
-                else if (qcustom)
+                if (qcustom)
                 {
                     // Second, if there are charges on the command line
                     fprintf(stderr, "WARNING: you provided charges on the command line. There is no guarantee that those charges can be used together with other parts of the force field and provide reasonable values..\n");

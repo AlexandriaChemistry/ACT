@@ -515,56 +515,6 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
     }
 }
 
-std::map<std::string, std::vector<double> > fetchCharges(const ForceField           *pd,
-                                                         ForceComputer              *forceComp,
-                                                         const std::vector<MolProp> &mps)
-{
-    std::map<std::string, std::vector<double> > qmap;
-    for(auto mp = mps.begin(); mp < mps.end(); mp++)
-    {
-        alexandria::ACTMol actmol;
-        actmol.Merge(&(*mp));
-        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
-        if (immStatus::OK != imm)
-        {
-            continue;
-        }
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
-        std::map<MolPropObservable, iqmType> iqm = {
-            { MolPropObservable::CHARGE, iqmType::QM }
-        };
-        actmol.getExpProps(pd, iqm, 0.0, 0.0, 100);
-        auto fhandler = actmol.fragmentHandler();
-        if (fhandler->topologies().size() == 1)
-        {
-            std::vector<double> dummy;
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(pd, forceComp, pd->chargeGenerationAlgorithm(),
-                                         qType::ACM, dummy, &coords, &forces);
-            if (immStatus::OK == imm)
-            {
-                // Add ACM charges
-                std::vector<double> newq;
-                for(auto atom: actmol.atomsConst())
-                {
-                    newq.push_back(atom.charge());
-                }
-                qmap.insert({fhandler->ids()[0], newq});
-            }
-        }
-    }
-    return qmap;
-}
-
-std::map<std::string, std::vector<double> > fetchCharges(const ForceField *pd,
-                                                         ForceComputer    *forceComp,
-                                                         const char       *charge_fn)
-{
-    std::vector<MolProp> mps;
-    MolPropRead(charge_fn, &mps);
-    return fetchCharges(pd, forceComp, mps);
-}
-
 } // namespace alexandria
 
 void splitLot(const char  *lot,

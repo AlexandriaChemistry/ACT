@@ -1226,8 +1226,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                                    std::vector<alexandria::ACTMol> *actmol,
                                    const ForceField                *pd,
                                    const gmx_output_env_t           *oenv,
-                                   const std::vector<t_filenm>      &filenm,
-                                   const char                       *chargeMethod)
+                                   const std::vector<t_filenm>      &filenm)
 {
     int  n = 0;
     std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
@@ -1312,11 +1311,6 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     std::map<std::string, double> molEpot;
     auto alg   = pd->chargeGenerationAlgorithm();
     auto qtype = qType::Calc;
-    if (nullptr != chargeMethod && strlen(chargeMethod) > 0)
-    {
-        qtype = stringToQtype(chargeMethod);
-        alg   = ChargeGenerationAlgorithm::Read;
-    }
     std::map<std::string, std::vector<ACTEnergy > > allEpot; 
     std::map<std::string, std::vector<ACTEnergy > > allEinter; 
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
