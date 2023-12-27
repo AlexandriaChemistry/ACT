@@ -162,6 +162,8 @@ class MoleculeDict:
         obConversion.ReadString(obmol, smiles)
         if addH:
             obmol.AddHydrogens()
+        gen3d = ob.OBOp.FindType("Gen3D")
+        gen3d.Do(obmol, "--best")
         success = self.analyse_obmol(obConversion, obmol, forcefield)
         # Help garbage collecting
         del obmol
