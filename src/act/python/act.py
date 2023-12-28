@@ -140,7 +140,7 @@ class ACT:
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
 
-        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -qmp %s -sel %s -g %s" % 
+        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -charges %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.chargesfile,
                   self.selectionfile, LogFile ) )
