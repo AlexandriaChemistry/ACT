@@ -655,7 +655,7 @@ size_t MolGen::Read(FILE                                *fp,
     {
         auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
         MolPropRead(molfn, &mp);
-        auto qmapfn = opt2fn_null("-qmp", filenms.size(), filenms.data());
+        auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
         if (qmapfn && strlen(qmapfn) > 0)
         {
             qmap = fetchChargeMap(pd, forceComp, qmapfn);
