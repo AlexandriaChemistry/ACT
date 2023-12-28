@@ -4,15 +4,15 @@ Alexandria Chemistry Toolkit
 All documentation is on the [ACT wiki](https://github.com/dspoel/ACT/wiki).
 
 ACT is begin developed by
-+ David van der Spoel (team leader, https://github.com/dspoel)
-+ Mohammad Ghahremanpour (@mmghahremanpour)
-+ Paul J. van Maaren 
++ [David van der Spoel](https://github.com/dspoel) (team leader)
++ [Mohammad Ghahremanpour](https://github.com/mmghahremanpour)
++ [Paul J. van Maaren](https://github.com/maaren)
   with contibutions from
 + [Julian Marrades](https://github.com/jCodingStuff)
 + [Marie-Madeleine Walz](https://github.com/MMW1)
-+ Kristian Kriz (@kkriz26)
-+ Alfred T. Andersson (@pastaalfredo)
-+ Oskar Tegby (@OskarTegby)
++ [Kristian Kriz](https://github.com/kkriz26)
++ [Alfred T. Andersson](https://github.com/pastaalfredo)
++ [Oskar Tegby](https://github.com/OskarTegby)
 
 And past contributions to the GROMACS part by developers from that software package.
 
