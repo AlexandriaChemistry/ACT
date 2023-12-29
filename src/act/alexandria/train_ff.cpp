@@ -181,6 +181,11 @@ void OptACM::initMaster(const char *fitnessFile)
             break;
         }
     }
+    // Do this only when explicitly requested.
+    if (bch_.checkPoint() || verbose_)
+    {
+        sii_->makeIndividualDir();  // We need to call this before opening working files!
+    }
     // Force computer
     forceComp_ = new ForceComputer;
     // Fitness computer
@@ -211,11 +216,6 @@ void OptACM::initMaster(const char *fitnessFile)
     // Initializer
     auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
-    // Do this only when explicitly requested.
-    if (bch_.checkPoint())
-    {
-        sii_->makeIndividualDir();  // We need to call this before opening working files!
-    }
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
         mutator_ = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());

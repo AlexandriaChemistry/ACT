@@ -60,7 +60,6 @@ void StaticIndividualInfo::fillIdAndPrefix()
     id_ = cr_->middleManOrdinal();
     if (id_ >= 0)
     {
-        // prefix_ = gmx::formatString("ind%d/", id_);
         prefix_ = "inds/";
     }
 }

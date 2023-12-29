@@ -318,17 +318,13 @@ public:
      */
     ForceEnergyDevComputer(      FILE                   *logfile,
                            const bool                    verbose,
-                                 std::map<eRMS, double>  boltzmannTemperature)
-    : DevComputer(logfile, verbose)
-    {
-        boltzmannTemperature_ = boltzmannTemperature;
-    }
+                                 std::map<eRMS, double>  boltzmannTemperature);
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
+                                     ACTMol                        *actmol,
                                      std::vector<gmx::RVec>        *coords,
                                      std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+                               const ForceField                    *forcefield);
 
 };
 

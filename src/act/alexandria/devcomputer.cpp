@@ -542,6 +542,21 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
 * BEGIN: ForceEnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
+ForceEnergyDevComputer::ForceEnergyDevComputer(      FILE                   *logfile,
+                                               const bool                    verbose,
+                                                     std::map<eRMS, double>  boltzmannTemperature)
+    : DevComputer(logfile, verbose)
+{
+    boltzmannTemperature_ = boltzmannTemperature;
+    if (verbose && logfile)
+    {
+        for(const auto &b : boltzmannTemperature)
+        {
+            fprintf(logfile, "Component %s Boltzmann temperature %g\n", rmsName(b.first), b.second);
+        }
+    }
+}
+
 double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
 {
     double beta = 0;

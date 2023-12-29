@@ -312,8 +312,7 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
         auto T = molgen_->enerBoltzTemp();
         std::map<eRMS, double> boltzmann = {
             { eRMS::EPOT, T },
-            { eRMS::Interaction, T },
-            { eRMS::Force2, T }
+            { eRMS::Interaction, T }
         };
         devComputers_.push_back(new ForceEnergyDevComputer(logfile_, verbose, boltzmann));
     }
