@@ -39,11 +39,9 @@
 #include <string>
 #include <vector>
 
-struct t_atoms;
 struct t_blocka;
 struct t_excls;
 struct t_mols;
-struct gpp_atomtype;
 
 namespace alexandria
 {
@@ -56,18 +54,15 @@ void print_top_mols(FILE *out,
                     int nincl, char **incls, int nmol, t_mols *mols);
 
 void print_top_header(FILE                           *fp,
-                      const ForceField                  *pd,
+                      const ForceField               *pd,
                       bool                            bPol,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
 
 void write_top(FILE                *out,
                char                *molname,
-               t_atoms             *at,
                const Topology      *topology,
-               struct t_excls      *excls,
-               struct gpp_atomtype *atype,
-               const ForceField        *pd);
+               const ForceField    *pd);
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 

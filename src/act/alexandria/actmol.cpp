@@ -1006,8 +1006,7 @@ void ACTMol::PrintTopology(const char                  *fn,
 
     // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
-    write_top(fp, printmol.name, nullptr,
-              topology_, nullptr, nullptr, pd);
+    write_top(fp, printmol.name, topology_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, pd->filename().c_str(),
