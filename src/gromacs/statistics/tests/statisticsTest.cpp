@@ -67,6 +67,9 @@ protected:
     void analyze(gmx_stats *gs)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-12);
+        myCheck.setDefaultTolerance(tolerance);
+
         real a, b, da, db, chi2, Rfit;
         gs->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         myCheck.checkDouble(a, "a");
