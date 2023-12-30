@@ -308,7 +308,9 @@ int simulate(int argc, char *argv[])
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                     fprintf(logFile, "Final energy: %g RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);
-                    if (actmol.fragmentHandler()->topologies().size() == 2)
+                    auto nfrag = actmol.fragmentHandler()->topologies().size();
+                    printf("There are %lu fragments\n", nfrag);
+                    if (nfrag == 2)
                     {
                         std::map<InteractionType, double> einter;
                         std::vector<gmx::RVec>            interactionForces;

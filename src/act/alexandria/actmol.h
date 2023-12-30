@@ -276,7 +276,7 @@ public:
     
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
-     * with Jobtype Opt or Topology.
+     * with Jobtype Opt or Topology. The array includes shells and/or vsites.
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;

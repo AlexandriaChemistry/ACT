@@ -326,6 +326,7 @@ static void spread_vsite2(const t_iatom ia[], real a,
     rvec_inc(f[ai], fi);
     rvec_inc(f[aj], fj);
     /* 6 Flops */
+    clear_rvec(f[av]);
 
     if (g)
     {

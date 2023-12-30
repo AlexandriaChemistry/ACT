@@ -34,6 +34,7 @@ add_subdirectory(forcefield)
 add_subdirectory(qgen)
 add_subdirectory(utility)
 add_subdirectory(quasirandom_sequences)
+add_subdirectory(stlbfgs)
 add_subdirectory(alexandria)
 # Couple of ACT python scripts, independent of C++ code.
 add_subdirectory(python)

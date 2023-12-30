@@ -350,9 +350,10 @@ void GAConfigHandler::check_pargs()
 * BEGIN: SimulationConfigHandler           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-static const char *eminAlgs[4] = {nullptr, "Newton", "Steep", nullptr};
+static const char *eminAlgs[5] = {nullptr, "LBFGS", "Newton", "Steep", nullptr};
 
 std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
+    { eMinimizeAlgorithm::LBFGS,  "LBFGS"  },
     { eMinimizeAlgorithm::Steep,  "Steep"  },
     { eMinimizeAlgorithm::Newton, "Newton" }
 };

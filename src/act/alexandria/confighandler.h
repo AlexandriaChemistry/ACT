@@ -365,7 +365,7 @@ public:
 };
 
 enum class eMinimizeAlgorithm {
-    Steep, Newton
+    LBFGS, Steep, Newton
 };
 
 const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e);
