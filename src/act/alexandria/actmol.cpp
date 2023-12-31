@@ -501,7 +501,12 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     // First, compute the total energy
     gmx::RVec fzero = { 0, 0, 0 };
     interactionForces->resize(coords->size(), fzero);
-    double edimer = forceComputer->compute(pd, topology_, coords, interactionForces, einter);
+    if (debug)
+    {
+        fprintf(debug, "Will compute interaction energy\n");
+    }
+    (void) forceComputer->compute(pd, topology_, coords, interactionForces, einter);
+    double edimer = (*einter)[InteractionType::EPOT];
     if (debug)
     {
         fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
@@ -520,7 +525,9 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             j++;
         }
         std::map<InteractionType, double> energies;
-        edimer -= forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
+        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
+        edimer -= energies[InteractionType::EPOT];
+        
         if (debug)
         {
             fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
@@ -692,6 +699,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     qcalc->setX(*coords);
                 }
             }
+            fraghandler_->setCharges(*myatoms);
             
             return immStatus::OK;
         }
@@ -751,7 +759,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             {
                 (*myatoms)[i].setCharge(qcustom[i]);
             }
-
+            fraghandler_->setCharges(*myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::ESP:
@@ -830,10 +838,8 @@ void ACTMol::PrintConformation(const char                   *fn,
                                bool                          writeShells,
                                const matrix                  box)
 {
-    char title[STRLEN];
-    
-    sprintf(title, "%s processed by ACT - The Alexandria Chemistry Tookit",
-            getMolname().c_str());
+    auto title = gmx::formatString("%s processed by ACT - The Alexandria Chemistry Tookit", getMolname().c_str());
+
     int        model_nr      = 1;
     char       chain         = ' ';
     gmx_conect conect        = gmx_conect_init();
@@ -855,14 +861,14 @@ void ACTMol::PrintConformation(const char                   *fn,
     FILE *fp = gmx_ffopen(fn, "w");
     if (writeShells)
     {
-        pdbWriter(fp, title, topology_->atoms(), 
+        pdbWriter(fp, title.c_str(), topology_->atoms(), 
                   coords, topology_->residueNames(),
                   epbc, box, chain, model_nr, {},
                   conect);
     }
     else
     {
-        pdbWriter(fp, title, topology_->atoms(),
+        pdbWriter(fp, title.c_str(), topology_->atoms(),
                   coords, topology_->residueNames(),
                   epbc, box, chain, model_nr, realAtoms_,
                   conect, true);
