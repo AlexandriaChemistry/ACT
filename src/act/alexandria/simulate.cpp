@@ -305,7 +305,8 @@ int simulate(int argc, char *argv[])
                                                       &xmin, &energies, logFile, freeze);
                 if (eMinimizeStatus::OK == eMin)
                 {
-                    auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
+                    auto xminCopy = xmin;
+                    auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xminCopy);
                     fprintf(logFile, "Final energy: %g RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);
                     auto nfrag = actmol.fragmentHandler()->topologies().size();
