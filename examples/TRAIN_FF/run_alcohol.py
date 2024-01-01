@@ -76,9 +76,12 @@ for target in [ Target.ACM, Target.Epot, Target.Inter ]:
         options["-random_init"] = ""
         options["-nocalc_frequencies"] = ""
 <<<<<<< HEAD:examples/TRAIN_FF/run_alcohol.py
+<<<<<<< HEAD:examples/TRAIN_FF/run_alcohol.py
     act_run.train_ff(ForceFieldFileIn, ForceFieldFileOut, 
                      LogFile, target, False, options)
 =======
+=======
+>>>>>>> 568d6a250cc0251089c550564f33013aa8e8db69:examples/TUNE_FF/run_alcohol.py
     act_run.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
                 LogFile, target, False, options)
 >>>>>>> eafa6844c (Renamed variable in run_alcohol.py):examples/TUNE_FF/run_alcohol.py
