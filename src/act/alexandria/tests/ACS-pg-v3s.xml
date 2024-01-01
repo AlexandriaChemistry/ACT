@@ -797,6 +797,7 @@
       <option key="element" value="VS"/>
       <option key="poltype" value="v3_s"/>
       <option key="row" value="0"/>
+      <option key="bondtype" value="v3"/>
       <option key="vdwtype" value="v3"/>
       <option key="zetatype" value="v3_z"/>
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
@@ -817,6 +818,7 @@
       <option key="poltype" value="v3out_s"/>
       <option key="row" value="0"/>
       <option key="vdwtype" value="v3out"/>
+      <option key="bondtype" value="v3out"/>
       <option key="zetatype" value="v3OUT_z"/>
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
@@ -1720,18 +1722,17 @@
       <parameter type="alpha" unit="Angstrom3" value="4.005" uncertainty="0" minimum="4.005" maximum="4.005" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE2" function="vsite2" canswap="vsite2">
-    <parameterlist identifier="br_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="-0.7" uncertainty="0" minimum="-1" maximum="-0.4" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="br~h!v2">
+      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="cl_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="-0.675" uncertainty="0" minimum="-1" maximum="-0.35" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="cl~h!v2">
+      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="f_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="-0.65" uncertainty="0" minimum="-1" maximum="-0.3" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="f~h!v2">
+      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="i_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="-0.725" uncertainty="0" minimum="-1" maximum="-0.45" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="h~i!v2">
+      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="VSITE3" function="vsite3" canswap="vsite3">
