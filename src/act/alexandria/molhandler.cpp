@@ -645,16 +645,29 @@ static void printEnergies(FILE *logFile, int myIter,
 }
 
 static double msForce(const std::vector<int>       &theAtoms,
-                      const std::vector<gmx::RVec> &forces)
+                      const std::vector<gmx::RVec> &forces,
+                      const std::vector<int>       &freeze)
 {
     double msAtomForce  = 0;
+<<<<<<< HEAD
     for(auto kk : theAtoms)
     {
         msAtomForce += iprod(forces[kk], forces[kk]);
-    }
-    if (theAtoms.size() > 0)
+=======
+    int    nonFrozen    = 0;
+    for(size_t kk = 0; kk < theAtoms.size(); kk++)
     {
-        return msAtomForce /= theAtoms.size();
+        int atomI = theAtoms[kk];
+        if (freeze.end() == std::find(freeze.begin(), freeze.end(), atomI))
+        {
+            msAtomForce += iprod(forces[atomI], forces[atomI]);
+            nonFrozen   += 1;
+        }
+>>>>>>> ae5c7a4ba ( added vsite3 & vsite3out)
+    }
+    if (nonFrozen > 0)
+    {
+        return msAtomForce /= nonFrozen;
     }
     else
     {
@@ -679,27 +692,24 @@ static void updateCoords(const std::vector<int>       &theAtoms,
 }
 
 /*! \brief Local class to provide data to the L-BFGS algorithm
- * Content is just a copy of inputs, respectively working variables.
+ * Content is just a copy of inputs, respectively owrking variables.
  */
 class StlbfgsHandler
 {
 private:
-    const ForceField                  *pd_;
-    const ACTMol                      *mol_;
-    const ForceComputer               *forceComp_;
-    std::vector<gmx::RVec>             coords_;
-    std::vector<gmx::RVec>             forces_;
-    std::map<InteractionType, double>  energies_;
-    const std::vector<int>             theAtoms_;
+    const ForceField              *pd_;
+    const ACTMol                  *mol_;
+    const ForceComputer           *forceComp_;
+    std::vector<gmx::RVec>         coords_;
+    std::vector<gmx::RVec>         forces_;
+    std::map<InteractionType, double> energies_;
 public:
     StlbfgsHandler(const ForceField    *pd,
                    const ACTMol        *mol,
-                   const ForceComputer *forceComp,
-                   const std::vector<int> &theAtoms) : 
-        pd_(pd), mol_(mol), forceComp_(forceComp), theAtoms_(theAtoms)
+                   const ForceComputer *forceComp) : pd_(pd), mol_(mol), forceComp_(forceComp)
     {
         gmx::RVec vzero = { 0, 0, 0 };
-        coords_ = mol_->xOriginal();
+        coords_.resize(mol_->atomsConst().size(), vzero);
         forces_.resize(mol_->atomsConst().size(), vzero);
     }
 
@@ -716,8 +726,6 @@ public:
     std::map<InteractionType, double> *energies() { return &energies_; }
 
     double energy(InteractionType itype) { return energies_[itype]; }
-
-    const std::vector<int> &theAtoms() const { return theAtoms_; }
 };
 
 // The return of the son of global variables. Easy but ugly.
@@ -725,31 +733,40 @@ static StlbfgsHandler *lbfgs = nullptr;
 
 static void func(const std::vector<double> &x, double &f, std::vector<double> &g)
 {
-    auto theAtoms = lbfgs->theAtoms();
-    if (x.size() != DIM*theAtoms.size())
+    auto myatoms  = lbfgs->mol()->topology()->atoms();
+    size_t natoms = lbfgs->mol()->nRealAtoms();
+    if (x.size() != DIM*natoms)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Number of coordinates %lu does not match number of real atoms %lu",
-                                                       x.size(), theAtoms.size()).c_str()));
+                                                       x.size(), natoms).c_str()));
     }
     auto coords = lbfgs->coordinates();
     auto forces = lbfgs->forces();
-    size_t jj   = 0;
-    for (auto i : theAtoms)
+    size_t jj      = 0;
+    for(size_t i = 0; i < myatoms.size(); i++)
     {
-        for(int j = 0; j < DIM; j++)
+        if (eptAtom == myatoms[i].pType())
         {
-            (*coords)[i][j] = x[jj++];
+            for(int j = 0; j < DIM; j++)
+            {
+                (*coords)[i][j] = x[DIM*jj+j];
+            }
+            jj += 1;
         }
     }
     lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), coords,
                                 forces, lbfgs->energies());
     f  = lbfgs->energy(InteractionType::EPOT);
     jj = 0;
-    for (auto i : theAtoms)
+    for(size_t i = 0; i < myatoms.size(); i++)
     {
-        for(int j = 0; j < DIM; j++)
+        if (eptAtom == myatoms[i].pType())
         {
-            g[jj++] = -(*forces)[i][j];
+            for(int j = 0; j < DIM; j++)
+            {
+                g[DIM*jj+j] = (*forces)[i][j];
+            }
+            jj += 1;
         }
     }
 }
@@ -781,13 +798,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     // List of atoms (not shells) and weighting factors
     auto              myatoms = mol->atomsConst();
     std::vector<int>  theAtoms;
+    std::vector<int>  freezeAtoms;
+    int               nTheAtom = 0;
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
-        // Store the atom numbers for the frozen atoms in the counting incl. shells
-        if (myatoms[atom].pType() == eptAtom &&
-            freeze.end() == std::find(freeze.begin(), freeze.end(), atom))
+        if (myatoms[atom].pType() == eptAtom)
         {
             theAtoms.push_back(atom);
+            // Store the atom numbers for the frozen atoms in the counting incl. shells
+            if (freeze.end() != std::find(freeze.begin(), freeze.end(), nTheAtom))
+            {
+                freezeAtoms.push_back(atom);
+            }
+            nTheAtom += 1;
         }
     }
     // Two sets of forces
@@ -819,11 +842,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
 #define next (1-current)
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
-        lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
+        lbfgs = new StlbfgsHandler(pd, mol, forceComp);
 
         STLBFGS::Optimizer opt{func};
         // One-dimensional array
-        std::vector<double> sx(theAtoms.size()*DIM);
+        std::vector<double> sx(mol->nRealAtoms()*DIM);
         for(size_t i = 0; i < theAtoms.size(); i++)
         {
             for(int j = 0; j < DIM; j++)
@@ -831,14 +854,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 sx[DIM*i+j] = (*coords)[theAtoms[i]][j];
             }
         }
-        converged = opt.run(sx);
-        if (converged)
-        {
-            newCoords[current]   = *lbfgs->coordinates();
-            newEnergies[current] = *lbfgs->energies();
-            forces[current]      = *lbfgs->forces();
-        }
+        opt.run(sx);
+        newCoords[current]   = *lbfgs->coordinates();
+        newEnergies[current] = *lbfgs->energies();
+        forces[current]      = *lbfgs->forces();
         delete lbfgs;
+        converged = true;
     }
     else
     {
@@ -876,7 +897,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 {
                     // Copy f0 to forces
                     size_t jj = 0;
-                    for(auto ii : theAtoms)
+                    for(size_t ii = 0; ii < theAtoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)
                         {
@@ -946,8 +967,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 }
             }
             break;
-        default:
-            break;
         }
         if (firstStep)
         {
@@ -957,7 +976,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 *energies = newEnergies[current];
             }
             epotMin = newEnergies[current][InteractionType::EPOT];
-            msfMin  = msForce(theAtoms, forces[current]);
+            msfMin  = msForce(theAtoms, forces[current], freezeAtoms);
             // Write stuff
             printEnergies(logFile, myIter, msfMin, 0, 0, newEnergies[current], gamma);
             firstStep = false;
@@ -975,7 +994,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             // Do an energy and force calculation with the new coordinates
             msShellForce   = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
-            double msfNew  = msForce(theAtoms, forces[next]);
+            double msfNew  = msForce(theAtoms, forces[next], freezeAtoms);
             acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
             double gmin    = gamma;
             if (!acceptStep)
@@ -990,7 +1009,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 if (logFile)
                 {
                     fprintf(logFile, "Trying line minimization, step 2.\n");
-                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
+                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next], freezeAtoms), 0, 0, newEnergies[next], gamma);
                 }
                 double epotHalf = newEnergies[next][InteractionType::EPOT];
                 // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
@@ -1036,7 +1055,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         } while (!acceptStep && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
         
         // Now check force convergence
-        double msAtomForce = msForce(theAtoms, forces[current]);
+        double msAtomForce = msForce(theAtoms, forces[current], freezeAtoms);
         converged = msAtomForce <= msForceToler;
         double fcurprev = 0;
         for(size_t ii = 0; ii < theAtoms.size(); ii++)
@@ -1076,7 +1095,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         }
         // Re-compute the energy one last time.
         // TODO: is this really needed?
-        // (void) forceComp->compute(pd, mol->topology(), coords, &forces[current], energies);
+        // (void) forceComp->compute(pd, mol->topology(), coords, &forces, energies);
         return eMinimizeStatus::OK;
     }
     else
@@ -1085,7 +1104,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     }
 }
 
-double MolHandler::coordinateRmsd(const ACTMol                 *mol,
+double MolHandler::coordinateRmsd(const ACTMol                  *mol,
                                   const std::vector<gmx::RVec> &xref,
                                   std::vector<gmx::RVec>       *xfit) const
 {
