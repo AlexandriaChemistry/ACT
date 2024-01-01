@@ -4,10 +4,10 @@
  * Copyright (C) 2022,2023
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -38,85 +38,91 @@ namespace alexandria
 {
 
     enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6SIGMA_IJ = 2, lj12_6EPSILON_IJ = 3, lj12_6NR = 4 };
-    
+
     extern const char *lj12_6_name[lj12_6NR];
 
     enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6SIGMA_IJ = 2, lj8_6EPSILON_IJ = 3, lj8_6NR = 4 };
 
     extern const char *lj8_6_name[lj8_6NR];
-    
+
     enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
-    
+
     extern const char *wbh_name[wbhNR];
 
     enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3, lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };
 
     extern const char *lj14_7_name[lj14_7NR];
-    
+
     enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
-    
+
     extern const char *gbh_name[gbhNR];
-    
+
     enum { coulZETAI = 0, coulZETAJ = 1, coulNR = 2 };
-    
+
     extern const char *coul_name[coulNR];
-    
+
     enum { bondKB = 0, bondLENGTH = 1, bondENERGY = 2, bondNR = 3 };
-    
+
     extern const char *bond_name[bondNR];
-    
+
     enum { cubicLENGTH = 0, cubicRMAX = 1, cubicKB = 2, cubicDE = 3, cubicNR = 4 };
-    
+
     extern const char *cubic_name[cubicNR];
-    
+
     enum { angleKT = 0, angleANGLE = 1, angleNR = 2 };
-    
+
     extern const char *angle_name[angleNR];
-    
+
     enum { ubKT = 0, ubANGLE = 1, ubR13 = 2, ubKUB = 3, ubNR = 4 };
-    
+
     extern const char *ub_name[ubNR];
-    
+
     enum { psANGLE = 0, psRIJ0 = 1, psRJK0 = 2, psNR = 3 };
-    
+
     extern const char *ps_names[psNR];
-    
+
     enum { polALPHA = 0, polKSH = 1, polNR = 2 };
-    
+
     extern const char *pol_name[polNR];
-    
+
     enum { morseBETA = 0, morseDE = 1, morseD0 = 2, morseLENGTH = 3, morseNR = 4 };
-    
+
     extern const char *morse_name[morseNR];
-    
+
     enum { linangA = 0, linangKLIN = 1, linangNR = 2 };
-    
+
     extern const char *linang_name[linangNR];
-    
+
     enum { idihKPHI = 0, idihNR = 1 };
-    
+
     extern const char *idih_name[idihNR];
-    
+
     enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihC6 = 6, fdihNR = 7 };
-    
+
     extern const char *fdih_name[fdihNR];
-    
+
     enum { pdihANGLE = 0, pdihKP = 1, pdihMULT = 2, pdihNR = 3 };
-    
+
     extern const char *pdih_name[pdihNR];
 
     enum { vsite2A = 0, vsite2NR = 1 };
-    
-    extern const char *vsite2_name[vsite2NR];
 
-    enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };    
+    extern const char *vsite2_name[vsite2NR];
     
+    enum { vsite3A = 0,vsite3B = 1, vsite3NR = 2 };
+
+    extern const char *vsite3_name[vsite3NR];
+
+    enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };
+
     extern const char *vsite3fad_name[vsite3fadNR];
-    
-    enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 3, vsite3outNR = 4 };    
+
+   // enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 3, vsite3outNR = 4 };
+
+    enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 2, vsite3outNR = 3 };
     
     extern const char *vsite3out_name[vsite3outNR];
-    
+
 } // namespace alexandria
 
 #endif

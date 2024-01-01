@@ -1,13 +1,13 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -53,7 +53,7 @@ enum class InteractionType
     IMPROPER_DIHEDRALS,
     //! Van der Waals interaction between atoms
     VDW,
-    //! Dispersion interaction 
+    //! Dispersion interaction
     DISPERSION,
     //! Repulsive interaction due to Pauli principle
     REPULSION,
@@ -68,6 +68,9 @@ enum class InteractionType
     //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
     //! Virtual interaction sites determined by three atoms in a plane
+    //
+    VSITE3,
+    //
     VSITE3FAD,
     //! Virtual interaction sites determined by three atoms out of the plane
     VSITE3OUT,
@@ -87,7 +90,7 @@ enum class InteractionType
 const std::string &interactionTypeToString(InteractionType iType);
 
 /*! \brief
- * Convert interaction type to descriptive string rather than 
+ * Convert interaction type to descriptive string rather than
  * what is force field files.
  * \param[in] iType The interaction type
  * \return The corresponding string

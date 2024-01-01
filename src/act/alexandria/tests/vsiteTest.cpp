@@ -4,10 +4,10 @@
  * Copyright (C) 2023
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \file
@@ -60,9 +60,9 @@ TEST(Vsite2, HF)
     std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
-    
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);            
-    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);        
+
+    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
     // Compare identifiers
     EXPECT_TRUE(fh == hf);
     auto itype = InteractionType::VSITE2;
@@ -84,8 +84,8 @@ TEST(Vsite2, HFCanSwapNo)
     std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
-    
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::No); 
+
+    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::No);
     auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::No);
     // Compare identifiers
     EXPECT_FALSE(fh == hf);
@@ -98,6 +98,50 @@ TEST(Vsite2, HFCanSwapNo)
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
     EXPECT_FALSE(fs.parameterExists(hf));
 }
+
+TEST(VSite3, hohCanSwapNo)
+{
+    std::string forcefield("ACS-pg-v3s");
+    // Get the forcefield
+    auto pd = getForceField(forcefield);
+
+    auto hoh = Identifier({ "h", "o3", "h", "v3" }, { 1, 1, 9 }, CanSwap::No);
+    auto coh = Identifier({ "c3", "o3", "h", "v3" }, { 1, 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    //9 means v-site
+    EXPECT_FALSE(hoh == coh);
+    auto itype = InteractionType::VSITE3;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(hoh));
+    auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
+    EXPECT_TRUE(param_hoh->internalValue() == 1.05);
+    EXPECT_FALSE(fs.parameterExists(coh));
+}
+
+
+
+TEST(VSite3OUT, hohCanSwapNo)
+{
+    std::string forcefield("gss-v3");
+    // Get the forcefield
+    auto pd = getForceField(forcefield);
+
+    auto hoh = Identifier({ "h", "o3", "h", "v3out" }, { 1, 1, 9 }, CanSwap::No);
+    auto coh = Identifier({ "c3", "o3", "h", "v3out" }, { 1, 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    EXPECT_FALSE(hoh == coh);
+    auto itype = InteractionType::VSITE3OUT;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(hoh));
+    auto param_hoh = fs.findParameterType(hoh, vsite3out_name[vsite3outA]);
+    EXPECT_TRUE(param_hoh->internalValue() == 0.34);
+    EXPECT_FALSE(fs.parameterExists(coh));
+}
+
 
 }  // namespace
 
