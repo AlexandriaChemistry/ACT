@@ -41,7 +41,7 @@
 
 namespace alexandria
 {
-    
+
 void TopologyEntry::check(size_t nAtom) const
 {
     if (indices_.size() != nAtom)
@@ -260,6 +260,18 @@ void Vsite3::get(int *ai, int *aj, int *ak, int *vs) const
     *ak = atomIndex(2);
     *vs = atomIndex(3);
 }
+
+
+void Vsite3OUT::get(int *ai, int *aj, int *ak, int *vs) const
+{
+    check(4);
+    *ai = atomIndex(0);
+    *aj = atomIndex(1);
+    *ak = atomIndex(2);
+    *vs = atomIndex(3);
+}
+
+
 
 Angle::Angle(const Bond bij, const Bond bjk)
 {

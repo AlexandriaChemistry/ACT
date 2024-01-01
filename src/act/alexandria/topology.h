@@ -88,24 +88,24 @@ public:
             double             newcharge) :
         id_({ name }), name_(name), elem_(elem), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
-    
+
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
         pType_( pt.gmxParticleType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
     {}
-    
+
     //! \return Identifier
     const Identifier &id() const { return id_; }
 
     //! \return the name
     const std::string &name() const { return name_; }
-    
+
     //! \return the element
     const std::string &element() const { return elem_; }
-    
+
     //! \return the ffType
     const std::string &ffType() const { return ffType_; }
-    
+
     //! \return the particle type
     int pType() const { return pType_; }
 
@@ -119,7 +119,7 @@ public:
      * \param[in] index The index
      */
     void addShell(int index) { shells_.push_back(index); }
-    
+
     /*! \brief Set the core particle index
      * \param[in] index The index
      */
@@ -140,10 +140,10 @@ public:
 
     //! \return the mass
     double mass() const { return mass_; }
-    
+
     //! \return the charge
     double charge() const { return charge_; }
-    
+
     /*! set the charge
      * \param[in] charge The new value
      */
@@ -151,7 +151,7 @@ public:
 
     //! return the residue number
     int residueNumber() const { return residueNumber_; }
-    
+
     /*! set the residue number
      * \param[in] resnr the new number
      */
@@ -178,7 +178,7 @@ private:
     std::vector<std::string>                                  residueNames_;
     //! The real atoms, that is, not the vsites or shells
     std::vector<int>                                          realAtoms_;
-         
+
     /*! Generate virtual sites for bonds.
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
@@ -186,21 +186,27 @@ private:
      */
     int makeVsite2s(const ForceField *pd,
                     AtomList         *atomList);
-    
+
+    int makeVsite3s(const ForceField *pd,
+                    AtomList         *atomList);
+
+    int makeVsite3OUTs(const ForceField *pd,
+                    AtomList         *atomList);                
+
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
      * \param[in] itype The interaction type for which to do this
-     */                              
+     */
     void setEntryIdentifiers(const ForceField *pd,
                              InteractionType   itype);
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
-     */                              
+     */
     void setIdentifiers(const ForceField *pd);
 
     /*! Add polarizabilities to the topology if needed
      * \param[in]    pd       Force field
-     * \param[inout] atomList The atoms and coordinates will be updated as well  
+     * \param[inout] atomList The atoms and coordinates will be updated as well
      */
     void addShells(const ForceField *pd,
                    AtomList         *atomList);
@@ -226,7 +232,7 @@ private:
      */
     void fixExclusions(TopologyEntryVector                 *pairs,
                        const std::vector<std::vector<int>> &exclusions);
-    
+
     /*! \brief Generate exclusions and remove pairs
      * \param[inout] pairs The list of all atom pairs
      * \param[in] nrexcl   The number of exclusions to generate for Coulomb interactions (max 2)
@@ -234,7 +240,7 @@ private:
      */
     std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
                                                      int                  nrexcl);
-    
+
  public:
     Topology()
     {
@@ -264,7 +270,7 @@ private:
 
     //! Add an atom to the topology
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
-    
+
     //! Debugging stuff
     void dumpPairlist(FILE *fp, InteractionType itype) const;
 
@@ -306,20 +312,20 @@ private:
 
     //! \return the residue names
     const std::vector<std::string> residueNames() const { return residueNames_; }
-    
+
     /*! \brief Add residue information
      * \param[in] residueNumber The original number
      * \param[in] residueName   The new number
      */
-    void addResidue(int                residueNumber, 
+    void addResidue(int                residueNumber,
                     const std::string &residueName);
-    
+
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }
-    
+
     //! \return the mass of the compound
     double mass() const;
-    
+
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
@@ -354,9 +360,9 @@ private:
     void addEntry(InteractionType            itype,
                   const TopologyEntryVector &entry);
 
-    //! \return the number of atoms                    
+    //! \return the number of atoms
     size_t nAtoms() const { return atoms_.size(); }
-        
+
     /*! Generate the non-bonded pair list based on just the atoms
      * \param[in] pd     Force field needed to set identifiers.
      * \param[in] natoms The number of atoms
@@ -371,7 +377,7 @@ private:
      * have been added.
      */
     void addShellPairs();
-    
+
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
 
@@ -393,7 +399,7 @@ private:
 
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, TopologyEntryVector> &entries() const { return entries_; }
-    
+
     /*! \brief Print structure to a file
      * \param[in] fp The file pointer
      */

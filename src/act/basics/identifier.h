@@ -52,7 +52,9 @@ namespace alexandria
         //! Special case for linear angles
         Linear,
         //! Special case for vsite2
-        Vsite2
+        Vsite2,
+        //
+        Vsite3,
     };
 
 /*! \brief Convert string to CanSwap

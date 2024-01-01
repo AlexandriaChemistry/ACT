@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* 
+/*
  * Adapted for ACT by DvdS 2023-05-17
  */
 #include "actpre.h"
@@ -1062,7 +1062,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     std::set<InteractionType>  vsites = {
-        InteractionType::VSITE2, InteractionType::VSITE3FAD, InteractionType::VSITE3OUT
+        InteractionType::VSITE2,InteractionType::VSITE3, InteractionType::VSITE3FAD, InteractionType::VSITE3OUT
     };
     for (const auto &entry: top->entries())
     {
@@ -1088,10 +1088,10 @@ void VsiteHandler::constructPositions(const Topology         *top,
                     fprintf(debug, "vsite a = %g\n", params[vsite2A]);
                 }
                 break;
-                //case InteractionType::VSITE3:
-                //al = atomIndices[3];
-                //constr_vsite3(x[ai], x[aj], x[ak], x[al], 
-                //            params["a1"], params["b1"], &pbc_);
+          case InteractionType::VSITE3:
+               al = atomIndices[3];
+               constr_vsite3(x[ai], x[aj],  x[ak], x[al],
+                            params[vsite3A], params[vsite3B], &pbc_);
                 break;
                 //case F_VSITE3FD:
                 //aj = ia[3];
@@ -1101,11 +1101,11 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 //break;
             case InteractionType::VSITE3FAD:
                 al = atomIndices[3];
-                constr_vsite3FAD(x[ai], x[aj], x[ak], x[al], 
+                constr_vsite3FAD(x[ai], x[aj], x[ak], x[al],
                                  params[vsite3fadA], params[vsite3fadB], &pbc_);
                 break;
             case InteractionType::VSITE3OUT:
-                constr_vsite3OUT(x[ai], x[aj], x[ak], x[al], 
+                constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
                                  params[vsite3outA], params[vsite3outB],
                                  params[vsite3outC], &pbc_);
                 break;
@@ -1138,7 +1138,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
         }
     }
 }
-                 
+
 void VsiteHandler::distributeForces(const Topology               *top,
                                     const std::vector<gmx::RVec> &coords,
                                     std::vector<gmx::RVec>       *forces,
@@ -1164,9 +1164,9 @@ void VsiteHandler::distributeForces(const Topology               *top,
             case InteractionType::VSITE2:
                 spread_vsite2(ia, params[vsite2A], x, f, fshift, &pbc_, g);
                 break;
-                //case InterctionType::VSITE3:
-                //spread_vsite3(ia, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
-                //break;
+            case InteractionType::VSITE3:
+                spread_vsite3(ia, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                break;
                 //case InteractionType::VSITE3FD:
                 //b1 = ip[tp].vsite.b;
                 //spread_vsite3FD(ia, a1, b1, x, f, fshift, VirCorr, dxdf, pbc_null2, g);

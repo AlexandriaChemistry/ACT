@@ -7,7 +7,7 @@
  *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -47,15 +47,16 @@
 namespace alexandria
 {
 
-std::map<CanSwap, std::string> cs2string = 
+std::map<CanSwap, std::string> cs2string =
     {
         { CanSwap::No,       "false"    },
         { CanSwap::Yes,      "true"     },
         { CanSwap::Idih,     "idih"     },
         { CanSwap::Linear,   "linear"   },
-        { CanSwap::Vsite2,   "vsite2"   }
+        { CanSwap::Vsite2,   "vsite2"   },
+        { CanSwap::Vsite3,   "vsite3"   }
     };
-    
+
 CanSwap stringToCanSwap(const std::string &str)
 {
     for(auto &cs : cs2string)
@@ -359,7 +360,7 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
             ids_.push_back(tmp);
         }
     }
-    
+
     if (cr->rank() == root)
     {
         tmp.assign(canSwapToString(canSwap_));
@@ -409,7 +410,7 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
         cr->recv_str(src, &tmp);
         ids_.push_back(tmp);
     }
-    
+
     cr->recv_str(src, &tmp);
     canSwap_ = stringToCanSwap(tmp);
     int natoms = cr->recv_int(src);
