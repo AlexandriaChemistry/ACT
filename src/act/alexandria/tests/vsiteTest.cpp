@@ -99,7 +99,6 @@ TEST(Vsite2, HFCanSwapNo)
     EXPECT_FALSE(fs.parameterExists(hf));
 }
 
-
 TEST(Vsite3, hoh)
 {
     std::string forcefield("ACS-pg-v3s");
@@ -122,7 +121,6 @@ TEST(Vsite3, hoh)
         EXPECT_TRUE(param_hoh->internalValue() == param_hoh->internalValue());
     }
 }
-
 
 TEST(VSite3, hohCanSwapNo)
 {
