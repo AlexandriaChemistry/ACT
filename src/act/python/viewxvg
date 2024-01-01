@@ -98,8 +98,10 @@ def set_extent(dataset):
             ax.set_aspect('equal', adjustable='box')
         elif viewDebug:
             print("Option -sq overruled by min and max options")
-    plt.xlim(xxmin, xxmax)
-    plt.ylim(yymin, yymax)
+    deltax = (xxmax-xxmin)*0.05
+    plt.xlim(xxmin-deltax, xxmax+deltax)
+    deltay = (yymax-yymin)*0.05
+    plt.ylim(yymin-deltay, yymax+deltay)
     return xxmin, xxmax, yymin, yymax
 
 def plot_once(ax, args):
@@ -155,8 +157,8 @@ def plot_once(ax, args):
     xxmin, xxmax, yymin, yymax = set_extent(datasets)
     if viewDebug:
         print("Extent of graphs xmin %g ymin %g xmax %g ymax %g" % ( xxmin, yymin, xxmax, yymax ))
-    plt.xlim(xxmin, xxmax)
-    plt.ylim(yymin, yymax)
+#    plt.xlim(xxmin, xxmax)
+#    plt.ylim(yymin, yymax)
     if args.title:
         plt.title(args.title, fontsize=args.titlefontsize)
     elif "title" in legends:

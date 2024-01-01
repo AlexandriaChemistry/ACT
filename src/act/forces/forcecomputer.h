@@ -46,7 +46,7 @@ class ForceComputer
 {
 private:
     //! Convergence criterium for minimizing shells: mean square force
-    double         msForce_;
+    double         msForceToler_;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_;
     //! Electric field to be optionally applied
@@ -110,12 +110,12 @@ private:
               InteractionType itype) const;
     
     //! \return the force tolerance
-    double forceTolerance() const { return msForce_; }
+    double forceTolerance() const { return msForceToler_; }
 
     /*! \brief Set the shell minimization RMS tolerance
      * \param[in] toler The new tolerance
      */
-    void setForceTolerance(double toler) { msForce_ = toler; }
+    void setForceTolerance(double toler) { msForceToler_ = toler; }
     
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to

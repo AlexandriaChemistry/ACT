@@ -58,8 +58,8 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
 ForceComputer::ForceComputer(double   msForce,
                              int      maxiter)
 { 
-    msForce_ = msForce;
-    maxiter_ = maxiter;
+    msForceToler_ = msForce;
+    maxiter_      = maxiter;
     clear_mat(box_);
     real dt = 0.001;
     vsiteHandler_ = new VsiteHandler(box_, dt);
@@ -78,62 +78,62 @@ double ForceComputer::compute(const ForceField                  *pd,
     computeOnce(pd, top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
-    if (!pd->polarizable() || !top->hasEntry(itype))
+    // mean square shell force
+    double msForce = 0;
+    if (pd->polarizable() && top->hasEntry(itype))
     {
-        return 0;
-    }
-    // Is this particle a shell?
-    std::vector<bool>   isShell;
-    // One over force constant for this particle
-    std::vector<double> fcShell_1;
-    auto &ffpl  = pd->findForcesConst(itype);
-    int  nshell = 0;
-    for(auto &aa : top->atoms())
-    {
-        bool bIS = aa.pType() == eptShell;
-        isShell.push_back(bIS);
-        double fc_1 = 0;
-        if (bIS)
+        // Is this particle a shell?
+        std::vector<bool>   isShell;
+        // One over force constant for this particle
+        std::vector<double> fcShell_1;
+        auto &ffpl  = pd->findForcesConst(itype);
+        int  nshell = 0;
+        for(auto &aa : top->atoms())
         {
-            Identifier atID(aa.ffType());
-            auto fc = ffpl.findParameterTypeConst(atID, "kshell").internalValue();
-            if (fc != 0)
+            bool bIS = aa.pType() == eptShell;
+            isShell.push_back(bIS);
+            double fc_1 = 0;
+            if (bIS)
             {
-                fc_1 = 1.0/fc;
+                Identifier atID(aa.ffType());
+                auto fc = ffpl.findParameterTypeConst(atID, "kshell").internalValue();
+                if (fc != 0)
+                {
+                    fc_1 = 1.0/fc;
+                }
+                nshell += 1;
             }
-            nshell += 1;
+            fcShell_1.push_back(fc_1);
         }
-        fcShell_1.push_back(fc_1);
-    }
-    double msForceMax = msForce_*nshell;
-    double msForce    = dotProdRvec(isShell, *forces);
-    auto &pols        = top->entry(itype);
-    int    iter       = 1;
-    // Golden ratio, may be used for overrelaxation
-    // double gold     = 0.5*(1+std::sqrt(5.0));
-    while (msForce > msForceMax && iter < maxiter_)
-    {
-        // Loop over polarizabilities
-        for(const auto &p : pols)
+        msForce    = dotProdRvec(isShell, *forces)/nshell;
+        auto &pols = top->entry(itype);
+        int   iter = 1;
+        // Golden ratio, may be used for overrelaxation
+        // double gold     = 0.5*(1+std::sqrt(5.0));
+        while (msForce > msForceToler_ && iter < maxiter_)
         {
-            // Displace the shells according to the force
-            // Since the potential is harmonic we use Hooke's law
-            // F = k dx -> dx = F / k
-            // TODO Optimize this protocol using overrelaxation
-            int shell = p->atomIndex(1);
-            for(int m = 0; m < DIM; m++)
+            // Loop over polarizabilities
+            for(const auto &p : pols)
             {
-                (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                // Displace the shells according to the force
+                // Since the potential is harmonic we use Hooke's law
+                // F = k dx -> dx = F / k
+                // TODO Optimize this protocol using overrelaxation
+                int shell = p->atomIndex(1);
+                for(int m = 0; m < DIM; m++)
+                {
+                    (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                }
             }
+            // Do next calculation
+            computeOnce(pd, top, coordinates, forces, energies, field);
+            msForce  = dotProdRvec(isShell, *forces)/nshell;
+            iter    += 1;
         }
-        // Do next calculation
-        computeOnce(pd, top, coordinates, forces, energies, field);
-        msForce  = dotProdRvec(isShell, *forces);
-        iter    += 1;
     }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
-    return msForce/nshell;
+    return msForce;
 }
 
 void ForceComputer::computeOnce(const ForceField                  *pd,

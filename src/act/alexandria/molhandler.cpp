@@ -607,10 +607,9 @@ static double msForce(const std::vector<int>       &theAtoms,
                       const std::vector<gmx::RVec> &forces)
 {
     double msAtomForce  = 0;
-    for(size_t kk = 0; kk < theAtoms.size(); kk++)
+    for(auto kk : theAtoms)
     {
-        int atomI = theAtoms[kk];
-        msAtomForce += iprod(forces[atomI], forces[atomI]);
+        msAtomForce += iprod(forces[kk], forces[kk]);
     }
     if (theAtoms.size() > 0)
     {
@@ -930,14 +929,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         // Update coordinates and check energy
         do
         {
-            // Account for frozen atoms
-            for(auto &ia : freeze)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    deltaX[current][DIM*ia+m] = 0;
-                }
-            }
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
             
             // Do an energy and force calculation with the new coordinates
