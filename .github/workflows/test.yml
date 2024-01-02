@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install openmi #package ssh dependency
+          sudo apt-get -y install openmpi eigen3 #package ssh dependency
           while read -r cmd
           do
             eval sudo $cmd
