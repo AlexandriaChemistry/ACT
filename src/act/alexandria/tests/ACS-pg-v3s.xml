@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="de363eb9f73f48a0be5b5c92c732d99f" timestamp="2023-12-04 11:45:56"/>
+  <version checksum="c8cb2082c10d8e530be96ea4bc13fe03" timestamp="2024-01-02 17:01:29"/>
   <particletypes>
     <particletype identifier="Ar" type="Atom" description="ar">
       <option key="acmtype" value="ar_z"/>
@@ -439,7 +439,7 @@
       <option key="row" value="1"/>
       <option key="vdwtype" value="h"/>
       <option key="zetatype" value="h_z"/>
-      <parameter type="charge" unit="e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="0.25" uncertainty="0" minimum="0" maximum="0.5" ntrain="0" mutability="ACM" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="h_s" type="Shell" description="hydrogen shell">
@@ -634,7 +634,7 @@
       <option key="row" value="2"/>
       <option key="vdwtype" value="o3"/>
       <option key="zetatype" value="o3_z"/>
-      <parameter type="charge" unit="e" value="0.5" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="o3_s" type="Shell" description="sp3 oxygen shell">
@@ -643,7 +643,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="o3_s"/>
       <option key="zetatype" value="o3_s_z"/>
-      <parameter type="charge" unit="e" value="-2.1" uncertainty="0" minimum="-3" maximum="-1.2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-1.4" uncertainty="0" minimum="-2" maximum="-0.8" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="p1" type="Atom" description="sp phosphor">
@@ -774,13 +774,14 @@
     </particletype>
     <particletype identifier="v2" type="VSite" description="bond virtual site">
       <option key="atomnumber" value="0"/>
+      <option key="bondtype" value="v2"/>
       <option key="element" value="VS"/>
       <option key="poltype" value="v2_s"/>
       <option key="row" value="0"/>
       <option key="vdwtype" value="v2"/>
       <option key="zetatype" value="v2_z"/>
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
-      <parameter type="mass" unit="Da" value="4.68197e-317" uncertainty="0" minimum="4.68197e-317" maximum="4.68197e-317" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="v2_s" type="Shell" description="bond virtual site shell">
       <option key="atomnumber" value="0"/>
@@ -799,7 +800,7 @@
       <option key="vdwtype" value="v3"/>
       <option key="zetatype" value="v3_z"/>
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
-      <parameter type="mass" unit="Da" value="4.68197e-317" uncertainty="0" minimum="4.68197e-317" maximum="4.68197e-317" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="v3_s" type="Shell" description="bond virtual site shell">
       <option key="atomnumber" value="0"/>
@@ -807,6 +808,25 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="v3_s"/>
       <option key="zetatype" value="v3_s_z"/>
+      <parameter type="charge" unit="e" value="-0.4" uncertainty="0" minimum="-0.6" maximum="-0.2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="v3out" type="VSite" description="bond virtual site">
+      <option key="atomnumber" value="0"/>
+      <option key="element" value="VS"/>
+      <option key="poltype" value="v3out_s"/>
+      <option key="row" value="0"/>
+      <option key="vdwtype" value="v3out"/>
+      <option key="zetatype" value="v3OUT_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="v3out_s" type="Shell" description="bond virtual site shell">
+      <option key="atomnumber" value="0"/>
+      <option key="element" value="X"/>
+      <option key="row" value="0"/>
+      <option key="vdwtype" value="v3out_s"/>
+      <option key="zetatype" value="v3OUT_s_z"/>
       <parameter type="charge" unit="e" value="-0.4" uncertainty="0" minimum="-0.6" maximum="-0.2" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -826,8 +846,11 @@
   <interaction type="PROPER_DIHEDRALS" function="FOURDIHS" canswap="true"/>
   <interaction type="IMPROPER_DIHEDRALS" function="IDIHS" canswap="idih"/>
   <interaction type="VANDERWAALS" function="GBHAM" canswap="true">
-    <option key="combination_rule" value="Qi_2"/>
     <option key="nexcl" value="1"/>
+    <combinationrule parameter="delta" rule="Arithmetic"/>
+    <combinationrule parameter="epsilon" rule="Geometric"/>
+    <combinationrule parameter="gamma" rule="Arithmetic"/>
+    <combinationrule parameter="rmin" rule="Geometric"/>
     <parameterlist identifier="Ar">
       <parameter type="delta" unit="" value="13" uncertainty="0" minimum="1" maximum="25" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.515" uncertainty="0" minimum="0.03" maximum="3" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -1302,6 +1325,18 @@
       <parameter type="gamma" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="rmin" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
+    <parameterlist identifier="v3out">
+      <parameter type="delta" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="gamma" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="rmin" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="v3out_s">
+      <parameter type="delta" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="gamma" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="rmin" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </parameterlist>
     <parameterlist identifier="xe_s">
       <parameter type="delta" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="epsilon" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -1312,7 +1347,7 @@
   <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
     <option key="epsilonr" value="1.000"/>
-    <option key="nexcl" value="0"/>
+    <option key="nexcl" value="1"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
@@ -1541,6 +1576,12 @@
     <parameterlist identifier="v2_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
+    <parameterlist identifier="v3OUT_s_z">
+      <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="v3OUT_z">
+      <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
     <parameterlist identifier="v3_s_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
@@ -1613,7 +1654,7 @@
       <parameter type="alpha" unit="Angstrom3" value="1.35" uncertainty="0" minimum="0.2" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_s">
-      <parameter type="alpha" unit="Angstrom3" value="0.25" uncertainty="0" minimum="0.1" maximum="0.4" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="alpha" unit="Angstrom3" value="0.55" uncertainty="0" minimum="0.1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="he_s">
       <parameter type="alpha" unit="Angstrom3" value="0.208" uncertainty="0" minimum="0.208" maximum="0.208" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -1646,7 +1687,7 @@
       <parameter type="alpha" unit="Angstrom3" value="1.45" uncertainty="0" minimum="0.4" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_s">
-      <parameter type="alpha" unit="Angstrom3" value="1.65" uncertainty="0" minimum="0.8" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="alpha" unit="Angstrom3" value="1.45" uncertainty="0" minimum="0.4" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="p1_s">
       <parameter type="alpha" unit="Angstrom3" value="2" uncertainty="0" minimum="1" maximum="3" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -1672,28 +1713,38 @@
     <parameterlist identifier="v3_s">
       <parameter type="alpha" unit="Angstrom3" value="0.3" uncertainty="0" minimum="0.1" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
+    <parameterlist identifier="v3out_s">
+      <parameter type="alpha" unit="Angstrom3" value="0.3" uncertainty="0" minimum="0.1" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
     <parameterlist identifier="xe_s">
       <parameter type="alpha" unit="Angstrom3" value="4.005" uncertainty="0" minimum="4.005" maximum="4.005" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
   <interaction type="VSITE2" function="vsite2" canswap="vsite2">
-    <parameterlist identifier="br~h!v2">
-      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="br_b~h_b!v2">
+      <parameter type="vs2a" unit="" value="-0.7" uncertainty="0" minimum="-1" maximum="-0.4" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="cl~h!v2">
-      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="cl_b~h_b!v2">
+      <parameter type="vs2a" unit="" value="-0.675" uncertainty="0" minimum="-1" maximum="-0.35" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="f~h!v2">
-      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="f_b~h_b!v2">
+      <parameter type="vs2a" unit="" value="-0.65" uncertainty="0" minimum="-1" maximum="-0.3" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
-    <parameterlist identifier="h~i!v2">
-      <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    <parameterlist identifier="i_b~h_b!v2">
+      <parameter type="vs2a" unit="" value="-0.725" uncertainty="0" minimum="-1" maximum="-0.45" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="VSITE3" function="vsite3" canswap="vsite3">
     <parameterlist identifier="h~o3~h!v3">
-      <parameter type="vs3a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="vs3b" unit="" value="0.5" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3a" unit="" value="-0.55" uncertainty="0" minimum="-1.05" maximum="-0.05" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3b" unit="" value="-0.55" uncertainty="0" minimum="-1.05" maximum="-0.05" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+  </interaction>
+  <interaction type="VSITE3OUT" function="vsite3out" canswap="false">
+    <parameterlist identifier="h~o3~h!v3out">
+      <parameter type="vs3out_a" unit="" value="-0.585" uncertainty="0" minimum="-1" maximum="-0.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3out_b" unit="" value="-0.585" uncertainty="0" minimum="-1" maximum="-0.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3out_c" unit="" value="-6.4" uncertainty="0" minimum="-12.8" maximum="0" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
@@ -1834,6 +1885,10 @@
       <parameter type="eta" unit="eV" value="14" uncertainty="0" minimum="4" maximum="24" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="v2_z">
+      <parameter type="chi" unit="eV" value="6.5" uncertainty="0" minimum="4" maximum="9" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV" value="14" uncertainty="0" minimum="4" maximum="24" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="v3OUT_z">
       <parameter type="chi" unit="eV" value="6.5" uncertainty="0" minimum="4" maximum="9" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="eta" unit="eV" value="14" uncertainty="0" minimum="4" maximum="24" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
