@@ -99,6 +99,31 @@ TEST(Vsite2, HFCanSwapNo)
     EXPECT_FALSE(fs.parameterExists(hf));
 }
 
+
+TEST(Vsite3, hoh)
+{
+    std::string forcefield("ACS-pg-v3s");
+    // Get forcefield
+    auto pd  = getForceField(forcefield);
+
+    auto hoh = Identifier({ "h", "o3", "h", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
+    // Compare identifiers
+    EXPECT_TRUE(hoh == hoh);
+    auto itype = InteractionType::VSITE3;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(hoh));
+    auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.55);
+    if (fs.parameterExists(hoh))
+    {
+        auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
+        EXPECT_TRUE(param_hoh->internalValue() == param_hoh->internalValue());
+    }
+}
+
+
 TEST(VSite3, hohCanSwapNo)
 {
     std::string forcefield("ACS-pg-v3s");
@@ -116,7 +141,7 @@ TEST(VSite3, hohCanSwapNo)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
-    EXPECT_TRUE(param_hoh->internalValue() == 1.05);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.55);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 
@@ -124,7 +149,7 @@ TEST(VSite3, hohCanSwapNo)
 
 TEST(VSite3OUT, hohCanSwapNo)
 {
-    std::string forcefield("gss-v3");
+    std::string forcefield("ACS-pg-v3s");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
@@ -138,7 +163,7 @@ TEST(VSite3OUT, hohCanSwapNo)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3out_name[vsite3outA]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.34);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.585);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 
