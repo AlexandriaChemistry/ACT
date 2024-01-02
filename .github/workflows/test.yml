@@ -24,5 +24,18 @@ jobs:
       - name: Install openbabel
         run: wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.9.tar.gz; tar xzf openbabel-alexandria-0.9.tar.gz; cd openbabel-openbabel-alexandria-0.9; mkdir build; cd build; cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=mpicxx.openmpi -DCMAKE_C_COMPILER=mpicc.openmpi -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools ..; make -j 2 install; cd ../..
       - name: Install ACT
-        run: cd ${{ github.workspace }}; mkdir build; cd build; cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..; make -j 2 tests; make test
+        run: cd ${{ github.workspace }}; mkdir build; cd build; cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..; make -j 2 tests
+        name: Test the ACT
+        run: bin/basics-test
+        run: bin/act-forces-test
+        run: bin/alexandria-test
+        run: bin/act-utility-test
+        run: bin/coulombIntegrals-test
+        run: bin/fileio-test
+        run: bin/forcefield-test
+        run: bin/molprop-test
+        run: bin/qgen-test
+        run: bin/sobol-test
+        run: bin/statistics-test
+        run: bin/wang-buckingham-test
       - run: echo "🍏 This job's status is ${{ job.status }}."
