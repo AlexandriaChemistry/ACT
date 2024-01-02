@@ -1,5 +1,5 @@
 name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+run-name: Employing GitHub Actions for compiling and testing ACT
 on: [push]
 jobs:
   Explore-GitHub-Actions:
@@ -22,5 +22,5 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libopenmpi3 openmpi-bin libeigen3-dev swig libxml2 sqlite3 libfftw3-dev #package ssh dependency
       - name: cmake
-        run: cd ${{ github.workspace }}; mkdir build; cd build; cmake -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
+        run: cd ${{ github.workspace }}; mkdir build; cd build; cmake -DCMAKE_C_COMPILER=/usr/bin/mpicc -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
       - run: echo "🍏 This job's status is ${{ job.status }}."
