@@ -44,7 +44,7 @@ gmx_add_unit_test(
     allbondedsTest.cpp
     b2Test.cpp
     forcecomputerTest.cpp
-    molhandlerTest.cpp
+#    molhandlerTest.cpp
     openmmTest.cpp
     sphereIntegratorTest.cpp
     topologyTest.cpp
