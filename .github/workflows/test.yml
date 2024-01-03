@@ -22,11 +22,23 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libopenmpi3 openmpi-bin libeigen3-dev swig libxml2 sqlite3 libfftw3-dev #package ssh dependency
       - name: Install openbabel
-        run: wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.9.tar.gz; tar xzf openbabel-alexandria-0.9.tar.gz; cd openbabel-openbabel-alexandria-0.9; mkdir build; cd build; cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=mpicxx.openmpi -DCMAKE_C_COMPILER=mpicc.openmpi -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools ..; make -j 2 install; cd ../..
+        run: 
+          wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.9.tar.gz
+          tar xzf openbabel-alexandria-0.9.tar.gz
+          cd openbabel-openbabel-alexandria-0.9
+          mkdir build
+          cd build
+          cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=mpicxx.openmpi -DCMAKE_C_COMPILER=mpicc.openmpi -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools ..
+          make -j 4 install
       - name: Install ACT
-        run: cd ${{ github.workspace }}; mkdir build; cd build; cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..; make -j 2 tests
+        run: |
+          cd ${{ github.workspace }} 
+          mkdir build; cd build
+          cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
+          make -j 4 install tests
       - name: Test the ACT
         run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
           cd ${{ github.workspace }}/build
           ./bin/basics-test
           ./bin/act-forces-test
