@@ -490,6 +490,42 @@ static void solveLapack(const ACTMol                  *mol,
     }
 }
 
+static void resortFreqIntens(std::vector<double> *frequencies, 
+                             std::vector<double> *intensities,
+                             double               freq_toler)
+{
+    std::vector<double> freq  = *frequencies;
+    std::vector<double> inten = *intensities;
+    std::vector<int> renumber(freq.size(), -1);
+    size_t i       = 0;
+    bool   swapped = false;
+    while (i < freq.size())
+    {
+        if (i < freq.size()-1 &&
+            abs(freq[i] - freq[i+1]) < freq_toler &&
+            inten[i+1] > inten[i])
+        {
+            renumber[i]   = i+1;
+            renumber[i+1] = i;
+            i += 2;
+            swapped = true;
+        }
+        else
+        {
+            renumber[i]   = i;
+            i += 1;
+        }
+    }
+    if (swapped)
+    {
+        for (size_t i = 0; i < renumber.size(); i++)
+        {
+            (*frequencies)[i] = freq[renumber[i]];
+            (*intensities)[i] = inten[renumber[i]];
+        }
+    }
+}
+
 void MolHandler::nma(const ForceField         *pd,
                      const ACTMol             *mol,
                      const ForceComputer      *forceComp,
@@ -569,6 +605,11 @@ void MolHandler::nma(const ForceField         *pd,
         solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
                    frequencies, intensities, output, debugNMA);
     }
+    // Check whether there are very similar frequencies, then change the sorting 
+    // according to intensities.
+    // TODO: make ftoler a parameter.
+    double ftoler = 0.001; // Frequency unit is internal unit.
+    resortFreqIntens(frequencies, intensities, ftoler);
 
     if (output)
     {

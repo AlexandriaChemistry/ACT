@@ -315,9 +315,6 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
     test("uracil.sdf", "ACS-pg", false);
 }
 
-// We cannot run these tests in debug mode because the LAPACK library
-// performs a 1/0 calculation to test the exception handling.
-// #if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
     test("carbon-dioxide.sdf", "ACS-g", true);
@@ -371,7 +368,6 @@ TEST_F (MolHandlerTest, UracilPol)
 {
     test("uracil.sdf", "ACS-pg", true);
 }
-// #endif
 
 } // namespace
 
