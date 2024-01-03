@@ -391,7 +391,7 @@ ForceFieldParameterMap evalCombinationRule(int                                  
             {
                 allrules += " " + c.first;
             }
-            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
         std::string cdist;
         if (F_GBHAM == ftype)
