@@ -608,7 +608,9 @@ void MolHandler::nma(const ForceField         *pd,
     // Check whether there are very similar frequencies, then change the sorting 
     // according to intensities.
     // TODO: make ftoler a parameter.
-    double ftoler = 0.001; // Frequency unit is internal unit.
+    auto mpo = MolPropObservable::FREQUENCY;
+    const char *unit = mpo_unit2(mpo);
+    double ftoler = convertToGromacs(0.001, unit);
     resortFreqIntens(frequencies, intensities, ftoler);
 
     if (output)
