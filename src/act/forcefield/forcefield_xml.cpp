@@ -580,7 +580,7 @@ void readForceField(const std::string &fileName,
     {
         fprintf(debug, "Opening library file %s\n", fn2.c_str());
     }
-    xmlDoValidityCheckingDefaultValue = 0;
+    //xmlDoValidityCheckingDefaultValue = 0;
     doc = xmlParseFile(fn2.c_str());
     if (doc == nullptr)
     {

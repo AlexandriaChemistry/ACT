@@ -845,7 +845,7 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     std::string   mpfile;
 
     fillMaps();
-    xmlDoValidityCheckingDefaultValue = 0;
+    //xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
     if (debug)
     {

@@ -62,6 +62,8 @@ set(IGNORED_CLANG_ALL_WARNINGS
 
     #Following ones are undecided/TODO
     "-Wno-disabled-macro-expansion"
+    "-Wno-deprecated-declarations"
+    "-Wno-deprecated-copy-with-dtor"
     "-Wno-cast-align"
     "-Wno-reserved-id-macro"
     "-Wno-global-constructors"

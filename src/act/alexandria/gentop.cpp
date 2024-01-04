@@ -76,7 +76,7 @@ int gentop(int argc, char *argv[])
         "the hybridization from the atom name and the number of bonds.[PAR]",
         "Recommend usage is to supply a molprop database",
         "with charges precalculate and then use the [TT]-db molecule[tt]",
-        "option to extract compounds from the molprop database.[PAR]"
+        "option to extract compounds from the molprop database.[PAR]",
         "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
         "instead of a [TT]top[tt] file.",
         "A force field file should be specified using the [TT]-ff[tt] flag.",

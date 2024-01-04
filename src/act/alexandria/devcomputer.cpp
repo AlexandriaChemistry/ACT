@@ -82,7 +82,6 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
     if (targets->end() != mytarget)
     {
         double bound = 0;
-        size_t n     = 0;
         for (auto &optIndex : *optIndex_)
         {
             InteractionType iType = optIndex.iType();
@@ -106,8 +105,6 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
                             optIndex.name().c_str(), p.value(), p.minimum(), p.maximum());
                 }
             }
-
-            n++;
         }
         mytarget->second.increase(1, bound);
     }

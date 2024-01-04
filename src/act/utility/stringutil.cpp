@@ -98,26 +98,19 @@ std::vector<std::string> split(const std::string &s,
 
 std::string gmx_ftoa(double f)
 {
-    char buf[32];
-
     if (fabs(f) < 100)
     {
-        sprintf(buf, "%.3f", f);
+        return gmx::formatString("%.3f", f);
     }
     else
     {
-        sprintf(buf, "%g", f);
+        return gmx::formatString("%g", f);
     }
-    return std::string(buf);
 }
 
 std::string gmx_itoa(int f)
 {
-    char a[32];
-
-    sprintf(a, "%d", f);
-
-    return std::string(a);
+    return gmx::formatString("%d", f);
 }
 
 double my_atof(const std::string &str, const std::string &description)
