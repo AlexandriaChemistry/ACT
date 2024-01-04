@@ -40,6 +40,7 @@
 #include "molhandler.h"
 
 #include <numeric>
+#include <random>
 
 #include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/velocityhandler.h"
@@ -816,22 +817,37 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     double gamma        = gamma_max;
     double msShellForce = 0;
     int current = 0;
+    auto   minAlg       = simConfig.minAlg();
 #define next (1-current)
-    if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
+    if (minAlg == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
 
-        STLBFGS::Optimizer opt{func};
+        STLBFGS::Optimizer                      opt{func};
         // One-dimensional array
-        std::vector<double> sx(theAtoms.size()*DIM);
-        for(size_t i = 0; i < theAtoms.size(); i++)
+        std::vector<double>                     sx(theAtoms.size()*DIM);
+        std::random_device                      rd;
+        std::mt19937                            gen(rd());
+        std::uniform_real_distribution<double>  dis(std::uniform_real_distribution<>(-1.0, 1.0));
+        double                                  displacement = 0.002; // nanometer
+        int maxRetry = 3;
+        int retry    = 0;
+        while (retry < maxRetry && !converged)
         {
-            for(int j = 0; j < DIM; j++)
+            if (logFile && retry > 0)
             {
-                sx[DIM*i+j] = (*coords)[theAtoms[i]][j];
+                fprintf(logFile, "Will retry minimization with slightly modified input coordinates.\n");
             }
+            for(size_t i = 0; i < theAtoms.size(); i++)
+            {
+                for(int j = 0; j < DIM; j++)
+                {
+                    sx[DIM*i+j] = (*coords)[theAtoms[i]][j] + retry * dis(gen) * displacement;
+                }
+            }
+            converged = opt.run(sx);
+            retry += 1;
         }
-        converged = opt.run(sx);
         if (converged)
         {
             newCoords[current]   = *lbfgs->coordinates();
@@ -845,7 +861,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     do
     {
         auto eMin = eMinimizeStatus::OK;
-        switch (simConfig.minAlg())
+        switch (minAlg)
         {
         case eMinimizeAlgorithm::Newton:
             {
