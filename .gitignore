@@ -44,3 +44,7 @@ examples/TUNE_EEM/run_alcohol_v2.py
 
 # VS Code
 .vscode
+git.err
+git.out
+main.diff
+my.diff

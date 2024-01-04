@@ -817,9 +817,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     double gamma        = gamma_max;
     double msShellForce = 0;
     int current = 0;
-    auto   minAlg       = simConfig.minAlg();
 #define next (1-current)
-    if (minAlg == eMinimizeAlgorithm::LBFGS)
+    if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
 
@@ -861,7 +860,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     do
     {
         auto eMin = eMinimizeStatus::OK;
-        switch (minAlg)
+        switch (simConfig.minAlg())
         {
         case eMinimizeAlgorithm::Newton:
             {
