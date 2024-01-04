@@ -198,7 +198,7 @@ static void add_vsites(const char *vsfile,
                                          Mutability::Bounded, false, false);
             ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                          Mutability::Bounded, false, false);
-            
+
             vsite3.addParameter(vs, vsite3_name[vsite3A], vs3param_a); //"vs3a"
             vsite3.addParameter(vs, vsite3_name[vsite3B], vs3param_b);//"vs3b"
         }
