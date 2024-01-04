@@ -41,10 +41,3 @@ examples/TUNE_EEM/viewxvg.py
 examples/TUNE_EEM/#*
 examples/TUNE_EEM/*.dat
 examples/TUNE_EEM/run_alcohol_v2.py
-
-# VS Code
-.vscode
-git.err
-git.out
-main.diff
-my.diff
