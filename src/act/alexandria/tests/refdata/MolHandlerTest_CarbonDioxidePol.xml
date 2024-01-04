@@ -51,8 +51,8 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">4</Int>
-    <Real>0.35279414931817421</Real>
     <Real>1.1283861100743511</Real>
+    <Real>0.35279414931817421</Real>
     <Real>0.097568537537763345</Real>
     <Real>0.50150493791377615</Real>
   </Sequence>

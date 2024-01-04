@@ -39,8 +39,6 @@
 #include <vector>
 #include <string>
 
-#include "gromacs/math/vectypes.h"
-
 class MatrixWrapper
 {
     public:
@@ -161,7 +159,5 @@ class MatrixWrapper
         // The number of rows
         int      nrow_;
 };
-
-void kabsch_rotation(tensor p, tensor q, tensor rotated_p);
 
 #endif
