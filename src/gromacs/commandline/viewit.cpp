@@ -42,6 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
@@ -75,7 +77,6 @@ static int can_view(int ftp)
 
 void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
 {
-    char        buf[STRLEN], env[STRLEN];
     const char *cmd;
     int         ftp, n;
 
@@ -88,12 +89,13 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
         else
         {
             ftp = fn2ftp(fn);
-            sprintf(env, "GMX_VIEW_%s", ftp2ext(ftp));
-            upstring(env);
+            auto env = gmx::formatString("GMX_VIEW_%s", ftp2ext(ftp));
+            // Convert to upper case
+            std::transform(env.begin(), env.end(), env.begin(), ::toupper);
             switch (ftp)
             {
                 case efXVG:
-                    if (!(cmd = getenv(env)) )
+                    if (!(cmd = getenv(env.c_str())) )
                     {
                         if (getenv("GMX_USE_XMGR") )
                         {
@@ -108,7 +110,7 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
                 default:
                     if ( (n = can_view(ftp)) )
                     {
-                        if (!(cmd = getenv(env)) )
+                        if (!(cmd = getenv(env.c_str())) )
                         {
                             cmd = view_program[n];
                         }
@@ -121,11 +123,11 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
             }
             if (strlen(cmd) )
             {
-                sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
-                fprintf(stderr, "Executing '%s'\n", buf);
-                if (0 != system(buf) )
+                auto buf = gmx::formatString("%s %s %s &", cmd, opts ? opts : "", fn);
+                fprintf(stderr, "Executing '%s'\n", buf.c_str());
+                if (0 != system(buf.c_str()) )
                 {
-                    gmx_fatal(FARGS, "Failed executing command: %s", buf);
+                    gmx_fatal(FARGS, "Failed executing command: %s", buf.c_str());
                 }
             }
         }

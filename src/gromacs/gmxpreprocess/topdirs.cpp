@@ -309,7 +309,7 @@ directive str2dir (char *dstr)
     /* Hack to be able to read old topologies */
     if (gmx_strncasecmp_min(dstr, "dummies", 7) == 0)
     {
-        sprintf(buf, "virtual_sites%s", dstr+7);
+        snprintf(buf, STRLEN-1, "virtual_sites%s", dstr+7);
         ptr = buf;
     }
     else

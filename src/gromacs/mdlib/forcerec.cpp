@@ -1273,7 +1273,6 @@ static void make_nbf_tables(FILE *fp,
                             const char *tabfn, char *eg1, char *eg2,
                             t_nblists *nbl)
 {
-    char buf[STRLEN];
     int  i, j;
 
     if (tabfn == nullptr)
@@ -1285,14 +1284,15 @@ static void make_nbf_tables(FILE *fp,
         return;
     }
 
-    sprintf(buf, "%s", tabfn);
+    std::string buf(tabfn);
     if (eg1 && eg2)
     {
-        /* Append the two energy group names */
-        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
-                eg1, eg2, ftp2ext(efXVG));
+        /* Append the two energy group names, before xvg extension */
+        buf = buf.substr(0, buf.size()-4);
+        buf += gmx::formatString("_%s_%s.%s",
+                                 eg1, eg2, ftp2ext(efXVG));
     }
-    nbl->table_elec_vdw = make_tables(fp, ic, buf, rtab, 0);
+    nbl->table_elec_vdw = make_tables(fp, ic, buf.c_str(), rtab, 0);
     /* Copy the contents of the table to separate coulomb and LJ tables too,
      * to improve cache performance.
      */

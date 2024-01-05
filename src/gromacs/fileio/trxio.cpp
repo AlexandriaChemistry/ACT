@@ -273,7 +273,6 @@ void set_trxframe_ePBC(t_trxframe *fr, int ePBC)
 int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
                            const int *ind, gmx_conect gc)
 {
-    char  title[STRLEN];
     rvec *xout = nullptr, *vout = nullptr, *fout = nullptr;
     int   i, ftp = -1;
 
@@ -330,7 +329,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
         default:
             break;
     }
-
+    auto title = gmx::formatString("frame t= %.3f", fr->time);
     switch (ftp)
     {
         case efTRR:
@@ -346,21 +345,19 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
                 gmx_fatal(FARGS, "Can not write a %s file without atom names",
                           ftp2ext(ftp));
             }
-            sprintf(title, "frame t= %.3f", fr->time);
             if (ftp == efGRO)
             {
-                write_hconf_indexed_p(gmx_fio_getfp(status->fio), title, fr->atoms, nind, ind,
+                write_hconf_indexed_p(gmx_fio_getfp(status->fio), title.c_str(), fr->atoms, nind, ind,
                                       fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
-                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms,
+                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title.c_str(), fr->atoms,
                                       fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE, FALSE);
             }
             break;
         case efG96:
-            sprintf(title, "frame t= %.3f", fr->time);
-            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, nind, ind);
+            write_g96_conf(gmx_fio_getfp(status->fio), title.c_str(), fr, nind, ind);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe_indexed can not write %s",
@@ -389,8 +386,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
 
 int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 {
-    char title[STRLEN];
-
     switch (gmx_fio_getftp(status->fio))
     {
         case efTRR:
@@ -403,7 +398,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             }
             break;
     }
-
+    auto title = gmx::formatString("frame t= %.3f", fr->time);
     switch (gmx_fio_getftp(status->fio))
     {
         case efTRR:
@@ -419,21 +414,20 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
                 gmx_fatal(FARGS, "Can not write a %s file without atom names",
                           ftp2ext(gmx_fio_getftp(status->fio)));
             }
-            sprintf(title, "frame t= %.3f", fr->time);
             if (gmx_fio_getftp(status->fio) == efGRO)
             {
-                write_hconf_p(gmx_fio_getfp(status->fio), title, fr->atoms,
+                write_hconf_p(gmx_fio_getfp(status->fio), title.c_str(), fr->atoms,
                               fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
-                write_pdbfile(gmx_fio_getfp(status->fio), title,
+                write_pdbfile(gmx_fio_getfp(status->fio), title.c_str(),
                               fr->atoms, fr->x, fr->bPBC ? fr->ePBC : -1, fr->box,
                               ' ', fr->step, gc, TRUE);
             }
             break;
         case efG96:
-            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr);
+            write_g96_conf(gmx_fio_getfp(status->fio), title.c_str(), fr, -1, nullptr);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s",

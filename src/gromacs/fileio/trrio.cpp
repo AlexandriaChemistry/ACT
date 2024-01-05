@@ -96,7 +96,6 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
     const int       magicValue = 1993;
     int             magic      = magicValue;
     static gmx_bool bFirst     = TRUE;
-    char            buf[256];
 
     *bOK = TRUE;
 
@@ -116,6 +115,7 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
 
     if (bRead)
     {
+        char buf[STRLEN];
         *bOK = *bOK && gmx_fio_do_string(fio, buf);
         if (bFirst)
         {
@@ -124,7 +124,8 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
     }
     else
     {
-        sprintf(buf, "GMX_trn_file");
+        char buf[STRLEN];
+        snprintf(buf, STRLEN-1, "GMX_trn_file");
         *bOK = *bOK && gmx_fio_do_string(fio, buf);
     }
     *bOK = *bOK && gmx_fio_do_int(fio, sh->ir_size);

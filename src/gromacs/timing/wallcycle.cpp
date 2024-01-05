@@ -674,28 +674,23 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
 static void print_gputimes(FILE *fplog, const char *name,
                            int n, double t, double tot_t)
 {
-    char num[11];
-    char avg_perf[11];
+    std::string num("          ");
+    std::string avg_perf = num;
 
     if (n > 0)
     {
-        snprintf(num, sizeof(num), "%10d", n);
-        snprintf(avg_perf, sizeof(avg_perf), "%10.3f", t/n);
-    }
-    else
-    {
-        sprintf(num, "          ");
-        sprintf(avg_perf, "          ");
+        num = gmx::formatString("%10d", n);
+        avg_perf = gmx::formatString("%10.3f", t/n);
     }
     if (t != tot_t && tot_t > 0)
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
-                name, num, t/1000, avg_perf, 100 * t/tot_t);
+                name, num.c_str(), t/1000, avg_perf.c_str(), 100 * t/tot_t);
     }
     else
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
-                name, "", t/1000, avg_perf, 100.0);
+                name, "", t/1000, avg_perf.c_str(), 100.0);
     }
 }
 

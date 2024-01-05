@@ -576,7 +576,6 @@ static void set_forces(FILE *fp, int angle,
 static void read_tables(FILE *fp, const char *filename,
                         int ntab, int angle, t_tabledata td[])
 {
-    char     buf[STRLEN];
     double **yy = nullptr, start, end, dx0, dx1, ssd, vm, vp, f, numf;
     int      k, i, nx, nx0 = 0, ny, nny, ns;
     gmx_bool bAllZero, bZeroV, bZeroF;
@@ -707,20 +706,20 @@ static void read_tables(FILE *fp, const char *filename,
             if (ns > 0)
             {
                 ssd /= ns;
-                sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %" PRId64
+                auto buf = gmx::formatString("For the %d non-zero entries for table %d in %s the forces deviate on average %" PRId64
                         "%% from minus the numerical derivative of the potential\n",
                         ns, k, libfn.c_str(), gmx::roundToInt64(100*ssd));
                 if (debug)
                 {
-                    fprintf(debug, "%s", buf);
+                    fprintf(debug, "%s", buf.c_str());
                 }
                 if (ssd > 0.2)
                 {
                     if (fp)
                     {
-                        fprintf(fp, "\nWARNING: %s\n", buf);
+                        fprintf(fp, "\nWARNING: %s\n", buf.c_str());
                     }
-                    fprintf(stderr, "\nWARNING: %s\n", buf);
+                    fprintf(stderr, "\nWARNING: %s\n", buf.c_str());
                 }
             }
         }

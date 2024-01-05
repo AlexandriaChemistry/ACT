@@ -250,24 +250,17 @@ void _gmx_error(const char *key, const std::string &msg, const char *file, int l
 void _range_check(int n, int n_min, int n_max, const char *warn_str,
                   const char *var, const char *file, int line)
 {
-    char buf[1024];
-
     if ((n < n_min) || (n >= n_max))
     {
+        std::string buf;
         if (warn_str != nullptr)
         {
-            strcpy(buf, warn_str);
-            strcat(buf, "\n");
+            buf = gmx::formatString("%s\n", warn_str);
         }
-        else
-        {
-            buf[0] = '\0';
-        }
+        buf += gmx::formatString("Variable %s has value %d. It should have been "
+                                 "within [ %d .. %d ]\n", var, n, n_min, n_max);
 
-        sprintf(buf+strlen(buf), "Variable %s has value %d. It should have been "
-                "within [ %d .. %d ]\n", var, n, n_min, n_max);
-
-        _gmx_error("range", buf, file, line);
+        _gmx_error("range", buf.c_str(), file, line);
     }
 }
 
@@ -277,7 +270,7 @@ void gmx_warning(gmx_fmtstr const char *fmt, ...)
     char    msg[STRLEN];
 
     va_start(ap, fmt);
-    vsprintf(msg, fmt, ap);
+    vsnprintf(msg, STRLEN-1, fmt, ap);
     va_end(ap);
 
     fprintf(stderr, "\nWARNING: %s\n\n", msg);
