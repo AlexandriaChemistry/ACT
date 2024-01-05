@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -403,6 +403,10 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs, bool MDopti
           "Algorithm to use for minimization." },
         { "-maxiter",FALSE, etINT,  {&maxIter_},
           "Maximum number of iterations for the energy minimizer, 0 is until convergence (see next option)." },
+        { "-maxretries", FALSE, etINT, {&minimizeRetries_},
+          "Number of retries for minimizing (LBFGS only)" },
+        { "-maxdisplacement", FALSE, etREAL, {&minimizeDisplacement_},
+          "Max random displacement (nm) before re-trying to minize a structure (LBFGS only)" },
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},

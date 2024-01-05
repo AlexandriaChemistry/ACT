@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022,2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -828,9 +828,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         std::random_device                      rd;
         std::mt19937                            gen(rd());
         std::uniform_real_distribution<double>  dis(std::uniform_real_distribution<>(-1.0, 1.0));
-        double                                  displacement = 0.002; // nanometer
-        int maxRetry = 3;
-        int retry    = 0;
+
+        double displacement = simConfig.minimizeDisplacement();
+        int maxRetry        = simConfig.minimizeRetries();
+        int retry           = 0;
         while (retry < maxRetry && !converged)
         {
             if (logFile && retry > 0)
