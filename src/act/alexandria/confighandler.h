@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -394,9 +394,13 @@ private:
     //! Minmize (before MD)
     bool               minimize_    = false;
     //! Minimization algorithm
-    eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
+    eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
     double             forceToler_  = 1e-4;
+    //! Number of retries for minimizing
+    int                minimizeRetries_ = 3;
+    //! Max random displacement (nm) before re-trying to minize a structure
+    double             minimizeDisplacement_ = 0.002;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
     double             overRelax_   = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
@@ -452,7 +456,13 @@ public:
 
     //! \return the minimization algorithm
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
-    
+
+    //! \return maximum number of retries for minimization
+    int minimizeRetries() const { return minimizeRetries_; }
+
+    //! \return max displacement when retrying to minimize
+    double minimizeDisplacement() const { return minimizeDisplacement_; }
+
     //! \brief Set the minimization algorithm
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
     
