@@ -515,6 +515,6 @@ str_to_int64_t(const char *str, char **endptr)
 
 char *gmx_step_str(int64_t i, char *buf)
 {
-    sprintf(buf, "%" PRId64, i);
+    snprintf(buf, strlen(buf)-1, "%" PRId64, i);
     return buf;
 }

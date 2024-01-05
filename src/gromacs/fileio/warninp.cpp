@@ -246,20 +246,14 @@ void free_warning(warninp_t wi)
 
 void _too_few(warninp_t wi, const char *fn, int line)
 {
-    char buf[STRLEN];
-
-    sprintf(buf,
-            "Too few parameters on line (source file %s, line %d)",
-            fn, line);
-    warning(wi, buf);
+    auto buf = gmx::formatString("Too few parameters on line (source file %s, line %d)",
+                                 fn, line);
+    warning(wi, buf.c_str());
 }
 
 void _incorrect_n_param(warninp_t wi, const char *fn, int line)
 {
-    char buf[STRLEN];
-
-    sprintf(buf,
-            "Incorrect number of parameters on line (source file %s, line %d)",
-            fn, line);
-    warning(wi, buf);
+    auto buf = gmx::formatString("Incorrect number of parameters on line (source file %s, line %d)",
+                                 fn, line);
+    warning(wi, buf.c_str());
 }

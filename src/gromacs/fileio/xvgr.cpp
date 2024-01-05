@@ -142,10 +142,10 @@ static char *xvgrstr(const std::string &gmx, const gmx_output_env_t *oenv,
                 switch (xvgf)
                 {
                     case exvgXMGRACE:
-                        sprintf(buf+b, "%s", "\\f{}");
+                        snprintf(buf+b, buflen-b-1, "%s", "\\f{}");
                         break;
                     case exvgXMGR:
-                        sprintf(buf+b, "%s", "\\4");
+                        snprintf(buf+b, buflen-b-1, "%s", "\\4");
                         break;
                     default:
                         buf[b] = '\0';
@@ -160,10 +160,10 @@ static char *xvgrstr(const std::string &gmx, const gmx_output_env_t *oenv,
                 switch (xvgf)
                 {
                     case exvgXMGRACE:
-                        sprintf(buf+b, "%s", "\\x");
+                        snprintf(buf+b, buflen-b-1, "%s", "\\x");
                         break;
                     case exvgXMGR:
-                        sprintf(buf+b, "%s", "\\8");
+                        snprintf(buf+b, buflen-b-1, "%s", "\\8");
                         break;
                     default:
                         buf[b] = '\0';
@@ -191,10 +191,10 @@ static char *xvgrstr(const std::string &gmx, const gmx_output_env_t *oenv,
                     switch (xvgf)
                     {
                         case exvgXMGRACE:
-                            sprintf(buf+b, "%s%c%s", "\\x", c, "\\f{}");
+                            snprintf(buf+b, buflen-b-1, "%s%c%s", "\\x", c, "\\f{}");
                             break;
                         case exvgXMGR:
-                            sprintf(buf+b, "%s%c%s", "\\8", c, "\\4");
+                            snprintf(buf+b, buflen-b-1, "%s%c%s", "\\8", c, "\\4");
                             break;
                         default:
                             std::strncat(buf+b, &gmx[g], std::strlen(sym[i]));

@@ -345,14 +345,14 @@ int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
              warninp_t wi)
 {
     std::vector<t_inpfile> &inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                   *ptr;
 
     int                     ii = get_einp(inp, name);
 
     if (ii == -1)
     {
-        sprintf(buf, "%d", def);
-        inpRef.back().value_.assign(buf);
+        auto buf = gmx::formatString("%d", def);
+        inpRef.back().value_.assign(buf.c_str());
 
         return def;
     }
@@ -361,8 +361,8 @@ int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
         int ret = std::strtol(inpRef[ii].value_.c_str(), &ptr, 10);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+            auto warn_buf = gmx::formatString("Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
+            warning_error(wi, warn_buf.c_str());
         }
 
         return ret;
@@ -381,14 +381,14 @@ int64_t get_eint64(std::vector<t_inpfile> *inp,
                    warninp_t wi)
 {
     std::vector<t_inpfile> &inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                   *ptr;
 
     int                     ii = get_einp(inp, name);
 
     if (ii == -1)
     {
-        sprintf(buf, "%" PRId64, def);
-        inpRef.back().value_.assign(buf);
+        auto buf = gmx::formatString("%" PRId64, def);
+        inpRef.back().value_.assign(buf.c_str());
 
         return def;
     }
@@ -397,8 +397,8 @@ int64_t get_eint64(std::vector<t_inpfile> *inp,
         int64_t ret = str_to_int64_t(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+            auto warn_buf = gmx::formatString("Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
+            warning_error(wi, warn_buf.c_str());
         }
 
         return ret;
@@ -417,14 +417,14 @@ double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
                  warninp_t wi)
 {
     std::vector<t_inpfile> &inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                   *ptr;
 
     int                     ii = get_einp(inp, name);
 
     if (ii == -1)
     {
-        sprintf(buf, "%g", def);
-        inpRef.back().value_.assign(buf);
+        auto buf = gmx::formatString("%g", def);
+        inpRef.back().value_.assign(buf.c_str());
 
         return def;
     }
@@ -433,8 +433,8 @@ double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
         double ret = strtod(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+            auto warn_buf = gmx::formatString("Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", inpRef[ii].value_.c_str(), inpRef[ii].name_.c_str());
+            warning_error(wi, warn_buf.c_str());
         }
 
         return ret;
@@ -451,7 +451,6 @@ double get_ereal(std::vector<t_inpfile> *inp, const std::string &name, double de
 const char *get_estr(std::vector<t_inpfile> *inp, const char *name, const char *def)
 {
     std::vector<t_inpfile> &inpRef = *inp;
-    char                    buf[32];
 
     int                     ii = get_einp(inp, name);
 
@@ -459,8 +458,7 @@ const char *get_estr(std::vector<t_inpfile> *inp, const char *name, const char *
     {
         if (def)
         {
-            sprintf(buf, "%s", def);
-            inpRef.back().value_.assign(buf);
+            inpRef.back().value_.assign(def);
         }
         else
         {
@@ -485,9 +483,6 @@ int get_eeenum(std::vector<t_inpfile> *inp, const char *name, const char **defs,
                warninp_t wi)
 {
     std::vector<t_inpfile> &inpRef = *inp;
-    int                     n      = 0;
-    char                    buf[STRLEN];
-
     int                     ii = get_einp(inp, name);
 
     if (ii == -1)
@@ -507,22 +502,22 @@ int get_eeenum(std::vector<t_inpfile> *inp, const char *name, const char **defs,
 
     if (defs[i] == nullptr)
     {
-        n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
-                     inpRef[ii].value_.c_str(), name, defs[0]);
-        n += sprintf(buf+n, "Next time use one of:");
+        auto buf = gmx::formatString("Invalid enum '%s' for variable %s, using '%s'\n",
+                                     inpRef[ii].value_.c_str(), name, defs[0]);
+        buf.append("Next time use one of:");
         int j  = 0;
         while (defs[j])
         {
-            n += sprintf(buf+n, " '%s'", defs[j]);
+            buf.append(gmx::formatString(" '%s'", defs[j]));
             j++;
         }
         if (wi != nullptr)
         {
-            warning_error(wi, buf);
+            warning_error(wi, buf.c_str());
         }
         else
         {
-            fprintf(stderr, "%s\n", buf);
+            fprintf(stderr, "%s\n", buf.c_str());
         }
 
         inpRef[ii].value_ = gmx_strdup(defs[0]);

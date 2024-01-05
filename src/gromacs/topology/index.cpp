@@ -404,7 +404,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
     int        *aid;
     int         nra, npres;
     gmx_bool    match;
-    char        ndx_name[STRLEN], *atnm;
+    char       *atnm;
     int         i;
 
     if (bVerb)
@@ -500,9 +500,9 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                     {
                         t_resinfo *ri;
                         ri = &atoms->resinfo[resind];
-                        sprintf(ndx_name, "%s_%s%d%c",
+                        auto ndx_name = gmx::formatString("%s_%s%d%c",
                                 constructing_data[i].group_name, *ri->name, ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
-                        add_grp(gb, gn, nra, aid, ndx_name);
+                        add_grp(gb, gn, nra, aid, ndx_name.c_str());
                         nra = 0;
                     }
                 }

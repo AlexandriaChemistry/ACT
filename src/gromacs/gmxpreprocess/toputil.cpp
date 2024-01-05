@@ -537,9 +537,8 @@ void print_bondeds(FILE *out, int natoms, directive d,
     open_symtab(&stab);
     for (i = 0; (i < natoms); i++)
     {
-        char buf[12];
-        sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0);
+        auto buf = gmx::formatString("%4d", (i+1));
+        add_atomtype(atype, &stab, a, buf.c_str(), param, 0, 0);
     }
     print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
 

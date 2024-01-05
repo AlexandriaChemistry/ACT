@@ -560,12 +560,9 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     /* Flush the file, so we are sure it is written */
     if (gmx_fio_int_flush(fio))
     {
-        char buf[STRLEN];
-        sprintf(
-                buf,
-                "Cannot write file '%s'; maybe you are out of disk space?",
-                fio->fn);
-        gmx_file(buf);
+        auto buf = gmx::formatString("Cannot write file '%s'; maybe you are out of disk space?",
+                                     fio->fn);
+        gmx_file(buf.c_str());
     }
 
     /* We cannot count on XDR being able to write 64-bit integers,
