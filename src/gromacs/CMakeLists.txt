@@ -44,10 +44,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(libactgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
 endif()
 
-add_library(libactgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
     set_target_properties(libactgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
-    set_target_properties(libactgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
 endif()
 
 function (_gmx_add_files_to_property PROPERTY)
@@ -87,7 +85,7 @@ add_subdirectory(fileio)
 add_subdirectory(compat)
 add_subdirectory(gmxpreprocess)
 add_subdirectory(statistics)
-add_subdirectory(selection)
+#add_subdirectory(selection)
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
@@ -108,7 +106,7 @@ gmx_configure_version_file(
     )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
      $<TARGET_OBJECTS:libactgromacs_external>
-     $<TARGET_OBJECTS:libactgromacs_generated>)
+)
 
 add_library(libactgromacs ${LIBGROMACS_SOURCES})
 
@@ -125,12 +123,6 @@ check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
 if (NOT MSVC)
     check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
 endif()
-if (HAS_NO_UNUSED)
-    target_compile_options(libactgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
-endif()
-if (HAS_NO_MISSING_DECL)
-    target_compile_options(libactgromacs_generated PRIVATE "-Wno-missing-declarations")
-endif()
 # TODO The group scheme kernels don't use proper function prototype
 # declarations, and clang warns about such use, which we suppress
 # rather than fix. We would prefer to use no suppressions. However
@@ -138,15 +130,6 @@ endif()
 # source files, and issue warnings about that. Remove the use of
 # -Wno-missing-prototypes here and above when the group scheme is
 # removed.
-if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(libactgromacs_generated PRIVATE "-Wno-missing-prototypes")
-endif()
-if (HAS_NO_MSVC_UNUSED)
-    target_compile_options(libactgromacs_generated PRIVATE "/wd4101")
-endif()
-if (HAS_DECL_IN_SOURCE)
-    target_compile_options(libactgromacs_generated PRIVATE "-wd1419")
-endif()
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
