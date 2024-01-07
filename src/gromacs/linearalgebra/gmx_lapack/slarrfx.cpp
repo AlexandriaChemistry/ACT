@@ -6,7 +6,8 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-
+#pragma clang diagnostic ignored "-Wunused-but-set-parameter"
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
 void
 F77_FUNC(slarrfx,SLARRFX)(int *n, 
 	float *d__, 
@@ -87,3 +88,5 @@ L30:
 
     return;
 }
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop

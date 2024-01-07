@@ -658,7 +658,7 @@ createEnumOptionStorage(const AbstractOption &option,
                         std::unique_ptr<IOptionValueStore<int> > store)
 {
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
-                                 defaultValueIfSet, move(store));
+                                 defaultValueIfSet, std::move(store));
 }
 //! \endcond
 

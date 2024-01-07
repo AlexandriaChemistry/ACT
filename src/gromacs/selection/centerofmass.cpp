@@ -52,6 +52,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
 
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 void
 gmx_calc_cog(const gmx_mtop_t * /* top */, rvec x[], int nrefat, const int index[], rvec xout)
 {
@@ -548,3 +550,5 @@ gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec f[], const t_blocka *block,
     /* TODO: It would probably be better to do this without the type cast */
     gmx_calc_comg_f_block(top, f, reinterpret_cast<const t_block *>(block), block->a, bMass, fout);
 }
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
