@@ -275,7 +275,7 @@ class CommandLineTestHelper::Impl
         {
             OutputFileInfo(const char *option, const std::string &path,
                            FileMatcherPointer matcher)
-                : option(option), path(path), matcher(move(matcher))
+                : option(option), path(path), matcher(std::move(matcher))
             {
             }
 
