@@ -46,6 +46,9 @@
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 static void
 F77_FUNC(dstqrb, DSTQRB) (int *      n,
                           double *   d__,
@@ -5765,3 +5768,5 @@ L9000:
     return;
 
 }
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop

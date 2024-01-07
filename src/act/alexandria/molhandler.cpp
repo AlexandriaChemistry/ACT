@@ -35,7 +35,11 @@
 
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
 #include "Eigen/Eigenvalues"
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 
 #include "molhandler.h"
 

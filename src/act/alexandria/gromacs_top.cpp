@@ -119,36 +119,34 @@ static void print_bondeds(FILE                      *out,
     fprintf(out, "\n");
 }
 
-static void print_excl(FILE *out, int natoms, t_excls excls[])
+static void print_excl(FILE *out, const Topology *top)
 {
-    int         i;
-    bool        have_excl;
-    int         j;
-
-    have_excl = FALSE;
-    for (i = 0; i < natoms && !have_excl; i++)
+    // For GROMACS type output files we only look at VANDERWAALS
+    auto itype = InteractionType::VDW;
+    if (!top->hasExclusions(itype))
     {
-        have_excl = (excls[i].nr > 0);
+        return;
     }
-
-    if (have_excl)
+    auto excls = top->exclusions(itype);
+    if (excls.empty())
     {
-        fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
-        fprintf (out, "; %4s    %s\n", "i", "excluded from i");
-        for (i = 0; i < natoms; i++)
+        return;
+    }
+    fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
+    fprintf (out, "; %4s    %s\n", "i", "excluded from i");
+    for (size_t i = 0; i < excls.size(); i++)
+    {
+        if (!excls[i].empty())
         {
-            if (excls[i].nr > 0)
+            fprintf (out, "%6lu", i+1);
+            for (size_t j = 0; j < excls[i].size(); j++)
             {
-                fprintf (out, "%6d ", i+1);
-                for (j = 0; j < excls[i].nr; j++)
-                {
-                    fprintf (out, " %5d", excls[i].e[j]+1);
-                }
-                fprintf (out, "\n");
+                fprintf (out, " %5d", excls[i][j]+1);
             }
+            fprintf (out, "\n");
         }
-        fprintf (out, "\n");
     }
+    fprintf (out, "\n");
 }
 
 static void print_top_system(FILE *out, const char *title)
@@ -327,6 +325,7 @@ void write_top(FILE            *out,
                 print_bondeds(out, toPrint.find(fType)->second, fType, topology->entry(iType));
             }
         }
+        print_excl(out, topology);
     }
 }
 

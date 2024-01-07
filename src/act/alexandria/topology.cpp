@@ -1691,4 +1691,14 @@ void Topology::setIdentifiers(const ForceField *pd)
     }
 }
 
+const std::vector<std::vector<int>> &Topology::exclusions(InteractionType itype) const
+{
+    auto exclptr = exclusions_.find(itype);
+    if (exclusions_.end() != exclptr)
+    {
+        return exclptr->second;
+    }
+    GMX_THROW(gmx::InternalError(gmx::formatString("No exclusions for interaction type %s", interactionTypeToString(itype).c_str()).c_str()));
+}
+
 } // namespace alexandria

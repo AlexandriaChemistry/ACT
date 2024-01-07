@@ -400,6 +400,22 @@ private:
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, TopologyEntryVector> &entries() const { return entries_; }
 
+    /*! \brief Determine whether an exclusion type is present
+     * \param[in] itype the InteractionType (COULOMB or VANDERWAALS)
+     * \return the result
+     */
+    bool hasExclusions(InteractionType itype) const
+    {
+        return exclusions_.find(itype) != exclusions_.end();
+    }
+
+    /*! \brief Return exclusions for interaction type
+     * \param[in] itype the InteractionType (COULOMB or VANDERWAALS)
+     * \return the exclusions.
+     * \throws if itype is not found 
+     */
+    const std::vector<std::vector<int>> &exclusions(InteractionType itype) const;
+
     /*! \brief Print structure to a file
      * \param[in] fp The file pointer
      */
