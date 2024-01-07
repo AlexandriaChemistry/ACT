@@ -649,7 +649,7 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
         {
             ReferenceDataEntry::EntryPointer outputEntry(createEntry(type, id, checker));
             entry->setCorrespondingOutputEntry(outputEntry.get());
-            outputRootEntry_->addChild(move(outputEntry));
+            outputRootEntry_->addChild(std::move(outputEntry));
             return ::testing::AssertionSuccess();
         }
     }

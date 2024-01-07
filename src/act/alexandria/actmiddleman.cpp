@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -45,7 +45,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            bool                  flush,
                            gmx_output_env_t     *oenv,
                            bool                  openConvFiles)
-: gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
+: gach_(gach), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
     int seed = sii->commRec()->recv_int(sii->commRec()->superior());
@@ -164,8 +164,6 @@ void ACTMiddleMan::run()
     
     // Stop my helpers too.
     stopHelpers();
-    // Save the last genome
-    // sii_->saveState(true, sii_->outputFileLast());
 }
 
 void ACTMiddleMan::printStatistics(FILE *logFile)

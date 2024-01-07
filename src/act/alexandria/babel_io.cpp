@@ -73,6 +73,10 @@
 #define KOKO HAVE_SYS_TIME_H
 #undef HAVE_SYS_TIME_H
 #endif
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
 #include <openbabel/bond.h>
@@ -88,6 +92,8 @@
 #include <openbabel/residue.h>
 #include <openbabel/typer.h>
 #include <openbabel/math/vector3.h>
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H

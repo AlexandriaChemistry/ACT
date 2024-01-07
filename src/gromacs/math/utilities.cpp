@@ -49,7 +49,7 @@
 #include <cfenv>
 
 //! Floating point exception set that we use and care about
-constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
+// constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
 bool
 gmx_within_tol(double   f1,

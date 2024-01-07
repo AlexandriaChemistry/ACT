@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,8 +41,12 @@
 
 #include <vector>
 
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
 #include <Eigen/Dense>
 #include <Eigen/SVD> 
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"

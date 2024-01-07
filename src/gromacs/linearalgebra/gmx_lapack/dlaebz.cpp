@@ -1,6 +1,8 @@
 #include <cmath>
 #include "../gmx_lapack.h"
 
+#pragma clang diagnostic ignored "-Wunused-but-set-parameter"
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
 void
 F77_FUNC(dlaebz,DLAEBZ)(int *ijob,
 	int *nitmax,
@@ -299,5 +301,5 @@ F77_FUNC(dlaebz,DLAEBZ)(int *ijob,
     return;
 
 }
-
-
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
