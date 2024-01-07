@@ -6,6 +6,8 @@
 
 #include "linesearch.h"
 
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 namespace STLBFGS {
     bool sufficient_decrease(const Sample &phi0, const Sample &phia, double mu) {
         return phia.f <= phi0.f + mu*phia.a*phi0.d;
@@ -197,3 +199,5 @@ namespace STLBFGS {
     }
 }
 
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop

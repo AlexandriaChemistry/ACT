@@ -7,6 +7,8 @@
 #include <cassert>
 #include "stlbfgs.h"
 
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 namespace STLBFGS {
     // compute dot product <a,b>
     double dot(const vector &a, const vector &b) {
@@ -178,3 +180,5 @@ namespace STLBFGS {
     }
 }
 
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop

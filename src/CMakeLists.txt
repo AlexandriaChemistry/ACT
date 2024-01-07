@@ -106,10 +106,15 @@ if (BUILD_TESTING)
     include(testutils/TestMacros.cmake)
     add_subdirectory(testutils)
 endif()
-
 add_subdirectory(gromacs)
 
 # The ACT library file
 add_library(actLib "")
 # And the source code
 add_subdirectory(act)
+
+# External code that is included in the ACT library
+add_subdirectory(external/quasirandom_sequences)
+add_subdirectory(external/stlbfgs)
+
+
