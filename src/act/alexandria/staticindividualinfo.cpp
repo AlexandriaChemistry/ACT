@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -36,6 +36,7 @@
 #include "staticindividualinfo.h"
 
 #include <algorithm>
+#include <filesystem>
 
 #include "act/forces/combinationrules.h"
 #include "act/ga/genome.h"
@@ -577,8 +578,7 @@ void StaticIndividualInfo::makeIndividualDir()
 {
     if (!prefix_.empty())
     {
-        std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
-        system(command.c_str());
+        (void) std::filesystem::create_directory(prefix_);
     }
 }
 

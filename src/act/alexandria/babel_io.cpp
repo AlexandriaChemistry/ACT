@@ -76,7 +76,7 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
 #include <openbabel/bond.h>
