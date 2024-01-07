@@ -42,7 +42,6 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/selection/selhelp.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/init.h"
 
@@ -57,13 +56,12 @@ main(int argc, char *argv[])
         t_commrec *cr = init_commrec();
         gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
-        manager.addHelpTopic(gmx::createSelectionHelpTopic());
         manager.setQuiet(true);
         setenv("GMX_NB_GENERIC", "1", 1);
         if (MASTER(cr))
         {
             printf("\n     Welcome to the Alexandria Chemistry Toolkit\n\n");
-            printf("              Copyright (c) 2014-2023\n\n");
+            printf("              Copyright (c) 2014-2024\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
             printf("See https://github.com/dspoel/ACT for details.\n\n");
             printf("Alexandria Chemistry Toolkit is free software under the Gnu Public License v 2.\n");
