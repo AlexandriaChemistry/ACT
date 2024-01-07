@@ -42,7 +42,7 @@
 #include <vector>
 
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #include <Eigen/Dense>
 #include <Eigen/SVD> 
 #pragma GCC diagnostic pop
