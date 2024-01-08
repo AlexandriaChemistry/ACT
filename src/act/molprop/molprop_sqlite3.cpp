@@ -122,7 +122,6 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
         gmx_fatal(FARGS, "%s", extra);
     }
 }
-#endif
 
 static void getSynonyms(sqlite3              *db,
                         std::vector<Synonym> &syn,
@@ -224,6 +223,7 @@ static void getClasses(sqlite3              *db,
     check_sqlite3(db, "Finalizing sqlite3 statement",
                   sqlite3_finalize(stmt2));
 }
+#endif
 
 void ReadSqlite3(const char           *sqlite_file,
                  std::vector<MolProp> *mp,
