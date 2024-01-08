@@ -42,7 +42,7 @@
 #include <algorithm>
 #include <vector>
 
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
 #include "act/molprop/molpropobservable.h"
@@ -102,7 +102,7 @@ class Classes
         const std::vector<std::string> &classes() { return classes_; }
 };
 
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
 static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
 {
     const char *msg;
@@ -229,7 +229,7 @@ void ReadSqlite3(const char           *sqlite_file,
                  std::vector<MolProp> *mp,
                  double                ref_temperature)
 {
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
 
     sqlite3                    *db   = nullptr;
