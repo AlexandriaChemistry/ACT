@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include <cstring>
+#include <cstdint>
 
 #if GMX_INTEGER_BIG_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 1
