@@ -150,7 +150,7 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
     {
         return 0;
     }
-    return std::pow((std::sqrt( tempi * tempj ) )* abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
+    return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
 double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
