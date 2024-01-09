@@ -538,7 +538,7 @@ KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(
 
 KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder()
 {
-    if (!std::uncaught_exception())
+    if (std::uncaught_exceptions() == 0)
     {
         data_->createRule(impl_);
     }
