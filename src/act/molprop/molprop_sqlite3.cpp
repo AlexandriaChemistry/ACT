@@ -225,9 +225,9 @@ static void getClasses(sqlite3              *db,
 }
 #endif
 
-void ReadSqlite3(const char           *sqlite_file,
-                 std::vector<MolProp> *mp,
-                 double                ref_temperature)
+void ReadSqlite3(gmx_unused const char           *sqlite_file,
+                 gmx_unused std::vector<MolProp> *mp,
+                 gmx_unused double                ref_temperature)
 {
 #if HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
