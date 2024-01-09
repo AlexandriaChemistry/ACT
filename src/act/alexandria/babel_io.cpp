@@ -250,7 +250,8 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
             int idx = atom->GetIdx();
             if (std::find(fatoms.begin(), fatoms.end(), idx-1) != fatoms.end())
             {
-                OpenBabel::OBAtom newatom(*atom);
+                OpenBabel::OBAtom    newatom;
+                newatom.Duplicate(&(*atom));
                 // Make a copy of the residue information
                 OpenBabel::OBResidue residue = *(atom->GetResidue());
                 residue.SetNum(fff+1);
