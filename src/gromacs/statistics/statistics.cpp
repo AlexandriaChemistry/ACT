@@ -135,7 +135,8 @@ eStats gmx_stats::add_points(int n, real *xx, real *yy,
 
 eStats gmx_stats::compute(int weight)
 {
-    double yy, yx, xx, sx, sy, d2;
+    // double yy;
+    double yx, xx, sx, sy, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
 
@@ -149,7 +150,8 @@ eStats gmx_stats::compute(int weight)
     if (!computed_)
     {
         xx   = xx_nw = 0;
-        yy   = yy_nw = 0;
+        // yy   = 
+        yy_nw = 0;
         yx   = yx_nw = 0;
         sx   = sx_nw = 0;
         sy   = sy_nw = 0;
@@ -177,7 +179,7 @@ eStats gmx_stats::compute(int weight)
             xx    += w*gmx::square(x_[i]);
             xx_nw += gmx::square(x_[i]);
 
-            yy    += w*gmx::square(y_[i]);
+            // yy    += w*gmx::square(y_[i]);
             yy_nw += gmx::square(y_[i]);
 
             yx    += w*y_[i]*x_[i];

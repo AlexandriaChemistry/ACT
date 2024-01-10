@@ -35,28 +35,28 @@
 include(CheckCXXSourceCompiles)
 include(FindThreads)
 
-# Check whether both a suitable C++11-compatible compiler and standard
+# Check whether both a suitable C++17-compatible compiler and standard
 # library is available, and give a fatal error if not.
 #
-# Any required compiler flag for C++11 support is returned in
+# Any required compiler flag for C++17 support is returned in
 # ${FLAG}. The other parameters are only inputs, naming variables that
 # contain flags that may have been detected, or set by the user.
-function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIES_NAME)
+function(GMX_TEST_CXX17 CXX17_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIES_NAME)
 
     # First check that the compiler is OK, and find the appropriate flag.
 
     if(WIN32 AND NOT MINGW)
-        set(CXX11_CXX_FLAG "/std:c++17 /Zc:__cplusplus")
+        set(CXX17_CXX_FLAG "/std:c++17 /Zc:__cplusplus")
     elseif(CYGWIN)
-        set(CXX11_CXX_FLAG "-std=gnu++17") #required for strdup
+        set(CXX17_CXX_FLAG "-std=gnu++17") #required for strdup
     else()
-        set(CXX11_CXX_FLAG "-std=c++17")
+        set(CXX17_CXX_FLAG "-std=c++17")
     endif()
-    CHECK_CXX_COMPILER_FLAG("${CXX11_CXX_FLAG}" CXXFLAG_STD_CXX0X)
+    CHECK_CXX_COMPILER_FLAG("${CXX17_CXX_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)
-        set(CXX11_CXX_FLAG "")
+        set(CXX17_CXX_FLAG "")
     endif()
-    set(CMAKE_REQUIRED_FLAGS "${CXX11_CXX_FLAG}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX17_CXX_FLAG}")
     check_cxx_source_compiles(
 "// Permit testing typeid keyword
 #include <typeinfo>
@@ -129,7 +129,7 @@ int main() {
   static_assert(true, \"if you see this, true somehow isn't\");
   // Test a lambda
   [=]{};
-}" CXX11_SUPPORTED)
+}" CXX17_SUPPORTED)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
             message(FATAL_ERROR "GROMACS requires version 4.8.1 or later of the GNU C++ compiler for complete C++11 support")
@@ -147,15 +147,15 @@ int main() {
             message(FATAL_ERROR "GROMACS requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++11 support")
         endif()
     endif()
-    if(CXX11_SUPPORTED)
-        set(${CXX11_CXX_FLAG_NAME} ${CXX11_CXX_FLAG} PARENT_SCOPE)
+    if(CXX17_SUPPORTED)
+        set(${CXX17_CXX_FLAG_NAME} ${CXX17_CXX_FLAG} PARENT_SCOPE)
     else()
         message(FATAL_ERROR "This version of GROMACS requires a C++11 compiler. Please use a newer compiler or use the GROMACS 5.1.x release. See the installation guide for details.")
     endif()
 
     # Now check the standard library is OK
 
-    set(CMAKE_REQUIRED_FLAGS "${CXX11_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX17_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
     set(CMAKE_REQUIRED_LIBRARIES "${${STDLIB_LIBRARIES_NAME}} ${CMAKE_THREAD_LIBS_INIT}")
     check_cxx_source_compiles(
 "#include <algorithm>
@@ -202,8 +202,8 @@ int main() {
   std::tie(tupleInt, tupleDouble) = theTuple;
   // Test std::string
   std::string message(\"hello\");
-}" CXX11_STDLIB_PRESENT)
-    if(NOT CXX11_STDLIB_PRESENT)
+}" CXX17_STDLIB_PRESENT)
+    if(NOT CXX17_STDLIB_PRESENT)
         message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Please use a newer compiler, and/or a newer standard library, or use the GROMACS 5.1.x release. Consult the installation guide for details before upgrading components.")
     endif()
 endfunction()
