@@ -369,8 +369,8 @@
 /* Define to 1 if you have the POSIX <regex.h> header file. */
 #cmakedefine01 HAVE_POSIX_REGEX
 
-/* Define to 1 if you have the C++11 <regex> header file. */
-#cmakedefine01 HAVE_CXX11_REGEX
+/* Define to 1 if you have the C++17 <regex> header file. */
+#cmakedefine01 HAVE_CXX17_REGEX
 
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF

@@ -49,7 +49,7 @@
 #    include <sys/types.h>
 // old Mac needs sys/types.h before regex.h
 #    include <regex.h>
-#elif HAVE_CXX11_REGEX
+#elif HAVE_CXX17_REGEX
 #    include <regex>
 #endif
 
@@ -62,7 +62,7 @@ namespace gmx
 // static
 bool Regex::isSupported()
 {
-#if HAVE_POSIX_REGEX || HAVE_CXX11_REGEX
+#if HAVE_POSIX_REGEX || HAVE_CXX17_REGEX
     return true;
 #else
     return false;
@@ -111,7 +111,7 @@ class Regex::Impl
 
         regex_t                 regex_;
 };
-#elif HAVE_CXX11_REGEX
+#elif HAVE_CXX17_REGEX
 class Regex::Impl
 {
     public:
