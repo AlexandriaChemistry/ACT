@@ -999,7 +999,6 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
     if (!pd)
     {
         GMX_THROW(gmx::InternalError("Why did you call makeVsites3out without a force field?"));
-        return 0;
     }
     auto itype_vs3out = InteractionType::VSITE3OUT;
     if (!pd->interactionPresent(itype_vs3out))
@@ -1052,7 +1051,6 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
             fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
         }
 
-
         for (auto &fvs : ffvs.parametersConst())
         {
             if (debug)
@@ -1088,50 +1086,46 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
                 {
                     auto ptype = pd->findParticleType(vsname);
                     std::string vstype = ptype->optionValue("bondtype");
-                    for (int pid=0; pid<1; pid++)
+                    for (int pid=0; pid<2; pid++)
 
              	    {
                           ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                    ptype->gmxParticleType(),
-                                    0, ptype->mass(), ptype->charge());
+                                          ptype->gmxParticleType(),
+                                          0, ptype->mass(), ptype->charge());
 
-                    int vs3out = atomList->size();
-                    newatom.addCore(ai);
-                    newatom.addCore(aj);
-                    newatom.addCore(ak);
+                          int vs3out = atomList->size();
+                          newatom.addCore(ai);
+                          newatom.addCore(aj);
+                          newatom.addCore(ak);
 
-                    newatom.setResidueNumber(atoms_[ai].residueNumber());
+                          newatom.setResidueNumber(atoms_[ai].residueNumber());
 
+                          gmx::RVec vzero = {0, 0, 0};
+                          size_t after = std::max({ai, aj, ak});
+                          auto iter = std::find(atomList->begin(), atomList->end(), after);
+                          atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3out, vzero));
 
-                    gmx::RVec vzero = {0, 0, 0};
-                    size_t after = std::max({ai, aj, ak});
-                    auto iter = std::find(atomList->begin(), atomList->end(), after);
-                    atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3out, vzero));
+                          // Create new topology entry
+                          Vsite3OUT vsnew(ai, aj, ak, vs3out);
+                          if (debug)
+                          {
+                              fprintf(debug, "Adding vs3out %s%d %s%d %s%d %d\n",
+                                      atoms_[ai].element().c_str(), ai,
+                                      atoms_[aj].element().c_str(), aj,
+                                      atoms_[ak].element().c_str(), ak, vs3out);
+                          }
+                          
+                          // Add bond orders, cp from the bond.
+                          for (auto b : border)
+                          {
+                              vsnew.addBondOrder(b);
+                          }
 
-
-
-                    // Create new top
-                     Vsite3OUT vsnew(ai, aj, ak, vs3out);
-                    //  Vsite3 vsnew(ai, aj, ak, vsIds);
-                    if (debug)
-                    {
-                        fprintf(debug, "Adding vs3out %s%d %s%d %s%d %d\n",
-                                atoms_[ai].element().c_str(), ai,
-                                atoms_[aj].element().c_str(), aj,
-                                atoms_[ak].element().c_str(), ak, vs3out);
+                          // Special bond order for vsites
+                          vsnew.addBondOrder(9);
+                          
+                          vsite3out.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
                     }
-
-                    // Add bond orders, cp from the bond.
-                    for (auto b : border)
-                    {
-                        vsnew.addBondOrder(b);
-                    }
-
-                    // Special bond order for vsites
-                    vsnew.addBondOrder(9);
-
-                    vsite3out.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
-                  }
                 }
             }
         }
@@ -1146,14 +1140,6 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
 
     return nvsites3out;
 }
-
-
-
-
-
-
-
-
 
 void Topology::renumberAtoms(const std::vector<int> &renumber)
 {
@@ -1293,8 +1279,7 @@ void Topology::build(const ForceField             *pd,
     // Now throw away the angles again since we need to reorder the
     // lists of atoms and vsites.
     auto itype_a = InteractionType::ANGLES;
-    auto aptr    = entries_.find(itype_a);
-    if (entries_.end() != aptr)
+    if (entries_.end() != entries_.find(itype_a))
     {
         entries_.erase(itype_a);
     }
