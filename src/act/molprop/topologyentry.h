@@ -479,7 +479,7 @@ class Vsite3 : public TopologyEntry
     Vsite3() {}
 
     //! Constructor setting the ids of the atoms and the bondorder
-    Vsite3(int ai, int aj,  int ak, int vs)
+    Vsite3(int ai, int aj, int ak,  int vs)
     {
         addAtom(ai);
         addAtom(aj);
@@ -503,10 +503,10 @@ class Vsite3 : public TopologyEntry
     }
 
      //! Returns the third atom id
-    int aK() const
-    {
-        return atomIndex(2);
-    }
+     int aK() const
+     {
+         return atomIndex(2);
+     }
 
     //! \return virtual site ID
     int vs() const

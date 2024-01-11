@@ -1088,7 +1088,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
                     fprintf(debug, "vsite a = %g\n", params[vsite2A]);
                 }
                 break;
-          case InteractionType::VSITE3:
+            case InteractionType::VSITE3:
                al = atomIndices[3];
                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
                             params[vsite3A], params[vsite3B], &pbc_);

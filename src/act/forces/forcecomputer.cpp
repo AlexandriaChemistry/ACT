@@ -57,7 +57,7 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
 
 ForceComputer::ForceComputer(double   msForce,
                              int      maxiter)
-{ 
+{
     msForceToler_ = msForce;
     maxiter_      = maxiter;
     clear_mat(box_);
@@ -154,7 +154,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     }
     double epot = 0;
     std::set<InteractionType> vsites = {
-        InteractionType::VSITE2, InteractionType::VSITE3OUT,InteractionType::VSITE3FAD,
+        InteractionType::VSITE2,InteractionType::VSITE3,   InteractionType::VSITE3,InteractionType::VSITE3OUT,InteractionType::VSITE3FAD,
     };
     for(const auto &entry : top->entries())
     {
@@ -240,11 +240,11 @@ void ForceComputer::plot(const ForceField  *pd,
     }
     else
     {
-        std::vector<std::pair<int, int>> linear_bonds = { 
-            { 0, 1}, {1, 2}, {2, 3} 
+        std::vector<std::pair<int, int>> linear_bonds = {
+            { 0, 1}, {1, 2}, {2, 3}
         };
-        std::vector<std::pair<int, int>> idih_bonds = { 
-            { 0, 1}, {0, 2}, {0, 3} 
+        std::vector<std::pair<int, int>> idih_bonds = {
+            { 0, 1}, {0, 2}, {0, 3}
         };
         for(const auto &f : fs.parametersConst())
         {
@@ -277,7 +277,7 @@ void ForceComputer::plot(const ForceField  *pd,
             Topology               top(bbb);
             std::vector<gmx::RVec> forces;
             gmx::RVec rvnul = { 0, 0, 0 };
-            
+
             auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
             {
@@ -301,7 +301,7 @@ void ForceComputer::plot(const ForceField  *pd,
             }
             forces.resize(top.nAtoms(), rvnul);
             // Open outfile
-            std::string filename = gmx::formatString("%s_%s.xvg", 
+            std::string filename = gmx::formatString("%s_%s.xvg",
                                                      interactionTypeToString(itype).c_str(),
                                                      f.first.id().c_str());
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
@@ -314,7 +314,7 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    
+
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.001;
@@ -398,7 +398,7 @@ void ForceComputer::plot(const ForceField  *pd,
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", xx, energies[itype]);
                     }
-                    
+
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:

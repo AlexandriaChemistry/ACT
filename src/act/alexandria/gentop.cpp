@@ -143,7 +143,7 @@ int gentop(int argc, char *argv[])
     //static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
     static const char               *qcustom        = nullptr;
 
-    t_pargs                          pa[]     = 
+    t_pargs                          pa[]     =
     {
         { "-f",      FALSE, etSTR,  {&molFile},
            "Input file name" },
@@ -187,7 +187,7 @@ int gentop(int argc, char *argv[])
           "Add hydrogen atoms to the compound - useful for PDB files." },
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
-        { "-qcustom", FALSE, etSTR, {&qcustom}, 
+        { "-qcustom", FALSE, etSTR, {&qcustom},
           "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." },
         { "-numberAtypes", FALSE, etBOOL, {&addNumbersToAtoms},
           "Add a number index to OpenMM atomtypes when generating output for that software." },
@@ -358,7 +358,7 @@ int gentop(int argc, char *argv[])
             {
                 auto qtype = qType::Calc;
                 std::vector<double> myq;
-                
+
                 if (qcustom)
                 {
                     // Second, if there are charges on the command line
@@ -398,7 +398,7 @@ int gentop(int argc, char *argv[])
                                 opt2fn_null("-diffhist", NFILE, fnm),
                                 oenv);
         }
-        
+
         if (immStatus::OK == imm && actmol.errors().size() == 0)
         {
             std::string index;
@@ -435,7 +435,7 @@ int gentop(int argc, char *argv[])
     }
     if (opt2bSet("-openmm", NFILE, fnm) || opt2bSet("-openmm_sim", NFILE, fnm))
     {
-        writeOpenMM(opt2fn("-openmm", NFILE, fnm), 
+        writeOpenMM(opt2fn("-openmm", NFILE, fnm),
                     opt2fn("-openmm_sim", NFILE, fnm), &pd, actmols, mDrude, addNumbersToAtoms);
     }
     if (!errors.empty())

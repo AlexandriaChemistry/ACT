@@ -191,7 +191,7 @@ private:
                     AtomList         *atomList);
 
     int makeVsite3OUTs(const ForceField *pd,
-                    AtomList         *atomList);                
+                       AtomList         *atomList);                
 
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
