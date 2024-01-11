@@ -188,7 +188,9 @@ void Topology::addBond(const Bond &bond)
     {
         entries_.insert({ itb, TopologyEntryVector{} });
     }
-    entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
+       entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
+
+
 }
 
 double Topology::mass() const
@@ -826,12 +828,12 @@ int Topology::makeVsite2s(const ForceField *pd,
     // A very subtle programming issue arises here:
     // after the std::move operation, the vector is empty
     // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
-    int nvsites = vsite2.size();
-    if (nvsites > 0)
+    int nvsites2 = vsite2.size();
+    if (nvsites2 > 0)
     {
         entries_.insert({ itype_vs2, std::move(vsite2) });
     }
-    return nvsites;
+    return nvsites2;
 }
 
 
@@ -862,7 +864,6 @@ int Topology::makeVsite3s(const ForceField *pd,
         }
         return 0;
     }
-    //change itype_b to itype_a, you removed BONDS
     auto itype_b = InteractionType::ANGLES;
     if (entries_.find(itype_b) == entries_.end())
     {
@@ -875,22 +876,22 @@ int Topology::makeVsite3s(const ForceField *pd,
     auto &angles     = entry(itype_b);
 
     TopologyEntryVector vsite3;
-    //for (size_t i = 0; i < bonds.size(); i++)
+
     for (size_t i = 0; i < angles.size(); i++)
     {
         auto mybond = static_cast<const Angle *>(angles[i]->self());
-        //auto mybond = static_cast<const Bond *>(bonds[i]->self());
-        //topologyentry.h
+
         mybond->check(3);
         auto bid    = mybond->id();
         auto border = bid.bondOrders();
         int  ai     = mybond->atomIndex(0);
         int  aj     = mybond->atomIndex(1);
         int  ak     = mybond->atomIndex(2);
+
         auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
         auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
         auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
-
+        fprintf(stderr, "%s %d %s %d %s %d\n", bai.c_str(), ai, baj.c_str(),aj, bak.c_str(), ak );
         if (debug)
         {
             fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
@@ -913,10 +914,11 @@ int Topology::makeVsite3s(const ForceField *pd,
                     found = true;
             }
                 else if (baj == vsatoms[1] && bak == vsatoms[0] && bai == vsatoms[2] && border[1] == vsbo[0] && border[0] == vsbo[1] )
-                     // plane, border ijk, kji and c=c-o-H (baj == vsatoms[1] (c-o) && bak (0-H) == vsatoms[0] && bai (c=c) == vsatoms[2] )
+
                 {
                     found   = true;
                     int tmp = ak; ak = ai; ai = tmp;
+                  //  int tmp=aj; aj=ai; ai=tmp;
                 }
 
 
@@ -932,8 +934,8 @@ int Topology::makeVsite3s(const ForceField *pd,
                 {
                     auto ptype = pd->findParticleType(vsname);
                     std::string vstype = ptype->optionValue("bondtype");
-                    for (int pid=0; pid<=0; pid++)
-                    //for (int pid=0; pid<2; pid++)
+                    for (int pid=0; pid<1; pid++)
+
              	    {
                           ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                     ptype->gmxParticleType(),
@@ -945,10 +947,12 @@ int Topology::makeVsite3s(const ForceField *pd,
                     newatom.addCore(ak);
                     newatom.setResidueNumber(atoms_[ai].residueNumber());
 
+
                     gmx::RVec vzero = {0, 0, 0};
                     size_t after = std::max({ai, aj, ak});
                     auto iter = std::find(atomList->begin(), atomList->end(), after);
                     atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3, vzero));
+
 
                     // Create new top
                      Vsite3 vsnew(ai, aj, ak, vs3);
@@ -978,17 +982,14 @@ int Topology::makeVsite3s(const ForceField *pd,
     }
 
     // If we found any vsite3 instances, add the vec to the top
-    int nvsites = vsite3.size();
-    if (nvsites > 0)
+    int nvsites3 = vsite3.size();
+    if (nvsites3 > 0)
     {
         entries_.insert({itype_vs3, std::move(vsite3)});
     }
 
-    return nvsites;
+    return nvsites3;
 }
-
-
-
 
 
 
@@ -1018,25 +1019,24 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
         }
         return 0;
     }
-    //change itype_b to itype_a, you removed BONDS
+
     auto itype_b = InteractionType::ANGLES;
     if (entries_.find(itype_b) == entries_.end())
     {
         if (debug)
         {
-            fprintf(debug, "There are no bonds to generate vsites3out from.\n");
+            fprintf(debug, "There are no angles to generate vsites3out from.\n");
         }
         return 0;
     }
     auto &angles     = entry(itype_b);
 
     TopologyEntryVector vsite3out;
-    //for (size_t i = 0; i < bonds.size(); i++)
+
     for (size_t i = 0; i < angles.size(); i++)
     {
         auto mybond = static_cast<const Angle *>(angles[i]->self());
-        //auto mybond = static_cast<const Bond *>(bonds[i]->self());
-        //topologyentry.h
+
         mybond->check(3);
         auto bid    = mybond->id();
         auto border = bid.bondOrders();
@@ -1069,7 +1069,7 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
                     found = true;
             }
                 else if (baj == vsatoms[1] && bak == vsatoms[0] && bai == vsatoms[2] && border[1] == vsbo[0] && border[0] == vsbo[1] )
-                     // plane, border ijk, kji and c=c-o-H (baj == vsatoms[1] (c-o) && bak (0-H) == vsatoms[0] && bai (c=c) == vsatoms[2] )
+
                 {
                     found   = true;
                     int tmp = ak; ak = ai; ai = tmp;
@@ -1088,8 +1088,8 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
                 {
                     auto ptype = pd->findParticleType(vsname);
                     std::string vstype = ptype->optionValue("bondtype");
-                    for (int pid=0; pid<=0; pid++)
-                    //for (int pid=0; pid<2; pid++)
+                    for (int pid=0; pid<1; pid++)
+
              	    {
                           ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                     ptype->gmxParticleType(),
@@ -1099,16 +1099,16 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
                     newatom.addCore(ai);
                     newatom.addCore(aj);
                     newatom.addCore(ak);
-                    //std::vector<int> vsIds(2);
-                   // vsIds[0] = 1;
-                   // vsIds[1] = -1;
-                    // Set residue number
+
                     newatom.setResidueNumber(atoms_[ai].residueNumber());
+
 
                     gmx::RVec vzero = {0, 0, 0};
                     size_t after = std::max({ai, aj, ak});
                     auto iter = std::find(atomList->begin(), atomList->end(), after);
                     atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3out, vzero));
+
+
 
                     // Create new top
                      Vsite3OUT vsnew(ai, aj, ak, vs3out);
@@ -1138,14 +1138,18 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
     }
 
     // If we found any vsite3 instances, add the vec to the top
-    int nvsites = vsite3out.size();
-    if (nvsites > 0)
+    int nvsites3out = vsite3out.size();
+    if (nvsites3out > 0)
     {
         entries_.insert({itype_vs3out, std::move(vsite3out)});
     }
 
-    return nvsites;
+    return nvsites3out;
 }
+
+
+
+
 
 
 
@@ -1275,16 +1279,31 @@ void Topology::build(const ForceField             *pd,
     setEntryIdentifiers(pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
-    int nvsites = makeVsite2s(pd, &atomList);
+    int nvsites2 = makeVsite2s(pd, &atomList);
+
+    // Before we can make three-particle vsites, we need to create
+    // angles, but only temporarily.
+    makeAngles(pd, *x, LinearAngleMin);
+    int nvsites3    = makeVsite3s(pd, &atomList);
+    int nvsites3out = makeVsite3OUTs(pd, &atomList);
     if (debug)
     {
-        fprintf(debug, "Added %d vsites\n", nvsites);
+        fprintf(debug, "Added %d vsite2 %d vsite3 %d vsite3out\n", nvsites2, nvsites3, nvsites3out);
     }
+    // Now throw away the angles again since we need to reorder the
+    // lists of atoms and vsites.
+    auto itype_a = InteractionType::ANGLES;
+    auto aptr    = entries_.find(itype_a);
+    if (entries_.end() != aptr)
+    {
+        entries_.erase(itype_a);
+    }
+
     // Now time for shells.
     addShells(pd, &atomList);
     if (debug)
     {
-        fprintf(debug, "Added %zu shells\n", atomList.size()-nvsites-atoms_.size());
+        fprintf(debug, "Added %zu shells\n", atomList.size()-nvsites2-nvsites3-nvsites3out-atoms_.size());
     }
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
@@ -1319,9 +1338,19 @@ void Topology::build(const ForceField             *pd,
     // Renumber the atoms in the TopologyEntries that have been created so far.
     renumberAtoms(renumber);
     setEntryIdentifiers(pd, InteractionType::POLARIZATION);
-    if (nvsites > 0)
+    if (nvsites2 > 0)
     {
         setEntryIdentifiers(pd, InteractionType::VSITE2);
+    }
+
+    if (nvsites3 > 0)
+    {
+        setEntryIdentifiers(pd, InteractionType::VSITE3);
+    }
+
+    if (nvsites3out > 0)
+    {
+        setEntryIdentifiers(pd, InteractionType::VSITE3OUT);
     }
 
     // Now make angles etc.
@@ -1571,6 +1600,9 @@ void Topology::fillParameters(const ForceField *pd)
             case F_VSITE2:
                 fillParams(fs, topID, vsite2NR, vsite2_name, &param);
                 break;
+            case F_VSITE3:
+                fillParams(fs, topID, vsite3NR, vsite3_name, &param);
+                break;
             case F_VSITE3OUT:
                 fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
                 break;
@@ -1681,7 +1713,7 @@ void Topology::setIdentifiers(const ForceField *pd)
     for(auto &entry : entries_)
     {
         // TODO this if statement should not be needed.
-        if (InteractionType::VSITE2 != entry.first)
+        if (InteractionType::VSITE2 != entry.first && InteractionType::VSITE3 != entry.first && InteractionType::VSITE3OUT != entry.first)
         {
             setEntryIdentifiers(pd, entry.first);
         }

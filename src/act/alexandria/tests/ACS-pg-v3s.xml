@@ -796,6 +796,7 @@
       <option key="atomnumber" value="0"/>
       <option key="element" value="VS"/>
       <option key="poltype" value="v3_s"/>
+      <option key="bondtype" value="v3"/>
       <option key="row" value="0"/>
       <option key="bondtype" value="v3"/>
       <option key="vdwtype" value="v3"/>
@@ -817,6 +818,7 @@
       <option key="element" value="VS"/>
       <option key="poltype" value="v3out_s"/>
       <option key="row" value="0"/>
+      <option key="bondtype" value="v3out"/>
       <option key="vdwtype" value="v3out"/>
       <option key="bondtype" value="v3out"/>
       <option key="zetatype" value="v3OUT_z"/>
@@ -1736,13 +1738,13 @@
     </parameterlist>
   </interaction>
   <interaction type="VSITE3" function="vsite3" canswap="vsite3">
-    <parameterlist identifier="h~o3~h!v3">
+    <parameterlist identifier="h_b~o3_b~h_b!v3">
       <parameter type="vs3a" unit="" value="-0.55" uncertainty="0" minimum="-1.05" maximum="-0.05" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3b" unit="" value="-0.55" uncertainty="0" minimum="-1.05" maximum="-0.05" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="VSITE3OUT" function="vsite3out" canswap="false">
-    <parameterlist identifier="h~o3~h!v3out">
+    <parameterlist identifier="h_b~o3_b~h_b!v3out">
       <parameter type="vs3out_a" unit="" value="-0.585" uncertainty="0" minimum="-1" maximum="-0.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3out_b" unit="" value="-0.585" uncertainty="0" minimum="-1" maximum="-0.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3out_c" unit="" value="-6.4" uncertainty="0" minimum="-12.8" maximum="0" ntrain="0" mutability="Bounded" nonnegative="no"/>

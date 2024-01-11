@@ -254,7 +254,7 @@ void Vsite2::get(int *ai, int *aj, int *vs) const
 
 void Vsite3::get(int *ai, int *aj, int *ak, int *vs) const
 {
-    check(4);
+    check(3);
     *ai = atomIndex(0);
     *aj = atomIndex(1);
     *ak = atomIndex(2);
