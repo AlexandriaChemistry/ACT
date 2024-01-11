@@ -1724,6 +1724,7 @@
       <parameter type="alpha" unit="Angstrom3" value="4.005" uncertainty="0" minimum="4.005" maximum="4.005" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
+  <interaction type="VSITE2" function="vsite2" canswap="vsite2">
     <parameterlist identifier="br~h!v2">
       <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
