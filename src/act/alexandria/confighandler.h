@@ -55,8 +55,10 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to vector of filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs) = 0;
+    virtual void add_options(std::vector<t_pargs> *pargs,
+                             std::vector<t_filenm> *fnms) = 0;
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -155,8 +157,10 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -287,8 +291,11 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
+
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -411,15 +418,17 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
-     * @param MDoptions Whether or not to add MD specific options
      */
-    void add_pargs(std::vector<t_pargs> *pargs, bool MDoptions);
+    void add_MD_options(std::vector<t_pargs> *pargs);
 
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs) { add_pargs(pargs, false); }
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
+
 
     /*!
      * \brief Check the validity of the provided arguments

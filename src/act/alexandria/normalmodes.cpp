@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022,2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -102,7 +102,7 @@ int nma(int argc, char *argv[])
     };
     SimulationConfigHandler  sch;
     sch.setMinimize(true);
-    sch.add_pargs(&pa, false);
+    sch.add_options(&pa, &fnm);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
