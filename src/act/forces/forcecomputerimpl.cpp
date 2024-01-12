@@ -70,9 +70,9 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
         auto rinv       = gmx::invsqrt(dr2);
         auto rinv2      = rinv*rinv;
         auto rinv6      = rinv2*rinv2*rinv2;
-        auto vvdw_disp  = c6*rinv6;
+        auto vvdw_disp  = -c6*rinv6;
         auto vvdw_rep   = c12*rinv6*rinv6;
-        auto flj        = (12*vvdw_rep - 6*vvdw_disp)*rinv2;
+        auto flj        = (12*vvdw_rep + 6*vvdw_disp)*rinv2;
         if (debug)
         {
             fprintf(debug, "ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g\n",
@@ -125,9 +125,9 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
         auto rinv       = gmx::invsqrt(dr2); 
         auto rinv2      = rinv*rinv;
         auto rinv6      = rinv2*rinv2*rinv2;
-        auto vvdw_disp  = c6*rinv6;     
+        auto vvdw_disp  = -c6*rinv6;     
         auto vvdw_rep   = c8*rinv6*rinv2;
-        auto flj        = (8*vvdw_rep - 6*vvdw_disp)*rinv2;
+        auto flj        = (8*vvdw_rep + 6*vvdw_disp)*rinv2;
         if (debug)
         {       
             fprintf(debug, "ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g\n", ai, aj, vvdw_rep, vvdw_disp, c6, c8);

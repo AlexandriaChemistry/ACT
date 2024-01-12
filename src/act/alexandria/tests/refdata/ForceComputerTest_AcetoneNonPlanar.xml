@@ -5,10 +5,10 @@
   <Real Name="ANGLES_act">1.7379137135588771</Real>
   <Real Name="PROPER_DIHEDRALS_act">15.683562716493238</Real>
   <Real Name="IMPROPER_DIHEDRALS_act">0.0018181936337405302</Real>
-  <Real Name="DISPERSION_act">1.7435183900817089e-05</Real>
+  <Real Name="DISPERSION_act">-1.7435183900817089e-05</Real>
   <Real Name="REPULSION_act">4.2324615744824401e-11</Real>
   <Real Name="COULOMB_act">-34.113608307514852</Real>
-  <Real Name="EPOT_act">-16.409390914113278</Real>
+  <Real Name="EPOT_act">-16.409425784481076</Real>
   <Real Name="o2-1_act fX">-163.02378069615847</Real>
   <Real Name="o2-1_act fY">-332.07596767704996</Real>
   <Real Name="o2-1_act fZ">36.582992001346135</Real>
