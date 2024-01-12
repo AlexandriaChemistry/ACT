@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -82,9 +82,10 @@ void my_fclose(FILE *fp)
     }
 }
 
-void OptACM::add_pargs(std::vector<t_pargs>  *pargs)
+void OptACM::add_options(std::vector<t_pargs>  *pargs,
+                         std::vector<t_filenm> *fnms)
 {
-    t_pargs pa[] =
+    std::vector<t_pargs> pa =
     {
         { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
           "Remove a molecule from training set if shell minimization does not converge."},
@@ -93,12 +94,22 @@ void OptACM::add_pargs(std::vector<t_pargs>  *pargs)
         { "-v",              FALSE, etBOOL, {&verbose_},
           "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
     };
-    for (int i = 0; i < asize(pa); i++) {
+    for (size_t i = 0; i < pa.size(); i++) {
         pargs->push_back(pa[i]);
     }
+    std::vector<t_filenm> filenames = {
+        { efXML, "-o",    "train_ff",    ffWRITE  },
+        { efLOG, "-g",    "train_ff",    ffWRITE  }
+    };
+    for (size_t i = 0; i < filenames.size(); ++i)
+    {
+        fnms->push_back(filenames[i]);
+    }
     mg_.addOptions(pargs, sii_->fittingTargets(iMolSelect::Train));
-    bch_.add_pargs(pargs);
-    gach_.add_pargs(pargs);
+    mg_.addFilenames(fnms);
+
+    bch_.add_options(pargs, fnms);
+    gach_.add_options(pargs, fnms);
 }
 
 void OptACM::check_pargs()
@@ -107,7 +118,7 @@ void OptACM::check_pargs()
     gach_.check_pargs();
 }
 
-void OptACM::optionsFinished(const std::string &outputFile)
+void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
@@ -121,11 +132,16 @@ void OptACM::optionsFinished(const std::string &outputFile)
     // Set prefix and id in sii_
     sii_->fillIdAndPrefix();
     // Set output file for FF parameters
-    baseOutputFileName_ = outputFile;
-    sii_->setOutputFile(outputFile);
+    if (commRec_.isMaster())
+    {
+        baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
+        sii_->setOutputFile(baseOutputFileName_);
+    }
 }
 
-void OptACM::openLogFile(const char *logfileName) {
+void OptACM::openLogFile(const std::vector<t_filenm> &filenms)
+{
+    auto logfileName = opt2fn("-g", filenms.size(), filenms.data());
     fplog_.reset(gmx_ffopen(logfileName, "w"));
 }
 
@@ -697,17 +713,14 @@ int train_ff(int argc, char *argv[])
     std::vector<t_filenm>       filenms =
     {
         { efXML, "-ff",   "aff",         ffRDMULT },
-        { efXML, "-o",    "train_ff",    ffWRITE  },
         { efDAT, "-sel",  "molselect",   ffREAD   },
-        { efLOG, "-g",    "train_ff",    ffWRITE  },
         { efXVG, "-conv", "param_conv" , ffWRITE  },
         { efXVG, "-chi2", "chi_squared", ffWRITE  },
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
     alexandria::OptACM opt;
-    opt.add_pargs(&pargs);
-    opt.mg()->addFilenames(&filenms);
+    opt.add_options(&pargs, &filenms);
     printer.addOptions(&pargs);
     printer.addFileOptions(&filenms);
 
@@ -737,14 +750,14 @@ int train_ff(int argc, char *argv[])
     // Initializes commRec_ in opt
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
-    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
+    opt.optionsFinished(filenms);
 
     // Propagate weights from training set to other sets
     opt.sii()->propagateWeightFittingTargets();
 
     if (opt.commRec()->isMaster())
     {
-        opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
+        opt.openLogFile(filenms);
         print_memory_usage(debug);
         print_header(opt.logFile(), pargs, filenms);
 

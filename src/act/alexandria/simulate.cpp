@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022,2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -114,7 +114,8 @@ int simulate(int argc, char *argv[])
           "Print part of the output in json format" }
     };
     SimulationConfigHandler  sch;
-    sch.add_pargs(&pa, true);
+    sch.add_options(&pa, &fnm);
+    sch.add_MD_options(&pa);
     DimerGenerator           gendimers;
     // We do not want to see those options in simulate, just in b2.
     // gendimers.addOptions(&pa);
