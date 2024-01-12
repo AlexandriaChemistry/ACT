@@ -102,8 +102,8 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
                          std::vector<gmx::RVec>                *forces,
                          std::map<InteractionType, double>     *energies)
 {   
-    double ebond = 0;
-
+    double erep  = 0;
+    double edisp = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto &b : pairs)
@@ -127,16 +127,14 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
         auto rinv6      = rinv2*rinv2*rinv2;
         auto vvdw_disp  = c6*rinv6;     
         auto vvdw_rep   = c8*rinv6*rinv2;
-//        auto vvdw_disp  = 3;
-//	auto vvdw_rep   = 2;
-        auto elj        = vvdw_rep - vvdw_disp;
         auto flj        = (8*vvdw_rep - 6*vvdw_disp)*rinv2;
         if (debug)
         {       
-            fprintf(debug, "ACT ai %d aj %d vvdw: %10g c6: %10g c8: %10g\n", ai, aj, elj, c6, c8);
+            fprintf(debug, "ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g\n", ai, aj, vvdw_rep, vvdw_disp, c6, c8);
         }
 
-        ebond      += elj;
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
         for (int m = 0; (m < DIM); m++)
         {
             auto fij          = flj*dx[m];
@@ -146,9 +144,10 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
     }
     if (debug)               
     {                        
-        fprintf(debug, "ACT vvdwtot: %10g \n", ebond); 
+        fprintf(debug, "ACT vvdw_rep: %10g vvdw_disp: %10g\n", erep, edisp); 
     }
-    energies->insert({InteractionType::VDW, ebond});
+    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
 } 
 
 static void computeLJ14_7(const TopologyEntryVector             &pairs,
@@ -259,7 +258,6 @@ static void computeWBH(const TopologyEntryVector             &pairs,
             }
         }
     }
-    //    energies->insert({InteractionType::VDW, erep+edisp});
     energies->insert({InteractionType::REPULSION, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }

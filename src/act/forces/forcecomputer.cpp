@@ -188,13 +188,6 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                     interaction_function[ffpl.gromacsType()].name);
         }
     }
-    // Avoid double counting. TODO remove the VDW term
-    if (energies->find(InteractionType::DISPERSION) != energies->end() &&
-        energies->find(InteractionType::REPULSION) != energies->end() &&
-        energies->find(InteractionType::VDW) != energies->end())
-    {
-        epot -= energies->find(InteractionType::VDW)->second;
-    }
     energies->insert({ InteractionType::EPOT, epot });
 }
 
