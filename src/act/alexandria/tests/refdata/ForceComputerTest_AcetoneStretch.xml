@@ -5,10 +5,10 @@
   <Real Name="ANGLES0.98_act">1.6749064998308802</Real>
   <Real Name="PROPER_DIHEDRALS0.98_act">15.062394391986754</Real>
   <Real Name="IMPROPER_DIHEDRALS0.98_act">0</Real>
-  <Real Name="DISPERSION0.98_act">1.9723656628050836e-05</Real>
+  <Real Name="DISPERSION0.98_act">-1.9723656628050836e-05</Real>
   <Real Name="REPULSION0.98_act">5.4248585306738046e-11</Real>
   <Real Name="COULOMB0.98_act">-34.804571705226543</Real>
-  <Real Name="EPOT0.98_act">-12.020319606412421</Real>
+  <Real Name="EPOT0.98_act">-12.020359053725677</Real>
   <Real Name="o2-1_act0.98 fX">0.5324467065651235</Real>
   <Real Name="o2-1_act0.98 fY">504.23203445624193</Real>
   <Real Name="o2-1_act0.98 fZ">7.9936057773011271e-15</Real>
@@ -43,10 +43,10 @@
   <Real Name="ANGLES1.07_act">1.6749064998308631</Real>
   <Real Name="PROPER_DIHEDRALS1.07_act">15.062394391986746</Real>
   <Real Name="IMPROPER_DIHEDRALS1.07_act">0</Real>
-  <Real Name="DISPERSION1.07_act">1.1642365282483841e-05</Real>
+  <Real Name="DISPERSION1.07_act">-1.1642365282483841e-05</Real>
   <Real Name="REPULSION1.07_act">1.8901487927496088e-11</Real>
   <Real Name="COULOMB1.07_act">-31.890495745481456</Real>
-  <Real Name="EPOT1.07_act">73.325784976797166</Real>
+  <Real Name="EPOT1.07_act">73.325761692066607</Real>
   <Real Name="o2-1_act1.07 fX">0.4882691574089173</Real>
   <Real Name="o2-1_act1.07 fY">-2758.7742116156869</Real>
   <Real Name="o2-1_act1.07 fZ">1.1102230246251565e-14</Real>
