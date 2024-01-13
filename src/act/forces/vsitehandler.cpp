@@ -39,7 +39,6 @@
  * Adapted for ACT by DvdS 2023-05-17
  */
 #include "actpre.h"
-#include <iostream>
 
 #include "vsitehandler.h"
 
@@ -190,13 +189,6 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
     pbc_rvec_sub(pbc, xj, xi, xij);
     pbc_rvec_sub(pbc, xk, xi, xik);
     cprod(xij, xik, temp);
-
-    std::cout << "xij: " << xij[XX] << " " << xij[YY] << " " << xij[ZZ] << std::endl;
-    std::cout << "xik: " << xik[XX] << " " << xik[YY] << " " << xik[ZZ] << std::endl;
-    std::cout << "temp: " << temp[XX] << " " << temp[YY] << " " << temp[ZZ] << std::endl;
-    std::cout << "a: " << a << std::endl;
-    std::cout << "b: " << b << std::endl;
-    std::cout << "c: " << c << std::endl;
     /* 15 Flops */
 
     x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
