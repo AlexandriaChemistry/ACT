@@ -1045,6 +1045,7 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
         auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
         auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
         auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
+        fprintf(stderr, "%s %d %s %d %s %d\n", bai.c_str(), ai, baj.c_str(),aj, bak.c_str(), ak );
 
         if (debug)
         {
@@ -1094,27 +1095,32 @@ int Topology::makeVsite3OUTs(const ForceField *pd,
                                           0, ptype->mass(), ptype->charge());
 
                           int vs3out = atomList->size();
+
+                          int sign= -1 + 2*pid;
                           newatom.addCore(ai);
                           newatom.addCore(aj);
                           newatom.addCore(ak);
 
+
                           newatom.setResidueNumber(atoms_[ai].residueNumber());
+                          newatom.setResidueNumber(atoms_[aj].residueNumber());
+                          newatom.setResidueNumber(atoms_[ak].residueNumber());
 
                           gmx::RVec vzero = {0, 0, 0};
-                          size_t after = std::max({ai, aj, ak});
+                          size_t after = std::max({ai, aj, ak, sign});
                           auto iter = std::find(atomList->begin(), atomList->end(), after);
                           atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3out, vzero));
 
                           // Create new topology entry
-                          Vsite3OUT vsnew(ai, aj, ak, vs3out);
+                          Vsite3OUT vsnew(ai, aj, ak, vs3out, sign);
                           if (debug)
                           {
-                              fprintf(debug, "Adding vs3out %s%d %s%d %s%d %d\n",
+                              fprintf(debug, "Adding vs3out %s%d %s%d %s%d %d %d\n",
                                       atoms_[ai].element().c_str(), ai,
                                       atoms_[aj].element().c_str(), aj,
-                                      atoms_[ak].element().c_str(), ak, vs3out);
+                                      atoms_[ak].element().c_str(), ak, vs3out, sign);
                           }
-                          
+
                           // Add bond orders, cp from the bond.
                           for (auto b : border)
                           {

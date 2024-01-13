@@ -39,6 +39,7 @@
  * Adapted for ACT by DvdS 2023-05-17
  */
 #include "actpre.h"
+#include <iostream>
 
 #include "vsitehandler.h"
 
@@ -189,6 +190,13 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
     pbc_rvec_sub(pbc, xj, xi, xij);
     pbc_rvec_sub(pbc, xk, xi, xik);
     cprod(xij, xik, temp);
+
+    std::cout << "xij: " << xij[XX] << " " << xij[YY] << " " << xij[ZZ] << std::endl;
+    std::cout << "xik: " << xik[XX] << " " << xik[YY] << " " << xik[ZZ] << std::endl;
+    std::cout << "temp: " << temp[XX] << " " << temp[YY] << " " << temp[ZZ] << std::endl;
+    std::cout << "a: " << a << std::endl;
+    std::cout << "b: " << b << std::endl;
+    std::cout << "c: " << c << std::endl;
     /* 15 Flops */
 
     x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
@@ -1104,11 +1112,23 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 constr_vsite3FAD(x[ai], x[aj], x[ak], x[al],
                                  params[vsite3fadA], params[vsite3fadB], &pbc_);
                 break;
-            case InteractionType::VSITE3OUT:
-                constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
-                                 params[vsite3outA], params[vsite3outB],
-                                 params[vsite3outC], &pbc_);
+            // case InteractionType::VSITE3OUT:
+            //     constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+            //                      params[vsite3outA], params[vsite3outB],
+            //                      vs.sign()*params[vsite3outC], &pbc_);
                 break;
+                case InteractionType::VSITE3OUT:
+                    {
+                        auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                        constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                                         params[vsite3outA], params[vsite3outB],
+                                         vsite3out_vs->sign() * params[vsite3outC], &pbc_);
+
+                                         printf("sign= %d, A=%g, B=%g, C=%g, D=%g \n", vsite3out_vs->sign(),params[vsite3outA], params[vsite3outB], params[vsite3outC], vsite3out_vs->sign() * params[vsite3outC]);
+                        break;
+                    }
+
+
 #ifdef LATER
                 case F_VSITE4FD:
                 aj = ia[3];

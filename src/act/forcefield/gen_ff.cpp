@@ -216,6 +216,7 @@ static void add_vsites(const char *vsfile,
             double bmax = my_atof(ptr[6], "vsite_parameter_max");
             double cmin = my_atof(ptr[7], "vsite_parameter_min");
             double cmax = my_atof(ptr[8], "vsite_parameter_max");
+
             ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
                                          Mutability::Bounded, false, false);
             ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
@@ -224,10 +225,12 @@ static void add_vsites(const char *vsfile,
             ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                          Mutability::Bounded, false, false);
 
+    
 
             vsite3out.addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);//"vs3outparam_a"
             vsite3out.addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);//"vs3outparam_b"
             vsite3out.addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);//"vs3outparam_c"
+
         }
         else
         {
