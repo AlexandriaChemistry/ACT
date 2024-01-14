@@ -109,19 +109,19 @@ static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk
 
     if (pbc)
     {
-        rvec dxj, dxk;
+        rvec dxi, dxk;
 
-        pbc_dx_aiuc(pbc, xj, xi, dxj);
-        pbc_dx_aiuc(pbc, xk, xi, dxk);
-        x[XX] = xi[XX] + a*dxj[XX] + b*dxk[XX];
-        x[YY] = xi[YY] + a*dxj[YY] + b*dxk[YY];
-        x[ZZ] = xi[ZZ] + a*dxj[ZZ] + b*dxk[ZZ];
+        pbc_dx_aiuc(pbc, xj, xi, dxi);
+        pbc_dx_aiuc(pbc, xj, xk, dxk);
+        x[XX] = xj[XX] + a*dxi[XX] + b*dxk[XX];
+        x[YY] = xj[YY] + a*dxi[YY] + b*dxk[YY];
+        x[ZZ] = xj[ZZ] + a*dxi[ZZ] + b*dxk[ZZ];
     }
     else
     {
-        x[XX] = c*xi[XX] + a*xj[XX] + b*xk[XX];
-        x[YY] = c*xi[YY] + a*xj[YY] + b*xk[YY];
-        x[ZZ] = c*xi[ZZ] + a*xj[ZZ] + b*xk[ZZ];
+        x[XX] = c*xj[XX] + a*xi[XX] + b*xk[XX];
+        x[YY] = c*xj[YY] + a*xi[YY] + b*xk[YY];
+        x[ZZ] = c*xj[ZZ] + a*xi[ZZ] + b*xk[ZZ];
         /* 15 Flops */
     }
 
@@ -157,6 +157,7 @@ static gmx_unused void constr_vsite3FD(const rvec xi, const rvec xj, const rvec 
 
 static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b, const t_pbc *pbc)
 {
+    gmx_fatal(FARGS, "Fix code in constr_vsite3FAD before using");
     rvec xij, xjk, xp;
     real a1, b1, c1, invdij;
 
@@ -184,16 +185,16 @@ static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x
 static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x,
                              real a, real b, real c, const t_pbc *pbc)
 {
-    rvec xij, xik, temp;
+    rvec xij, xkj, temp;
 
     pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xk, xi, xik);
-    cprod(xij, xik, temp);
+    pbc_rvec_sub(pbc, xj, xk, xkj);
+    cprod(xij, xkj, temp);
     /* 15 Flops */
 
-    x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
-    x[YY] = xi[YY] + a*xij[YY] + b*xik[YY] + c*temp[YY];
-    x[ZZ] = xi[ZZ] + a*xij[ZZ] + b*xik[ZZ] + c*temp[ZZ];
+    x[XX] = xj[XX] + a*xij[XX] + b*xkj[XX] + c*temp[XX];
+    x[YY] = xj[YY] + a*xij[YY] + b*xkj[YY] + c*temp[YY];
+    x[ZZ] = xj[ZZ] + a*xij[ZZ] + b*xkj[ZZ] + c*temp[ZZ];
     /* 18 Flops */
 
     /* TOTAL: 33 flops */
@@ -202,6 +203,7 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
 static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
                                        real a, real b, real c, const t_pbc *pbc)
 {
+    gmx_fatal(FARGS, "Fix code in constr_vsite4FD before using");
     rvec xij, xjk, xjl, temp;
     real d;
 
@@ -230,6 +232,7 @@ static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec 
 static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
                                         real a, real b, real c, const t_pbc *pbc)
 {
+    gmx_fatal(FARGS, "Fix code in constr_vsite4FDN before using");
     rvec xij, xik, xil, ra, rb, rja, rjb, rm;
     real d;
 
@@ -270,6 +273,7 @@ static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec
 static gmx_unused int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
                                     rvec *x, const t_pbc *pbc)
 {
+    gmx_fatal(FARGS, "Fix code in constr_vsiten before using");
     rvec x1, dx;
     dvec dsum;
     int  n3, av, ai;
@@ -1107,6 +1111,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
 
             case InteractionType::VSITE3OUT:
                 {
+                    al = atomIndices[3];
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
