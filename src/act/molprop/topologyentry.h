@@ -531,7 +531,8 @@ class Vsite3OUT : public TopologyEntry
     Vsite3OUT() {}
 
     //! Constructor setting the ids of the atoms and the bondorder
-    Vsite3OUT(int ai, int aj,  int ak, int vs)
+    Vsite3OUT(int ai, int aj,  int ak, int vs, int sign)
+       : sign_(sign)
     {
         addAtom(ai);
         addAtom(aj);
@@ -539,14 +540,22 @@ class Vsite3OUT : public TopologyEntry
         addAtom(vs);
     }
 
+       int sign() const
+       {
+            return sign_;
+       }
+
+ private:
+    int sign_=0;
+
     //! Returns the ids of the atoms and the bondorder
-    void get(int *ai, int *aj, int *ak, int *vs) const;
+    void get(int *ai, int *aj, int *ak, int *vs, int *sign) const;
 
     //! Returns the first atom id
-    int aI() const
-    {
-        return atomIndex(0);
-    }
+   int aI() const
+   {
+       return atomIndex(0);
+   }
     //! Returns the second atom id
    int aJ() const
    {
@@ -559,17 +568,16 @@ class Vsite3OUT : public TopologyEntry
    }
 
    //! \return virtual site ID
-    int vs() const
-    {
+
+   int vs() const
+   {
         return atomIndex(3);
-     }
+   }
+
    Vsite3OUT swap() const;
 
    bool operator==(const Vsite3OUT &other) const;
 };
-
-
-
 
 
 } // namespace alexandria

@@ -1104,11 +1104,19 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 constr_vsite3FAD(x[ai], x[aj], x[ak], x[al],
                                  params[vsite3fadA], params[vsite3fadB], &pbc_);
                 break;
+
             case InteractionType::VSITE3OUT:
-                constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
-                                 params[vsite3outA], params[vsite3outB],
-                                 params[vsite3outC], &pbc_);
-                break;
+                    {
+                        auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                        constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                                         params[vsite3outA], params[vsite3outB],
+                                         vsite3out_vs->sign() * params[vsite3outC], &pbc_);
+
+                                         printf("sign= %d, A=%g, B=%g, C=%g, D=%g \n", vsite3out_vs->sign(),params[vsite3outA], params[vsite3outB], params[vsite3outC], vsite3out_vs->sign() * params[vsite3outC]);
+                        break;
+                    }
+
+
 #ifdef LATER
                 case F_VSITE4FD:
                 aj = ia[3];
