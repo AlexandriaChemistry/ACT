@@ -636,7 +636,7 @@ class ActOpenMMSim:
         if 'CUDA' == plform:
             properties = {'CudaPrecision': 'single'}
             self.usePrecisionCuda = self.sim_params.getStr('usePrecisionCuda')
-        else:
+        elif not "Reference" == plform:
             if self.platform.supportsDoublePrecision():
                 self.txt.write("Setting precision to double\n")
                 self.platform.setPropertyValue("Precision", "double")
