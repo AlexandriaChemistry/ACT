@@ -1091,7 +1091,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
             case InteractionType::VSITE3:
                al = atomIndices[3];
                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
-                            params[vsite3A], params[vsite3B], &pbc_);
+                             params[vsite3A], params[vsite3B], &pbc_);
                 break;
                 //case F_VSITE3FD:
                 //aj = ia[3];
@@ -1106,39 +1106,40 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 break;
 
             case InteractionType::VSITE3OUT:
+                {
+                    auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                                     params[vsite3outA], params[vsite3outB],
+                                     vsite3out_vs->sign() * params[vsite3outC], &pbc_);
+                    if (debug)
                     {
-                        auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
-                        constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
-                                         params[vsite3outA], params[vsite3outB],
-                                         vsite3out_vs->sign() * params[vsite3outC], &pbc_);
-
-                                         printf("sign= %d, A=%g, B=%g, C=%g, D=%g \n", vsite3out_vs->sign(),params[vsite3outA], params[vsite3outB], params[vsite3outC], vsite3out_vs->sign() * params[vsite3outC]);
-                        break;
+                        fprintf(debug, "sign= %d, A=%g, B=%g, C=%g, D=%g \n", vsite3out_vs->sign(),params[vsite3outA], params[vsite3outB], params[vsite3outC], vsite3out_vs->sign() * params[vsite3outC]);
                     }
-
+                    break;
+                }
 
 #ifdef LATER
-                case F_VSITE4FD:
+            case F_VSITE4FD:
                 aj = ia[3];
                 ak = ia[4];
                 al = ia[5];
                 b1 = ip[tp].vsite.b;
-                        c1 = ip[tp].vsite.c;
-                        constr_vsite4FD(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
-                                        pbc_null2);
-                        break;
-                    case F_VSITE4FDN:
-                        aj = ia[3];
-                        ak = ia[4];
-                        al = ia[5];
-                        b1 = ip[tp].vsite.b;
-                        c1 = ip[tp].vsite.c;
-                        constr_vsite4FDN(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
-                                         pbc_null2);
-                        break;
-                    case F_VSITEN:
-                        inc = constr_vsiten(ia, ip, x, pbc_null2);
-                        break;
+                c1 = ip[tp].vsite.c;
+                constr_vsite4FD(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
+                                pbc_null2);
+                break;
+            case F_VSITE4FDN:
+                aj = ia[3];
+                ak = ia[4];
+                al = ia[5];
+                b1 = ip[tp].vsite.b;
+                c1 = ip[tp].vsite.c;
+                constr_vsite4FDN(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
+                                 pbc_null2);
+                break;
+            case F_VSITEN:
+                inc = constr_vsiten(ia, ip, x, pbc_null2);
+                break;
 #endif
             default:
                 break;
