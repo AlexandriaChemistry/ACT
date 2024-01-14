@@ -225,8 +225,6 @@ static void add_vsites(const char *vsfile,
             ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                          Mutability::Bounded, false, false);
 
-    
-
             vsite3out.addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);//"vs3outparam_a"
             vsite3out.addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);//"vs3outparam_b"
             vsite3out.addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);//"vs3outparam_c"

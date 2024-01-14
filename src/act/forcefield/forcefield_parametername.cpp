@@ -71,6 +71,6 @@ const char *vsite3_name[vsite3NR] = { "vs3a", "vs3b" };
 
 const char *vsite3fad_name[vsite3fadNR] = { "vs3fad_a", "vs3fad_b" };
 
-const char *vsite3out_name[vsite3outNR] = { "vs3out_a", "vs3out_b", "vs3out_c"};
+const char *vsite3out_name[vsite3outNR] = { "vs3out_a", "vs3out_b", "vs3out_c" };
 
 } // namespace alexandria

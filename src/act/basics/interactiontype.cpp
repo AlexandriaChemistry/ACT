@@ -109,10 +109,10 @@ int interactionTypeToNatoms(InteractionType iType)
 {
     switch (iType)
     {
-    case InteractionType::VSITE3OUT:
     case InteractionType::PROPER_DIHEDRALS:
     case InteractionType::IMPROPER_DIHEDRALS:
     case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3OUT:
     case InteractionType::VSITE3:
         return 4;
     case InteractionType::ANGLES:
