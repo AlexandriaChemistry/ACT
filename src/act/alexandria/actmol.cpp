@@ -954,14 +954,15 @@ void ACTMol::PrintTopology(const char                  *fn,
             auto gp = qmProperty(mpo, T, JobType::OPT);
             if (gp)
             {
-                //auto vec = gp->getVector();
-                //qelec->setMultipole(mpo, vec);
-                auto mymu = qelec.getMultipole(mpo);
-                commercials.push_back(gmx::formatString("%s %s (%s)\n",
-                                                        mylot.c_str(), mpo_name(mpo), gp->getUnit()));
-                for(auto &fmp : formatMultipole(mpo, mymu))
+                if (qelec.hasMultipole(mpo))
                 {
-                    commercials.push_back(fmp);
+                    auto mymu = qelec.getMultipole(mpo);
+                    commercials.push_back(gmx::formatString("%s %s (%s)\n",
+                                                            mylot.c_str(), mpo_name(mpo), gp->getUnit()));
+                    for(auto &fmp : formatMultipole(mpo, mymu))
+                    {
+                        commercials.push_back(fmp);
+                    }
                 }
                 if (qcalc->hasMultipole(mpo))
                 {
