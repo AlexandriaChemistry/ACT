@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -368,25 +368,13 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
     }
 }
 
-static void analyzeForceField(ForceField           *pd,
-                           const std::string &analyze)
+static void analyzeForceField(ForceField *pd)
 {
-    bool found;
-    
-    auto myset = findInteractionMap(analyze, &found);
-    if (!found)
-    {
-        return;
-    }
     int    mindata   = 1;
     double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {
         auto itype = fc.first;
-        if (myset.find(itype) == myset.end())
-        {
-            continue;
-        }
         for(auto &fm : fc.second.parametersConst())
         {
             auto myid = fm.first;
@@ -416,10 +404,10 @@ static void analyzeForceField(ForceField           *pd,
     }
 }
 
-static void dumpForceField(ForceField           *pd,
-                        const std::string &analyze,
-                        const std::string &particle,
-                        const std::string &filenm)
+static void dumpForceField(ForceField        *pd,
+                           const std::string &analyze,
+                           const std::string &particle,
+                           const std::string &filenm)
 {
     bool found;
     
@@ -534,8 +522,8 @@ static void copy_missing(const ForceField     *pdref,
     }
 }
 
-static void implant_values(const ForceField     *pdref,
-                           ForceField           *pdout,
+static void implant_values(const ForceField  *pdref,
+                           ForceField        *pdout,
                            const std::string &analyze)
 {
     bool found;
@@ -727,6 +715,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
+    gmx_bool     bounds     = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -755,6 +744,8 @@ int edit_ff(int argc, char*argv[])
           "Reset the limits for a parameter (class) to the current value of the parameter times this number (between 0 and 1) and one over the value. If you set e.g. -limits 0.8 the parameter min and max will be set to 0.8 respectively 1.25 times the present value." },
         { "-ana", FALSE, etSTR, {&analyze},
           "Analyze either the EEM, the BONDS or OTHER parameters in a simple manner" },
+        { "-bounds", FALSE, etBOOL, {&bounds},
+          "Check whether any parameter is hitting the wall, i.e. is at one of the boundaries." },
         { "-copy_missing", FALSE, etSTR, {&missing},
           "Copy either the EEM, the BONDS or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
         { "-replace", FALSE, etSTR, {&replace},
@@ -817,6 +808,10 @@ int edit_ff(int argc, char*argv[])
                 compare_pd(&pd, &pd2, parameter);
             }
         }
+        else if (bounds)
+        {
+            analyzeForceField(&pd);
+        }
         else if (strlen(analyze) > 0)
         {
             auto dumpfn = opt2fn_null("-dump", NFILE, fnm);
@@ -827,10 +822,6 @@ int edit_ff(int argc, char*argv[])
             else if (plot)
             {
                 plotInteractions(&pd, analyze);
-            }
-            else
-            {
-                analyzeForceField(&pd, analyze);
             }
         }
         else if (De2D0)
