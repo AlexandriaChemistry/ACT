@@ -278,6 +278,10 @@ int gentop(int argc, char *argv[])
             fprintf(stderr, "Could not read molecule(s) from  input file %s.\n", molFile);
             return 1;
         }
+        if (nullptr != opt2fn_null("-pdbdiff",  NFILE, fnm))
+        {
+            fprintf(stderr, "WARNING: Cannot generate a pdbdiff file from user defined coordinates. Use the -db flag instead.\n");
+        }
     }
     else
     {
