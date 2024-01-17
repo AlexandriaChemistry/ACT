@@ -215,6 +215,24 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
     return eqgen;
 }
 
+bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
+{
+    if (atoms->size() != natoms_)
+    {
+        return false;
+    }
+    size_t k = 0;
+    for(size_t i = 0; i < topologies_.size(); i++)
+    {
+        auto ats = topologies_[i]->atoms();
+        for(size_t j = 0; j < ats.size(); j++)
+        {
+            (*atoms)[k++].setCharge(ats[j].charge());
+        }
+    }
+    return true;
+}
+
 bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double> >&qmap)
 {
     bool success = true;
@@ -241,6 +259,7 @@ bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double>
             success = false;
         }
     }
+    fixedQ_ = success;
     return success;
 }
 

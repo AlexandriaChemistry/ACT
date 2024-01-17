@@ -72,6 +72,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::BondOrder,                "Determining bond order" },
     { immStatus::RespInit,                 "RESP Initialization" },
     { immStatus::ChargeGeneration,         "Charge generation" },
+    { immStatus::MissingChargeGenerationParameters, "Parameters for charge generation missing" },
     { immStatus::ShellMinimization,        "Shell minimization" },
     { immStatus::Topology,                 "No input to generate a topology" },
     { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },

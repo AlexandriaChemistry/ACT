@@ -755,7 +755,12 @@ size_t MolGen::Read(FILE                                *fp,
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
-                    if (!fragments->setCharges(qmap))
+                    if (fragments->setCharges(qmap))
+                    {
+                        // Copy charges to the high-level topology as well
+                        fragments->fetchCharges(actmol.atoms());
+                    }
+                    else
                     {
                         if (fp)
                         {
@@ -941,7 +946,12 @@ size_t MolGen::Read(FILE                                *fp,
             if (immStatus::OK == imm)
             {
                 auto fragments = actmol.fragmentHandler();
-                if (!fragments->setCharges(qmap))
+                if (fragments->setCharges(qmap))
+                {
+                    // Copy charges to the high-level topology as well
+                    fragments->fetchCharges(actmol.atoms());
+                }
+                else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                     std::vector<double> dummy;
