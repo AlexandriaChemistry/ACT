@@ -578,6 +578,11 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
                                                        getMolname().c_str(), atomsConst().size(), qold.size()).c_str()));
     }
     immStatus imm       = immStatus::OK;
+    if (fraghandler_->fixedCharges())
+    {
+        // We do not need to derive charges again, since they were set once already.
+        return imm;
+    }
     int       iter      = 0;
     bool      converged = true;
     double    EemRms    = 0;
@@ -586,8 +591,9 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     do
     {
         EemRms = 0;
-        if (eQgen::OK == fraghandler_->generateCharges(debug, getMolname(),
-                                                       *coords, pd, atoms()))
+        auto eqgen = fraghandler_->generateCharges(debug, getMolname(),
+                                                   *coords, pd, atoms());
+        if (eQgen::OK == eqgen)
         {
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
             std::vector<double> qnew;
@@ -601,6 +607,10 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
             }
             EemRms   /= natom;
             converged = (EemRms < qTolerance_) || !haveShells();
+        }
+        else if (eQgen::NOSUPPORT == eqgen)
+        {
+            imm = immStatus::MissingChargeGenerationParameters;
         }
         else
         {
