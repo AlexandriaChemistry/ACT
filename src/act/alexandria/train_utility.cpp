@@ -1309,8 +1309,6 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
     std::map<std::string, double> molEpot;
-    auto alg   = pd->chargeGenerationAlgorithm();
-    auto qtype = qType::Calc;
     std::map<std::string, std::vector<ACTEnergy > > allEpot; 
     std::map<std::string, std::vector<ACTEnergy > > allEinter; 
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
@@ -1326,12 +1324,9 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                     mol->symmetryNumber(),
                     iMolSelectName(ims));
 
-            // Recalculate the atomic charges using the optimized parameters.
-            std::vector<double>    dummy;
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
-            mol->GenerateCharges(pd, forceComp, alg, qtype, dummy, &coords, &forces);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             for (auto &i : qTypes())

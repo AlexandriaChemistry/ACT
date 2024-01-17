@@ -140,10 +140,12 @@ class ACT:
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
 
-        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -charges %s -sel %s -g %s" % 
+        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" %
                 ( ForceFieldFileIn, ForceFieldFileOut,
-                  self.molpropfile, self.chargesfile,
+                  self.molpropfile,
                   self.selectionfile, LogFile ) )
+        if len(self.chargesfile) > 0:
+            cmd += " -charges " + self.chargesfile
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
         ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "phi0", "c1", "c2", "c3", "bondenergy" ]

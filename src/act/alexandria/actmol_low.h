@@ -98,6 +98,8 @@ enum class immStatus {
     NoMolpropCharges,
     //! Problem generating charges
     ChargeGeneration,
+    //! Missing charge generation parameters
+    MissingChargeGenerationParameters,
     //! Shell minimization did not converge
     ShellMinimization,
     //! QM Inconsistency (ESP dipole does not match Electronic)

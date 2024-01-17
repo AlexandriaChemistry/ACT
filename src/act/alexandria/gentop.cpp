@@ -358,7 +358,12 @@ int gentop(int argc, char *argv[])
             actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
             auto fragments  = actmol.fragmentHandler();
             auto topologies = fragments->topologies();
-            if (!fragments->setCharges(qmap))
+            if (fragments->setCharges(qmap))
+            {
+                // Copy charges to the high-level topology as well
+                fragments->fetchCharges(actmol.atoms());
+            }
+            else
             {
                 auto qtype = qType::Calc;
                 std::vector<double> myq;

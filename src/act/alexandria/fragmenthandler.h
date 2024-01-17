@@ -55,6 +55,8 @@ namespace alexandria
         std::vector<size_t>                atomStart_;
         //! Pointer to copy of the fragments
         std::vector<double>                qtotal_;
+        //! Whether charges are fixed or not. They are when set from a charge map.
+        bool                               fixedQ_ = false;
         //! Total number of atoms
         size_t                             natoms_ = 0;
     public:
@@ -105,13 +107,18 @@ namespace alexandria
          * \param[in] atoms The atoms from the complete topology for all fragments
          */
         void setCharges(const std::vector<ActAtom> &atoms);
-        
+        /*! \brief Copy charges from fragments back to atoms
+         * \param[inout] atoms The atoms to copy to.
+         * \return whether atoms->size() equals the sum of the number of atoms in the fragments.
+         */
+        bool fetchCharges(std::vector<ActAtom> *atoms);
         /*! \brief Copy charges from a charge map
          * \param[in] qmap The charge map
          * \return true if charges for all fragments were found
          */
         bool setCharges(const std::map<std::string, std::vector<double> >&qmap);
-        
+        //! \return whether charges are fixed or not
+        bool fixedCharges() const { return fixedQ_; }
         /*! \brief Set the charge generation algorithm to use
          * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
          */
