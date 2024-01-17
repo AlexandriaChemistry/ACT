@@ -529,11 +529,15 @@ class ActOpenMMSim:
             self.fgnumber[directname]  = fgnumber
             force.setName(directname)
             # Now for the PME part
-            new_fgnumber += 1
-            recipname = fcname + ' (reciprocal space)'
-            self.force_group[new_fgnumber] = recipname
-            self.fgnumber[recipname]       = new_fgnumber
-            force.setReciprocalSpaceForceGroup(new_fgnumber)
+           ### blue
+            if fcname != "CustomManyParticleForce":
+            ### three body dispersion has no reciprocal space, adding a if and a indent
+
+                new_fgnumber += 1
+                recipname = fcname + ' (reciprocal space)'
+                self.force_group[new_fgnumber] = recipname
+                self.fgnumber[recipname]       = new_fgnumber
+                force.setReciprocalSpaceForceGroup(new_fgnumber)
         elif newfg:
             new_fgnumber += 1
             self.force_group[new_fgnumber] = fcname
@@ -601,7 +605,6 @@ class ActOpenMMSim:
         self.dt                 = self.sim_params.getFloat('dt')
         self.equilibrationSteps = self.sim_params.getInt('equilibrationSteps')
         self.steps              = self.sim_params.getInt('steps')
-        
         self.nonbondedMethod           = nbmethod[self.sim_params.getStr('nonbondedMethod')]
         self.use_switching_function    = self.sim_params.getBool('use_switching_function')
         self.switch_width              = self.sim_params.getFloat('switch_width')
@@ -772,6 +775,8 @@ class ActOpenMMSim:
         """
         cnbname       = "CustomNonbondedForce"
         dforce        = "DrudeForce"
+        #BLUE
+        DDDforce      = "CustomManyParticleForce"
         forces        = {}
         self.customnb = None
         drudeforce    = None
@@ -784,6 +789,11 @@ class ActOpenMMSim:
                 self.customnb = forces[cnbname]
             elif dforce == fname:
                 drudeforce = forces[dforce]
+            ####blue# three body dispersion
+            if DDDforce == fname:
+                self.CustomDDDforce = forces[DDDforce]
+                self.add_force_group(self.CustomDDDforce, True, False)
+            ####blue
         self.count_forces("Direct space 1")
         # There always is a regular NonbondedForce
         self.nonbondedforce  = forces['NonbondedForce']
@@ -1020,6 +1030,8 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
 
     #################################################
+
+
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
         if self.system.isVirtualSite(iatom) or self.system.isVirtualSite(jatom):
             return True
@@ -1177,6 +1189,20 @@ class ActOpenMMSim:
         self.add_direct_space_force()
         self.add_bonded_forces()
         self.add_excl_correction()
+
+#blue, printing of details 
+        
+        for g in self.forcefield.getGenerators():
+#            print(g)
+            if isinstance(g, forcefield.CustomManyParticleGenerator):
+                print(g.__dir__())
+                self.txt.write("Many particle force detected in the force field. Following lines concern this force:\n")
+                self.txt.write(f"This is the global C9 parameter {g.globalParams['C9']}\n")
+                self.txt.write(f"This is the permutation mode index {g.permutationMode}\n")
+                self.txt.write(f"This is the particle per set number {g.particlesPerSet}\n")
+                self.txt.write(f"This is the bond cutoff {g.bondCutoff}\n")
+                self.txt.write(f"Finally, this is the energy expression:  {g.energy}\n")
+#blue
         for force in self.system.getForces():
             if (force.getName() in [ "CustomAngleForce", "HarmonicAngleForce" ] and
                 0 == force.getNumAngles()):
