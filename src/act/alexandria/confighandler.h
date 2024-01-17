@@ -405,9 +405,11 @@ private:
     //! Tolerance on mean square force for minimizer.
     double             forceToler_  = 1e-4;
     //! Number of retries for minimizing
-    int                minimizeRetries_ = 3;
+    int                minimizeRetries_      = 3;
     //! Max random displacement (nm) before re-trying to minize a structure
     double             minimizeDisplacement_ = 0.002;
+    //! Whether to force using displacement and reminimize even if converged
+    bool               forceReminimize_      = false;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
     double             overRelax_   = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
@@ -471,6 +473,9 @@ public:
 
     //! \return max displacement when retrying to minimize
     double minimizeDisplacement() const { return minimizeDisplacement_; }
+
+    //! \return whether to force multiple minimizations
+    bool forceReminimize() const { return forceReminimize_; }
 
     //! \brief Set the minimization algorithm
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
