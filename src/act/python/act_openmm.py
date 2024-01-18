@@ -529,9 +529,8 @@ class ActOpenMMSim:
             self.fgnumber[directname]  = fgnumber
             force.setName(directname)
             # Now for the PME part
-           ### blue
+            ### three body dispersion has no reciprocal space
             if fcname != "CustomManyParticleForce":
-            ### three body dispersion has no reciprocal space, adding a if and a indent
 
                 new_fgnumber += 1
                 recipname = fcname + ' (reciprocal space)'
@@ -775,7 +774,6 @@ class ActOpenMMSim:
         """
         cnbname       = "CustomNonbondedForce"
         dforce        = "DrudeForce"
-        #BLUE
         DDDforce      = "CustomManyParticleForce"
         forces        = {}
         self.customnb = None
@@ -789,11 +787,10 @@ class ActOpenMMSim:
                 self.customnb = forces[cnbname]
             elif dforce == fname:
                 drudeforce = forces[dforce]
-            ####blue# three body dispersion
+            # three body dispersion
             if DDDforce == fname:
                 self.CustomDDDforce = forces[DDDforce]
                 self.add_force_group(self.CustomDDDforce, True, False)
-            ####blue
         self.count_forces("Direct space 1")
         # There always is a regular NonbondedForce
         self.nonbondedforce  = forces['NonbondedForce']
@@ -1190,10 +1187,8 @@ class ActOpenMMSim:
         self.add_bonded_forces()
         self.add_excl_correction()
 
-#blue, printing of details 
-        
+        #printing of details for many particle force from force field 
         for g in self.forcefield.getGenerators():
-#            print(g)
             if isinstance(g, forcefield.CustomManyParticleGenerator):
                 print(g.__dir__())
                 self.txt.write("Many particle force detected in the force field. Following lines concern this force:\n")
@@ -1202,7 +1197,6 @@ class ActOpenMMSim:
                 self.txt.write(f"This is the particle per set number {g.particlesPerSet}\n")
                 self.txt.write(f"This is the bond cutoff {g.bondCutoff}\n")
                 self.txt.write(f"Finally, this is the energy expression:  {g.energy}\n")
-#blue
         for force in self.system.getForces():
             if (force.getName() in [ "CustomAngleForce", "HarmonicAngleForce" ] and
                 0 == force.getNumAngles()):
