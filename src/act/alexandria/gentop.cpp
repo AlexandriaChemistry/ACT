@@ -261,8 +261,8 @@ int gentop(int argc, char *argv[])
         {
             molnm = (char *)"MOL";
         }
-        std::vector<MolProp>  mps;
-        double qtot_babel = qtot;
+        std::vector<MolProp> mps;
+        double               qtot_babel = qtot;
         if (readBabel(&pd, molFile, &mps, molnm, iupac, conf, &method, &basis,
                       maxpot, nsymm, jobtype, &qtot_babel, addHydrogens, box))
         {
@@ -283,58 +283,56 @@ int gentop(int argc, char *argv[])
             fprintf(stderr, "WARNING: Cannot generate a pdbdiff file from user defined coordinates. Use the -db flag instead.\n");
         }
     }
-    else
+    const char *molpropDatabase = opt2fn_null("-charges", NFILE, fnm);
+    if (molpropDatabase || strlen(molpropDatabase) > 0)
     {
-        const char *molpropDatabase = opt2fn_null("-charges", NFILE, fnm);
-        if (!molpropDatabase || strlen(molpropDatabase) == 0)
-        {
-            fprintf(stderr, "Empty database file name\n");
-            return 1;
-        }
         std::vector<MolProp> mps;
         MolPropRead(molpropDatabase, &mps);
-        std::vector<std::string> mymols;
-        if (strlen(dbname) > 0)
+        if (strlen(molFile) == 0)
         {
-            if (bVerbose)
+            std::vector<std::string> mymols;
+            if (strlen(dbname) > 0)
             {
-                printf("Looking up %s in a molecule database %s.\n",
-                       dbname, molpropDatabase);
-            }
-            mymols = split(dbname, ' ');
-        }
-        if (mymols.empty())
-        {
-            for(const auto &mp : mps)
-            {
-                ACTMol mm;
-                mm.Merge(&(mp));
-                actmols.push_back(mm);
-            }
-        }
-        else
-        {
-            for(auto mymol : mymols)
-            {
-                const auto newmp = std::find_if(mps.begin(), mps.end(),
-                                                [&mymol](const MolProp &x)
-                                                { return x.getMolname() == mymol; });
-                if (newmp == mps.end())
+                if (bVerbose)
                 {
-                    fprintf(stderr, "Molecule %s not found in database", mymol.c_str());
+                    printf("Looking up %s in a molecule database %s.\n",
+                           dbname, molpropDatabase);
                 }
-                else
+                mymols = split(dbname, ' ');
+            }
+            if (mymols.empty())
+            {
+                for(const auto &mp : mps)
                 {
                     ACTMol mm;
-                    mm.Merge(&(*newmp));
+                    mm.Merge(&(mp));
                     actmols.push_back(mm);
                 }
             }
-        }
-        if (actmols.empty())
-        {
-            fprintf(stderr, "Couldn't find any of the selected molecules\n");
-            return 0;
+            else
+            {
+                for(auto mymol : mymols)
+                {
+                    const auto newmp = std::find_if(mps.begin(), mps.end(),
+                                                    [&mymol](const MolProp &x)
+                                                    { return x.getMolname() == mymol; });
+                    if (newmp == mps.end())
+                    {
+                        fprintf(stderr, "Molecule %s not found in database", mymol.c_str());
+                    }
+                    else
+                    {
+                        ACTMol mm;
+                        mm.Merge(&(*newmp));
+                        actmols.push_back(mm);
+                    }
+                }
+            }
+            if (actmols.empty())
+            {
+                fprintf(stderr, "Couldn't find any of the selected molecules\n");
+                return 0;
+            }
         }
         qmap = fetchChargeMap(&pd, forceComp, mps);
     }
