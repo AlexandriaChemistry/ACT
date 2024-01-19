@@ -287,7 +287,8 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
         auto amol  = amols.find(inchi);
         if (nullptr != amol)
         {
-            fptr->setId(amol->iupac);
+            fptr->setId(inchi);
+            fptr->setIupac(amol->iupac);
             fptr->setCharge(amol->charge);
             fptr->setMass(amol->mass);
             fptr->setFormula(amol->formula);

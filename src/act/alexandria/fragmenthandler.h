@@ -49,7 +49,7 @@ namespace alexandria
         std::vector<Topology *>            topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
-        //! Fragment identifiers
+        //! Fragment InChi identifiers
         std::vector<std::string>           ids_;
         //! Array denoting where the atoms start in the global system
         std::vector<size_t>                atomStart_;
@@ -82,7 +82,7 @@ namespace alexandria
         
         //! Return the fragment ids
         const std::vector<std::string> &ids() const { return ids_; }
-        
+
         //! \return the atomStart_ vector, containing one extra index more than the number of fragments.
         const std::vector<size_t> atomStart() const { return atomStart_; }
 

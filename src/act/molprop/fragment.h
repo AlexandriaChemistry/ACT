@@ -53,6 +53,8 @@ class Fragment
  private:
     //! Identifier for this fragment
     std::string      id_;
+    //! Iupac name
+    std::string      iupac_;
     //! Mass of this fragment
     double           mass_           = 0.0;
     //! Charge of this fragment
@@ -97,18 +99,26 @@ class Fragment
         makeTexFormula();
         symmetryNumber_ = std::max(1, symmetryNumber);
     }
-       
+
     //! Return the id
     const std::string &id() const { return id_; }
-    
+
+    //! Return the iupac
+    const std::string &iupac() const { return iupac_; }
+
     /*! Set the identifier
      * \param[in] id The new identifier
      */
     void setId(const std::string &id) { id_ = id; }
-    
+
+    /*! Set the iupac name
+     * \param[in] iupac The new iupac name
+     */
+    void setIupac(const std::string &iupac) { iupac_ = iupac; }
+
     //! Return the mass
     double mass() const { return mass_; }
-    
+
     /*! Set the mass
      * \param[in] m The new mass
      */
