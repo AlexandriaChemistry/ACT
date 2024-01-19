@@ -88,6 +88,7 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&formula_, comm);
         cr->bcast(&texform_, comm);
         cr->bcast(&id_, comm);
+        cr->bcast(&iupac_, comm);
         int natom     = atoms_.size();
         cr->bcast(&natom, comm);
         if (cr->rank() != root)
@@ -116,6 +117,7 @@ CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
     cr->recv_str(src, &formula_);
     cr->recv_str(src, &texform_);
     cr->recv_str(src, &id_);
+    cr->recv_str(src, &iupac_);
     int natom     = cr->recv_int(src);
     atoms_.clear();
     for(int i = 0; i < natom; i++)
@@ -136,6 +138,7 @@ CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) cons
     cr->send_str(dest, &formula_);
     cr->send_str(dest, &texform_);
     cr->send_str(dest, &id_);
+    cr->send_str(dest, &iupac_);
     cr->send_int(dest, atoms_.size());
     for(auto &a : atoms_)
     {
