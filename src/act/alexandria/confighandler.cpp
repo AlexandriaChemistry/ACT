@@ -392,6 +392,8 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
           "Number of retries for minimizing (LBFGS only)" },
         { "-maxdisplacement", FALSE, etREAL, {&minimizeDisplacement_},
           "Max random displacement (nm) before re-trying to minize a structure (LBFGS only)" },
+        { "-forcereminimize", FALSE, etBOOL, {&forceReminimize_},
+          "Force using displacement and reminimize even if converged in an attempt to overcome local minima (LBFGS only)" },
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},

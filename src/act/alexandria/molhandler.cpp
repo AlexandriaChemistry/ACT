@@ -836,7 +836,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         double displacement = simConfig.minimizeDisplacement();
         int maxRetry        = simConfig.minimizeRetries();
         int retry           = 0;
-        while (retry < maxRetry && !converged)
+        // Large number!
+        double eMin         = 1e8;
+        while (retry < maxRetry && (!converged || simConfig.forceReminimize()))
         {
             if (logFile && retry > 0)
             {
@@ -850,13 +852,24 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 }
             }
             converged = opt.run(sx);
+            if (converged)
+            {
+                double enew = lbfgs->energy(InteractionType::EPOT);
+                if (logFile)
+                {
+                    fprintf(logFile, "Minimization iteration %d/%d energy %g\n",
+                            retry+1, maxRetry, enew);
+                }
+                if (enew < eMin)
+                {
+                    // Store new structure only when it has lower energy.
+                    newCoords[current]   = *lbfgs->coordinates();
+                    newEnergies[current] = *lbfgs->energies();
+                    forces[current]      = *lbfgs->forces();
+                    eMin                 = enew;
+                }
+            }
             retry += 1;
-        }
-        if (converged)
-        {
-            newCoords[current]   = *lbfgs->coordinates();
-            newEnergies[current] = *lbfgs->energies();
-            forces[current]      = *lbfgs->forces();
         }
         delete lbfgs;
     }

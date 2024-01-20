@@ -383,37 +383,39 @@ class SimulationConfigHandler : ConfigHandler
 {
 private:
     //! Number of integration steps
-    int                nsteps_      = 0;
+    int                nsteps_               = 0;
     //! The integration time step
-    double             deltat_      = 0.0002;
+    double             deltat_               = 0.0002;
     //! Initial simulation temperature
-    double             temperature_ = 0;
+    double             temperature_          = 0;
     //! Random number seed for generating velocities
-    int                seed_        = 0;
+    int                seed_                 = 0;
     //! How often to write coordinates
-    int                nstxout_     = 1;
+    int                nstxout_              = 1;
     //! How often to write velocities
-    int                nstvout_     = 0;
+    int                nstvout_              = 0;
     //! How often to write energies
-    int                nstener_     = 1;
+    int                nstener_              = 1;
     //! Write shells to trajectory and coordinates
-    bool               writeShells_ = false;
+    bool               writeShells_          = false;
     //! Minmize (before MD)
-    bool               minimize_    = false;
+    bool               minimize_             = false;
     //! Minimization algorithm
-    eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::LBFGS;
+    eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
-    double             forceToler_  = 1e-4;
+    double             forceToler_           = 1e-4;
     //! Number of retries for minimizing
-    int                minimizeRetries_ = 3;
+    int                minimizeRetries_      = 3;
     //! Max random displacement (nm) before re-trying to minize a structure
     double             minimizeDisplacement_ = 0.002;
+    //! Whether to force using displacement and reminimize even if converged
+    bool               forceReminimize_      = false;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
-    double             overRelax_   = 1.0;
+    double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
-    int                maxIter_     = 100;
+    int                maxIter_              = 100;
     //! Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis.
-    bool               lapack_      = false;
+    bool               lapack_               = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -471,6 +473,9 @@ public:
 
     //! \return max displacement when retrying to minimize
     double minimizeDisplacement() const { return minimizeDisplacement_; }
+
+    //! \return whether to force multiple minimizations
+    bool forceReminimize() const { return forceReminimize_; }
 
     //! \brief Set the minimization algorithm
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
