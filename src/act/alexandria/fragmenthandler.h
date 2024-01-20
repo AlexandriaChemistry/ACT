@@ -25,6 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
+#ifndef ACT_ALEXANDRIA_FRAGMENTHANDLER_H
+#define ACT_ALEXANDRIA_FRAGMENTHANDLER_H
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
@@ -125,3 +127,5 @@ namespace alexandria
         void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm alg) { algorithm_ = alg; }
     };
 } // namespace alexandria
+
+#endif
