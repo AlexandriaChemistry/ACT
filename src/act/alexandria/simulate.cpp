@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023,2024
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,16 +33,18 @@
 #include <cctype>
 #include <cstdlib>
 
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/secondvirial.h"
 #include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
@@ -67,24 +69,23 @@ int simulate(int argc, char *argv[])
         "submitted after which the energy per conformation is printed.[PAR]",
         "The input is given by a coordinate file, a force field file and",
         "command line options. During the simulation an energy file,",
-        "a trajectory file and a log file are generated. If a trajectory",
-        "of dimers is presented as input for energy calculations, the",
-        "corresponding molecule file, used for generating the topology",
-        "needs to be a molprop (xml) file and contain information about",
-        "the compounds in the dimer.[PAR]",
+        "a trajectory file and a log file are generated.[PAR]",
+        "It is highly recommended to provide the [TT]-charges[tt] option",
+        "with a molprop file that will be used to generate charges for the",
+        "file specified with the [TT]-f[tt] option.",
         "During minimization a user select group of atoms can be frozen.",
         "To do so, supply an index file with atom numbers (first atom is 1)",
         "and numbering should disregard shells if present."
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "aff",        ffREAD  },
-        { efXML, "-mp", "molprop",    ffOPTRD },
-        { efPDB, "-o",  "trajectory", ffWRITE },
-        { efSTO, "-c",  "confout",    ffOPTWR },
-        { efXVG, "-e",  "energy",     ffWRITE },
-        { efLOG, "-g",  "simulation", ffWRITE },
-        { efNDX, "-freeze", "freeze", ffOPTRD }
+        { efXML, "-ff",      "aff",        ffREAD  },
+        { efXML, "-charges", "molprop",    ffOPTRD },
+        { efPDB, "-o",       "trajectory", ffWRITE },
+        { efSTO, "-c",       "confout",    ffOPTWR },
+        { efXVG, "-e",       "energy",     ffWRITE },
+        { efLOG, "-g",       "simulation", ffWRITE },
+        { efNDX, "-freeze",  "freeze",     ffOPTRD }
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
@@ -131,19 +132,19 @@ int simulate(int argc, char *argv[])
     }
     sch.check_pargs();
 
-    if (opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) > 0)
+    if (strlen(filename) == 0)
     {
-        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option), but not both.\n");
-        status = 1;
-        return status;
+        fprintf(stderr, "Please provide a filename with a structure to optimize.\n");
+        return 0;
     }
-    else if (!opt2bSet("-mp", fnm.size(), fnm.data()) && strlen(filename) == 0)
+    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
+    FILE *logFile   = gmx_ffopen(logFileName, "w");
+    print_header(logFile, pa, fnm);
+    if (shellToler >= sch.forceTolerance())
     {
-        fprintf(stderr, "Please supply either a molprop file (-mp option) or an input filename (-f option)\n");
-        status = 1;
-        return status;
+        shellToler = sch.forceTolerance()/10;
+        fprintf(logFile, "\nShell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
-    
     ForceField        pd;
     try
     {
@@ -152,16 +153,24 @@ int simulate(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-    FILE *logFile   = gmx_ffopen(logFileName, "w");
-    if (shellToler >= sch.forceTolerance())
+
+    std::map<std::string, std::vector<double> > qmap;
+    auto forceComp = new ForceComputer(shellToler, 100);
+    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
+    if (qfn)
     {
-        shellToler = sch.forceTolerance()/10;
-        printf("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
+        qmap = fetchChargeMap(&pd, forceComp, qfn);
+        fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
+        if (strlen(qqm) > 0)
+        {
+            fprintf(stderr, "WARNING: Since you provide a charge map, I will ignore the -qqm flag.\n");
+        }
+        if (strlen(qcustom) > 0)
+        {
+            fprintf(stderr, "WARNING: Since you provide a charge map, I will ignore the -qcustom flag.\n");
+        }
     }
-    auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa, fnm);
-    
+
     JsonTree jtree("simulate");
     if (verbose)
     {
@@ -173,23 +182,16 @@ int simulate(int argc, char *argv[])
     clear_mat(box);
     {
         std::vector<MolProp> mps;
-        if (opt2bSet("-mp", fnm.size(), fnm.data()))
+        double               qtot_babel = qtot;
+        std::string          method, basis;
+        int                  maxpot = 100;
+        int                  nsymm  = 1;
+        if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
+                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
+                       false, box))
         {
-            MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
-        }
-        else
-        {
-            double               qtot_babel = qtot;
-            std::string          method, basis;
-            int                  maxpot = 100;
-            int                  nsymm  = 1;
-            if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
-                           &basis, maxpot, nsymm, "Opt", &qtot_babel,
-                           false, box))
-            {
-                fprintf(logFile, "Reading %s failed.\n", filename);
-                status = 1;
-            }
+            fprintf(logFile, "Reading %s failed.\n", filename);
+            status = 1;
         }
         if (status == 0)
         {
@@ -218,26 +220,35 @@ int simulate(int argc, char *argv[])
     std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
-        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+        auto fragments  = actmol.fragmentHandler();
+        if (fragments->setCharges(qmap))
+        {
+            // Copy charges to the high-level topology as well
+            fragments->fetchCharges(actmol.atoms());
+        }
+        else
+        {
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
-        std::vector<double> myq;
-        auto alg   = pd.chargeGenerationAlgorithm();
-        auto qtype = qType::Calc;
-        if (strlen(qcustom) > 0)
-        {
-            auto mycharges = gmx::splitString(qcustom);
-            for(auto &q : mycharges)
+            std::vector<double> myq;
+            auto alg   = pd.chargeGenerationAlgorithm();
+            auto qtype = qType::Calc;
+            if (strlen(qcustom) > 0)
             {
-                myq.push_back(my_atof(q.c_str(), "custom q"));
+                auto mycharges = gmx::splitString(qcustom);
+                for(auto &q : mycharges)
+                {
+                    myq.push_back(my_atof(q.c_str(), "custom q"));
+                }
+                alg = ChargeGenerationAlgorithm::Custom;
             }
-            alg = ChargeGenerationAlgorithm::Custom;
+            else if (strlen(qqm) > 0)
+            {
+                alg   = ChargeGenerationAlgorithm::Read;
+                qtype = stringToQtype(qqm);
+            }
+            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
-        else if (strlen(qqm) > 0)
-        {
-            alg   = ChargeGenerationAlgorithm::Read;
-            qtype = stringToQtype(qqm);
-        }
-        imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
     }
     if (immStatus::OK == imm && status == 0)
     {
