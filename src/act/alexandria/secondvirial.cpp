@@ -39,6 +39,7 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
@@ -783,10 +784,8 @@ void ReRunner::rerun(FILE                        *logFile,
 int b2(int argc, char *argv[])
 {
     std::vector<const char *> desc = {
-        "alexandria b2 will either read a trajectory",
-        "of dimers as input for energy calculations or generate",
-        "conformations of dimers. The",
-        "corresponding molecule file, used for generating the topology",
+        "alexandria b2 will generate conformations of dimers. The",
+        "corresponding charges (molprop) file, used for generating the topology",
         "needs to contain information about",
         "the compounds in the dimer. Based on dimer energies the second",
         "virial coefficient will be estimated. Mayer curves can optionally",
@@ -795,9 +794,9 @@ int b2(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "aff",        ffREAD  },
-        { efXML, "-mp", "molprop",    ffOPTRD },
-        { efLOG, "-g",  "b2",         ffWRITE } 
+        { efXML, "-ff",      "aff",     ffREAD  },
+        { efXML, "-charges", "charges", ffOPTRD },
+        { efLOG, "-g",       "b2",      ffWRITE } 
     };
     gmx_output_env_t         *oenv;
     static char              *molnm      = (char *)"";
@@ -857,23 +856,18 @@ int b2(int argc, char *argv[])
     }
 
     ACTMol                actmol;
-    if (opt2bSet("-mp", fnm.size(), fnm.data()))
+    std::map<std::string, std::vector<double> > qmap;
+    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
+    if (qfn)
     {
-        std::vector<MolProp> mps;
-        MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
-        if (mps.size() > 1)
-        {
-            fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), 
-                    opt2fn("-mp", fnm.size(), fnm.data()));
-        }
-        actmol.Merge(&mps[0]);
+        qmap = fetchChargeMap(&pd, forceComp, qfn);
+        fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
     }
-    else
+    if (strlen(molnm) == 0)
     {
-        if (strlen(molnm) == 0)
-        {
-            molnm = (char *)"MOL";
-        }
+        molnm = (char *)"MOL";
+    }
+    {
         std::vector<MolProp>  mps;
         double qtot_babel = qtot;
         int maxpot = 100;
@@ -905,17 +899,27 @@ int b2(int argc, char *argv[])
     std::vector<gmx::RVec> coords = actmol.xOriginal();
     if (immStatus::OK == imm && status == 0)
     {
-        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-
-        std::vector<double> myq;
-        auto alg   = pd.chargeGenerationAlgorithm();
-        auto qtype = qType::Calc;
-        if (strlen(qqm) > 0)
+        auto fragments  = actmol.fragmentHandler();
+        if (fragments->setCharges(qmap))
         {
-            alg   = ChargeGenerationAlgorithm::Read;
-            qtype = stringToQtype(qqm);
+            // Copy charges to the high-level topology as well
+            fragments->fetchCharges(actmol.atoms());
         }
-        imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+        else
+        {
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+
+            std::vector<double> myq;
+            auto alg   = pd.chargeGenerationAlgorithm();
+            auto qtype = qType::Calc;
+            if (strlen(qqm) > 0)
+            {
+                alg   = ChargeGenerationAlgorithm::Read;
+                qtype = stringToQtype(qqm);
+            }
+            fprintf(logFile, "WARNING: No information in charge map. Will generate charges using %s algorithm\n", chargeGenerationAlgorithmName(alg).c_str());
+            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+        }
     }
     if (immStatus::OK == imm && status == 0)
     {
