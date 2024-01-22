@@ -284,7 +284,7 @@ int gentop(int argc, char *argv[])
         }
     }
     const char *molpropDatabase = opt2fn_null("-charges", NFILE, fnm);
-    if (molpropDatabase || strlen(molpropDatabase) > 0)
+    if (molpropDatabase && strlen(molpropDatabase) > 0)
     {
         std::vector<MolProp> mps;
         MolPropRead(molpropDatabase, &mps);
@@ -339,13 +339,13 @@ int gentop(int argc, char *argv[])
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     int mp_index   = 1;
     std::map<std::string, std::pair<immStatus, std::vector<std::string>>> errors;
-    for(auto &actmol : actmols)
+    for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
     {
-        imm = actmol.GenerateTopology(stdout, &pd,
-                                      bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
+        imm = actmol->GenerateTopology(stdout, &pd,
+                                       bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
-        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        std::vector<gmx::RVec> forces(actmol->atomsConst().size());
+        std::vector<gmx::RVec> coords = actmol->xOriginal();
         if (immStatus::OK == imm)
         {
             maxpot = 100; // Use 100 percent of the ESP read from QM file.
@@ -353,13 +353,13 @@ int gentop(int argc, char *argv[])
                 { MolPropObservable::POTENTIAL, iqmType::QM },
                 { MolPropObservable::CHARGE,    iqmType::QM }
             };
-            actmol.getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
-            auto fragments  = actmol.fragmentHandler();
+            actmol->getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
+            auto fragments  = actmol->fragmentHandler();
             auto topologies = fragments->topologies();
             if (fragments->setCharges(qmap))
             {
                 // Copy charges to the high-level topology as well
-                fragments->fetchCharges(actmol.atoms());
+                fragments->fetchCharges(actmol->atoms());
             }
             else
             {
@@ -375,38 +375,40 @@ int gentop(int argc, char *argv[])
                     {
                         myq.push_back(my_atof(q.c_str(), "custom q"));
                     }
-                    imm = actmol.GenerateCharges(&pd, forceComp, ChargeGenerationAlgorithm::Custom,
-                                                 qtype, myq, &coords, &forces);
+                    imm = actmol->GenerateCharges(&pd, forceComp, ChargeGenerationAlgorithm::Custom,
+                                                  qtype, myq, &coords, &forces);
                 }
                 else if (genCharges)
                 {
                     // Finally generate charges
                     auto alg   = pd.chargeGenerationAlgorithm();
                     fprintf(stderr, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
-                    imm = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+                    imm = actmol->GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
                 }
                 else
                 {
-                    fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -generateCharges flag.\n", actmol.getMolname().c_str());
+                    fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -generateCharges flag.\n", actmol->getMolname().c_str());
+                    actmol = actmols.erase(actmol);
+                    imm = immStatus::ChargeGeneration;
                 }
             }
         }
         if (immStatus::OK == imm)
         {
-            actmol.GenerateCube(&pd, coords, forceComp,
-                                spacing, border,
-                                opt2fn_null("-ref",      NFILE, fnm),
-                                opt2fn_null("-pc",       NFILE, fnm),
-                                opt2fn_null("-pdbdiff",  NFILE, fnm),
-                                opt2fn_null("-pot",      NFILE, fnm),
-                                opt2fn_null("-rho",      NFILE, fnm),
-                                opt2fn_null("-his",      NFILE, fnm),
-                                opt2fn_null("-diff",     NFILE, fnm),
-                                opt2fn_null("-diffhist", NFILE, fnm),
-                                oenv);
+            actmol->GenerateCube(&pd, coords, forceComp,
+                                 spacing, border,
+                                 opt2fn_null("-ref",      NFILE, fnm),
+                                 opt2fn_null("-pc",       NFILE, fnm),
+                                 opt2fn_null("-pdbdiff",  NFILE, fnm),
+                                 opt2fn_null("-pot",      NFILE, fnm),
+                                 opt2fn_null("-rho",      NFILE, fnm),
+                                 opt2fn_null("-his",      NFILE, fnm),
+                                 opt2fn_null("-diff",     NFILE, fnm),
+                                 opt2fn_null("-diffhist", NFILE, fnm),
+                                 oenv);
         }
 
-        if (immStatus::OK == imm && actmol.errors().size() == 0)
+        if (immStatus::OK == imm && actmol->errors().size() == 0)
         {
             std::string index;
             if (actmols.size() > 1)
@@ -417,7 +419,7 @@ int gentop(int argc, char *argv[])
             {
                 std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                     bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm));
-                actmol.PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
+                actmol->PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
                                      &cr, coords, method, basis, bITP);
             }
             if (opt2bSet("-c", NFILE, fnm))
@@ -431,19 +433,22 @@ int gentop(int argc, char *argv[])
                         box[m][m] = mybox[m];
                     }
                 }
-                actmol.PrintConformation(cfn.c_str(), coords, writeShells, box);
+                actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
             }
         }
         else
         {
-            errors.insert({actmol.getMolname(), { imm, actmol.errors() } });
+            errors.insert({actmol->getMolname(), { imm, actmol->errors() } });
         }
         mp_index++;
     }
-    if (opt2bSet("-openmm", NFILE, fnm) || opt2bSet("-openmm_sim", NFILE, fnm))
+    if (!actmols.empty())
     {
-        writeOpenMM(opt2fn("-openmm", NFILE, fnm),
-                    opt2fn("-openmm_sim", NFILE, fnm), &pd, actmols, mDrude, addNumbersToAtoms);
+        if (opt2bSet("-openmm", NFILE, fnm) || opt2bSet("-openmm_sim", NFILE, fnm))
+        {
+            writeOpenMM(opt2fn("-openmm", NFILE, fnm),
+                        opt2fn("-openmm_sim", NFILE, fnm), &pd, actmols, mDrude, addNumbersToAtoms);
+        }
     }
     if (!errors.empty())
     {
