@@ -308,7 +308,7 @@ class CombinationRules:
             if "sigma" in allParam:
                 sigma1 = allParam["sigma"][0]
                 sigma2 = allParam["sigma"][1]
-            elif "rmin" in allParams:
+            elif "rmin" in allParam:
                 rmin1 = allParam["rmin"][0]
                 rmin2 = allParam["rmin"][1]
             if "gamma" in allParam:
