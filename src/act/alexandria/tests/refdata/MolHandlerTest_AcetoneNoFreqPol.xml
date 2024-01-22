@@ -2,22 +2,22 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Morse before">-3599.7031713026513</Real>
-  <Real Name="Angle before">1.5500121645022678</Real>
+  <Real Name="Angle before">1.5500121645022629</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="Dispersion before">-11.286151420990329</Real>
   <Real Name="Repulsion before">47.503499908053271</Real>
-  <Real Name="Coulomb (SR) before">-202.7839925939964</Real>
-  <Real Name="Polarization before">7.1702122261295491</Real>
-  <Real Name="Potential before">-3757.5495910189534</Real>
-  <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
-  <String Name="algorithm">Steep</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0031188317111664936</Real>
-  <Real Name="Morse after">-3596.8333919334455</Real>
-  <Real Name="Angle after">2.2679203020938301</Real>
-  <Real Name="Improper Dih. after">7.5103907353856744e-09</Real>
-  <Real Name="Dispersion after">-11.226190470841601</Real>
-  <Real Name="Repulsion after">38.327912418848243</Real>
-  <Real Name="Coulomb (SR) after">-203.58478812895783</Real>
-  <Real Name="Polarization after">6.9088887447683698</Real>
-  <Real Name="Potential after">-3764.1396490600237</Real>
+  <Real Name="Coulomb (SR) before">-202.6991793370338</Real>
+  <Real Name="Polarization before">7.2049621866989</Real>
+  <Real Name="Potential before">-3757.4300278014211</Real>
+  <Real Name="Coordinate RMSD before minimizing">4.6860710317178802e-17</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">0.0031261008863842405</Real>
+  <Real Name="Morse after">-3596.8330037520532</Real>
+  <Real Name="Angle after">2.2741311459375422</Real>
+  <Real Name="Improper Dih. after">6.8993390947801863e-08</Real>
+  <Real Name="Dispersion after">-11.22239382249591</Real>
+  <Real Name="Repulsion after">38.357077942895529</Real>
+  <Real Name="Coulomb (SR) after">-203.52693663173937</Real>
+  <Real Name="Polarization after">6.9344918287819644</Real>
+  <Real Name="Potential after">-3764.01663321968</Real>
 </ReferenceData>

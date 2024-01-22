@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -168,6 +168,7 @@ protected:
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(1e-4);
+            simConfig.setRetries(1);
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});
             if (eMinimizeStatus::OK != eMin)

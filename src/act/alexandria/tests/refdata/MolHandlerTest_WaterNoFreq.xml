@@ -4,10 +4,10 @@
   <Real Name="Bond before">0.0026570465668230014</Real>
   <Real Name="Angle before">0.55728331281907129</Real>
   <Real Name="Potential before">0.55994035938589426</Real>
-  <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
-  <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0022963684324229451</Real>
-  <Real Name="Bond after">2.1276705858379222e-20</Real>
-  <Real Name="Angle after">1.8771906380465326e-22</Real>
-  <Real Name="Potential after">2.1464424922183876e-20</Real>
+  <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">0.0022962699374105503</Real>
+  <Real Name="Bond after">5.3945968622453021e-11</Real>
+  <Real Name="Angle after">1.0098556026545187e-09</Real>
+  <Real Name="Potential after">1.0638015712769716e-09</Real>
 </ReferenceData>

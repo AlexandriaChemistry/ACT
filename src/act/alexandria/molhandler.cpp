@@ -327,27 +327,25 @@ static void solveEigen(const MatrixWrapper          &hessian,
             mat(col, row) = hessian.get(col, row);
         }
     }
-    bool computeEigenVectors = true;
-    Eigen::EigenSolver<Eigen::MatrixXd> solver(mat, computeEigenVectors);
+    // We need this special solver for hermitian matrices.
+    // It will automatically sort the eigenvalues.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(mat);
     auto evecs = solver.eigenvectors();
     if (output)
     {
         for(Eigen::Index i =  0; i < matrixSide; i++)
         {
-            double sumReal = 0, sumComplex = 0;
+            double sum = 0;
             auto evv = evecs.col(i);
             std::string evi;
             for(Eigen::Index j = 0; j < matrixSide; j++)
             {
-                auto evec   = evv[j];
-                sumReal    += gmx::square(evec.real());
-                sumComplex += gmx::square(std::abs(evec));
-                evi += gmx::formatString("  %10g", evec.real());
+                auto evec = evv[j];
+                sum       += gmx::square(evec);
+                evi += gmx::formatString("  %10g", evec);
             }
-            output->push_back(gmx::formatString("|v[%2zu]|^2 = %8g (real) %8g (complex) Eigenval = %g + i%g.",
-                                                i, sumReal, sumComplex,
-                                                solver.eigenvalues()[i].real(),
-                                                solver.eigenvalues()[i].imag()));
+            output->push_back(gmx::formatString("|v[%2zu]|^2 = %8g Eigenval = %g",
+                                                i, sum, solver.eigenvalues()[i]));
         }
         if (debugNMA)
         {
@@ -357,32 +355,18 @@ static void solveEigen(const MatrixWrapper          &hessian,
                 std::string evi;
                 for(Eigen::Index j = 0; j < matrixSide; j++)
                 {
-                    evi += gmx::formatString("  %10g", evv[j].real());
+                    evi += gmx::formatString("  %10g", evv[j]);
                 }
                 output->push_back(gmx::formatString("EV%ld %s", i, evi.c_str()));
             }
         }
     }
 
-    // Eigen does not sort the output according to increasing eigenvalue
-    // so we have to do the sorting ourselves.
-    typedef struct
-    {
-        Eigen::Index index;
-        double       value;
-    } iv_t;
-    std::vector<iv_t> iv;
-    auto &evals    = solver.eigenvalues();
-    int nnegative = 0;
+    auto &evals     = solver.eigenvalues();
+    int   nnegative = 0;
     for(Eigen::Index i = 0; i < matrixSide; i++)
     {
-        // Both eigenvalues and eigenvectors can be complex numbers
-        // If we take the real part only, we reproduce the LAPACK
-        // result, but is this correct?
-        auto eval = evals[i].real();
-        //auto eval = std::abs(evals[i]);
-        iv.push_back({ i, eval });
-        if (eval < 0)
+        if (evals[i] < 0)
         {
             nnegative += 1;
         }
@@ -392,25 +376,18 @@ static void solveEigen(const MatrixWrapper          &hessian,
         output->push_back(gmx::formatString("There are %d negative eigenvalues.",
                                             nnegative-rot_trans));
     }
-    std::sort(iv.begin(), iv.end(), [](const iv_t &a, const iv_t &b)
-              { return a.value < b.value; });
 
     std::vector<double> In(matrixSide, 0);
     for(Eigen::Index col = 0; col < matrixSide; col++)
     {
-        auto   icol = iv[col].index;
-        auto   evec = evecs.col(icol);
-        for (int row = 0; row < matrixSide; row++)
+        auto evec = evecs.col(col);
+        for (Eigen::Index row = 0; row < matrixSide; row++)
         {
-            auto irow = iv[row].index;
-            // Eigenvectors are complex numbers too. The eigenvectors
-            // should be normalized (length 1). This is indeed the case
-            // if we take the imaginary part into account, but whether
-            // this gives the correct physical result is unclear.
-            // auto myev = std::abs(evec[irow]);
-            auto myev  = evec[irow].real();
-            auto atomI = irow / DIM;
-            int k      = irow % DIM;
+            // The eigenvectors should be normalized (length 1).
+            // This is indeed the case.
+            auto myev  = evec[row];
+            auto atomI = row / DIM;
+            int k      = row % DIM;
             size_t ai  = atomIndex[atomI];
             // The components of the root-mass weighted Hessian
             // have unit kJ/(Da mol nm^2). Even though the eigenvectors
@@ -425,8 +402,8 @@ static void solveEigen(const MatrixWrapper          &hessian,
             // get the units (almost) correct. nm^2 g / cm mol. This means
             // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
             // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
-            In[icol] += gmx::square(dpdq[atomI][k]*myev*
-                                    gmx::invsqrt(atoms[ai].mass()));
+            In[col] += gmx::square(dpdq[atomI][k]*myev*
+                                   gmx::invsqrt(atoms[ai].mass()));
         }
     }
     intensities->clear();
@@ -434,10 +411,10 @@ static void solveEigen(const MatrixWrapper          &hessian,
     {
         intensities->push_back(In[i]);
     }
-    std::vector<double> eigenvalues(matrixSide, 0.0);
-    for(int col = 0; col < matrixSide; col++)
+    std::vector<double> eigenvalues;
+    for(int i = 0; i < matrixSide; i++)
     {
-        eigenvalues[col]    = iv[col].value;
+        eigenvalues.push_back(evals(i));
     }
     computeFrequencies(eigenvalues, rot_trans, frequencies, output);
 }
