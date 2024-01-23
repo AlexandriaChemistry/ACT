@@ -324,7 +324,12 @@ class CombinationRules:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
-                    mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*sigma1**3*sigma2**3)/(sigma1**6+sigma2**6)
+                    if "sigma" in allParam:
+                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(sigma1**3)*(sigma2**3))/((sigma1**6)+(sigma2**6))
+                    elif "rmin" in allParam:
+                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(rmin1**3)*(rmin2**3))/((rmin1**6)+(rmin2**6))
+                    else:
+                        sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
             elif mng == self.comb[param].lower():
@@ -353,7 +358,12 @@ class CombinationRules:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
-                    mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*sigma1**3*sigma2**3/(sigma1**6+sigma2**6)")
+                    if "sigma" in self.comb.keys():
+                        mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*(sigma1^3)*(sigma2^3))/((sigma1^6)+(sigma2^6))")
+                    elif "rmin" in self.comb.keys():
+                        mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*(rmin1^3)*(rmin2^3))/((rmin1^6)+(rmin2^6))")
+                    else:
+                        sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
             elif mng == self.comb[param].lower():
