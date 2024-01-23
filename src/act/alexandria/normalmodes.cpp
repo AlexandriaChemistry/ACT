@@ -36,6 +36,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/secondvirial.h"
@@ -62,15 +63,17 @@ int nma(int argc, char *argv[])
         "a force field derived by the Alexandria Chemistry Toolkit.", 
         "The program will perform an energy minimization and a normal mode",
         "analysis including thermochemistry calculations.[PAR]",
-        "The input is given by a coordinate file, a force field file and",
+        "The input is given by a coordinate file, a force field file,",
+        "a molprop file containing charge information and",
         "command line options."
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff", "aff",        ffREAD  },
-        { efSTO, "-c",  "confout",    ffOPTWR },
-        { efLOG, "-g",  "nma",        ffWRITE },
-        { efXVG, "-ir", "IRspectrum", ffOPTWR }
+        { efXML, "-ff",      "aff",        ffREAD  },
+        { efXML, "-charges", "charges",    ffOPTRD },
+        { efSTO, "-c",       "confout",    ffOPTWR },
+        { efLOG, "-g",       "nma",        ffWRITE },
+        { efXVG, "-ir",      "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     static char              *filename   = (char *)"";
@@ -168,19 +171,36 @@ int nma(int argc, char *argv[])
         imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
     }
     std::vector<gmx::RVec> coords = actmol.xOriginal();
+    std::map<std::string, std::vector<double> > qmap;
+    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
+    if (qfn)
+    {
+        qmap = fetchChargeMap(&pd, forceComp, qfn);
+        fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
+    }
     if (immStatus::OK == imm && status == 0)
     {
-        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-
-        std::vector<double> myq;
-        auto alg   = pd.chargeGenerationAlgorithm();
-        auto qtype = qType::Calc;
-        if (strlen(qqm) > 0)
+        auto fragments  = actmol.fragmentHandler();
+        if (fragments->setCharges(qmap))
         {
-            alg   = ChargeGenerationAlgorithm::Read;
-            qtype = stringToQtype(qqm);
+            // Copy charges to the high-level topology as well
+            fragments->fetchCharges(actmol.atoms());
         }
-        imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+        else
+        {
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+
+            std::vector<double> myq;
+            auto alg   = pd.chargeGenerationAlgorithm();
+            auto qtype = qType::Calc;
+            if (strlen(qqm) > 0)
+            {
+                alg   = ChargeGenerationAlgorithm::Read;
+                qtype = stringToQtype(qqm);
+            }
+            fprintf(logFile, "WARNING: No information in charge map. Will generate charges using %s algorithm\n", chargeGenerationAlgorithmName(alg).c_str());
+            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+        }
     }
     if (immStatus::OK == imm && status == 0)
     {
