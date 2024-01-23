@@ -813,13 +813,12 @@ void doFrequencyAnalysis(const ForceField         *pd,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      useLapack,
                          bool                      debugNMA)
 {
     std::vector<double> alex_freq, intensities;
     std::vector<std::string> output;
     molhandler.nma(pd, mol, forceComp, coords, &alex_freq, &intensities,
-                   &output, useLapack, debugNMA);
+                   &output, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
@@ -1124,7 +1123,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         JsonTree jtree("FrequencyAnalysis");
         doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
                             atomenergy, lsq_freq, &jtree,
-                            nullptr, 24, nullptr, false, false);
+                            nullptr, 24, nullptr, false);
         int indent = 0;
         tcout->push_back(jtree.writeString(false, &indent));
     }

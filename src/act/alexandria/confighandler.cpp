@@ -397,9 +397,7 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
-          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
-        { "-lapack", FALSE, etBOOL, {&lapack_},
-          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
     };
     for(auto &i : extra)
     {
