@@ -164,7 +164,6 @@ void print_header(FILE                        *fp,
  * \paran[in]    spcetrumFileName If not nullptr, a simulated IR spectrum will be written to this file
  * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
  * \param[in]    oenv         Structure to print xvg files
- * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
 void doFrequencyAnalysis(const ForceField         *pd,
@@ -178,7 +177,6 @@ void doFrequencyAnalysis(const ForceField         *pd,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      useLapack,
                          bool                      debugNMA);
                             
 } // namespace alexandria

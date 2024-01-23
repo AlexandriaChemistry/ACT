@@ -419,59 +419,6 @@ static void solveEigen(const MatrixWrapper          &hessian,
     computeFrequencies(eigenvalues, rot_trans, frequencies, output);
 }
 
-static void solveLapack(const ACTMol                  *mol,
-                        const MatrixWrapper          &hessian,
-                        const std::vector<int>       &atomIndex,
-                        const std::vector<ActAtom>   &atoms,
-                        const std::vector<gmx::RVec> &dpdq,
-                        int                           rot_trans,
-                        std::vector<double>          *frequencies,
-                        std::vector<double>          *intensities,
-                        std::vector<std::string>     *output)
-{
-    if (output)
-    {
-        output->push_back("Using LAPACK to solve eigenvalue problem.");
-    }
-    int matrixSide = hessian.nColumn();
-    std::vector<double> eigenvalues(matrixSide);
-    std::vector<double> eigenvectors(matrixSide*matrixSide);
-    auto                hessianFlat = hessian.flatten();
-    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
-                eigenvalues.data(), eigenvectors.data());
-    // Scale the output eigenvectors
-    for (int i = 0; i < matrixSide; i++)
-    {
-        for (size_t j = 0; j < atomIndex.size(); j++)
-        {
-            size_t aj      = atomIndex[j];
-            double massFac = gmx::invsqrt(atoms[aj].mass());
-            for (size_t k = 0; (k < DIM); k++)
-            {
-                eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
-            }
-        }
-    }
-    computeIntensities(eigenvalues, eigenvectors, atomIndex,
-                       atoms, dpdq, intensities);
-    computeFrequencies(eigenvalues, rot_trans, frequencies, output);
-    // Print eigenvalues and eigenvectors to debug files
-    if (debug)
-    {
-        // Print vibrational frequencies to file
-        const int FLOAT_SIZE  = 13;
-        fprintf(debug, "\nMolecule: %s\nHessian eigenvalues:\n[ ", mol->getMolname().c_str());
-        for (const auto &val : eigenvalues)
-        {
-            fprintf(debug, "%-*g ", FLOAT_SIZE, val);
-        }
-        // Get the eigenvectors into a MatrixWrapper
-        MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
-        
-        fprintf(debug, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
-    }
-}
-
 static void resortFreqIntens(std::vector<double> *frequencies, 
                              std::vector<double> *intensities,
                              double               freq_toler)
@@ -515,7 +462,6 @@ void MolHandler::nma(const ForceField         *pd,
                      std::vector<double>      *frequencies,
                      std::vector<double>      *intensities,
                      std::vector<std::string> *output,
-                     bool                      useLapack,
                      bool                      debugNMA) const
 {
     // Get the indices of the real atoms of the molecule (not shells and such)
@@ -577,16 +523,8 @@ void MolHandler::nma(const ForceField         *pd,
     {
         output->push_back("Diagonalizing Hessian to find eigenvectors.");
     }
-    if (useLapack)
-    {
-        solveLapack(mol, hessian, atomIndex, atoms, dpdq, rot_trans,
-                    frequencies, intensities, output);
-    }
-    else
-    {
-        solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
-                   frequencies, intensities, output, debugNMA);
-    }
+    solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
+               frequencies, intensities, output, debugNMA);
     // Check whether there are very similar frequencies, then change the sorting 
     // according to intensities.
     // TODO: make ftoler a parameter.

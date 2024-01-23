@@ -237,7 +237,7 @@ int nma(int argc, char *argv[])
                 doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &coords,
                                     atomenergy, nullptr, &jtree,
                                     opt2fn_null("-ir", fnm.size(), fnm.data()),
-                                    linewidth, oenv, sch.lapack(), verbose);
+                                    linewidth, oenv, verbose);
             }
         }
         

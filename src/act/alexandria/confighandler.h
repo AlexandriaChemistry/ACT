@@ -414,8 +414,6 @@ private:
     double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
     int                maxIter_              = 100;
-    //! Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis.
-    bool               lapack_               = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -485,9 +483,6 @@ public:
     //! \brief Set the minimization algorithm
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
     
-    //! \return whether or not to use Lapack iso Eigen.
-    bool lapack() const { return lapack_; }
-
     //! \return the convergence tolerance (RMS force) for the minimizer
     double forceTolerance() const { return forceToler_; }
 
