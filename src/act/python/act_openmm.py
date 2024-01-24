@@ -1489,7 +1489,7 @@ class ActOpenMMSim:
     def write_coordinates(self, outfile:str):
         format = outfile[-3:]
         with open(outfile, "w") as outf:
-§            pbc = False
+            pbc = False
             if self.nonbondedMethod != NoCutoff:
                 vecs = self.simulation.context.getState().getPeriodicBoxVectors()
                 self.topology.setPeriodicBoxVectors(vecs)
