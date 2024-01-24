@@ -1273,7 +1273,8 @@ class ActOpenMMSim:
         temperature_s = self.sim_params.getFloat('temperature_s')
         integrator    = self.sim_params.getStr('integrator')
         if self.polarizable:
-            if "DrudeLangevinIntegrator" == integrator:
+            dli = "DrudeLangevinIntegrator"
+            if dli == integrator:
                 self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s, 
                                                           self.sim_params.getFloat('friction_s'), self.dt)
             elif "DrudeNoseHooverIntegrator" == integrator:
@@ -1283,7 +1284,10 @@ class ActOpenMMSim:
                 self.integrator = DrudeSCFIntegrator(self.dt)
                 self.integrator.setDrudeTemperature(temperature_s)
             else:
-                sys.exit("Unknown integrator %s for polarizable system" % integrator)
+                self.txt.write("Unsupported integrator %s for polarizable system, will use %s instead\n"
+                               % ( integrator, dli ))
+                self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s,
+                                                          self.sim_params.getFloat('friction_s'), self.dt)
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
                 self.txt.write("Andersen thermostat will be turned off since %s contains a built-in thermostat.\n"
                                % self.integrator)
