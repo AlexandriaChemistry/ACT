@@ -71,6 +71,8 @@ class AtomPropsTest : public gmx::test::CommandLineTestBase
             newchk.checkReal(ap.second.mass(), "mass");
             newchk.checkString(ap.second.name().c_str(), "name");
             newchk.checkInteger(ap.second.atomnumber(), "atomnumber");
+            newchk.checkInteger(ap.second.charge(), "charge");
+            newchk.checkInteger(ap.second.mult(), "multiplicity");
         }
     }
 };
