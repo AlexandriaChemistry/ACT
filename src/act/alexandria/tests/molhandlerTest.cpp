@@ -50,7 +50,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
-#include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"

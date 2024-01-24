@@ -52,7 +52,6 @@
 #include "act/utility/units.h"
 #include "external/stlbfgs/stlbfgs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -210,42 +209,6 @@ static void computeFrequencies(const std::vector<double> &eigenvalues,
             double f = 1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val);
             frequencies->push_back(convertToGromacs(f, unit));
         }
-    }
-}
-
-static void computeIntensities(const std::vector<double>    &eigenvalues,
-                               const std::vector<double>    &eigenvectors,
-                               const std::vector<int>       &atomIndex,
-                               const std::vector<ActAtom>   &atoms,
-                               const std::vector<gmx::RVec> &dpdq,
-                               std::vector<double>          *intensities)
-{
-    intensities->clear();
-    auto matrixSide = eigenvalues.size();
-    for (size_t i = 0; i < eigenvalues.size(); i++)
-    {
-        double In = 0;
-        for (size_t j = 0; j < atomIndex.size(); j++)
-        {
-            size_t aj      = atomIndex[j];
-            double massFac = gmx::invsqrt(atoms[aj].mass());
-            for(int d = 0; d < DIM; d++)
-            {
-                auto evindex = i * matrixSide + j * DIM + d;
-                GMX_RELEASE_ASSERT(evindex < eigenvectors.size(), "Range check");
-                auto myev = eigenvectors[evindex];
-                if (myev != 0)
-                {
-                    In += gmx::square(dpdq[j][d]*massFac*myev);
-                }
-                else if (debug)
-                {
-                    fprintf(debug, "Eigenvector[%zu][%zu][%d] = %g\n",
-                            i, j, d, eigenvectors[evindex]);
-                }
-            } 
-        }
-        intensities->push_back(In);
     }
 }
 
