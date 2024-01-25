@@ -259,7 +259,7 @@ class CombinationRules:
         elif "arithmetic" == myrule:
             return self.arithmeticString(vara, varb)
         elif "yang" == myrule:
-            return ("(%s*%s)*(%s+%s)/(%s*%s+%s*%s)" % ( vara, varb, vara, varb, vara, vara, varb, varb ))
+            return ("select(%s+%s, (%s*%s)*(%s+%s)/(%s*%s+%s*%s), 0)" % ( vara, varb, vara, varb, vara, varb, vara, vara, varb, varb ))
         elif "waldmansigma" == myrule:
             return ("(0.5*(%s^6 + %s^6))^(1.0/6.0)" % ( vara, varb ))
         elif "volumetric" == myrule:
@@ -325,11 +325,16 @@ class CombinationRules:
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     if "sigma" in allParam:
-                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(sigma1**3)*(sigma2**3))/((sigma1**6)+(sigma2**6))
+                        denominator = (sigma1**6)+(sigma2**6)
                     elif "rmin" in allParam:
-                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(rmin1**3)*(rmin2**3))/((rmin1**6)+(rmin2**6))
+                        denominator = (rmin1**6)+(rmin2**6)
                     else:
                         sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
+                    # check for division by zero
+                    if denominator != 0:
+                        mydict["epsilon"] = math.sqrt(epsilon1*epsilon2)*(2*(rmin1**3)*(rmin2**3))/(denominator)
+                    else:
+                        mydict["epsilon"] = 0
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
             elif mng == self.comb[param].lower():
@@ -359,9 +364,9 @@ class CombinationRules:
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     if "sigma" in self.comb.keys():
-                        mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*(sigma1^3)*(sigma2^3))/((sigma1^6)+(sigma2^6))")
+                        mydict["epsilon"] = ("select(sigma1+sigma2, sqrt(epsilon1*epsilon2)*(2*(sigma1^3)*(sigma2^3))/((sigma1^6)+(sigma2^6)), 0)")
                     elif "rmin" in self.comb.keys():
-                        mydict["epsilon"] = ("sqrt(epsilon1*epsilon2)*(2*(rmin1^3)*(rmin2^3))/((rmin1^6)+(rmin2^6))")
+                        mydict["epsilon"] = ("select(rmin1+rmin2, sqrt(epsilon1*epsilon2)*(2*(rmin1^3)*(rmin2^3))/((rmin1^6)+(rmin2^6)), 0)")
                     else:
                         sys.exit("Combination rule %s requires either sigma or rmin to calculate %s" % ( wme, param ))
                 else:
@@ -955,7 +960,7 @@ class ActOpenMMSim:
             self.system.addForce(self.vdw_correction)
 #################################################
         elif self.vdw == VdW.GBHAM:
-            self.vdw_expression =('select(epsilon,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
+            self.vdw_expression =('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0);')
             expression += ( 'U_VDW = %s;' % self.vdw_expression )
             expression += ( 'rmin    = %s;' % combdict["rmin"] )
             expression += ( 'epsilon  = %s;' % combdict["epsilon"] )
