@@ -38,16 +38,6 @@ set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
-add_library(libactgromacs_external OBJECT "")
-if(CMAKE_COMPILER_IS_GNUCXX)
-    # Keep quiet about e.g. linearalgebra module
-    target_compile_options(libactgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
-endif()
-
-if (BUILD_SHARED_LIBS)
-    set_target_properties(libactgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
-endif()
-
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
@@ -69,7 +59,6 @@ add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(gpu_utils)
-add_subdirectory(linearalgebra)
 add_subdirectory(math)
 add_subdirectory(mdrunutility)
 add_subdirectory(mdtypes)
@@ -105,7 +94,6 @@ gmx_configure_version_file(
         GMX_SOURCE_DOI
     )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libactgromacs_external>
 )
 
 add_library(libactgromacs ${LIBGROMACS_SOURCES})

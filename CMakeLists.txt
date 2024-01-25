@@ -744,8 +744,6 @@ endif()
 ##################################################
 include(gmxManageFFTLibraries)
 
-include(gmxManageLinearAlgebraLibraries)
-
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
 if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
