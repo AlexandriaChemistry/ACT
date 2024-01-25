@@ -42,7 +42,6 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/utility/latex_util.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"

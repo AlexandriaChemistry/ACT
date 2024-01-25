@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_LINEARALGEBRA_MATRIX_H
-#define GMX_LINEARALGEBRA_MATRIX_H
+#ifndef GMX_MATH_MATRIX_H
+#define GMX_MATH_MATRIX_H
 
 #include <stdio.h>
 
@@ -44,19 +44,5 @@ double **alloc_matrix(int n, int m);
 void free_matrix(double **a);
 
 void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z);
-
-/* Return 0 if OK or row number where inversion failed otherwise. */
-int matrix_invert(FILE *fp, int n, double **a);
-
-double multi_regression(FILE *fp, int ny, double *y,
-                        int nx, double **xx, double *a0);
-/* Perform a regression analysis to fit
- * y' = a0[0] xx[0] + a0[1] xx[1] ... + a0[nx-1] xx[nx-1]
- * with ny data points in each vector.
- * The coefficients are returned in vector a0.
- * The return value of the function is the chi2 value:
- * sum_{j=0}^{ny-1} (y[j] - y'[j])^2
- * If fp is not NULL debug information will be written to it.
- */
 
 #endif

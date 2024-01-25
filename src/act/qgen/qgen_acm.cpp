@@ -38,7 +38,6 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"

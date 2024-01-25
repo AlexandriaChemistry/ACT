@@ -44,7 +44,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
