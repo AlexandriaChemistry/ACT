@@ -38,7 +38,6 @@
 #include <cstdlib>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
