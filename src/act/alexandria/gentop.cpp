@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -251,10 +251,10 @@ int gentop(int argc, char *argv[])
                static_cast<int>(pd.getNatypes()));
     }
 
-    std::vector<ACTMol>                         actmols;
-    matrix                                      box       = {{ 0 }};
-    auto                                        forceComp = new ForceComputer();
-    std::map<std::string, std::vector<double> > qmap;
+    std::vector<ACTMol> actmols;
+    matrix              box       = {{ 0 }};
+    auto                forceComp = new ForceComputer();
+    chargeMap           qmap;
     if (strlen(molFile) > 0)
     {
         if (strlen(molnm) == 0)

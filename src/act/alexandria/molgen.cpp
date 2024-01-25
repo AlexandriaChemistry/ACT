@@ -644,7 +644,7 @@ size_t MolGen::Read(FILE                                *fp,
     std::map<immStatus, int>         imm_count;
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
-    std::map<std::string, std::vector<double> > qmap;
+    chargeMap                        qmap;
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 

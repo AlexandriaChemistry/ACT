@@ -171,7 +171,7 @@ int nma(int argc, char *argv[])
         imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
     }
     std::vector<gmx::RVec> coords = actmol.xOriginal();
-    std::map<std::string, std::vector<double> > qmap;
+    chargeMap              qmap;
     auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
     if (qfn)
     {

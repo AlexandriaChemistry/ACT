@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,11 +40,11 @@
 namespace alexandria
 {
 
-std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField           *pd,
-                                                           ForceComputer              *forceComp,
-                                                           const std::vector<MolProp> &mps)
+chargeMap fetchChargeMap(const ForceField           *pd,
+                         ForceComputer              *forceComp,
+                         const std::vector<MolProp> &mps)
 {
-    std::map<std::string, std::vector<double> > qmap;
+    chargeMap qmap;
     for(auto mp = mps.begin(); mp < mps.end(); mp++)
     {
         alexandria::ACTMol actmol;
@@ -69,10 +69,10 @@ std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField     
             if (immStatus::OK == imm)
             {
                 // Add ACM charges
-                std::vector<double> newq;
+                std::vector<std::pair<Identifier, double>> newq;
                 for(auto atom: actmol.atomsConst())
                 {
-                    newq.push_back(atom.charge());
+                    newq.push_back({atom.id(), atom.charge()});
                 }
                 qmap.insert({fhandler->ids()[0], newq});
             }
@@ -81,17 +81,17 @@ std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField     
     return qmap;
 }
 
-std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField *pd,
-                                                           ForceComputer    *forceComp,
-                                                           const char       *charge_fn)
+chargeMap fetchChargeMap(const ForceField *pd,
+                         ForceComputer    *forceComp,
+                         const char       *charge_fn)
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
     return fetchChargeMap(pd, forceComp, mps);
 }
 
-void broadcastChargeMap(const CommunicationRecord                   *cr,
-                        std::map<std::string, std::vector<double> > *qmap)
+void broadcastChargeMap(const CommunicationRecord *cr,
+                        chargeMap                 *qmap)
 {
     auto mycomm = MPI_COMM_WORLD;
     int nqmap   = qmap->size();
@@ -100,20 +100,35 @@ void broadcastChargeMap(const CommunicationRecord                   *cr,
     {
         for(auto &q : *qmap)
         {
-            std::string tmp = q.first;
-            cr->bcast(&tmp, mycomm);
-            cr->bcast(&q.second, mycomm);
+            std::string cmp = q.first;
+            cr->bcast(&cmp, mycomm);
+            int natom = q.second.size();
+            cr->bcast(&natom, mycomm);
+            for(size_t i = 0; i < q.second.size(); i++)
+            {
+                auto &mypair = q.second[i];
+                mypair.first.BroadCast(cr, 0, mycomm);
+                cr->bcast(&mypair.second, mycomm);
+            }
         }
     }
     else
     {
         for(int i = 0; i < nqmap; i++)
         {
-            std::string id;
-            cr->bcast(&id, mycomm);
-            std::vector<double> q;
-            cr->bcast(&q, mycomm);
-            qmap->insert({id, q});
+            std::string cmp;
+            cr->bcast(&cmp, mycomm);
+            int natom;
+            cr->bcast(&natom, mycomm);
+            std::vector<std::pair<Identifier, double>> newpairs;
+            for(int i = 0; i < natom; i++)
+            {
+                std::pair<Identifier, double> mypair;
+                mypair.first.BroadCast(cr, 0, mycomm);
+                cr->bcast(&mypair.second, mycomm);
+                newpairs.push_back(mypair);
+            }
+            qmap->insert({cmp, newpairs});
         }
     }
 }
