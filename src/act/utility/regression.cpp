@@ -48,7 +48,7 @@
 #pragma GCC diagnostic pop
 #pragma clang diagnostic pop
 
-#include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"

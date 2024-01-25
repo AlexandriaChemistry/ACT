@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,59 +34,75 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_FILETYPES_H
-#define GMX_FILEIO_FILETYPES_H
+#include "actpre.h"
 
-#include "gromacs/utility/basedefinitions.h"
+#include "matrix.h"
 
-/* this enum should correspond to the array deffile in filetypes.cpp */
-enum GromacsFileType {
-    efMDP,
-    efTRX, efTRO, efTRN, efTRR,
-    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT,
-    efLOG, efXVG, efOUT,
-    efNDX,
-    efTOP, efITP,
-    efTPS,
-    efTEX,
-    efDAT,
-    efCUB,
-    efRND,
-    efXML,
-    efCSV,
-    efSDF,
-    efNR
-};
+#include "config.h"
 
-const char *ftp2ext(int ftp);
-/* Return extension for filetype */
+#include <stdio.h>
 
-const char *ftp2ext_generic(int ftp);
-/* Return extension for filetype, and a generic name for generic types
-   (e.g. trx)*/
+#include "gromacs/utility/smalloc.h"
 
-const char *ftp2ext_with_dot(int ftp);
-/* Return extension for filetype with a leading dot */
+double **alloc_matrix(int n, int m)
+{
+    double **ptr;
+    int      i;
 
-int ftp2generic_count(int ftp);
-/* Return the number of filetypes for a generic filetype */
+    if (n <= 0 || m <= 0)
+    {
+        return nullptr;
+    }
+    /* There's always time for more pointer arithmetic! */
+    /* This is necessary in order to be able to work with LAPACK */
+    snew(ptr, n);
+    snew(ptr[0], n*m);
+    for (i = 1; (i < n); i++)
+    {
+        ptr[i] = ptr[i-1]+m;
+    }
+    return ptr;
+}
 
-const int *ftp2generic_list(int ftp);
-/* Return the list of filetypes for a generic filetype */
+void free_matrix(double **a)
+{
+    sfree(a[0]);
+    sfree(a);
+}
 
-const char *ftp2desc(int ftp);
-/* Return description for file type */
+#define DEBUG_MATRIX 1
+void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
+{
+    int i, j, k;
 
-const char *ftp2defnm(int ftp);
-/* Return default file name for file type */
-
-const char *ftp2defopt(int ftp);
-/* Return default option name for file type */
-
-gmx_bool ftp_is_text(int ftp);
-gmx_bool ftp_is_xdr(int ftp);
-
-int fn2ftp(const char *fn);
-/* Return the filetype corrsponding to filename */
-
+#ifdef DEBUG_MATRIX
+    if (fp)
+    {
+        fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n",
+                n, m, m, n);
+    }
+    if (fp)
+    {
+        for (i = 0; (i < n); i++)
+        {
+            for (j = 0; (j < m); j++)
+            {
+                fprintf(fp, " %7g", x[i][j]);
+            }
+            fprintf(fp, "\n");
+        }
+    }
 #endif
+    for (i = 0; (i < m); i++)
+    {
+        for (j = 0; (j < m); j++)
+        {
+            z[i][j] = 0;
+            for (k = 0; (k < n); k++)
+            {
+                z[i][j] += x[k][i]*y[j][k];
+            }
+        }
+    }
+}
+

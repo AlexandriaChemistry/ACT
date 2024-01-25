@@ -43,8 +43,8 @@
 
 #include <cmath>
 
-#include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/nrjac.h"
 #include "gromacs/math/vec.h"
 
 #define NDIM 4
