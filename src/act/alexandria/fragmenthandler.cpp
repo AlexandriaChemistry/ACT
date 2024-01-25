@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -233,7 +233,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
     return true;
 }
 
-bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double> >&qmap)
+bool FragmentHandler::setCharges(const chargeMap &qmap)
 {
     bool success = true;
     for(size_t i = 0; i < ids_.size() && success; i++)
@@ -244,9 +244,16 @@ bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double>
             auto aptr = topologies_[i]->atomsPtr();
             if (aptr->size() == qptr->second.size())
             {
-                for(size_t a = 0; a < aptr->size(); a++)
+                for(size_t a = 0; success && a < aptr->size(); a++)
                 {
-                    (*aptr)[a].setCharge(qptr->second[a]);
+                    if (!((*aptr)[a].id() == qptr->second[a].first))
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom mismatch when reading charges from chargemap. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
+                                                                           (*aptr)[a].id().id().c_str(), qptr->second[a].first.id().c_str()).c_str()));
+                        // Program will throw before this, but success there was not.
+                        success = false;
+                    }
+                    (*aptr)[a].setCharge(qptr->second[a].second);
                 }
             }
             else

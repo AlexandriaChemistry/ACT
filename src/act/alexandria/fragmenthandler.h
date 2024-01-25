@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
+#include "act/alexandria/fetch_charges.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 
@@ -118,7 +119,7 @@ namespace alexandria
          * \param[in] qmap The charge map
          * \return true if charges for all fragments were found
          */
-        bool setCharges(const std::map<std::string, std::vector<double> >&qmap);
+        bool setCharges(const chargeMap &qmap);
         //! \return whether charges are fixed or not
         bool fixedCharges() const { return fixedQ_; }
         /*! \brief Set the charge generation algorithm to use

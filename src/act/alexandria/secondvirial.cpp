@@ -855,8 +855,8 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    ACTMol                actmol;
-    std::map<std::string, std::vector<double> > qmap;
+    ACTMol    actmol;
+    chargeMap qmap;
     auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
     if (qfn)
     {

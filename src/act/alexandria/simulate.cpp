@@ -154,7 +154,7 @@ int simulate(int argc, char *argv[])
     
     (void) pd.verifyCheckSum(stderr);
 
-    std::map<std::string, std::vector<double> > qmap;
+    chargeMap qmap;
     auto forceComp = new ForceComputer(shellToler, 100);
     auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
     if (qfn)
