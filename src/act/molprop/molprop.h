@@ -252,10 +252,8 @@ public:
 
     /*! Generate fragments based on bonds
      * \param[in] pd     The force field needed for looking up atom props
-     * \param[in] qtotal The total charge of the molecule
      */    
-    void generateFragments(const ForceField *pd,
-                           double            qtotal);
+    void generateFragments(const ForceField *pd);
     
     //! Clear the fragment information
     void clearFragments() { fragment_.clear(); }

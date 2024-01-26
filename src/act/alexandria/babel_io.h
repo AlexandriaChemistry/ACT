@@ -102,8 +102,9 @@ class BabelFiles
  * \param[in]  nsymm       Symmetry number for this molecule. If zero it will be detected from
  *                         the input.
  * \param[in]  jobtype     Calculation type for reading QM output
- * \param[out] qtot        Total charge as deduced by OB from the input. If initialized to a non-zero 
- *                         value, that will be used instead of what is read from the input file.
+ * \param[in]  userqtot    Whether the user explicitly set the total charge. If set,
+ *                         the qtot below will be used instead of what is read from the input file.
+ * \param[out] qtot        Total charge as deduced by OB from the input. 
  * \param[in]  addHydrogen If true, hydrogens will be added
  * \param[out] box         Unit cell if present, in gromacs format.
  * \param[in]  renameAtoms If true, openbabel type will be converted to Alexandria
@@ -121,6 +122,7 @@ bool readBabel(const alexandria::ForceField     *pd,
                int                  maxpot,
                int                  nsymm,
                const char          *jobtype,
+               bool                 userqtot,
                double              *qtot,
                bool                 addHydrogen,
                matrix               box,

@@ -168,16 +168,18 @@ public:
     void setEInteraction(bool eInter) { eInter_ = eInter; }
     
     /*! \brief Do the rerunning with different options
-     * \param[in] logFile File pointer to print info
-     * \param[in] pd      Force field structure
+     * \param[in] logFile  File pointer to print info
+     * \param[in] pd       Force field structure
      * \param[in] actmol   Structure with molecule info
-     * \param[in] qtot    The total charge for when reading from a trajectory
-     * \param[in] verbose Whether or not to print a lot
-     * \param[in] fnm     The filenames
+     * \param[in] userqtot Whether the user has explicitly set the qtot value below
+     * \param[in] qtot     The total charge for when reading from a trajectory
+     * \param[in] verbose  Whether or not to print a lot
+     * \param[in] fnm      The filenames
      */
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
+               bool                         userqtot,
                double                       qtot,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);

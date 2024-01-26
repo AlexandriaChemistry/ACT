@@ -502,6 +502,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
 void ReRunner::rerun(FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
+                     bool                         userqtot,
                      double                       qtot,
                      bool                         verbose,
                      const std::vector<t_filenm> &fnm)
@@ -531,7 +532,7 @@ void ReRunner::rerun(FILE                        *logFile,
             // Read compounds if we have a trajectory file
             matrix box;
             if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                           &basis, maxpot, nsymm, "Opt", &qtot, false, box))
+                           &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box))
             {
                 fprintf(stderr, "Could not read compounds from %s\n", trajname_);
                 return;
@@ -876,8 +877,9 @@ int b2(int argc, char *argv[])
         const char *conf = "";
         const char *jobtype = (char *)"Opt";
         matrix box;
+        bool   userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
         if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, &qtot_babel, false, box))
+                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box))
         {
             if (mps.size() > 1)
             {
@@ -928,7 +930,8 @@ int b2(int argc, char *argv[])
             actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        rerun.rerun(logFile, &pd, &actmol, qtot, verbose, fnm);
+        bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
+        rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, fnm);
     }
     if (json)
     {

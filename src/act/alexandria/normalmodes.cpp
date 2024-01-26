@@ -144,12 +144,13 @@ int nma(int argc, char *argv[])
     {
         std::vector<MolProp> mps;
         double               qtot_babel = qtot;
+        bool                 userqtot   = opt2parg_bSet("-qtot", pa.size(), pa.data());
         std::string          method, basis;
         int                  maxpot = 100;
         int                  nsymm  = 1;
         matrix               box;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
+                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
                        false, box))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);

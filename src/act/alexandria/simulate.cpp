@@ -156,6 +156,7 @@ int simulate(int argc, char *argv[])
 
     chargeMap qmap;
     auto forceComp = new ForceComputer(shellToler, 100);
+    bool userqtot  = false;
     auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
     if (qfn)
     {
@@ -178,7 +179,8 @@ int simulate(int argc, char *argv[])
         {
             myq += my_atof(word, descr);
         }
-        qtot = static_cast<int>(std::round(myq));
+        qtot     = static_cast<int>(std::round(myq));
+        userqtot = true;
     }
 
     JsonTree jtree("simulate");
@@ -197,7 +199,7 @@ int simulate(int argc, char *argv[])
         int                  maxpot = 100;
         int                  nsymm  = 1;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", &qtot_babel,
+                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
                        false, box))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
@@ -295,7 +297,7 @@ int simulate(int argc, char *argv[])
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-            rerun.rerun(logFile, &pd, &actmol, qtot, verbose, fnm);
+            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, fnm);
         }
         else if (actmol.errors().empty())
         {
