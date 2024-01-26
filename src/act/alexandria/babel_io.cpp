@@ -417,7 +417,7 @@ static bool babel2ACT(const ForceField                         *pd,
         double qtest = mol->GetTotalCharge();
         if (qtest != *qtot)
         {
-            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, user specified %g. File %s.\n",
+            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, will use %g as specified by user. File %s.\n",
                     qtest, *qtot, g09);
         }
         mol->SetTotalCharge(*qtot);

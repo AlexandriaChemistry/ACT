@@ -102,7 +102,7 @@ int simulate(int argc, char *argv[])
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
-          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
+          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-qcustom", FALSE, etSTR, {&qcustom}, 
@@ -169,6 +169,16 @@ int simulate(int argc, char *argv[])
         {
             fprintf(stderr, "WARNING: Since you provide a charge map, I will ignore the -qcustom flag.\n");
         }
+    }
+    else if (strlen(qcustom) > 0)
+    {
+        std::string descr("qcustom");
+        double myq = 0;
+        for(const auto &word : split(qcustom, ' '))
+        {
+            myq += my_atof(word, descr);
+        }
+        qtot = static_cast<int>(std::round(myq));
     }
 
     JsonTree jtree("simulate");
