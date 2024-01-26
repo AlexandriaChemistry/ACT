@@ -263,8 +263,9 @@ int gentop(int argc, char *argv[])
         }
         std::vector<MolProp> mps;
         double               qtot_babel = qtot;
+        bool                 userqtot   = opt2parg_bSet("-qtot", asize(pa), pa);
         if (readBabel(&pd, molFile, &mps, molnm, iupac, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, &qtot_babel, addHydrogens, box))
+                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, addHydrogens, box))
         {
             for(auto &mp : mps)
             {

@@ -266,8 +266,7 @@ bool MolProp::renumberResidues()
     return true;
 }
 
-void MolProp::generateFragments(const ForceField *pd,
-                                double            qtotal)
+void MolProp::generateFragments(const ForceField *pd)
 {
     auto catom = LastExperiment()->calcAtomConst();
     int  natom = catom.size();
@@ -350,7 +349,6 @@ void MolProp::generateFragments(const ForceField *pd,
         std::vector<int>           atomIndices;
         double                     mass = 0;
         std::map<std::string, int> comp;
-        int                        anumber = 0;
         for(auto &i : fm.second)
         {
             atomIndices.push_back(i);
@@ -360,7 +358,6 @@ void MolProp::generateFragments(const ForceField *pd,
             {
                 auto ptype = pd->findParticleType(atype);
                 mass      += ptype->mass();
-                anumber   += ptype->atomnumber();
                 auto elem  = ptype->element();
                 if (comp.find(elem) == comp.end())
                 {
@@ -376,27 +373,10 @@ void MolProp::generateFragments(const ForceField *pd,
         }
         auto formula  = comp2formula(comp);
         auto fragName = gmx::formatString("%d", fi++);
-        int  spin     = 1;
-        int  qfrag    = 0;
-        if (anumber % 2 == 0)
-        {
-            // Closed shell system, assume charge = 0;
-            qfrag = 0;
-        }
-        else if (qtotal != 0)
-        {
-            // Move qtotal to this fragment that has odd number of electrons
-            qfrag   = qtotal;
-            qtotal -= qfrag;
-        }
-        else
-        {
-            // We're out of our comfort zone: the total charge is zero but there is an odd number of electrons
-            fprintf(stderr, "WARNING: Found fragment %s with odd number of electrons but zero charge. Check your output.\n",
-                    fragName.c_str());
-            spin  = 2;
-        }
-        addFragment(Fragment(fragName, mass, qfrag, spin, 1, formula, atomIndices));
+        // Set charge to 0 and spin to 1 now, fix it later.
+        int qtot = 0;
+        int spin = 1;
+        addFragment(Fragment(fragName, mass, qtot, spin, 1, formula, atomIndices));
     }
     std::sort(fragment_.begin(), fragment_.end(), fragCompare);
     

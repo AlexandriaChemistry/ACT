@@ -314,6 +314,7 @@ static bool babel2ACT(const ForceField                         *pd,
                       int                                       maxPotential,
                       int                                       nsymm,
                       const char                               *jobType,
+                      bool                                      userqtot,
                       double                                   *qtot,
                       bool                                      addHydrogen,
                       const char                               *g09,
@@ -412,18 +413,18 @@ static bool babel2ACT(const ForceField                         *pd,
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.
-    if (*qtot != 0)
+    if (userqtot)
     {
         double qtest = mol->GetTotalCharge();
         if (qtest != *qtot)
         {
-            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, will use %g as specified by user. File %s.\n",
-                    qtest, *qtot, g09);
+            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g for compounds in '%s', will use %g as specified by user.\n",
+                    qtest, g09, *qtot);
         }
-        mol->SetTotalCharge(*qtot);
     }
     else
     {
+        mol->SetTotalCharge(*qtot);
         *qtot = mol->GetTotalCharge();
     }
     mpt->AddExperiment(exp);
@@ -665,7 +666,7 @@ static bool babel2ACT(const ForceField                         *pd,
         }
     }
     // Fragment information will be generated
-    mpt->generateFragments(pd, *qtot);
+    mpt->generateFragments(pd);
     addInchiToFragments(amols, conv, mol, mpt->fragmentPtr());
     
     // Dipole
@@ -903,6 +904,7 @@ bool readBabel(const ForceField                 *pd,
                int                               maxPotential,
                int                               nsymm,
                const char                      *jobType,
+               bool                             userqtot,
                double                          *qtot,
                bool                             addHydrogen,
                matrix                           box,
@@ -927,7 +929,7 @@ bool readBabel(const ForceField                 *pd,
     {
         alexandria::MolProp mp;
         if (babel2ACT(pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
-                      maxPotential, nsymm, jobType, qtot, addHydrogen, g09,
+                      maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, g09,
                       inputformat))
         {
             mpt->push_back(mp);

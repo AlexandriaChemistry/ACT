@@ -107,7 +107,6 @@ def write_sdf(outf, topology, positions, ffcharge, bonds, my_shell):
     charges = []
     count   = 1
     remap   = {}
-    print("bonds {}".format(bonds))
     for res in topology.residues():
         for atom in res.atoms():
             i = atom.index
@@ -122,6 +121,8 @@ def write_sdf(outf, topology, positions, ffcharge, bonds, my_shell):
                 qqq = ffcharge[i]
                 if my_shell and i in my_shell:
                     qqq += ffcharge[my_shell[i]]
+                # Have to prevent rounding of numbers in the wrong direction
+                qqq = int(round(qqq))
                 if 0 != qqq:
                     bonded = False
                     for n in bonds:
