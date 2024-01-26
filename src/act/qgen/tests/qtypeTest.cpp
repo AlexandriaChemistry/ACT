@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -89,7 +89,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
         void testQtype(const std::string &model, inputFormat inputformat, 
                        const std::string &molname,
                        double qtotal,
-                       std::vector<double> qcustom)
+                       const std::vector<double> &qcustom)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
@@ -138,12 +138,14 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             auto pd  = getForceField(model);
 
             auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+            bool   userqtot   = !qcustom.empty();
             double qtot_babel = qtotal;
             matrix box;
             EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                                   molname.c_str(), molname.c_str(),
                                   conf, &method, &basis, maxpot,
-                                  nsymm, jobtype, &qtot_babel, false, box));
+                                  nsymm, jobtype, userqtot,
+                                  &qtot_babel, false, box));
 
             if (trustObCharge)
             {
