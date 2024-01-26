@@ -87,6 +87,9 @@ parameter_indices = {
         }
     }
 
+def select(x, y, z):
+    return y if x else z
+
 def count_atoms(topology)->int:
     # First count real atoms
     natom = 0
@@ -277,24 +280,14 @@ class CombinationRules:
 
     def combTwoFloats(self, param:str, vara:float, varb:float)->float:
         myrule = self.comb[param].lower()
-        if "qisigma" == myrule:
-            if (vara+varb) == 0:
-                return 0
-            else:
-                return (vara**3+varb**3)/(vara**2+varb**2)
-        elif "halgrenepsilon" == myrule:
-            if (vara**2+varb**2) == 0:
-                return 0
-            else:
-                return (4*vara*varb/(math.sqrt(vara)+math.sqrt(varb))**2)
-        elif "hogervorstepsilon" == myrule:
-            if (vara+varb) == 0:
-                return 0
-            else:
-                return (2.0 * vara * varb)/( vara + varb )
-        else:
+        try:
             mystring = self.combTwoString(myrule, vara, varb).replace("^", "**").replace("sqrt", "math.sqrt")
             return eval(mystring)
+        except Exception as e:
+            if (vara + varb) == 0 and myrule in ["qisigma", "halgrenepsilon", "hogervorstepsilon", "yang"]:
+                return 0
+            else:
+                raise e
 
     def combFloats(self, allParam:dict)->list:
         mydict = {}
