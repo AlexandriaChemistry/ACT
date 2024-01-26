@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,11 +91,12 @@ protected:
         int         nsymm    = 0;
 
         //Read input file for molprop
-        auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
-        double qtot = 0;
+        auto dataName   = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+        bool   userqtot = false;
+        double qtot     = 0;
         matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, &qtot, false, box));
+                              maxpot, nsymm, jobtype, userqtot, &qtot, false, box));
                     
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;

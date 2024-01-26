@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2019-2023
+ * Copyright (C) 2019-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -86,11 +86,12 @@ protected:
             std::string                     dataName;
             std::vector<alexandria::MolProp> molprops;
 
-            dataName    = gmx::test::TestFileManager::getInputFilePath(molname);
-            double qtot = 0.0;
+            dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
+            bool   userqtot = false;
+            double qtot     = 0.0;
             matrix box;
             bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
-                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false, box, true);
+                                    conf, &method, &basis, maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
             EXPECT_TRUE(readOK);
             for(auto &molprop: molprops)
             {

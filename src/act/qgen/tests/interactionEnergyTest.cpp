@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -142,13 +142,13 @@ protected:
         }
         // Get forcefield
         auto pd = getForceField(model);
-
+        bool   userqtot   = !qcustom.empty();
         double qtot_babel = myqtot;
         matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
-                              jobtype, &qtot_babel, false, box));
+                              jobtype, userqtot, &qtot_babel, false, box));
 
         if (trustObCharge)
         {
