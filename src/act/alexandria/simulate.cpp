@@ -398,6 +398,10 @@ int simulate(int argc, char *argv[])
         jtree.fwrite(logFile, json);
     }
     gmx_ffclose(logFile);
+    if (immStatus::OK != imm)
+    {
+        printf("Simulate failed with an error:\n%s\n", immsg(imm));
+    }
     return status;
 }
 
