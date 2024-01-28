@@ -156,7 +156,9 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
         { "-nbootstrap", FALSE, etINT, {&nbootStrap_},
           "Number of times to iterate B2 calculation based on the same dimer orientations and energies" },
         { "-optimizedB2", FALSE, etBOOL, {&optimizedB2_},
-          "Optimize the bootstrapping by pre-calculating stuff" }
+          "Optimize the bootstrapping by pre-calculating stuff" },
+        { "-totalOnly", FALSE, etBOOL, {&totalOnly_},
+          "Plot the total B2(T) only and not the components" }
     };
     pargs->push_back(pa[0]);
     if (computeB2_)
@@ -244,15 +246,25 @@ void ReRunner::plotB2temp(const char *b2file)
     }
     FILE *b2p = xvgropen(b2file, "Second virial coefficient",
                          "Temperature (K)", "B2(T) cm^3/mol", oenv_);
-    std::vector<std::string> legend = {
-        "Total", "Classical", "Force", "Torque"
-    };
-    xvgrLegend(b2p, legend, oenv_);
-    for(size_t ii = 0; ii < T.size(); ii++)
+    if (totalOnly_)
     {
-        fprintf(b2p, "%10g  %10g  %10g  %10g  %10g\n", T[ii], 
-                b2t_[b2Type::Total][ii], b2t_[b2Type::Classical][ii],
-                b2t_[b2Type::Force][ii], b2t_[b2Type::Torque][ii]);
+        for(size_t ii = 0; ii < T.size(); ii++)
+        {
+            fprintf(b2p, "%10g  %10g\n", T[ii], b2t_[b2Type::Total][ii]);
+        }
+    }
+    else
+    {
+        std::vector<std::string> legend = {
+            "Total", "Classical", "Force", "Torque"
+        };
+        xvgrLegend(b2p, legend, oenv_);
+        for(size_t ii = 0; ii < T.size(); ii++)
+        {
+            fprintf(b2p, "%10g  %10g  %10g  %10g  %10g\n", T[ii], 
+                    b2t_[b2Type::Total][ii], b2t_[b2Type::Classical][ii],
+                    b2t_[b2Type::Force][ii], b2t_[b2Type::Torque][ii]);
+        }
     }
     xvgrclose(b2p);
 }
@@ -461,7 +473,8 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 }
                 // Conversion to regular units cm^3/mol.
                 double fac  = AVOGADRO*1e-21;
-                double bqt  = (BqmTorque[0]+BqmTorque[1])*0.5;
+                // TODO: Fix the torque contribution
+                double bqt  = 0; //(BqmTorque[0]+BqmTorque[1])*0.5;
                 double Btot = (Bclass + BqmForce + bqt)*fac;
                 // Add to bootstrapping statistics
                 b2BootStrap[b2Type::Classical].add_point(nb, Bclass*fac, 0, 0);
