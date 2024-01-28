@@ -102,6 +102,8 @@ private:
     bool                computeB2_   = false;
     //! Optimize the bootstrapping by pre-calculating stuff
     bool                optimizedB2_ = false;
+    //! Plot only the total B2
+    bool                totalOnly_   = false;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)
@@ -118,7 +120,7 @@ private:
                    const std::vector<std::vector<double>> &mayer);
 
     /*! \brief Generate plot with Second virial as a function of temperature
-     * \param[in] b2file The B2(T) output file name
+     * \param[in] b2file    The B2(T) output file name
      */
     void plotB2temp(const char *b2file);
 
