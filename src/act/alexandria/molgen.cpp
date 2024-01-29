@@ -403,7 +403,9 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                 InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
                 InteractionType::PROPER_DIHEDRALS,
                 InteractionType::IMPROPER_DIHEDRALS,
-                InteractionType::VSITE2
+                InteractionType::VSITE2,
+                InteractionType::VSITE3,
+                InteractionType::VSITE3OUT
             };
             for (const auto &atype : atypes)
             {
@@ -417,9 +419,12 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                             // TODO check multiple ids
                             for (auto &ff : *(angles->findParameters(topentry->id())))
                             {
-                                if (fp && InteractionType::VSITE2 == atype)
+                                std::set myvs = { InteractionType::VSITE2, InteractionType::VSITE3, InteractionType::VSITE3OUT };
+                                if (fp && myvs.find(atype) != myvs.end())
                                 {
-                                    fprintf(fp, "Found vsite2 %s\n", topentry->id().id().c_str());
+                                    fprintf(fp, "Found %s %s\n",
+                                            interactionTypeToString(atype).c_str(),
+                                            topentry->id().id().c_str());
                                 }
                                 if (ff.second.isMutable())
                                 {
