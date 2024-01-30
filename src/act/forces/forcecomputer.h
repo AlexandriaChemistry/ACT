@@ -126,6 +126,15 @@ private:
     void plot(const ForceField   *pd,
               InteractionType  itype) const;
 
+    /*! \brief Generate vsites
+     * \param[in] top         Topology
+     * \param[in] coordinates The coordinates to update
+     */
+    void generateVsites(const Topology         *top,
+                        std::vector<gmx::RVec> *coordinates)
+    {
+        vsiteHandler_->constructPositions(top, coordinates, box_);
+    }
 };
 
 } // namespace alexandria
