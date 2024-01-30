@@ -1326,6 +1326,8 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
             std::vector<gmx::RVec> coords = mol->xOriginal();
+            forceComp->generateVsites(mol->topology(), &coords);
+
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             for (auto &i : qTypes())

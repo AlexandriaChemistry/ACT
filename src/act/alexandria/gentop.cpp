@@ -347,6 +347,8 @@ int gentop(int argc, char *argv[])
 
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
         std::vector<gmx::RVec> coords = actmol->xOriginal();
+        ForceComputer fcomp;
+        fcomp.generateVsites(actmol->topology(), &coords);
         if (immStatus::OK == imm)
         {
             maxpot = 100; // Use 100 percent of the ESP read from QM file.

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -209,8 +209,9 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
 }
 
 static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
-                                          const std::vector<ActAtom>   &myatoms)
+                                          const Topology               *topology)
 {
+    auto myatoms = topology->atoms();
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
@@ -246,6 +247,8 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
             }
         }
     }
+    ForceComputer fcomp;
+    fcomp.generateVsites(topology, &coords);
     return coords;
 }
 
@@ -270,7 +273,7 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
                     jobType2string(JobType::SP));
         }
     }
-    return experCoords(exper->getCoordinates(), topology_->atoms());
+    return experCoords(exper->getCoordinates(), topology_);
 }
 
 void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
@@ -288,7 +291,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     gmx::RVec fzero = { 0, 0, 0 };
     for (auto &ei : experimentConst())
     {
-        auto coords = experCoords(ei.getCoordinates(), myatoms);
+        auto coords = experCoords(ei.getCoordinates(), topology_);
         // We compute either interaction energies or normal energies for one experiment
         if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
         {
@@ -848,7 +851,7 @@ void ACTMol::PrintConformation(const char                   *fn,
                                bool                          writeShells,
                                const matrix                  box)
 {
-    auto title = gmx::formatString("%s processed by ACT - The Alexandria Chemistry Tookit", getMolname().c_str());
+    auto title = gmx::formatString("%s processed by ACT - The Alexandria Chemistry Toolkit", getMolname().c_str());
 
     int        model_nr      = 1;
     char       chain         = ' ';
@@ -1210,7 +1213,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
         auto     props = myexp.propertiesConst();
-        auto     xatom = experCoords(myexp.getCoordinates(), topology_->atoms());
+        auto     xatom = experCoords(myexp.getCoordinates(), topology_);
         std::vector<double> q;
         for (auto prop : props)
         {
