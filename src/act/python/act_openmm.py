@@ -35,7 +35,7 @@ class VdW(Enum):
 # Map strings to VdW entries.
 VdWdict = {
 #    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
-#    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
+    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
     'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
     'WBHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
     'GBHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] }
@@ -1350,7 +1350,7 @@ class ActOpenMMSim:
             self.bond_force.updateParametersInContext(self.simulation.context)
 
         self.nonbondedforce.updateParametersInContext(self.simulation.context)
-        if self.nonbondedMethod == NoCutoff:
+        if self.nonbondedMethod == NoCutoff and self.vdw != VdW.LJ12_6:
             # Remove the default Non-Bonded with OpenMM
             self.txt.write("Will remove standard NonBonded forces\n")
             self.del_force(self.nonbondedforce, False)
