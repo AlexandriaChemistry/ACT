@@ -79,7 +79,10 @@ private:
      */
     ForceComputer(double   msForce = 1e-6,
                   int      maxiter = 25);
-    
+
+    //! \brief Destructor
+    ~ForceComputer();
+
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
      * \param[in]  pd          Pointer to force field structure
