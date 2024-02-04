@@ -1123,7 +1123,9 @@ void VsiteHandler::constructPositions(const Topology         *top,
                                      vsite3out_vs->sign() * params[vsite3outC], &pbc_);
                     if (debug)
                     {
-                        fprintf(debug, "sign= %d, A=%g, B=%g, C=%g, D=%g \n", vsite3out_vs->sign(),params[vsite3outA], params[vsite3outB], params[vsite3outC], vsite3out_vs->sign() * params[vsite3outC]);
+                        fprintf(debug, "vs3out: sign= %2d, A=%g, B=%g, C=%g\n",
+                                vsite3out_vs->sign(), params[vsite3outA], params[vsite3outB], 
+                                vsite3out_vs->sign() * params[vsite3outC]);
                     }
                     break;
                 }
@@ -1194,8 +1196,13 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite3FAD(ia, params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3OUT:
-                spread_vsite3OUT(ia, params[vsite3outA], params[vsite3outB], params[vsite3outC],
-                                 x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                {
+                    auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+
+                    spread_vsite3OUT(ia, params[vsite3outA], params[vsite3outB],
+                                     vsite3out_vs->sign() * params[vsite3outC],
+                                     x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                }
                 break;
                 //case F_VSITE4FD:
                 //b1 = ip[tp].vsite.b;
