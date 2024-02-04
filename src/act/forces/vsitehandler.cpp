@@ -1079,6 +1079,11 @@ void VsiteHandler::constructPositions(const Topology         *top,
         {
             auto atomIndices = vs->atomIndices();
             auto params      = vs->params();
+            if (params.empty())
+            {
+                fprintf(stderr, "WARNING: No parameters to generate virtual sites in topology (yet).\n");
+                continue;
+            }
             int ai = atomIndices[0];
             int aj = atomIndices[1];
             int ak = atomIndices[2];
