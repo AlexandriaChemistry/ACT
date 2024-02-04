@@ -65,6 +65,14 @@ ForceComputer::ForceComputer(double   msForce,
     vsiteHandler_ = new VsiteHandler(box_, dt);
 }
 
+ForceComputer::~ForceComputer()
+{
+    if (vsiteHandler_)
+    {
+        delete vsiteHandler_;
+    }
+}
+
 double ForceComputer::compute(const ForceField                  *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
