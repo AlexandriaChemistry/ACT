@@ -113,6 +113,10 @@ namespace alexandria
 
     extern const char *vsite3_name[vsite3NR];
 
+    enum { vsite3fdA = 0, vsite3fdB = 1, vsite3fdNR = 2 };
+
+    extern const char *vsite3fd_name[vsite3fdNR];
+
     enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };
 
     extern const char *vsite3fad_name[vsite3fadNR];

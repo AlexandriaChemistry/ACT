@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,6 +30,7 @@
  * Implements test of bonded force routines
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author A. Najla Hosseini <atiyeh.hosseini@icm.uu.se>
  * \ingroup module_listed-forces
  */
 #include "actpre.h"
@@ -140,6 +141,27 @@ TEST(VSite3, hohCanSwapNo)
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
     EXPECT_TRUE(param_hoh->internalValue() == 0.2);
+    EXPECT_FALSE(fs.parameterExists(coh));
+}
+
+TEST(VSite3fd, hohCanSwapNo)
+{
+    std::string forcefield("ACS-v3fds");
+    // Get the forcefield
+    auto pd = getForceField(forcefield);
+
+    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
+    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3Ow" }, { 1, 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    //9 means v-site
+    EXPECT_FALSE(hoh == coh);
+    auto itype = InteractionType::VSITE3FD;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(hoh));
+    auto param_hoh = fs.findParameterType(hoh, vsite3fd_name[vsite3fdB]);
+    EXPECT_TRUE(param_hoh->internalValue() == 0.15);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 

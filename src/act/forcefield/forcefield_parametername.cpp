@@ -69,6 +69,8 @@ const char *vsite2_name[vsite2NR] = { "vs2a" };
 
 const char *vsite3_name[vsite3NR] = { "vs3a", "vs3b" };
 
+const char *vsite3fd_name[vsite3fdNR] = { "vs3fd_a", "vs3fd_b" };
+
 const char *vsite3fad_name[vsite3fadNR] = { "vs3fad_a", "vs3fad_b" };
 
 const char *vsite3out_name[vsite3outNR] = { "vs3out_a", "vs3out_b", "vs3out_c" };
