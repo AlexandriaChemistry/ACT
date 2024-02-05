@@ -61,6 +61,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
+    { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual sites with 3FD" } },
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with 3FAD" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
     { InteractionType::COULOMB,            { "COULOMB", "Coulomb interactions" } },
@@ -111,6 +112,7 @@ int interactionTypeToNatoms(InteractionType iType)
     {
     case InteractionType::PROPER_DIHEDRALS:
     case InteractionType::IMPROPER_DIHEDRALS:
+    case InteractionType::VSITE3FD:
     case InteractionType::VSITE3FAD:
     case InteractionType::VSITE3OUT:
     case InteractionType::VSITE3:

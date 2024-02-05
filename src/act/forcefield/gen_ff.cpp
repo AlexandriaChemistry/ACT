@@ -153,10 +153,8 @@ static void add_vsites(const char *vsfile,
     int                      lineno = 1;
     ForceFieldParameterList  vsite2("vsite2", CanSwap::Vsite2);
     ForceFieldParameterList  vsite3("vsite3", CanSwap::Vsite3);
+    ForceFieldParameterList  vsite3fd("vsite3", CanSwap::No);
     ForceFieldParameterList  vsite3out("vsite3out", CanSwap::No);
-    auto itypeVS2            = InteractionType::VSITE2;
-    auto itypeVS3            = InteractionType::VSITE3;
-    auto itypeVS3OUT            = InteractionType::VSITE3OUT;
     while (tr.readLine(&tmp))
     {
         auto ptr = split(tmp, '|');
@@ -167,80 +165,92 @@ static void add_vsites(const char *vsfile,
                                                                ptr[0].c_str(), lineno, vsfile).c_str()));
         }
         auto itype = stringToInteractionType(ptr[1]);
-        // if (itype != itypeVS2 || itype != itypeVS3 || itype != itypeVS3OUT)
-        // {
-        //     GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not supported yet on line %d in file %s",
-        //                                                        ptr[1].c_str(), lineno, vsfile).c_str()));
-        // }
 
-        if (itype == itypeVS2)
+        switch (itype)
         {
-        std::string myId = ptr[2] + "!" + ptr[0];
-        Identifier vs(itype, myId, CanSwap::Vsite2);
-        double amin = my_atof(ptr[3], "vsite_parameter_min");
-        double amax = my_atof(ptr[4], "vsite_parameter_max");
-        ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
-                                     Mutability::Bounded, false, false);
-        vsite2.addParameter(vs, vsite2_name[vsite2A], vs2param);
-        }
-        else if (itype == itypeVS3)
-        {
-            // Handle vsite3
+        case InteractionType::VSITE2:
+            {
+                std::string myId = ptr[2] + "!" + ptr[0];
+                Identifier vs(itype, myId, CanSwap::Vsite2);
+                double amin = my_atof(ptr[3], "vsite_parameter_min");
+                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
+                                             Mutability::Bounded, false, false);
+                vsite2.addParameter(vs, vsite2_name[vsite2A], vs2param);
+            }
+            break;
+        case InteractionType::VSITE3:
+        case InteractionType::VSITE3FD:
+            {
+                std::string myId = ptr[2] + "!" + ptr[0];
+                
+                Identifier vs(itype, myId, CanSwap::Vsite3);
+                double amin = my_atof(ptr[3], "vsite_parameter_min");
+                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                ForceFieldParameter vs3param_a("", (amin+amax)/2, 0, 0, amin, amax,
+                                               Mutability::Bounded, false, false);
+                ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
+                                               Mutability::Bounded, false, false);
+                if (InteractionType::VSITE3 == itype)
+                {
+                    vsite3.addParameter(vs, vsite3_name[vsite3A], vs3param_a);
+                    vsite3.addParameter(vs, vsite3_name[vsite3B], vs3param_b);
+                }
+                else
+                {
+                    vsite3fd.addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
+                    vsite3fd.addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
+                }
+            }
+            break;
+        case InteractionType::VSITE3OUT:
+            {
+                std::string myId = ptr[2] + "!" + ptr[0];
+                Identifier vs(itype, myId, CanSwap::No);
 
-            std::string myId = ptr[2] + "!" + ptr[0];
+                double amin = my_atof(ptr[3], "vsite_parameter_min");
+                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                double cmin = my_atof(ptr[7], "vsite_parameter_min");
+                double cmax = my_atof(ptr[8], "vsite_parameter_max");
 
-            Identifier vs(itype, myId, CanSwap::Vsite3);
-            double amin = my_atof(ptr[3], "vsite_parameter_min");
-            double amax = my_atof(ptr[4], "vsite_parameter_max");
-            double bmin = my_atof(ptr[5], "vsite_parameter_min");
-            double bmax = my_atof(ptr[6], "vsite_parameter_max");
-            ForceFieldParameter vs3param_a("", (amin+amax)/2, 0, 0, amin, amax,
-                                         Mutability::Bounded, false, false);
-            ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                         Mutability::Bounded, false, false);
+                ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
+                                                  Mutability::Bounded, false, false);
+                ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
+                                                  Mutability::Bounded, false, false);
+                ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
+                                                  Mutability::Bounded, false, false);
 
-            vsite3.addParameter(vs, vsite3_name[vsite3A], vs3param_a); //"vs3a"
-            vsite3.addParameter(vs, vsite3_name[vsite3B], vs3param_b);//"vs3b"
-        }
-        else if (itype == itypeVS3OUT)
-        {
-            // Handle vsite3out
-
-            std::string myId = ptr[2] + "!" + ptr[0];
-            Identifier vs(itype, myId, CanSwap::No);
-
-
-            double amin = my_atof(ptr[3], "vsite_parameter_min");
-            double amax = my_atof(ptr[4], "vsite_parameter_max");
-            double bmin = my_atof(ptr[5], "vsite_parameter_min");
-            double bmax = my_atof(ptr[6], "vsite_parameter_max");
-            double cmin = my_atof(ptr[7], "vsite_parameter_min");
-            double cmax = my_atof(ptr[8], "vsite_parameter_max");
-
-            ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
-                                         Mutability::Bounded, false, false);
-            ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                         Mutability::Bounded, false, false);
-
-            ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
-                                         Mutability::Bounded, false, false);
-
-            vsite3out.addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);//"vs3outparam_a"
-            vsite3out.addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);//"vs3outparam_b"
-            vsite3out.addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);//"vs3outparam_c"
-
-        }
-        else
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not supported on line %d in file %s",
-                                                               ptr[1].c_str(), lineno, vsfile).c_str()));
+                vsite3out.addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
+                vsite3out.addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
+                vsite3out.addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
+            }
+            break;
+        default:
+            break;
         }
 
         lineno += 1;
     }
-    pd->addForces(interactionTypeToString(itypeVS2), vsite2);
-    pd->addForces(interactionTypeToString(itypeVS3), vsite3);
-    pd->addForces(interactionTypeToString(itypeVS3OUT), vsite3out);
+    if (!vsite2.empty())
+    {
+        pd->addForces(interactionTypeToString(InteractionType::VSITE2), vsite2);
+    }
+    if (!vsite3.empty())
+    {
+        pd->addForces(interactionTypeToString(InteractionType::VSITE3), vsite3);
+    }
+    if (!vsite3fd.empty())
+    {
+        pd->addForces(interactionTypeToString(InteractionType::VSITE3FD), vsite3fd);
+    }
+    if (!vsite3out.empty())
+    {
+        pd->addForces(interactionTypeToString(InteractionType::VSITE3OUT), vsite3out);
+    }
 }
 
 int gen_ff(int argc, char*argv[])

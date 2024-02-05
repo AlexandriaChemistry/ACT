@@ -68,9 +68,10 @@ enum class InteractionType
     //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
     //! Virtual interaction sites determined by three atoms in a plane
-    //
     VSITE3,
-    //
+    //! Virtual interaction sites determined by three atoms in a plane with fixed distance
+    VSITE3FD,
+    //! Virtual interaction sites determined by three atoms in a plane with fixed angle and distance
     VSITE3FAD,
     //! Virtual interaction sites determined by three atoms out of the plane
     VSITE3OUT,
