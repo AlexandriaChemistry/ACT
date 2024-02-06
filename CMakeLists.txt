@@ -63,10 +63,10 @@ include(gmxBuildTreeInfo)
 include(gmxVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
-    set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
+    set(CMAKE_INSTALL_PREFIX "/usr/local/ACT" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 if("${CMAKE_INSTALL_PREFIX}" STREQUAL "${CMAKE_BINARY_DIR}")
-    message(FATAL_ERROR "GROMACS cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
+    message(FATAL_ERROR "ACT cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
 endif()
 
 include(gmxBuildTypeReference)
@@ -83,7 +83,7 @@ if(NOT CMAKE_BUILD_TYPE)
         "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
-    # Add appropriate GROMACS-specific build types for the Visual
+    # Add appropriate ACT-specific build types for the Visual
     # Studio generator (Debug, Release, MinSizeRel and RelWithDebInfo
     # are already present by default).
     list(APPEND CMAKE_CONFIGURATION_TYPES "RelWithAssert" "Reference")
@@ -110,7 +110,7 @@ set(INSTALLED_HEADER_DEFINITIONS "")
 # Global non-cache variables for implementing the build system
 ########################################################################
 
-# These variables collect libraries that GROMACS requires for
+# These variables collect libraries that ACT requires for
 # linking. They should be appended to with list(APPEND ${name}
 # new-library) calls. They are:
 #  - Libraries that are required for libactgromacs (only)
@@ -158,10 +158,9 @@ mark_as_advanced(GMX_STDLIB_LIBRARIES)
 ########################################################################
 # Detect CXX17 support and flags
 ########################################################################
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v3.0.0 so that GROMACS can detect
-# invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer and ICC.
+# The cmake/Check{C,CXX}CompilerFlag.cmake files in the ACT distribution
+# are used with permission from CMake v3.0.0 so that ACT can detect
+# invalid options with the Intel Compilers.
 # CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
 # a semicolon. Since this is also used as a separator in lists inside CMake,
 # that string ends up being split into two separate patterns, and the last
@@ -169,7 +168,7 @@ mark_as_advanced(GMX_STDLIB_LIBRARIES)
 # by replacing the semicolon with a period that matches any character.
 #
 # These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building GROMACS.
+# includes the features in question becomes required for building ACT.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
@@ -189,13 +188,12 @@ include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-# Fujitsu only has SIMD in double precision, so this will be faster
 gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
 option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
 mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
 
-option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" ON)
+option(GMX_MPI    "Build a parallel (message-passing) version of ACT" ON)
 gmx_dependent_option(
     GMX_MPI_IN_PLACE
     "Enable MPI_IN_PLACE for MPIs that have it defined"
@@ -411,17 +409,6 @@ include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
-
-# Management of GROMACS options for specific toolchains should go
-# here. Because the initial settings for some of the main options have
-# already happened, but things like library detection and MPI compiler
-# feature detection have not, the docstrings for any over-rides of
-# GROMACS defaults or user settings will make sense. Also, any
-# toolchain-related reasons for choosing whether to detect various
-# things can be sorted out now, before the detection takes place.
-if(GMX_TARGET_FUJITSU_SPARC64)
-    include(gmxManageFujitsuSparc64)
-endif()
 
 ########################################################################
 #Process MPI settings

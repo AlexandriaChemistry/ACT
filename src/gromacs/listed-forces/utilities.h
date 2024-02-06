@@ -57,7 +57,7 @@ ftype_is_bonded_potential(int ftype)
 {
     return
         ((interaction_function[ftype].flags & IF_BOND) != 0u) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
+        !(ftype == F_CONNBONDS);
 }
 
 #endif

@@ -53,10 +53,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/listed-forces/disre.h"
-#include "gromacs/listed-forces/orires.h"
 #include "gromacs/listed-forces/pairs.h"
-#include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -96,7 +93,6 @@ static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
     BondedInteractions {FENE_bonds, eNR_FENEBONDS },              // F_FENEBONDS
     BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDS
     BondedInteractions {tab_bonds, eNR_TABBONDS },                // F_TABBONDSNC
-    BondedInteractions {restraint_bonds, eNR_RESTRBONDS },        // F_RESTRBONDS
     BondedInteractions {angles, eNR_ANGLES },                     // F_ANGLES
     BondedInteractions {g96angles, eNR_ANGLES },                  // F_G96ANGLES
     BondedInteractions {restrangles, eNR_ANGLES },                // F_RESTRANGLES
@@ -142,16 +138,6 @@ static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
     BondedInteractions {water_pol, eNR_WPOL },                    // F_WATER_POL
     BondedInteractions {thole_pol, eNR_THOLE },                   // F_THOLE_POL
     BondedInteractions {anharm_polarize, eNR_ANHARM_POL },        // F_ANHARM_POL
-    BondedInteractions {unimplemented, -1 },                      // F_POSRES
-    BondedInteractions {unimplemented, -1 },                      // F_FBPOSRES
-    BondedInteractions {ta_disres, eNR_DISRES },                  // F_DISRES
-    BondedInteractions {unimplemented, -1 },                      // F_DISRESVIOL
-    BondedInteractions {orires, eNR_ORIRES },                     // F_ORIRES
-    BondedInteractions {unimplemented, -1 },                      // F_ORIRESDEV
-    BondedInteractions {angres, eNR_ANGRES },                     // F_ANGRES
-    BondedInteractions {angresz, eNR_ANGRESZ },                   // F_ANGRESZ
-    BondedInteractions {dihres, eNR_DIHRES },                     // F_DIHRES
-    BondedInteractions {unimplemented, -1 },                      // F_DIHRESVIOL
     BondedInteractions {unimplemented, -1 },                      // F_CONSTR
     BondedInteractions {unimplemented, -1 },                      // F_CONSTRNC
     BondedInteractions {unimplemented, -1 },                      // F_SETTLE
@@ -590,16 +576,16 @@ calcBondedForces(const t_idef     *idef,
     }
 }
 
-void calc_listed(const t_commrec             *cr,
-                 const gmx_multisim_t *ms,
+void calc_listed(gmx_unused const t_commrec             *cr,
+                 gmx_unused const gmx_multisim_t *ms,
                  struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
-                 const rvec x[], history_t *hist,
+                 gmx_unused const rvec x[], gmx_unused history_t *hist,
                  rvec f[],
-                 gmx::ForceWithVirial *forceWithVirial,
+                 gmx_unused gmx::ForceWithVirial *forceWithVirial,
                  const t_forcerec *fr,
                  const struct t_pbc *pbc,
-                 const struct t_pbc *pbc_full,
+                 gmx_unused const struct t_pbc *pbc_full,
                  const struct t_graph *g,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb,
                  const real *lambda,
@@ -620,58 +606,6 @@ void calc_listed(const t_commrec             *cr,
     else
     {
         pbc_null = nullptr;
-    }
-
-    if ((idef->il[F_POSRES].nr > 0) ||
-        (idef->il[F_FBPOSRES].nr > 0) ||
-        fcd->orires.nr > 0 ||
-        fcd->disres.nres > 0)
-    {
-        /* TODO Use of restraints triggers further function calls
-           inside the loop over calc_one_bond(), but those are too
-           awkward to account to this subtimer properly in the present
-           code. We don't test / care much about performance with
-           restraints, anyway. */
-        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
-
-        if (idef->il[F_POSRES].nr > 0)
-        {
-            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr,
-                           forceWithVirial);
-        }
-
-        if (idef->il[F_FBPOSRES].nr > 0)
-        {
-            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr,
-                             forceWithVirial);
-        }
-
-        /* Do pre force calculation stuff which might require communication */
-        if (fcd->orires.nr > 0)
-        {
-            /* This assertion is to ensure we have whole molecules.
-             * Unfortunately we do not have an mdrun state variable that tells
-             * us if molecules in x are not broken over PBC, so we have to make
-             * do with checking graph!=nullptr, which should tell us if we made
-             * molecules whole before calling the current function.
-             */
-            GMX_RELEASE_ASSERT(fr->ePBC == epbcNONE || g != nullptr, "With orientation restraints molecules should be whole");
-            enerd->term[F_ORIRESDEV] =
-                calc_orires_dev(ms, idef->il[F_ORIRES].nr,
-                                idef->il[F_ORIRES].iatoms,
-                                idef->iparams, md, x,
-                                pbc_null, fcd, hist);
-        }
-        if (fcd->disres.nres > 0)
-        {
-            calc_disres_R_6(cr, ms,
-                            idef->il[F_DISRES].nr,
-                            idef->il[F_DISRES].iatoms,
-                            x, pbc_null,
-                            fcd, hist);
-        }
-
-        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
     if (bt->haveBondeds)
@@ -702,10 +636,6 @@ void calc_listed(const t_commrec             *cr,
     }
 
     /* Copy the sum of violations for the distance restraints from fcd */
-    if (fcd)
-    {
-        enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
-    }
 }
 
 void calc_listed_lambda(const t_idef *idef,
@@ -779,8 +709,8 @@ void calc_listed_lambda(const t_idef *idef,
 
 void
 do_force_listed(struct gmx_wallcycle        *wcycle,
-                matrix                       box,
-                const t_lambda              *fepvals,
+                gmx_unused matrix                       box,
+                gmx_unused const t_lambda              *fepvals,
                 const t_commrec             *cr,
                 const gmx_multisim_t        *ms,
                 const t_idef                *idef,
@@ -806,47 +736,9 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         return;
     }
 
-    if ((idef->il[F_POSRES].nr > 0) ||
-        (idef->il[F_FBPOSRES].nr > 0))
-    {
-        /* Not enough flops to bother counting */
-        set_pbc(&pbc_full, fr->ePBC, box);
-    }
     calc_listed(cr, ms, wcycle, idef, x, hist,
                 forceForUseWithShiftForces, forceWithVirial,
                 fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
-
-    /* Check if we have to determine energy differences
-     * at foreign lambda's.
-     */
-    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL))
-    {
-        posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
-
-        if (idef->ilsort != ilsortNO_FE)
-        {
-            wallcycle_sub_start(wcycle, ewcsLISTED_FEP);
-            if (idef->ilsort != ilsortFE_SORTED)
-            {
-                gmx_incons("The bonded interactions are not sorted for free energy");
-            }
-            for (int i = 0; i < enerd->n_lambda; i++)
-            {
-                real lam_i[efptNR];
-
-                reset_foreign_enerdata(enerd);
-                for (int j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                calc_listed_lambda(idef, x, fr, pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
-                                   fcd, global_atom_index);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-            wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
-        }
-    }
 }
