@@ -119,13 +119,6 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
         case F_FENEBONDS:
             fprintf(fp, "bm=%15.8e, kb=%15.8e\n", iparams->fene.bm, iparams->fene.kb);
             break;
-        case F_RESTRBONDS:
-            fprintf(fp, "lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kB=%15.8e,\n",
-                    iparams->restraint.lowA, iparams->restraint.up1A,
-                    iparams->restraint.up2A, iparams->restraint.kA,
-                    iparams->restraint.lowB, iparams->restraint.up1B,
-                    iparams->restraint.up2B, iparams->restraint.kB);
-            break;
         case F_TABBONDS:
         case F_TABBONDSNC:
         case F_TABANGLES:
@@ -179,43 +172,6 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             break;
         case F_PDIHS:
         case F_PIDIHS:
-        case F_ANGRES:
-        case F_ANGRESZ:
-            fprintf(fp, "phiA=%15.8e, cpA=%15.8e, phiB=%15.8e, cpB=%15.8e, mult=%d\n",
-                    iparams->pdihs.phiA, iparams->pdihs.cpA,
-                    iparams->pdihs.phiB, iparams->pdihs.cpB,
-                    iparams->pdihs.mult);
-            break;
-        case F_DISRES:
-            fprintf(fp, "label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
-                    iparams->disres.label, iparams->disres.type,
-                    iparams->disres.low, iparams->disres.up1,
-                    iparams->disres.up2, iparams->disres.kfac);
-            break;
-        case F_ORIRES:
-            fprintf(fp, "ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
-                    iparams->orires.ex, iparams->orires.label, iparams->orires.power,
-                    iparams->orires.c, iparams->orires.obs, iparams->orires.kfac);
-            break;
-        case F_DIHRES:
-            fprintf(fp, "phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
-                    iparams->dihres.phiA, iparams->dihres.dphiA, iparams->dihres.kfacA,
-                    iparams->dihres.phiB, iparams->dihres.dphiB, iparams->dihres.kfacB);
-            break;
-        case F_POSRES:
-            fprintf(fp, "pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
-                    iparams->posres.pos0A[XX], iparams->posres.pos0A[YY],
-                    iparams->posres.pos0A[ZZ], iparams->posres.fcA[XX],
-                    iparams->posres.fcA[YY], iparams->posres.fcA[ZZ],
-                    iparams->posres.pos0B[XX], iparams->posres.pos0B[YY],
-                    iparams->posres.pos0B[ZZ], iparams->posres.fcB[XX],
-                    iparams->posres.fcB[YY], iparams->posres.fcB[ZZ]);
-            break;
-        case F_FBPOSRES:
-            fprintf(fp, "pos0=(%15.8e,%15.8e,%15.8e), geometry=%d, r=%15.8e, k=%15.8e\n",
-                    iparams->fbposres.pos0[XX], iparams->fbposres.pos0[YY],
-                    iparams->fbposres.pos0[ZZ], iparams->fbposres.geom,
-                    iparams->fbposres.r,        iparams->fbposres.k);
             break;
         case F_RBDIHS:
             for (int i = 0; i < NR_RBDIHS; i++)
