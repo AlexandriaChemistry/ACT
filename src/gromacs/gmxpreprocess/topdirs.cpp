@@ -115,8 +115,6 @@ int ifunc_index(directive d, int type)
                     return F_TABBONDS;
                 case 9:
                     return F_TABBONDSNC;
-                case 10:
-                    return F_RESTRBONDS;
                 default:
                     gmx_fatal(FARGS, "Invalid bond type %d", type);
             }
@@ -245,17 +243,6 @@ int ifunc_index(directive d, int type)
             }
         case d_settles:
             return F_SETTLE;
-        case d_position_restraints:
-            switch (type)
-            {
-                case 1:
-                    return F_POSRES;
-                case 2:
-                    return F_FBPOSRES;
-                default:
-                    fprintf(stderr, "Invalid position restraint type %d\n", type);
-                    return -1;
-            }
         case d_polarization:
             switch (type)
             {
@@ -273,16 +260,6 @@ int ifunc_index(directive d, int type)
             return F_THOLE_POL;
         case d_water_polarization:
             return F_WATER_POL;
-        case d_angle_restraints:
-            return F_ANGRES;
-        case d_angle_restraints_z:
-            return F_ANGRESZ;
-        case d_distance_restraints:
-            return F_DISRES;
-        case d_orientation_restraints:
-            return F_ORIRES;
-        case d_dihedral_restraints:
-            return F_DIHRES;
         default:
             gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)",
                       dir2str(d), __FILE__, __LINE__);

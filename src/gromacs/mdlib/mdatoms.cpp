@@ -185,8 +185,6 @@ makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
         }
     }
 
-    md->bOrires = (gmx_mtop_ftype_count(&mtop, F_ORIRES) != 0);
-
     return mdAtoms;
 }
 
@@ -285,10 +283,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         if (md->bVCMgrps)
         {
             srenew(md->cVCM, md->nalloc);
-        }
-        if (md->bOrires)
-        {
-            srenew(md->cORF, md->nalloc);
         }
         if (md->nPerturbed)
         {

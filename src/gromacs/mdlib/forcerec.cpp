@@ -2340,9 +2340,7 @@ void init_forcerec(FILE                             *fp,
 
     fr->haveDirectVirialContributions =
         (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
-         fr->forceProviders->hasForceProvider() ||
-         gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
+         fr->forceProviders->hasForceProvider());
 
     if (fr->haveDirectVirialContributions)
     {

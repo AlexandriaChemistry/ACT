@@ -391,10 +391,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
     {
-        if (i != F_DISRESVIOL && i != F_ORIRESDEV)
-        {
-            epot[F_EPOT] += epot[i];
-        }
+        epot[F_EPOT] += epot[i];
     }
 }
 

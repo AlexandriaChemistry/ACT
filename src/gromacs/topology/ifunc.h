@@ -129,7 +129,6 @@ enum
     F_FENEBONDS,
     F_TABBONDS,
     F_TABBONDSNC,
-    F_RESTRBONDS,
     F_ANGLES,
     F_G96ANGLES,
     F_RESTRANGLES,
@@ -177,16 +176,6 @@ enum
     F_WATER_POL,
     F_THOLE_POL,
     F_ANHARM_POL,
-    F_POSRES,
-    F_FBPOSRES,
-    F_DISRES,
-    F_DISRESVIOL,
-    F_ORIRES,
-    F_ORIRESDEV,
-    F_ANGRES,
-    F_ANGRESZ,
-    F_DIHRES,
-    F_DIHRESVIOL,
     F_CONSTR,
     F_CONSTRNC,
     F_SETTLE,
@@ -219,13 +208,9 @@ enum
     F_NRE               /* This number is for the total number of energies      */
 };
 
-static inline bool IS_RESTRAINT_TYPE(int ifunc)
+static inline bool IS_RESTRAINT_TYPE(gmx_unused int ifunc)
 {
-    return
-        ifunc == F_POSRES || ifunc == F_FBPOSRES ||
-        ifunc == F_DISRES || ifunc == F_RESTRBONDS || ifunc == F_DISRESVIOL ||
-        ifunc == F_ORIRES || ifunc == F_ORIRESDEV ||
-        ifunc == F_ANGRES || ifunc == F_ANGRESZ || ifunc == F_DIHRES;
+    return false;
 }
 
 /* Maximum allowed number of atoms, parameters and terms in interaction_function.
