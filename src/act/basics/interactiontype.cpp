@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -61,8 +61,8 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
-    { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual sites with 3FD" } },
-    { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with 3FAD" } },
+    { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual site with three constructing atoms and fixed distance" } },
+    { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
     { InteractionType::COULOMB,            { "COULOMB", "Coulomb interactions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },

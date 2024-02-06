@@ -1066,7 +1066,11 @@ void VsiteHandler::constructPositions(const Topology         *top,
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     std::set<InteractionType>  vsites = {
-        InteractionType::VSITE2,InteractionType::VSITE3, InteractionType::VSITE3FAD, InteractionType::VSITE3OUT
+        InteractionType::VSITE2,
+        InteractionType::VSITE3,
+        InteractionType::VSITE3FD,
+        InteractionType::VSITE3FAD,
+        InteractionType::VSITE3OUT
     };
     for (const auto &entry: top->entries())
     {

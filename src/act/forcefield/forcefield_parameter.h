@@ -124,6 +124,10 @@ class ForceFieldParameter
                       gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]",
                       value_, unit_.c_str(), minimum_, maximum_).c_str()));
         }
+        else if (minimum_ == maximum_ && mutability_ == Mutability::Bounded)
+        {
+            mutability_ = Mutability::Fixed;
+        }
         calculateInternalValue();
     }
         

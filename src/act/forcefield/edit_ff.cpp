@@ -345,6 +345,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
     static std::set<InteractionType> other = {
         InteractionType::CONSTR,
         InteractionType::VSITE2,
+        InteractionType::VSITE3FD,
         InteractionType::VSITE3FAD,
         InteractionType::VSITE3OUT };
     static std::set<InteractionType> eem = {
