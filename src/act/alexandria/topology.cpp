@@ -859,13 +859,18 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
             }
         }
     }
-    if (ffvs.empty())
+    if (debug)
     {
-        if (debug)
+        if (ffvs.empty())
         {
-            fprintf(debug, "Force field does not contain VSITE3 or VSITE3FDs.\n");
+            fprintf(debug, "Force field does not contain any three particle virtual sites.\n");
+            return {};
         }
-        return {};
+        else
+        {
+            fprintf(debug, "There are %zu non-empty three particle vsite entries in the force field.\n",
+                    ffvs.size());
+        }
     }
     auto itype_b = InteractionType::ANGLES;
     if (entries_.find(itype_b) == entries_.end())
@@ -880,6 +885,10 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
     std::map<InteractionType, size_t> num_v3;
     for (const auto itype : v3s)
     {
+        if (ffvs.find(itype) == ffvs.end())
+        {
+            continue;
+        }
         TopologyEntryVector v3top;
         auto &angles     = entry(itype_b);
         for (size_t i = 0; i < angles.size(); i++)
@@ -1014,8 +1023,11 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
             }
         }
 
-        num_v3.insert({itype , v3top.size() });
-        entries_.insert({ itype, std::move(v3top) });
+        if (!v3top.empty())
+        {
+            num_v3.insert({itype , v3top.size() });
+            entries_.insert({ itype, std::move(v3top) });
+        }
     }
     return num_v3;
 }
@@ -1408,6 +1420,10 @@ void Topology::fillParameters(const ForceField *pd)
 {
     for(auto &entry : entries_)
     {
+        if (!pd->interactionPresent(entry.first))
+        {
+            continue;
+        }
         auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry : entry.second)
         {
@@ -1490,7 +1506,7 @@ void Topology::fillParameters(const ForceField *pd)
 void Topology::setEntryIdentifiers(const ForceField *pd,
                                    InteractionType   itype)
 {
-    if (!hasEntry(itype))
+    if (!hasEntry(itype) || !pd->interactionPresent(itype))
     {
         return;
     }
