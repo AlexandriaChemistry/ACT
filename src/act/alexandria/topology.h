@@ -187,11 +187,13 @@ private:
     int makeVsite2s(const ForceField *pd,
                     AtomList         *atomList);
 
-    int makeVsite3s(const ForceField *pd,
-                    AtomList         *atomList);
-
-    int makeVsite3OUTs(const ForceField *pd,
-                       AtomList         *atomList);                
+    /*! \brief Generate three body vsites
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The linked list of particles
+     * \return map containing number of entries added for each interaction type
+     */
+    std::map<InteractionType, size_t>  makeVsite3s(const ForceField *pd,
+                                                   AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure

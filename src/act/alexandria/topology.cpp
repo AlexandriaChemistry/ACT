@@ -836,296 +836,188 @@ int Topology::makeVsite2s(const ForceField *pd,
     return nvsites2;
 }
 
-int Topology::makeVsite3s(const ForceField *pd,
-                          AtomList         *atomList)
+std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
+                                                        AtomList         *atomList)
 {
     if (!pd)
     {
         GMX_THROW(gmx::InternalError("Why did you call makeVsites3 without a force field?"));
-        return 0;
+        return {};
     }
-    auto itype_vs3 = InteractionType::VSITE3;
-    if (!pd->interactionPresent(itype_vs3))
+    std::vector<InteractionType> v3s = { InteractionType::VSITE3,
+                                         InteractionType::VSITE3FD,
+                                         InteractionType::VSITE3OUT };
+    std::map<InteractionType, ForceFieldParameterList> ffvs;
+    for (const auto itype : v3s)
     {
-        if (debug)
+        if (pd->interactionPresent(itype))
         {
-            fprintf(debug, "Force field does not contain vsites3.\n");
+            const auto &fs = pd->findForcesConst(itype);
+            if (!fs.empty())
+            {
+                ffvs.insert({itype, fs });
+            }
         }
-        return 0;
     }
-    auto &ffvs     = pd->findForcesConst(itype_vs3);
     if (ffvs.empty())
     {
         if (debug)
         {
-            fprintf(debug, "Force field has zero vsite3 interactions!\n");
+            fprintf(debug, "Force field does not contain VSITE3 or VSITE3FDs.\n");
         }
-        return 0;
+        return {};
     }
     auto itype_b = InteractionType::ANGLES;
     if (entries_.find(itype_b) == entries_.end())
     {
         if (debug)
         {
-            fprintf(debug, "There are no bonds to generate vsites3 from.\n");
+            fprintf(debug, "There are no angles to generate vsites3 from.\n");
         }
-        return 0;
+        return {};
     }
-    auto &angles     = entry(itype_b);
-
-    TopologyEntryVector vsite3;
-
-    for (size_t i = 0; i < angles.size(); i++)
+    // Count the number of interactions of each type that we find
+    std::map<InteractionType, size_t> num_v3;
+    for (const auto itype : v3s)
     {
-        auto mybond = static_cast<const Angle *>(angles[i]->self());
-
-        mybond->check(3);
-        auto bid    = mybond->id();
-        auto border = bid.bondOrders();
-        int  ai     = mybond->atomIndex(0);
-        int  aj     = mybond->atomIndex(1);
-        int  ak     = mybond->atomIndex(2);
-
-        auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
-        auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
-        auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
-        if (debug)
+        TopologyEntryVector v3top;
+        auto &angles     = entry(itype_b);
+        for (size_t i = 0; i < angles.size(); i++)
         {
-            fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
-        }
+            auto mybond = static_cast<const Angle *>(angles[i]->self());
 
-        for (auto &fvs : ffvs.parametersConst())
-        {
+            mybond->check(3);
+            auto bid    = mybond->id();
+            auto border = bid.bondOrders();
+            int  ai     = mybond->atomIndex(0);
+            int  aj     = mybond->atomIndex(1);
+            int  ak     = mybond->atomIndex(2);
+
+            auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
+            auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
+            auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
             if (debug)
             {
-                fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
+                fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
             }
 
-            auto vsatoms = fvs.first.atoms();
-            auto vsbo    = fvs.first.bondOrders();
-            bool found   = false;
-            
-            if (border[0] == vsbo[0] && border[1] == vsbo[1] && bai == vsatoms[0] && baj == vsatoms[1] && bak == vsatoms[2])
+            for (const auto &myffvs : ffvs)
             {
-                found = true;
-            }
-            else if (baj == vsatoms[1] && bak == vsatoms[0] && bai == vsatoms[2] && border[1] == vsbo[0] && border[0] == vsbo[1] )
-            {
-                found   = true;
-                int tmp = ak; ak = ai; ai = tmp;
-            }
-
-            if (found)
-            {
-                auto vsname = vsatoms[vsatoms.size() - 1];
-                if (!pd->hasParticleType(vsname))
+                for (const auto &fvs : myffvs.second.parametersConst())
                 {
-                    printf("No such particle type %s as found in vsite %s\n",
-                           vsname.c_str(), fvs.first.id().c_str());
-                }
-                else
-                {
-                    auto ptype = pd->findParticleType(vsname);
-                    std::string vstype = ptype->optionValue("bondtype");
-                    for (int pid=0; pid<1; pid++)
+                    if (debug)
                     {
-                        ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                        ptype->gmxParticleType(),
-                                        0, ptype->mass(), ptype->charge());
+                        fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
+                    }
+                    auto vsatoms = fvs.first.atoms();
+                    auto vsbo    = fvs.first.bondOrders();
+                    bool found   = false;
 
-                        int vs3 = atomList->size();
-                        newatom.addCore(ai);
-                        newatom.addCore(aj);
-                        newatom.addCore(ak);
-                        newatom.setResidueNumber(atoms_[ai].residueNumber());
+                    if (border[0] == vsbo[0] && border[1] == vsbo[1] &&
+                        bai == vsatoms[0] && baj == vsatoms[1] && bak == vsatoms[2])
+                    {
+                        found = true;
+                    }
+                    else if (baj == vsatoms[1] && bak == vsatoms[0] &&
+                             bai == vsatoms[2] && border[1] == vsbo[0] && border[0] == vsbo[1] )
+                    {
+                        found   = true;
+                        int tmp = ak; ak = ai; ai = tmp;
+                    }
 
-                        gmx::RVec vzero = {0, 0, 0};
-                        size_t after = std::max({ai, aj, ak});
-                        auto iter = std::find(atomList->begin(), atomList->end(), after);
-                        atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3, vzero));
-
-                        // Create new topology entry
-                        Vsite3 vsnew(ai, aj, ak, vs3);
-                        if (debug)
+                    if (found)
+                    {
+                        auto vsname = vsatoms[vsatoms.size() - 1];
+                        if (!pd->hasParticleType(vsname))
                         {
-                            fprintf(debug, "Adding vs3 %s%d %s%d %s%d %d\n",
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj,
-                                    atoms_[ak].element().c_str(), ak, vs3);
+                            printf("No such particle type %s as found in vsite %s\n",
+                                   vsname.c_str(), fvs.first.id().c_str());
                         }
-
-                        // Add bond orders, cp from the bond.
-                        for (auto b : border)
+                        else
                         {
-                            vsnew.addBondOrder(b);
+                            auto ptype = pd->findParticleType(vsname);
+                            std::string vstype = ptype->optionValue("bondtype");
+                            // Determine how many particles to add
+                            int maxpid = 1;
+                            if (InteractionType::VSITE3OUT == myffvs.first)
+                            {
+                                maxpid = 2;
+                            }
+                            for (int pid=0; pid<maxpid; pid++)
+                            {
+                                ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
+                                                ptype->gmxParticleType(),
+                                                0, ptype->mass(), ptype->charge());
+
+                                int vs3 = atomList->size();
+                                newatom.addCore(ai);
+                                newatom.addCore(aj);
+                                newatom.addCore(ak);
+                                newatom.setResidueNumber(atoms_[ai].residueNumber());
+                                if (debug)
+                                {
+                                    fprintf(debug, "Adding %s %s%d %s%d %s%d %d\n",
+                                            interactionTypeToString(itype).c_str(),
+                                            atoms_[ai].element().c_str(), ai,
+                                            atoms_[aj].element().c_str(), aj,
+                                            atoms_[ak].element().c_str(), ak, vs3);
+                                }
+
+                                gmx::RVec vzero = {0, 0, 0};
+                                size_t after = std::max({ai, aj, ak});
+                                auto iter = std::find(atomList->begin(), atomList->end(), after);
+                                atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3, vzero));
+
+                                // Create new topology entry
+                                switch(myffvs.first)
+                                {
+                                case InteractionType::VSITE3:
+                                case InteractionType::VSITE3FD:
+                                    {
+                                        Vsite3 vsnew(ai, aj, ak, vs3);
+
+                                        // Add bond orders, cp from the angle.
+                                        for (auto b : border)
+                                        {
+                                            vsnew.addBondOrder(b);
+                                        }
+
+                                        // Special bond order for vsites
+                                        vsnew.addBondOrder(9);
+                                        v3top.push_back(std::any_cast<Vsite3>(std::move(vsnew)));
+                                    }
+                                    break;
+                                case InteractionType::VSITE3OUT:
+                                    {
+                                        // We are creating two of these, with different sign on the c parameter.
+                                        int       sign = 2*pid - 1;
+                                        Vsite3OUT vsnew(ai, aj, ak, vs3, sign);
+
+                                        // Add bond orders, cp from the angle.
+                                        for (auto b : border)
+                                        {
+                                            vsnew.addBondOrder(b);
+                                        }
+
+                                        // Special bond order for vsites
+                                        vsnew.addBondOrder(9);
+                                        v3top.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
+                                    }
+                                    break;
+                                default:
+                                    break;
+                                }
+                            }
                         }
-
-                        // Special bond order for vsites
-                        vsnew.addBondOrder(9);
-
-                        vsite3.push_back(std::any_cast<Vsite3>(std::move(vsnew)));
                     }
                 }
             }
         }
+
+        num_v3.insert({itype , v3top.size() });
+        entries_.insert({ itype, std::move(v3top) });
     }
-
-    // If we found any vsite3 instances, add the vec to the top
-    int nvsites3 = vsite3.size();
-    if (nvsites3 > 0)
-    {
-        entries_.insert({itype_vs3, std::move(vsite3)});
-    }
-
-    return nvsites3;
-}
-
-int Topology::makeVsite3OUTs(const ForceField *pd,
-                          AtomList         *atomList)
-{
-    if (!pd)
-    {
-        GMX_THROW(gmx::InternalError("Why did you call makeVsites3out without a force field?"));
-    }
-    auto itype_vs3out = InteractionType::VSITE3OUT;
-    if (!pd->interactionPresent(itype_vs3out))
-    {
-        if (debug)
-        {
-            fprintf(debug, "Force field does not contain vsites3out.\n");
-        }
-        return 0;
-    }
-    auto &ffvs     = pd->findForcesConst(itype_vs3out);
-    if (ffvs.empty())
-    {
-        if (debug)
-        {
-            fprintf(debug, "Force field has zero vsite3out interactions!\n");
-        }
-        return 0;
-    }
-
-    auto itype_b = InteractionType::ANGLES;
-    if (entries_.find(itype_b) == entries_.end())
-    {
-        if (debug)
-        {
-            fprintf(debug, "There are no angles to generate vsites3out from.\n");
-        }
-        return 0;
-    }
-    auto &angles     = entry(itype_b);
-
-    TopologyEntryVector vsite3out;
-
-    for (size_t i = 0; i < angles.size(); i++)
-    {
-        auto mybond = static_cast<const Angle *>(angles[i]->self());
-
-        mybond->check(3);
-        auto bid    = mybond->id();
-        auto border = bid.bondOrders();
-        int  ai     = mybond->atomIndex(0);
-        int  aj     = mybond->atomIndex(1);
-        int  ak     = mybond->atomIndex(2);
-        auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
-        auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
-        auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
-        if (debug)
-        {
-            fprintf(debug, "%s %d %s %d %s %d\n", bai.c_str(), ai, baj.c_str(),aj, bak.c_str(), ak );
-            fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
-        }
-
-        for (auto &fvs : ffvs.parametersConst())
-        {
-            if (debug)
-            {
-                fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
-            }
-
-            auto vsatoms = fvs.first.atoms();
-            auto vsbo    = fvs.first.bondOrders();
-            bool found   = false;
-
-            if (border[0] == vsbo[0] && border[1] == vsbo[1] && bai == vsatoms[0] && baj == vsatoms[1] && bak == vsatoms[2])
-            {
-                found = true;
-            }
-            else if (baj == vsatoms[1] && bak == vsatoms[0] && bai == vsatoms[2] && border[1] == vsbo[0] && border[0] == vsbo[1] )
-            {
-                found   = true;
-                int tmp = ak; ak = ai; ai = tmp;
-            }
-
-            if (found)
-            {
-                auto vsname = vsatoms[vsatoms.size() - 1];
-                if (!pd->hasParticleType(vsname))
-                {
-                    printf("No such particle type %s as found in vsite %s\n",
-                           vsname.c_str(), fvs.first.id().c_str());
-                }
-                else
-                {
-                    auto ptype = pd->findParticleType(vsname);
-                    std::string vstype = ptype->optionValue("bondtype");
-                    for (int pid=0; pid<2; pid++)
-                    {
-                        ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                        ptype->gmxParticleType(),
-                                        0, ptype->mass(), ptype->charge());
-
-                        int vs3out = atomList->size();
-
-                        int sign= -1 + 2*pid;
-                        newatom.addCore(ai);
-                        newatom.addCore(aj);
-                        newatom.addCore(ak);
-
-                        newatom.setResidueNumber(atoms_[ai].residueNumber());
-                        newatom.setResidueNumber(atoms_[aj].residueNumber());
-                        newatom.setResidueNumber(atoms_[ak].residueNumber());
-
-                        gmx::RVec vzero = {0, 0, 0};
-                        size_t after = std::max({ai, aj, ak, sign});
-                        auto iter = std::find(atomList->begin(), atomList->end(), after);
-                        atomList->insert(std::next(iter), ActAtomListItem(newatom, vs3out, vzero));
-
-                        // Create new topology entry
-                        Vsite3OUT vsnew(ai, aj, ak, vs3out, sign);
-                        if (debug)
-                        {
-                            fprintf(debug, "Adding vs3out %s%d %s%d %s%d %d %d\n",
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj,
-                                    atoms_[ak].element().c_str(), ak, vs3out, sign);
-                        }
-
-                        // Add bond orders, cp from the bond.
-                        for (auto b : border)
-                        {
-                            vsnew.addBondOrder(b);
-                        }
-
-                        // Special bond order for vsites
-                        vsnew.addBondOrder(9);
-                        vsite3out.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
-                    }
-                }
-            }
-        }
-    }
-
-    // If we found any vsite3 instances, add the vec to the top
-    int nvsites3out = vsite3out.size();
-    if (nvsites3out > 0)
-    {
-        entries_.insert({itype_vs3out, std::move(vsite3out)});
-    }
-
-    return nvsites3out;
+    return num_v3;
 }
 
 void Topology::renumberAtoms(const std::vector<int> &renumber)
@@ -1257,11 +1149,15 @@ void Topology::build(const ForceField             *pd,
     // Before we can make three-particle vsites, we need to create
     // angles, but only temporarily.
     makeAngles(pd, *x, LinearAngleMin);
-    int nvsites3    = makeVsite3s(pd, &atomList);
-    int nvsites3out = makeVsite3OUTs(pd, &atomList);
+    auto nv3 = makeVsite3s(pd, &atomList);
     if (debug)
     {
-        fprintf(debug, "Added %d vsite2 %d vsite3 %d vsite3out\n", nvsites2, nvsites3, nvsites3out);
+        fprintf(debug, "Added %d %s", nvsites2, interactionTypeToString(InteractionType::VSITE2).c_str());
+        for(const auto nn : nv3)
+        {
+            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
+        }
+        fprintf(debug, "\n");
     }
     // Now throw away the angles again since we need to reorder the
     // lists of atoms and vsites.
@@ -1275,7 +1171,12 @@ void Topology::build(const ForceField             *pd,
     addShells(pd, &atomList);
     if (debug)
     {
-        fprintf(debug, "Added %zu shells\n", atomList.size()-nvsites2-nvsites3-nvsites3out-atoms_.size());
+        auto nshell = atomList.size()-nvsites2;
+        for(const auto nn : nv3)
+        {
+            nshell -= nn.second;
+        }
+        fprintf(debug, "Added %zu shells\n", nshell);
     }
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
@@ -1314,15 +1215,9 @@ void Topology::build(const ForceField             *pd,
     {
         setEntryIdentifiers(pd, InteractionType::VSITE2);
     }
-
-    if (nvsites3 > 0)
+    for(const auto nn : nv3)
     {
-        setEntryIdentifiers(pd, InteractionType::VSITE3);
-    }
-
-    if (nvsites3out > 0)
-    {
-        setEntryIdentifiers(pd, InteractionType::VSITE3OUT);
+        setEntryIdentifiers(pd, nn.first);
     }
 
     // Now make angles etc.
@@ -1574,6 +1469,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case F_VSITE3:
                 fillParams(fs, topID, vsite3NR, vsite3_name, &param);
+                break;
+            case F_VSITE3FD:
+                fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
                 break;
             case F_VSITE3OUT:
                 fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
