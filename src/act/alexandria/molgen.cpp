@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -405,6 +405,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                 InteractionType::IMPROPER_DIHEDRALS,
                 InteractionType::VSITE2,
                 InteractionType::VSITE3,
+                InteractionType::VSITE3FD,
+                InteractionType::VSITE3FAD,
                 InteractionType::VSITE3OUT
             };
             for (const auto &atype : atypes)

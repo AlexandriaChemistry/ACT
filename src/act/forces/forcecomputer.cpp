@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -162,7 +162,11 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     }
     double epot = 0;
     std::set<InteractionType> vsites = {
-        InteractionType::VSITE2,InteractionType::VSITE3,   InteractionType::VSITE3,InteractionType::VSITE3OUT,InteractionType::VSITE3FAD,
+        InteractionType::VSITE2,
+        InteractionType::VSITE3,
+        InteractionType::VSITE3FD,
+        InteractionType::VSITE3FAD,
+        InteractionType::VSITE3OUT
     };
     for(const auto &entry : top->entries())
     {
