@@ -80,16 +80,16 @@ TEST(Vsite2, HF)
     }
 }
 
-TEST(Vsite2, HFCanSwapNo)
+TEST(Vsite2, HFCanSwapVsite2)
 {
     std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::No);
-    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::No);
+    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
     // Compare identifiers
-    EXPECT_FALSE(fh == hf);
+    EXPECT_TRUE(fh == hf);
     auto itype = InteractionType::VSITE2;
     EXPECT_TRUE(pd->interactionPresent(itype));
     auto fs = pd->findForcesConst(itype);
@@ -97,7 +97,7 @@ TEST(Vsite2, HFCanSwapNo)
     EXPECT_TRUE(fs.parameterExists(fh));
     auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
-    EXPECT_FALSE(fs.parameterExists(hf));
+    EXPECT_TRUE(fs.parameterExists(hf));
 }
 
 TEST(Vsite3, hoh)
@@ -123,14 +123,14 @@ TEST(Vsite3, hoh)
     }
 }
 
-TEST(VSite3, hohCanSwapNo)
+TEST(VSite3, hohCanSwapVsite3)
 {
     std::string forcefield("ACS-pg-v3s");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
-    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::No);
-    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::No);
+    auto hoh = Identifier({ "h_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
+    auto coh = Identifier({ "c3_b", "o3_b", "h_b", "v3" }, { 1, 1, 9 }, CanSwap::Vsite3);
     // Compare identifiers
     //9 means v-site
     EXPECT_FALSE(hoh == coh);

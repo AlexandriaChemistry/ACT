@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="729892ee1b1172e34fbc69fe4f52f2e3" timestamp="2023-11-29 13:51:26"/>
+  <version checksum="8b73a54d49c4b807b871db23f0ac2571" timestamp="2024-02-07 22:43:50"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -14205,8 +14205,10 @@
     </parameterlist>
   </interaction>
   <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
-    <option key="combination_rule" value="Geometric"/>
     <option key="nexcl" value="0"/>
+    <combinationrule parameter="epsilon" rule="Geometric"/>
+    <combinationrule parameter="gamma" rule="Geometric"/>
+    <combinationrule parameter="sigma" rule="Geometric"/>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -14548,7 +14550,7 @@
       <parameter type="sigma" unit="nm" value="0" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="COULOMB" function="COUL_SR" canswap="false">
+  <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
     <option key="epsilonr" value="1"/>
     <option key="nexcl" value="0"/>
@@ -14758,9 +14760,9 @@
       <parameter type="zeta" unit="1/nm" value="30" uncertainty="0" minimum="30" maximum="30" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="POLARIZATION" function="Polarization" canswap="false"/>
-  <interaction type="VSITE2" function="vsite2" canswap="false"/>
-  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
+  <interaction type="POLARIZATION" function="Polarization" canswap="true"/>
+  <interaction type="VSITE2" function="vsite2" canswap="vsite2"/>
+  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="br_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>

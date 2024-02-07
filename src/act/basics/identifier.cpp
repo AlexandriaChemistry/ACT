@@ -217,7 +217,7 @@ Identifier::Identifier(const std::string &atom)
 {
     atoms_.push_back(atom);
     ids_.push_back(atom);
-    canSwap_ = CanSwap::No;
+    canSwap_ = CanSwap::Yes;
     update();
 }
 
