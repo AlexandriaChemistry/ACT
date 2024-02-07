@@ -102,71 +102,90 @@ TEST(IdentifierSimpleTest, SwappedAEqualToB) {
 TEST(IdentifierSimpleTest, ANotEqualToB) {
     Identifier a({"P", "H"}, { 1.0 }, CanSwap::Yes);
     Identifier b({"C", "H"}, { 1.0 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE(equal);
+    EXPECT_FALSE(a < b);
+    EXPECT_TRUE(b < a);
+    EXPECT_FALSE(a == b);
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanABondOrder1) {
     Identifier a({"P", "H"}, { 1 }, CanSwap::Yes);
     Identifier b({"C", "H"}, { 1 }, CanSwap::Yes);
-    bool compare = b < a;
-    EXPECT_TRUE((compare));
+    EXPECT_TRUE(b < a);
+    EXPECT_FALSE(a < b);
+    EXPECT_FALSE(a == b);
 }
 
 TEST(IdentifierSimpleTest, NotASmallerThanBBondOrder2) {
     Identifier a({"P", "H"}, { 2 }, CanSwap::Yes);
     Identifier b({"C", "H"}, { 2 }, CanSwap::Yes);
-    bool compare = a < b;
-    EXPECT_FALSE((compare));
+    EXPECT_FALSE(a < b);
 }
 
 TEST(IdentifierSimpleTest, AEqualToBBondOrder1) {
     Identifier a({"P", "H"}, { 1 }, CanSwap::Yes);
     Identifier b({"P", "H"}, { 1 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_TRUE((equal));
+    EXPECT_TRUE(a == b);
 }
 
 TEST(IdentifierSimpleTest, AEqualToBBondOrderDiff) {
     Identifier a({"P", "H"}, { 1 }, CanSwap::Yes);
     Identifier b({"P", "H"}, { 3 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE((equal));
+    EXPECT_FALSE(a == b);
 }
 
 TEST(IdentifierSimpleTest, SwappedAEqualToBBondOrder2) {
     Identifier a({"P", "H"}, { 2 }, CanSwap::Yes);
     Identifier b({"H", "P"}, { 2 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_TRUE((equal));
+    EXPECT_FALSE(a < b);
+    EXPECT_FALSE(b < a);
+    EXPECT_TRUE(a == b);
 }
 
 TEST(IdentifierSimpleTest, EqualNotSwappableAB) {
     Identifier a({"P", "H"}, { 1.0 }, CanSwap::No);
     Identifier b({"H", "P"}, { 1.0 }, CanSwap::No);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE((equal));
+    EXPECT_FALSE(a < b);
+    EXPECT_TRUE(b < a);
 }
 
 TEST(IdentifierSimpleTest, EqualNotSwappableA) {
     Identifier a({"P", "H"}, { 1.0 }, CanSwap::No);
     Identifier b({"H", "P"}, { 1.0 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE((equal));
+    EXPECT_TRUE(a < b);
+    EXPECT_FALSE(b < a);
+    EXPECT_FALSE(a == b);
 }
 
 TEST(IdentifierSimpleTest, EqualNotSwappableB) {
     Identifier a({"P", "H"}, { 1.0 }, CanSwap::Yes);
     Identifier b({"H", "P"}, { 1.0 }, CanSwap::No);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_TRUE((equal));
+    EXPECT_FALSE(a < b);
+    EXPECT_TRUE(b < a);
+    EXPECT_FALSE(a == b);
 }
 
 TEST(IdentifierSimpleTest, ANotEqualToBBondOrder2) {
     Identifier a({"P", "H"}, { 2 }, CanSwap::Yes);
     Identifier b({"C", "H"}, { 2 }, CanSwap::Yes);
-    bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE((equal));
+    EXPECT_FALSE(a < b);
+    EXPECT_TRUE(b < a);
+    EXPECT_FALSE(a == b);
+}
+
+TEST(IdentifierSimpleTest, DiffLengthCanSwap) {
+    Identifier a({"P" }, { }, CanSwap::No);
+    Identifier b({"C", "H"}, { 2 }, CanSwap::Yes);
+    EXPECT_FALSE(a == b);
+    EXPECT_TRUE(a < b);
+    EXPECT_FALSE(b < a);
+}
+
+TEST(IdentifierSimpleTest, DiffLength) {
+    Identifier a({"P" }, { }, CanSwap::Yes);
+    Identifier b({"C", "H"}, { 2 }, CanSwap::Yes);
+    EXPECT_FALSE(a == b);
+    EXPECT_TRUE(a < b);
+    EXPECT_FALSE(b < a);
 }
 
 TEST(IdentifierSimpleTest, LinearNotEqual) {
@@ -220,8 +239,7 @@ TEST(IdentifierSimpleTest, Idih1a) {
     std::vector<std::string> ac = {"C", "C", "C", "H"};
     Identifier a(aa, bOa, CanSwap::Idih);
     Identifier b(ab, bOb, CanSwap::Idih);
-    bool equal = a == b;
-    EXPECT_TRUE((equal));
+    EXPECT_TRUE(a == b);
     EXPECT_FALSE(bOb == b.bondOrders());
     EXPECT_FALSE(bOa == a.bondOrders());
     EXPECT_TRUE(bOc == a.bondOrders());
