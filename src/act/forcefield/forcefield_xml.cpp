@@ -333,6 +333,25 @@ static void processAttr(FILE       *fp,
             std::string function = xbufString(xmlEntry::FUNCTION);
             std::string inter    = xbufString(xmlEntry::TYPE);
             currentItype = stringToInteractionType(inter.c_str());
+            // This is a hack to be able to read "old" force field files.
+            std::map<InteractionType, CanSwap> csUpdate = {
+                { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
+                { InteractionType::POLARIZATION, CanSwap::Yes },
+                { InteractionType::COULOMB, CanSwap::Yes },
+                { InteractionType::VSITE2, CanSwap::Vsite2 }
+            };
+            auto doUpdate = csUpdate.find(currentItype);
+            if (doUpdate != csUpdate.end())
+            {
+                canSwap = doUpdate->second;
+                if (debug)
+                {
+                    fprintf(debug, "WARNING: Changing CanSwap to %s for %s\n",
+                            canSwapToString(doUpdate->second).c_str(),
+                            interactionTypeToString(currentItype).c_str());
+                }
+            }
+
             if (function.empty() && currentItype == InteractionType::COULOMB)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));

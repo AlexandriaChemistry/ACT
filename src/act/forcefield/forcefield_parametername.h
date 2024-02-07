@@ -57,7 +57,7 @@ namespace alexandria
 
     extern const char *gbh_name[gbhNR];
 
-    enum { coulZETAI = 0, coulZETAJ = 1, coulNR = 2 };
+    enum { coulZETA = 0, coulZETAI = 1, coulZETAJ = 2, coulNR = 3 };
 
     extern const char *coul_name[coulNR];
 
