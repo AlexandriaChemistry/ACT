@@ -12,4 +12,5 @@
   <String Name="atom3">c3</String>
   <Real Name="OriginalValue">0.20000000000000001</Real>
   <Real Name="UnchangedValue">0.20000000000000001</Real>
+  <String Name="atom4">h3~h3</String>
 </ReferenceData>

@@ -72,7 +72,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
         }
         void runTest(ForceFieldParameterList *ff, bool modify)
         {
-            std::vector<std::string> atoms = { "c2", "h3", "c3" };
+            std::vector<std::string> atoms = { "c2", "h3", "c3", "h3~h3" };
             
             checker_.checkString(ff->function(), "function");
             int i = 1;
@@ -198,6 +198,17 @@ TEST_F (ForceFieldParameterListTest, ModifyParameter) {
                     ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 0.1, 0.4, Mutability::Bounded, false, false));
     ff.addParameter(Identifier("c3"), "epsilon",
                     ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 0.1, 0.4, Mutability::Fixed, false, true));
+    runTest(&ff, true);
+}
+
+TEST_F (ForceFieldParameterListTest, FindParameter) {
+    ForceFieldParameterList ff("COUL_SR", CanSwap::Yes);
+    ff.addParameter(Identifier("h3~o3"), "zeta", 
+                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Free, false, false));
+    ff.addParameter(Identifier("h3~h3"), "zeta",
+                    ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Bounded, true, true));
+    ff.addParameter(Identifier("o3~o3"), "zeta",
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 0.1, 0.4, Mutability::Bounded, false, false));
     runTest(&ff, true);
 }
 
