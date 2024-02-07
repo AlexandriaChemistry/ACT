@@ -153,17 +153,18 @@ class Identifier
             // Identical!
             return false;
         }
-        else if (a.canSwap() != CanSwap::No &&
-                 ((a.ids_.size() == 2 && a.swapped() == b.id()) ||
-                  (b.ids_.size() == 2 && a.id() == b.swapped())))
+        else if (a.canSwap() != CanSwap::No)
         {
-            // Identical as well
-            return false;
+            for(auto &id : a.ids_)
+            {
+                if (id == b.id())
+                {
+                    // Identical as well
+                    return false;
+                }
+            }
         }
-        else
-        {
-            return a.ids_[0] < b.ids_[0];
-        }
+        return a.ids_[0] < b.ids_[0];
     }
 
     /*! \brief Comparison operator

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,6 +54,30 @@ TEST(IdentifierSimpleTest, BSmallerThanA) {
     Identifier b({"C", "H"}, { 1.0 }, CanSwap::Yes);
     bool compare = b < a;
     EXPECT_TRUE((compare));
+}
+
+TEST(IdentifierSimpleTest, SortsCanSwapLinear) {
+    Identifier a({"H", "C", "N"}, { 1.0, 3.0 }, CanSwap::Linear);
+    Identifier b({"N", "C", "H"}, { 3.0, 1.0 }, CanSwap::Linear);
+    EXPECT_TRUE(a.id() == "H~C#N");
+    EXPECT_TRUE(a.swapped() == "N#C~H");
+    EXPECT_TRUE(a == b);
+}
+
+TEST(IdentifierSimpleTest, SortsCanSwapVsite2) {
+    Identifier a({"P", "H", "V"}, { 1.0, 9 }, CanSwap::Vsite2);
+    EXPECT_TRUE(a.id() == "P~H!V");
+    EXPECT_TRUE(a.swapped() == "H~P!V");
+}
+
+TEST(IdentifierSimpleTest, SortsCanSwapYes) {
+    Identifier a({"P", "H"}, { 1.0 }, CanSwap::Yes);
+    EXPECT_TRUE(a.id() == "H~P");
+}
+
+TEST(IdentifierSimpleTest, SortsCanSwapNo) {
+    Identifier a({"P", "H"}, { 1.0 }, CanSwap::No);
+    EXPECT_TRUE(a.id() == "P~H");
 }
 
 TEST(IdentifierSimpleTest, CompareDifferentLength) {
