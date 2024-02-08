@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Int Name="Number of atomprops">126</Int>
+  <Int Name="Number of atomprops">127</Int>
   <element Name="Ac">
     <Real Name="mass">227</Real>
     <String Name="name">Actinium</String>
@@ -835,6 +835,13 @@
     <Int Name="charge">0</Int>
     <Int Name="multiplicity">2</Int>
   </element>
+  <element Name="VS">
+    <Real Name="mass">0</Real>
+    <String Name="name">Vsite</String>
+    <Int Name="atomnumber">0</Int>
+    <Int Name="charge">0</Int>
+    <Int Name="multiplicity">1</Int>
+  </element>
   <element Name="W">
     <Real Name="mass">183.84</Real>
     <String Name="name">Tungsten</String>
@@ -844,7 +851,7 @@
   </element>
   <element Name="X">
     <Real Name="mass">0</Real>
-    <String Name="name">Vsite</String>
+    <String Name="name">Shell</String>
     <Int Name="atomnumber">0</Int>
     <Int Name="charge">0</Int>
     <Int Name="multiplicity">1</Int>
