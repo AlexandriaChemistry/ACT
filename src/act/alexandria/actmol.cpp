@@ -41,26 +41,22 @@
 #include <random>
 #include <string>
 
+#include "act/alexandria/actmol_low.h"
+#include "act/alexandria/gromacs_top.h"
 #include "act/alexandria/pdbwriter.h"
+#include "act/alexandria/symmetrize_charges.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "act/forcefield/forcefield_parameter.h"
-#include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
-#include "gromacs/commandline/filenm.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/strconvert.h"
-#include "gromacs/utility/stringcompare.h"
-#include "gromacs_top.h"
-#include "actmol_low.h"
-#include "symmetrize_charges.h"
 
 namespace alexandria
 {
@@ -1029,8 +1025,7 @@ void ACTMol::PrintTopology(const char                  *fn,
     write_top(fp, printmol.name, topology_, pd);
     if (!bITP)
     {
-        print_top_mols(fp, printmol.name, pd->filename().c_str(),
-                       nullptr, 0, nullptr, 1, &printmol);
+        print_top_mols(fp, printmol.name, 1, &printmol);
     }
     if (bVerbose)
     {
