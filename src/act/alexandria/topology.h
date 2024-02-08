@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -201,10 +201,6 @@ private:
      */
     void setEntryIdentifiers(const ForceField *pd,
                              InteractionType   itype);
-    /*! \brief Add identifiers to interactions
-     * \param[in] pd The force field structure
-     */
-    void setIdentifiers(const ForceField *pd);
 
     /*! Add polarizabilities to the topology if needed
      * \param[in]    pd       Force field
