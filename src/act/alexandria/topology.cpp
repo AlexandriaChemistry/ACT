@@ -1594,18 +1594,6 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
     }
 }
 
-void Topology::setIdentifiers(const ForceField *pd)
-{
-    for(auto &entry : entries_)
-    {
-        // TODO this if statement should not be needed.
-        if (InteractionType::VSITE2 != entry.first && InteractionType::VSITE3 != entry.first && InteractionType::VSITE3OUT != entry.first)
-        {
-            setEntryIdentifiers(pd, entry.first);
-        }
-    }
-}
-
 const std::vector<std::vector<int>> &Topology::exclusions(InteractionType itype) const
 {
     auto exclptr = exclusions_.find(itype);
