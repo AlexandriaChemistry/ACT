@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,18 +36,12 @@
 
 #include <map>
 
-#include "gromacs/gmxpreprocess/fflibutil.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/exclusionblocks.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/path.h"
-
+#include "act/alexandria/topology.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "topology.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
 {
@@ -156,54 +150,9 @@ static void print_top_system(FILE *out, const char *title)
     fprintf(out, "%s\n\n", title[0] ? title : "Protein");
 }
 
-static void print_top_water(FILE *out, const char *ffdir, const char *water)
+void print_top_mols(FILE *out, const char *title,
+                    int nmol, t_mols *mols)
 {
-    const char *p;
- 
-    fprintf(out, "; Include water topology\n");
-
-    p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
-    fprintf(out, "#include \"%s/%s.itp\"\n", p, water);
-
-    fprintf(out, "\n");
-    fprintf(out, "#ifdef POSRES_WATER\n");
-    fprintf(out, "; Position restraint for each water oxygen\n");
-    fprintf(out, "[ position_restraints ]\n");
-    fprintf(out, ";%3s %5s %9s %10s %10s\n", "i", "funct", "fcx", "fcy", "fcz");
-    fprintf(out, "%4d %4d %10g %10g %10g\n", 1, 1, 1000.0, 1000.0, 1000.0);
-    fprintf(out, "#endif\n");
-    fprintf(out, "\n");
-
-    std::string buf = gmx::formatString("%s/ions.itp", p);
-
-    if (fflib_fexist(buf.c_str()))
-    {
-        fprintf(out, "; Include topology for ions\n");
-        fprintf(out, "#include \"%s\"\n", buf.c_str());
-        fprintf(out, "\n");
-    }
-}
-
-void print_top_mols(FILE *out,
-                    const char *title, const char *ffdir, const char *water,
-                    int nincl, char **incls, int nmol, t_mols *mols)
-{
-
-    if (nincl > 0)
-    {
-        fprintf(out, "; Include chain topologies\n");
-        for (int i = 0; i < nincl; i++)
-        {
-            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incls[i]).c_str());
-        }
-        fprintf(out, "\n");
-    }
-
-    if (water)
-    {
-        print_top_water(out, ffdir, water);
-    }
     print_top_system(out, title);
 
     if (nmol)
@@ -262,8 +211,7 @@ static void print_atoms(FILE                           *out,
     fprintf(out, "\n");
 }
 
-
-void write_top(FILE            *out,
+void write_top(FILE             *out,
                char             *molname,
                const Topology   *topology,
                const ForceField *pd)
@@ -449,39 +397,6 @@ void print_top_header(FILE                    *fp,
             fprintf(fp, "\n");
         }
     }
-}
-
-void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
-{
-    int i, j, k, nra;
-
-    if (blocka->nr < natom)
-    {
-        srenew(blocka->index, natom+1);
-        for (int i = blocka->nr; i < natom+1; i++)
-        {
-            blocka->index[i] = 0;
-        }
-    }
-    nra = 0;
-    for (i = 0; (i < natom); i++)
-    {
-        nra += excls_[i].nr;
-    }
-    snew(blocka->a, nra+1);
-    nra = 0;
-    for (i = j = 0; (i < natom); i++)
-    {
-        blocka->index[i] = nra;
-        for (k = 0; (k < excls_[i].nr); k++)
-        {
-            blocka->a[j++] = excls_[i].e[k];
-        }
-        nra += excls_[i].nr;
-    }
-    blocka->index[natom] = nra;
-    blocka->nr           = natom;
-    blocka->nra          = nra;
 }
 
 } // namespace alexandria
