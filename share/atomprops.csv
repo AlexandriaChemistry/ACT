@@ -1,5 +1,6 @@
 #Element,Name,AtomicNumber,Mass,Charge,Mult
-X,Vsite,0,0,0,1
+X,Shell,0,0,0,1
+VS,Vsite,0,0,0,1
 H,Hydrogen,1,1.0079,0,2
 He,Helium,2,4.0026,0,1
 Li,Lithium,3,6.941,0,2
