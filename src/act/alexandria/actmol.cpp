@@ -197,8 +197,9 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
     int multOk = atomnumberTotal + totalMultiplicity() + totalCharge();
     if (multOk % 2 == 0)
     {
-        fprintf(stderr, "atomnumberTotal %d, totalMultiplicity %d, totalCharge %d\n",
-                atomnumberTotal, totalMultiplicity(), totalCharge());
+        fprintf(stderr, "WARNING: atomnumberTotal %d, totalMultiplicity %d, totalCharge %d for %s\n",
+                atomnumberTotal, totalMultiplicity(), totalCharge(),
+                getMolname().c_str());
         return immStatus::Multiplicity;
     }
     return immStatus::OK;
