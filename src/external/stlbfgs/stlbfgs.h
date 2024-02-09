@@ -40,7 +40,7 @@ namespace STLBFGS {
         double eta = 9e-1; // curvature condition constant
 //      int lsmaxfev = 16;  // TODO move all line search parameters here
 
-        bool verbose = true;
+        bool verbose = false;
     };
 }
 
