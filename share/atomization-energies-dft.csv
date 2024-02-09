@@ -1205,8 +1205,8 @@ I|-1|MP2/aug-cc-pvtz-pp|E0|0|-294.995009|1|Hartree|Unknown2023a||
 K|0|MP2/def2-TZVPP|E0|0|-599.318130|2|Hartree|Unknown2023a||
 K|1|MP2/def2-TZVPP|E0|0|-599.162361|1|Hartree|Unknown2023a||
 Kr|0|MP2/aug-cc-pwcvtz-pp|E0|0|-463.182491|1|Hartree|Unknown2023a||
-LI|1|MP2/aug-cc-pvtz|E0|0|-7.247324|1|Hartree|Unknown2023a||
-LI|0|MP2/aug-cc-pvtz|E0|0|-7.443970|2|Hartree|Unknown2023a||
+Li|1|MP2/aug-cc-pvtz|E0|0|-7.247324|1|Hartree|Unknown2023a||
+Li|0|MP2/aug-cc-pvtz|E0|0|-7.443970|2|Hartree|Unknown2023a||
 Mg|0|MP2/aug-cc-pvtz|E0|0|-199.656536|1|Hartree|Unknown2023a||
 Mg|2|MP2/aug-cc-pvtz|E0|0|-198.843870|1|Hartree|Unknown2023a||
 N|0|MP2/aug-cc-pvtz|E0|0|-54.509243|4|Hartree|Unknown2023a||
