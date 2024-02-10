@@ -101,6 +101,25 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     /* TOTAL: 10 flops */
 }
 
+static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
+{
+    rvec dx;
+
+    if (pbc)
+    {
+        pbc_dx_aiuc(pbc, xj, xi, dx);
+    }
+    else
+    {
+        rvec_sub(xj, xi, dx);
+    }
+    real factor = a*gmx::invsqrt(iprod(dx, dx));
+    x[XX] = xi[XX] + factor*dx[XX];
+    x[YY] = xi[YY] + factor*dx[YY];
+    x[ZZ] = xi[ZZ] + factor*dx[ZZ];
+    // 20 flops at least
+}
+
 static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
                                      const t_pbc *pbc)
 {
@@ -358,6 +377,46 @@ static void spread_vsite2(const t_iatom ia[], real a,
     }
 
     /* TOTAL: 13 flops */
+}
+
+static void spread_vsite2fd(const t_iatom ia[], real a,
+                            const rvec x[],
+                            rvec f[], const t_pbc *pbc)
+{
+    rvec    dx;
+    t_iatom av, ai, aj;
+
+    av = ia[3];
+    ai = ia[1];
+    aj = ia[2];
+
+    if (pbc)
+    {
+        pbc_rvec_sub(pbc, x[aj], x[ai], dx);
+    }
+    else
+    {
+        rvec_sub(x[aj], x[ai], dx);
+    }
+    real gamma = a*gmx::invsqrt(iprod(dx, dx));
+    rvec xis;
+    for (int m = 0; m < DIM; m++)
+    {
+        xis[m] = x[ai][m] + gamma*dx[m];
+    }
+    rvec p;
+    svmul(iprod(xis, f[av])/iprod(xis, xis), xis, p);
+    rvec df;
+    for(int m = 0; m < DIM; m++)
+    {
+        df[m] = gamma*(f[av][m]-p[m]);
+    }
+    
+    rvec_inc(f[ai], df);
+    rvec_dec(f[aj], df);
+    
+    /* 6 Flops */
+    clear_rvec(f[av]);
 }
 
 static void spread_vsite3(const t_iatom ia[], real a, real b,
@@ -1103,6 +1162,13 @@ void VsiteHandler::constructPositions(const Topology         *top,
                     fprintf(debug, "vsite a = %g\n", params[vsite2A]);
                 }
                 break;
+            case InteractionType::VSITE2FD:
+                constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
+                if (debug)
+                {
+                    fprintf(debug, "vsite a = %g\n", params[vsite2A]);
+                }
+                break;
             case InteractionType::VSITE3:
                 al = atomIndices[3];
                 constr_vsite3(x[ai], x[aj],  x[ak], x[al],
@@ -1193,6 +1259,9 @@ void VsiteHandler::distributeForces(const Topology               *top,
             {
             case InteractionType::VSITE2:
                 spread_vsite2(ia.data(), params[vsite2A], x, f, fshift, &pbc_, g);
+                break;
+            case InteractionType::VSITE2FD:
+                spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
                 break;
             case InteractionType::VSITE3:
                 spread_vsite3(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
