@@ -270,7 +270,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
     auto topology = actmol->topology();
     std::vector<gmx::RVec> forces(topology->atoms().size());
     std::map<InteractionType, double> energies;
-    bool doForce = forcefield->polarizable() || topology->hasEntry(InteractionType::VSITE2);
+    bool doForce = forcefield->polarizable() || topology->hasVsites();
     // Loop over zero or more ESP data sets.
     for(auto qc = qProps->begin(); qc < qProps->end(); qc++)
     {

@@ -385,6 +385,9 @@ private:
      */
     bool hasEntry(InteractionType itype) const { return entries_.find(itype) != entries_.end(); }
 
+    //! \return whether there are any virtual sites
+    bool hasVsites() const;
+
     /*! \brief Return the desired entry or throw
      * \param[in] itype The desired interaction type
      * \return a vector of pointers

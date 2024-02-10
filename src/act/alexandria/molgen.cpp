@@ -423,10 +423,15 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                             {
                                 if (fp)
                                 {
-                                    fprintf(fp, "Cannot find parameter %s CanSwap %s swapped %s in parameter list %s CanSwap %s\n",
+                                    std::string swapped;
+                                    if (topentry->id().haveSwapped())
+                                    {
+                                        swapped = topentry->id().swapped();
+                                    }
+                                    fprintf(fp, "Cannot find parameter '%s' CanSwap %s swapped '%s' in parameter list %s CanSwap %s\n",
                                             topentry->id().id().c_str(),
                                             canSwapToString(topentry->id().canSwap()).c_str(),
-                                            topentry->id().swapped().c_str(),
+                                            swapped.c_str(),
                                             interactionTypeToString(atype).c_str(),
                                             canSwapToString(angles->canSwap()).c_str());
                                 }
