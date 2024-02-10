@@ -112,9 +112,12 @@ static void dump_entry(FILE                      *fp,
 bool Topology::hasVsites() const
 {
     return (hasEntry(InteractionType::VSITE2) ||
+            hasEntry(InteractionType::VSITE2FD) ||
             hasEntry(InteractionType::VSITE3) ||
             hasEntry(InteractionType::VSITE3FD) ||
-            hasEntry(InteractionType::VSITE3OUT));
+            hasEntry(InteractionType::VSITE3FAD) ||
+            hasEntry(InteractionType::VSITE3OUT) ||
+            hasEntry(InteractionType::VSITE3OUTS));
 }
 
 void Topology::addShells(const ForceField *pd,

@@ -67,6 +67,8 @@ enum class InteractionType
     CONSTR,
     //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
+    //! Virtual interaction sites along the bond between two atoms at a fixed distance
+    VSITE2FD,
     //! Virtual interaction sites determined by three atoms in a plane
     VSITE3,
     //! Virtual interaction sites determined by three atoms in a plane with fixed distance
@@ -75,6 +77,8 @@ enum class InteractionType
     VSITE3FAD,
     //! Virtual interaction sites determined by three atoms out of the plane
     VSITE3OUT,
+    //! Virtual interaction sites determined by three atoms out of the plane, in a symmetric fashion
+    VSITE3OUTS,
     //! Bond hardness and electronegativity needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
     //! Correction to the electronegativity difference between two atoms connected by a bond

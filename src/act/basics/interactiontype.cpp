@@ -115,11 +115,13 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::VSITE3FD:
     case InteractionType::VSITE3FAD:
     case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
     case InteractionType::VSITE3:
         return 4;
     case InteractionType::ANGLES:
     case InteractionType::LINEAR_ANGLES:
     case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
         return 3;
     case InteractionType::VDW:
     case InteractionType::DISPERSION:

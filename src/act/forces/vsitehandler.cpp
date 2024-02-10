@@ -1067,10 +1067,12 @@ void VsiteHandler::constructPositions(const Topology         *top,
     std::vector<gmx::RVec>    &x      = *coordinates;
     std::set<InteractionType>  vsites = {
         InteractionType::VSITE2,
+        InteractionType::VSITE2FD,
         InteractionType::VSITE3,
         InteractionType::VSITE3FD,
         InteractionType::VSITE3FAD,
-        InteractionType::VSITE3OUT
+        InteractionType::VSITE3OUT,
+        InteractionType::VSITE3OUTS
     };
     for (const auto &entry: top->entries())
     {
@@ -1157,7 +1159,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 break;
 #endif
             default:
-                break;
+                GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site type %s not implemented yet.", interactionTypeToString(entry.first).c_str()).c_str()));
             }
         }
     }

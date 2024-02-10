@@ -151,10 +151,15 @@ static void add_vsites(const char *vsfile,
     std::string              tmp;
     std::vector<std::string> value;
     int                      lineno = 1;
-    ForceFieldParameterList  vsite2("vsite2", CanSwap::Vsite2);
-    ForceFieldParameterList  vsite3("vsite3", CanSwap::Vsite3);
-    ForceFieldParameterList  vsite3fd("vsite3fd", CanSwap::No);
-    ForceFieldParameterList  vsite3out("vsite3out", CanSwap::No);
+    std::map<InteractionType, ForceFieldParameterList> i2f = {
+        { InteractionType::VSITE2,     ForceFieldParameterList("vsite2",     CanSwap::Vsite2) },
+        { InteractionType::VSITE2FD,   ForceFieldParameterList("vsite2fd",   CanSwap::Vsite2) },
+        { InteractionType::VSITE3,     ForceFieldParameterList("vsite3",     CanSwap::Vsite3) },
+        { InteractionType::VSITE3FD,   ForceFieldParameterList("vsite3fd",   CanSwap::No)     },
+        { InteractionType::VSITE3FAD,  ForceFieldParameterList("vsite3fad",  CanSwap::No)     },
+        { InteractionType::VSITE3OUT,  ForceFieldParameterList("vsite3out",  CanSwap::No)     },
+        { InteractionType::VSITE3OUTS, ForceFieldParameterList("vsite3outs", CanSwap::No)     }
+    };
     while (tr.readLine(&tmp))
     {
         auto ptr = split(tmp, '|');
@@ -169,6 +174,7 @@ static void add_vsites(const char *vsfile,
         switch (itype)
         {
         case InteractionType::VSITE2:
+        case InteractionType::VSITE2FD:
             {
                 std::string myId = ptr[2] + "!" + ptr[0];
                 Identifier vs(itype, myId, CanSwap::Vsite2);
@@ -176,7 +182,7 @@ static void add_vsites(const char *vsfile,
                 double amax = my_atof(ptr[4], "vsite_parameter_max");
                 ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
                                              Mutability::Bounded, false, false);
-                vsite2.addParameter(vs, vsite2_name[vsite2A], vs2param);
+                i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
             }
             break;
         case InteractionType::VSITE3:
@@ -193,19 +199,12 @@ static void add_vsites(const char *vsfile,
                                                Mutability::Bounded, false, false);
                 ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                Mutability::Bounded, false, false);
-                if (InteractionType::VSITE3 == itype)
-                {
-                    vsite3.addParameter(vs, vsite3_name[vsite3A], vs3param_a);
-                    vsite3.addParameter(vs, vsite3_name[vsite3B], vs3param_b);
-                }
-                else
-                {
-                    vsite3fd.addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
-                    vsite3fd.addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
-                }
+                i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
+                i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
             }
             break;
         case InteractionType::VSITE3OUT:
+        case InteractionType::VSITE3OUTS:
             {
                 std::string myId = ptr[2] + "!" + ptr[0];
                 Identifier vs(itype, myId, CanSwap::No);
@@ -214,19 +213,20 @@ static void add_vsites(const char *vsfile,
                 double amax = my_atof(ptr[4], "vsite_parameter_max");
                 double bmin = my_atof(ptr[5], "vsite_parameter_min");
                 double bmax = my_atof(ptr[6], "vsite_parameter_max");
-                double cmin = my_atof(ptr[7], "vsite_parameter_min");
-                double cmax = my_atof(ptr[8], "vsite_parameter_max");
-
                 ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
                                                   Mutability::Bounded, false, false);
                 ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                   Mutability::Bounded, false, false);
-                ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
-                                                  Mutability::Bounded, false, false);
-
-                vsite3out.addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
-                vsite3out.addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
-                vsite3out.addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
+                i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
+                i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
+                if (InteractionType::VSITE3OUT == itype)
+                {
+                    double cmin = my_atof(ptr[7], "vsite_parameter_min");
+                    double cmax = my_atof(ptr[8], "vsite_parameter_max");
+                    ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
+                                                      Mutability::Bounded, false, false);
+                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
+                }
             }
             break;
         default:
@@ -235,21 +235,12 @@ static void add_vsites(const char *vsfile,
 
         lineno += 1;
     }
-    if (!vsite2.empty())
+    for(const auto &iii: i2f)
     {
-        pd->addForces(interactionTypeToString(InteractionType::VSITE2), vsite2);
-    }
-    if (!vsite3.empty())
-    {
-        pd->addForces(interactionTypeToString(InteractionType::VSITE3), vsite3);
-    }
-    if (!vsite3fd.empty())
-    {
-        pd->addForces(interactionTypeToString(InteractionType::VSITE3FD), vsite3fd);
-    }
-    if (!vsite3out.empty())
-    {
-        pd->addForces(interactionTypeToString(InteractionType::VSITE3OUT), vsite3out);
+        if (!iii.second.empty())
+        {
+            pd->addForces(interactionTypeToString(iii.first), iii.second);
+        }
     }
 }
 
