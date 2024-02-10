@@ -60,6 +60,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
+    { InteractionType::VSITE2FD,           { "VSITE2FD", "virtual sites with two constructing atoms with fixed distance to atom" } },
     { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
     { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual site with three constructing atoms and fixed distance" } },
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },

@@ -80,6 +80,30 @@ TEST(Vsite2, HF)
     }
 }
 
+TEST(Vsite2FD, HF)
+{
+    std::string forcefield("ACS-pg-vs2");
+    // Get forcefield
+    auto pd  = getForceField(forcefield);
+
+    auto fh = Identifier({ "f_b", "h_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    auto hf = Identifier({ "h_b", "f_b", "v2" }, { 1, 9 }, CanSwap::Vsite2);
+    // Compare identifiers
+    EXPECT_TRUE(fh == hf);
+    auto itype = InteractionType::VSITE2;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(fh));
+    auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
+    EXPECT_TRUE(param_fh->internalValue() == 1.05);
+    if (fs.parameterExists(hf))
+    {
+        auto param_hf = fs.findParameterType(hf, vsite2_name[vsite2A]);
+        EXPECT_TRUE(param_fh->internalValue() == param_hf->internalValue());
+    }
+}
+
 TEST(Vsite2, HFCanSwapVsite2)
 {
     std::string forcefield("ACS-pg-vs2");
@@ -102,7 +126,7 @@ TEST(Vsite2, HFCanSwapVsite2)
 
 TEST(Vsite3, hoh)
 {
-    std::string forcefield("ACS-pg-v3s");
+    std::string forcefield("ACS-pg-vs3");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
@@ -125,7 +149,7 @@ TEST(Vsite3, hoh)
 
 TEST(VSite3, hohCanSwapVsite3)
 {
-    std::string forcefield("ACS-pg-v3s");
+    std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
@@ -169,7 +193,7 @@ TEST(VSite3fd, hohCanSwapNo)
 
 TEST(VSite3OUT, hohCanSwapNo)
 {
-    std::string forcefield("ACS-pg-v3s");
+    std::string forcefield("ACS-pg-vs3");
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
@@ -189,4 +213,4 @@ TEST(VSite3OUT, hohCanSwapNo)
 
 }  // namespace
 
-}  // namespace gmx
+}  // namespace alexandria
