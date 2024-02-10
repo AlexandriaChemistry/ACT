@@ -128,13 +128,13 @@ static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk
     /* TOTAL: 17 flops */
 }
 
-static gmx_unused void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
-                                       const t_pbc *pbc)
+static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
+                            const t_pbc *pbc)
 {
     rvec xij, xjk, temp;
     real c;
 
-    pbc_rvec_sub(pbc, xj, xi, xij);
+    pbc_rvec_sub(pbc, xi, xj, xij);
     pbc_rvec_sub(pbc, xk, xj, xjk);
     /* 6 flops */
 
@@ -147,9 +147,9 @@ static gmx_unused void constr_vsite3FD(const rvec xi, const rvec xj, const rvec 
     c = b*gmx::invsqrt(iprod(temp, temp));
     /* 6 + 10 flops */
 
-    x[XX] = xi[XX] + c*temp[XX];
-    x[YY] = xi[YY] + c*temp[YY];
-    x[ZZ] = xi[ZZ] + c*temp[ZZ];
+    x[XX] = xj[XX] + c*temp[XX];
+    x[YY] = xj[YY] + c*temp[YY];
+    x[ZZ] = xj[ZZ] + c*temp[ZZ];
     /* 6 Flops */
 
     /* TOTAL: 34 flops */
@@ -360,9 +360,9 @@ static void spread_vsite2(const t_iatom ia[], real a,
     /* TOTAL: 13 flops */
 }
 
-static gmx_unused void spread_vsite3(const t_iatom ia[], real a, real b,
-                                     const rvec x[], rvec f[], rvec fshift[],
-                                     const t_pbc *pbc, const t_graph *g)
+static void spread_vsite3(const t_iatom ia[], real a, real b,
+                          const rvec x[], rvec f[], rvec fshift[],
+                          const t_pbc *pbc, const t_graph *g)
 {
     rvec    fi, fj, fk, dx;
     int     av, ai, aj, ak;
@@ -417,10 +417,10 @@ static gmx_unused void spread_vsite3(const t_iatom ia[], real a, real b,
     /* TOTAL: 20 flops */
 }
 
-static gmx_unused void spread_vsite3FD(const t_iatom ia[], real a, real b,
-                                       const rvec x[], rvec f[], rvec fshift[],
-                                       gmx_bool VirCorr, matrix dxdf,
-                                       const t_pbc *pbc, const t_graph *g)
+static void spread_vsite3FD(const t_iatom ia[], real a, real b,
+                            const rvec x[], rvec f[], rvec fshift[],
+                            gmx_bool VirCorr, matrix dxdf,
+                            const t_pbc *pbc, const t_graph *g)
 {
     real    c, invl, fproj, a1;
     rvec    xvi, xij, xjk, xix, fv, temp;
@@ -428,10 +428,10 @@ static gmx_unused void spread_vsite3FD(const t_iatom ia[], real a, real b,
     int     svi, sji, skj;
     ivec    di;
 
-    av = ia[1];
+    av = ia[4];
     ai = ia[2];
-    aj = ia[3];
-    ak = ia[4];
+    aj = ia[1];
+    ak = ia[3];
     copy_rvec(f[av], fv);
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
@@ -1102,9 +1102,9 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 }
                 break;
             case InteractionType::VSITE3:
-               al = atomIndices[3];
-               constr_vsite3(x[ai], x[aj],  x[ak], x[al],
-                             params[vsite3A], params[vsite3B], &pbc_);
+                al = atomIndices[3];
+                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
+                              params[vsite3A], params[vsite3B], &pbc_);
                 break;
             case InteractionType::VSITE3FD:
                 al = atomIndices[3];
@@ -1182,27 +1182,31 @@ void VsiteHandler::distributeForces(const Topology               *top,
             auto atomIndices = vs->atomIndices();
             auto params      = vs->params();
             // Ugly hack to minimize change in underlying gromacs code
-            t_iatom *ia      = atomIndices.data() - 1;
+            std::vector<t_iatom> ia = { -1 };
+            for(auto ai : atomIndices)
+            {
+                ia.push_back(ai);
+            }
             switch(entry.first)
             {
             case InteractionType::VSITE2:
-                spread_vsite2(ia, params[vsite2A], x, f, fshift, &pbc_, g);
+                spread_vsite2(ia.data(), params[vsite2A], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE3:
-                spread_vsite3(ia, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                spread_vsite3(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE3FD:
-                spread_vsite3FD(ia, params[vsite3A], params[vsite3B], x, f, fshift,
+                spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,
                                 VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3FAD:
-                spread_vsite3FAD(ia, params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                spread_vsite3FAD(ia.data(), params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3OUT:
                 {
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
 
-                    spread_vsite3OUT(ia, params[vsite3outA], params[vsite3outB],
+                    spread_vsite3OUT(ia.data(), params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC],
                                      x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 }

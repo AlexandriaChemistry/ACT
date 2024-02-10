@@ -153,7 +153,7 @@ static void add_vsites(const char *vsfile,
     int                      lineno = 1;
     ForceFieldParameterList  vsite2("vsite2", CanSwap::Vsite2);
     ForceFieldParameterList  vsite3("vsite3", CanSwap::Vsite3);
-    ForceFieldParameterList  vsite3fd("vsite3", CanSwap::No);
+    ForceFieldParameterList  vsite3fd("vsite3fd", CanSwap::No);
     ForceFieldParameterList  vsite3out("vsite3out", CanSwap::No);
     while (tr.readLine(&tmp))
     {

@@ -111,6 +111,9 @@ class Identifier
      */
     const std::string &id() const;
 
+    //! \return whether a swapped id exists
+    bool haveSwapped() const { return ids_.size() > 1; }
+
     /*! \brief Return swapped identifier string
      * \throws if there are no ids
      */

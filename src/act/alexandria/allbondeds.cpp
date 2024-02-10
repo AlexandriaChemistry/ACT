@@ -222,6 +222,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::VDW:
     case InteractionType::VSITE2:
     case InteractionType::VSITE3:
+    case InteractionType::VSITE3FD:
     case InteractionType::VSITE3OUT:
         // Nothing to be done for non-bonded interactions.
         return;
