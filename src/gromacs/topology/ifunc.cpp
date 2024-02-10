@@ -146,6 +146,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_vsite   ("VSITE3FD", "Virtual site 3fd", 4, 2                                ),
     def_vsite   ("VSITE3FAD", "Virtual site 3fad", 4, 2                               ),
     def_vsite   ("VSITE3OUT", "Virtual site 3out", 4, 3                               ),
+    def_vsite   ("VSITE3OUTS", "Virtual site 3outs", 4, 2                               ),
     def_vsite   ("VSITE4FD", "Virtual site 4fd", 5, 3                               ),
     def_vsite   ("VSITE4FDN", "Virtual site 4fdn", 5, 3                               ),
     def_vsite   ("VSITEN",   "Virtual site N",   2, 2                               ),

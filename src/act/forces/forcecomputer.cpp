@@ -163,6 +163,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     double epot = 0;
     std::set<InteractionType> vsites = {
         InteractionType::VSITE2,
+        InteractionType::VSITE2FD,
         InteractionType::VSITE3,
         InteractionType::VSITE3FD,
         InteractionType::VSITE3FAD,
