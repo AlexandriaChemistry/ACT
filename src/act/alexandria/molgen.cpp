@@ -422,9 +422,9 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                             for (auto &ff : *(angles->findParameters(topentry->id())))
                             {
                                 std::set myvs = { InteractionType::VSITE2, InteractionType::VSITE3, InteractionType::VSITE3OUT };
-                                if (fp && myvs.find(atype) != myvs.end())
+                                if (debug && myvs.find(atype) != myvs.end())
                                 {
-                                    fprintf(fp, "Found %s %s\n",
+                                    fprintf(debug, "Found %s %s\n",
                                             interactionTypeToString(atype).c_str(),
                                             topentry->id().id().c_str());
                                 }
