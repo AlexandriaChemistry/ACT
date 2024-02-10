@@ -221,9 +221,12 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::COULOMB:
     case InteractionType::VDW:
     case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
     case InteractionType::VSITE3:
     case InteractionType::VSITE3FD:
+    case InteractionType::VSITE3FAD:
     case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
         // Nothing to be done for non-bonded interactions.
         return;
     default:
