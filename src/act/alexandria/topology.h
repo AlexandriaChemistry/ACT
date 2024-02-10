@@ -182,18 +182,18 @@ private:
     /*! Generate virtual sites for bonds.
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
-     * \return the number of vsites added
+     * \return map containing number of entries added for each interaction type
      */
-    int makeVsite2s(const ForceField *pd,
-                    AtomList         *atomList);
+    std::map<InteractionType, size_t> makeVsite2s(const ForceField *pd,
+                                                  AtomList         *atomList);
 
     /*! \brief Generate three body vsites
      * \param[in]    pd       The force field
      * \param[inout] atomList The linked list of particles
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t>  makeVsite3s(const ForceField *pd,
-                                                   AtomList         *atomList);
+    std::map<InteractionType, size_t> makeVsite3s(const ForceField *pd,
+                                                  AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
