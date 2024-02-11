@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -58,6 +58,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 

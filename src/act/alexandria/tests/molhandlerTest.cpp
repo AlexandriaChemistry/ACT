@@ -50,6 +50,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"

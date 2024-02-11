@@ -44,6 +44,7 @@
 #include "act/alexandria/actmol_low.h"
 #include "act/alexandria/princ.h"
 #include "act/utility/units.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"

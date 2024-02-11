@@ -963,7 +963,8 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                     std::string vstype = ptype->optionValue("bondtype");
                     // Determine how many particles to add
                     int maxpid = 1;
-                    if (InteractionType::VSITE3OUT == myffvs.first)
+                    if (InteractionType::VSITE3OUT == myffvs.first ||
+                        InteractionType::VSITE3OUTS == myffvs.first)
                     {
                         maxpid = 2;
                     }
@@ -1011,6 +1012,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                             }
                             break;
                         case InteractionType::VSITE3OUT:
+                        case InteractionType::VSITE3OUTS:
                             {
                                 // We are creating two of these, with different sign on the c parameter.
                                 int       sign = 2*pid - 1;
@@ -1500,8 +1502,10 @@ void Topology::fillParameters(const ForceField *pd)
                 fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
             case F_VSITE2:
-            case F_VSITE2FD:
                 fillParams(fs, topID, vsite2NR, vsite2_name, &param);
+                break;
+            case F_VSITE2FD:
+                fillParams(fs, topID, vsite2fdNR, vsite2fd_name, &param);
                 break;
             case F_VSITE3:
                 fillParams(fs, topID, vsite3NR, vsite3_name, &param);
@@ -1511,6 +1515,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case F_VSITE3OUT:
                 fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
+                break;
+            case F_VSITE3OUTS:
+                fillParams(fs, topID, vsite3outsNR, vsite3outs_name, &param);
                 break;
                 //Commenting this out such that we do not generate incorrect results but crash instead.
                 //case F_VSITE3FAD:

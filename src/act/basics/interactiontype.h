@@ -117,6 +117,12 @@ InteractionType stringToInteractionType(const std::string &name);
  */
 int interactionTypeToNatoms(InteractionType iType);
 
+/*! Determine whether an interaction is a virtual site
+ * \param[in] iType The InteractionType to check
+ * \return true or false
+ */
+bool isVsite(InteractionType iType);
+
 } // namespace
 
 #endif

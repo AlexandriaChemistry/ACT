@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -182,7 +182,14 @@ static void add_vsites(const char *vsfile,
                 double amax = my_atof(ptr[4], "vsite_parameter_max");
                 ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
                                              Mutability::Bounded, false, false);
-                i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
+                if (InteractionType::VSITE2 == itype)
+                {
+                    i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
+                }
+                else
+                {
+                    i2f[itype].addParameter(vs, vsite2fd_name[vsite2fdA], vs2param);
+                }
             }
             break;
         case InteractionType::VSITE3:
@@ -215,17 +222,26 @@ static void add_vsites(const char *vsfile,
                 double bmax = my_atof(ptr[6], "vsite_parameter_max");
                 ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
                                                   Mutability::Bounded, false, false);
-                ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                                  Mutability::Bounded, false, false);
-                i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
-                i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
                 if (InteractionType::VSITE3OUT == itype)
                 {
                     double cmin = my_atof(ptr[7], "vsite_parameter_min");
                     double cmax = my_atof(ptr[8], "vsite_parameter_max");
+                    ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
+                                                      Mutability::Bounded, false, false);
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
+                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
+                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
+                }
+                else
+                {
+                    double cmin = my_atof(ptr[5], "vsite_parameter_min");
+                    double cmax = my_atof(ptr[6], "vsite_parameter_max");
+                    ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
+                                                      Mutability::Bounded, false, false);
+                    i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
+                    i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
                 }
             }
             break;
