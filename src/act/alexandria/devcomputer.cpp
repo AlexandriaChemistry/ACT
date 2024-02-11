@@ -43,6 +43,7 @@
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/topology/atoms.h"
 
 namespace alexandria
 {

@@ -38,7 +38,6 @@
 #include <map>
 
 #include "act/alexandria/fragmenthandler.h"
-#include "act/alexandria/gentop_vsite.h"
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/actmol_low.h"
 #include "act/forces/forcecomputer.h"

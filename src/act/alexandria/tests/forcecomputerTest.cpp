@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,6 +50,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/fatalerror.h"
 

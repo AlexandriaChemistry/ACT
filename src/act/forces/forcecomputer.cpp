@@ -161,14 +161,6 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         svmul(fac, field, (*forces)[ff]);
     }
     double epot = 0;
-    std::set<InteractionType> vsites = {
-        InteractionType::VSITE2,
-        InteractionType::VSITE2FD,
-        InteractionType::VSITE3,
-        InteractionType::VSITE3FD,
-        InteractionType::VSITE3FAD,
-        InteractionType::VSITE3OUT
-    };
     for(const auto &entry : top->entries())
     {
         if (entry.second.empty())
@@ -195,7 +187,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                 epot += me.second;
             }
         }
-        else if (vsites.end() == vsites.find(entry.first))
+        else if (!isVsite(entry.first))
         {
             fprintf(stderr, "Please implement a force function for type %s\n",
                     interaction_function[ffpl.gromacsType()].name);

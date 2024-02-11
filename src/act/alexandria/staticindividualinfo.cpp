@@ -154,9 +154,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
         GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
         if (p)
         {
-            if (debug && InteractionType::VSITE2 == iType)
+            if (debug && isVsite(iType))
             {
-                fprintf(debug, "Updating vsite parameter to %g\n", bases[n]);
+                fprintf(debug, "Updating %s parameter to %g\n",
+                        interactionTypeToString(iType).c_str(), bases[n]);
             }
             p->setValue(bases[n]);
             // TODO fix the uncertainty

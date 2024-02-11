@@ -109,6 +109,10 @@ namespace alexandria
 
     extern const char *vsite2_name[vsite2NR];
 
+    enum { vsite2fdA = 0, vsite2fdNR = 1 };
+
+    extern const char *vsite2fd_name[vsite2fdNR];
+
     enum { vsite3A = 0,vsite3B = 1, vsite3NR = 2 };
 
     extern const char *vsite3_name[vsite3NR];
@@ -124,6 +128,10 @@ namespace alexandria
     enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 2,  vsite3outNR = 3 };
 
     extern const char *vsite3out_name[vsite3outNR];
+
+    enum { vsite3outsA = 0, vsite3outsC = 1,  vsite3outsNR = 2 };
+
+    extern const char *vsite3outs_name[vsite3outsNR];
 
 } // namespace alexandria
 

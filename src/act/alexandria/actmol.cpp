@@ -52,6 +52,7 @@
 #include "act/molprop/multipole_names.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"

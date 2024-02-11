@@ -1187,19 +1187,34 @@ void VsiteHandler::constructPositions(const Topology         *top,
 
             case InteractionType::VSITE3OUT:
                 {
-                    al = atomIndices[3];
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    al                 = atomIndices[3];
                     constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC], &pbc_);
                     if (debug)
                     {
                         fprintf(debug, "vs3out: sign= %2d, A=%g, B=%g, C=%g\n",
-                                vsite3out_vs->sign(), params[vsite3outA], params[vsite3outB], 
+                                vsite3out_vs->sign(), params[vsite3outA], params[vsite3outB],
                                 vsite3out_vs->sign() * params[vsite3outC]);
                     }
-                    break;
                 }
+                break;
+            case InteractionType::VSITE3OUTS:
+                {
+                    auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    al                 = atomIndices[3];
+                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                                     params[vsite3outsA], params[vsite3outsA],
+                                     vsite3out_vs->sign() * params[vsite3outsC], &pbc_);
+                    if (debug)
+                    {
+                        fprintf(debug, "vs3out: sign= %2d, A=%g, C=%g\n",
+                                vsite3out_vs->sign(), params[vsite3outsA],
+                                vsite3out_vs->sign() * params[vsite3outsC]);
+                    }
+                }
+                break;
 
 #ifdef LATER
             case F_VSITE4FD:
@@ -1275,10 +1290,17 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 break;
             case InteractionType::VSITE3OUT:
                 {
-                    auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
-
+                    auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     spread_vsite3OUT(ia.data(), params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC],
+                                     x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                }
+                break;
+            case InteractionType::VSITE3OUTS:
+                {
+                    auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    spread_vsite3OUT(ia.data(), params[vsite3outsA], params[vsite3outsA], 
+                                     vsite3out_vs->sign() * params[vsite3outsC],
                                      x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 }
                 break;

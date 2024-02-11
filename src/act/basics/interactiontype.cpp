@@ -35,6 +35,7 @@
 #include "interactiontype.h"
 
 #include <map>
+#include <set>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -65,6 +66,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual site with three constructing atoms and fixed distance" } },
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
+    { InteractionType::VSITE3OUTS,         { "VSITE3OUTS", "virtual sites with three contructing atoms, out of plane, symmetric with respect to the plane" } },
     { InteractionType::COULOMB,            { "COULOMB", "Coulomb interactions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
     { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } },
@@ -140,6 +142,14 @@ int interactionTypeToNatoms(InteractionType iType)
         return 0;
     }
     return 0;
+}
+
+bool isVsite(InteractionType iType)
+{
+    std::set myvs = { InteractionType::VSITE2, InteractionType::VSITE2FD,
+                      InteractionType::VSITE3, InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
+                      InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS };
+    return (myvs.end() != myvs.find(iType));
 }
 
 } // namespace alexandria
