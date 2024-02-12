@@ -309,6 +309,15 @@ public:
      */
     void addFilenames(std::vector<t_filenm> *filenms);
 
+    /*! \brief Check whether options make sense.
+     * \params[in] logFile   To print warnings to
+     * \params[in] filenames List of filenames
+     * \params[in] pd        ForceField for information
+     */
+    void checkOptions(FILE                        *logFile,
+                      const std::vector<t_filenm> &filenames,
+                      ForceField                  *pd);
+
     /*! \brief Process options after parsing
      */
     void optionsFinished();
