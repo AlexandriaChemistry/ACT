@@ -790,6 +790,11 @@ int train_ff(int argc, char *argv[])
                     opt.sii()->forcefield()->nParticleTypes());
         }
     }
+    // Check inputs
+    if (fp)
+    {
+        opt.mg()->checkOptions(fp, filenms, opt.sii()->forcefield());
+    }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(fp, filenms, opt.sii()->forcefield(), gms,

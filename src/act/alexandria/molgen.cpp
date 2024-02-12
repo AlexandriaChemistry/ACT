@@ -43,6 +43,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
@@ -156,6 +157,38 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
+}
+
+void MolGen::checkOptions(FILE                        *logFile,
+                          const std::vector<t_filenm> &filenames,
+                          ForceField                  *pd)
+{
+    std::set iTypeElec  = { InteractionType::COULOMB, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+                            InteractionType::BONDCORRECTIONS, InteractionType::POLARIZATION };
+    bool Electrostatics = false;
+
+    for(auto toFit = fit_.begin(); toFit != fit_.end(); )
+    {
+        InteractionType itype;
+        if (pd->typeToInteractionType(toFit->first, &itype))
+        {
+            Electrostatics = Electrostatics || isVsite(itype) || (iTypeElec.end() != iTypeElec.find(itype));
+            toFit++;
+        }
+        else
+        {
+            fprintf(stderr, "Ignoring unknown training parameter '%s'\n", toFit->first.c_str());
+            toFit = fit_.erase(toFit);
+        }
+    }
+    auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
+    fprintf(stderr, "Charges file '%s'\n", charge_fn ? charge_fn : "");
+    if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
+    {
+        std::string w("WARNING: By supplying the -charges option, your charges will not be updated during the training.");
+        fprintf(logFile, "\n%s\n\n", w.c_str());
+        fprintf(stderr,  "\n%s\n\n", w.c_str());
+    }
 }
 
 void MolGen::optionsFinished()
