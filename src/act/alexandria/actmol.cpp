@@ -475,10 +475,12 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    isLinear_ = isLinearMolecule(myatoms, coords);
-    // Symmetrize the atoms
-    get_symmetrized_charges(topology_, pd, nullptr, &symmetric_charges_);
-
+    if (immStatus::OK == imm)
+    {
+        isLinear_ = isLinearMolecule(myatoms, coords);
+        // Symmetrize the atoms
+        get_symmetrized_charges(topology_, pd, nullptr, &symmetric_charges_);
+    }
     return imm;
 }
 
