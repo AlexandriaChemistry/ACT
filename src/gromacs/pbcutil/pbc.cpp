@@ -199,7 +199,8 @@ real max_cutoff2(int ePBC, const matrix box)
 }
 
 //! Set to true if warning has been printed
-static gmx_bool bWarnedGuess = FALSE;
+static gmx_bool bWarnedGuess          = FALSE;
+static gmx_bool bWarnedUnsupportedBox = FALSE;
 
 int guess_ePBC(const matrix box)
 {
@@ -219,19 +220,20 @@ int guess_ePBC(const matrix box)
     }
     else
     {
-        if (!bWarnedGuess)
+        if (!bWarnedUnsupportedBox)
         {
             fprintf(stderr, "WARNING: Unsupported box diagonal %f %f %f, "
                     "will not use periodic boundary conditions\n\n",
                     box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
-            bWarnedGuess = TRUE;
+            bWarnedUnsupportedBox = TRUE;
         }
         ePBC = epbcNONE;
     }
 
-    if (debug)
+    if (debug && !bWarnedGuess)
     {
         fprintf(debug, "Guessed pbc = %s from the box matrix\n", epbc_names[ePBC]);
+        bWarnedGuess = TRUE;
     }
 
     return ePBC;

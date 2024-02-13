@@ -1160,6 +1160,7 @@ void Topology::build(const ForceField             *pd,
     // scaling to insert for instance one shell per particle. At the end of this
     // algorithm we copy the contents of the list back to std::vectors.
     AtomList atomList;
+    auto     nRealAtoms = atoms_.size();
     for(size_t index = 0; index < atoms_.size(); index++)
     {
         atomList.push_back(ActAtomListItem(atoms_[index], index, (*x)[index]));
@@ -1175,7 +1176,7 @@ void Topology::build(const ForceField             *pd,
     // angles, but only temporarily.
     makeAngles(pd, *x, LinearAngleMin);
     auto nv3 = makeVsite3s(pd, &atomList);
-    if (debug)
+    if (debug && (nv2.size() > 0 || nv3.size() > 0))
     {
         fprintf(debug, "Added");
         for(const auto nn : nv2)
@@ -1200,7 +1201,7 @@ void Topology::build(const ForceField             *pd,
     addShells(pd, &atomList);
     if (debug)
     {
-        auto nshell = atomList.size();
+        auto nshell = atomList.size()-nRealAtoms;
         for(const auto nn : nv2)
         {
             nshell -= nn.second;
