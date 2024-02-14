@@ -291,13 +291,13 @@ public:
         case RotationAlgorithm::Polar:
             {
                 double beta  = std::acos(2*r3-1);
-                rx = sobol(alpha, beta, gamma, coords);
+                rx = polar(alpha, beta, gamma, coords);
             }
             break;
         case RotationAlgorithm::Sobol:
             {
                 double beta  = std::acos(2*r3-1);
-                rx = polar(alpha, beta, gamma, coords);
+                rx = sobol(alpha, beta, gamma, coords);
             }
             break;
         }
@@ -352,7 +352,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
         { "-seed", FALSE, etINT, {&seed_},
           "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used. For the Sobol quasi-random sequence it is advised to leave the seed at 0." },
         { "-rotalg", FALSE, etSTR, {&rotalg_},
-          "Rotation algorithm should be either Cartesian, Polar or Sobol" },
+          "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
           "Low-level debugging of routines" }
     };

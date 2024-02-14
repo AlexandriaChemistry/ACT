@@ -475,7 +475,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
                 // Conversion to regular units cm^3/mol.
                 double fac  = AVOGADRO*1e-21;
                 // TODO: Fix the torque contribution
-                double bqt  = 0; //(BqmTorque[0]+BqmTorque[1])*0.5;
+                double bqt  = (BqmTorque[0]+BqmTorque[1])*0.5;
                 double Btot = (Bclass + BqmForce + bqt)*fac;
                 // Add to bootstrapping statistics
                 b2BootStrap[b2Type::Classical].add_point(nb, Bclass*fac, 0, 0);
@@ -805,7 +805,10 @@ int b2(int argc, char *argv[])
         "the compounds in the dimer. Based on dimer energies the second",
         "virial coefficient will be estimated. Mayer curves can optionally",
         "be plotted and the second virial can be plotted as a function",
-        "of temperature."
+        "of temperature.[PAR]",
+        "To run the program you need to provide a pdb file with two monomeric",
+        "compounds that have support in the force field and that are present",
+        "in the charges file."
     };
 
     std::vector<t_filenm>     fnm = {
