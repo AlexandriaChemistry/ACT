@@ -516,6 +516,7 @@ void ReRunner::computeB2(FILE                                      *logFile,
 void ReRunner::rerun(FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
+                     int                          maxdimer,
                      bool                         userqtot,
                      double                       qtot,
                      bool                         verbose,
@@ -579,7 +580,7 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Generate compounds
-        gendimers_->generate(logFile, actmol, &dimers, opt2fn_null("-ox", fnm.size(), fnm.data()));
+        gendimers_->generate(logFile, actmol, maxdimer, &dimers, opt2fn_null("-ox", fnm.size(), fnm.data()));
         ndist = gendimers_->ndist();
     }
     if (verbose && debug)
@@ -822,6 +823,7 @@ int b2(int argc, char *argv[])
     static char              *filename   = (char *)"";
     double                    qtot       = 0;
     double                    shellToler = 1e-6;
+    int                       maxdimers  = 1024;
     bool                      verbose    = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
@@ -835,6 +837,8 @@ int b2(int argc, char *argv[])
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
+        { "-maxdimer", FALSE, etINT, {&maxdimers},
+          "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)." },
         { "-json", FALSE, etBOOL, {&json},
@@ -948,7 +952,7 @@ int b2(int argc, char *argv[])
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
         bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-        rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, fnm);
+        rerun.rerun(logFile, &pd, &actmol, maxdimers, userqtot, qtot, verbose, fnm);
     }
     if (json)
     {
