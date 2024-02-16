@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,10 +37,10 @@
 #include <random>
 #include <vector>
 
-#include "act/alexandria/b2utils.h"
 #include "act/alexandria/actmol.h"
-#include "act/forces/forcecomputer.h"
+#include "act/alexandria/dimergenerator.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forces/forcecomputer.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -173,6 +173,7 @@ public:
      * \param[in] logFile  File pointer to print info
      * \param[in] pd       Force field structure
      * \param[in] actmol   Structure with molecule info
+     * \param[in] maxdimer Number of dimers to generate (if any)
      * \param[in] userqtot Whether the user has explicitly set the qtot value below
      * \param[in] qtot     The total charge for when reading from a trajectory
      * \param[in] verbose  Whether or not to print a lot
@@ -181,6 +182,7 @@ public:
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
+               int                          maxdimer,
                bool                         userqtot,
                double                       qtot,
                bool                         verbose,

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,13 +31,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ACT_B2UTILS_H
-#define ACT_B2UTILS_H
+#ifndef ACT_DIMERGENERATOR_H
+#define ACT_DIMERGENERATOR_H
 
 #include <random>
 #include <vector>
 
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/rotator.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
@@ -52,8 +53,6 @@ namespace alexandria
 class DimerGenerator
 {
 private:
-    //! Number of dimers to generate
-    int maxdimers_      = 1000;
     //! Number of distances to use. See alexandria b2 -h for an explanation
     int ndist_          =    0;
     //! Minimum com-com distance (nm)
@@ -62,6 +61,8 @@ private:
     double maxdist_     =  4.0;
     //! (Quasi-) random number seed
     int    seed_        =    0;
+    //! Internal copy of seed
+    long long int sobolSeed_ = 0;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! Rotation algorithm
@@ -72,10 +73,15 @@ private:
     std::mt19937                           gen_;
     //! Distribution
     std::uniform_real_distribution<double> dis_;
+    //! Rotator
+    Rotator                               *rot_ = nullptr;
 public:
     //! Constructor
     DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
-    
+
+    //! Destructor
+    ~DimerGenerator();
+  
     /*! \brief Add my options
      * \param[inout] pa  The command line options
      * \param[inout] fnm File names for the command line
@@ -88,20 +94,30 @@ public:
     
     //! Return the number of distancea
     int ndist() const { return ndist_; }
-    
-    /*! \brief Do the actual generation
+
+    /*! \brief Do the actual generation for one pair. Two molecules
+     * will be oriented and a distance series will be generated.
+     * \param[in]  actmol  The description of the two fragments
+     * \return The coordinate sets
+     */
+    std::vector<std::vector<gmx::RVec>>  generateDimers(const ACTMol *actmol);
+    /*! \brief Do the actual generation for many dimers.
+     * Note that the memory usage can be significant (many Gb).
+     * 
      * \param[in]  logFile   For debugging info, may be a nullptr
-     * \param[in]  actmol     The description of the two fragments
+     * \param[in]  actmol    The description of the two fragments
+     * \parma[in]  maxdimer  The number of different dimers to generate
      * \param[out] coords    The coordinate sets
      * \param[in]  outcoords Output file name for the generated coordinates.
      *                       If nullptr, they will not be written.
      */
     void generate(FILE                                *logFile,
-                  const ACTMol                         *actmol,
+                  const ACTMol                        *actmol,
+                  int                                  maxdimer,
                   std::vector<std::vector<gmx::RVec>> *coords,
                   const char                          *outcoords);
 };
 
 } // namespace alexandria
 
-#endif // ACT_B2UTILS_H
+#endif // ACT_DIMERGENERATOR_H

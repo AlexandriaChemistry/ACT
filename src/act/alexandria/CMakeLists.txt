@@ -27,21 +27,22 @@
 
 target_sources(actLib
     PRIVATE
-           acm_ga.cpp
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp
            acthelper.cpp
            actmiddleman.cpp
+           actmol.cpp
+           actmol_low.cpp
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
            babel_io.cpp
            bayes.cpp
-           b2utils.cpp
            confighandler.cpp
            devcomputer.cpp
+           dimergenerator.cpp
            dissociation_energy.cpp
            fetch_charges.cpp
            fill_inputrec.cpp
@@ -54,13 +55,12 @@ target_sources(actLib
            molgen.cpp
            molhandler.cpp
            molselect.cpp
-           actmol.cpp
-           actmol_low.cpp
            normalmodes.cpp
            openmm_xml.cpp
            pdbwriter.cpp
            percentmutator.cpp
            princ.cpp
+           rotator.cpp
            secondvirial.cpp
            simulate.cpp
            staticindividualinfo.cpp
@@ -70,6 +70,7 @@ target_sources(actLib
            train_ff.cpp
            train_utility.cpp          
            velocityhandler.cpp
+acm_ga.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})
