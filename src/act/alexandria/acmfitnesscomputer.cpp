@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -193,6 +193,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             // Now update the topology
             actmol->topologyPtr()->fillParameters(sii_->forcefield());
+            // Fill the fragments too if there are any
+            for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+            {
+                ft->fillParameters(sii_->forcefield());
+            }
+
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();

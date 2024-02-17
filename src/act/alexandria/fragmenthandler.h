@@ -89,8 +89,11 @@ namespace alexandria
         //! \return the atomStart_ vector, containing one extra index more than the number of fragments.
         const std::vector<size_t> atomStart() const { return atomStart_; }
 
-        //! \return the vector of Topology structures        
+        //! \return the vector of Topology structures
         const std::vector<Topology *> topologies() const { return topologies_; }
+
+        //! \return the vector of Topology structures
+        std::vector<Topology *> &topologiesPtr() { return topologies_; }
 
         /*! \brief Generate charges for all fragments
          * \param[in]  fp      Debug file pointer, may be nullptr
