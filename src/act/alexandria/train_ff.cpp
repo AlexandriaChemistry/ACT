@@ -791,9 +791,15 @@ int train_ff(int argc, char *argv[])
         }
     }
     // Check inputs
-    if (fp)
+    bool optionsOk = true;
+    if (opt.commRec()->isMaster())
     {
-        opt.mg()->checkOptions(fp, filenms, opt.sii()->forcefield());
+        optionsOk = opt.mg()->checkOptions(fp, filenms, opt.sii()->forcefield());
+    }
+    opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
+    if (!optionsOk)
+    {
+        return 0;
     }
 
     // MolGen read being called here!

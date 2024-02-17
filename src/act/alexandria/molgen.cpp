@@ -159,7 +159,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
     doAddOptions(pargs, asize(pa_general), pa_general);
 }
 
-void MolGen::checkOptions(FILE                        *logFile,
+bool MolGen::checkOptions(FILE                        *logFile,
                           const std::vector<t_filenm> &filenames,
                           ForceField                  *pd)
 {
@@ -185,10 +185,12 @@ void MolGen::checkOptions(FILE                        *logFile,
     fprintf(stderr, "Charges file '%s'\n", charge_fn ? charge_fn : "");
     if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
     {
-        std::string w("WARNING: By supplying the -charges option, your charges will not be updated during the training.");
-        fprintf(logFile, "\n%s\n\n", w.c_str());
-        fprintf(stderr,  "\n%s\n\n", w.c_str());
+        std::string w("ERROR: The combination of supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
+        fprintf(logFile, "\n%s\n", w.c_str());
+        fprintf(stderr, "\n%s\n\n", w.c_str());
+        return false;
     }
+    return true;
 }
 
 void MolGen::optionsFinished()
