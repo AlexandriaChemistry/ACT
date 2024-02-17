@@ -489,6 +489,15 @@ double ACTMol::bondOrder(int ai, int aj) const
     return topology_->findBond(ai, aj).bondOrder();
 }
 
+static void printEmap(FILE *fp, const std::map<InteractionType, double> *e)
+{
+    for(auto ee = e->begin(); ee != e->end(); ee++)
+    {
+        fprintf(fp, " %s %g", interactionTypeToString(ee->first).c_str(), ee->second);
+    }
+    fprintf(fp, "\n");
+}
+
 void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                                         const ForceComputer               *forceComputer,
                                         std::map<InteractionType, double> *einter,
@@ -533,7 +542,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         
         if (debug)
         {
-            fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
+            fprintf(debug, "%s initial:", getMolname().c_str());
+            printEmap(debug, einter);
         }
         for(const auto &ee : energies)
         {
@@ -558,13 +568,14 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         if (debug)
         {
-            fprintf(debug, "%s Fragment %zu Epot %g\n", getMolname().c_str(), ff, 
-                    einter->find(InteractionType::EPOT)->second);
+            fprintf(debug, "%s Fragment %zu ", getMolname().c_str(), ff);
+            printEmap(debug, &energies);
         }
     }
     if (debug)
     {
-        fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
+        fprintf(debug, "%s result:", getMolname().c_str());
+        printEmap(debug, einter);
     }
 }
 
