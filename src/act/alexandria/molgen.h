@@ -313,8 +313,9 @@ public:
      * \params[in] logFile   To print warnings to
      * \params[in] filenames List of filenames
      * \params[in] pd        ForceField for information
+     * \return true if options are consistent, false otherwise.
      */
-    void checkOptions(FILE                        *logFile,
+    bool checkOptions(FILE                        *logFile,
                       const std::vector<t_filenm> &filenames,
                       ForceField                  *pd);
 
