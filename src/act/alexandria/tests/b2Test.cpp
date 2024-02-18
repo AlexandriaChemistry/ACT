@@ -78,12 +78,17 @@ protected:
         std::vector<gmx::RVec>  inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
         
         output_env_init_default(&oenv);
-        
+ 
+        // First data point at this distance
         double x0    = 0.1;
         double bw    = 0.0001;
         double rmax  = 10;
+        // We will add data points until rmax+x0
         int    irmax = (x0+rmax)/bw;
         B2Data b2data(irmax, bw, Temperature);
+        // We start computing from x0, however we need the points from zero
+        // for integration later. The integer index times the binwidth is
+        // used as the distance in the integration algorithm.
         for(int i = int(x0/bw); i < irmax; i++)
         {
             if (LJ)
