@@ -19,7 +19,16 @@
     <Real>0.02350629292634784</Real>
     <Real>0.021828632526542463</Real>
   </Sequence>
-  <Sequence Name="B2(Torque)">
+  <Sequence Name="B2(Torque1)">
+    <Int Name="Length">6</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="B2(Torque2)">
     <Int Name="Length">6</Int>
     <Real>0</Real>
     <Real>0</Real>

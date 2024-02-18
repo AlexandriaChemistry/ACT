@@ -74,49 +74,65 @@ protected:
                 double sig, double eps, double mass, 
                 const std::vector<double> &Temperature)
     {
-        //FILE                                *logFile = nullptr;
-        gmx_stats                            edist;
-        gmx_output_env_t                    *oenv    = nullptr;
-        std::vector<gmx::RVec>               inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
-        std::vector<std::vector<gmx::RVec>>  force(2);
-        std::vector<std::vector<gmx::RVec>>  torque(2);
+        gmx_output_env_t       *oenv    = nullptr;
+        std::vector<gmx::RVec>  inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
         
         output_env_init_default(&oenv);
         
         double x0    = 0.1;
         double bw    = 0.0001;
         double rmax  = 10;
-        int    irmax = rmax/bw;
+        int    irmax = (x0+rmax)/bw;
         B2Data b2data(irmax, bw, Temperature);
-        for(int i = 0; i < irmax; i++)
+        for(int i = int(x0/bw); i < irmax; i++)
         {
             if (LJ)
             {
-                double x = x0 + bw*i;
+                double x = bw*i;
                 double y = 4*eps*(std::pow(sig/x, 12) - std::pow(sig/x, 6));
                 double f = 4*(eps/sig)*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
+                gmx::RVec ttt = { 0,0,0 };
                 for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
                 {
-                    double beta = 1.0/(BOLTZ*Temperature[iTemp]);
-                    b2data.addData(iTemp, i, std::exp(-beta*y)-1,
-                                   { 0, 0, f }, { 0, 0, -f },
-                                   ttt, ttt);
+                    double beta  = 1.0/(BOLTZ*Temperature[iTemp]);
+                    double g0_12 = std::exp(-beta*y);
+                    b2data.addData(iTemp, i, g0_12-1,
+                                   g0_12*f*f, g0_12*f*f, ttt, ttt);
                 }
             }
         }
         if (LJ)
         {
-            ReRunner rerun(true);
-            std::vector<t_filenm> fnm;
-            rerun.setTemperatures(Temperature);
             std::vector<double> m2 = { mass, mass };
-            rerun.runB2(&cr, logFile, edist, irmax, m2,
-                        inertia, force, torque, fnm);
+            std::map<b2Type, std::vector<double>> b2t = {
+                { b2Type::Classical, {} },
+                { b2Type::Force, {} },
+                { b2Type::Torque1, {} },
+                { b2Type::Torque2, {} },
+                { b2Type::Total, {} }
+            };
+            // Conversion to regular units cm^3/mol.
+            double fac  = AVOGADRO*1e-21;
+            for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
+            {
+                double Bclass, BqmForce, BqmTorque1, BqmTorque2;
+                double beta = 1.0/(BOLTZ*Temperature[iTemp]);
+                b2data.fillToXmin(iTemp, x0, bw);
+                b2data.integrate(iTemp, bw, beta, m2, inertia,
+                                 &Bclass, &BqmForce,
+                                 &BqmTorque1, &BqmTorque2);
+                b2t[b2Type::Classical].push_back(Bclass*fac);
+                b2t[b2Type::Force].push_back(BqmForce*fac);
+                b2t[b2Type::Torque1].push_back(BqmTorque1*fac);
+                b2t[b2Type::Torque2].push_back(BqmTorque2*fac);
+                b2t[b2Type::Total].push_back((Bclass+BqmForce+0.5*(BqmTorque1+BqmTorque2))*fac);
+            };
             
             for(const auto &b2 : b2Type2str)
             {
-                auto b2t = rerun.b2Temp(b2.first);
-                checker_.checkSequence(b2t.begin(), b2t.end(), b2.second.c_str());
+                checker_.checkSequence(b2t[b2.first].begin(),
+                                       b2t[b2.first].end(),
+                                       b2.second.c_str());
             }
         }
     }
