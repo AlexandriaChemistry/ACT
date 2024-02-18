@@ -38,6 +38,7 @@ target_sources(actLib
            allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
+           b2data.cpp
            babel_io.cpp
            bayes.cpp
            confighandler.cpp
