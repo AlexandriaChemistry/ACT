@@ -57,8 +57,6 @@ private:
     matrix            Average_;
     //! The number of matrices added
     size_t            naver_  = 0;
-    //! Sobol seed, only use this for debugging
-    long long int     sobolSeed_ = 0;
     //! Rotation algorithm to use
     RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian;
     //! Debug angles?
@@ -110,10 +108,8 @@ public:
     /*! \brief Constructor setting up algorithm
      * \param[in] rotalg      The rotation algorithm string
      * \param[in] debugAngles Whether or not to print histograms of angles
-     * \param[in] sobolSeed   Starting index in the Sobol sequence. Keep at 
-     *                        zero except for debugging.
      */
-    Rotator(const std::string &rotalg, bool debugAngles, long long int sobolSeed = 0);
+    Rotator(const std::string &rotalg, bool debugAngles);
     
     //! \return the rotation algorithm selected
     RotationAlgorithm rotalg() const { return rotalg_; }
@@ -126,7 +122,7 @@ public:
                                   const std::vector<gmx::RVec> &coords);
 
     void checkMatrix(FILE *fp);
-        
+
     void printAverageMatrix(FILE *fp);
 
     void printAngleHisto();

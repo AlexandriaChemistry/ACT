@@ -86,6 +86,12 @@ DimerGenerator::~DimerGenerator()
     }
 }
 
+void DimerGenerator::setSeed(int seed)
+{
+    seed_      = seed;
+    sobolSeed_ = seed_;
+}
+
 void DimerGenerator::finishOptions()
 {
     if (seed_ > 0)
@@ -93,7 +99,11 @@ void DimerGenerator::finishOptions()
         gen_.seed(seed_);
     }
     sobolSeed_ = seed_;
-    rot_ = new Rotator(rotalg_, debugGD_, sobolSeed_);
+    rot_ = new Rotator(rotalg_, debugGD_);
+    if (0 == ndist_)
+    {
+        ndist_ = 1+std::round((maxdist_-mindist_)/binWidth_);
+    }
 }
 
 static void dump_coords(const char                                *outcoords,
@@ -241,13 +251,12 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
         xrand[m] = rot_->random(q[j0], q[j0+1], q[j0+2], xrand[m]);
     }
     // Loop over distances from mindist to maxdist
-    double range = maxdist_ - mindist_;
     for(int idist = 0; idist < ndist_; idist++)
     {
         double    dist  = mindist_;
         if (ndist_ > 1)
         {
-            dist += range*((1.0*idist)/(ndist_-1));
+            dist += idist*binWidth_;
         }
         gmx::RVec trans = { 0, 0, dist };
         auto      atoms = tops[1]->atoms();

@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include "act/alexandria/b2data.h"
 #include "act/alexandria/secondvirial.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
@@ -73,7 +74,7 @@ protected:
                 double sig, double eps, double mass, 
                 const std::vector<double> &Temperature)
     {
-        FILE                                *logFile = nullptr;
+        //FILE                                *logFile = nullptr;
         gmx_stats                            edist;
         gmx_output_env_t                    *oenv    = nullptr;
         std::vector<gmx::RVec>               inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -86,6 +87,7 @@ protected:
         double bw    = 0.0001;
         double rmax  = 10;
         int    irmax = rmax/bw;
+        B2Data b2data(irmax, bw, Temperature);
         for(int i = 0; i < irmax; i++)
         {
             if (LJ)
@@ -93,13 +95,13 @@ protected:
                 double x = x0 + bw*i;
                 double y = 4*eps*(std::pow(sig/x, 12) - std::pow(sig/x, 6));
                 double f = 4*(eps/sig)*(12*std::pow(sig/x, 13) - 6*std::pow(sig/x, 7));
-                edist.add_point(x, y, 0, 0);
-                force[0].push_back({ 0, 0, f });
-                force[1].push_back({ 0, 0, -f });
-                gmx::RVec ttt = { 0, 0, 0 };
-                // Torque is needed for two compounds
-                torque[0].push_back(ttt);
-                torque[1].push_back(ttt);
+                for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
+                {
+                    double beta = 1.0/(BOLTZ*Temperature[iTemp]);
+                    b2data.addData(iTemp, i, std::exp(-beta*y)-1,
+                                   { 0, 0, f }, { 0, 0, -f },
+                                   ttt, ttt);
+                }
             }
         }
         if (LJ)
@@ -108,8 +110,8 @@ protected:
             std::vector<t_filenm> fnm;
             rerun.setTemperatures(Temperature);
             std::vector<double> m2 = { mass, mass };
-            rerun.computeB2(logFile, edist, irmax, m2,
-                            inertia, force, torque, fnm);
+            rerun.runB2(&cr, logFile, edist, irmax, m2,
+                        inertia, force, torque, fnm);
             
             for(const auto &b2 : b2Type2str)
             {

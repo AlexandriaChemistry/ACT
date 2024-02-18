@@ -55,6 +55,8 @@ class DimerGenerator
 private:
     //! Number of distances to use. See alexandria b2 -h for an explanation
     int ndist_          =    0;
+    //! The bin width (nm)
+    double binWidth_    =  0.0025;
     //! Minimum com-com distance (nm)
     double mindist_     =  0.1;
     //! Maximum com-com distance (nm)
@@ -91,9 +93,21 @@ public:
 
     //! \brief Process the options
     void finishOptions();
+
+    //! Get the original seed
+    int seed() const { return seed_; }
+
+    //! Set a new seed
+    void setSeed(int seed);
     
     //! Return the number of distancea
     int ndist() const { return ndist_; }
+
+    //! Return max distance
+    double maxdist() const { return maxdist_; }
+
+    //! Return bin width
+    double binwidth() const { return binWidth_; }
 
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.

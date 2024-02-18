@@ -210,7 +210,7 @@ void Rotator::printOneAngleHisto(gmx_stats angle, const char *file)
     }
 }
     
-Rotator::Rotator(const std::string &rotalg, bool debugAngles, long long int sobolSeed)
+Rotator::Rotator(const std::string &rotalg, bool debugAngles)
 {
     resetMatrix();
     if (stringToRotationAlgorithm.end() != stringToRotationAlgorithm.find(rotalg))
@@ -218,7 +218,6 @@ Rotator::Rotator(const std::string &rotalg, bool debugAngles, long long int sobo
         rotalg_ = stringToRotationAlgorithm[rotalg];
     }
     debugAngles_ = debugAngles;
-    sobolSeed_   = sobolSeed;
 }
     
 std::vector<gmx::RVec> Rotator::random(double                        r1,

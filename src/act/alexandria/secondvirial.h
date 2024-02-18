@@ -57,16 +57,7 @@ namespace alexandria
 void forceFieldSummary(JsonTree      *jtree,
                        const ForceField *pd);
 
-/*! \brief Compute integral over sphere section
- * \param[in] r1   The radius to start at
- * \param[in] r2   The radius to stop at
- * \param[in] val1 The function value at r1
- * \param[in] val2 The function value at r2
- * \return The integral of 4 pi r^2 f(r) from r1 to r2
- */
-double sphereIntegrator(double r1, double r2, double val1, double val2);
-
-enum class b2Type { Classical, Force, Torque, Total };
+enum class b2Type { Classical, Force, Torque1, Torque2, Total };
 
 extern const std::map<b2Type, std::string> b2Type2str;
 
@@ -94,31 +85,18 @@ private:
     double              T2_          = 400;
     //! Temperature step
     double              deltaT_      = 10;
-    //! Number of bootstraps
-    int                 nbootStrap_  = 1;
     //! Whether to compute interaction energies and potentially B2
     bool                eInter_      = true;
     //! Whether to compute the second virial
     bool                computeB2_   = false;
-    //! Optimize the bootstrapping by pre-calculating stuff
-    bool                optimizedB2_ = false;
     //! Plot only the total B2
     bool                totalOnly_   = false;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)
     std::map<b2Type, std::vector<double>> b2t_;
-    //! Uncertainty in the second virial as determined by bootstrapping
-    std::map<b2Type, std::vector<double>> b2tError_;
     //! Generate temperature series if needed and return it
     const std::vector<double> &temperatures();
-    /*! \brief Generate plot with Mayer functions for all temperatures
-     * \param[in] ehisto The output file name
-     * \param[in] mayer  The curves
-     */
-    void plotMayer(const char                             *ehisto,
-                   const std::vector<std::vector<double>> &mayer);
-
     /*! \brief Generate plot with Second virial as a function of temperature
      * \param[in] b2file    The B2(T) output file name
      */
@@ -168,43 +146,41 @@ public:
      * \param[in] eInter The value
      */
     void setEInteraction(bool eInter) { eInter_ = eInter; }
-    
+
+    //! \return Whether to do a rerun
+    bool doRerun() const { return trajname_ && strlen(trajname_) > 0; }
+
     /*! \brief Do the rerunning with different options
      * \param[in] logFile  File pointer to print info
      * \param[in] pd       Force field structure
      * \param[in] actmol   Structure with molecule info
-     * \param[in] maxdimer Number of dimers to generate (if any)
      * \param[in] userqtot Whether the user has explicitly set the qtot value below
      * \param[in] qtot     The total charge for when reading from a trajectory
      * \param[in] verbose  Whether or not to print a lot
-     * \param[in] fnm      The filenames
      */
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
-               int                          maxdimer,
                bool                         userqtot,
                double                       qtot,
+               bool                         verbose);
+
+    /*! \brief Compute second virial coefficient including QM corrections
+     * \param[in] cr       Communication Record for parallel calcs
+     * \param[in] logFile  File pointer to print info (may be nullptr)
+     * \param[in] pd       Force field structure
+     * \param[in] actmol   Structure with molecule info
+     * \param[in] maxdimer Number of dimers to generate (if any)
+     * \param[in] verbose  Whether or not to print a lot
+     * \param[in] fnm      The filenames
+     */
+    void runB2(CommunicationRecord         *cr,
+               FILE                        *logFile,
+               const ForceField            *pd,
+               const ACTMol                *actmol,
+               int                          maxdimer,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);
-
-    /*! \brief Compute the second virial coefficient including QM corrections
-     * \param[in] logFile   Output file for printing
-     * \param[in] edist     Statistics for interaction energies
-     * \param[in] ndist     Number of distinct distances or 0 when unknown
-     * \param[in] inertia   The moments of inertia of the molecules
-     * \param[in] force     The interaction forces on both molecules
-     * \param[in] torqueMol The torque on both molecules
-     * \param[in] fnm       The filenames
-     */
-    void computeB2(FILE                                      *logFile,
-                   gmx_stats                                  edist,
-                   int                                        ndist,
-                   const std::vector<double>                 &mass,
-                   const std::vector<gmx::RVec>              &inertia,
-                   const std::vector<std::vector<gmx::RVec>> &force,
-                   const std::vector<std::vector<gmx::RVec>> &torqueMol,
-                   const std::vector<t_filenm>               &fnm);
 
     //! \return the second virial as a function of T.
     const std::vector<double> &b2Temp(b2Type b2t) const { return b2t_.find(b2t)->second; }

@@ -173,8 +173,8 @@ public:
     eStats add_points(int n, real *x, real *y,
                       real *dx, real *dy);
 
-    const std::vector<double> getX() const { return x_; }
-    const std::vector<double> getY() const { return y_; }
+    const std::vector<double> &getX() const { return x_; }
+    const std::vector<double> &getY() const { return y_; }
     /*! \brief
      * Delivers data points from the statistics.
      *

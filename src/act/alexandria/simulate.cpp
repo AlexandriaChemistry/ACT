@@ -297,7 +297,7 @@ int simulate(int argc, char *argv[])
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-            rerun.rerun(logFile, &pd, &actmol, 0, userqtot, qtot, verbose, fnm);
+            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose);
         }
         else if (actmol.errors().empty())
         {
