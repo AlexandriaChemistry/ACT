@@ -266,7 +266,7 @@ void B2Data::plotMayer(const char                *fmayer,
     {
         return;
     }
-    GMX_RELEASE_ASSERT(mayer_.size() == temperatures_.size()+1, "Mismatch between Mayer and temperatures");
+    GMX_RELEASE_ASSERT(mayer_.size() == temperatures_.size(), "Mismatch between Mayer and temperatures");
     FILE *fp = xvgropen(fmayer, "Mayer function", "r (nm)",
                         "< exp[-U12/kBT]-1 >", oenv);
     std::vector<std::string> label;

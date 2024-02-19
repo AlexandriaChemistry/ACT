@@ -63,7 +63,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
         { "-rotalg", FALSE, etSTR, {&rotalg_},
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
-          "Low-level debugging of routines" }
+          "Low-level debugging of routines. Gives complete information only when run on a single processor." }
     };
     for(auto &pp : mypa)
     {
@@ -82,6 +82,11 @@ DimerGenerator::~DimerGenerator()
 {
     if (rot_)
     {
+        rot_->printAngleHisto();
+        if (debugGD_)
+        {
+            rot_->printAverageMatrix(stdout);
+        }
         delete rot_;
     }
 }
@@ -154,11 +159,6 @@ void DimerGenerator::generate(FILE                                *logFile,
         {
             coords->push_back(newx);
         }
-    }
-    rot_->printAngleHisto();
-    if (debugGD_)
-    {
-        rot_->printAverageMatrix(logFile);
     }
     if (nullptr != outcoords && strlen(outcoords) > 0)
     {
