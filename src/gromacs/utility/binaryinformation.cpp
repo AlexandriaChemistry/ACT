@@ -166,9 +166,10 @@ void printCopyright(gmx::TextWriter *writer)
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
             const int width = 18;
-            char      buf[30];
+#define MYBUFLEN 30
+            char      buf[MYBUFLEN];
             const int offset = centeringOffset(width, strlen(Contributors[i]));
-            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < MYBUFLEN,
                                "Formatting buffer is not long enough");
             std::fill(buf, buf+width, ' ');
             std::strcpy(buf+offset, Contributors[i]);
