@@ -44,7 +44,7 @@ class xvgDataSet:
         self.xmax = max(self.xmax, x)
         self.ymax = max(self.ymax, y)
 
-def read_xvg(filename):
+def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
     legends  = {}
     labels   = []
     dataset  = []
@@ -66,6 +66,8 @@ def read_xvg(filename):
                     legkey, legval = interpret_legend(myline)
                     if legkey and legval:
                         if legkey == "label":
+                            if filelabel:
+                                legval += " " + filename
                             labels.append(legval)
                         else:
                             legends[legkey] = legval
@@ -83,9 +85,11 @@ def read_xvg(filename):
                             print("Found data but no dataset yet")
                         dataset.append(xvgDataSet())
                     try:
-                        w0 = float(w[0])
-                        w1 = float(w[1])
-                        dataset[len(dataset)-1].add_point(w0, w1)
+                        xx = float(w[0])
+                        yy = float(w[1])
+                        if residual:
+                            yy -= xx
+                        dataset[len(dataset)-1].add_point(xx, yy)
                     except:
                         if debugXvgUtils:
                             print("Could not read line '%s'" % line)
@@ -95,9 +99,18 @@ def read_xvg(filename):
                             dataset.append(xvgDataSet())
                     for i in range(numwords-1):
                         try:
-                            dataset[i].add_point(float(w[0]), float(w[i+1]))
+                            xx = float(w[0])
+                            yy = float(w[i+1])
+                            if residual:
+                                yy -= xx
+                            dataset[i].add_point(xx, yy)
                         except:
                             if debugXvgUtils:
                                 print("Could not read line '%s'" % line)
+    if residual:
+        ylabel = "ylabel"
+        if not ylabel in legends:
+            legends[ylabel] = ""
+        legends[ylabel] += " (Residual)"
     return labels, legends, dataset
     
