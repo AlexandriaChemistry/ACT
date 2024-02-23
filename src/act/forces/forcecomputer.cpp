@@ -299,6 +299,8 @@ void ForceComputer::plot(const ForceField  *pd,
             std::string filename = gmx::formatString("%s_%s.xvg",
                                                      interactionTypeToString(itype).c_str(),
                                                      f.first.id().c_str());
+            std::vector<gmx::RVec> forces;
+            gmx::RVec rvnul = { 0, 0, 0 };
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
             std::map<InteractionType, double> energies;
             switch (itype)
@@ -309,8 +311,6 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    std::vector<gmx::RVec> forces;
-                    gmx::RVec rvnul = { 0, 0, 0 };
                     forces.resize(top.nAtoms(), rvnul);
                     size_t jatom = top.nAtoms()/2;
                     std::vector<double> rr, vv, ff;
@@ -368,8 +368,6 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    std::vector<gmx::RVec> forces;
-                    gmx::RVec rvnul = { 0, 0, 0 };
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
@@ -389,8 +387,6 @@ void ForceComputer::plot(const ForceField  *pd,
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    std::vector<gmx::RVec> forces;
-                    gmx::RVec rvnul = { 0, 0, 0 };
                     forces.resize(top.nAtoms(), rvnul);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
@@ -409,8 +405,6 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    std::vector<gmx::RVec> forces;
-                    gmx::RVec rvnul = { 0, 0, 0 };
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
@@ -429,8 +423,6 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    std::vector<gmx::RVec> forces;
-                    gmx::RVec rvnul = { 0, 0, 0 };
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
