@@ -143,7 +143,7 @@ class ForceFieldParameterList
      */
     void addCombinationRule(const std::string &param, const std::string &rule)
     {
-        combrules_.insert({param, rule});
+        combrules_[param] = rule;
     }
     
     /*! \brief check whether a combination rule exists

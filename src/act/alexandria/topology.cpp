@@ -1163,7 +1163,8 @@ void Topology::build(const ForceField             *pd,
     auto     nRealAtoms = atoms_.size();
     for(size_t index = 0; index < atoms_.size(); index++)
     {
-        atomList.push_back(ActAtomListItem(atoms_[index], index, (*x)[index]));
+        ActAtomListItem item(atoms_[index], index, (*x)[index]);
+        atomList.push_back(std::move(item));
     }
 
     // Before we can do anything we need to "identify" the bonds

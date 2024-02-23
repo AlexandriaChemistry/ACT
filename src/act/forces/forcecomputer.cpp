@@ -273,8 +273,6 @@ void ForceComputer::plot(const ForceField  *pd,
                 }
             }
             Topology               top(bbb);
-            std::vector<gmx::RVec> forces;
-            gmx::RVec rvnul = { 0, 0, 0 };
 
             auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
@@ -297,7 +295,6 @@ void ForceComputer::plot(const ForceField  *pd,
             {
                 continue;
             }
-            forces.resize(top.nAtoms(), rvnul);
             // Open outfile
             std::string filename = gmx::formatString("%s_%s.xvg",
                                                      interactionTypeToString(itype).c_str(),
@@ -312,7 +309,10 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-
+                    std::vector<gmx::RVec> forces;
+                    gmx::RVec rvnul = { 0, 0, 0 };
+                    forces.resize(top.nAtoms(), rvnul);
+                    size_t jatom = top.nAtoms()/2;
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.001;
@@ -320,7 +320,7 @@ void ForceComputer::plot(const ForceField  *pd,
                     for(int i = 0; i < nsteps; i++)
                     {
                         double x = r0+i*delta;
-                        coordinates[1][0] = x;
+                        coordinates[jatom][0] = x;
                         rr.push_back(x);
                         energies.clear();
                         for(size_t k = 0; k < top.nAtoms(); k++)
@@ -368,6 +368,9 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    std::vector<gmx::RVec> forces;
+                    gmx::RVec rvnul = { 0, 0, 0 };
+                    forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -386,6 +389,9 @@ void ForceComputer::plot(const ForceField  *pd,
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    std::vector<gmx::RVec> forces;
+                    gmx::RVec rvnul = { 0, 0, 0 };
+                    forces.resize(top.nAtoms(), rvnul);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -403,6 +409,9 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    std::vector<gmx::RVec> forces;
+                    gmx::RVec rvnul = { 0, 0, 0 };
+                    forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -420,6 +429,9 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    std::vector<gmx::RVec> forces;
+                    gmx::RVec rvnul = { 0, 0, 0 };
+                    forces.resize(top.nAtoms(), rvnul);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
