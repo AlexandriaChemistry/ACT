@@ -36,6 +36,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
@@ -184,10 +185,18 @@ void B2Data::aggregate(CommunicationRecord *cr)
     }
 }
     
-void B2Data::addData(int iTemp, int index,
+void B2Data::addData(size_t iTemp, size_t index,
                      double exp_U12, double exp_F0, double exp_F1,
                      gmx::RVec exp_tau0, gmx::RVec exp_tau1)
 {
+    if (iTemp >= exp_U12_.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("iTemp = %zu, should be less than %zu", iTemp, exp_U12_.size()).c_str()));
+    }
+    if (index >= exp_U12_[iTemp].size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index, exp_U12_[iTemp].size()).c_str()));
+    }
     exp_U12_[iTemp][index]    += exp_U12;
     exp_F2_[0][iTemp][index]  += exp_F0;
     exp_F2_[1][iTemp][index]  += exp_F1;

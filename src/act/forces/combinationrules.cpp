@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -406,8 +406,16 @@ ForceFieldParameterMap evalCombinationRule(int                                  
         const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
         auto ieps = ivdw.find(cepsilon)->second.value();
         auto jeps = jvdw.find(cepsilon)->second.value();
-        auto igam = ivdw.find(cgamma)->second.value();
-        auto jgam = jvdw.find(cgamma)->second.value();
+        double igam = 0;
+        double jgam = 0;
+        if (ivdw.end() != ivdw.find(cgamma))
+        {
+            igam = ivdw.find(cgamma)->second.value();
+        }
+        if (jvdw.end() != jvdw.find(cgamma))
+        {
+            jgam = jvdw.find(cgamma)->second.value();
+        }
         double isig = 0, jsig = 0;
         if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
         {

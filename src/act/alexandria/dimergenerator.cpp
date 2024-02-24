@@ -109,6 +109,10 @@ void DimerGenerator::finishOptions()
     {
         ndist_ = 1+std::round((maxdist_-mindist_)/binWidth_);
     }
+    else
+    {
+        binWidth_ = (maxdist_-mindist_)/(ndist_);
+    }
 }
 
 static void dump_coords(const char                                *outcoords,
