@@ -98,7 +98,7 @@ public:
      * \param[in] exp_tau0 Exp weighted Torque on molecule 0
      * \param[in] exp_tau1 Exp weighted Torque on molecule 1
      */
-    void addData(int iTemp, int index,
+    void addData(size_t iTemp, size_t index,
                  double exp_U12, double exp_F0, double exp_F1,
                  gmx::RVec exp_tau0, gmx::RVec exp_tau1);
 

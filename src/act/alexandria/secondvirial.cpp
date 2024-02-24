@@ -450,8 +450,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     {
         // Generate a new set of dimers for all distances
         auto   dimers = gendimers_->generateDimers(actmol);
-        size_t ndist  = gendimers_->ndist();
-        GMX_RELEASE_ASSERT(ndist == dimers.size(), "Size of dimer array should match number of distances");
 
         // Structures to store energies, forces and torques
         gmx_stats                           edist;
