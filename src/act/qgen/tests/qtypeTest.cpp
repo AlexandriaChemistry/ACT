@@ -177,7 +177,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 {
                     alg = ChargeGenerationAlgorithm::Custom;
                 }
-                actmol.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+                actmol.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces, true);
                 
                 std::vector<double> q;
                 auto myatoms = actmol.atomsConst();

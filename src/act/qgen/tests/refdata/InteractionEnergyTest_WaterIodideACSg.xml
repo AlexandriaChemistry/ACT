@@ -4,15 +4,15 @@
   <Int Name="qtotSize">4</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">4</Int>
-    <Real>-0.50598769119203146</Real>
-    <Real>0.25299384559601573</Real>
-    <Real>0.25299384559601573</Real>
+    <Real>-0.50598769119203135</Real>
+    <Real>0.25299384559601568</Real>
+    <Real>0.25299384559601568</Real>
     <Real>-1</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">0</Real>
   <Real Name="Molecule 2 charge">-1</Real>
-  <Real Name="InteractionEnergy">-15.956799808884512</Real>
-  <Real Name="Coulomb">-15.129212946565644</Real>
+  <Real Name="InteractionEnergy">-15.956799808884398</Real>
+  <Real Name="Coulomb">-15.129212946565531</Real>
   <Real Name="Polarization">0</Real>
   <Real Name="Dispersion">-0.85801796634326344</Real>
   <Real Name="Repulsion">0.030431104024387423</Real>

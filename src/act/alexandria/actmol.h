@@ -429,6 +429,7 @@ public:
      * \param[in]  qcustom   Custom (user-provided) charges
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
+     * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
     immStatus GenerateCharges(const ForceField          *pd,
                               const ForceComputer       *forceComp,
@@ -436,7 +437,8 @@ public:
                               qType                      qtype,
                               const std::vector<double> &qcustom,
                               std::vector<gmx::RVec>    *coords,
-                              std::vector<gmx::RVec>    *forces);
+                              std::vector<gmx::RVec>    *forces,
+                              bool                       updateQprops = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
@@ -457,14 +459,12 @@ public:
      *
      * \param[in] pd   The force field   
      * \param[in] iqm  Determine whether to allow exp or QM results or both for each property
-     * \param[in] T    The temperature to use. -1 allows any T.
      * \param[in]  watoms  Weight for the potential on the atoms in 
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
     immStatus getExpProps(const ForceField                           *pd,
                           const std::map<MolPropObservable, iqmType> &iqm,
-                          double                                      T,
                           real                                        watoms = 0,
                           int                                         maxESP = 100);
     

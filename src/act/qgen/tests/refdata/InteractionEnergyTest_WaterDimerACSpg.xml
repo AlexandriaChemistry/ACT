@@ -19,9 +19,9 @@
   </Sequence>
   <Real Name="Molecule 1 charge">-3.3306690738754696e-16</Real>
   <Real Name="Molecule 2 charge">-2.2204460492503131e-16</Real>
-  <Real Name="InteractionEnergy">13.290640216705469</Real>
-  <Real Name="Coulomb">-0.92361413808771431</Real>
-  <Real Name="Polarization">-0.37005948357512353</Real>
+  <Real Name="InteractionEnergy">13.290640216706379</Real>
+  <Real Name="Coulomb">-0.92361413808765747</Real>
+  <Real Name="Polarization">-0.37005948357513108</Real>
   <Real Name="Dispersion">-3.738431425616739</Real>
   <Real Name="Repulsion">18.322745263983961</Real>
 </ReferenceData>

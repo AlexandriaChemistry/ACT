@@ -82,7 +82,7 @@ static bool dump_molecule(FILE              *fp,
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::CHARGE, iqmType::QM }
         };
-        actmol.getExpProps(&pd, iqm, 0.0, 0.0, 100);
+        actmol.getExpProps(&pd, iqm, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {

@@ -103,7 +103,7 @@ void QtypeProps::computeCoC()
 {
     if (atomNumber_.size() != x_.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu x %zu elements.",
+        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu coords %zu elements.",
                                                        atomNumber_.size(), x_.size()).c_str()));
     }
     int atntot = 0;
@@ -220,7 +220,7 @@ bool QtypeProps::hasMultipole(MolPropObservable mpo) const
     return (multipoles_.find(mpo) != multipoles_.end());
 }
 
-const std::vector<double> &QtypeProps::getMultipole(MolPropObservable mpo) const
+const std::vector<double> QtypeProps::getMultipole(MolPropObservable mpo) const
 {
     auto mf = multipoles_.find(mpo);
     if (mf == multipoles_.end())
@@ -257,6 +257,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     
     forceComp->compute(pd, top, &coords, &forces, &energies, field);
     setQ(top->atoms());
+    setX(coords);
     calcMoments();
     auto mpo = MolPropObservable::DIPOLE;
     if (!hasMultipole(mpo))
