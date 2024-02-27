@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -1527,7 +1527,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                "Frequencies (cm^-1)", qmref, alex,
                lsq_freq, oenv);
     print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
-               "Electrostatic Potential (Hartree/e)", qmref, alex,
+               "Electrostatic Potential (kJ/mol e)", qmref, alex,
                lsq_esp, oenv);
     print_corr(opt2fn_null("-qcorr", filenm.size(), filenm.data()),
                "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
