@@ -36,7 +36,7 @@
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">4</Int>
-    <Real>842.74874621586366</Real>
+    <Real>842.74874621586355</Real>
     <Real>842.74874621586366</Real>
     <Real>1164.7945708301256</Real>
     <Real>2383.6163225664691</Real>
@@ -52,11 +52,11 @@
   <Real Name="Delta H form (kJ/mol)">1253.9912086432028</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">156.05323190748459</Real>
   <Real Name="Standard entropy -    Rotation  (J/mol K)">60.46609213105355</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">1.6671630856030024</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">1.6671630856030031</Real>
   <Real Name="Standard entropy -       Total  (J/mol K)">218.18648712414114</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471692120587631</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">8.3144614137250876</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">5.8466588466921898</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">5.8466588466921907</Real>
   <Real Name="Heat capacity cV -       Total (J/mol K)">26.632812381004907</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184350057532018</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">2.4789566705021349</Real>

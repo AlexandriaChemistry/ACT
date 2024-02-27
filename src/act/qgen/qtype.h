@@ -232,7 +232,7 @@ class QtypeProps
      * \return The multipole values
      * \throws with invalid input
      */
-    const std::vector<double> &getMultipole(MolPropObservable mpo) const;
+    const std::vector<double> getMultipole(MolPropObservable mpo) const;
 
     /*! \brief Set quadrupole tensor
      * \param[in] quad The quadrupole tensor

@@ -811,7 +811,7 @@ size_t MolGen::Read(FILE                                *fp,
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                imm = actmol.getExpProps(pd, iqmMap, 0.0, 0.0, 100);
+                imm = actmol.getExpProps(pd, iqmMap, 0.0, 100);
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
@@ -831,7 +831,7 @@ size_t MolGen::Read(FILE                                *fp,
                         std::vector<double> dummy;
                         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                         imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                     qtype, dummy, &coords, &forces);
+                                                     qtype, dummy, &coords, &forces, true);
                     }
                 }
                 if (immStatus::OK != imm)
@@ -1016,7 +1016,7 @@ size_t MolGen::Read(FILE                                *fp,
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                     std::vector<double> dummy;
                     imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                 qtype, dummy, &coords, &forces);
+                                                 qtype, dummy, &coords, &forces, true);
                 }
             }
             if (cr_->isMiddleMan())

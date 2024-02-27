@@ -356,7 +356,7 @@ int gentop(int argc, char *argv[])
                 { MolPropObservable::POTENTIAL, iqmType::QM },
                 { MolPropObservable::CHARGE,    iqmType::QM }
             };
-            actmol->getExpProps(&pd, iqm, 0.0, 0.0, maxpot);
+            actmol->getExpProps(&pd, iqm, 0.0, maxpot);
             auto fragments  = actmol->fragmentHandler();
             auto topologies = fragments->topologies();
             if (fragments->setCharges(qmap))
@@ -379,14 +379,14 @@ int gentop(int argc, char *argv[])
                         myq.push_back(my_atof(q.c_str(), "custom q"));
                     }
                     imm = actmol->GenerateCharges(&pd, forceComp, ChargeGenerationAlgorithm::Custom,
-                                                  qtype, myq, &coords, &forces);
+                                                  qtype, myq, &coords, &forces, true);
                 }
                 else if (genCharges)
                 {
                     // Finally generate charges
                     auto alg   = pd.chargeGenerationAlgorithm();
                     fprintf(stderr, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
-                    imm = actmol->GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+                    imm = actmol->GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces, true);
                 }
                 else
                 {

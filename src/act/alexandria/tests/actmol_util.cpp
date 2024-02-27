@@ -58,7 +58,7 @@ void initACTMol(const char          *molname,
                 imm = mm.getExpProps(pd, iqmMap, 0);
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
                 mps->push_back(mm);
             }
         }
