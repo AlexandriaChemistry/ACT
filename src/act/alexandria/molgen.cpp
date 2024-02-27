@@ -182,7 +182,6 @@ bool MolGen::checkOptions(FILE                        *logFile,
         }
     }
     auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
-    fprintf(stderr, "Charges file '%s'\n", charge_fn ? charge_fn : "");
     if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
     {
         std::string w("ERROR: The combination of supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
