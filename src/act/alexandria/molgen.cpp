@@ -154,7 +154,9 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
-          "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " }
+          "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " },
+        { "-maxpot", FALSE, etINT, { &maxpot_},
+          "Fraction of ESP points to use when training on it. Number given in percent." }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
 }
@@ -811,7 +813,7 @@ size_t MolGen::Read(FILE                                *fp,
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                imm = actmol.getExpProps(pd, iqmMap, 0.0, 100);
+                imm = actmol.getExpProps(pd, iqmMap, 0.0, maxpot_);
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
@@ -1001,7 +1003,7 @@ size_t MolGen::Read(FILE                                *fp,
             std::vector<gmx::RVec> coords = actmol.xOriginal();
             if (immStatus::OK == imm)
             {
-                imm = actmol.getExpProps(pd, iqmMap, 0);
+                imm = actmol.getExpProps(pd, iqmMap, 0, maxpot_);
             }
             if (immStatus::OK == imm)
             {
