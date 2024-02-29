@@ -265,6 +265,8 @@ private:
     double                          ener_boltz_temp_ = 0;
     //! Fraction of ESP points to read (in percent)
     int                             maxpot_ = 100;
+    //! Weight for the potential on the atoms in training on ESP. Should be 0 in most cases.
+    double                          watoms_ = 0;
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.

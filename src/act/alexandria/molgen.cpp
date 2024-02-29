@@ -156,7 +156,9 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
           "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " },
         { "-maxpot", FALSE, etINT, { &maxpot_},
-          "Fraction of ESP points to use when training on it. Number given in percent." }
+          "Fraction of ESP points to use when training on it. Number given in percent." },
+        { "-watoms", FALSE, etREAL, { &watoms_},
+          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
 }
@@ -813,7 +815,7 @@ size_t MolGen::Read(FILE                                *fp,
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                imm = actmol.getExpProps(pd, iqmMap, 0.0, maxpot_);
+                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
@@ -1003,7 +1005,7 @@ size_t MolGen::Read(FILE                                *fp,
             std::vector<gmx::RVec> coords = actmol.xOriginal();
             if (immStatus::OK == imm)
             {
-                imm = actmol.getExpProps(pd, iqmMap, 0, maxpot_);
+                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
             }
             if (immStatus::OK == imm)
             {
