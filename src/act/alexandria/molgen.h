@@ -263,6 +263,8 @@ private:
     double                          zetaDiff_ = 2;    
     //! Boltzmann weighting temperature of energies, if larger than zero
     double                          ener_boltz_temp_ = 0;
+    //! Fraction of ESP points to read (in percent)
+    int                             maxpot_ = 100;
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
