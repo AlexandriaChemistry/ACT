@@ -1213,8 +1213,10 @@ class ActOpenMMSim:
             elif (force.getName() in [ "RBTorsionForce", "PeriodicTorsionForce" ] and
                   0 == force.getNumTorsions()):
                 self.del_force(force)
-            elif (force.getName() == "CMMotionRemover" and force.getFrequency() <= 0):
-                self.del_force(force)
+            elif force.getName() == "CMMotionRemover":
+                force.setFrequency(self.sim_params.getInt('commremoval_frequency', 10))
+                if force.getFrequency() <= 0:
+                    self.del_force(force)
 
     def print_force_settings(self):
         for force in self.system.getForces():
