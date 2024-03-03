@@ -114,7 +114,7 @@ public:
      * \param[in]  actmol  The description of the two fragments
      * \return The coordinate sets
      */
-    std::vector<std::vector<gmx::RVec>>  generateDimers(const ACTMol *actmol);
+    std::vector<std::vector<gmx::RVec>> generateDimers(const ACTMol *actmol);
     /*! \brief Do the actual generation for many dimers.
      * Note that the memory usage can be significant (many Gb).
      * 

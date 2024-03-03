@@ -228,47 +228,45 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
-void ReRunner::rerun(FILE                        *logFile,
-                     const ForceField            *pd,
-                     const ACTMol                *actmol,
-                     bool                         userqtot,
-                     double                       qtot,
-                     bool                         verbose,
-                     bool                         oneH)
+//void ReRunner::rerun(FILE                        *logFile,
+//                   const ForceField            *pd,
+//                   const ACTMol                *actmol,
+//                   bool                         userqtot,
+//                   double                       qtot,
+//                   bool                         verbose,
+//                   bool                         oneH)
+static std::vector<std::vector<gmx::RVec>> read_dimers(const ForceField  *pd,
+                                                       const char        *trajname,
+                                                       bool               userqtot,
+                                                       double            *qtot)
 {
-    std::vector<std::vector<gmx::RVec> > dimers;
-    std::string          method, basis;
-    int                  maxpot = 100;
-    int                  nsymm  = 1;
-    const char          *molnm  = "";
-    if (verbose && debug)
-    {
-        print_memory_usage(debug);
-    }
-    if (!trajname_ || strlen(trajname_) == 0)
-    {
-        printf("No trajectory passed. Not doing any rerun.\n");
-        return;
-    }
     std::vector<MolProp> mps;
-    std::string tname(trajname_);
+    std::string tname(trajname);
     auto pos = tname.find(".xml");
     if (pos != std::string::npos && tname.size() == pos+4)
     {
         // Assume this is a molprop file
-        MolPropRead(trajname_, &mps);
+        MolPropRead(trajname, &mps);
     }
     else
     {
         // Read compounds if we have a trajectory file
-        matrix box;
-        if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
+        //        matrix box;
+        //if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
+        //             &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
+        matrix      box = {{ 0 }};
+        std::string method, basis;
+        int         maxpot = 100;
+        int         nsymm  = 1;
+        const char *molnm  = "MOL";
+        if (!readBabel(pd, trajname, &mps, molnm, molnm, "", &method,
+                       &basis, maxpot, nsymm, "Opt", userqtot, qtot, false, box))
         {
-            fprintf(stderr, "Could not read compounds from %s\n", trajname_);
-            return;
+            fprintf(stderr, "Could not read compounds from %s\n", trajname);
+            return {};
         }
     }
+    std::vector<std::vector<gmx::RVec> > dimers;
     for(size_t i = 0; i < mps.size(); i++)
     {
         auto exper = mps[i].experimentConst();
@@ -286,6 +284,22 @@ void ReRunner::rerun(FILE                        *logFile,
             dimers.push_back(xx);
         }
     }
+    return dimers;
+}
+
+void ReRunner::rerun(FILE             *logFile,
+                     const ForceField *pd,
+                     const ACTMol     *actmol,
+                     bool              userqtot,
+                     double            qtot,
+                     bool              verbose)
+{
+    if (!trajname_ || strlen(trajname_) == 0)
+    {
+        printf("No trajectory passed. Not doing any rerun.\n");
+        return;
+    }
+    auto dimers = read_dimers(pd, trajname_, userqtot, &qtot);
     if (logFile)
     {
         fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
@@ -363,14 +377,13 @@ void ReRunner::rerun(FILE                        *logFile,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (debug)
+            if (logFile && verbose)
             {
-                fprintf(debug, " r %g", rcom);
+                fprintf(logFile, " r %g", rcom);
                 for (auto &EE: einter)
                 {
-                    fprintf(debug, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
+                    fprintf(logFile, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
                 }
-                fprintf(debug, "\n");
             }
             edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
@@ -382,7 +395,6 @@ void ReRunner::rerun(FILE                        *logFile,
             {
                 fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
             }
-            fprintf(logFile, "\n");
         }
         if (verbose)
         {
