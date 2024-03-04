@@ -55,9 +55,10 @@ nbmethod = {
     }
 
 constrmethod = {
-    'HBonds':  HBonds,
-    'HAngles': HAngles,
-    'None': None
+    'AllBonds': AllBonds,
+    'HBonds':   HBonds,
+    'HAngles':  HAngles,
+    'None':     None
     }
 
 # indices (XML files have to follow this order)
@@ -1101,10 +1102,6 @@ class ActOpenMMSim:
                 if self.debug:
                     self.txt.write("iatom %d jatom %d\n" % ( iatom, jatom ))
 
-                # Check for shell exclusions first
-                if (self.polarizable and ((jatom, iatom) in self.core_shell or ((iatom, jatom) in self.core_shell))):
-                    continue
-
                 # And get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
@@ -1171,6 +1168,7 @@ class ActOpenMMSim:
         self.bond_force = None
         cbfname = 'CustomBondForce'
         hbfname = 'HarmonicBondForce'
+        # pairs without constraints
         for bond_force in self.system.getForces():
             if  bond_force.getName() in [ cbfname, hbfname ]:
                 if self.verbose:
@@ -1186,6 +1184,10 @@ class ActOpenMMSim:
                         self.txt.write("DBG: bondinfo {}\n".format(bondinfo))
                     self.bonds.append((bondinfo[0], bondinfo[1]))
                 self.bond_force = bond_force
+        # pairs with constraints
+        for index in range(self.system.getNumConstraints()):
+            iatom, jatom, _ = self.system.getConstraintParameters(index)
+            self.bonds.append((iatom, jatom))
         if self.debug:
             for b in self.bonds:
                 self.txt.write("bond %d %d\n" % ( b[0], b[1] ))
