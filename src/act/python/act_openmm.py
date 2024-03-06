@@ -645,13 +645,18 @@ class ActOpenMMSim:
         ################################################
         plform = self.sim_params.getStr('usePlatform')
         self.platform = Platform.getPlatformByName(plform)
-        if 'CUDA' == plform:
-            properties = {'CudaPrecision': 'single'}
-            self.usePrecisionCuda = self.sim_params.getStr('usePrecisionCuda')
+        if 'CUDA' == plform or 'OpenCL' == plform:
+            self.usePrecision = self.sim_params.getStr('usePrecision')
         elif not "Reference" == plform:
             if self.platform.supportsDoublePrecision():
                 self.txt.write("Setting precision to double\n")
-                self.platform.setPropertyValue("Precision", "double")
+                self.usePrecision = "double"
+            else:
+                self.txt.write("Setting precision to single\n")
+                self.usePrecision = "single"
+        else:
+            self.txt.write("Setting precision to single\n")
+            self.usePrecision = "single"
         self.txt.write("Using OpenMM version %s\n" % self.platform.getOpenMMVersion())
         self.txt.write("Integration time step %g ps\n" % self.dt)
 
@@ -1325,6 +1330,7 @@ class ActOpenMMSim:
         #### Simulation setup ####
         self.simulation = Simulation(self.topology, self.system, self.integrator, self.platform)
         self.simulation.context.setPositions(self.positions)
+        self.platform.setPropertyValue(self.simulation.context, "Precision", self.usePrecision)
 
         #### Set positions of shell system to almost zero) ####
         #### the shell displacement is necessary for the LJPME to work, otherwise an error is thrown:
