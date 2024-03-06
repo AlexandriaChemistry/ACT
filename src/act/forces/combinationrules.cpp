@@ -197,6 +197,8 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
     const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
     const std::string cdelta(lj14_7_name[lj14_7DELTA]);
+    const std::string caqt(lj14_7_name[lj14_7AQT]);
+    const std::string cbqt(lj14_7_name[lj14_7BQT]);
     bool haveDelta = F_GBHAM == ftype || F_LJ14_7 ==ftype;
     bool haveGamma = haveDelta || F_WBHAM == ftype;
     switch (i)

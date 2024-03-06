@@ -1019,6 +1019,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
             std::map<InteractionType, const char *> terms = { 
                 { InteractionType::COULOMB, "Coul." },
                 { InteractionType::POLARIZATION, "Pol." },
+                { InteractionType::CHARGETRANSFER, "QT." },
                 { InteractionType::DISPERSION, "Disp." },
                 { InteractionType::REPULSION, "Rep." } };
             for(auto &term : terms)

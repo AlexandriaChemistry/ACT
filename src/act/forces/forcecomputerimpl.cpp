@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -158,7 +158,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
 {
     double erep  = 0;
     double edisp = 0;
-
+    double eqt   = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto &b : pairs)
@@ -167,12 +167,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
         auto &params    = b->params();
         auto sigma      = params[lj14_7SIGMA_IJ];
         auto epsilon    = params[lj14_7EPSILON_IJ];
-        if (0 == epsilon)
-        {
-            continue;
-        }
-        auto gamma      = params[lj14_7GAMMA_IJ];
-        auto delta      = params[lj14_7DELTA_IJ];
+        real f147       = 0;
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -181,24 +176,44 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
-        real rstar      = dr2*rinv/sigma;
-        real delta1     = delta + 1;
-        real gamma1     = gamma + 1;
-        real deltars    = delta + rstar;
-        real repfac     = epsilon * std::pow( (delta1/deltars), 7);
-        real eerep      = repfac * (gamma1/(std::pow((rstar), 7) + gamma ));
-        real eedisp     = -2 * repfac;
-        //real f147       = (epsilon * (std::pow( ((delta + 1 )/( (rstar) + delta)   ), 7) )* ( ((1 + gamma)/( (std::pow((rstar), 7)) + gamma )) -2 )              ); 
-        real gamrstar7  = gamma + std::pow(rstar, 7);
-        real f147       = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
+        real eerep = 0, eedisp = 0;
+        if (epsilon > 0)
+        {
+            auto gamma      = params[lj14_7GAMMA_IJ];
+            auto delta      = params[lj14_7DELTA_IJ];
+            real rstar      = dr2*rinv/sigma;
+            real delta1     = delta + 1;
+            real gamma1     = gamma + 1;
+            real deltars    = delta + rstar;
+            real repfac     = epsilon * std::pow( (delta1/deltars), 7);
+            eerep           = repfac * (gamma1/(std::pow((rstar), 7) + gamma ));
+            eedisp          = -2 * repfac;
+            real gamrstar7  = gamma + std::pow(rstar, 7);
+            f147            = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
 
-        if (debug)
-        {    
-            fprintf(debug, "ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n", ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta);
+            if (debug)
+            {
+                fprintf(debug, "ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n",
+                        ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta);
+            }
+            erep     += eerep;
+            edisp    += eedisp;
         }
-        erep     += eerep;
-        edisp    += eedisp;
-
+        // Charge transfer correction, according to Eqn. 20, Walker et al. https://doi.org/10.1002/jcc.26954
+        real aqt    = params[lj14_7AQT_IJ];
+        if (aqt > 0)
+        {
+            real bqt   = params[lj14_7BQT_IJ];
+            auto eeqt  = -aqt*std::exp(-bqt*dr2*rinv);
+            if (debug)
+            {
+                fprintf(debug, "r  %g  eeqt %g erep %g edisp %g total %g epsilon %g\n", dr2*rinv, eeqt,
+                        eerep, eedisp, eeqt+eerep+eedisp, epsilon);
+            }
+            auto ffqt  = bqt*eeqt;
+            f147      += ffqt;
+            eqt       += eeqt;
+        }
         real fbond  = f147*rinv;
         for (int m = 0; (m < DIM); m++)
         {
@@ -207,6 +222,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
             f[indices[1]][m] -= fij;
         }
     }
+    energies->insert({InteractionType::CHARGETRANSFER, eqt});
     energies->insert({InteractionType::REPULSION, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }

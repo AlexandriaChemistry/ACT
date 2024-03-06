@@ -49,7 +49,8 @@ namespace alexandria
 
     extern const char *wbh_name[wbhNR];
 
-    enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3, lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };
+    enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3, lj14_7AQT = 4, lj14_7BQT = 5,
+           lj14_7SIGMA_IJ = 6, lj14_7EPSILON_IJ = 7, lj14_7GAMMA_IJ = 8, lj14_7DELTA_IJ = 9, lj14_7AQT_IJ = 10, lj14_7BQT_IJ = 11, lj14_7NR = 12 };
 
     extern const char *lj14_7_name[lj14_7NR];
 
