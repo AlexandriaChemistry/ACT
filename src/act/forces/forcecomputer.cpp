@@ -338,6 +338,11 @@ void ForceComputer::plot(const ForceField  *pd,
                             {
                                 ener = energies[irep] + energies[idsp];
                             }
+                            auto iqt = InteractionType::CHARGETRANSFER;
+                            if (energies.find(iqt) != energies.end())
+                            {
+                                ener += energies[iqt];
+                            }
                         }
                         fprintf(fp, "%10g  %10g\n", x, ener);
                         vv.push_back(ener);

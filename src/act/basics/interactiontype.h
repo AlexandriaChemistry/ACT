@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -61,6 +61,8 @@ enum class InteractionType
     COULOMB,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Charge transfer correction energy
+    CHARGETRANSFER,
     //! Potential energy, sum over the above
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.

@@ -51,7 +51,9 @@ const std::map<const char *, const char *> mycr = {
     { "-cr_sig",  "sigma"   },
     { "-cr_rmin", "rmin"    },
     { "-cr_gam",  "gamma"   },
-    { "-cr_del",  "delta"   }
+    { "-cr_del",  "delta"   },
+    { "-cr_aqt",  "aqt"     },
+    { "-cr_bqt",  "bqt"     }
 };
 
 void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)

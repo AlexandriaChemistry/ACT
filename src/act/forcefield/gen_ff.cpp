@@ -86,7 +86,8 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     while (tr.readLine(&tmp))
     {
         auto ptr = split(tmp, '|');
-        if (37 == ptr.size())
+        // There should be at least 37 columns, but could be more.
+        if (37 <= ptr.size())
         {
             if (value.empty())
             {
@@ -323,7 +324,8 @@ int gen_ff(int argc, char*argv[])
     }
 
     auto table = read_atomtypes(opt2fn("-f", fnm.size(), fnm.data()));
-    printf("There are %zu atom types in the force field\n", table.size());
+    printf("There are %zu atom types in the force field with %zu properties.\n",
+           table.size(), table.begin()->second.size());
 
     auto aprops = readAtomProps();
     printf("There are %zu element properties\n", aprops.size());
@@ -439,8 +441,8 @@ int gen_ff(int argc, char*argv[])
             case F_LJ8_6:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
-           case F_LJ14_7:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
+            case F_LJ14_7:
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" }, { "aqt", "kJ/mol" }, { "bqt", "1/nm"} };
                 break;
             case F_WBHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
