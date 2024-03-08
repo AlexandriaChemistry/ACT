@@ -136,8 +136,6 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
                           std::vector<t_filenm> *filenm)
 {
     std::vector<t_pargs> pa = {
-        { "-traj",   FALSE, etSTR,  {&trajname_},
-          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-T1",     FALSE, etREAL, {&T1_},
           "Starting temperature for second virial calculations." },
         { "-T2",     FALSE, etREAL, {&T2_},
@@ -228,6 +226,7 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
+<<<<<<< HEAD
 void ReRunner::rerun(FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
@@ -285,6 +284,8 @@ void ReRunner::rerun(FILE                        *logFile,
     return dimers;
 }
 
+=======
+>>>>>>> b62f17adb (Implemented reading trajectory in b2 calculations.)
 void ReRunner::rerun(FILE             *logFile,
                      const ForceField *pd,
                      const ACTMol     *actmol,
@@ -292,16 +293,17 @@ void ReRunner::rerun(FILE             *logFile,
                      double            qtot,
                      bool              verbose)
 {
-    if (!trajname_ || strlen(trajname_) == 0)
+    if (!gendimers_->hasTrajectory())
     {
         printf("No trajectory passed. Not doing any rerun.\n");
         return;
     }
-    auto dimers = read_dimers(pd, trajname_, userqtot, &qtot);
+    std::vector<std::vector<gmx::RVec>> dimers;
+    gendimers_->read(pd, userqtot, &qtot, &dimers);
     if (logFile)
     {
         fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
-                dimers.size(), trajname_);
+                dimers.size(), gendimers_->trajname());
         fflush(logFile);
     }
     if (verbose && debug)
@@ -411,6 +413,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                      FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
+                     bool                         userqtot,
+                     double                       qtot,
                      int                          maxdimer,
                      bool                         verbose,
                      const std::vector<t_filenm> &fnm)
@@ -420,14 +424,31 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         actmol->fragmentHandler()->topologies()[0]->mass(),
         actmol->fragmentHandler()->topologies()[1]->mass()
     };
-    // Do this in parallel and with little memory
-    int ndimer = maxdimer / cr->size();
-    int nrest  = maxdimer % cr->size();
+    int ndimer = 0;
+    int nrest  = 0;
+    std::vector<std::vector<gmx::RVec>> dimers;
+    if (gendimers_->hasTrajectory())
+    {
+        if (cr->isMaster())
+        {
+            gendimers_->read(pd,  userqtot, &qtot, &dimers);
+        }
+        maxdimer = dimers.size();
+        ndimer   = 1;
+    }
+    else
+    {
+        // Make sure that different nodes have different random number generator seed.
+        gendimers_->setSeed(gendimers_->seed() + 2*cr->rank());
+        // Do this in parallel and with little memory
+        ndimer = maxdimer / cr->size();
+        nrest  = maxdimer % cr->size();
+    }
     if (cr->isMaster() && nrest != 0)
     {
         if (logFile)
         {
-            fprintf(logFile, "Will generate %d dimers on helpers and %d on master.\n", ndimer, nrest);
+            fprintf(logFile, "Will generate or read %d dimers on helpers and %d on master.\n", ndimer, nrest);
         }
         ndimer = nrest;
     }
@@ -435,8 +456,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     {
         fprintf(logFile, "Will generate %d dimers on each node.\n", ndimer);
     }
-    // Make sure that different nodes have different random number generator seed.
-    gendimers_->setSeed(gendimers_->seed() + 2*cr->rank());
+    if (logFile)
+    {
+        fflush(logFile);
+    }
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
     //Standard mersenne_twister_engine seeded with rd()
@@ -462,8 +485,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     for(int idimer = 0; idimer < ndimer; idimer++)
     {
         // Generate a new set of dimers for all distances
-        auto   dimers = gendimers_->generateDimers(actmol);
-
+        if (!gendimers_->hasTrajectory())
+        {
+            dimers = gendimers_->generateDimers(actmol);
+        }
         // Structures to store energies, forces and torques
         gmx_stats                           edist;
         std::map<InteractionType, double>   energies;

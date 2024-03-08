@@ -77,8 +77,6 @@ private:
     //! GROMACS output stuff
     gmx_output_env_t   *oenv_        = nullptr;
                
-    //! Trajectory name
-    const char         *trajname_    = "";
     //! Temperature to start
     double              T1_          = 300;
     //! Final temperature
@@ -130,9 +128,6 @@ public:
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }
 
-    //! \return the trajectory name
-    const char *trajectoryFileName() const { return trajname_; }
-    
     //! \brief Manually set the temperatures
     void setTemperatures(double T1, double T2, double deltaT) { T1_ = T1; T2_ = T2; deltaT_ = deltaT; }
     
@@ -147,32 +142,26 @@ public:
      */
     void setEInteraction(bool eInter) { eInter_ = eInter; }
 
-    //! \return Whether to do a rerun
-    bool doRerun() const { return trajname_ && strlen(trajname_) > 0; }
-
     /*! \brief Do the rerunning with different options
-     * \param[in] logFile  File pointer to print info
-     * \param[in] pd       Force field structure
-     * \param[in] actmol   Structure with molecule info
-     * \param[in] userqtot Whether the user has explicitly set the qtot value below
-     * \param[in] qtot     The total charge for when reading from a trajectory
-     * \param[in] verbose  Whether or not to print a lot
-     * \param[in] oneH     Whether to map all H to one atom type
+     * \param[in] logFile        File pointer to print info
+     * \param[in] pd             Force field structure
+     * \param[in] actmol         Structure with molecule info
+     * \param[in] userqtot       Whether the user has explicitly set the qtot value below
+     * \param[in] qtot           The total charge for when reading from a trajectory
+     * \param[in] verbose        Whether or not to print a lot
      */
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
-               //bool                         userqtot,
-               //double                       qtot,
-               bool                         verbose
-               //,bool                         oneH
-               );
+               bool                         verbose);
 
     /*! \brief Compute second virial coefficient including QM corrections
      * \param[in] cr       Communication Record for parallel calcs
      * \param[in] logFile  File pointer to print info (may be nullptr)
      * \param[in] pd       Force field structure
      * \param[in] actmol   Structure with molecule info
+     * \param[in] userqtot Whether the user has explicitly set the qtot value below
+     * \param[in] qtot     The total charge for when reading from a trajectory
      * \param[in] maxdimer Number of dimers to generate (if any)
      * \param[in] verbose  Whether or not to print a lot
      * \param[in] fnm      The filenames
@@ -181,6 +170,8 @@ public:
                FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
+               bool                         userqtot,
+               double                       qtot,
                int                          maxdimer,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);
