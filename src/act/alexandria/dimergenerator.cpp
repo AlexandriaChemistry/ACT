@@ -36,7 +36,9 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "act/alexandria/babel_io.h"
 #include "act/alexandria/rotator.h"
+#include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
@@ -58,12 +60,14 @@ void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
           "Minimum com-com distance to generate dimers for." },
         { "-maxdist", FALSE, etREAL, {&maxdist_},
           "Maximum com-com distance to generate dimers for." },
-        { "-seed", FALSE, etINT, {&seed_},
-          "Random number seed to generate monomer orientations, applied if seed is larger than 0. If not, the built-in default will be used. For the Sobol quasi-random sequence it is advised to leave the seed at 0." },
+        { "-dimerseed", FALSE, etINT, {&dimerseed_},
+          "Random number seed to generate monomer orientations, applied if dimerseed is larger than 0. If not, the built-in default will be used. For the Sobol quasi-random sequence it is advised to leave the dimerseed at 0." },
         { "-rotalg", FALSE, etSTR, {&rotalg_},
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
-          "Low-level debugging of routines. Gives complete information only when run on a single processor." }
+          "Low-level debugging of routines. Gives complete information only when run on a single processor." },
+        { "-traj",   FALSE, etSTR,  {&trajname_},
+          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." }
     };
     for(auto &pp : mypa)
     {
@@ -93,17 +97,17 @@ DimerGenerator::~DimerGenerator()
 
 void DimerGenerator::setSeed(int seed)
 {
-    seed_      = seed;
-    sobolSeed_ = seed_;
+    dimerseed_ = seed;
+    sobolSeed_ = seed;
 }
 
 void DimerGenerator::finishOptions()
 {
-    if (seed_ > 0)
+    if (dimerseed_ > 0)
     {
-        gen_.seed(seed_);
+        gen_.seed(dimerseed_);
     }
-    sobolSeed_ = seed_;
+    sobolSeed_ = dimerseed_;
     rot_ = new Rotator(rotalg_, debugGD_);
     if (0 == ndist_)
     {
@@ -170,6 +174,54 @@ void DimerGenerator::generate(FILE                                *logFile,
     }
 
 }
+
+void DimerGenerator::read(const ForceField                    *pd,
+                          bool                                 userqtot,
+                          double                              *qtot,
+                          std::vector<std::vector<gmx::RVec>> *coords)
+{
+    std::vector<MolProp> mps;
+    std::string tname(trajname_);
+    auto pos = tname.find(".xml");
+    if (pos != std::string::npos && tname.size() == pos+4)
+    {
+        // Assume this is a molprop file
+        MolPropRead(trajname_, &mps);
+    }
+    else
+    {
+        // Read compounds if we have a trajectory file
+        matrix      box = {{ 0 }};
+        std::string method, basis;
+        int         maxpot = 100;
+        int         nsymm  = 1;
+        const char *molnm  = "MOL";
+        if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
+                       &basis, maxpot, nsymm, "Opt", userqtot, qtot, false, box))
+        {
+            printf("Could not read compounds from %s\n", trajname_);
+            return;
+        }
+    }
+    for(size_t i = 0; i < mps.size(); i++)
+    {
+        auto exper = mps[i].experimentConst();
+        for(const auto &ep : exper)
+        {
+            std::vector<gmx::RVec> xx;
+            for(const auto &epx: ep.getCoordinates())
+            {
+                xx.push_back(epx);
+                if (pd->polarizable())
+                {
+                    xx.push_back(epx);
+                }
+            }
+            coords->push_back(xx);
+        }
+    }
+}
+
 
 std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol *actmol)
 {
