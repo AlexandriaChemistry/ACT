@@ -118,8 +118,8 @@ int simulate(int argc, char *argv[])
     sch.add_options(&pa, &fnm);
     sch.add_MD_options(&pa);
     DimerGenerator           gendimers;
-    // We do not want to see those options in simulate, just in b2.
-    // gendimers.addOptions(&pa);
+
+    gendimers.addOptions(&pa, &fnm);
     ReRunner                 rerun(false);
     rerun.addOptions(&pa, &fnm);
     int status = 0;
@@ -300,7 +300,7 @@ int simulate(int argc, char *argv[])
         }
         auto eMin = eMinimizeStatus::OK;
         /* Generate output file for debugging if requested */
-        if (strlen(rerun.trajectoryFileName()) > 0)
+        if (gendimers.hasTrajectory())
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);

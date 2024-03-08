@@ -62,7 +62,7 @@ private:
     //! Maximum com-com distance (nm)
     double maxdist_     =  4.0;
     //! (Quasi-) random number seed
-    int    seed_        =    0;
+    int    dimerseed_   =    0;
     //! Internal copy of seed
     long long int sobolSeed_ = 0;
     //! Low-level debugging
@@ -77,6 +77,8 @@ private:
     std::uniform_real_distribution<double> dis_;
     //! Rotator
     Rotator                               *rot_ = nullptr;
+    //! Trajectory name
+    const char                            *trajname_    = "";
 public:
     //! Constructor
     DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
@@ -95,7 +97,7 @@ public:
     void finishOptions();
 
     //! Get the original seed
-    int seed() const { return seed_; }
+    int seed() const { return dimerseed_; }
 
     //! Set a new seed
     void setSeed(int seed);
@@ -103,11 +105,16 @@ public:
     //! Return the number of distancea
     int ndist() const { return ndist_; }
 
+    //! Return trajectory name
+    const char *trajname() const { return trajname_; }
     //! Return max distance
     double maxdist() const { return maxdist_; }
 
     //! Return bin width
     double binwidth() const { return binWidth_; }
+
+    //! Return whether or not there is a trajectory to read
+    bool hasTrajectory() const { return trajname_ && strlen(trajname_) > 0; }
 
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.
@@ -130,6 +137,17 @@ public:
                   int                                  maxdimer,
                   std::vector<std::vector<gmx::RVec>> *coords,
                   const char                          *outcoords);
+
+    /*! \brief Read all the dimers at once from a file. 
+     * \param[in]    pd       ForceField structures
+     * \param[in]    userqtot Whether or not the user has passed a qtot variable
+     * \param[inout] qtot     Total charges
+     * \param[out]   coords   The coordinates. If empty reading failed or the variable was empty
+     */
+    void read(const ForceField                    *pd,
+              bool                                 userqtot,
+              double                              *qtot,
+              std::vector<std::vector<gmx::RVec>> *coords);
 };
 
 } // namespace alexandria
