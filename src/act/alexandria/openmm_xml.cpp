@@ -1116,7 +1116,7 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
 static void writeCombinationRules(FILE *fp,
                                   const std::map<const std::string, CombRule> cmap)
 {
-    fprintf(fp, "combination_rule =");
+    fprintf(fp, "combinationRule =");
     for(const auto &cm : cmap)
     {
         fprintf(fp, " %s %s", cm.first.c_str(), combinationRuleName(cm.second).c_str());
@@ -1129,8 +1129,8 @@ void OpenMMWriter::writeDat(const std::string &fileName,
 {
     std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
         { InteractionType::COULOMB, 
-          { { "chargetype", "charge_distribution" },
-            { "epsilonr", "dielectric_constant" },
+          { { "chargetype", "chargeDistribution" },
+            { "epsilonr", "dielectricConstant" },
             { "nexcl", "nexclqq" } } },
         { InteractionType::VDW,
           { {  "nexcl", "nexclvdw" } } }

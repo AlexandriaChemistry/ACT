@@ -870,7 +870,7 @@ class ActOpenMMSim:
             if self.debug:
                 self.txt.write("index %d" % index)
                 for pp in range(len(vdwParamNames)):
-                    self.txt.write(" %s %g" % ( vdwParamNames[pp], ppp[pp]._value ) )
+                    self.txt.write(" %s %g" % ( vdwParamNames[pp], ppp[pp] ) )
                 self.txt.write("\n")
 
     def do_force_settings(self, force):
@@ -967,7 +967,7 @@ class ActOpenMMSim:
                 self.custom_coulomb.addParticle([charge])
             else:
                 self.custom_coulomb.addParticle([charge, zeta])
-            self.txt.write("Adding %s charge %g to particle %d\n" % ( self.qdist, charge._value, index ))
+            self.txt.write("Adding %s charge %g to particle %d\n" % ( self.qdist, charge, index ))
 
         # Van der Waals, is our custom potential minus the default LJ.
         self.makeVdWFunc() 
@@ -1076,12 +1076,16 @@ class ActOpenMMSim:
 
         qq_excl_corr = None
         if not self.useOpenMMForce:
-            myexpression =  ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ( ONE_4PI_EPS0 ) )
+            if self.qdist == "Point":
+                myexpression =  ( "(%s*charge1*charge2/r)" % ( ONE_4PI_EPS0 ) )
+            else:
+                myexpression =  ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ( ONE_4PI_EPS0 ) )
             qq_excl_corr = openmm.CustomBondForce(myexpression)
             qq_excl_corr.setName("CoulombExclusionCorrection")
             qq_excl_corr.addPerBondParameter("charge1")
             qq_excl_corr.addPerBondParameter("charge2")
-            qq_excl_corr.addPerBondParameter("zeta")
+            if self.qdist != "Point":
+                qq_excl_corr.addPerBondParameter("zeta")
             self.txt.write("Made qq_excl_corr\n")
         
         nexclvdw = self.sim_params.getInt("nexclvdw")
@@ -1128,7 +1132,10 @@ class ActOpenMMSim:
                 else:
                     zeta = ((allParam["zeta"][0] * allParam["zeta"][1])/
                             (math.sqrt(allParam["zeta"][0]**2 + allParam["zeta"][1]**2)))
-                qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], zeta])
+                if self.qdist == "Point":
+                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1]])
+                else:
+                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], zeta])
                 if self.debug:
                     self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g\n" %
                                    ( iatom, jatom, allParam["charge"][0], allParam["charge"][1], zeta))
