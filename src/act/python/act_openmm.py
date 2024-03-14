@@ -645,7 +645,7 @@ class ActOpenMMSim:
         self.steps              = self.sim_params.getInt('steps')
         self.nonbondedMethod           = nbmethod[self.sim_params.getStr('nonbondedMethod')]
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
-        self.col_freq                  = self.sim_params.getFloat('collision_frequency', 0.1) 
+        self.col_freq                  = self.sim_params.getFloat('collisionFrequency', 0.1) 
         self.maxDrudeDist              = self.sim_params.getFloat('maxDrudeDistance', 0.02)
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
@@ -952,16 +952,13 @@ class ActOpenMMSim:
                 myparams = self.nonbondedforce.getParticleParameters(index)
             else:
                 myparams = self.customnb.getParticleParameters(index)
-            if self.vdw == VdW.WBHAM:
-                [_, _, _, charge, zeta] = myparams
-            elif self.vdw == VdW.GBHAM:
-                [_, _, _, _, charge, zeta] = myparams
-            elif self.vdw == VdW.LJ14_7:
-                [_,  _, _, _, charge, zeta] = myparams
-            elif self.vdw == VdW.LJ12_6:
-                [charge,  _, _ ] = myparams
+            if self.vdw == VdW.LJ12_6:
+                charge = myparams[0]._value
+            elif len(myparams) == len(VdWdict[self.vdw]["params"])+2:
+                charge = myparams[-2]
+                zeta   = myparams[-1]
             else:
-                sys.exit("Not implemented what to do")
+                sys.exit("Not implemented how to extract charge (and zeta)")
             self.charges.append(charge)
             if "Point" == self.qdist:
                 self.custom_coulomb.addParticle([charge])
