@@ -862,11 +862,11 @@ class ActOpenMMSim:
         # https://manual.gromacs.org/documentation/2019/reference-manual/functions/long-range-vdw.html
         self.vdw_pme_corr_expression = None
         if self.nonbondedMethod == LJPME:
-            self.vdw_pme_corr_expression = ( " - (1 - exp(-(%s*r)^2)*(1 + (%s*r)^2 + 0.5*(%s*r)^4))*c6/r^6;" % ( self.alphaPME, self.alphaPME, self.alphaPME))
-            self.vdw_pme_corr_expression += ( " c6 = 4*epsilon*sigma^6 ")
+            self.vdw_pme_corr_expression = ( "((1 - exp(-(%s*r)^2)*(1 + (%s*r)^2 + 0.5*(%s*r)^4))*c6/r^6)" %
+                                             ( self.alphaPME, self.alphaPME, self.alphaPME) )
             if self.debug:
                 self.txt.write("DBG: vdw_pme_corr_expression '%s'\n" % self.vdw_pme_corr_expression)
-            expression += self.vdw_pme_corr_expression
+            expression += " - "+self.vdw_pme_corr_expression
         expression += ";"
         self.vdw_expression  = expression
         if self.debug:
@@ -880,10 +880,14 @@ class ActOpenMMSim:
             expression += ( 'gamma3   = (gamma/(3+gamma));')
         for pp in vdwParamNames:
             expression += ( '%s    = %s;' % ( pp, combdict[pp] ))
+        if self.nonbondedMethod == LJPME:
+            expression += ( 'c6 = sqrt(c61*c62);' )
         self.custom_vdw = openmm.CustomNonbondedForce(expression)
         self.custom_vdw.setName("VanderWaals"+dictVdW[self.vdw])
         for pp in vdwParamNames:
             self.custom_vdw.addPerParticleParameter(pp)
+        if self.nonbondedMethod == LJPME:
+            self.custom_vdw.addPerParticleParameter("c6")
 
         if self.debug:
             for i in range(self.custom_vdw.getNumPerParticleParameters()):
@@ -895,12 +899,17 @@ class ActOpenMMSim:
             else:
                 ppp = self.customnb.getParticleParameters(index)
             ppp = ppp[:len(vdwParamNames)]
+            # Compute the c6 for LJPME correction
+            if self.nonbondedMethod == LJPME:
+                ppp.append(4*epsilon._value*sigma._value**6)
 
             self.custom_vdw.addParticle(ppp)
             if self.debug:
                 self.txt.write("index %d" % index)
-                for pp in range(len(vdwParamNames)):
-                    self.txt.write(" %s %g" % ( vdwParamNames[pp], ppp[pp] ) )
+                myparm = self.custom_vdw.getParticleParameters(index)
+                for mypp in range(self.custom_vdw.getNumPerParticleParameters()):
+                    self.txt.write(" %s %g" % ( self.custom_vdw.getPerParticleParameterName(mypp),
+                                                myparm[mypp] ) )
                 self.txt.write("\n")
 
     def do_force_settings(self, force):
@@ -1003,7 +1012,8 @@ class ActOpenMMSim:
         for force in [ self.custom_vdw, self.custom_coulomb ]:
             self.do_force_settings(force)
             # Finally add it to the system forces. Well done!
-            self.add_force_group(force, False, True)
+            nb_direct = False
+            self.add_force_group(force, nb_direct, True)
             self.system.addForce(force)
 
     #################################################
@@ -1062,10 +1072,9 @@ class ActOpenMMSim:
         # Now corrections for PME, dispersion only. TODO: This needs the erf function!
         vdw_pme_corr = None
         if self.nonbondedMethod == LJPME and not self.useOpenMMForce and self.vdw_pme_corr_expression:
-            vdw_pme_corr = openmm.CustomBondForce("-1*%s" % self.vdw_pme_corr_expression)
+            vdw_pme_corr = openmm.CustomBondForce("%s" % self.vdw_pme_corr_expression)
             vdw_pme_corr.setName("VanderWaalsPMEExclusionCorrection")
-            vdw_pme_corr.addPerBondParameter("sigma")
-            vdw_pme_corr.addPerBondParameter("epsilon")
+            vdw_pme_corr.addPerBondParameter("c6")
 
         if False:
             if self.nonbondedMethod == LJPME:
@@ -1171,17 +1180,15 @@ class ActOpenMMSim:
             # Always add the PME exclusion, independent of our own exclusion settings
             # And get the parameters from the Custom NB force
             if vdw_pme_corr:
-                *iLJ12_6, = self.nonbondedforce.getParticleParameters(iatom)
-                *jLJ12_6, = self.nonbondedforce.getParticleParameters(jatom)
-                myParam = {}
-                for parameter, idx in parameter_indices[VdW.LJ12_6].items():
-                    if "charge" == parameter:
-                        continue
-                    pij = [ iLJ12_6[idx]._value, jLJ12_6[idx]._value ]
-                    myParam[parameter] = math.sqrt(pij[0]*pij[1])
-                vdw_pme_corr.addBond(iatom, jatom, [ myParam["sigma"], myParam["epsilon"] ])
+                iLJ12_6 = self.nonbondedforce.getParticleParameters(iatom)
+                jLJ12_6 = self.nonbondedforce.getParticleParameters(jatom)
+                # Use geometric combination rule
+                sigma   = math.sqrt(iLJ12_6[1]._value*jLJ12_6[1]._value)
+                epsilon = math.sqrt(iLJ12_6[2]._value*jLJ12_6[2]._value)
+                c6 = 4*epsilon*sigma**6
+                vdw_pme_corr.addBond(iatom, jatom, [ c6 ])
                 if self.debug:
-                    self.txt.write("Adding vdw_pme_corr iatom %d jatom %d sigma %g epsilon %g\n" % ( iatom, jatom, myParam["sigma"], myParam["epsilon"] ))
+                    self.txt.write("Adding vdw_pme_corr iatom %d jatom %d sigma %g epsilon %g c6 %g\n" % ( iatom, jatom, sigma, epsilon, c6 ))
             if vdw_excl_corr and self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
 
                 if (not self.real_exclusion(nexclvdw, iatom, jatom) and 
@@ -1207,6 +1214,7 @@ class ActOpenMMSim:
                         self.txt.write("%s\n" % msg)
 
         # Finally single particle self interaction
+        # This is not needed. Throw away?
         if qq_pme_self:
             for index in range(self.nonbondedforce.getNumParticles()):
                 [ charge, _, _ ] = self.nonbondedforce.getParticleParameters(index)
@@ -1297,6 +1305,13 @@ class ActOpenMMSim:
             self.txt.write("%s Group: %d, PBC: %s\n" % ( force.getName(), 
                                                          force.getForceGroup(),
                                                          str(force.usesPeriodicBoundaryConditions())))
+            if hasattr(force, 'getEnergyFunction'):
+                self.txt.write('Expression {0}\n'.format(force.getEnergyFunction()))
+            if hasattr(force, 'getNumPerParticleParameters'):
+                self.txt.write("Parameter")
+                for i in range(force.getNumPerParticleParameters()):
+                    self.txt.write(" %d %s" % ( i, force.getPerParticleParameterName(i)))
+                self.txt.write("\n")
             if hasattr(force, 'getNonbondedMethod'):
                 self.txt.write('NonbondedMethod {0}\n'.format(force.getNonbondedMethod()))
             if hasattr(force, 'getCutoffDistance'):
@@ -1427,6 +1442,16 @@ class ActOpenMMSim:
             for np in new_pos:
                 self.txt.write("%10.5f  %10.5f  %10.5f\n" % ( np[0]._value, np[1]._value, np[2]._value ))
 
+    def remove_unused_forces(self):
+        if not self.useOpenMMForce and not self.nonbondedMethod in [ PME, LJPME ]:
+            # Remove the default Non-Bonded with OpenMM
+            self.txt.write("Will remove standard (OpenMM) NonBondedForce\n")
+            self.del_force(self.nonbondedforce, False)
+        # TODO check whether this if statement should be flipped.
+        if self.customnb:
+            self.txt.write("Will remove standard CustomNonBondedForce\n")
+            self.del_force(self.customnb)
+
     def update_forces(self):
         for myforce in self.system.getForces():
             if myforce.getName() in self.fgnumber and not myforce.getName() in [ "CMMotionRemover", "MonteCarloAnisotropicBarostat", "MonteCarloBarostat" ]:
@@ -1434,13 +1459,6 @@ class ActOpenMMSim:
                     self.txt.write("Will update force %s\n" % myforce.getName())
                 myforce.updateParametersInContext(self.simulation.context)
         
-        if not self.useOpenMMForce:
-            # Remove the default Non-Bonded with OpenMM
-            self.txt.write("Will remove standard (OpenMM) NonBondedForce\n")
-            self.del_force(self.nonbondedforce, False)
-        # TODO check whether this if statement should be flipped.
-        if self.customnb:
-            self.del_force(self.customnb)
         
     def dhvap(self, epot:float)->float:
         if None == self.emonomer:
@@ -1562,6 +1580,8 @@ class ActOpenMMSim:
         self.init_forces()
         self.make_forces()
         self.add_excl_correction()
+        self.remove_unused_forces()
+        self.print_force_settings()
         self.init_simulation()
         self.update_forces()
         self.update_positions()
