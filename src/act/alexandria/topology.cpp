@@ -503,9 +503,19 @@ void Topology::fixExclusions(TopologyEntryVector                 *pairs,
                 continue;
             }
             // Check whether these particles have shells
-            for(size_t si : atoms_[ai].shells())
+            auto sv_i = atoms_[ai].vsites();
+            for(auto si : atoms_[ai].shells())
             {
-                for(size_t sj : atoms_[aj].shells())
+                sv_i.push_back(si);
+            }
+            for(size_t si : sv_i)
+            {
+                auto sv_j = atoms_[aj].vsites();
+                for(auto sj : atoms_[aj].shells())
+                {
+                    sv_j.push_back(sj);
+                }
+                for(size_t sj : sv_j)
                 {
                     // See whether this interaction exists
                     auto it = pairs->begin();
@@ -536,14 +546,18 @@ void Topology::fixExclusions(TopologyEntryVector                 *pairs,
             // Each vsite has two or more cores
             for (size_t core : atoms_[i].cores())
             {
-                std::vector<int> core_and_shells = atoms_[core].shells();
-                core_and_shells.push_back(core);
-                for (size_t cas : core_and_shells)
+                std::vector<int> cores_shells_vsites = atoms_[core].shells();
+                for(auto vs : atoms_[core].vsites())
+                {
+                    cores_shells_vsites.push_back(vs);
+                }
+                cores_shells_vsites.push_back(core);
+                for (size_t csv : cores_shells_vsites)
                 {
                     // Loop over the exclusions for this itype and core or its shells
-                    for (size_t jj = 0; jj < exclusions[cas].size(); ++jj)
+                    for (size_t jj = 0; jj < exclusions[csv].size(); ++jj)
                     {
-                        size_t aj = exclusions[cas][jj];
+                        size_t aj = exclusions[csv][jj];
                         // Now check the pair list
                         auto it   = pairs->begin();
                         while (pairs->end() != it)
@@ -1045,6 +1059,20 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
     return num_v3;
 }
 
+void Topology::addVsitesToCores()
+{
+    for(size_t i = 0; i < atoms_.size(); i++)
+    {
+        if (eptVSite == atoms_[i].pType())
+        {
+            for(const auto cj : atoms_[i].cores())
+            {
+                atoms_[cj].addVsite(i);
+            }
+        }
+    }
+}
+
 void Topology::renumberAtoms(const std::vector<int> &renumber)
 {
     for(auto &myEntry: entries_)
@@ -1254,6 +1282,8 @@ void Topology::build(const ForceField             *pd,
     {
         setEntryIdentifiers(pd, nn.first);
     }
+    // Add vsite ids to cores
+    addVsitesToCores();
 
     // Now make angles etc.
     makeAngles(pd, *x, LinearAngleMin);
@@ -1345,6 +1375,19 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
                 }
             }
             break;
+        case InteractionType::VSITE2:
+            {
+                for(auto &b : myEntry.second)
+                {
+                    auto a = b->atomIndices();
+                    for (int m = 0; m < 2; m++)
+                    {
+                        exclusions[a[m]].push_back(a[2]);
+                        exclusions[a[2]].push_back(a[m]);
+                    }
+                }
+            }
+            break;
         case InteractionType::POLARIZATION:
             {
                 for(auto &b : myEntry.second)
@@ -1369,7 +1412,28 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
                 }
             }
             break;
+        case InteractionType::VSITE3:
+        case InteractionType::VSITE3OUT:
+            {
+                for(auto &b : myEntry.second)
+                {
+                    auto a = b->atomIndices();
+                    for (int m = 0; m < 3; m++)
+                    {
+                        exclusions[a[m]].push_back(a[3]);
+                        exclusions[a[3]].push_back(a[m]);
+                    }
+                }
+            }
+            break;
+        case InteractionType::VDW:
+        case InteractionType::COULOMB:
+        case InteractionType::PROPER_DIHEDRALS:
+        case InteractionType::IMPROPER_DIHEDRALS:
+            break;
         default:
+            GMX_THROW(gmx::InternalError(gmx::formatString("Interaction type %s not handled when making exclusions.",
+                                                           interactionTypeToString(myEntry.first).c_str()).c_str()));
             break;
         }
     }

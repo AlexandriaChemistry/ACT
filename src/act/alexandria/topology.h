@@ -68,7 +68,9 @@ private:
     int              pType_;
     //! My shell particles, if any
     std::vector<int> shells_;
-    //! My atom particle, if any,or -1
+    //! My vsite particles, if any
+    std::vector<int> vsites_;
+    //! My atom particles, if any. Both VSite and Shell particles have "cores"
     std::vector<int> cores_;
     //! The atomic number
     int              atomicNumber_;
@@ -112,6 +114,9 @@ public:
     //! \return the list of shells for this particle
     const std::vector<int> &shells() const { return shells_; }
 
+    //! \return the list of vsites for this particle
+    const std::vector<int> &vsites() const { return vsites_; }
+
     //! \return the list of shells for this particle for editing
     std::vector<int> *shellsPtr() { return &shells_; }
 
@@ -119,6 +124,11 @@ public:
      * \param[in] index The index
      */
     void addShell(int index) { shells_.push_back(index); }
+
+    /*! \brief Add a vsite particle index
+     * \param[in] index The index
+     */
+    void addVsite(int index) { vsites_.push_back(index); }
 
     /*! \brief Set the core particle index
      * \param[in] index The index
@@ -238,6 +248,8 @@ private:
      */
     std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
                                                      int                  nrexcl);
+    //! \brief Add vsite identifiers to the cores such that they can be used for exclusions
+    void addVsitesToCores();
 
  public:
     Topology()
