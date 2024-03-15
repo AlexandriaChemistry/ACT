@@ -3815,6 +3815,7 @@
   </interaction>
   <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
     <option key="combination_rule" value="Geometric"/>
+    <option key="nexcl" value="2"/>
     <parameterlist identifier="Ar">
       <parameter type="epsilon" unit="kJ/mol" value="0.515" uncertainty="0" minimum="0.03" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -4316,6 +4317,7 @@
   <interaction type="VSITE2" function="vsite2" canswap="false"/>
   <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
+    <option key="nexcl" value="2"/>
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="7" uncertainty="0" minimum="2" maximum="12" ntrain="1" mutability="Bounded" nonnegative="yes"/>
