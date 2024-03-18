@@ -897,7 +897,7 @@ class ActOpenMMSim:
             if self.useOpenMMForce or not self.customnb:
                 ppp = [ sigma._value, epsilon._value ]
             else:
-                ppp = self.customnb.getParticleParameters(index)
+                ppp = list(self.customnb.getParticleParameters(index))
             ppp = ppp[:len(vdwParamNames)]
             # Compute the c6 for LJPME correction
             if self.nonbondedMethod == LJPME:
