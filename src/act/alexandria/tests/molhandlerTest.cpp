@@ -120,7 +120,7 @@ protected:
         matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
-                                maxpot, nsymm, jobtype, userqtot, &qtot, false, box);
+                                maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges

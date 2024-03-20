@@ -200,7 +200,7 @@ int simulate(int argc, char *argv[])
         int                  nsymm  = 1;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
-                       false, box))
+                       false, box, false))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
             status = 1;

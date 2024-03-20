@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -908,6 +908,7 @@ bool readBabel(const ForceField                 *pd,
                double                          *qtot,
                bool                             addHydrogen,
                matrix                           box,
+               bool                             oneH,
                bool                             renameAtoms)
 {
     std::vector<OpenBabel::OBMol *> mols;
@@ -921,7 +922,7 @@ bool readBabel(const ForceField                 *pd,
     std::map<std::string, std::string> g2a;
     if (renameAtoms)
     {
-        gaffToAlexandria("", &g2a);
+        gaffToAlexandria("", &g2a, oneH);
     }
     AlexandriaMols amols;
     
