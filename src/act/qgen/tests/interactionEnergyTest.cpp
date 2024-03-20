@@ -148,7 +148,7 @@ protected:
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
-                              jobtype, userqtot, &qtot_babel, false, box));
+                              jobtype, userqtot, &qtot_babel, false, box, true));
 
         if (trustObCharge)
         {

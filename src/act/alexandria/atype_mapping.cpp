@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,7 +42,8 @@
 #include "gromacs/utility/textreader.h"
     
 void gaffToAlexandria(const std::string                  &filenm,
-                      std::map<std::string, std::string> *g2a)
+                      std::map<std::string, std::string> *g2a,
+                      bool                                oneH)
 {
     g2a->clear();
     std::string myfilenm(filenm);
@@ -59,7 +60,13 @@ void gaffToAlexandria(const std::string                  &filenm,
         {
             if (g2a->find(words[0]) == g2a->end())
             {
-                g2a->insert(std::pair<std::string, std::string>(words[0], words[1]));
+                std::string hh("h");
+                std::string w1 = words[1];
+                if (oneH && w1.find(hh) == 0)
+                {
+                    w1.assign("h");
+                }
+                g2a->insert(std::pair<std::string, std::string>(words[0], w1));
             }
             else
             {

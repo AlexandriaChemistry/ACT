@@ -145,7 +145,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                                   molname.c_str(), molname.c_str(),
                                   conf, &method, &basis, maxpot,
                                   nsymm, jobtype, userqtot,
-                                  &qtot_babel, false, box));
+                                  &qtot_babel, false, box, true));
 
             if (trustObCharge)
             {

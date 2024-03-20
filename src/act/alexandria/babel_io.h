@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -126,6 +126,7 @@ bool readBabel(const alexandria::ForceField     *pd,
                double              *qtot,
                bool                 addHydrogen,
                matrix               box,
+               bool                 oneH,
                bool                 renameAtoms = true);
 
 /*! \brief Add atomtype to a Molprop object
