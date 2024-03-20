@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -55,6 +55,8 @@ enum class eQgen {
     NOSUPPORT,
     //! Problem solving the matrix equation
     MATRIXSOLVER,
+    //! Incorrect molecule
+    INCORRECTMOL,
     //! Unknown error
     ERROR
 };
@@ -175,10 +177,6 @@ private:
     std::vector<int>                 nonFixed_;
     //! The atoms/shells not to optimize charges for
     std::vector<int>                 fixed_;
-    //! Reverse mapping of the charges
-    std::map<int, int>               nfToGromacs_;
-    //! Mapping from nonFixed particles to shells
-    std::map<int, int>               myShell_;
     //! The row number for each of the atoms
     std::vector<int>                 row_;
     //! The atomic charges
@@ -228,11 +226,11 @@ private:
      * \param[out] delta_eta the bond hardness
      */
     void getBccParams(const ForceField *pd,
-                      int            ai,
-                      int            aj,
-                      double         bondorder,
-                      double        *delta_chi,
-                      double        *delta_eta);
+                      int               ai,
+                      int               aj,
+                      double            bondorder,
+                      double           *delta_chi,
+                      double           *delta_eta);
     
     /*! \brief Store the atoms in their destination structure
      * \param[inout] atoms The array with atom properties
@@ -259,11 +257,13 @@ private:
     /*! \brief Compute shell potential at atom position
      * This takes into account all the shells in the molecule.
      * \param[in] top_ndx  Atom number
+     * \param[in] atoms    Atom information
      * \param[in] epsilonr Relative  dielectric constant
      * \return The potential
      */
-    double calcJcs(int      top_ndx,
-                   double   epsilonr);
+    double calcJcs(int                         top_ndx,
+                   const std::vector<ActAtom> &atoms,
+                   double                      epsilonr);
     
     /*! \brief Solve the matrix equation to determine charges
      * \param[in] fp File pointer for optional outptu
@@ -295,9 +295,11 @@ private:
     double calcSij(int i, int j);
     
     /*! \brief Compute the right/hand side of the matrix equation
+     * \param[in] atoms    Atom information
      * \param[in] epsilonr The relative dielectric constant
      */
-    void calcRhs(double epsilonr);
+    void calcRhs(const std::vector<ActAtom> &atoms,
+                 double                      epsilonr);
 };
 }
 #endif

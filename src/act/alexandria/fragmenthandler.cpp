@@ -197,6 +197,8 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                                      xx, bonds_[ff]);
                 if (eQgen::OK != eqgen)
                 {
+                    fprintf(stderr, "Failed to generate charges for %s: '%s'\n",
+                            molname.c_str(), QgenAcm_[ff].status());
                     break;
                 }
                 for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
