@@ -32,7 +32,7 @@ void initACTMol(const char          *molname,
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, userqtot,
-                                &qtot, false, box);
+                                &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         if (readOK)
         {

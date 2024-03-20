@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,9 +43,11 @@
  * \param[in]  filenm The name of the file to read from. If empty a
  *                    library file will be read
  * \param[out] g2a    Map for the atom names going from Gaff to Alexandria
+ * \param[in]  oneH   Remap all hydrogens to just h (mainly for testing)
  */
 void gaffToAlexandria(const std::string                  &filenm,
-                      std::map<std::string, std::string> *g2a);
+                      std::map<std::string, std::string> *g2a,
+                      bool                                oneH);
 
 /*! \brief
  * Rename atoms in molprop structure according to the table

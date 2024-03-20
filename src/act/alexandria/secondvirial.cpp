@@ -261,7 +261,7 @@ void ReRunner::rerun(FILE                        *logFile,
         // Read compounds if we have a trajectory file
         matrix box;
         if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box))
+                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, false))
         {
             fprintf(stderr, "Could not read compounds from %s\n", trajname_);
             return;
@@ -804,7 +804,7 @@ int b2(int argc, char *argv[])
         matrix box;
         bool   userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
         if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box))
+                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box, false))
         {
             if (mps.size() > 1)
             {
