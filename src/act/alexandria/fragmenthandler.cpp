@@ -53,15 +53,18 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
     std::vector<bool> atomFound(coordinates.size(), false);
     // Total number of atoms
     natoms_ = 0;
+    bool allWell = true;
     size_t  ff = 0;
     // Copy the coordinates
     std::vector<gmx::RVec> x = coordinates;
-    for(auto f = fragments->begin(); f < fragments->end(); ++f)
+    for(auto f = fragments->begin(); allWell && f < fragments->end(); ++f)
     {
         // First reality check
         if (f->atoms().size() == 0)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No atoms in fragment %zu with formula %s", ff, f->formula().c_str()).c_str()));
+            fprintf(stderr, "No atoms in fragment %zu with formula %s", ff, f->formula().c_str());
+            allWell = false;
+            break;
         }
         // Determine start of each molecule
         int offset = x.size()+1;
@@ -70,9 +73,15 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
             offset = std::min(offset, i);
             if (atomFound[i])
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str()).c_str()));
+                fprintf(stderr, "Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str());
+                allWell = false;
+                break;
             }
             atomFound[i] = true;
+        }
+        if (!allWell)
+        {
+            break;
         }
         // Split bonds
         for(const auto &b : bonds)
@@ -119,18 +128,27 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         // Increase counter
         ff += 1;
     }
-    // Finaly determine molecule boundaries
-    atomStart_.resize(fragments->size(), 0);
-    for(size_t ff = 0; ff < topologies_.size(); ff++)
+    if (allWell)
     {
-        if (0 == ff)
+        // Finaly determine molecule boundaries
+        atomStart_.resize(fragments->size(), 0);
+        for(size_t ff = 0; ff < topologies_.size(); ff++)
         {
-            atomStart_[ff] = 0;
+            if (0 == ff)
+            {
+                atomStart_[ff] = 0;
+            }
+            else
+            {
+                atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
+            }
         }
-        else
-        {
-            atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
-        }
+    }
+    else
+    {
+        topologies_.clear();
+        ids_.clear();
+        qtotal_.clear();
     }
 }
 
