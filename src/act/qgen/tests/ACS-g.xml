@@ -26503,7 +26503,7 @@
   <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
     <option key="reference" value="Ghahremanpour2022a"/>
-    <option key="nexcl" value="2"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
