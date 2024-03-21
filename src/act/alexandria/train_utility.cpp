@@ -1320,8 +1320,6 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
 
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
-            std::vector<gmx::RVec> coords = mol->xOriginal();
-            forceComp->generateVsites(mol->topology(), &coords);
 
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
@@ -1330,8 +1328,6 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
                 {
                     // For multipoles, further down.
-                    // TODO: Is this correct? Should not each qp and its resp have their own coordinates?
-                    qp->qPact()->setQandX(mol->topology()->atoms(), coords);
                     auto qi    = i.first;
                     auto qresp = qp->qgenResp();
                     if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
@@ -1396,6 +1392,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             }
 
             // Atomic charges
+            std::vector<gmx::RVec> coords = mol->xOriginal();
             {
                 std::map<InteractionType, double> energies;
                 (void) forceComp->compute(pd, mol->topology(), &coords,
