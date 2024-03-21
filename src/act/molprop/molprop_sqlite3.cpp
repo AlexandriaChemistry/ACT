@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -433,7 +433,7 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
     
 #else
     fprintf(stderr, "No support for sqlite3 database in this executable.\n");
-    fprintf(stderr, "Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
+    fprintf(stderr, "Please rebuild ACT with cmake flag -DGMX_SQLITE3=ON set if you need that.\n");
 #endif
 }
 
