@@ -489,7 +489,14 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         auto aType = pd->findParticleType(fft.first);
         for(int i = 1; i <= fft.second; i++)
         {
-            auto param = fs.findParametersConst(Identifier(fft.first));
+            std::string vdwtype("vdwtype");
+            if (!aType->hasOption(vdwtype))
+            {
+                gmx_fatal(FARGS, "Incorrect force field. No option %s for %s.\n",
+                          vdwtype.c_str(), fft.first.c_str());
+            }
+            auto vdwId = Identifier(aType->optionValue(vdwtype));
+            auto param = fs.findParametersConst(Identifier(vdwId));
             
             std::string type1 = fft.first;
             if (addNumbersToAtomTypes_)
