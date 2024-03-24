@@ -169,8 +169,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     }
 
     // Loop over molecules
-    int ntrain = 0;
-    int nlocal = 0;
+    int nselect = 0;
     auto mymols = molgen_->actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
@@ -178,11 +177,10 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
         {
             continue;
         }
-        ntrain++;
+        nselect++;
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
-            nlocal++;
             std::vector<InteractionType> itUpdate;
             for(auto &io : molgen_->iopt())
             {
@@ -229,17 +227,16 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
         }
     }
-    double chi2epot = targets->find(eRMS::EPOT)->second.chiSquared();
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
     sii_->sumChiSquared(task == CalcDev::Compute, ims);
 
     numberCalcDevCalled_ += 1;
     auto &etot = targets->find(eRMS::TOT)->second;
-    if (etot.chiSquared() == 0 && ntrain > 0)
+    if (etot.chiSquared() == 0 && nselect > 0)
     {
-        printf("Zero total chi squared for %s, for epot it is %g before summation. This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d. %zu devComputers\n",
-               iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal, devComputers_.size());
+        printf("Zero total chi squared for %s, most likely there is no data for %d compound(s).\n",
+               iMolSelectName(ims), nselect);
     }
     
     return etot.chiSquared();
