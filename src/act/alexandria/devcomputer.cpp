@@ -407,9 +407,11 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
                                          std::map<eRMS, FittingTarget>      *targets,
                                          gmx_unused const ForceField        *forcefield)
 {
-    auto   qProps = actmol->qProps();
-    int    ndiff  = 0;
-    double delta  = 0;
+    auto   qProps   = actmol->qProps();
+    int    ndiff    = 0;
+    double delta    = 0;
+    auto   topology = actmol->topology();
+    bool doForce    = forcefield->polarizable() || topology->hasVsites();
     for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
     {
         auto qqm  = qp->qPqmConst();
@@ -417,6 +419,17 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
         if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
         {
             auto qelec = qqm.getMultipole(mpo_);
+            // TODO: Compute this only once if both dipole and quadrupole are used in fitting
+            qact.setQ(*actmol->atoms());
+            if (doForce)
+            {
+                std::vector<gmx::RVec>            forces;
+                std::map<InteractionType, double> energies;
+                auto                              myx = qact.x();
+                forceComputer->compute(forcefield, topology, &myx, &forces, &energies);
+                qact.setX(myx);
+            }
+            qact.calcMoments();
             auto qcalc = qact.getMultipole(mpo_);
             for (size_t mm = 0; mm < qelec.size(); mm++)
             {
