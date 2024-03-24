@@ -247,14 +247,26 @@ static void print_polarizability(FILE              *fp,
 static void analyse_multipoles(FILE                                                        *fp,
                                const std::vector<alexandria::ACTMol>::iterator             &mol,
                                std::map<MolPropObservable, double>                          toler,
-                               std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
+                               std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq,
+                               const ForceField                                            *pd,
+                               const ForceComputer                                         *forceComputer)
 {
+    auto topology = mol->topology();
+    bool doForce  = pd->polarizable() || topology->hasVsites();
     auto qprops = mol->qPropsConst();
     for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
     {
         auto qelec = qp->qPqmConst();
         auto qcalc = qp->qPact();
         qcalc->initializeMoments();
+        if (doForce)
+        {
+            std::vector<gmx::RVec>            forces(topology->nAtoms());
+            std::map<InteractionType, double> energies;
+            auto                              myx = qcalc->x();
+            forceComputer->compute(pd, topology, &myx, &forces, &energies);
+            qcalc->setX(myx);
+        }
         qcalc->calcMoments();
 
         for(auto &mpo : mpoMultiPoles)
@@ -1307,6 +1319,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     std::map<std::string, std::vector<ACTEnergy > > allEinter; 
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
+        auto topology = mol->topology();
         if (mol->support() != eSupport::No)
         {
             auto ims = mol->datasetType();
@@ -1336,7 +1349,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
-                        (void) forceComp->compute(pd, mol->topology(), &myx,
+                        (void) forceComp->compute(pd, topology, &myx,
                                                   &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(mol->atomsConst());
@@ -1362,7 +1375,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 }
             }
             // Charges
-            auto atoms = mol->topology()->atoms();
+            auto atoms = topology->atoms();
             auto lll   = lsqt.find(ims);
             for(size_t ai = 0; ai < atoms.size(); ai++)
             {
@@ -1382,7 +1395,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 }
             }
             // Multipoles
-            analyse_multipoles(fp, mol, multi_toler, &lsq_multi);
+            analyse_multipoles(fp, mol, multi_toler, &lsq_multi, pd, forceComp);
             
             // Polarizability
             if (bPolar)
@@ -1395,7 +1408,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             std::vector<gmx::RVec> coords = mol->xOriginal();
             {
                 std::map<InteractionType, double> energies;
-                (void) forceComp->compute(pd, mol->topology(), &coords,
+                (void) forceComp->compute(pd, topology, &coords,
                                           &forces, &energies);
             }
             printAtoms(fp, &(*mol), coords, forces);
