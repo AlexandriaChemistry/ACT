@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -858,6 +858,28 @@ void ForceField::checkConsistency(FILE *fp) const
         if (nullptr != fp)
         {
             fprintf(fp, "\n");
+        }
+    }
+    const auto itq = InteractionType::COULOMB;
+    if (interactionPresent(itq))
+    {
+        auto fs  = findForcesConst(itq);
+        std::string zeta("zeta");
+        std::string opt("chargetype");
+        if (fs.optionExists(opt) &&
+            name2ChargeType(fs.optionValue(opt)) == ChargeType::Point)
+        {
+            for(const auto &myparam : fs.parametersConst())
+            {
+                for(const auto &param : myparam.second)
+                {
+                    auto myval = param.second.internalValue();
+                    if (param.first == zeta && myval != 0)
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force field specifies Point charges but %s = %g for %s", zeta.c_str(), myval, myparam.first.id().c_str()).c_str()));
+                    }
+                }
+            }
         }
     }
     if (nerror > 0)
