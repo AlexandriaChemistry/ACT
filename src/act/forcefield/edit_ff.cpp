@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -465,8 +466,8 @@ static void plotInteractions(ForceField           *pd,
     }
 }
 
-static void copy_missing(const ForceField     *pdref,
-                         ForceField           *pdout,
+static void copy_missing(const ForceField  *pdref,
+                         ForceField        *pdout,
                          const std::string &analyze,
                          bool               replace)
 {
@@ -527,7 +528,10 @@ static void copy_missing(const ForceField     *pdref,
 
 static void implant_values(const ForceField  *pdref,
                            ForceField        *pdout,
-                           const std::string &analyze)
+                           const std::string &analyze,
+                           const std::string &particle,
+                           const std::string &parameter,
+                           bool               verbose)
 {
     bool found;
     auto myset = findInteractionMap(analyze, &found);
@@ -535,9 +539,6 @@ static void implant_values(const ForceField  *pdref,
     {
         return;
     }
-    printf("Implanting optimized values for %s interactions from %s to %s\n",
-           analyze.c_str(),
-           pdref->filename().c_str(), pdout->filename().c_str());
     
     for(auto &fc : pdref->forcesConst())
     {
@@ -548,28 +549,48 @@ static void implant_values(const ForceField  *pdref,
         }
         if (!pdout->interactionPresent(itype))
         {
-            printf("Cannot find interaction %s in %s, giving up\n",
-                   interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
-            return;
+            if (verbose)
+            {
+                printf("Cannot find interaction %s in %s\n",
+                       interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
+            }
+            continue;
+        }
+        if (verbose)
+        {
+            printf("Will try to implant values for %s interactions from %s to %s\n",
+                   interactionTypeToString(itype).c_str(),
+                   pdref->filename().c_str(), pdout->filename().c_str());
         }
         auto fcout = pdout->findForces(itype);
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            auto myid    = fm.first;
+            auto myatoms = myid.atoms();
+            // If we have a specified atom, it should be in the identifier, if not skip this one
+            if (!particle.empty() && std::find(myatoms.begin(), myatoms.end(), particle) == myatoms.end())
+            {
+                continue;
+            }
             if (fcout->parameterExists(myid))
             {
                 for(auto &fmp : fm.second)
                 {
                     auto pout = fcout->findParameterType(myid, fmp.first);
-                
-                    if (fmp.second.ntrain() > pout->ntrain())
+                    // If we have a specified parameter, it should be that one, if not skip it
+                    if (!parameter.empty() && fmp.first != parameter)
                     {
-                        printf("Parameter %s , interaction %s will be replaced in %s\n",
-                               myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
-                               pdout->filename().c_str());
+                        continue;
+                    }
+
+                    if (fmp.second.ntrain() > 0)
+                    {
+                        printf("Parameter %s for particle %s will be replaced in %s\n",
+                               fmp.first.c_str(), myid.id().c_str(),
+                               interactionTypeToDescription(itype).c_str());
                         pout->copy(fmp.second);
                     }
-                    else
+                    else if (verbose)
                     {
                         printf("Parameter %s , interaction %s will not be replaced in %s, old one has ntrain %d new %d\n",
                                myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
@@ -719,6 +740,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
     gmx_bool     bounds     = false;
+    gmx_bool     verbose    = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -754,7 +776,7 @@ int edit_ff(int argc, char*argv[])
         { "-replace", FALSE, etSTR, {&replace},
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
-          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
         { "-de2d0", FALSE, etBOOL, {&De2D0},
           "This is a hack to copy -De to D0 in the Morse potential" },
         { "-bondenergy", FALSE, etBOOL, {&bondenergy},
@@ -763,6 +785,8 @@ int edit_ff(int argc, char*argv[])
           "Plot many interactions as a function of distance or angle" },
         { "-bcast",   FALSE, etBOOL, {&bcast},
           "Use broadcast rather than send/receive to communicate force field" },
+        { "-v", FALSE, etBOOL, {&verbose},
+          "Print more stuff during processing" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
@@ -804,7 +828,7 @@ int edit_ff(int argc, char*argv[])
             }
             else if (strlen(implant) > 0)
             {
-                implant_values(&pd2, &pd, implant);
+                implant_values(&pd2, &pd, implant, particle, parameter, verbose);
             }
             else
             {
