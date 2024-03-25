@@ -315,7 +315,8 @@ void OptACM::initMaster(const char *fitnessFile)
         );
     }
     terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
-    if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
+    // If maxTestGenerations is enabled and there is something to test as well
+    if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
     {
         if (logFile())
         {
