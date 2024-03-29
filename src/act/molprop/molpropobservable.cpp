@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -61,6 +61,10 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::HF, "HF" }, 
     { MolPropObservable::DELTAE0, "DeltaE0" }, 
     { MolPropObservable::INTERACTIONENERGY, "InteractionEnergy" }, 
+    { MolPropObservable::ELECTROSTATICS, "Electrostatics" },
+    { MolPropObservable::INDUCTION, "Induction" },
+    { MolPropObservable::EXCHANGE, "Exchange" },
+    { MolPropObservable::DISPERSION, "Dispersion" },
     { MolPropObservable::DHFORM, "DeltaHform" }, 
     { MolPropObservable::DGFORM, "DeltaGform" },
     { MolPropObservable::DSFORM, "DeltaSform" },
@@ -86,7 +90,11 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
     { MolPropObservable::POLARIZABILITY,    "Angstrom3" }, 
     { MolPropObservable::HF,                "kJ/mol" }, 
     { MolPropObservable::DELTAE0,           "kJ/mol" }, 
-    { MolPropObservable::INTERACTIONENERGY, "kJ/mol" }, 
+    { MolPropObservable::INTERACTIONENERGY, "kJ/mol" },
+    { MolPropObservable::ELECTROSTATICS,    "kJ/mol" },
+    { MolPropObservable::INDUCTION,         "kJ/mol" },
+    { MolPropObservable::EXCHANGE,          "kJ/mol" },
+    { MolPropObservable::DISPERSION,        "kJ/mol" },
     { MolPropObservable::DHFORM,            "kJ/mol" }, 
     { MolPropObservable::DGFORM,            "kJ/mol" }, 
     { MolPropObservable::DSFORM,            "J/mol K" }, 

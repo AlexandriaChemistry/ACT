@@ -92,7 +92,7 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
     {
         fprintf(debug, "ACT erep: %10g edisp %10g\n", erep, edisp);
     }
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
@@ -146,7 +146,7 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
     {                        
         fprintf(debug, "ACT vvdw_rep: %10g vvdw_disp: %10g\n", erep, edisp); 
     }
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 } 
 
@@ -223,7 +223,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
         }
     }
     energies->insert({InteractionType::CHARGETRANSFER, eqt});
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
@@ -274,7 +274,7 @@ static void computeWBH(const TopologyEntryVector             &pairs,
             }
         }
     }
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
@@ -333,7 +333,7 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
             }
         }
     }
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
@@ -390,7 +390,7 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
             }
         }
     }
-    energies->insert({InteractionType::REPULSION, erep});
+    energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023,2024
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -519,7 +519,7 @@ static void printEnergies(FILE *logFile, int myIter,
     {
         fprintf(logFile, "  %s %.5f", interactionTypeToString(ee.first).c_str(), ee.second);
         if (InteractionType::DISPERSION == ee.first || 
-            InteractionType::REPULSION == ee.first)
+            InteractionType::EXCHANGE == ee.first)
         {
             evdw += ee.second;
         }

@@ -331,7 +331,7 @@ void ForceComputer::plot(const ForceField  *pd,
                         auto ener = energies[itype];
                         if (ener == 0 && InteractionType::VDW == itype)
                         {
-                            auto irep = InteractionType::REPULSION;
+                            auto irep = InteractionType::EXCHANGE;
                             auto idsp = InteractionType::DISPERSION;
                             if (energies.find(irep) != energies.end() &&
                                 energies.find(idsp) != energies.end())
