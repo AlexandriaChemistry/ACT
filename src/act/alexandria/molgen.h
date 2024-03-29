@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -76,6 +76,14 @@ enum class eRMS {
     EPOT,
     //! Interaction energy deviation
     Interaction,
+    //! SAPT component deviation Electrostatics
+    Electrostatics,
+    //! SAPT component deviation Exchange
+    Exchange,
+    //! SAPT component deviation Dispersion
+    Dispersion,
+    //! SAPT component deviation Induction
+    Induction,
     //! Mean square force on the atoms
     Force2,
     //! Deviation of polarizability components
