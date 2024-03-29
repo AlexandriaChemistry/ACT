@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -78,6 +78,14 @@ enum class MolPropObservable {
     DELTAE0,
     //! Interaction energy between fragments
     INTERACTIONENERGY,
+    //! SAPT component Electrostatics
+    ELECTROSTATICS,
+    //! SAPT component Induction
+    INDUCTION,
+    //! SAPT component Exchange
+    EXCHANGE,
+    //! SAPT component Dispersion
+    DISPERSION,
     //! Delta H formation
     DHFORM,
     //! Delta G formation

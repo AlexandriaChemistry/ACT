@@ -6,7 +6,7 @@
   <Real Name="PROPER_DIHEDRALS0.9_act">0</Real>
   <Real Name="IMPROPER_DIHEDRALS0.9_act">0</Real>
   <Real Name="DISPERSION0.9_act">-4.6535051479459346</Real>
-  <Real Name="REPULSION0.9_act">2.6079845206923178</Real>
+  <Real Name="EXCHANGE0.9_act">2.6079845206923178</Real>
   <Real Name="COULOMB0.9_act">-9.3078679839435381</Real>
   <Real Name="EPOT0.9_act">234.09582597217005</Real>
   <Real Name="n2-1_act0.9 fX">572.59794974096815</Real>
@@ -50,7 +50,7 @@
   <Real Name="PROPER_DIHEDRALS1.1_act">0</Real>
   <Real Name="IMPROPER_DIHEDRALS1.1_act">0</Real>
   <Real Name="DISPERSION1.1_act">-1.3959798332259143</Real>
-  <Real Name="REPULSION1.1_act">0.2346944938403589</Real>
+  <Real Name="EXCHANGE1.1_act">0.2346944938403589</Real>
   <Real Name="COULOMB1.1_act">-7.5667275730269594</Real>
   <Real Name="EPOT1.1_act">412.40857247218167</Real>
   <Real Name="n2-1_act1.1 fX">726.88004102495438</Real>

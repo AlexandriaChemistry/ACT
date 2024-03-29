@@ -71,7 +71,7 @@ static void add_energies(const ForceField                        *pd,
 {
     std::map<InteractionType, int> i2f = {
         { InteractionType::EPOT,       F_EPOT },
-        { InteractionType::REPULSION,  F_REPULSION },
+        { InteractionType::EXCHANGE,  F_REPULSION },
         { InteractionType::DISPERSION, F_DISPERSION }
     };
     auto fsc = pd->forcesConst();
