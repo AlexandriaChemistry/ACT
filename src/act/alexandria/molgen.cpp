@@ -71,6 +71,10 @@ std::map<eRMS, const char *> ermsNames = {
     { eRMS::ESP,        "ESP"        },
     { eRMS::EPOT,       "EPOT"       },
     { eRMS::Interaction,"Interaction"},
+    { eRMS::Electrostatics, "Electrostatics" },
+    { eRMS::Exchange,   "Exchange"   },
+    { eRMS::Dispersion, "Dispersion" },
+    { eRMS::Induction,  "Induction"  },
     { eRMS::Force2,     "Force2"     },
     { eRMS::Polar,      "Polar"      },
     { eRMS::TOT,        "TOT"        }
@@ -131,6 +135,14 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_inter",    FALSE, etREAL, {targets->find(eRMS::Interaction)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of interaction energies of multimers from the reference." },
+        { "-fc_elec",    FALSE, etREAL, {targets->find(eRMS::Electrostatics)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the electrostatic component of the interaction energies of multimers from the reference." },
+        { "-fc_disp",    FALSE, etREAL, {targets->find(eRMS::Dispersion)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the dispersion component of the interaction energies of multimers from the reference." },
+        { "-fc_exch",    FALSE, etREAL, {targets->find(eRMS::Exchange)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the exchange component of the interaction energies of multimers from the reference." },
+        { "-fc_induc",    FALSE, etREAL, {targets->find(eRMS::Induction)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the induction component of the interaction energies of multimers from the reference." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." },
         { "-fc_freq",  FALSE, etREAL, {targets->find(eRMS::FREQUENCY)->second.weightPtr()},
@@ -667,6 +679,10 @@ static double computeCost(const ACTMol                         *actmol,
                 w += gmx::square(myexp.NAtom());
                 break;
             case eRMS::Interaction:
+            case eRMS::Electrostatics:
+            case eRMS::Dispersion:
+            case eRMS::Induction:
+            case eRMS::Exchange:
                 // All versus all interactions for dimer and monomers separately
                 w += 2*gmx::square(myexp.NAtom());
                 break;
