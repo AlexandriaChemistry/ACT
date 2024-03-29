@@ -6,7 +6,7 @@
   <Real Name="PROPER_DIHEDRALS_act">48</Real>
   <Real Name="IMPROPER_DIHEDRALS_act">0</Real>
   <Real Name="DISPERSION_act">-40.984814553088832</Real>
-  <Real Name="REPULSION_act">13003.09834336222</Real>
+  <Real Name="EXCHANGE_act">13003.09834336222</Real>
   <Real Name="COULOMB_act">-47.337168868208423</Real>
   <Real Name="EPOT_act">12979.622967769541</Real>
   <Real Name="n2-1_act fX">6157.9696379835968</Real>

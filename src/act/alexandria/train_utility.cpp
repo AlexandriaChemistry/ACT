@@ -1033,7 +1033,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                 { InteractionType::POLARIZATION, "Pol." },
                 { InteractionType::CHARGETRANSFER, "QT." },
                 { InteractionType::DISPERSION, "Disp." },
-                { InteractionType::REPULSION, "Rep." } };
+                { InteractionType::EXCHANGE, "Exch." } };
             for(auto &term : terms)
             {
                 auto tptr = iem->second.find(term.first);

@@ -4,7 +4,7 @@
   <Real Name="BONDS_act">0.0049707080459029385</Real>
   <Real Name="ANGLES_act">0.0021322557372346757</Real>
   <Real Name="DISPERSION_act">-2.7135824572624498</Real>
-  <Real Name="REPULSION_act">4507.6203772160752</Real>
+  <Real Name="EXCHANGE_act">4507.6203772160752</Real>
   <Real Name="COULOMB_act">-34.842308379253822</Real>
   <Real Name="EPOT_act">4470.0715893433417</Real>
   <Real Name="o3-1_act fX">0</Real>

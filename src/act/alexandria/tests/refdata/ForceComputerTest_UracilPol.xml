@@ -5,7 +5,7 @@
   <Real Name="ANGLES_act">29.434308363917996</Real>
   <Real Name="IMPROPER_DIHEDRALS_act">0</Real>
   <Real Name="DISPERSION_act">-10.096019437976086</Real>
-  <Real Name="REPULSION_act">161.05724583689985</Real>
+  <Real Name="EXCHANGE_act">161.05724583689985</Real>
   <Real Name="COULOMB_act">-229.16405312274969</Real>
   <Real Name="POLARIZATION_act">8.8650467399360249</Real>
   <Real Name="EPOT_act">-4818.6193624370653</Real>
