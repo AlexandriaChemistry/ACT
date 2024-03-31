@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -588,9 +588,10 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                                            std::map<eRMS, FittingTarget>     *targets,
                                            const ForceField                  *forcefield)
 {
-    std::vector<ACTEnergy>                                  energyMap;
-    std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap, interactionEnergyMap;
+    std::vector<ACTEnergy>                                              energyMap;
+    std::vector<std::vector<std::pair<double, double> > >               forceMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
+    ACTEnergyMapVector                                                  interactionEnergyMap;
     actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
                             &interactionEnergyMap, &enerComponentMap);
 
@@ -643,29 +644,62 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             }
         }
     }
-    auto ermsi = eRMS::Interaction;
-    auto ti = targets->find(ermsi);
-    if (ti != targets->end() && !interactionEnergyMap.empty())
+    bool                            doInter = false;
+    std::map<eRMS, InteractionType> rmsE    = { 
+        { eRMS::Interaction,    InteractionType::EPOT         },
+        { eRMS::Electrostatics, InteractionType::COULOMB      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION   },
+        { eRMS::Exchange,       InteractionType::EXCHANGE     },
+        { eRMS::Induction,      InteractionType::POLARIZATION }
+    };
+    for (auto &rms : rmsE)
     {
-        auto beta = computeBeta(ermsi);
-        double eqmMin = 1e8;
-        if (beta > 0)
+        if (targets->find(rms.first) != targets->end())
         {
-            for(const auto &ff : interactionEnergyMap)
+            doInter = true;
+        }
+    }
+    if (doInter)
+    {
+        std::map<eRMS, double> beta;
+        std::map<eRMS, double> eqmMin;
+        for(const auto &rms: rmsE)
+        {
+            // TODO fix beta (but how?)
+            eqmMin[rms.first] = 1e8;
+            beta[rms.first]   = computeBeta(rms.first);
+            if (beta[rms.first] > 0)
             {
-                eqmMin = std::min(eqmMin, ff.first);
+                for(auto &iem : interactionEnergyMap)
+                {
+                    auto &ff = iem.find(rms.second)->second;
+                    eqmMin[rms.first] = std::min(eqmMin[rms.first], ff.eqm());
+                }
             }
         }
-        for(const auto &ff : interactionEnergyMap)
+        for(auto &iem : interactionEnergyMap)
         {
-            auto eqm  = ff.first;
-            auto eact = ff.second.find(InteractionType::EPOT)->second;
-            double weight = 1;
-            if (beta > 0)
+            for(const auto &rms: rmsE)
             {
-                weight = exp(-beta*(eqm-eqmMin));
+                auto ti = targets->find(rms.first);
+                if (ti == targets->end())
+                {
+                    continue;
+                }
+                if (iem.find(rms.second) == iem.end())
+                {
+                    continue;
+                }
+                auto &ff = iem.find(rms.second)->second;
+                auto eqm  = ff.eqm();
+                auto eact = ff.eact();
+                double weight = 1;
+                if (beta[rms.first] > 0)
+                {
+                    weight = exp(-beta[rms.first]*(eqm-eqmMin[rms.first]));
+                }
+                ti->second.increase(weight, gmx::square(eqm-eact));
             }
-            ti->second.increase(weight, gmx::square(eqm-eact));
         }
     }
 }

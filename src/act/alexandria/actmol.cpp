@@ -271,15 +271,16 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
                     jobType2string(JobType::SP));
         }
     }
+
     return experCoords(exper->getCoordinates(), topology_);
 }
 
-void ACTMol::forceEnergyMaps(const ForceField                                                    *pd,
-                             const ForceComputer                                                 *forceComp,
-                             std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                             std::vector<ACTEnergy>                                              *energyMap,
-                             std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
-                             std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const
+void ACTMol::forceEnergyMaps(const ForceField                                      *pd,
+                             const ForceComputer                                   *forceComp,
+                             std::vector<std::vector<std::pair<double, double> > > *forceMap,
+                             std::vector<ACTEnergy>                                *energyMap,
+                             ACTEnergyMapVector                                    *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const
 {
     auto       myatoms = topology_->atoms();
     forceMap->clear();
@@ -287,44 +288,51 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     interactionEnergyMap->clear();
     energyComponentMap->clear();
     gmx::RVec fzero = { 0, 0, 0 };
+    std::map<MolPropObservable, InteractionType> interE = { 
+        { MolPropObservable::INTERACTIONENERGY, InteractionType::EPOT           },
+        { MolPropObservable::ELECTROSTATICS,    InteractionType::COULOMB        },
+        { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
+        { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
+        { MolPropObservable::INDUCTION,         InteractionType::POLARIZATION   },
+        { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
+    };
+    GMX_RELEASE_ASSERT(forceComp, "No force computer supplied");
     for (auto &ei : experimentConst())
     {
-        auto coords = experCoords(ei.getCoordinates(), topology_);
         // We compute either interaction energies or normal energies for one experiment
-        if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
+        auto coords  = experCoords(ei.getCoordinates(), topology_);
+        bool doInter = false;
+        for(auto &ie : interE)
         {
-            auto eprops = ei.propertyConst(MolPropObservable::INTERACTIONENERGY);
-            if (eprops.size() > 1)
+            if (ei.hasProperty(ie.first))
             {
-                gmx_fatal(FARGS, "Multiple interaction energies for this experiment");
+                doInter = true;
             }
-            else if (eprops.size() == 1)
+        }
+        if (doInter)
+        {
+            std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
+            std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
+            
+            std::map<InteractionType, double> einter;
+            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
+            ACTEnergyMap aemap;
+            for (auto &ie : interE)
             {
-                if (forceComp)
+                auto ae = ACTEnergy(ei.id());
+                if (ei.hasProperty(ie.first))
                 {
-                    std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
-                    std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
-                    auto exp_coords = ei.getCoordinates();
-                    int eindex = 0;
-                    for(size_t i = 0; i < myatoms.size(); i++)
-                    {
-                        if (myatoms[i].pType() == eptAtom)
-                        {
-                            copy_rvec(exp_coords[eindex], mycoords[i]);
-                            eindex += 1;
-                        }
-                        else if (myatoms[i].pType() == eptShell && i > 0)
-                        {
-                            // TODO fix this hack
-                            copy_rvec(mycoords[i-1], mycoords[i]);
-                        }
-                    }
-                    std::map<InteractionType, double> einter;
-                    calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &mycoords);
-                    interactionEnergyMap->push_back({ eprops[0]->getValue(), einter});
-                    // TODO Store the interaction forces
+                    auto exp_props = ei.propertyConst(ie.first);
+                    ae.setQM(exp_props[0]->getValue());
                 }
+                if (einter.find(ie.second) != einter.end())
+                {
+                    ae.setACT(einter.find(ie.second)->second);
+                }
+                aemap.insert({ie.second, ae});
+                // TODO Store the interaction forces
             }
+            interactionEnergyMap->push_back(aemap);
         }
         else if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
@@ -332,13 +340,15 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
             (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
+            ACTEnergyMap aemap;
             if (eprops.size() > 1)
             {
                 gmx_fatal(FARGS, "Multiple energies for this experiment");
             }
             else if (eprops.size() == 1)
             {
-                energyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(), energies[InteractionType::EPOT]));
+                energyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(),
+                                               energies[InteractionType::EPOT]));
                 energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }
         
@@ -439,7 +449,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
         if (fraghandler_->topologies().empty())
         {
             delete fraghandler_;
-            imm = immStatus::Topology;
+            imm = immStatus::FragmentHandler;
         }
         else
         {

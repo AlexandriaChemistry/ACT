@@ -1114,6 +1114,10 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     }
     if (!ci)
     {
+        ci = mol->findExperimentConst(JobType::SP);
+    }
+    if (!ci)
+    {
         return immStatus::Topology;
     }
     if (ci)
