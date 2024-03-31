@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -81,28 +81,63 @@ class ACTEnergy
 {
 private:
     //! Id of the experiment
-    int    experiment_;
+    int    experiment_ = 0;
     //! QM energy
-    double eqm_;
+    double eqm_        = 0;
     //! ACT energy
-    double eact_;
+    double eact_       = 0;
+    //! QM present
+    bool haveQM_       = false;
+    //! ACT present
+    bool haveACT_      = false;
 public:
     /*! \brief Constructor
      * \param[in] experiment The id
      * \param[in] eqm        The QM energy
      * \param[in] eact       The ACT energy
      */
-    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment), eqm_(eqm), eact_(eact) {}
-    
+    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment)
+    {
+        setQM(eqm);
+        setACT(eact);
+    }
+    /*! \brief Constructor
+     * \param[in] experiment The id
+     */
+    ACTEnergy(int experiment) : experiment_(experiment) {}
+
     //! \return The experiment ID
     int id() const { return experiment_; }
+
+    //! Is there a QM energy
+    bool haveQM() const { return haveQM_; }
 
     //! \return The QM energy    
     double eqm() const { return eqm_; }
 
+    //! set QM value
+    void setQM(double eqm)
+    {
+        eqm_ = eqm;
+        haveQM_ = true;
+    }
+
+    //! Is there an ACT energy
+    bool haveACT() const { return haveACT_; }
+
     //! \return The ACT energy
     double eact() const { return eact_; }
+
+    //! set ACT value
+    void setACT(double eact)
+    {
+        eact_ = eact;
+        haveACT_ = true;
+    }
 };
+
+typedef std::map<InteractionType, ACTEnergy> ACTEnergyMap;
+typedef std::vector<ACTEnergyMap>            ACTEnergyMapVector;
 
 /*! \brief Class to hold corresponding QM (reference) adn ACT props
  */
@@ -267,7 +302,8 @@ private:
     //! Structure to manage charge generation
     FragmentHandler               *fraghandler_   = nullptr;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
-
+    //! Internal storage for original coords
+    std::vector<gmx::RVec>         xOriginal_;
 public:
 
     //! \return a GROMACS style array with energy terms
@@ -275,7 +311,7 @@ public:
     
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
-     * with Jobtype Opt or Topology. The array includes shells and/or vsites.
+     * with Jobtype Opt or Topology or SP. The array includes shells and/or vsites.
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
@@ -351,12 +387,12 @@ public:
      * \param[out] interactionEnergyMap The interaction energies
      * \param[out] energyComponentsMap  The energy components
      */
-    void forceEnergyMaps(const ForceField                                                    *pd,
-                         const ForceComputer                                                 *forceComp,
-                         std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                         std::vector<ACTEnergy>                                              *energyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
+    void forceEnergyMaps(const ForceField                                                  *pd,
+                         const ForceComputer                                               *forceComp,
+                         std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                         std::vector<ACTEnergy>                                            *energyMap,
+                         ACTEnergyMapVector                                                *interactionEnergyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }

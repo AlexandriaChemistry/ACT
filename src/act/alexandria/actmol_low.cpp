@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -75,6 +75,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::MissingChargeGenerationParameters, "Parameters for charge generation missing" },
     { immStatus::ShellMinimization,        "Shell minimization" },
     { immStatus::Topology,                 "No input to generate a topology" },
+    { immStatus::FragmentHandler,          "Fragment Handler could not make topologies" },
     { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
     { immStatus::Test,                     "Compound not in training set" },
     { immStatus::NoData,                   "No experimental data" },
