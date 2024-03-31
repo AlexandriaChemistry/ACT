@@ -313,48 +313,26 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         }
         if (doInter)
         {
-            std::set<MolPropObservable> mpElec = { MolPropObservable::ELECTROSTATICS,
-                                                   MolPropObservable::INDUCTION };
-            std::set<InteractionType> itElec = { InteractionType::COULOMB,
-                                                 InteractionType::POLARIZATION,
-                                                 InteractionType::CHARGETRANSFER };
             std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
             calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
             ACTEnergyMap aemap;
-            double allelec_qm  = 0;
-            double allelec_act = 0;
-            size_t foundQM     = 0;
             for (auto &ie : interE)
             {
                 auto ae = ACTEnergy(ei.id());
                 if (ei.hasProperty(ie.first))
                 {
-                    auto value = ei.propertyConst(ie.first)[0]->getValue();
-                    ae.setQM(value);
-                    if (mpElec.find(ie.first) != mpElec.end())
-                    {
-                        allelec_qm += value;
-                        foundQM    += 1;
-                    }
+                    auto exp_props = ei.propertyConst(ie.first);
+                    ae.setQM(exp_props[0]->getValue());
                 }
                 if (einter.find(ie.second) != einter.end())
                 {
                     ae.setACT(einter.find(ie.second)->second);
-                    if (itElec.find(ie.second) != itElec.end())
-                    {
-                        allelec_act += einter.find(ie.second)->second;
-                    }
                 }
                 aemap.insert({ie.second, ae});
                 // TODO Store the interaction forces
-            }
-            if (foundQM == mpElec.size())
-            {
-                ACTEnergy all(ei.id(), allelec_qm, allelec_act);
-                aemap.insert({InteractionType::ALLELEC, all});
             }
             interactionEnergyMap->push_back(aemap);
         }
