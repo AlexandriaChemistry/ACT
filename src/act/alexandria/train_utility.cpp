@@ -247,7 +247,7 @@ static void print_polarizability(FILE              *fp,
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
     terms_ =  { InteractionType::EPOT, InteractionType::COULOMB,
-                InteractionType::POLARIZATION, InteractionType::CHARGETRANSFER, InteractionType::ALLELEC,
+                InteractionType::POLARIZATION, InteractionType::CHARGETRANSFER,
                 InteractionType::DISPERSION, InteractionType::EXCHANGE };
 }
 
@@ -999,6 +999,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
         myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
     }
+    gmx_stats myinter;
     for(const auto &iem : interactionEnergyMap)
     {
         for(const auto &ie: iem)
@@ -1008,6 +1009,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                 auto eqm  = ie.second.eqm();
                 auto eact = ie.second.eact();
                 lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
+                myinter.add_point(eqm, eact);
             }
         }
     }

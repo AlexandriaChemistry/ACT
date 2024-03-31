@@ -644,14 +644,13 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             }
         }
     }
-    bool                            doInter = targets->find(eRMS::AllElec) != targets->end();
+    bool                            doInter = false;
     std::map<eRMS, InteractionType> rmsE    = { 
         { eRMS::Interaction,    InteractionType::EPOT         },
         { eRMS::Electrostatics, InteractionType::COULOMB      },
         { eRMS::Dispersion,     InteractionType::DISPERSION   },
         { eRMS::Exchange,       InteractionType::EXCHANGE     },
-        { eRMS::Induction,      InteractionType::POLARIZATION },
-        { eRMS::AllElec,        InteractionType::ALLELEC      }
+        { eRMS::Induction,      InteractionType::POLARIZATION }
     };
     for (auto &rms : rmsE)
     {
@@ -691,7 +690,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                 {
                     continue;
                 }
-                auto &ff  = iem.find(rms.second)->second;
+                auto &ff = iem.find(rms.second)->second;
                 auto eqm  = ff.eqm();
                 auto eact = ff.eact();
                 double weight = 1;
