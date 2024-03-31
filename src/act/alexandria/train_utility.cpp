@@ -999,7 +999,6 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
         myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
     }
-    gmx_stats myinter;
     for(const auto &iem : interactionEnergyMap)
     {
         for(const auto &ie: iem)
@@ -1009,7 +1008,6 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                 auto eqm  = ie.second.eqm();
                 auto eact = ie.second.eact();
                 lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
-                myinter.add_point(eqm, eact);
             }
         }
     }
@@ -1083,9 +1081,13 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     {
         low_print_stats(tcout, &myepot, "Energy");
     }
-    if (interactionEnergyMap.size() > 0)
+    for(const auto &tt : terms_)
     {
-        low_print_stats(tcout, &myinter, "Einteraction");
+        auto mystat = &lsq_einter_[tt][ims][qType::Calc];
+        if (mystat->get_npoints() > 0)
+        {
+            low_print_stats(tcout, mystat, interactionTypeToString(tt).c_str());
+        }
     }
     if (!forceMap.empty())
     {
