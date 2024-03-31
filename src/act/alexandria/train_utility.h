@@ -92,16 +92,31 @@ private:
     bool diatomic_            = false;
     //! Dump outliers to xyz files if larger or equal to zero
     real dumpOutliers_        = -1;
+    //! Data structures for storing results of interaction energies
+    std::map<InteractionType, std::map<iMolSelect, qtStats>> lsq_einter_;
+    //! Comparison of epot, isoPol, anisoPol and alpha
+    std::map<iMolSelect, qtStats>      lsq_epot_, lsq_isoPol_, lsq_anisoPol_, lsq_alpha_;
+    //! Statistics for RMSF and frequencies.
+    std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
+    gmx_stats                          lsq_freq_;
+    //! Statistics for multipoles
+    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
+    //! Interaction energy terms
+    std::vector<InteractionType> terms_;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
                                const ForceField    *pd,
                                alexandria::ACTMol  *mol,
-                               const ForceComputer *forceComp,
-                               qtStats             *lsq_isoPol,
-                               qtStats             *lsq_anisoPol,
-                               qtStats             *lsq_alpha);
+                               iMolSelect           ims,
+                               const ForceComputer *forceComp);
     
+    //! \brief Analyses dipoles, quadrupoles, etc.
+    void analyse_multipoles(FILE                                            *fp,
+                            const std::vector<alexandria::ACTMol>::iterator &mol,
+                            std::map<MolPropObservable, double>              toler,
+                            const ForceField                                *pd,
+                            const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
     void printAtoms(FILE                         *fp,
                     alexandria::ACTMol            *mol,
@@ -116,13 +131,10 @@ private:
                              const ForceComputer      *forceComp,
                              const AtomizationEnergy  &atomenergy,
                              alexandria::ACTMol        *mol,
-                             gmx_stats                *lsq_rmsf,
-                             qtStats                  *lsq_epot,
-                             qtStats                  *lsq_eInter,
-                             gmx_stats                *lsq_freq,
+                             iMolSelect                ims,
                              const gmx_output_env_t   *oenv);
 public:
-    TrainForceFieldPrinter() {}
+    TrainForceFieldPrinter();
     
     /*! \brief Add my options to the list of command line arguments
      * \param[out] pargs The vector to add to

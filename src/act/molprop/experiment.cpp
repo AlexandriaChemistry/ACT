@@ -464,6 +464,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::ELECTROSTATICS:
                     case MolPropObservable::EXCHANGE:
                     case MolPropObservable::DISPERSION:
+                    case MolPropObservable::CHARGETRANSFER:
                     case MolPropObservable::INDUCTION:
                     case MolPropObservable::DHFORM:
                     case MolPropObservable::DGFORM:
@@ -596,6 +597,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 case MolPropObservable::EXCHANGE:
                 case MolPropObservable::DISPERSION:
                 case MolPropObservable::INDUCTION:
+                case MolPropObservable::CHARGETRANSFER:
                 case MolPropObservable::DHFORM:
                 case MolPropObservable::DGFORM:
                 case MolPropObservable::DSFORM:

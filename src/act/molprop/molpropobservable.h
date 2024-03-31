@@ -86,6 +86,8 @@ enum class MolPropObservable {
     EXCHANGE,
     //! SAPT component Dispersion
     DISPERSION,
+    //! Charge Transfer
+    CHARGETRANSFER,
     //! Delta H formation
     DHFORM,
     //! Delta G formation
