@@ -58,6 +58,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::DISPERSION,         { "DISPERSION", "London dispersion" } },
     { InteractionType::EXCHANGE,           { "EXCHANGE", "Exchange repulsion due to Pauli principle" } },
     { InteractionType::CHARGETRANSFER,     { "CHARGETRANSFER", "Charge transfer energy correction" } },
+    { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
@@ -133,6 +134,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::CHARGETRANSFER:
     case InteractionType::POLARIZATION:
     case InteractionType::COULOMB:
+    case InteractionType::ALLELEC:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
     case InteractionType::BONDS:

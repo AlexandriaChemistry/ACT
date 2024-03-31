@@ -63,6 +63,8 @@ enum class InteractionType
     POLARIZATION,
     //! Charge transfer correction energy
     CHARGETRANSFER,
+    //! Sum of electrostatic terms
+    ALLELEC,
     //! Potential energy, sum over the above
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.
