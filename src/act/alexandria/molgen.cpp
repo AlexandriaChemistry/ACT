@@ -75,6 +75,7 @@ std::map<eRMS, const char *> ermsNames = {
     { eRMS::Exchange,   "Exchange"   },
     { eRMS::Dispersion, "Dispersion" },
     { eRMS::Induction,  "Induction"  },
+    { eRMS::AllElec,    "AllElec"    },
     { eRMS::Force2,     "Force2"     },
     { eRMS::Polar,      "Polar"      },
     { eRMS::TOT,        "TOT"        }
@@ -137,6 +138,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of interaction energies of multimers from the reference." },
         { "-fc_elec",    FALSE, etREAL, {targets->find(eRMS::Electrostatics)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the electrostatic component of the interaction energies of multimers from the reference." },
+        { "-fc_allelec",    FALSE, etREAL, {targets->find(eRMS::AllElec)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the sum of all energy components involving electrostatics, that is Coulomb, Polarization, Charge Transfer, of the sum of SAPT energy terms Electrostatics and Induction for multimers from the reference." },
         { "-fc_disp",    FALSE, etREAL, {targets->find(eRMS::Dispersion)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the dispersion component of the interaction energies of multimers from the reference." },
         { "-fc_exch",    FALSE, etREAL, {targets->find(eRMS::Exchange)->second.weightPtr()},
@@ -683,6 +686,7 @@ static double computeCost(const ACTMol                         *actmol,
             case eRMS::Dispersion:
             case eRMS::Induction:
             case eRMS::Exchange:
+            case eRMS::AllElec:
                 // All versus all interactions for dimer and monomers separately
                 w += 2*gmx::square(myexp.NAtom());
                 break;
