@@ -84,6 +84,8 @@ enum class eRMS {
     Dispersion,
     //! SAPT component deviation Induction
     Induction,
+    //! Sum of electrostatic terms
+    AllElec,
     //! Mean square force on the atoms
     Force2,
     //! Deviation of polarizability components
