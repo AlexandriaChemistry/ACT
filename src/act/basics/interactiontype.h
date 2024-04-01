@@ -61,6 +61,8 @@ enum class InteractionType
     COULOMB,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Induction energy
+    INDUCTION,
     //! Charge transfer correction energy
     CHARGETRANSFER,
     //! Sum of electrostatic terms

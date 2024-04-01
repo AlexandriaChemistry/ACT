@@ -295,7 +295,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         { MolPropObservable::ELECTROSTATICS,    InteractionType::COULOMB        },
         { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
         { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
-        { MolPropObservable::INDUCTION,         InteractionType::POLARIZATION   },
+        { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
     GMX_RELEASE_ASSERT(forceComp, "No force computer supplied");
@@ -313,35 +313,75 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         }
         if (doInter)
         {
+            std::set<MolPropObservable> mpElec = { MolPropObservable::ELECTROSTATICS,
+                                                   MolPropObservable::INDUCTION };
+            std::set<InteractionType> itElec = { InteractionType::COULOMB,
+                                                 InteractionType::INDUCTION };
             std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
             calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
             ACTEnergyMap aemap;
+            double allelec_qm  = 0;
+            double allelec_act = 0;
+            size_t foundQM     = 0;
+            size_t foundACT    = 0;
             for (auto &ie : interE)
             {
                 auto ae = ACTEnergy(ei.id());
                 if (ei.hasProperty(ie.first))
                 {
-                    auto exp_props = ei.propertyConst(ie.first);
-                    ae.setQM(exp_props[0]->getValue());
+                    auto propvec = ei.propertyConst(ie.first);
+                    if (propvec.size() != 1)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", interactionTypeToString(ie.second).c_str(), propvec.size()).c_str()));
+                    }
+                    auto value = propvec[0]->getValue();
+                    ae.setQM(value);
+                    if (mpElec.find(ie.first) != mpElec.end())
+                    {
+                        allelec_qm += value;
+                        foundQM    += 1;
+                    }
                 }
                 if (einter.find(ie.second) != einter.end())
                 {
-                    ae.setACT(einter.find(ie.second)->second);
+                    auto tt = einter.find(ie.second);
+                    if (einter.end() != tt)
+                    {
+                        ae.setACT(tt->second);
+                    
+                        if (itElec.find(ie.second) != itElec.end())
+                        {
+                            allelec_act += tt->second;
+                            foundACT    += 1;
+                        }
+                    }
                 }
-                aemap.insert({ie.second, ae});
+                if (ae.haveQM() || ae.haveACT())
+                {
+                    aemap.insert({ie.second, ae});
+                }
                 // TODO Store the interaction forces
             }
             ACTEnergy allelec(ei.id());
-            allelec.setACT(allelec_act);
+            if (foundACT == itElec.size())
+            {
+                allelec.setACT(allelec_act);
+            }
             if (foundQM == mpElec.size())
             {
                 allelec.setQM(allelec_qm);
             }
-            aemap.insert({InteractionType::ALLELEC, allelec});
-            interactionEnergyMap->push_back(aemap);
+            if (foundACT == itElec.size() || foundQM == mpElec.size())
+            {
+                aemap.insert({InteractionType::ALLELEC, allelec});
+            }
+            if (aemap.size() > 0)
+            {
+                interactionEnergyMap->push_back(aemap);
+            }
         }
         else if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
