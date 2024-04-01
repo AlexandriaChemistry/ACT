@@ -113,7 +113,11 @@ public:
     bool haveQM() const { return haveQM_; }
 
     //! \return The QM energy    
-    double eqm() const { return eqm_; }
+    double eqm() const
+    {
+        GMX_RELEASE_ASSERT(haveQM_, "Trying to extract a QM energy when there is none");
+        return eqm_;
+    }
 
     //! set QM value
     void setQM(double eqm)
@@ -126,7 +130,11 @@ public:
     bool haveACT() const { return haveACT_; }
 
     //! \return The ACT energy
-    double eact() const { return eact_; }
+    double eact() const
+    {
+        GMX_RELEASE_ASSERT(haveACT_, "Trying to extract an ACT energy when there is none");
+        return eact_;
+    }
 
     //! set ACT value
     void setACT(double eact)
