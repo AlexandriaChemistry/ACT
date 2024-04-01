@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.0014452799999988793</Real>
-  <Real Name="Potential before">0.0014452799999988793</Real>
+  <Real Name="BONDS before">0.0014452799999988793</Real>
+  <Real Name="EPOT before">0.0014452799999988793</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">6.8783780180472332e-05</Real>
-  <Real Name="Bond after">0</Real>
-  <Real Name="Potential after">0</Real>
+  <Real Name="BONDS after">0</Real>
+  <Real Name="EPOT after">0</Real>
   <Sequence Name="Equilibrium force">
     <Int Name="Length">6</Int>
     <Real>0</Real>
@@ -20,7 +20,7 @@
   <Sequence Name="DeltaX">
     <Int Name="Length">6</Int>
     <Real>0</Real>
-    <Real>-0</Real>
+    <Real>0</Real>
     <Real>0</Real>
     <Real>-1.8268791422376395e-17</Real>
     <Real>0</Real>

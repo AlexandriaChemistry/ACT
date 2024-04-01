@@ -69,27 +69,11 @@ static void add_energies(const ForceField                        *pd,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
 {
-    std::map<InteractionType, int> i2f = {
-        { InteractionType::EPOT,       F_EPOT },
-        { InteractionType::EXCHANGE,  F_REPULSION },
-        { InteractionType::DISPERSION, F_DISPERSION }
-    };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)
     {
-        int ftype;
-        if (i2f.find(imf.first) != i2f.end())
-        {
-            ftype = i2f.find(imf.first)->second;
-        }
-        else
-        {
-            auto i = fsc.find(imf.first);
-            EXPECT_TRUE(fsc.end() != i);
-            ftype = i->second.gromacsType();
-        }
         std::string mylabel = gmx::formatString("%s %s",
-                                                interaction_function[ftype].longname, label);
+                                                interactionTypeToString(imf.first).c_str(), label);
         
         checker->checkReal(imf.second, mylabel.c_str());
     }

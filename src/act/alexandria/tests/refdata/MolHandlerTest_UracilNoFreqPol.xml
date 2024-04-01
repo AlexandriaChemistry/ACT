@@ -1,23 +1,25 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Morse before">-4778.7158908170932</Real>
-  <Real Name="Angle before">29.434308363917996</Real>
-  <Real Name="Improper Dih. before">0</Real>
-  <Real Name="Dispersion before">-10.096019437976086</Real>
-  <Real Name="Repulsion before">161.05724583689985</Real>
-  <Real Name="Coulomb (SR) before">-229.16405022905417</Real>
-  <Real Name="Polarization before">8.865043846241738</Real>
-  <Real Name="Potential before">-4818.6193624370635</Real>
-  <Real Name="Coordinate RMSD before minimizing">7.2305237604181833e-17</Real>
+  <Real Name="BONDS before">-4778.7158908170932</Real>
+  <Real Name="ANGLES before">29.434308363917996</Real>
+  <Real Name="IMPROPER_DIHEDRALS before">0</Real>
+  <Real Name="DISPERSION before">-10.096019437976086</Real>
+  <Real Name="EXCHANGE before">161.05724583689985</Real>
+  <Real Name="COULOMB before">-209.54689876448339</Real>
+  <Real Name="POLARIZATION before">0</Real>
+  <Real Name="INDUCTION before">-10.75210761832947</Real>
+  <Real Name="EPOT before">-4818.6193624370644</Real>
+  <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0082600794892758976</Real>
-  <Real Name="Morse after">-4772.9090258260612</Real>
-  <Real Name="Angle after">14.479715050881333</Real>
-  <Real Name="Improper Dih. after">0</Real>
-  <Real Name="Dispersion after">-10.051000731605178</Real>
-  <Real Name="Repulsion after">80.983738078650276</Real>
-  <Real Name="Coulomb (SR) after">-226.35054342113818</Real>
-  <Real Name="Polarization after">9.7755459794760284</Real>
-  <Real Name="Potential after">-4904.0715708697971</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0082600794879550497</Real>
+  <Real Name="BONDS after">-4772.9090258161486</Real>
+  <Real Name="ANGLES after">14.479715050433018</Real>
+  <Real Name="IMPROPER_DIHEDRALS after">0</Real>
+  <Real Name="DISPERSION after">-10.051000730886564</Real>
+  <Real Name="EXCHANGE after">80.98373806699226</Real>
+  <Real Name="COULOMB after">-204.70881694652235</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">-11.866180493623245</Real>
+  <Real Name="EPOT after">-4904.0715708697553</Real>
 </ReferenceData>

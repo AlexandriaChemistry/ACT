@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.18122894212805943</Real>
-  <Real Name="Angle before">1.6749064998308829</Real>
-  <Real Name="Proper Dih. before">15.062394391986754</Real>
-  <Real Name="Improper Dih. before">0</Real>
-  <Real Name="Dispersion before">-1.7472050946736563e-05</Real>
-  <Real Name="Repulsion before">4.2569772129151275e-11</Real>
-  <Real Name="Coulomb (SR) before">-34.113162910249208</Real>
-  <Real Name="Potential before">-17.194650548311888</Real>
-  <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
+  <Real Name="BONDS before">0.18122894212805943</Real>
+  <Real Name="ANGLES before">1.6749064998308758</Real>
+  <Real Name="PROPER_DIHEDRALS before">15.062394391986754</Real>
+  <Real Name="IMPROPER_DIHEDRALS before">0</Real>
+  <Real Name="DISPERSION before">-1.7472050946736563e-05</Real>
+  <Real Name="EXCHANGE before">4.2569772129151275e-11</Real>
+  <Real Name="COULOMB before">-34.11316291024918</Real>
+  <Real Name="EPOT before">-17.194650548311866</Real>
+  <Real Name="Coordinate RMSD before minimizing">4.6860710317178802e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.013779319315087446</Real>
-  <Real Name="Bond after">0.025451177427861096</Real>
-  <Real Name="Angle after">0.37508880597076916</Real>
-  <Real Name="Proper Dih. after">8.0390482838286896</Real>
-  <Real Name="Improper Dih. after">1.0009322048812489e-09</Real>
-  <Real Name="Dispersion after">-1.7785354318431416e-05</Real>
-  <Real Name="Repulsion after">4.2297853924399008e-11</Real>
-  <Real Name="Coulomb (SR) after">-34.451469790961426</Real>
-  <Real Name="Potential after">-26.011899308045194</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.013779319315087649</Real>
+  <Real Name="BONDS after">0.025451177427835044</Real>
+  <Real Name="ANGLES after">0.37508880597076494</Real>
+  <Real Name="PROPER_DIHEDRALS after">8.0390482838286896</Real>
+  <Real Name="IMPROPER_DIHEDRALS after">1.0009322049095767e-09</Real>
+  <Real Name="DISPERSION after">-1.7785354318431369e-05</Real>
+  <Real Name="EXCHANGE after">4.2297853924398749e-11</Real>
+  <Real Name="COULOMB after">-34.451469790961397</Real>
+  <Real Name="EPOT after">-26.011899308045194</Real>
 </ReferenceData>

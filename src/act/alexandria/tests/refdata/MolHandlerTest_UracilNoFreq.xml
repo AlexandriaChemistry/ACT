@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">24.063389006139413</Real>
-  <Real Name="Angle before">25.427796327841154</Real>
-  <Real Name="Proper Dih. before">0</Real>
-  <Real Name="Improper Dih. before">0</Real>
-  <Real Name="Dispersion before">-2.4730634293295379</Real>
-  <Real Name="Repulsion before">0.73657185932875591</Real>
-  <Real Name="Coulomb (SR) before">-8.3389346866784244</Real>
-  <Real Name="Potential before">39.41575907730136</Real>
-  <Real Name="Coordinate RMSD before minimizing">7.2305237604181833e-17</Real>
+  <Real Name="BONDS before">24.063389006139413</Real>
+  <Real Name="ANGLES before">25.427796327841151</Real>
+  <Real Name="PROPER_DIHEDRALS before">0</Real>
+  <Real Name="IMPROPER_DIHEDRALS before">0</Real>
+  <Real Name="DISPERSION before">-2.4730634293295379</Real>
+  <Real Name="EXCHANGE before">0.73657185932875591</Real>
+  <Real Name="COULOMB before">-8.3389346866784102</Real>
+  <Real Name="EPOT before">39.415759077301374</Real>
+  <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0072352403338493019</Real>
-  <Real Name="Bond after">0.22742945247795351</Real>
-  <Real Name="Angle after">7.3277336356657994</Real>
-  <Real Name="Proper Dih. after">0</Real>
-  <Real Name="Improper Dih. after">5.8851621069776829e-34</Real>
-  <Real Name="Dispersion after">-2.7427211066688169</Real>
-  <Real Name="Repulsion after">0.80157827835305173</Real>
-  <Real Name="Coulomb (SR) after">-8.6423431845135017</Real>
-  <Real Name="Potential after">-3.0283229246855132</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.007235240333849308</Real>
+  <Real Name="BONDS after">0.22742945247796881</Real>
+  <Real Name="ANGLES after">7.3277336356657576</Real>
+  <Real Name="PROPER_DIHEDRALS after">0</Real>
+  <Real Name="IMPROPER_DIHEDRALS after">5.8851621075079928e-34</Real>
+  <Real Name="DISPERSION after">-2.7427211066688155</Real>
+  <Real Name="EXCHANGE after">0.80157827835305062</Real>
+  <Real Name="COULOMB after">-8.6423431845134893</Real>
+  <Real Name="EPOT after">-3.0283229246855274</Real>
 </ReferenceData>
