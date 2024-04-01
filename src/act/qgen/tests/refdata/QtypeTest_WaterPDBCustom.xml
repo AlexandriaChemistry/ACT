@@ -10,7 +10,7 @@
   <Sequence Name="dipole">
     <Int Name="Length">3</Int>
     <Real>0</Real>
-    <Real>0</Real>
+    <Real>-7.0369362178851374e-17</Real>
     <Real>-1.8545172596559698</Real>
   </Sequence>
   <Sequence Name="quadrupole">
@@ -19,8 +19,8 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>1.0166104337736996</Real>
-    <Real>0</Real>
-    <Real>-0.18283743781722703</Real>
+    <Real>2.877674436965226e-17</Real>
+    <Real>-0.18283743781722714</Real>
   </Sequence>
   <Sequence Name="octupole">
     <Int Name="Length">10</Int>
@@ -30,9 +30,9 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0</Real>
+    <Real>8.3684272780593174e-18</Real>
     <Real>-0.86597944511372071</Real>
-    <Real>0</Real>
+    <Real>-3.3792669359510135e-18</Real>
     <Real>-0.33002432797659742</Real>
   </Sequence>
   <Sequence Name="hexadecapole">
@@ -48,9 +48,9 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>1.0800614063997827</Real>
-    <Real>0</Real>
+    <Real>1.3953609027762616e-17</Real>
     <Real>0.40527838031322133</Real>
-    <Real>0</Real>
+    <Real>9.1013359594458754e-18</Real>
     <Real>0.15148116654125823</Real>
   </Sequence>
 </ReferenceData>

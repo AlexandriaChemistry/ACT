@@ -1,21 +1,23 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Morse before">-799.9021283352007</Real>
-  <Real Name="Lin. Angle before">0</Real>
-  <Real Name="Dispersion before">-3.4365090069733371</Real>
-  <Real Name="Repulsion before">164.25691799281856</Real>
-  <Real Name="Coulomb (SR) before">-0.36199488121576451</Real>
-  <Real Name="Polarization before">0.00054708406437928184</Real>
-  <Real Name="Potential before">-639.44316714650688</Real>
+  <Real Name="BONDS before">-799.9021283352007</Real>
+  <Real Name="LINEAR_ANGLES before">0</Real>
+  <Real Name="DISPERSION before">-3.4365090069733371</Real>
+  <Real Name="EXCHANGE before">164.25691799281856</Real>
+  <Real Name="COULOMB before">-0.3608992845774992</Real>
+  <Real Name="POLARIZATION before">0</Real>
+  <Real Name="INDUCTION before">-0.0005485125741133978</Real>
+  <Real Name="EPOT before">-639.44316714650711</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0096426036837147858</Real>
-  <Real Name="Morse after">-767.47332321653539</Real>
-  <Real Name="Lin. Angle after">0</Real>
-  <Real Name="Dispersion after">-3.2808541874583028</Real>
-  <Real Name="Repulsion after">60.918044429821727</Real>
-  <Real Name="Coulomb (SR) after">-0.35994592853955965</Real>
-  <Real Name="Polarization after">0.00081564676019836243</Real>
-  <Real Name="Potential after">-710.19526325595132</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0096426036843551104</Real>
+  <Real Name="BONDS after">-767.47332321249553</Real>
+  <Real Name="LINEAR_ANGLES after">0</Real>
+  <Real Name="DISPERSION after">-3.2808541874463346</Real>
+  <Real Name="EXCHANGE after">60.918044425769814</Real>
+  <Real Name="COULOMB after">-0.35830614098142632</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">-0.00082414079764500398</Real>
+  <Real Name="EPOT after">-710.19526325595109</Real>
 </ReferenceData>

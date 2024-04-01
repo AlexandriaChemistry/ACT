@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.0026570465668230014</Real>
-  <Real Name="Angle before">0.55728331281907129</Real>
-  <Real Name="Potential before">0.55994035938589426</Real>
-  <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
+  <Real Name="BONDS before">0.0026570465668230014</Real>
+  <Real Name="ANGLES before">0.55728331281907129</Real>
+  <Real Name="EPOT before">0.55994035938589426</Real>
+  <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0022962699374105507</Real>
-  <Real Name="Bond after">5.3945968622453021e-11</Real>
-  <Real Name="Angle after">1.0098556026545187e-09</Real>
-  <Real Name="Potential after">1.0638015712769716e-09</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0022962699374105503</Real>
+  <Real Name="BONDS after">5.3945968622453021e-11</Real>
+  <Real Name="ANGLES after">1.0098556026545187e-09</Real>
+  <Real Name="EPOT after">1.0638015712769716e-09</Real>
 </ReferenceData>
