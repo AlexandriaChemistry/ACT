@@ -82,8 +82,20 @@ double ForceComputer::compute(const ForceField                  *pd,
 {
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
+    // Reset shells if needed
+    auto atoms = top->atoms();
+    for(size_t i = 0; i < top->nAtoms(); i++)
+    {
+        for(int sh : atoms[i].shells())
+        {
+            copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+        }
+    }
     // Do first calculation every time.
     computeOnce(pd, top, coordinates, forces, energies, field);
+    // Store total electrostatics energy
+    std::map<InteractionType, double> eBefore = *energies;
+
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
     // mean square shell force
@@ -138,6 +150,23 @@ double ForceComputer::compute(const ForceField                  *pd,
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
         }
+        // Extract electrostatics once more
+        std::set<InteractionType> eTerms = {
+            InteractionType::COULOMB,
+            InteractionType::POLARIZATION,
+            InteractionType::CHARGETRANSFER
+        };
+        double eInduction = 0;
+        for(auto et : eTerms)
+        {
+            auto tt = energies->find(et);
+            if (energies->end() != tt)
+            {
+                eInduction += tt->second - eBefore[et];
+                tt->second = eBefore[et];
+            }
+        }
+        energies->insert({InteractionType::INDUCTION, eInduction});
     }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);

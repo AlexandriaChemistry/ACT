@@ -620,7 +620,10 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
         {
             for(const auto &ff : energyMap)
             {
-                eqmMin = std::min(eqmMin, ff.eqm());
+                if (ff.haveQM())
+                {
+                    eqmMin = std::min(eqmMin, ff.eqm());
+                }
             }
         }
         for(const auto &ff : energyMap)
@@ -631,16 +634,17 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             }
             else
             {
-                // TODO Double check if the atomizationEnergy is needed.
-                // auto enerexp = actmol->atomizationEnergy() + ff.first;
-                double eqm    = ff.eqm();
-                double mydev2 = gmx::square(eqm-ff.eact());
-                double weight = 1;
-                if (beta > 0)
+                if (ff.haveQM() && ff.haveACT())
                 {
-                    weight = exp(-beta*(eqm-eqmMin));
+                    double eqm    = ff.eqm();
+                    double mydev2 = gmx::square(eqm-ff.eact());
+                    double weight = 1;
+                    if (beta > 0)
+                    {
+                        weight = exp(-beta*(eqm-eqmMin));
+                    }
+                    te->second.increase(weight, mydev2);
                 }
-                te->second.increase(weight, mydev2);
             }
         }
     }
@@ -650,7 +654,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
         { eRMS::Electrostatics, InteractionType::COULOMB      },
         { eRMS::Dispersion,     InteractionType::DISPERSION   },
         { eRMS::Exchange,       InteractionType::EXCHANGE     },
-        { eRMS::Induction,      InteractionType::POLARIZATION },
+        { eRMS::Induction,      InteractionType::INDUCTION    },
         { eRMS::AllElec,        InteractionType::ALLELEC      }
     };
     for (auto &rms : rmsE)
@@ -674,7 +678,10 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                 for(auto &iem : interactionEnergyMap)
                 {
                     auto &ff = iem.find(rms.second)->second;
-                    eqmMin[rms.first] = std::min(eqmMin[rms.first], ff.eqm());
+                    if (ff.haveQM())
+                    {
+                        eqmMin[rms.first] = std::min(eqmMin[rms.first], ff.eqm());
+                    }
                 }
             }
         }
@@ -692,14 +699,17 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                     continue;
                 }
                 auto &ff  = iem.find(rms.second)->second;
-                auto eqm  = ff.eqm();
-                auto eact = ff.eact();
-                double weight = 1;
-                if (beta[rms.first] > 0)
+                if (ff.haveQM() && ff.haveACT())
                 {
-                    weight = exp(-beta[rms.first]*(eqm-eqmMin[rms.first]));
+                    auto eqm  = ff.eqm();
+                    auto eact = ff.eact();
+                    double weight = 1;
+                    if (beta[rms.first] > 0)
+                    {
+                        weight = exp(-beta[rms.first]*(eqm-eqmMin[rms.first]));
+                    }
+                    ti->second.increase(weight, gmx::square(eqm-eact));
                 }
-                ti->second.increase(weight, gmx::square(eqm-eact));
             }
         }
     }
