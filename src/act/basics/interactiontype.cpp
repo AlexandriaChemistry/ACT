@@ -61,6 +61,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
+    { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE2FD,           { "VSITE2FD", "virtual sites with two constructing atoms with fixed distance to atom" } },
@@ -133,6 +134,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::EXCHANGE:
     case InteractionType::CHARGETRANSFER:
     case InteractionType::POLARIZATION:
+    case InteractionType::INDUCTION:
     case InteractionType::COULOMB:
     case InteractionType::ALLELEC:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:

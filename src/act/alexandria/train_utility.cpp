@@ -247,7 +247,7 @@ static void print_polarizability(FILE              *fp,
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
     terms_ =  { InteractionType::EPOT, InteractionType::COULOMB,
-                InteractionType::POLARIZATION, InteractionType::CHARGETRANSFER,
+                InteractionType::INDUCTION, InteractionType::CHARGETRANSFER, InteractionType::ALLELEC,
                 InteractionType::DISPERSION, InteractionType::EXCHANGE };
 }
 
@@ -928,7 +928,7 @@ static void low_print_stats(std::vector<std::string> *tcout,
     {
         stats->get_corr_coeff(&R);
     }
-    tcout->push_back(gmx::formatString("%s RMSD %8.2f MSE %8.2f (kJ/mol) R %4.1f%% #points = %zu",
+    tcout->push_back(gmx::formatString("%18s RMSD %8.2f MSE %8.2f (kJ/mol) R %4.1f%% #points = %zu",
                                        label, rmsd, mse, 100*R, stats->get_npoints()));
 }
 
@@ -950,7 +950,7 @@ static void print_diatomics(const alexandria::ACTMol                            
     for (const auto &ecm : energyComponentMap)
     {
         double eee = ecm.first;
-        for(const auto itype : { InteractionType::COULOMB, InteractionType::POLARIZATION })
+        for(const auto itype : { InteractionType::COULOMB, InteractionType::INDUCTION })
         {
             auto esm = ecm.second.find(itype);
             if (ecm.second.end() != esm)
@@ -1049,7 +1049,8 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
             for(const auto &t : terms_)
             {
                 auto ttt = iem.find(t);
-                if (ttt->second.haveQM())
+                
+                if (iem.end() != ttt && ttt->second.haveQM())
                 {
                     myline += gmx::formatString(" %9.2f", ttt->second.eqm());
                 }
@@ -1057,7 +1058,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                 {
                     myline += ("         x");
                 }
-                if (ttt->second.haveACT())
+                if (iem.end() != ttt && ttt->second.haveACT())
                 {
                     myline += gmx::formatString(" %9.2f", ttt->second.eact());
                 }
@@ -1227,18 +1228,21 @@ static void printOutliers(FILE              *fp,
             {
                 for (auto ener : emm.second)
                 {
-                    double deltaE = std::abs(ener.eqm()-ener.eact());
-                    if (deltaE > epotMax)
+                    if (ener.haveQM() && ener.haveACT())
                     {
-                        fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
-                                ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
-                        noutlier++;
-                    }
-                    if (dumpFactor >= 0 && deltaE >= dumpFactor*sigma)
-                    {
-                        if (actmol->end() != actmolptr)
+                        double deltaE = std::abs(ener.eqm()-ener.eact());
+                        if (deltaE > epotMax)
                         {
-                            dump_xyz(&(*actmolptr), ener);
+                            fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
+                                    ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
+                            noutlier++;
+                        }
+                        if (dumpFactor >= 0 && deltaE >= dumpFactor*sigma)
+                        {
+                            if (actmol->end() != actmolptr)
+                            {
+                                dump_xyz(&(*actmolptr), ener);
+                            }
                         }
                     }
                 }
@@ -1467,9 +1471,9 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             }
             {
                 // Copy the eInter pairs
-                std::vector<ACTEnergy> myEinter;
                 for(const auto &tt : terms_)
                 {
+                    std::vector<ACTEnergy> myEinter;
                     auto x = lsq_einter_[tt][ims][qType::Calc].getX();
                     auto y = lsq_einter_[tt][ims][qType::Calc].getY();
                     for(size_t kk = 0; kk < x.size(); kk++)
