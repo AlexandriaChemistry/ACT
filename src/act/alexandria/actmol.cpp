@@ -350,11 +350,13 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                 aemap.insert({ie.second, ae});
                 // TODO Store the interaction forces
             }
+            ACTEnergy allelec(ei.id());
+            allelec.setACT(allelec_act);
             if (foundQM == mpElec.size())
             {
-                ACTEnergy all(ei.id(), allelec_qm, allelec_act);
-                aemap.insert({InteractionType::ALLELEC, all});
+                allelec.setQM(allelec_qm);
             }
+            aemap.insert({InteractionType::ALLELEC, allelec});
             interactionEnergyMap->push_back(aemap);
         }
         else if (ei.hasProperty(MolPropObservable::DELTAE0))
