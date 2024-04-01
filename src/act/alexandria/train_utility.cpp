@@ -554,7 +554,7 @@ void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
                                         const std::vector<gmx::RVec> &forces)
 {
     std::map<qType, const std::vector<double> > qQM;
-    std::vector<qType>                    typeQM = { 
+    std::vector<qType>                          typeQM = { 
         qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken
     };
     for(auto &qt : typeQM)
@@ -996,9 +996,13 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     gmx_stats myepot;
     for(const auto &ff : energyMap)
     {
-        lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
-        myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+        if (ff.haveQM() && ff.haveACT())
+        {
+            lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
+            myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+        }
     }
+    std::map<InteractionType, gmx_stats> myeinter;
     for(const auto &iem : interactionEnergyMap)
     {
         for(const auto &ie: iem)
@@ -1008,6 +1012,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                 auto eqm  = ie.second.eqm();
                 auto eact = ie.second.eact();
                 lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
+                myeinter[ie.first].add_point(eqm, eact, 0, 0);
             }
         }
     }
@@ -1083,7 +1088,7 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     }
     for(const auto &tt : terms_)
     {
-        auto mystat = &lsq_einter_[tt][ims][qType::Calc];
+        auto mystat = &myeinter[tt];
         if (mystat->get_npoints() > 0)
         {
             low_print_stats(tcout, mystat, interactionTypeToString(tt).c_str());
