@@ -120,29 +120,15 @@ static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a, const 
     // 20 flops at least
 }
 
-static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
-                                     const t_pbc *pbc)
+static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b)
 {
     real c = 1 - a - b;
     /* 2 flops */
 
-    if (pbc)
-    {
-        rvec dxi, dxk;
-
-        pbc_dx_aiuc(pbc, xj, xi, dxi);
-        pbc_dx_aiuc(pbc, xj, xk, dxk);
-        x[XX] = xj[XX] + a*dxi[XX] + b*dxk[XX];
-        x[YY] = xj[YY] + a*dxi[YY] + b*dxk[YY];
-        x[ZZ] = xj[ZZ] + a*dxi[ZZ] + b*dxk[ZZ];
-    }
-    else
-    {
-        x[XX] = c*xj[XX] + a*xi[XX] + b*xk[XX];
-        x[YY] = c*xj[YY] + a*xi[YY] + b*xk[YY];
-        x[ZZ] = c*xj[ZZ] + a*xi[ZZ] + b*xk[ZZ];
-        /* 15 Flops */
-    }
+    x[XX] = c*xj[XX] + a*xi[XX] + b*xk[XX];
+    x[YY] = c*xj[YY] + a*xi[YY] + b*xk[YY];
+    x[ZZ] = c*xj[ZZ] + a*xi[ZZ] + b*xk[ZZ];
+    /* 15 Flops */
 
     /* TOTAL: 17 flops */
 }
@@ -419,7 +405,8 @@ static void spread_vsite2fd(const t_iatom ia[], real a,
     clear_rvec(f[av]);
 }
 
-static void spread_vsite3(const t_iatom ia[], real a, real b,
+static void spread_vsite3(const std::vector<int> &indices,
+                          real a, real b,
                           const rvec x[], rvec f[], rvec fshift[],
                           const t_pbc *pbc, const t_graph *g)
 {
@@ -428,13 +415,13 @@ static void spread_vsite3(const t_iatom ia[], real a, real b,
     ivec    di;
     int     siv, sij, sik;
 
-    av = ia[1];
-    ai = ia[2];
-    aj = ia[3];
-    ak = ia[4];
+    ai = indices[0];
+    aj = indices[1];
+    ak = indices[2];
+    av = indices[3];
 
-    svmul(1 - a - b, f[av], fi);
-    svmul(        a, f[av], fj);
+    svmul(1 - a - b, f[av], fj);
+    svmul(        a, f[av], fi);
     svmul(        b, f[av], fk);
     /* 11 flops */
 
@@ -445,7 +432,7 @@ static void spread_vsite3(const t_iatom ia[], real a, real b,
 
     if (g)
     {
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ia[1]), di);
+        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, av), di);
         siv = IVEC2IS(di);
         ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), di);
         sij = IVEC2IS(di);
@@ -472,7 +459,7 @@ static void spread_vsite3(const t_iatom ia[], real a, real b,
         rvec_dec(fshift[sij], fj);
         rvec_dec(fshift[sik], fk);
     }
-
+    clear_rvec(f[av]);
     /* TOTAL: 20 flops */
 }
 
@@ -1172,7 +1159,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
             case InteractionType::VSITE3:
                 al = atomIndices[3];
                 constr_vsite3(x[ai], x[aj],  x[ak], x[al],
-                              params[vsite3A], params[vsite3B], &pbc_);
+                              params[vsite3A], params[vsite3B]);
                 break;
             case InteractionType::VSITE3FD:
                 al = atomIndices[3];
@@ -1279,7 +1266,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
                 break;
             case InteractionType::VSITE3:
-                spread_vsite3(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                spread_vsite3(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE3FD:
                 spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,
