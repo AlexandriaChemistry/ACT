@@ -176,19 +176,18 @@ TEST_P (SlaterTest, All)
 }
 
 //! Rows for Slater tests
-const std::vector<std::tuple<int, int> > &make_rows()
+const std::vector<std::tuple<int, int> > make_rows()
 {
-    int myints[6][2] = {
+#if !HAVE_LIBCLN
+    return {
+        { 1, 1 }
+    };
+#else
+    return {
         { 1, 1 }, { 1, 2 }, { 2, 2 },
         { 1, 3 }, { 2, 3 }, { 3, 3 }
     };
-    
-    static std::vector<std::tuple<int, int>> vt;
-    for(int i = 0; i < 6; i++)
-    {
-        vt.push_back(std::make_tuple(myints[i][0], myints[i][1]));
-    }
-    return vt;
+#endif
 };
 
 //! Instantiate the combination of Slater row-row interactions to test
@@ -217,9 +216,7 @@ const std::vector<std::tuple<double, double> > &make_xi()
 //! Instantiate the combination of Slater widths to test
 static const std::vector<std::tuple<double, double> > c_xi = make_xi();
 
-#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
-#endif
 
 INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
 
@@ -246,9 +243,7 @@ const std::vector<std::tuple<double, double> > &make_xiInteger()
 //! Instantiate xi and xj pair values
 static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
 
-#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
-#endif
 
 } // namespace
 
