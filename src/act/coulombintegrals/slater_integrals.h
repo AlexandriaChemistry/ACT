@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,9 @@
  */
 #ifndef SLATERINTEGRALS_H
 #define SLATERINTEGRALS_H
+
+#define SLATER_MAX 3
+#define SLATER_MAX_CLN SLATER_MAX
 
 /*! \brief 
  * Compute the Slater overlap integral between two Slater distributed charges.

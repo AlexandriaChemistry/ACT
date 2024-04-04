@@ -214,16 +214,16 @@ const std::vector<std::tuple<double, double> > &make_xi()
 };
 
 //! Instantiate the combination of Slater widths to test
-static const std::vector<std::tuple<double, double> > c_xi = make_xi();
+static auto c_xi = make_xi();
 
 INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
 
 INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
 
 //! integer xi and xj for tests
-const std::vector<std::tuple<double, double> > &make_xiInteger()
+const std::vector<std::tuple<double, double> > make_xiInteger()
 {
-    double mydbl[7][2] = {
+    return {
         {  3.0,  4.0 },
         { 17.0, 18.0 },
         { 25.0, 26.0 },
@@ -232,18 +232,28 @@ const std::vector<std::tuple<double, double> > &make_xiInteger()
         { 31.0, 33.0 },
         { 37.0, 38.0 }
     };
-    static std::vector<std::tuple<double, double>> vt;
-    for(int i = 0; i < 7; i++)
-    {
-        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
-    }
-    return vt;
 };
 
 //! Instantiate xi and xj pair values
-static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
+static auto c_xiInteger = make_xiInteger();
 
 INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
+
+//! integer xi and xj for tests
+const std::vector<std::tuple<double, double> > make_xiIdentical()
+{
+    return {
+        {  3.0,  3.0 },
+        { 17.0, 17.0 },
+        { 26.1, 26.1 },
+        {  9.4,  9.4 },
+        { 10.0, 10.0 }
+    };
+};
+
+static auto c_xiIdentical = make_xiIdentical();
+
+INSTANTIATE_TEST_CASE_P(IdenticalXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiIdentical)));
 
 } // namespace
 

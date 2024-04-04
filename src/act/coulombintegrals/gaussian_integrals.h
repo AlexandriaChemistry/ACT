@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,9 +41,6 @@
 
 
 #include "gromacs/math/functions.h"
-
-#define SLATER_MAX 3
-#define SLATER_MAX_CLN SLATER_MAX
 
 const double invsqrt_pi = 1.0/std::sqrt(M_PI);
 

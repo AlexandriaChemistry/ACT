@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="irow">3</Int64>
+  <Int64 Name="jrow">3</Int64>
+  <Real Name="izeta">9.4000000000000004</Real>
+  <Real Name="jzeta">9.4000000000000004</Real>
+  <Sequence Name="Potential-Slater">
+    <Int Name="Length">6</Int>
+    <Real>2.4264973958333331</Real>
+    <Real>2.2855375224099985</Real>
+    <Real>1.9485931427608663</Real>
+    <Real>1.5609986503916007</Real>
+    <Real>1.2338927591488216</Real>
+    <Real>0.99805820955396385</Real>
+  </Sequence>
+  <Sequence Name="Force-Slater">
+    <Int Name="Length">6</Int>
+    <Real>-0</Real>
+    <Real>-1.3172808107930081</Real>
+    <Real>-1.9280520489858759</Real>
+    <Real>-1.8485374743749965</Real>
+    <Real>-1.4012200065329417</Real>
+    <Real>-0.97841925220408754</Real>
+  </Sequence>
+  <Sequence Name="NuclearPotential-Slater">
+    <Int Name="Length">6</Int>
+    <Real>3.1333333333333333</Real>
+    <Real>3.0097735222809963</Real>
+    <Real>2.3111050495963448</Real>
+    <Real>1.6529727455508734</Real>
+    <Real>1.2492094175806387</Real>
+    <Real>0.99996109603153882</Real>
+  </Sequence>
+  <Sequence Name="NuclearForce-Slater">
+    <Int Name="Length">6</Int>
+    <Real>-0</Real>
+    <Real>-2.1798436904523584</Real>
+    <Real>-3.9035886858625446</Real>
+    <Real>-2.5893980107104415</Real>
+    <Real>-1.5508740208614322</Real>
+    <Real>-0.99940188791175844</Real>
+  </Sequence>
+</ReferenceData>
