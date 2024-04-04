@@ -93,6 +93,15 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
 }
 
 #else
+static double pow3(double x)
+{
+    return x*x*x;
+}
+static double pow4(double x)
+{
+    return x*x*x*x;
+}
+
 double Slater_1S_1S(double r, double xi, double xj)
 {
     double S, rxi, rxj;
@@ -110,11 +119,8 @@ double Slater_1S_1S(double r, double xi, double xj)
         }
         else
         {
-            S = (1/r)*((-24 + 24*exp(2*rxi) - 33*rxi - 18*pow(rxi, 2) - 4*pow(rxi, 3))/
-
-                         (24*exp(2*rxi))
-
-                         );
+            double exp2rxi = exp(2*rxi);
+            S = (1/r)*((-24 + 24*exp2rxi - 33*rxi - 18*rxi*rxi - 4*rxi*rxi*rxi) / (24*exp2rxi));
         }
 
     }
@@ -122,25 +128,29 @@ double Slater_1S_1S(double r, double xi, double xj)
     {
         if (r == 0)
         {
-            S = (xi*xj*(pow(xi, 2) + 3*xi*xj + pow(xj, 2)))/pow(xi + xj, 3)
+            S = (xi*xj*(pow(xi, 2) + 3*xi*xj + pow(xj, 2)))/pow3(xi + xj)
 
             ;
         }
         else
         {
-            S = (1/r)*((exp(2*(rxi + rxj))*pow(pow(rxi, 2) - pow(rxj, 2), 3) +
-
-                          exp(2*rxj)*pow(rxj, 4)*
-
-                          (-3*pow(rxi, 2) - pow(rxi, 3) + pow(rxj, 2) + rxi*pow(rxj, 2)) -
-
-                          exp(2*rxi)*pow(rxi, 4)*
-
-                          (pow(rxi, 2)*(1 + rxj) - pow(rxj, 2)*(3 + rxj)))/
-
-                         (exp(2*(rxi + rxj))*pow(rxi - rxj, 3)*pow(rxi + rxj, 3))
-
-                         );
+            double rxi2     = rxi*rxi;
+            double rxj2     = rxj*rxj;
+            double rxij     = rxi+rxj;
+            double exp2rxij = exp(2*(rxij));
+            S = (1/r)*((exp2rxij*pow3(rxi2 - rxj2) +
+                        
+                        exp(2*rxj)*pow4(rxj)*
+                        
+                        (-3*rxi2 - pow3(rxi) + rxj2 + rxi*rxj2) -
+                        
+                        exp(2*rxi)*pow4(rxi)*
+                        
+                        (rxi2*(1 + rxj) - rxj2*(3 + rxj)))/
+                       
+                       (exp2rxij*pow3(rxi - rxj)*pow3(rxij))
+                       
+                       );
         }
 
     }
