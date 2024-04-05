@@ -34,6 +34,7 @@
 
 #include "train_utility.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -246,8 +247,7 @@ static void print_polarizability(FILE              *fp,
 
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
-    terms_ =  { InteractionType::EPOT, InteractionType::COULOMB,
-                InteractionType::INDUCTION, InteractionType::CHARGETRANSFER, InteractionType::ALLELEC,
+    terms_ =  { InteractionType::EPOT, InteractionType::COULOMB, InteractionType::INDUCTION,
                 InteractionType::DISPERSION, InteractionType::EXCHANGE };
 }
 
@@ -1038,11 +1038,19 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         std::string mysub;
         for(const auto &t : terms_)
         {
-            myheader += gmx::formatString("%20s", interactionTypeToString(t).c_str());
+            myheader += gmx::formatString("%15s     ", interactionTypeToString(t).c_str());
             mysub    += gmx::formatString(" %9s %9s", "QM", "ACT");
         }
         tcout->push_back(myheader);
         tcout->push_back(mysub);
+        
+        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end(),
+                  [](const ACTEnergyMap &a, const ACTEnergyMap &b)
+        { 
+            return (a.find(InteractionType::EPOT)->second.eqm() < 
+                    b.find(InteractionType::EPOT)->second.eqm());
+        });
+        auto expers = mol->experimentConst();
         for(const auto &iem : interactionEnergyMap)
         {
             std::string myline;
@@ -1067,6 +1075,15 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
                     myline += ("         x");
                 }
             }
+            auto ttt   = iem.find(InteractionType::EPOT);
+            auto exper = std::find_if(expers.begin(), expers.end(), 
+                                      [&ttt](const Experiment& x)
+                                      { return x.id() == ttt->second.id(); });
+            if (expers.end() != exper)
+            {
+                myline += " " + exper->getDatafile();
+            }
+            
             tcout->push_back(myline);
         }
         std::sort(forceMap.begin(), forceMap.end());
