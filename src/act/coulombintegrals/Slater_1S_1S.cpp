@@ -128,7 +128,7 @@ double Slater_1S_1S(double r, double xi, double xj)
     {
         if (r == 0)
         {
-            S = (xi*xj*(pow(xi, 2) + 3*xi*xj + pow(xj, 2)))/pow3(xi + xj)
+            S = (xi*xj*(xi*xi + 3*xi*xj + xj*xj))/pow3(xi + xj)
 
             ;
         }
