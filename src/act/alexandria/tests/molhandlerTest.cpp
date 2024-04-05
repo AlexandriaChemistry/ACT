@@ -241,6 +241,7 @@ protected:
                 }
             }
         }
+        delete forceComp;
     }
 };
 

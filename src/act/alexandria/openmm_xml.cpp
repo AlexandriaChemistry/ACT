@@ -855,16 +855,11 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
     // Loop over all molecules
     for(auto &actmol : actmols)
     {
-        auto fragmentHandler  = actmol.fragmentHandler();
-        if (!fragmentHandler)
-        {
-            printf("No complete information for %s, skipping conversion to OpenMM.\n", actmol.getMolname().c_str());
-            continue;
-        }
-        auto fragIds          = fragmentHandler->ids();
+        auto fragmentHandler  = actmol.fragmentHandlerConst();
+        auto fragIds          = fragmentHandler.ids();
         // First residue will be defined below.
         xmlNodePtr residuePtr = nullptr;
-        auto topologies       = fragmentHandler->topologies();
+        auto topologies       = fragmentHandler.topologies();
         // The atoms that are part of the present residue
         std::set<int>         AtomsInResidue;
         for(size_t fff = 0; fff < topologies.size(); fff++)
@@ -879,7 +874,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             // be a different residue from a mid-chain amino acid.
             // This is taken care of under the hood when reading through the OpenBabel
             // interface, which replaces the residue names by InChi strings.
-            auto myatoms       = topologies[fff]->atoms();
+            auto myatoms       = topologies[fff].atoms();
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
@@ -1012,11 +1007,11 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                         };
                         for(const auto &itp : itypes)
                         {
-                            if (!topologies[fff]->hasEntry(itp.first))
+                            if (!topologies[fff].hasEntry(itp.first))
                             {
                                 continue;
                             }
-                            for(const auto &ee : topologies[fff]->entry(itp.first))
+                            for(const auto &ee : topologies[fff].entry(itp.first))
                             {
                                 auto indices = ee->atomIndices();
                                 // Check whether the present vsite is the last in the
@@ -1068,7 +1063,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 }
             }
             // Add bonds
-            addXmlResidueBonds(residuePtr, pd, topologies[fff]);
+            addXmlResidueBonds(residuePtr, pd, &topologies[fff]);
             // Add bond types.
             addTopologyEntries(pd, &BondClassUsed, actmol.topology());
         }

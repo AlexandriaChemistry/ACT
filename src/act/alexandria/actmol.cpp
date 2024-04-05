@@ -493,11 +493,10 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     // Create fragments before adding shells!
     if (immStatus::OK == imm)
     {
-        fraghandler_ = new FragmentHandler(pd, coords, topology_->atoms(),
-                                           bondsConst(), fragmentPtr(), missing);
-        if (fraghandler_->topologies().empty())
+        fraghandler_.init(pd, coords, topology_->atoms(),
+                          bondsConst(), fragmentPtr(), missing);
+        if (fraghandler_.topologies().empty())
         {
-            delete fraghandler_;
             imm = immStatus::FragmentHandler;
         }
         else
@@ -571,7 +570,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                                         std::vector<gmx::RVec>            *interactionForces,
                                         std::vector<gmx::RVec>            *coords) const
 {
-    auto &tops = fraghandler_->topologies();
+    auto &tops = fraghandler_.topologies();
     einter->clear();
     if (tops.size() <= 1)
     {
@@ -591,10 +590,10 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
     }
     // Now compute interaction energies if there are fragments
-    auto   &astart = fraghandler_->atomStart();
+    auto   &astart = fraghandler_.atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
-        int natom = tops[ff]->atoms().size();
+        int natom = tops[ff].atoms().size();
         std::vector<gmx::RVec> forces(natom, fzero);
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
@@ -604,7 +603,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             j++;
         }
         std::map<InteractionType, double> energies;
-        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
+        (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
         edimer -= energies[InteractionType::EPOT];
         
         if (debug)
@@ -652,14 +651,14 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
                                      std::vector<gmx::RVec> *forces)
 {
     std::vector<double> qold;
-    fraghandler_->fetchCharges(&qold);
+    fraghandler_.fetchCharges(&qold);
     if (qold.size() != atomsConst().size())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
                                                        getMolname().c_str(), atomsConst().size(), qold.size()).c_str()));
     }
     immStatus imm       = immStatus::OK;
-    if (fraghandler_->fixedCharges())
+    if (fraghandler_.fixedCharges())
     {
         // We do not need to derive charges again, since they were set once already.
         return imm;
@@ -672,13 +671,13 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     do
     {
         EemRms = 0;
-        auto eqgen = fraghandler_->generateCharges(debug, getMolname(),
-                                                   *coords, pd, atoms());
+        auto eqgen = fraghandler_.generateCharges(debug, getMolname(),
+                                                  *coords, pd, atoms());
         if (eQgen::OK == eqgen)
         {
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
             std::vector<double> qnew;
-            fraghandler_->fetchCharges(&qnew);
+            fraghandler_.fetchCharges(&qnew);
             apply_symmetrized_charges(&qnew, symmetric_charges_);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
             for (size_t i = 0; i < qnew.size(); i++)
@@ -763,7 +762,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             algorithm = ChargeGenerationAlgorithm::NONE;
         }
     }
-    fraghandler_->setChargeGenerationAlgorithm(algorithm);
+    fraghandler_.setChargeGenerationAlgorithm(algorithm);
     switch (algorithm)
     {
     case ChargeGenerationAlgorithm::NONE:
@@ -796,7 +795,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     qcalc->setX(myx);
                 }
             }
-            fraghandler_->setCharges(*myatoms);
+            fraghandler_.setCharges(*myatoms);
             
             return immStatus::OK;
         }
@@ -848,7 +847,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     (*myatoms)[i-1].setCharge(qread[j-1]-q);
                 }
             }
-            fraghandler_->setCharges(*myatoms);
+            fraghandler_.setCharges(*myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::Custom:
@@ -857,7 +856,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             {
                 (*myatoms)[i].setCharge(qcustom[i]);
             }
-            fraghandler_->setCharges(*myatoms);
+            fraghandler_.setCharges(*myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::ESP:
@@ -921,7 +920,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     // TODO not sure whether this is needed but why not.
                     *coords = myx;
                     // Copy charges to fragments
-                    fraghandler_->setCharges(*myatoms);
+                    fraghandler_.setCharges(*myatoms);
                 }
                 else
                 {

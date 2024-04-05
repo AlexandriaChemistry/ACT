@@ -308,7 +308,7 @@ private:
     std::vector<std::string>       error_messages_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
-    FragmentHandler               *fraghandler_   = nullptr;
+    FragmentHandler                fraghandler_;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
     std::vector<gmx::RVec>         xOriginal_;
@@ -328,7 +328,7 @@ public:
      * Constructor
      */
     ACTMol();
-    
+
     iMolSelect datasetType() const { return dataset_type_; }
     
     void set_datasetType(iMolSelect dataset_type) 
@@ -427,9 +427,13 @@ public:
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
 
-    /*! \brief Return the fragment handler
+    /*! \brief Return const fragment handler
      */
-    FragmentHandler *fragmentHandler() const { return fraghandler_; }
+    const FragmentHandler &fragmentHandlerConst() const { return fraghandler_; }
+    
+    /*! \brief Return mutable fragment handler
+     */
+    FragmentHandler *fragmentHandler() { return &fraghandler_; }
     
     /*! \brief
      * \return atoms data

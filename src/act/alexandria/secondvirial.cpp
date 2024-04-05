@@ -335,13 +335,13 @@ void ReRunner::rerun(FILE                        *logFile,
         {
             std::map<InteractionType, double> einter;
             actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
-            auto atomStart  = actmol->fragmentHandler()->atomStart();
+            auto atomStart  = actmol->fragmentHandlerConst().atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            auto      tops  = actmol->fragmentHandlerConst().topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -404,8 +404,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 {
     // Compute the relative masses
     std::vector<double> masses = {
-        actmol->fragmentHandler()->topologies()[0]->mass(),
-        actmol->fragmentHandler()->topologies()[1]->mass()
+        actmol->fragmentHandlerConst().topologies()[0].mass(),
+        actmol->fragmentHandlerConst().topologies()[1].mass()
     };
     // Do this in parallel and with little memory
     int ndimer = maxdimer / cr->size();
@@ -496,16 +496,16 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
             actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
-            auto atomStart  = actmol->fragmentHandler()->atomStart();
+            auto atomStart  = actmol->fragmentHandlerConst().atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
             std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            auto      tops  = actmol->fragmentHandlerConst().topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
