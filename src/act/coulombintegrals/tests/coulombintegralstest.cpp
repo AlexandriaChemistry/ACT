@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -194,9 +194,9 @@ const std::vector<std::tuple<int, int> > make_rows()
 static const std::vector<std::tuple<int, int> > c_rows = make_rows();
 
 //! xi and xj for tests
-const std::vector<std::tuple<double, double> > &make_xi()
+const std::vector<std::tuple<double, double> > make_xi()
 {
-    double mydbl[7][2] = {
+    return {
         {  5.6,   5.7  },
         {  5.7,   5.71 },
         {  5.91,  5.9  },
@@ -205,12 +205,6 @@ const std::vector<std::tuple<double, double> > &make_xi()
         { 22.3,  22.4  },
         { 34.6,  34.5  }
     };
-    static std::vector<std::tuple<double, double>> vt;
-    for(int i = 0; i < 7; i++)
-    {
-        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
-    }
-    return vt;
 };
 
 //! Instantiate the combination of Slater widths to test
