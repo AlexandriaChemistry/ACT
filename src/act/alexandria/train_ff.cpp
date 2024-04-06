@@ -791,6 +791,10 @@ int train_ff(int argc, char *argv[])
                     opt.sii()->forcefield()->nParticleTypes());
         }
     }
+    if (opt.sii()->commRec()->isMaster())
+    {
+        opt.sii()->forcefield()->print(fp);
+    }
     // Check inputs
     bool optionsOk = true;
     if (opt.commRec()->isMaster())

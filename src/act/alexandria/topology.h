@@ -62,6 +62,8 @@ private:
     std::string      name_;
     //! The chemical element
     std::string      elem_;
+    //! Row in the periodic table (for Slater electrostatics)
+    int              row_ = 0;
     //! The atom type in the force field
     std::string      ffType_;
     //! The particle type
@@ -87,8 +89,9 @@ public:
             int                pType,
             int                atomicNumber,
             double             newmass,
-            double             newcharge) :
-        id_({ name }), name_(name), elem_(elem), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
+            double             newcharge,
+            int                row) :
+        id_({ name }), name_(name), elem_(elem), row_(row), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
 
     ActAtom(const ParticleType &pt) :
@@ -104,6 +107,9 @@ public:
 
     //! \return the element
     const std::string &element() const { return elem_; }
+
+    //! \return the row
+    int row() const { return row_; }
 
     //! \return the ffType
     const std::string &ffType() const { return ffType_; }
