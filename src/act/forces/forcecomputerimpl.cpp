@@ -30,6 +30,7 @@
 #include "forcecomputerimpl.h"
 
 #include "act/coulombintegrals/coulomb_gaussian.h"
+#include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
 
@@ -394,11 +395,11 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
-static void computeCoulomb(const TopologyEntryVector         &pairs,
-                           const std::vector<ActAtom>        &atoms,
-                           const std::vector<gmx::RVec>      *coordinates,
-                           std::vector<gmx::RVec>            *forces,
-                           std::map<InteractionType, double> *energies)
+static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
+                                   const std::vector<ActAtom>        &atoms,
+                                   const std::vector<gmx::RVec>      *coordinates,
+                                   std::vector<gmx::RVec>            *forces,
+                                   std::map<InteractionType, double> *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -418,6 +419,55 @@ static void computeCoulomb(const TopologyEntryVector         &pairs,
         auto dr2        = iprod(dx, dx);
         real velec, felec;
         coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
+        if (debug)
+        {
+            auto r1 = std::sqrt(dr2);
+            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, 
+                    atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
+        }
+        ebond += velec;
+        if (dr2 > 0)
+        {
+            felec *= gmx::invsqrt(dr2);
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij  = felec*dx[m];
+                f[ai][m] += fij;
+                f[aj][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::COULOMB, ebond});
+}
+
+static void computeCoulombSlater(const TopologyEntryVector         &pairs,
+                                 const std::vector<ActAtom>        &atoms,
+                                 const std::vector<gmx::RVec>      *coordinates,
+                                 std::vector<gmx::RVec>            *forces,
+                                 std::map<InteractionType, double> *energies)
+{
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto ai     = b->atomIndices()[0];
+        auto aj     = b->atomIndices()[1];
+        auto &params= b->params();
+        auto izeta  = params[coulZETAI];
+        auto jzeta  = params[coulZETAJ];
+        auto irow   = atoms[ai].row();
+        auto jrow   = atoms[aj].row();
+        // Get the atom indices
+        real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        real velec, felec;
+        real r1 = std::sqrt(dr2);
+        velec = Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        felec = -DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
@@ -1078,9 +1128,9 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_LJ,            computeLJ12_6       },
     { F_LJ8_6,         computeLJ8_6        },
     { F_LJ14_7,        computeLJ14_7       },
-    { F_WBHAM,          computeWBH          },
+    { F_WBHAM,         computeWBH          },
     { F_GBHAM,         computeNonBonded    },
-    { F_COUL_SR,       computeCoulomb      },
+    { F_COUL_SR,       computeCoulombGaussian },
     { F_POLARIZATION,  computePolarization },
     { F_IDIHS,         computeImpropers    },
     { F_PDIHS,         computePropers      },
@@ -1088,14 +1138,21 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_UREY_BRADLEY,  computeUreyBradley  }
 };
 
-bondForceComputer getBondForceComputer(int gromacs_index)
+bondForceComputer getBondForceComputer(int        gromacs_index,
+                                       ChargeType qdist)
 {
-    auto bfc = bondForceComputerMap.find(gromacs_index);
-    if (bondForceComputerMap.end() != bfc)
+    if (F_COUL_SR == gromacs_index && ChargeType::Slater == qdist)
     {
-        return *bfc->second;
+        return computeCoulombSlater;
     }
-
+    else
+    {
+        auto bfc = bondForceComputerMap.find(gromacs_index);
+        if (bondForceComputerMap.end() != bfc)
+        {
+            return *bfc->second;
+        }
+    }
     // Keep the compiler happy
     return nullptr;
 }

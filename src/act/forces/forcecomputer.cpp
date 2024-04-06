@@ -31,6 +31,7 @@
 
 #include <cstdlib>
 
+#include "act/basics/chargemodel.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
@@ -169,8 +170,17 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         }
         // Force field parameter list
         auto &ffpl = pd->findForcesConst(entry.first);
+        auto qdist = ChargeType::Gaussian;
+        if (InteractionType::COULOMB == entry.first)
+        {
+            std::string option("chargetype");
+            if (ffpl.optionExists(option))
+            {
+                qdist = name2ChargeType(ffpl.optionValue(option));
+            }
+        }
         // The function we need to do the math
-        auto bfc   = getBondForceComputer(ffpl.gromacsType());
+        auto bfc   = getBondForceComputer(ffpl.gromacsType(), qdist);
         if (bfc)
         {
             // Now do the calculations and store the energy
@@ -228,9 +238,18 @@ void ForceComputer::plot(const ForceField  *pd,
         { InteractionType::VDW,                vdwtype },
         { InteractionType::COULOMB,            vdwtype }
     };
-    auto &fs = pd->findForcesConst(itype);
+    auto &fs   = pd->findForcesConst(itype);
     // The function we need to do the math
-    auto bfc = getBondForceComputer(fs.gromacsType());
+    auto qdist = ChargeType::Gaussian;
+    if (InteractionType::COULOMB == itype)
+    {
+        std::string option("chargetype");
+        if (fs.optionExists(option))
+        {
+            qdist = name2ChargeType(fs.optionValue(option));
+        }
+    }
+    auto bfc   = getBondForceComputer(fs.gromacsType(), qdist);
     if (nullptr == bfc)
     {
         fprintf(stderr, "Please implement a force function for type %s\n",

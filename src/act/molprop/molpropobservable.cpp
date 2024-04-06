@@ -60,7 +60,7 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::POLARIZABILITY, "polarizability" }, 
     { MolPropObservable::HF, "HF" }, 
     { MolPropObservable::DELTAE0, "DeltaE0" }, 
-    { MolPropObservable::INTERACTIONENERGY, "InteractionEnergy" }, 
+    { MolPropObservable::INTERACTIONENERGY, "InteractionEnergy" },
     { MolPropObservable::DHFORM, "DeltaHform" }, 
     { MolPropObservable::DGFORM, "DeltaGform" },
     { MolPropObservable::DSFORM, "DeltaSform" },

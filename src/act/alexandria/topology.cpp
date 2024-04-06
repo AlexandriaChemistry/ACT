@@ -164,7 +164,7 @@ void Topology::addShells(const ForceField *pd,
                     // Insert shell atom
                     auto shellName = iter->atom().name() + "s";
                     ActAtom newshell(shellName, "EP", ptype.id(), eptShell,
-                                     0, 0, charge);
+                                     0, 0, charge, fa->row());
                     newshell.setResidueNumber(iter->atom().residueNumber());
                     auto olditer = iter;
                     iter = atomList->insert(std::next(iter), ActAtomListItem(newshell, shell, olditer->x()));
@@ -825,7 +825,8 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                         std::string vstype = ptype->optionValue(bondtype);
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->gmxParticleType(),
-                                        0, ptype->mass(), ptype->charge());
+                                        0, ptype->mass(), ptype->charge(),
+                                        ptype->row());
                         // Put virtual site straight after the last atom.
                         int vs2 = atomList->size();
                         newatom.addCore(ai);
@@ -986,7 +987,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                     {
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->gmxParticleType(),
-                                        0, ptype->mass(), ptype->charge());
+                                        0, ptype->mass(), ptype->charge(), ptype->row());
 
                         int vs3 = atomList->size();
                         newatom.addCore(ai);
@@ -1147,7 +1148,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
                 auto atype = pd->findParticleType(cai.getObtype());
 
                 ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), eptAtom,
-                                atype->atomnumber(), atype->mass(), atype->charge());
+                                atype->atomnumber(), atype->mass(), atype->charge(), atype->row());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);
                 realAtoms_.push_back(natom++);
