@@ -189,7 +189,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
     std::vector<gmx::RVec> xmOrig[2];
     for(int m = 0; m < 2; m++)
     {
-        auto   atoms   = tops[m].atoms();
+        auto   atoms   = tops[m]->atoms();
         for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
         {
             xmOrig[m].push_back(xorig[j]);
@@ -201,7 +201,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
     {
         // Compute center of mass
         clear_rvec(com[m]);
-        auto   atoms   = tops[m].atoms();
+        auto   atoms   = tops[m]->atoms();
         double totmass = 0;
         for(size_t j = 0; j < atoms.size(); j++)
         {
@@ -263,7 +263,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
             dist += idist*binWidth_;
         }
         gmx::RVec trans = { 0, 0, dist };
-        auto      atoms = tops[1].atoms();
+        auto      atoms = tops[1]->atoms();
         for(size_t j = 0; j < atoms.size(); j++)
         {
             rvec_inc(xrand[1][j], trans);
@@ -271,7 +271,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
         coords[idist].resize(xorig.size());
         for(int m = 0; m < 2; m++)
         {
-            auto   atoms   = tops[m].atoms();
+            auto   atoms   = tops[m]->atoms();
             for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
             {
                 auto jindex = j - atomStart[m];

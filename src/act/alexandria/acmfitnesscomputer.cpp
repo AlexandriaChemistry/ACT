@@ -196,7 +196,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft.fillParameters(sii_->forcefield());
+                ft->fillParameters(sii_->forcefield());
             }
 
             // Run charge generation including shell minimization

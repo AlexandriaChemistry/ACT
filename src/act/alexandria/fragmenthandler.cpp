@@ -101,7 +101,7 @@ void FragmentHandler::init(const ForceField             *pd,
             }
         }
         // Create new topology
-        Topology top(bonds_[ff]);
+        auto top = new Topology(bonds_[ff]);
 
         // Split coordinate array
         size_t natom = f->atoms().size();
@@ -110,19 +110,19 @@ void FragmentHandler::init(const ForceField             *pd,
         int j = 0;
         for(size_t i = offset; i < offset+natom; i++)
         {
-            top.addAtom(atoms[i]);
+            top->addAtom(atoms[i]);
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
-        top.build(pd, &xfrag, 175.0, 5.0, missing);
+        top->build(pd, &xfrag, 175.0, 5.0, missing);
         // Array of total charges
         qtotal_.push_back(f->charge());
         // ID
         ids_.push_back(f->id());
         // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top.atoms(), f->charge()));
+        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), f->charge()));
         // Total number of atoms
-        natoms_ += top.atoms().size();
+        natoms_ += top->atoms().size();
         // Extend topologies_ array
         topologies_.push_back(std::move(top));
         // Increase counter
@@ -140,7 +140,7 @@ void FragmentHandler::init(const ForceField             *pd,
             }
             else
             {
-                atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1].atoms().size();
+                atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
             }
         }
     }
@@ -157,7 +157,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        for (size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+        for (size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
         {
             // TODO: Check whether this works for polarizable models
             switch (algorithm_)
@@ -177,7 +177,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
                 }
                 break;
             case ChargeGenerationAlgorithm::Read:
-                (*qq)[atomStart_[ff] + a] = topologies_[ff].atoms()[a].charge();
+                (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
                 break;
             default:
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
@@ -204,14 +204,14 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
             {
                 // TODO only copy the coordinates if there is more than one fragment.
                 std::vector<gmx::RVec> xx;
-                xx.resize(topologies_[ff].atoms().size());
-                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                xx.resize(topologies_[ff]->atoms().size());
+                for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
                     copy_rvec(x[atomStart_[ff]+a], xx[a]);
                 }
                 QgenAcm_[ff].setQtotal(qtotal_[ff]);
                 eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
-                                                     topologies_[ff].atomsPtr(),
+                                                     topologies_[ff]->atomsPtr(),
                                                      xx, bonds_[ff]);
                 if (eQgen::OK != eqgen)
                 {
@@ -219,9 +219,9 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                             molname.c_str(), QgenAcm_[ff].status());
                     break;
                 }
-                for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
+                for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
-                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
+                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff]->atoms()[a].charge());
                 }
             }
         }
@@ -244,7 +244,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
     size_t k = 0;
     for(size_t i = 0; i < topologies_.size(); i++)
     {
-        auto ats = topologies_[i].atoms();
+        auto ats = topologies_[i]->atoms();
         for(size_t j = 0; j < ats.size(); j++)
         {
             (*atoms)[k++].setCharge(ats[j].charge());
@@ -261,7 +261,7 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
         auto qptr = qmap.find(ids_[i]);
         if (qmap.end() != qptr)
         {
-            auto aptr = topologies_[i].atomsPtr();
+            auto aptr = topologies_[i]->atomsPtr();
             if (aptr->size() == qptr->second.size())
             {
                 for(size_t a = 0; success && a < aptr->size(); a++)
@@ -294,7 +294,7 @@ void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
 {
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        auto aptr = topologies_[ff].atomsPtr();
+        auto aptr = topologies_[ff]->atomsPtr();
         for(size_t a = 0; a < aptr->size(); a++)
         {
             (*aptr)[a].setCharge(atoms[atomStart_[ff]+a].charge());

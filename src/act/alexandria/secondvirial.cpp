@@ -341,7 +341,7 @@ void ReRunner::rerun(FILE                        *logFile,
             auto      tops  = actmol->fragmentHandlerConst().topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk].atoms().size();
+                auto natom = tops[kk]->atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -404,8 +404,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 {
     // Compute the relative masses
     std::vector<double> masses = {
-        actmol->fragmentHandlerConst().topologies()[0].mass(),
-        actmol->fragmentHandlerConst().topologies()[1].mass()
+        actmol->fragmentHandlerConst().topologies()[0]->mass(),
+        actmol->fragmentHandlerConst().topologies()[1]->mass()
     };
     // Do this in parallel and with little memory
     int ndimer = maxdimer / cr->size();
@@ -505,7 +505,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             auto      tops  = actmol->fragmentHandlerConst().topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk].atoms().size();
+                auto natom = tops[kk]->atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;

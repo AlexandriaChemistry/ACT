@@ -207,7 +207,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 {
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
-                        auto   natom = fh->topologies()[f].atoms().size();
+                        auto   natom = fh->topologies()[f]->atoms().size();
                         double qt    = 0;
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {

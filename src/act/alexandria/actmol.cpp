@@ -593,7 +593,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     auto   &astart = fraghandler_.atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
-        int natom = tops[ff].atoms().size();
+        int natom = tops[ff]->atoms().size();
         std::vector<gmx::RVec> forces(natom, fzero);
         std::vector<gmx::RVec> myx(natom);
         int j = 0;
@@ -603,7 +603,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             j++;
         }
         std::map<InteractionType, double> energies;
-        (void) forceComputer->compute(pd, &tops[ff], &myx, &forces, &energies);
+        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
         edimer -= energies[InteractionType::EPOT];
         
         if (debug)

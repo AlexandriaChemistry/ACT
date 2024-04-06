@@ -49,7 +49,7 @@ namespace alexandria
         //! What algorithm do we use for generating charges
         ChargeGenerationAlgorithm          algorithm_ = ChargeGenerationAlgorithm::EEM;
         //! A complete topology for each fragment is needed to compute energies
-        std::vector<Topology>              topologies_;
+        std::vector<Topology *>            topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
         //! Fragment InChi identifiers
@@ -92,10 +92,10 @@ namespace alexandria
         const std::vector<size_t> atomStart() const { return atomStart_; }
 
         //! \return the vector of Topology structures
-        const std::vector<Topology> &topologies() const { return topologies_; }
+        const std::vector<Topology *> &topologies() const { return topologies_; }
 
         //! \return the vector of Topology structures
-        std::vector<Topology> &topologiesPtr() { return topologies_; }
+        std::vector<Topology *> &topologiesPtr() { return topologies_; }
 
         /*! \brief Generate charges for all fragments
          * \param[in]  fp      Debug file pointer, may be nullptr
