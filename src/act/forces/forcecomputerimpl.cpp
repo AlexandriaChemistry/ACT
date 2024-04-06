@@ -466,8 +466,8 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         auto dr2        = iprod(dx, dx);
         real velec, felec;
         real r1 = std::sqrt(dr2);
-        velec = Coulomb_SS(r1, irow, jrow, izeta, jzeta);
-        felec = -DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
