@@ -58,7 +58,7 @@ namespace alexandria
 {
 
 bool ForceField::verifyCheckSum(FILE              *fp,
-                             const std::string &checkSum)
+                                const std::string &checkSum)
 {
     bool match = checkSum == checkSum_;
     if (!match && fp)
@@ -68,6 +68,31 @@ bool ForceField::verifyCheckSum(FILE              *fp,
                 checkSum_.c_str(), checkSum.c_str());
     }
     return match;
+}
+
+void ForceField::print(FILE *fp) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    fprintf(fp, "Force field information\n");
+    fprintf(fp, "-----------------------------------------------\n");
+    fprintf(fp, "Filename:    %s\n", filename_.c_str());
+    fprintf(fp, "CheckSum:    %s\n", checkSum_.c_str());
+    fprintf(fp, "TimeStamp:   %s\n", timeStamp_.c_str());
+    fprintf(fp, "Polarizable: %s\n", polarizable() ? "True" : "False");
+    fprintf(fp, "Interactions:\n");
+    for(const auto &fs : forces_)
+    {
+        fprintf(fp, "  %s function %s\n", interactionTypeToString(fs.first).c_str(),
+                fs.second.function().c_str());
+        for(const auto &opt : fs.second.option())
+        {
+            fprintf(fp, "    option %s value %s\n", opt.first.c_str(), opt.second.c_str());
+        }
+    }
+    fprintf(fp, "-----------------------------------------------\n");
 }
 
 bool ForceField::verifyCheckSum(FILE *fp)

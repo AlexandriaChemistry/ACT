@@ -61,6 +61,11 @@ class ForceField
         //! Default constructor
         ForceField() {};
 
+        /*! Print information about the force field
+         * \param[in] fp File pointer
+         */
+        void print(FILE *fp) const;
+
         /*! \brief
          * Set the file name gentop.dat
          *
