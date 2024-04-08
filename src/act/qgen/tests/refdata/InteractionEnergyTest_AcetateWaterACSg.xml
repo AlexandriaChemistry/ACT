@@ -19,7 +19,7 @@
   <Real Name="Molecule 2 charge">0</Real>
   <Real Name="InteractionEnergy">-35.974175933148899</Real>
   <Real Name="Coulomb">-33.068894641146727</Real>
-  <Real Name="Polarization">0</Real>
+  <Real Name="Induction">0</Real>
   <Real Name="Dispersion">-3.4087311870027501</Real>
   <Real Name="Repulsion">0.50344989500050519</Real>
 </ReferenceData>

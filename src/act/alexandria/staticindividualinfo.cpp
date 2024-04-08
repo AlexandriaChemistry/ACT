@@ -379,7 +379,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                     {
                         if (mg->fit(param.first))
                         {
-                            if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
+                           if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                             }
@@ -400,10 +400,30 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         }
         if (fp)
         {
-            fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+            fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
+            fprintf(fp, "Identifier Parameter     Minimum     Maximum\n");
+            auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
-                fprintf(fp, "Will optimize %s\n", i.name().c_str());
+                auto ff = fcs.find(i.iType());
+                if (fcs.end() == ff)
+                {
+                    continue;
+                }
+                auto pp = ff->second.parametersConst();
+                auto gg = pp.find(i.id());
+                if (pp.end() == gg)
+                {
+                    continue;
+                }
+                const auto &fs = gg->second.find(i.parameterType());
+                if (gg->second.end() == fs)
+                {
+                    continue;
+                }
+                fprintf(fp, "%-10s %9s  %10g  %10g\n",
+                        i.id().id().c_str(), i.parameterType().c_str(),
+                        fs->second.minimum(), fs->second.maximum());
             }
         }
         // Now send the data over to my helpers

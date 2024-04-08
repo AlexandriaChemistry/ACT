@@ -230,7 +230,9 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the filled structure is used for the optimize() method
+void MolGen::fillIopt(ForceField *pd,
+                      FILE       *fp)
+// This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
@@ -243,9 +245,10 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
                 fprintf(debug, "Adding parameter %s to fitting\n", fit.first.c_str());
             }
         }
-        else
+        else if (fp)
         {
-            printf("Cannot find parameter '%s' in force field\n", fit.first.c_str()); 
+            fprintf(fp, "Cannot find parameter '%s' in force field\n",
+                    fit.first.c_str()); 
         }
     }
 }
@@ -733,7 +736,7 @@ size_t MolGen::Read(FILE                                *fp,
     print_memory_usage(debug);
 
     //  Now  we have read the forcefield and spread it to processors
-    fillIopt(pd);
+    fillIopt(pd, cr_->isMaster() ? fp : nullptr);
     /* Reading Molecules from allmols.dat */
     if (cr_->isMaster())
     {
