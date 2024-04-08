@@ -451,28 +451,27 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
     auto  &f     = *forces;
     for (const auto &b : pairs)
     {
-        // Get the parameters. We have to know their names to do this.
+        // Get the atom indices
         auto ai     = b->atomIndices()[0];
         auto aj     = b->atomIndices()[1];
+        // Get the parameters. We have to know their names to do this.
         auto &params= b->params();
         auto izeta  = params[coulZETAI];
         auto jzeta  = params[coulZETAJ];
         auto irow   = atoms[ai].row();
         auto jrow   = atoms[aj].row();
-        // Get the atom indices
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        real velec, felec;
-        real r1 = std::sqrt(dr2);
-        velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
-        felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        auto dr2   = iprod(dx, dx);
+        real r1    = std::sqrt(dr2);
+        real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        // The DCoulomb_SS code returns - the derivative of the energy.
+        real felec =  qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
-            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, 
-                    atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
+            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
         }
         ebond += velec;
         if (dr2 > 0)

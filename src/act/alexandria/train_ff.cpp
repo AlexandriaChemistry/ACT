@@ -828,7 +828,7 @@ int train_ff(int argc, char *argv[])
         {
             if (opt.sii()->commRec()->isMaster())
             {
-                fprintf(stderr, "Nothing to optimize. Check your input.\n");
+                fprintf(stderr, "No parameters to train. Did you run alexandria geometry_ff?\n");
             }
             return 0;
         }

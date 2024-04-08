@@ -344,8 +344,10 @@ public:
 
     /*! \brief Fill the  iOpt_ map
      * \param[in] pd Pointer to forcefield
+     * \param[in] fp File for information, may be nullptr
      */
-    void fillIopt(ForceField *pd);
+    void fillIopt(ForceField *pd,
+                  FILE       *fp);
     
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }
