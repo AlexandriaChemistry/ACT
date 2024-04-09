@@ -345,7 +345,7 @@ int gentop(int argc, char *argv[])
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     int mp_index   = 1;
     std::map<std::string, std::pair<immStatus, std::vector<std::string>>> errors;
-    for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
+    for(auto actmol = actmols.begin(); actmol < actmols.end(); )
     {
         imm = actmol->GenerateTopology(stdout, &pd,
                                        bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
@@ -443,10 +443,12 @@ int gentop(int argc, char *argv[])
                 }
                 actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
             }
+            ++actmol;
         }
         else
         {
             errors.insert({actmol->getMolname(), { imm, actmol->errors() } });
+            actmol = actmols.erase(actmol);
         }
         mp_index++;
     }
