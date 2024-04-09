@@ -75,7 +75,7 @@ int gentop(int argc, char *argv[])
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.[PAR]",
         "Recommend usage is to supply a molprop database",
-        "with charges precalculate and then use the [TT]-db molecule[tt]",
+        "with charges precalculate and then use the [TT]-db 'molecule(s)'[tt]",
         "option to extract compounds from the molprop database.[PAR]",
         "If the [TT]-oi[tt] option is set an [TT]itp[tt] file will be generated",
         "instead of a [TT]top[tt] file.",
@@ -312,21 +312,26 @@ int gentop(int argc, char *argv[])
             }
             else
             {
-                for(auto mymol : mymols)
+                // Throw away those compounds that are not in the selection
+                for(auto mp = mps.begin(); mp < mps.end(); )
                 {
-                    const auto newmp = std::find_if(mps.begin(), mps.end(),
-                                                    [&mymol](const MolProp &x)
-                                                    { return x.getMolname() == mymol; });
-                    if (newmp == mps.end())
+                    const auto molnm = std::find_if(mymols.begin(), mymols.end(),
+                                                    [mp](const std::string &x)
+                                                    { return x == mp->getMolname(); });
+                    if (molnm == mymols.end())
                     {
-                        fprintf(stderr, "Molecule %s not found in database", mymol.c_str());
+                        mp = mps.erase(mp);
                     }
                     else
                     {
-                        ACTMol mm;
-                        mm.Merge(&(*newmp));
-                        actmols.push_back(mm);
+                        ++mp;
                     }
+                }
+                for(auto mp : mps)
+                {
+                    ACTMol mm;
+                    mm.Merge(&mp);
+                    actmols.push_back(mm);
                 }
             }
             if (actmols.empty())
