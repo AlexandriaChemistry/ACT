@@ -401,7 +401,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         if (fp)
         {
             fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
-            fprintf(fp, "Identifier Parameter     Minimum     Maximum\n");
+            fprintf(fp, "Identifier       Parameter       Minimum     Maximum\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
@@ -421,7 +421,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                 {
                     continue;
                 }
-                fprintf(fp, "%-10s %9s  %10g  %10g\n",
+                fprintf(fp, "%-16s %11s  %10g  %10g\n",
                         i.id().id().c_str(), i.parameterType().c_str(),
                         fs->second.minimum(), fs->second.maximum());
             }
