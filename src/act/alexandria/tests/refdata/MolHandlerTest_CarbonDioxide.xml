@@ -5,7 +5,7 @@
   <Real Name="LINEAR_ANGLES before">0</Real>
   <Real Name="EPOT before">0.001925499999998507</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
-  <String Name="algorithm">Steep</String>
+  <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">4.0824829046415801e-05</Real>
   <Real Name="BONDS after">1.4833512431670491e-28</Real>
   <Real Name="LINEAR_ANGLES after">0</Real>

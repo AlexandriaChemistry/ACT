@@ -153,18 +153,9 @@ protected:
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(1e-4);
-            simConfig.setRetries(1);
+            simConfig.setRetries(3);
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});
-            if (eMinimizeStatus::OK != eMin)
-            {
-                // New try using steepest descents
-                simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
-                xmin    = coords;
-                simConfig.setMaxIter(5000);
-                eMin    = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                                 &xmin, &eAfter, nullptr, {});
-            }
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
