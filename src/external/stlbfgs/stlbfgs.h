@@ -44,6 +44,7 @@ namespace STLBFGS {
         void setVerbose() { verbose = true; }
         
         void setFtol(double newftol) { ftol = newftol; }
+        void setGtol(double newgtol) { gtol = newgtol; }
     };
 }
 

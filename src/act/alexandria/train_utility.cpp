@@ -1150,8 +1150,9 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         SimulationConfigHandler simConfig;
         std::vector<gmx::RVec>  xmin   = coords;
         std::map<InteractionType, double> eAfter;
+        double rmsForce;
         molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
-                                        &xmin, &eAfter, nullptr, {});
+                                        &xmin, &eAfter, nullptr, {}, &rmsForce);
         double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
         
         if (rmsd > 0.1) // nm

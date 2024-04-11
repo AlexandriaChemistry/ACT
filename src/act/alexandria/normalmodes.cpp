@@ -219,8 +219,9 @@ int nma(int argc, char *argv[])
             if (sch.minimize())
             {
                 std::map<InteractionType, double> energies;
+                double rmsForce;
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile, {});
+                                                      &xmin, &energies, logFile, {}, &rmsForce);
                 if (eMinimizeStatus::OK == eMin)
                 {
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);

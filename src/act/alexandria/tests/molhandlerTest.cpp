@@ -152,10 +152,12 @@ protected:
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
-            simConfig.setForceTolerance(1e-8);
-            simConfig.setRetries(3);
+            double forceToler = 1e-6;
+            simConfig.setForceTolerance(forceToler);
+            simConfig.setRetries(1);
+            double rmsForce = 0;
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                               &xmin, &eAfter, nullptr, {});
+                                               &xmin, &eAfter, nullptr, {}, &rmsForce);
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");

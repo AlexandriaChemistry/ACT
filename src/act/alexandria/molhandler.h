@@ -143,7 +143,8 @@ public:
                                         std::vector<gmx::RVec>            *coords,
                                         std::map<InteractionType, double> *energies,
                                         FILE                              *logFile,
-                                        const std::vector<int>            &freeze) const;
+                                        const std::vector<int>            &freeze,
+                                        double                            *rmsForce) const;
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple
      * molecules, while relaxing shells if present.

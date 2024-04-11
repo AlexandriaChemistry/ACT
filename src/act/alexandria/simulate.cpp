@@ -328,8 +328,9 @@ int simulate(int argc, char *argv[])
                 }
                 
                 std::map<InteractionType, double> energies;
+                double rmsForce;
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile, freeze);
+                                                      &xmin, &energies, logFile, freeze, &rmsForce);
                 if (eMinimizeStatus::OK == eMin)
                 {
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);

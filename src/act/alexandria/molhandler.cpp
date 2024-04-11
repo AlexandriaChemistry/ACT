@@ -647,7 +647,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                                                 std::vector<gmx::RVec>            *coords,
                                                 std::map<InteractionType, double> *energies,
                                                 FILE                              *logFile,
-                                                const std::vector<int>            &freeze) const
+                                                const std::vector<int>            &freeze,
+                                                double                            *rmsForce) const
 {
     bool      converged    = false;
     int       myIter       = 0;
@@ -712,7 +713,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         {
             opt.setVerbose();
         }
-        opt.setFtol(msForceToler);
+        opt.setFtol(gmx::square(msForceToler));
+        opt.setGtol(msForceToler);
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;
@@ -743,10 +745,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             {
                 msf += iprod(f, f);
             }
-            msf /= lbfgs->forces()->size();
+            *rmsForce = std::sqrt(msf/lbfgs->forces()->size());
             if (debug)
             {
-                fprintf(debug, "RMS force after minimization %g\n", std::sqrt(msf));
+                fprintf(debug, "RMS force after minimization %g\n", *rmsForce);
             }
             if (converged)
             {
@@ -754,7 +756,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 if (logFile)
                 {
                     fprintf(logFile, "Minimization iteration %d/%d energy %g rms force %g\n",
-                            retry+1, maxRetry, enew, std::sqrt(msf));
+                            retry+1, maxRetry, enew, *rmsForce);
                 }
                 if (enew < eMin)
                 {

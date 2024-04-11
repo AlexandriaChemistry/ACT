@@ -486,8 +486,9 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
     {
         return;
     }
+    double rmsForce;
     auto eMin = handler_.minimizeCoordinates(forcefield, actmol, forceComputer, simConfig_, coords,
-                                             nullptr, nullptr, {});
+                                             nullptr, nullptr, {}, &rmsForce);
     if (eMinimizeStatus::OK != eMin)
     {
         // Something fishy happened, but it means we cannot use this structure

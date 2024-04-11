@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="4a00fb215389e20c0473a7188742003a" timestamp="2023-07-20 11:41:51"/>
+  <version checksum="1bf8143a10c91b24546f541d92e38a27" timestamp="2024-04-11 19:10:12"/>
   <particletypes>
     <particletype identifier="Ar" type="Atom" description="ar">
       <option key="acmtype" value="ar_z"/>
@@ -7840,8 +7840,10 @@
     </parameterlist>
   </interaction>
   <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
-    <option key="combination_rule" value="Geometric"/>
     <option key="nexcl" value="0"/>
+    <combinationrule parameter="epsilon" rule="Geometric"/>
+    <combinationrule parameter="gamma" rule="Geometric"/>
+    <combinationrule parameter="sigma" rule="Geometric"/>
     <parameterlist identifier="Ar">
       <parameter type="epsilon" unit="kJ/mol" value="0.515" uncertainty="0" minimum="0.03" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -8457,7 +8459,7 @@
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="POLARIZATION" function="Polarization" canswap="false">
+  <interaction type="POLARIZATION" function="Polarization" canswap="true">
     <option key="reference" value="Molina2011a,Ghahremanpour2018b"/>
     <parameterlist identifier="Be2+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.3" uncertainty="0" minimum="0.3" maximum="0.3" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -8612,7 +8614,7 @@
       <parameter type="kshell" unit="kJ/mol nm2" value="74098.9" uncertainty="0" minimum="74098.9" maximum="74098.9" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE2" function="vsite2" canswap="false"/>
+  <interaction type="VSITE2" function="vsite2" canswap="vsite2"/>
   <interaction type="BONDCORRECTIONS" function="" canswap="false">
     <parameterlist identifier="br_z~br_z">
       <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -9295,7 +9297,7 @@
       <parameter type="delta_eta" unit="eV/e" value="5" uncertainty="0" minimum="-8" maximum="20" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
+  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="ar_z">
       <parameter type="chi" unit="eV" value="3.5" uncertainty="0" minimum="2" maximum="5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
