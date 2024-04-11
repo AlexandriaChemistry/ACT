@@ -29,6 +29,7 @@
 
 #include <set>
 
+#include <cmath>
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
@@ -331,12 +332,11 @@ void ForceComputer::plot(const ForceField  *pd,
             {
                 for(const auto &atomname : f.first.atoms())
                 {
-                    if (pd->hasParticleType(atomname))
+                    for(const auto &p : pd->particleTypesConst())
                     {
-                        auto p = pd->findParticleType(atomname);
-                        if (p->hasOption(subtype->second))
+                        if (p.second.hasOption(btype) && atomname == p.second.optionValue(btype))
                         {
-                            ActAtom a(*p);
+                            ActAtom a(p.second);
                             a.setCharge(1);
                             top.addAtom(a);
                         }
@@ -367,7 +367,7 @@ void ForceComputer::plot(const ForceField  *pd,
                     size_t jatom = top.nAtoms()/2;
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
-                    double r0 = 0.05, r1 = 1.0, delta = 0.001;
+                    double r0 = 0.05, r1 = 0.5, delta = 0.0005;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
                     {
@@ -408,11 +408,11 @@ void ForceComputer::plot(const ForceField  *pd,
                             if (std::abs(ff[i]) > 1e-6)
                             {
                                 double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
-                                double relerror = (fnumeric-ff[i])/ff[i];
-                                if (std::abs(relerror) > 1e-1)
+                                double relerror = (fnumeric-ff[i])/std::abs(ff[i]);
+                                if (std::abs(relerror) > 0.02)
                                 {
-                                    fprintf(debug, "%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
-                                            filename.c_str(),
+                                    fprintf(debug, "%s: i = %zu Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
+                                            filename.c_str(), i,
                                             ff[i], fnumeric, relerror, rr[i],
                                             vv[i+1], vv[i-1], 2*delta);
                                 }
@@ -428,11 +428,12 @@ void ForceComputer::plot(const ForceField  *pd,
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
+                    auto   k      = top.realAtoms()[2];
                     for(int i = 0; i < nsteps; i++)
                     {
                         double theta = (th0+i*delta);
-                        coordinates[2][0] = 1+std::cos(theta*DEG2RAD);
-                        coordinates[2][1] = std::sin(theta*DEG2RAD);
+                        coordinates[k][0] = 1-std::cos(theta*DEG2RAD);
+                        coordinates[k][1] = std::sin(theta*DEG2RAD);
                         energies.clear();
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
@@ -447,10 +448,11 @@ void ForceComputer::plot(const ForceField  *pd,
                     forces.resize(top.nAtoms(), rvnul);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
+                    auto   j      = top.realAtoms()[1];
                     for(int i = 0; i < nsteps; i++)
                     {
                         double xx = (r0+i*delta);
-                        coordinates[1][1] = xx;
+                        coordinates[j][1] = xx;
                         energies.clear();
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", xx, energies[itype]);
@@ -468,7 +470,7 @@ void ForceComputer::plot(const ForceField  *pd,
                     for(int i = 0; i < nsteps; i++)
                     {
                         double theta = (th0+i*delta);
-                        coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
+                        coordinates[3][0] = 1-std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
                         energies.clear();
                         bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);

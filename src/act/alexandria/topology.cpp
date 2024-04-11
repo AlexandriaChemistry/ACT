@@ -1193,7 +1193,11 @@ void Topology::build(const ForceField             *pd,
     // scaling to insert for instance one shell per particle. At the end of this
     // algorithm we copy the contents of the list back to std::vectors.
     AtomList atomList;
-    auto     nRealAtoms = atoms_.size();
+    realAtoms_.clear();
+    for(size_t i = 0; i < atoms_.size(); i++)
+    {
+        realAtoms_.push_back(i);
+    }
     for(size_t index = 0; index < atoms_.size(); index++)
     {
         ActAtomListItem item(atoms_[index], index, (*x)[index]);
@@ -1235,7 +1239,7 @@ void Topology::build(const ForceField             *pd,
     addShells(pd, &atomList);
     if (debug)
     {
-        auto nshell = atomList.size()-nRealAtoms;
+        auto nshell = atomList.size()-realAtoms_.size();
         for(const auto nn : nv2)
         {
             nshell -= nn.second;

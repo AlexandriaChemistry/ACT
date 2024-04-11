@@ -773,7 +773,14 @@ static void computeAngles(const TopologyEntryVector             &angles,
 
         real vA, fangle;
         harmonic(ka, theta0, theta, &vA, &fangle);
-        
+
+        if (debug)
+        {
+            fprintf(debug, "Angle %s %s %s = %g, ref angle %g energy %g force %g\n",
+                    atoms[indices[0]].name().c_str(),
+                    atoms[indices[1]].name().c_str(),
+                    atoms[indices[2]].name().c_str(), theta, theta0, vA, fangle);
+        }
         energy += vA;
         
         auto costh2 = gmx::square(costh);
