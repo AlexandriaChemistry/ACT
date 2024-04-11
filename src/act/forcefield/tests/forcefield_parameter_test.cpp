@@ -168,6 +168,11 @@ TEST(ForceFieldParameterSimpleTest, NtrainStrict) {
     EXPECT_THROW(fp.setNtrain(30), gmx::InternalError);
 }
 
+TEST(ForceFieldParameterSimpleTest, MinEqualsMaxSetMutabilityFixed) {
+    ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
+    EXPECT_TRUE(fp.mutability() == Mutability::Fixed);
+}
+
 TEST(ForceFieldParameterSimpleTest, NameToMutability) {
     Mutability m;
     EXPECT_TRUE(nameToMutability("Free", &m));
