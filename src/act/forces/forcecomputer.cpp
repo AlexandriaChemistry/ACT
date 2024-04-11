@@ -79,17 +79,21 @@ double ForceComputer::compute(const ForceField                  *pd,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
-                              const gmx::RVec                   &field) const
+                              const gmx::RVec                   &field,
+                              bool                               minimizeShells) const
 {
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
     // Reset shells if needed
-    auto atoms = top->atoms();
-    for(size_t i = 0; i < top->nAtoms(); i++)
+    if (minimizeShells)
     {
-        for(int sh : atoms[i].shells())
+        auto atoms = top->atoms();
+        for(size_t i = 0; i < top->nAtoms(); i++)
         {
-            copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+            for(int sh : atoms[i].shells())
+            {
+                copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+            }
         }
     }
     // Do first calculation every time.
@@ -101,7 +105,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     auto itype = InteractionType::POLARIZATION;
     // mean square shell force
     double msForce = 0;
-    if (pd->polarizable() && top->hasEntry(itype))
+    if (pd->polarizable() && top->hasEntry(itype) && minimizeShells)
     {
         // Is this particle a shell?
         std::vector<bool>   isShell;

@@ -83,16 +83,19 @@ private:
     //! \brief Destructor
     ~ForceComputer();
 
-    /*! Do complete energy/force computation.
-     * If shells are present their positions will be minimized.
-     * \param[in]  pd          Pointer to force field structure
-     * \param[in]  top         The molecular topology
-     * \param[in]  charges     The charges for all particles
-     * \param[in]  coordinates The atomic coordinates. Coordinates of
-     *                         shell particles may be changed.
-     * \param[out] forces      The atomic forces
-     * \param[out] energies    The energy components
-     * \param[in]  field       Optional electric field to be applied
+    /*! Do energy/force computation.
+     * If shells are present and the flag below is set, their positions will be 
+     * reset and  then minimized. If the flag is not set a single energy calculation
+     * is done only.
+     * \param[in]  pd             Pointer to force field structure
+     * \param[in]  top            The molecular topology
+     * \param[in]  charges        The charges for all particles
+     * \param[in]  coordinates    The atomic coordinates. Coordinates of
+     *                            shell particles may be changed.
+     * \param[out] forces         The atomic forces
+     * \param[out] energies       The energy components
+     * \param[in]  field          Optional electric field to be applied
+     * \param[in]  minimizeShells If true, shell positions are minimized, see above
      * \return The mean square force on the shells, or zero if not present.
      */
     double compute(const ForceField                  *pd,
@@ -100,7 +103,8 @@ private:
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
                    std::map<InteractionType, double> *energies,
-                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 }) const;
+                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                   bool                               minimizeShells = true) const;
                  
     /*! \brief Return the gromacs type used
      * In practice this converts the InteractionType to the ftype

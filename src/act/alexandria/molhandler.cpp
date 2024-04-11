@@ -575,9 +575,9 @@ private:
     std::map<InteractionType, double>  energies_;
     const std::vector<int>             theAtoms_;
 public:
-    StlbfgsHandler(const ForceField    *pd,
-                   const ACTMol        *mol,
-                   const ForceComputer *forceComp,
+    StlbfgsHandler(const ForceField       *pd,
+                   const ACTMol           *mol,
+                   const ForceComputer    *forceComp,
                    const std::vector<int> &theAtoms) : 
         pd_(pd), mol_(mol), forceComp_(forceComp), theAtoms_(theAtoms)
     {
@@ -624,8 +624,11 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
             (*coords)[i][j] = x[jj++];
         }
     }
+    gmx::RVec field = { 0, 0, 0 };
+    bool minimizeShells = false;
     lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), coords,
-                                forces, lbfgs->energies());
+                                forces, lbfgs->energies(), field,
+                                minimizeShells);
     f  = lbfgs->energy(InteractionType::EPOT);
     jj = 0;
     for (auto i : theAtoms)
@@ -659,15 +662,16 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                     msForceToler, shellToler2);
             fprintf(logFile, "Increasing atom mean square force tolerance to hundred times that for shells.\n");
         }
-        msForceToler = 100*shellToler2;
+        msForceToler = shellToler2;
     }
-    // List of atoms (not shells) and weighting factors
+    // List of atoms and shells but not vsites and weighting factors
     auto              myatoms = mol->atomsConst();
     std::vector<int>  theAtoms;
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         // Store the atom numbers for the frozen atoms in the counting incl. shells
-        if (myatoms[atom].pType() == eptAtom &&
+        if ((myatoms[atom].pType() == eptAtom ||
+             myatoms[atom].pType() == eptShell) &&
             freeze.end() == std::find(freeze.begin(), freeze.end(), atom))
         {
             theAtoms.push_back(atom);
@@ -703,8 +707,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
-
         STLBFGS::Optimizer                      opt{func};
+        if (logFile)
+        {
+            opt.setVerbose();
+        }
+        opt.setFtol(msForceToler);
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;
@@ -729,14 +737,24 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                     sx[DIM*i+j] = (*coords)[theAtoms[i]][j] + retry * dis(gen) * displacement;
                 }
             }
-            converged = opt.run(sx);
+            converged  = opt.run(sx);
+            double msf = 0;
+            for(const auto &f : *lbfgs->forces())
+            {
+                msf += iprod(f, f);
+            }
+            msf /= lbfgs->forces()->size();
+            if (debug)
+            {
+                fprintf(debug, "RMS force after minimization %g\n", std::sqrt(msf));
+            }
             if (converged)
             {
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (logFile)
                 {
-                    fprintf(logFile, "Minimization iteration %d/%d energy %g\n",
-                            retry+1, maxRetry, enew);
+                    fprintf(logFile, "Minimization iteration %d/%d energy %g rms force %g\n",
+                            retry+1, maxRetry, enew, std::sqrt(msf));
                 }
                 if (enew < eMin)
                 {

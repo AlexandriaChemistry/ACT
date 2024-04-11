@@ -109,7 +109,7 @@ protected:
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
         auto alg = ChargeGenerationAlgorithm::NONE;
-        double shellTolerance = 1e-12;
+        double shellTolerance = 1e-6;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
@@ -152,7 +152,7 @@ protected:
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
-            simConfig.setForceTolerance(1e-4);
+            simConfig.setForceTolerance(1e-8);
             simConfig.setRetries(3);
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});

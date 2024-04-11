@@ -11,13 +11,13 @@
   <Real Name="EPOT before">39.415759077301374</Real>
   <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.007235240333849308</Real>
-  <Real Name="BONDS after">0.22742945247796881</Real>
-  <Real Name="ANGLES after">7.3277336356657576</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0072351261356531048</Real>
+  <Real Name="BONDS after">0.22724463050063246</Real>
+  <Real Name="ANGLES after">7.3279454518350713</Real>
   <Real Name="PROPER_DIHEDRALS after">0</Real>
-  <Real Name="IMPROPER_DIHEDRALS after">5.8851621075079928e-34</Real>
-  <Real Name="DISPERSION after">-2.7427211066688155</Real>
-  <Real Name="EXCHANGE after">0.80157827835305062</Real>
-  <Real Name="COULOMB after">-8.6423431845134893</Real>
-  <Real Name="EPOT after">-3.0283229246855274</Real>
+  <Real Name="IMPROPER_DIHEDRALS after">6.9317422056149021e-34</Real>
+  <Real Name="DISPERSION after">-2.7426796853731004</Real>
+  <Real Name="EXCHANGE after">0.80155248622073672</Real>
+  <Real Name="COULOMB after">-8.6423868957587899</Real>
+  <Real Name="EPOT after">-3.0283240125754496</Real>
 </ReferenceData>

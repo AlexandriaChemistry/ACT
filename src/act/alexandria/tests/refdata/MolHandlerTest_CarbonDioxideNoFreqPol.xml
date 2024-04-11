@@ -7,17 +7,16 @@
   <Real Name="EXCHANGE before">164.25691799281856</Real>
   <Real Name="COULOMB before">-0.3608992845774992</Real>
   <Real Name="POLARIZATION before">0</Real>
-  <Real Name="INDUCTION before">-0.0005485125741133978</Real>
-  <Real Name="EPOT before">-639.44316714650711</Real>
+  <Real Name="INDUCTION before">-0.00054851257402283265</Real>
+  <Real Name="EPOT before">-639.44316714650699</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0096426036843551104</Real>
-  <Real Name="BONDS after">-767.47332321249553</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.00964258768887271</Real>
+  <Real Name="BONDS after">-767.47342413006572</Real>
   <Real Name="LINEAR_ANGLES after">0</Real>
-  <Real Name="DISPERSION after">-3.2808541874463346</Real>
-  <Real Name="EXCHANGE after">60.918044425769814</Real>
-  <Real Name="COULOMB after">-0.35830614098142632</Real>
-  <Real Name="POLARIZATION after">0</Real>
-  <Real Name="INDUCTION after">-0.00082414079764500398</Real>
-  <Real Name="EPOT after">-710.19526325595109</Real>
+  <Real Name="DISPERSION after">-3.2808544864191744</Real>
+  <Real Name="EXCHANGE after">60.918145646471523</Real>
+  <Real Name="COULOMB after">-0.35994563741223828</Real>
+  <Real Name="POLARIZATION after">0.00081535142195481448</Real>
+  <Real Name="EPOT after">-710.19526325600373</Real>
 </ReferenceData>

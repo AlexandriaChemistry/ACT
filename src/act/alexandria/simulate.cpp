@@ -95,6 +95,7 @@ int simulate(int argc, char *argv[])
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
     bool                      json       = false;
+    bool                      oneH       = false;
     static char              *qcustom    = (char *)"";
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
@@ -111,6 +112,8 @@ int simulate(int argc, char *argv[])
           "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" },
+        { "-oneH", FALSE, etBOOL, {&oneH},
+          "Map all hydrogen atom types back to H (for debugging only)" },
         { "-json", FALSE, etBOOL, {&json},
           "Print part of the output in json format" }
     };
@@ -200,7 +203,7 @@ int simulate(int argc, char *argv[])
         int                  nsymm  = 1;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
-                       false, box, false))
+                       false, box, oneH))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
             status = 1;
