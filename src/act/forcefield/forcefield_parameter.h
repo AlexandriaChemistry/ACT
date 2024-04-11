@@ -66,6 +66,8 @@ class ForceFieldParameter
     
     /*! \brief Constructor initiating all parameters.
      *
+     * If min and max are equal, mutability will be set to Fixed
+     * automatically.
      * TODO: Check unit
      * \param[in] unit        Physical unit of parameter, e.g. nm or fs
      * \param[in] value       Actual value of the parameter
