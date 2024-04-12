@@ -82,7 +82,8 @@ static void add_energies(const ForceField                        *pd,
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(const char *molname, const char *forcefield, bool nma)
+    void test(const char *molname, const char *forcefield, bool nma,
+              double forceToler = 1e-7)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -152,7 +153,6 @@ protected:
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
-            double forceToler = 1e-6;
             simConfig.setForceTolerance(forceToler);
             simConfig.setRetries(1);
             double rmsForce = 0;
@@ -270,7 +270,7 @@ TEST_F (MolHandlerTest, UracilNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", false);
+    test("carbon-dioxide.sdf", "ACS-pg", false, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
@@ -324,7 +324,7 @@ TEST_F (MolHandlerTest, Uracil)
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", true);
+    test("carbon-dioxide.sdf", "ACS-pg", true, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
