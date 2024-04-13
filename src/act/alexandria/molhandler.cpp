@@ -723,7 +723,16 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms, *coords);
-        STLBFGS::Optimizer                      opt{func};
+        {
+            // Before handing over the coordinates to the LBFGS algorithm we
+            // minimize the shells just once.
+            gmx::RVec field = { 0, 0, 0 };
+            std::vector<gmx::RVec> forces(mol->atomsConst().size());
+            lbfgs->forceComp()->compute(pd, mol->topology(), coords,
+                                        &forces, lbfgs->energies(), field,
+                                        true);
+        }
+        STLBFGS::Optimizer opt{func};
         if (logFile)
         {
             opt.setVerbose();
