@@ -142,15 +142,18 @@ protected:
             std::vector<gmx::RVec> forces(mp.atomsConst().size());
             std::vector<gmx::RVec> coords = mp.xOriginal();
             std::map<InteractionType, double> eBefore;
-            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
+            auto shellRMSF = forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
             add_energies(pd, &checker_, eBefore, "before");
+            checker_.checkReal(shellRMSF, "ShellRMS force before");
             checker_.checkSequence(forces.begin(), forces.end(), "Initial force");
 
             MolHandler mh;
             
             std::vector<gmx::RVec> xmin = coords;
-            double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
-            checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
+            // TODO: remove this. The coordinateRmsd introduces noise in the
+            // coordinates.
+            //double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            //checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
@@ -170,10 +173,11 @@ protected:
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
-            rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-            (void) forceComp->compute(pd, mp.topology(), &xmin, &forces, &eAfter);
+            shellRMSF = forceComp->compute(pd, mp.topology(), &xmin, &forces, &eAfter);
             add_energies(pd, &checker_, eAfter, "after");
+            checker_.checkReal(shellRMSF, "ShellRMS force after");
             checker_.checkSequence(forces.begin(), forces.end(), "Minimized force");
             // Verify that the energy has gone down, not up.
             EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);

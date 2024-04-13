@@ -637,10 +637,14 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                 minimizeShells);
     f  = lbfgs->energy(InteractionType::EPOT);
     // TODO make the printing into debug only
+    for (const auto &ener : *lbfgs->energies())
+    {
+        printf("LBFGS %s %.6f\n", interactionTypeToString(ener.first).c_str(), ener.second);
+    }
     auto atoms = lbfgs->mol()->atomsConst();
     for(size_t i = 0; i < coords->size(); i++)
     {
-        printf("LBFGS iter %5d %4s %2zu x %8.4f  %8.4f  %8.4f f %14.5f %14.5f %14.5f\n",
+        printf("LBFGS iter %5d %4s %2zu x %12.5e  %12.5e  %12.5e f %14.5e %14.5e %14.5e\n",
                lbfgs->iter(), atoms[i].id().id().c_str(), i,
                (*coords)[i][XX], (*coords)[i][YY], (*coords)[i][ZZ],
                (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]);
@@ -726,11 +730,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         {
             // Before handing over the coordinates to the LBFGS algorithm we
             // minimize the shells just once.
-            gmx::RVec field = { 0, 0, 0 };
-            std::vector<gmx::RVec> forces(mol->atomsConst().size());
-            lbfgs->forceComp()->compute(pd, mol->topology(), coords,
-                                        &forces, lbfgs->energies(), field,
-                                        true);
+            //gmx::RVec field = { 0, 0, 0 };
+            //std::vector<gmx::RVec> forces(mol->atomsConst().size());
+            //lbfgs->forceComp()->compute(pd, mol->topology(), coords,
+            //                          &forces, lbfgs->energies(), field,
+            //                          true);
         }
         STLBFGS::Optimizer opt{func};
         if (logFile)
