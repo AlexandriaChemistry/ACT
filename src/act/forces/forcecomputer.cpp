@@ -233,8 +233,9 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         }
         else if (!isVsite(entry.first))
         {
-            fprintf(stderr, "Please implement a force function for type %s\n",
-                    interaction_function[ffpl.gromacsType()].name);
+            //   fprintf(stderr, "Please implement a force function for type %s\n",
+            //      interaction_function[ffpl.gromacsType()].name)
+            ;
         }
     }
     energies->insert({ InteractionType::EPOT, epot });

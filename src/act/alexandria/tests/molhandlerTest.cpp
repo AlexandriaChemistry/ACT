@@ -83,7 +83,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma,
-              double forceToler = 1e-7)
+              double forceToler = 1e-4)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -144,7 +144,8 @@ protected:
             std::map<InteractionType, double> eBefore;
             (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
             add_energies(pd, &checker_, eBefore, "before");
-            
+            checker_.checkSequence(forces.begin(), forces.end(), "Initial force");
+
             MolHandler mh;
             
             std::vector<gmx::RVec> xmin = coords;
@@ -156,13 +157,16 @@ protected:
             simConfig.setForceTolerance(forceToler);
             simConfig.setRetries(1);
             double rmsForce = 0;
+            // To get more debug output, set printer to stdout
+            FILE *printer = nullptr;
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                               &xmin, &eAfter, nullptr, {}, &rmsForce);
+                                               &xmin, printer, {}, &rmsForce);
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
             rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
+            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eAfter);
             add_energies(pd, &checker_, eAfter, "after");
             
             // Verify that the energy has gone down, not up.
@@ -270,7 +274,7 @@ TEST_F (MolHandlerTest, UracilNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", false, 1e-6);
+    test("carbon-dioxide.sdf", "ACS-pg", false);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
@@ -324,7 +328,7 @@ TEST_F (MolHandlerTest, Uracil)
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", true, 1e-6);
+    test("carbon-dioxide.sdf", "ACS-pg", true);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)

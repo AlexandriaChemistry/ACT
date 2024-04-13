@@ -1,29 +1,29 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS_act">0.10108926929309103</Real>
-  <Real Name="ANGLES_act">1.3363857584857888</Real>
+  <Real Name="BONDS_act">0.10108926929309421</Real>
+  <Real Name="ANGLES_act">1.3363857584857919</Real>
   <Real Name="PROPER_DIHEDRALS_act">0.038879974930688954</Real>
   <Real Name="DISPERSION_act">-2.442323994976032e-11</Real>
   <Real Name="EXCHANGE_act">9.1212148244748533e-22</Real>
-  <Real Name="COULOMB_act">11.951573910327573</Real>
-  <Real Name="EPOT_act">13.427928913012719</Real>
-  <Real Name="s3-1_act fX">-142.60188241170266</Real>
-  <Real Name="s3-1_act fY">-167.63336811487068</Real>
+  <Real Name="COULOMB_act">11.95157391032758</Real>
+  <Real Name="EPOT_act">13.427928913012732</Real>
+  <Real Name="s3-1_act fX">-142.6018824117113</Real>
+  <Real Name="s3-1_act fY">-167.63336811487173</Real>
   <Real Name="s3-1_act fZ">3.5527136788005009e-14</Real>
-  <Real Name="h-2_act fX">-8.5129075795205509</Real>
-  <Real Name="h-2_act fY">-17.491532783644786</Real>
+  <Real Name="h-2_act fX">-8.512907579512305</Real>
+  <Real Name="h-2_act fY">-17.491532783643763</Real>
   <Real Name="h-2_act fZ">-4.0856207306205761e-14</Real>
-  <Real Name="c3-3_act fX">315.49067482540761</Real>
-  <Real Name="c3-3_act fY">-89.272562497657617</Real>
+  <Real Name="c3-3_act fX">315.49067482541267</Real>
+  <Real Name="c3-3_act fY">-89.272562497660061</Real>
   <Real Name="c3-3_act fZ">5.6843418860808015e-14</Real>
-  <Real Name="h-4_act fX">-102.31087513995234</Real>
-  <Real Name="h-4_act fY">32.763051286083403</Real>
-  <Real Name="h-4_act fZ">65.450667079382555</Real>
-  <Real Name="h-5_act fX">40.245865445720312</Real>
-  <Real Name="h-5_act fY">208.87136082400627</Real>
+  <Real Name="h-4_act fX">-102.31087513995469</Real>
+  <Real Name="h-4_act fY">32.763051286084654</Real>
+  <Real Name="h-4_act fZ">65.450667079384672</Real>
+  <Real Name="h-5_act fX">40.245865445720327</Real>
+  <Real Name="h-5_act fY">208.87136082400622</Real>
   <Real Name="h-5_act fZ">-5.2761231174371367e-14</Real>
-  <Real Name="h-6_act fX">-102.31087513995234</Real>
-  <Real Name="h-6_act fY">32.763051286083403</Real>
-  <Real Name="h-6_act fZ">-65.450667079382555</Real>
+  <Real Name="h-6_act fX">-102.31087513995469</Real>
+  <Real Name="h-6_act fY">32.763051286084654</Real>
+  <Real Name="h-6_act fZ">-65.450667079384672</Real>
 </ReferenceData>

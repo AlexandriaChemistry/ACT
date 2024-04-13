@@ -578,11 +578,12 @@ public:
     StlbfgsHandler(const ForceField       *pd,
                    const ACTMol           *mol,
                    const ForceComputer    *forceComp,
-                   const std::vector<int> &theAtoms) : 
+                   const std::vector<int> &theAtoms,
+                   const std::vector<gmx::RVec> &coords) :
         pd_(pd), mol_(mol), forceComp_(forceComp), theAtoms_(theAtoms)
     {
         gmx::RVec vzero = { 0, 0, 0 };
-        coords_ = mol_->xOriginal();
+        coords_         = coords;
         forces_.resize(mol_->atomsConst().size(), vzero);
     }
 
@@ -645,7 +646,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                                                 const ForceComputer               *forceComp,
                                                 const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
-                                                std::map<InteractionType, double> *energies,
                                                 FILE                              *logFile,
                                                 const std::vector<int>            &freeze,
                                                 double                            *rmsForce) const
@@ -707,14 +707,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
 #define next (1-current)
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
-        lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
+        lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms, *coords);
         STLBFGS::Optimizer                      opt{func};
         if (logFile)
         {
             opt.setVerbose();
         }
-        opt.setFtol(gmx::square(msForceToler));
-        opt.setGtol(msForceToler);
+        // Only converge if the energy change is 0 or the maximum force is what
+        // is specified by the user.
+        opt.setFtol(0);
+        opt.setGtol(0);
+        opt.setGmax(msForceToler);
+        opt.setMaxIter(10000);
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;
@@ -882,11 +886,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         }
         if (firstStep)
         {
-            // Store energy
-            if (energies)
-            {
-                *energies = newEnergies[current];
-            }
             epotMin = newEnergies[current][InteractionType::EPOT];
             msfMin  = msForce(theAtoms, forces[current]);
             // Write stuff
@@ -1001,13 +1000,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     if (converged)
     {
         *coords   = newCoords[current];
-        if (energies && !newEnergies[current].empty())
-        {
-            *energies = newEnergies[current];
-        }
-        // Re-compute the energy one last time.
-        // TODO: is this really needed?
-        // (void) forceComp->compute(pd, mol->topology(), coords, &forces[current], energies);
         return eMinimizeStatus::OK;
     }
     else

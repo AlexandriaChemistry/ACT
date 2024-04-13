@@ -7840,7 +7840,7 @@
     </parameterlist>
   </interaction>
   <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
-    <option key="nexcl" value="0"/>
+    <option key="nexcl" value="1"/>
     <combinationrule parameter="epsilon" rule="Geometric"/>
     <combinationrule parameter="gamma" rule="Geometric"/>
     <combinationrule parameter="sigma" rule="Geometric"/>
@@ -8228,7 +8228,7 @@
   <interaction type="COULOMB" function="COUL_SR" canswap="true">
     <option key="chargetype" value="Gaussian"/>
     <option key="epsilonr" value="1"/>
-    <option key="nexcl" value="0"/>
+    <option key="nexcl" value="1"/>
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="6" uncertainty="0" minimum="2" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>

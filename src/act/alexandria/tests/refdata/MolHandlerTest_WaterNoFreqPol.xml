@@ -3,20 +3,54 @@
 <ReferenceData>
   <Real Name="BONDS before">-799.99014184846362</Real>
   <Real Name="ANGLES before">0.00062492073723482847</Real>
-  <Real Name="DISPERSION before">-2.7018806070515495</Real>
-  <Real Name="EXCHANGE before">972.27536570167695</Real>
-  <Real Name="COULOMB before">-78.242686039374689</Real>
+  <Real Name="DISPERSION before">-0.58564874216823237</Real>
+  <Real Name="EXCHANGE before">14.999067826117853</Real>
+  <Real Name="COULOMB before">23.531546285042168</Real>
   <Real Name="POLARIZATION before">0</Real>
-  <Real Name="INDUCTION before">-0.24915677766045777</Real>
-  <Real Name="EPOT before">91.092125349863863</Real>
+  <Real Name="INDUCTION before">-0.14682838856135766</Real>
+  <Real Name="EPOT before">-762.19137994729601</Real>
+  <Sequence Name="Initial force">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">78.637041510438877</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">1103.3836931439405</Real>
+      <Real Name="Z">-39.318520755219438</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-0.00015488629230731021</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-1103.3836931439405</Real>
+      <Real Name="Z">-39.318520755219438</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0.00015488629230731021</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.023280248108082643</Real>
-  <Real Name="BONDS after">-642.14393723756734</Real>
-  <Real Name="ANGLES after">0.045787415418065733</Real>
-  <Real Name="DISPERSION after">-2.46731903984917</Real>
-  <Real Name="EXCHANGE after">104.34464701961404</Real>
-  <Real Name="COULOMB after">-77.240253878933345</Real>
-  <Real Name="POLARIZATION after">0.35292090195703119</Real>
-  <Real Name="EPOT after">-617.10815481936061</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0043605984496444166</Real>
+  <Real Name="BONDS after">-799.99014184846362</Real>
+  <Real Name="ANGLES after">0.00062492073723482847</Real>
+  <Real Name="DISPERSION after">-0.58564874216823237</Real>
+  <Real Name="EXCHANGE after">14.999067826117853</Real>
+  <Real Name="COULOMB after">23.531546285042168</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">-0.14682838856135766</Real>
+  <Real Name="EPOT after">-762.19137994729601</Real>
 </ReferenceData>

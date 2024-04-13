@@ -2,19 +2,37 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="BONDS before">-399.99840319626986</Real>
-  <Real Name="DISPERSION before">-1.2471522353481168</Real>
-  <Real Name="EXCHANGE before">392.13316508533296</Real>
-  <Real Name="COULOMB before">-58.959008301747303</Real>
   <Real Name="POLARIZATION before">0</Real>
-  <Real Name="INDUCTION before">-0.81818189558999921</Real>
-  <Real Name="EPOT before">-68.889580543622301</Real>
+  <Real Name="INDUCTION before">0</Real>
+  <Real Name="EPOT before">-399.99840319626986</Real>
+  <Sequence Name="Initial force">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-31.904149173452932</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">31.904149173452932</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.020409963555613253</Real>
-  <Real Name="BONDS after">-319.47194501304966</Real>
-  <Real Name="DISPERSION after">-1.2027534288537804</Real>
-  <Real Name="EXCHANGE after">67.488578759433253</Real>
-  <Real Name="COULOMB after">-58.377699622800037</Real>
-  <Real Name="POLARIZATION after">1.0209676091825342</Real>
-  <Real Name="EPOT after">-310.54285169608767</Real>
+  <Real Name="Coordinate RMSD after minimizing">6.8783859914472862e-05</Real>
+  <Real Name="BONDS after">-399.99840319626986</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">0</Real>
+  <Real Name="EPOT after">-399.99840319626986</Real>
 </ReferenceData>

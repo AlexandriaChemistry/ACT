@@ -218,12 +218,14 @@ int nma(int argc, char *argv[])
             std::vector<gmx::RVec> xmin   = coords;
             if (sch.minimize())
             {
-                std::map<InteractionType, double> energies;
                 double rmsForce;
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile, {}, &rmsForce);
+                                                      &xmin, logFile, {}, &rmsForce);
                 if (eMinimizeStatus::OK == eMin)
                 {
+                    std::map<InteractionType, double> energies;
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
                     auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                     fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
                             energies[InteractionType::EPOT], rmsd);

@@ -120,20 +120,19 @@ public:
              bool                      debugNMA = false) const;
 
     /*! \brief
-     * The routine will energy minimize the atomic coordinates of a molecule while
-     * relaxing the shells. The minimized coordinates will be stored in the 
-     * actmol object. If the msForceToler = 0, the value will be derived from the
-     * tolerance inside the forceComp, accoring to:
-     * toler = 10*forceComp->rmsForce()^2
+     * The routine will energy minimize the atomic coordinates and the shells
+     * of a molecule. The minimized coordinates will be returned in the same
+     * coordinate array that is passed as input.
      *
-     * \param[in]  pd          Pointer to force field structure
-     * \param[in] mol          The molecule object (will be modified)
-     * \param[in] forceComp    Force Computer utility
-     * \param[in] sch          Configuration options
+     * \param[in]    pd        Pointer to force field structure
+     * \param[in]    mol       The molecule object (will be modified)
+     * \param[in]    forceComp Force Computer utility
+     * \param[in]    simConfig Configuration options
      * \param[inout] coords    The coordinates to be minimized
-     * \param[in] logFile      File to write some info to, may be a nullptr
-     * \param[in] freeze       List of atoms (not shells) that will not be
+     * \param[in]    logFile   File to write some info to, may be a nullptr
+     * \param[in]    freeze    List of atoms (not shells) that will not be
      *                         moved during the minimization.
+     * \param[out]   rmsForce  Root mean square force on minimized particles
      * \return Status flag
      */
     eMinimizeStatus minimizeCoordinates(const ForceField                  *pd,
@@ -141,7 +140,6 @@ public:
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
-                                        std::map<InteractionType, double> *energies,
                                         FILE                              *logFile,
                                         const std::vector<int>            &freeze,
                                         double                            *rmsForce) const;

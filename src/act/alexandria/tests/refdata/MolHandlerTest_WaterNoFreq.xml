@@ -4,10 +4,28 @@
   <Real Name="BONDS before">0.0026570465668230014</Real>
   <Real Name="ANGLES before">0.55728331281907129</Real>
   <Real Name="EPOT before">0.55994035938589426</Real>
+  <Sequence Name="Initial force">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-251.16496956577922</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">140.65432822664658</Real>
+      <Real Name="Z">125.58248478288961</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-140.65432822664658</Real>
+      <Real Name="Z">125.58248478288961</Real>
+    </Vector>
+  </Sequence>
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">0.0022963682873678904</Real>
-  <Real Name="BONDS after">5.0109687639767848e-15</Real>
-  <Real Name="ANGLES after">1.8844386051571452e-15</Real>
-  <Real Name="EPOT after">6.8954073691339296e-15</Real>
+  <Real Name="BONDS after">0.0026570465668230014</Real>
+  <Real Name="ANGLES after">0.55728331281907129</Real>
+  <Real Name="EPOT after">0.55994035938589426</Real>
 </ReferenceData>

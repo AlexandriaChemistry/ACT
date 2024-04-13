@@ -147,14 +147,16 @@ int min_complex(int argc, char *argv[])
             /* Generate output file for debugging if requested */
             MolHandler molhandler;
             std::vector<gmx::RVec> xmin   = coords;
-            std::map<InteractionType, double> energies;
             double rmsForce;
-            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                  &xmin, &energies, 
+            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch, &xmin,
                                                   verbose ? logFile : nullptr, {}, &rmsForce);
     
             if (eMinimizeStatus::OK == eMin)
             {
+                std::map<InteractionType, double> energies;
+                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+
                 std::vector<gmx::RVec> interactionForces;
                 std::map<InteractionType, double> einter;
                 actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin);

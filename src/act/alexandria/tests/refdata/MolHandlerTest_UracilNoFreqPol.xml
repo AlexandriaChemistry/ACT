@@ -4,21 +4,145 @@
   <Real Name="BONDS before">-4778.7158908170932</Real>
   <Real Name="ANGLES before">29.434308363917996</Real>
   <Real Name="IMPROPER_DIHEDRALS before">0</Real>
-  <Real Name="DISPERSION before">-10.096019437976086</Real>
-  <Real Name="EXCHANGE before">161.05724583689985</Real>
-  <Real Name="COULOMB before">-209.54689876448339</Real>
+  <Real Name="DISPERSION before">-2.8323438047785681</Real>
+  <Real Name="EXCHANGE before">0.050519593204144522</Real>
+  <Real Name="COULOMB before">-179.45839323179672</Real>
   <Real Name="POLARIZATION before">0</Real>
-  <Real Name="INDUCTION before">-10.752107618324283</Real>
-  <Real Name="EPOT before">-4818.619362437059</Real>
+  <Real Name="INDUCTION before">-6.3648002893245801</Real>
+  <Real Name="EPOT before">-4937.8866001858705</Real>
+  <Sequence Name="Initial force">
+    <Int Name="Length">24</Int>
+    <Vector>
+      <Real Name="X">426.5601027847174</Real>
+      <Real Name="Y">445.47454522355719</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.5963869095212431e-05</Real>
+      <Real Name="Y">-0.00036455324021744673</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">40.013295602122604</Real>
+      <Real Name="Y">-161.48723986892566</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2.7349075741867068e-05</Real>
+      <Real Name="Y">-0.0006154798407465023</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2072.0157233723626</Real>
+      <Real Name="Y">-1645.5646862364167</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.00069632392808216537</Real>
+      <Real Name="Y">-7.8781179979614535e-05</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-138.17729120468846</Real>
+      <Real Name="Y">-196.13818511151169</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.0008675385793139867</Real>
+      <Real Name="Y">-0.00032467438234107249</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1807.7804337000289</Real>
+      <Real Name="Y">-1494.2735030645479</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.00063926528440561015</Real>
+      <Real Name="Y">-8.9166863006084895e-05</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">112.36516818935304</Real>
+      <Real Name="Y">-108.70246712705625</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.00053747099894785322</Real>
+      <Real Name="Y">0.00041226109431136138</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2500.7217814477694</Real>
+      <Real Name="Y">-602.65799651213956</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.2955184505366617e-05</Real>
+      <Real Name="Y">0.00080811055096319251</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">322.24584786182493</Real>
+      <Real Name="Y">56.65596060559551</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.8749912309631327e-05</Real>
+      <Real Name="Y">0.00063091167311313257</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-280.53875464972708</Real>
+      <Real Name="Y">941.19483061206597</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.00051549204903267309</Real>
+      <Real Name="Y">0.00052316807204988436</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">35.696600993592618</Real>
+      <Real Name="Y">-57.914760692954303</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.00047907447477513188</Real>
+      <Real Name="Y">0.00042551894512143917</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1572.2175025131792</Real>
+      <Real Name="Y">2859.4330136343169</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.00045242156008384882</Real>
+      <Real Name="Y">0.00056207353520676406</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">146.10365599068456</Real>
+      <Real Name="Y">-36.021167439596027</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.00089768926187616671</Real>
+      <Real Name="Y">-0.00023341075045379966</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
   <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0082722336712233689</Real>
-  <Real Name="BONDS after">-4772.8877172348884</Real>
-  <Real Name="ANGLES after">14.520542089210132</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0070780518053100549</Real>
+  <Real Name="BONDS after">-4778.7158908170932</Real>
+  <Real Name="ANGLES after">29.434308363917996</Real>
   <Real Name="IMPROPER_DIHEDRALS after">0</Real>
-  <Real Name="DISPERSION after">-10.051467858974112</Real>
-  <Real Name="EXCHANGE after">80.972742315524044</Real>
-  <Real Name="COULOMB after">-226.39413105723747</Real>
-  <Real Name="POLARIZATION after">9.7615444058955134</Real>
-  <Real Name="EPOT after">-4904.0784873404709</Real>
+  <Real Name="DISPERSION after">-2.8323438047785681</Real>
+  <Real Name="EXCHANGE after">0.050519593204144522</Real>
+  <Real Name="COULOMB after">-179.45839323179672</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">-6.3648002893245801</Real>
+  <Real Name="EPOT after">-4937.8866001858705</Real>
 </ReferenceData>

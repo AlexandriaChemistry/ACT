@@ -3,19 +3,19 @@
 <ReferenceData>
   <Real Name="BONDS_act">-799.99014184846362</Real>
   <Real Name="ANGLES_act">0.00062492073723482847</Real>
-  <Real Name="DISPERSION_act">-2.7018806070515495</Real>
-  <Real Name="EXCHANGE_act">972.27536570167695</Real>
-  <Real Name="COULOMB_act">-78.242686039374689</Real>
+  <Real Name="DISPERSION_act">-0.58564874216823237</Real>
+  <Real Name="EXCHANGE_act">14.999067826117853</Real>
+  <Real Name="COULOMB_act">23.531546285042168</Real>
   <Real Name="POLARIZATION_act">0</Real>
-  <Real Name="INDUCTION_act">-0.24915677766383837</Real>
-  <Real Name="EPOT_act">91.092125349860481</Real>
+  <Real Name="INDUCTION_act">-0.14682838856135766</Real>
+  <Real Name="EPOT_act">-762.19137994729601</Real>
   <Real Name="o3-1_act fX">0</Real>
   <Real Name="o3-1_act fY">0</Real>
-  <Real Name="o3-1_act fZ">43322.627731983826</Real>
+  <Real Name="o3-1_act fZ">78.637041510438877</Real>
   <Real Name="h-3_act fX">0</Real>
-  <Real Name="h-3_act fY">29335.067811232373</Real>
-  <Real Name="h-3_act fZ">-21661.313793906545</Real>
+  <Real Name="h-3_act fY">1103.3836931439405</Real>
+  <Real Name="h-3_act fZ">-39.318520755219438</Real>
   <Real Name="h-5_act fX">0</Real>
-  <Real Name="h-5_act fY">-29335.067811232373</Real>
-  <Real Name="h-5_act fZ">-21661.313793906545</Real>
+  <Real Name="h-5_act fY">-1103.3836931439405</Real>
+  <Real Name="h-5_act fZ">-39.318520755219438</Real>
 </ReferenceData>

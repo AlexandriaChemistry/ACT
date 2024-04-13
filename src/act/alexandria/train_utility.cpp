@@ -1149,12 +1149,14 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         // Now get the minimized structure RMSD and Energy
         SimulationConfigHandler simConfig;
         std::vector<gmx::RVec>  xmin   = coords;
-        std::map<InteractionType, double> eAfter;
         double rmsForce;
         molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
-                                        &xmin, &eAfter, nullptr, {}, &rmsForce);
+                                        &xmin, nullptr, {}, &rmsForce);
         double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
-        
+        std::map<InteractionType, double> eAfter;
+        std::vector<gmx::RVec> forces(mol->atomsConst().size());
+        (void) forceComp->compute(pd, mol->topology(), &xmin, &forces, &eAfter);
+
         if (rmsd > 0.1) // nm
         {
             auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
