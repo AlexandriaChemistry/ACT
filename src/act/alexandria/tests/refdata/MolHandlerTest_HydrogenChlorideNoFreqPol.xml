@@ -31,8 +31,31 @@
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">6.8783859914472862e-05</Real>
-  <Real Name="BONDS after">-399.99840319626986</Real>
+  <Real Name="BONDS after">-400</Real>
   <Real Name="POLARIZATION after">0</Real>
   <Real Name="INDUCTION after">0</Real>
-  <Real Name="EPOT after">-399.99840319626986</Real>
+  <Real Name="EPOT after">-400</Real>
+  <Sequence Name="Minimized force">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">3.7094320590137812e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-3.7094320590137812e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
 </ReferenceData>

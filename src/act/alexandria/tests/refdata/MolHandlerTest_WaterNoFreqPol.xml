@@ -45,12 +45,45 @@
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">0.0043605984496444166</Real>
-  <Real Name="BONDS after">-799.99014184846362</Real>
-  <Real Name="ANGLES after">0.00062492073723482847</Real>
-  <Real Name="DISPERSION after">-0.58564874216823237</Real>
-  <Real Name="EXCHANGE after">14.999067826117853</Real>
-  <Real Name="COULOMB after">23.531546285042168</Real>
+  <Real Name="BONDS after">-799.19296043955944</Real>
+  <Real Name="ANGLES after">1.8109202527403663</Real>
+  <Real Name="DISPERSION after">-0.56716434274430105</Real>
+  <Real Name="EXCHANGE after">8.0568977593730207</Real>
+  <Real Name="COULOMB after">23.178354940967495</Real>
   <Real Name="POLARIZATION after">0</Real>
-  <Real Name="INDUCTION after">-0.14682838856135766</Real>
-  <Real Name="EPOT after">-762.19137994729601</Real>
+  <Real Name="INDUCTION after">-0.15519471167449686</Real>
+  <Real Name="EPOT after">-766.8691465408973</Real>
+  <Sequence Name="Minimized force">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">1.4864780496282037e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">9.5179877206419405e-05</Real>
+      <Real Name="Z">-7.4323902803105533e-06</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-0.00010669345144265208</Real>
+      <Real Name="Z">6.6971970950658002e-15</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">-9.5179877206419405e-05</Real>
+      <Real Name="Z">-7.4323902159714841e-06</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0.00010669345144265208</Real>
+      <Real Name="Z">-6.6971970950658002e-15</Real>
+    </Vector>
+  </Sequence>
 </ReferenceData>

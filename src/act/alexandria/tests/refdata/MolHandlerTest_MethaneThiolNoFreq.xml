@@ -44,11 +44,44 @@
   <Real Name="Coordinate RMSD before minimizing">3.9824180233022367e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">0.0030893825137262364</Real>
-  <Real Name="BONDS after">0.10108926929309421</Real>
-  <Real Name="ANGLES after">1.3363857584857919</Real>
-  <Real Name="PROPER_DIHEDRALS after">0.038879974930688954</Real>
-  <Real Name="DISPERSION after">-2.442323994976032e-11</Real>
-  <Real Name="EXCHANGE after">9.1212148244748533e-22</Real>
-  <Real Name="COULOMB after">11.95157391032758</Real>
-  <Real Name="EPOT after">13.427928913012732</Real>
+  <Real Name="BONDS after">0.0032403832500293331</Real>
+  <Real Name="ANGLES after">0.47936122273265802</Real>
+  <Real Name="PROPER_DIHEDRALS after">0.00017837677282805942</Real>
+  <Real Name="DISPERSION after">-2.4693482417607248e-11</Real>
+  <Real Name="EXCHANGE after">9.496267184727355e-22</Real>
+  <Real Name="COULOMB after">11.937269235097297</Real>
+  <Real Name="EPOT after">12.420049217828119</Real>
+  <Sequence Name="Minimized force">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">1.32007453000349e-05</Real>
+      <Real Name="Y">4.3977718347714811e-05</Real>
+      <Real Name="Z">2.7422508708241367e-13</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.391544932451751e-05</Real>
+      <Real Name="Y">9.4626363988936646e-07</Real>
+      <Real Name="Z">9.50350909079134e-14</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-7.2982566667878501e-07</Real>
+      <Real Name="Y">3.0884936839253863e-07</Real>
+      <Real Name="Z">-1.0822676088650951e-11</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2.7461499918501886e-07</Real>
+      <Real Name="Y">-3.2529977740836102e-05</Real>
+      <Real Name="Z">7.7268318401380043e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2.0895296808376429e-05</Real>
+      <Real Name="Y">1.9827127769822539e-05</Real>
+      <Real Name="Z">1.8761034198823887e-12</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2.7461789020577498e-07</Real>
+      <Real Name="Y">-3.2529981373485839e-05</Real>
+      <Real Name="Z">-7.7268309825129222e-05</Real>
+    </Vector>
+  </Sequence>
 </ReferenceData>

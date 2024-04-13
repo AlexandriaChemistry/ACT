@@ -45,12 +45,45 @@
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">0.00044745714912821776</Real>
-  <Real Name="BONDS after">-799.9021283352007</Real>
+  <Real Name="BONDS after">-799.99999874649745</Real>
   <Real Name="LINEAR_ANGLES after">0</Real>
-  <Real Name="DISPERSION after">-0.033735898071527409</Real>
-  <Real Name="EXCHANGE after">4.6173159996548017e-09</Real>
-  <Real Name="COULOMB after">0.092187719137882596</Real>
+  <Real Name="DISPERSION after">-0.03281277743821763</Real>
+  <Real Name="EXCHANGE after">3.9159731657154306e-09</Real>
+  <Real Name="COULOMB after">0.091971745509567882</Real>
   <Real Name="POLARIZATION after">0</Real>
-  <Real Name="INDUCTION after">-0.0021974115009977288</Real>
-  <Real Name="EPOT after">-799.8458739210181</Real>
+  <Real Name="INDUCTION after">-0.0021958103787077525</Real>
+  <Real Name="EPOT after">-799.94303558488889</Real>
+  <Sequence Name="Minimized force">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-6.9250964440215057e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">6.9077348040735842e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">6.9250964440215057e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-6.9077348040735842e-05</Real>
+    </Vector>
+  </Sequence>
 </ReferenceData>

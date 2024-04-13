@@ -19,16 +19,20 @@
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">6.8783780180472332e-05</Real>
-  <Real Name="BONDS after">0.0014452799999988793</Real>
-  <Real Name="EPOT after">0.0014452799999988793</Real>
-  <Sequence Name="Equilibrium force">
-    <Int Name="Length">6</Int>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>-8.0229156651512328e-12</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>8.0229156651512328e-12</Real>
+  <Real Name="BONDS after">1.1134032120095937e-28</Real>
+  <Real Name="EPOT after">1.1134032120095937e-28</Real>
+  <Sequence Name="Minimized force">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-8.0229156651512328e-12</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">8.0229156651512328e-12</Real>
+    </Vector>
   </Sequence>
   <Sequence Name="DeltaX">
     <Int Name="Length">6</Int>

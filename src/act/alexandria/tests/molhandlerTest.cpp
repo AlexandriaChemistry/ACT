@@ -83,7 +83,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma,
-              double forceToler = 1e-4)
+              double forceToler = 1e-5)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -161,14 +161,20 @@ protected:
             FILE *printer = nullptr;
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, printer, {}, &rmsForce);
+            if (eMinimizeStatus::OK != eMin)
+            {
+                simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
+                eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
+                                              &xmin, printer, {}, &rmsForce);
+            }
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
             rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eAfter);
+            (void) forceComp->compute(pd, mp.topology(), &xmin, &forces, &eAfter);
             add_energies(pd, &checker_, eAfter, "after");
-            
+            checker_.checkSequence(forces.begin(), forces.end(), "Minimized force");
             // Verify that the energy has gone down, not up.
             EXPECT_TRUE(eAfter[InteractionType::EPOT] <= eBefore[InteractionType::EPOT]);
             
@@ -191,7 +197,6 @@ protected:
                     MatrixWrapper hessian(matrixSide, matrixSide);
                     mh.computeHessian(pd, &mp, forceComp, &xmin, atomIndex,
                                       &hessian, &forceZero, &energyZero);
-                    checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
                     // Now test the solver used in minimization
                     std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
                     int result = hessian.solve(forceZero, &deltaX);
