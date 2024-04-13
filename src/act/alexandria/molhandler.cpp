@@ -574,6 +574,7 @@ private:
     std::vector<gmx::RVec>             forces_;
     std::map<InteractionType, double>  energies_;
     const std::vector<int>             theAtoms_;
+    int                                iter_ = 0;
 public:
     StlbfgsHandler(const ForceField       *pd,
                    const ACTMol           *mol,
@@ -602,6 +603,10 @@ public:
     double energy(InteractionType itype) { return energies_[itype]; }
 
     const std::vector<int> &theAtoms() const { return theAtoms_; }
+
+    int iter() const { return iter_; }
+
+    void inc_iter() { iter_++; }
 };
 
 // The return of the son of global variables. Easy but ugly.
@@ -631,6 +636,15 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                 forces, lbfgs->energies(), field,
                                 minimizeShells);
     f  = lbfgs->energy(InteractionType::EPOT);
+    // TODO make the printing into debug only
+    auto atoms = lbfgs->mol()->atomsConst();
+    for(size_t i = 0; i < coords->size(); i++)
+    {
+        printf("LBFGS iter %5d %4s %2zu x %8.4f  %8.4f  %8.4f f %14.5f %14.5f %14.5f\n",
+               lbfgs->iter(), atoms[i].id().id().c_str(), i,
+               (*coords)[i][XX], (*coords)[i][YY], (*coords)[i][ZZ],
+               (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]);
+    }
     jj = 0;
     for (auto i : theAtoms)
     {
@@ -639,6 +653,7 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
             g[jj++] = -(*forces)[i][j];
         }
     }
+    lbfgs->inc_iter();
 }
 
 eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                  *pd,
