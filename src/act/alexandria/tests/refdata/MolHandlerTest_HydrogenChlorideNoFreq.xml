@@ -3,6 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS before">0.0014452799999988793</Real>
   <Real Name="EPOT before">0.0014452799999988793</Real>
+  <Real Name="ShellRMS force before">0</Real>
   <Sequence Name="Initial force">
     <Int Name="Length">2</Int>
     <Vector>
@@ -16,11 +17,11 @@
       <Real Name="Z">28.905599999988791</Real>
     </Vector>
   </Sequence>
-  <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">6.8783780180472332e-05</Real>
+  <Real Name="Coordinate RMSD after minimizing">6.8783780180472318e-05</Real>
   <Real Name="BONDS after">1.1134032120095937e-28</Real>
   <Real Name="EPOT after">1.1134032120095937e-28</Real>
+  <Real Name="ShellRMS force after">0</Real>
   <Sequence Name="Minimized force">
     <Int Name="Length">2</Int>
     <Vector>

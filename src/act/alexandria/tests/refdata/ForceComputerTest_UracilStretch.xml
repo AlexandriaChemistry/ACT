@@ -37,7 +37,7 @@
   <Real Name="n2-9_act0.9 fY">448.33515352268427</Real>
   <Real Name="n2-9_act0.9 fZ">7.0791893646230916e-16</Real>
   <Real Name="h-10_act0.9 fX">2870.5726720934626</Real>
-  <Real Name="h-10_act0.9 fY">-1817.6417972287138</Real>
+  <Real Name="h-10_act0.9 fY">-1817.6417972287136</Real>
   <Real Name="h-10_act0.9 fZ">-1.6502351233290118e-15</Real>
   <Real Name="c2-11_act0.9 fX">2394.061296080899</Real>
   <Real Name="c2-11_act0.9 fY">2030.4856724207023</Real>
@@ -54,7 +54,7 @@
   <Real Name="COULOMB1.1_act">-7.5667275730269496</Real>
   <Real Name="EPOT1.1_act">412.40857247218213</Real>
   <Real Name="n2-1_act1.1 fX">726.88004102494665</Real>
-  <Real Name="n2-1_act1.1 fY">-439.3671983236402</Real>
+  <Real Name="n2-1_act1.1 fY">-439.36719832364031</Real>
   <Real Name="n2-1_act1.1 fZ">-2.9731024974149711e-15</Real>
   <Real Name="h-2_act1.1 fX">96.369723382889532</Real>
   <Real Name="h-2_act1.1 fY">-3079.8119603117084</Real>
@@ -78,7 +78,7 @@
   <Real Name="h-8_act1.1 fY">3144.4867911213523</Real>
   <Real Name="h-8_act1.1 fZ">2.5143403929909374e-15</Real>
   <Real Name="n2-9_act1.1 fX">504.85494191196841</Real>
-  <Real Name="n2-9_act1.1 fY">1750.7209242795873</Real>
+  <Real Name="n2-9_act1.1 fY">1750.7209242795877</Real>
   <Real Name="n2-9_act1.1 fZ">5.7920640256002409e-16</Real>
   <Real Name="h-10_act1.1 fX">-2730.2915777091721</Real>
   <Real Name="h-10_act1.1 fY">1405.3772135306117</Real>

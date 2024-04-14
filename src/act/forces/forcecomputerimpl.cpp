@@ -25,9 +25,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include <map>
-
 #include "forcecomputerimpl.h"
+
+#include <cmath>
+#include <map>
 
 #include "act/coulombintegrals/coulomb_gaussian.h"
 #include "act/coulombintegrals/slater_integrals.h"
@@ -68,7 +69,7 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv       = 1.0/std::sqrt(dr2);
         auto rinv2      = rinv*rinv;
         auto rinv6      = rinv2*rinv2*rinv2;
         auto vvdw_disp  = -c6*rinv6;
@@ -123,7 +124,7 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2); 
+        auto rinv       = 1.0/std::sqrt(dr2); 
         auto rinv2      = rinv*rinv;
         auto rinv6      = rinv2*rinv2*rinv2;
         auto vvdw_disp  = -c6*rinv6;     
@@ -176,7 +177,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
         rvec dx; 
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv       = 1.0/std::sqrt(dr2);
         real eerep = 0, eedisp = 0;
         if (epsilon > 0)
         {
@@ -256,7 +257,7 @@ static void computeWBH(const TopologyEntryVector             &pairs,
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
-            auto rinv       = gmx::invsqrt(dr2);
+            auto rinv       = 1.0/std::sqrt(dr2);
             real eerep = 0, eedisp = 0, fwbh = 0;
             wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
             erep     += eerep;
@@ -304,7 +305,7 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
-            auto rinv       = gmx::invsqrt(dr2);
+            auto rinv       = 1.0/std::sqrt(dr2);
 
             real delta6     = 6+delta;
             real delta6gam2 = delta6 + 2*gamma;
@@ -363,7 +364,7 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
-            auto rinv       = gmx::invsqrt(dr2);
+            auto rinv       = 1.0/std::sqrt(dr2);
             real rstar      = dr2*rinv/rmin;
             real sixterm    = 1 + std::pow(rstar,6);
 
@@ -428,7 +429,7 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         ebond += velec;
         if (dr2 > 0)
         {
-            felec *= gmx::invsqrt(dr2);
+            felec *= 1.0/std::sqrt(dr2);
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij  = felec*dx[m];
@@ -476,7 +477,7 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         ebond += velec;
         if (dr2 > 0)
         {
-            felec *= gmx::invsqrt(dr2);
+            felec *= 1.0/std::sqrt(dr2);
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij  = felec*dx[m];
@@ -524,14 +525,14 @@ static void computePartridge(const TopologyEntryVector             &angles,
         auto drkj   = rjk0-norm(r_kj);
         
         auto costh2 = gmx::square(costh);
-        auto st     = theta0*gmx::invsqrt(1 - costh2);   
+        auto st     = theta0/std::sqrt(1 - costh2);   
         auto sth    = st*costh; 
         
         auto nrij2 = iprod(r_ij, r_ij);                 
         auto nrkj2 = iprod(r_kj, r_kj);                 
         
-        auto nrij_1 = gmx::invsqrt(nrij2);              
-        auto nrkj_1 = gmx::invsqrt(nrkj2);              
+        auto nrij_1 = 1.0/std::sqrt(nrij2);              
+        auto nrkj_1 = 1.0/std::sqrt(nrkj2);              
         
         auto cik = st*nrij_1*nrkj_1;                    
         auto cii = sth*nrij_1*nrij_1;                   
@@ -597,7 +598,7 @@ static void computeBonds(const TopologyEntryVector             &bonds,
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
-        auto r_1        = gmx::invsqrt(dr2);
+        auto r_1        = 1.0/std::sqrt(dr2);
         auto r1         = dr2*r_1;
 
         real vB, fbond;
@@ -648,7 +649,7 @@ static void computeCubic(const TopologyEntryVector             &bonds,
         {
             // Do not allow the potential to go to -infinity
             auto r2 = std::min(rhi*rhi, iprod(dx, dx));
-            r_1     = gmx::invsqrt(r2);
+            r_1     = 1.0/std::sqrt(r2);
             r1      = r2*r_1;
         }
         real vB, fbond;
@@ -791,14 +792,14 @@ static void computeAngles(const TopologyEntryVector             &angles,
             real nrkj2, nrij2;
             real nrkj_1, nrij_1;
 
-            st    = fangle*gmx::invsqrt(1 - costh2);   
+            st    = fangle/std::sqrt(1 - costh2);   
             sth   = st*costh;                      
 
             nrij2 = iprod(r_ij, r_ij);                 
             nrkj2 = iprod(r_kj, r_kj);                 
 
-            nrij_1 = gmx::invsqrt(nrij2);              
-            nrkj_1 = gmx::invsqrt(nrkj2);              
+            nrij_1 = 1.0/std::sqrt(nrij2);
+            nrkj_1 = 1.0/std::sqrt(nrkj2);
 
             cik = st*nrij_1*nrkj_1;                    
             cii = sth*nrij_1*nrij_1;                   
@@ -863,7 +864,7 @@ static void computeUreyBradley(const TopologyEntryVector             &angles,
         harmonic(kUB, r13, norm_rik, &vUB, &fUB);
 
         energy += vUB;
-        fUB    *= gmx::invsqrt(rik2);
+        fUB    /= std::sqrt(rik2);
 
         auto costh2 = gmx::square(costh);
         if (costh2 < 1)
@@ -873,14 +874,14 @@ static void computeUreyBradley(const TopologyEntryVector             &angles,
             real nrkj2, nrij2;
             real nrkj_1, nrij_1;
 
-            st    = fangle*gmx::invsqrt(1 - costh2);   
+            st    = fangle/std::sqrt(1 - costh2);   
             sth   = st*costh;                      
 
             nrij2 = iprod(r_ij, r_ij);                 
             nrkj2 = iprod(r_kj, r_kj);                 
 
-            nrij_1 = gmx::invsqrt(nrij2);              
-            nrkj_1 = gmx::invsqrt(nrkj2);              
+            nrij_1 = 1.0/std::sqrt(nrij2);              
+            nrkj_1 = 1.0/std::sqrt(nrkj2);              
 
             cik = st*nrij_1*nrkj_1;                    
             cii = sth*nrij_1*nrij_1;                   
@@ -951,7 +952,7 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
     toler = nrkj2*GMX_REAL_EPS;
     if ((iprm > toler) && (iprn > toler))
     {
-        nrkj_1 = gmx::invsqrt(nrkj2); /* 10	*/
+        nrkj_1 = 1.0/std::sqrt(nrkj2); /* 10	*/
         nrkj_2 = nrkj_1*nrkj_1;       /*  1	*/
         nrkj   = nrkj2*nrkj_1;        /*  1	*/
         a      = -ddphi*nrkj/iprm;    /* 11	*/

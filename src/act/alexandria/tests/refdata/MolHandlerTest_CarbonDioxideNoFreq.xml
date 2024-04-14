@@ -4,6 +4,7 @@
   <Real Name="BONDS before">0.001925499999998507</Real>
   <Real Name="LINEAR_ANGLES before">0</Real>
   <Real Name="EPOT before">0.001925499999998507</Real>
+  <Real Name="ShellRMS force before">0</Real>
   <Sequence Name="Initial force">
     <Int Name="Length">3</Int>
     <Vector>
@@ -22,18 +23,18 @@
       <Real Name="Z">-38.50999999998507</Real>
     </Vector>
   </Sequence>
-  <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">4.0824829046404465e-05</Real>
-  <Real Name="BONDS after">5.9334049726681962e-28</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.0824829046393135e-05</Real>
+  <Real Name="BONDS after">1.4833512431670491e-28</Real>
   <Real Name="LINEAR_ANGLES after">0</Real>
-  <Real Name="EPOT after">5.9334049726681962e-28</Real>
+  <Real Name="EPOT after">1.4833512431670491e-28</Real>
+  <Real Name="ShellRMS force after">0</Real>
   <Sequence Name="Minimized force">
     <Int Name="Length">3</Int>
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">-2.1377344339157389e-11</Real>
+      <Real Name="Z">-1.0688672169578695e-11</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -43,7 +44,7 @@
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">2.1377344339157389e-11</Real>
+      <Real Name="Z">1.0688672169578695e-11</Real>
     </Vector>
   </Sequence>
 </ReferenceData>

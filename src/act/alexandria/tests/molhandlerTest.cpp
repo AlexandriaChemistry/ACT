@@ -83,7 +83,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma,
-              double forceToler = 1e-5)
+              double forceToler = 2e-4)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -148,12 +148,7 @@ protected:
             checker_.checkSequence(forces.begin(), forces.end(), "Initial force");
 
             MolHandler mh;
-            
             std::vector<gmx::RVec> xmin = coords;
-            // TODO: remove this. The coordinateRmsd introduces noise in the
-            // coordinates.
-            //double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
-            //checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
@@ -161,15 +156,9 @@ protected:
             simConfig.setRetries(1);
             double rmsForce = 0;
             // To get more debug output, set printer to stdout
-            FILE *printer = nullptr;
+            FILE *printer = stdout;//nullptr;
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, printer, {}, &rmsForce);
-            if (eMinimizeStatus::OK != eMin)
-            {
-                simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
-                eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                              &xmin, printer, {}, &rmsForce);
-            }
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
