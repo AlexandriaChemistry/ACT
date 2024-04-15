@@ -83,7 +83,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma,
-              double forceToler = 1e-4)
+              double forceToler = 1e-6)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -242,7 +242,7 @@ protected:
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
-    test("methanethiol.sdf", "ACS-g", false);
+    test("methanethiol.sdf", "ACS-g", false, 2e-6);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
@@ -284,7 +284,7 @@ TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 3e-5);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
@@ -338,7 +338,7 @@ TEST_F (MolHandlerTest, HydrogenChloridePol)
 TEST_F (MolHandlerTest, WaterPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", true);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 3e-5);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
