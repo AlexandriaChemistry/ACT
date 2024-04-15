@@ -31,7 +31,7 @@ namespace STLBFGS {
 
         // L-BFGS user parameters
         int maxiter = 10000; // maximum number of quasi-Newton updates
-        double ftol = 1e-8;  // the iteration stops when (f^k - f^{k+1})/max{|f^k|,|f^{k+1}|,1} <= ftol
+        double ftol = 1e-6;  // the iteration stops when (f^k - f^{k+1})/max{|f^k|,|f^{k+1}|,1} <= ftol
         double gtol = 1e-14; // the iteration stops when ||g||/max(1,||x||) <= gtol
         double gmax = 1e-14; // the iteration stops when max{|g_i|, i = 1, ..., n} <= gmax
 
