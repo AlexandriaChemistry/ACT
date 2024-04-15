@@ -38,6 +38,8 @@
 #ifndef _nb_generic_h_
 #define _nb_generic_h_
 
+#include <cmath>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/math/vectypes.h"
@@ -60,7 +62,7 @@ static void gmx_unused wang_buckingham(real sigma, real epsilon, real gamma,
                                        real *fvdw)
 {
     /* Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
-    real r           = rsq*rinv;
+    real r           = std::sqrt(rsq);
     real r5          = rsq*rsq*r;
     real r6          = r5*r;
     real sigma2      = sigma*sigma;

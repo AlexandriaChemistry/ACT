@@ -636,20 +636,33 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                 forces, lbfgs->energies(), field,
                                 minimizeShells);
     f  = lbfgs->energy(InteractionType::EPOT);
-    if (debug)
+    // Set to a file if debugging is needed
+    FILE *mydebug = nullptr;
+    if (mydebug != nullptr)
     {
         for (const auto &ener : *lbfgs->energies())
         {
-            fprintf(debug, "LBFGS %s %.6f\n", interactionTypeToString(ener.first).c_str(), ener.second);
+            fprintf(mydebug, "LBFGS iter %5d %s %.6f\n",
+                    lbfgs->iter(),
+                    interactionTypeToString(ener.first).c_str(), ener.second);
         }
-        auto atoms = lbfgs->mol()->atomsConst();
+        auto atoms  = lbfgs->mol()->atomsConst();
+        double msf  = 0;
+        double fmax = 0;
         for(size_t i = 0; i < coords->size(); i++)
         {
-            fprintf(debug, "LBFGS iter %5d %4s %2zu x %12.5e  %12.5e  %12.5e f %14.5e %14.5e %14.5e\n",
+            fprintf(mydebug, "LBFGS iter %5d %4s %2zu x %12.5e  %12.5e  %12.5e f %14.5e %14.5e %14.5e\n",
                     lbfgs->iter(), atoms[i].id().id().c_str(), i,
                     (*coords)[i][XX], (*coords)[i][YY], (*coords)[i][ZZ],
                     (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]);
+            msf += iprod((*forces)[i], (*forces)[i]);
+            for(int m = 0; m < DIM; m++)
+            {
+                fmax = std::max(fmax, std::abs((*forces)[i][m]));
+            }
         }
+        fprintf(mydebug, "LBFGS iter %5d rms force %g max force %g\n", 
+                lbfgs->iter(), std::sqrt(msf/theAtoms.size()), fmax);
     }
     jj = 0;
     for (auto i : theAtoms)
@@ -749,8 +762,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         opt.setGtol(0);
         opt.setGmax(msForceToler);
         opt.setMaxIter(10000);
+        opt.setEta(0.9);
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
+        // For scaling the coordinates to integers. This allows up to 20 nm as a coordinate.
         std::random_device                      rd;
         std::mt19937                            gen(rd());
         std::uniform_real_distribution<double>  dis(std::uniform_real_distribution<>(-1.0, 1.0));

@@ -137,7 +137,8 @@ namespace STLBFGS {
             assert(-dot(g, p)<0);
 
             double fprev = f;
-            vector xprev = x, gprev = g;
+            vector xprev = x;
+            vector gprev = g;
 
             int nfev = 0;
             const linesearch_function ls_func = [&](const double alpha) -> Sample {
@@ -156,7 +157,10 @@ namespace STLBFGS {
                     !line_search_more_thuente(ls_func, f0, alpha, mu, eta) &&
                     !line_search_backtracking(ls_func, f0, alpha, mu, eta)
                ) {
-                if (verbose) std::cerr << "Line search failed" << std::endl;
+                if (verbose)
+                {
+                    std::cerr << "Line search failed" << std::endl;
+                }
                 return false;
             }
 

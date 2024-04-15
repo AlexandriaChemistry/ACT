@@ -47,6 +47,8 @@ namespace STLBFGS {
         void setGtol(double newgtol) { gtol = newgtol; }
         void setGmax(double newgmax) { gmax = newgmax; }
         void setMaxIter(int newmaxiter) { maxiter = newmaxiter; }
+        void setMu(double newmu) { mu = newmu; }
+        void setEta(double neweta) { eta = neweta; }
     };
 }
 

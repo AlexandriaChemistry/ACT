@@ -39,7 +39,6 @@
 #ifndef _COULOMBINTEGRALS_H
 #define _COULOMBINTEGRALS_H
 
-
 #include "gromacs/math/functions.h"
 
 const double invsqrt_pi = 1.0/std::sqrt(M_PI);
@@ -112,7 +111,7 @@ static gmx_unused double Coulomb_GG(double r, double zi, double zj)
         }
         else
         {
-            zeff = zi*zj*gmx::invsqrt(sqr(zi)+sqr(zj));
+            zeff = zi*zj/std::sqrt(sqr(zi)+sqr(zj));
         }
     }
     
@@ -175,7 +174,7 @@ static gmx_unused double DCoulomb_GG(double r, double zi, double zj)
         }
         else
         {
-            zeff = zi*zj*gmx::invsqrt(sqr(zi)+sqr(zj));
+            zeff = zi*zj/std::sqrt(sqr(zi)+sqr(zj));
         }
     }
     

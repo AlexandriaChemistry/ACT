@@ -3,8 +3,8 @@
 <ReferenceData>
   <Real Name="BONDS before">-799.9021283352007</Real>
   <Real Name="LINEAR_ANGLES before">0</Real>
-  <Real Name="DISPERSION before">-0.033735898071527409</Real>
-  <Real Name="EXCHANGE before">4.6173159996548017e-09</Real>
+  <Real Name="DISPERSION before">-0.033735898071527416</Real>
+  <Real Name="EXCHANGE before">4.6173159996548191e-09</Real>
   <Real Name="COULOMB before">0.092187719137882596</Real>
   <Real Name="POLARIZATION before">0</Real>
   <Real Name="INDUCTION before">-0.0021974115009977288</Real>
@@ -15,7 +15,7 @@
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">178.26886791087975</Real>
+      <Real Name="Z">178.26886791087952</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -35,7 +35,7 @@
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">-178.26886791087975</Real>
+      <Real Name="Z">-178.26886791087952</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -53,23 +53,18 @@
   <Real Name="POLARIZATION after">0</Real>
   <Real Name="INDUCTION after">-0.0021958103787077525</Real>
   <Real Name="EPOT after">-799.94303558488889</Real>
-  <Real Name="ShellRMS force after">3.1811200082273012e-09</Real>
+  <Real Name="ShellRMS force after">3.1811200291691287e-09</Real>
   <Sequence Name="Minimized force">
     <Int Name="Length">6</Int>
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">-6.9250964440215057e-05</Real>
+      <Real Name="Z">-6.9250962848599329e-05</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">6.9077348040735842e-05</Real>
-    </Vector>
-    <Vector>
-      <Real Name="X">0</Real>
-      <Real Name="Y">0</Real>
-      <Real Name="Z">0</Real>
+      <Real Name="Z">6.9077348268109517e-05</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -79,12 +74,17 @@
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">6.9250964440215057e-05</Real>
+      <Real Name="Z">0</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
-      <Real Name="Z">-6.9077348040735842e-05</Real>
+      <Real Name="Z">6.9250962848599329e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-6.9077348268109517e-05</Real>
     </Vector>
   </Sequence>
 </ReferenceData>

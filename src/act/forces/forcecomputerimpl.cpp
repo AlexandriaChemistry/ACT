@@ -419,17 +419,17 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         real velec, felec;
-        coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
+        auto r1 = std::sqrt(dr2);
+        coulomb_gaussian(qq, izeta, jzeta, r1, &velec, &felec);
         if (debug)
         {
-            auto r1 = std::sqrt(dr2);
             fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, 
                     atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
         }
         ebond += velec;
         if (dr2 > 0)
         {
-            felec *= 1.0/std::sqrt(dr2);
+            felec /= r1;
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij  = felec*dx[m];
@@ -471,13 +471,12 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         real felec =  qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
-            auto r1 = std::sqrt(dr2);
             fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
         }
         ebond += velec;
         if (dr2 > 0)
         {
-            felec *= 1.0/std::sqrt(dr2);
+            felec /= r1;
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij  = felec*dx[m];
@@ -691,9 +690,13 @@ static void computeMorse(const TopologyEntryVector             &bonds,
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
         auto dr         = std::sqrt(dr2);
-        auto expterm    = std::exp(-beta*(dr-bondlength));
+        auto arg        = -beta*(dr-bondlength);
+        auto expterm    = std::exp(arg);
         auto vbond      = De*expterm*(expterm - 2) + D0;
-        auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
+        // expm1 is more accurate than writing it out.
+        // https://en.cppreference.com/w/cpp/numeric/math/expm1
+        // auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
+        auto fbond      = 2*De*beta*expterm*std::expm1(arg)/dr;
         ebond          += vbond;
 
         for (int m = 0; (m < DIM); m++)
@@ -1053,9 +1056,9 @@ static void computeImpropers(const TopologyEntryVector             &impropers,
                              std::vector<gmx::RVec>                *forces,
                              std::map<InteractionType, double>     *energies)
 {
-    double  energy = 0;
-    auto    x     = *coordinates;
-    const  real half = 0.5;
+    double      energy = 0;
+    auto       &x      = *coordinates;
+    const real  half   = 0.5;
     for (const auto &a : impropers)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1067,7 +1070,6 @@ static void computeImpropers(const TopologyEntryVector             &impropers,
         auto aj       = indices[1];
         auto ak       = indices[2];
         auto al       = indices[3];
-
         rvec r_ij, r_kj, r_kl, m, n;
         auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
                              r_ij, r_kj, r_kl, m, n);

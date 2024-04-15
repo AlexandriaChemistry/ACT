@@ -83,7 +83,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma,
-              double forceToler = 2e-4)
+              double forceToler = 1e-4)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -156,7 +156,7 @@ protected:
             simConfig.setRetries(1);
             double rmsForce = 0;
             // To get more debug output, set printer to stdout
-            FILE *printer = stdout;//nullptr;
+            FILE *printer = nullptr;
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, printer, {}, &rmsForce);
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
