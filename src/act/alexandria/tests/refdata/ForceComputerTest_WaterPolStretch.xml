@@ -5,8 +5,9 @@
   <Real Name="ANGLES0.98_act">0.00062492073723482847</Real>
   <Real Name="DISPERSION0.98_act">-2.7098979230569</Real>
   <Real Name="EXCHANGE0.98_act">1123.066380441579</Real>
-  <Real Name="COULOMB0.98_act">-78.803959169197583</Real>
-  <Real Name="POLARIZATION0.98_act">0.22306408180559933</Real>
+  <Real Name="COULOMB0.98_act">-78.340134624607231</Real>
+  <Real Name="POLARIZATION0.98_act">0</Real>
+  <Real Name="INDUCTION0.98_act">-0.24076046278475283</Real>
   <Real Name="EPOT0.98_act">243.24774181593699</Real>
   <Real Name="o3-1_act0.98 fX">0</Real>
   <Real Name="o3-1_act0.98 fY">0</Real>
@@ -21,8 +22,9 @@
   <Real Name="ANGLES1.04_act">0.00062492073723496443</Real>
   <Real Name="DISPERSION1.04_act">-2.68363849518227</Real>
   <Real Name="EXCHANGE1.04_act">728.53630666752952</Real>
-  <Real Name="COULOMB1.04_act">-78.554259590467495</Real>
-  <Real Name="POLARIZATION1.04_act">0.24710265231242573</Real>
+  <Real Name="COULOMB1.04_act">-78.041025184459613</Real>
+  <Real Name="POLARIZATION1.04_act">0</Real>
+  <Real Name="INDUCTION1.04_act">-0.26613175369545644</Real>
   <Real Name="EPOT1.04_act">-148.43908430329287</Real>
   <Real Name="o3-1_act1.04 fX">0</Real>
   <Real Name="o3-1_act1.04 fY">0</Real>
