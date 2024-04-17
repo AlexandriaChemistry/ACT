@@ -5,8 +5,9 @@
   <Real Name="Angle before">0.00062492073723482847</Real>
   <Real Name="Dispersion before">-2.7018806070515495</Real>
   <Real Name="Repulsion before">972.27536570167695</Real>
-  <Real Name="Coulomb (SR) before">-78.722849368074719</Real>
-  <Real Name="Polarization before">0.23100655103535167</Real>
+  <Real Name="Coulomb (SR) before">-78.242686039374689</Real>
+  <Real Name="Polarization before">0</Real>
+  <Real Name="INDUCTION before">-0.24915677766467831</Real>
   <Real Name="Potential before">91.092125349859643</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
   <String Name="algorithm">LBFGS</String>
@@ -15,8 +16,9 @@
   <Real Name="Angle after">0.045847457522367061</Real>
   <Real Name="Dispersion after">-2.4673252165995438</Real>
   <Real Name="Repulsion after">104.35129145429454</Real>
-  <Real Name="Coulomb (SR) after">-77.2405120123355</Real>
-  <Real Name="Polarization after">0.35309311187606729</Real>
+  <Real Name="Coulomb (SR) after">-77.240198983508776</Real>
+  <Real Name="Polarization after">0.35278495938200316</Real>
+  <Real Name="INDUCTION after">-4.8763326602196955e-06</Real>
   <Real Name="Potential after">-617.1081547828943</Real>
   <Sequence Name="Equilibrium force">
     <Int Name="Length">9</Int>
@@ -32,15 +34,15 @@
   </Sequence>
   <Sequence Name="DeltaX">
     <Int Name="Length">9</Int>
-    <Real>-5.7603300761129465e-22</Real>
-    <Real>1.397726469109129e-22</Real>
-    <Real>3.64299403405141e-07</Real>
-    <Real>2.4737966377034522e-23</Real>
+    <Real>-5.7699911270812103e-22</Real>
+    <Real>1.6665200208608845e-22</Real>
+    <Real>3.6429940340514089e-07</Real>
+    <Real>4.5049617767794268e-23</Real>
     <Real>2.0100514216738854e-07</Real>
-    <Real>-1.5459843067055778e-07</Real>
-    <Real>2.0009112927847246e-23</Real>
-    <Real>-2.0100514216738835e-07</Real>
-    <Real>-1.5459843067055759e-07</Real>
+    <Real>-1.5459843067055786e-07</Real>
+    <Real>1.9410515547476232e-23</Real>
+    <Real>-2.0100514216738841e-07</Real>
+    <Real>-1.5459843067055757e-07</Real>
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
