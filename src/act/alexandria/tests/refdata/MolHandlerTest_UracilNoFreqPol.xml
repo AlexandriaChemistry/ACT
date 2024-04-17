@@ -6,8 +6,9 @@
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="Dispersion before">-10.096019437976086</Real>
   <Real Name="Repulsion before">161.05724583689985</Real>
-  <Real Name="Coulomb (SR) before">-229.16405022905417</Real>
-  <Real Name="Polarization before">8.865043846241738</Real>
+  <Real Name="Coulomb (SR) before">-209.54689876448316</Real>
+  <Real Name="Polarization before">0</Real>
+  <Real Name="INDUCTION before">-10.752107618329271</Real>
   <Real Name="Potential before">-4818.6193624370635</Real>
   <Real Name="Coordinate RMSD before minimizing">7.2305237604181833e-17</Real>
   <String Name="algorithm">LBFGS</String>
@@ -17,7 +18,8 @@
   <Real Name="Improper Dih. after">0</Real>
   <Real Name="Dispersion after">-10.051000731605178</Real>
   <Real Name="Repulsion after">80.983738078650276</Real>
-  <Real Name="Coulomb (SR) after">-226.35054342113818</Real>
-  <Real Name="Polarization after">9.7755459794760284</Real>
+  <Real Name="Coulomb (SR) after">-226.36433375342233</Real>
+  <Real Name="Polarization after">9.7898736318837258</Real>
+  <Real Name="INDUCTION after">-0.00053732012355212078</Real>
   <Real Name="Potential after">-4904.0715708697971</Real>
 </ReferenceData>

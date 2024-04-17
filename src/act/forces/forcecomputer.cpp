@@ -84,12 +84,15 @@ double ForceComputer::compute(const ForceField                  *pd,
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
     // Reset shells if needed
-    auto atoms = top->atoms();
-    for(size_t i = 0; i < top->nAtoms(); i++)
+    if (false)
     {
-        for(int sh : atoms[i].shells())
+        auto atoms = top->atoms();
+        for(size_t i = 0; i < top->nAtoms(); i++)
         {
-            copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+            for(int sh : atoms[i].shells())
+            {
+                copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+            }
         }
     }
     // Do first calculation every time.

@@ -20,7 +20,7 @@
   <Sequence Name="DeltaX">
     <Int Name="Length">6</Int>
     <Real>0</Real>
-    <Real>-0</Real>
+    <Real>0</Real>
     <Real>0</Real>
     <Real>-1.8268791422376395e-17</Real>
     <Real>0</Real>
