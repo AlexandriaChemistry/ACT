@@ -6,8 +6,9 @@
   <Real Name="IMPROPER_DIHEDRALS0.99_act">0</Real>
   <Real Name="DISPERSION0.99_act">-10.39346527938263</Real>
   <Real Name="EXCHANGE0.99_act">177.39236851362085</Real>
-  <Real Name="COULOMB0.99_act">-229.82073401901272</Real>
-  <Real Name="POLARIZATION0.99_act">8.777205076600282</Real>
+  <Real Name="COULOMB0.99_act">-210.38166768975054</Real>
+  <Real Name="POLARIZATION0.99_act">0</Real>
+  <Real Name="INDUCTION0.99_act">-10.661861252661893</Real>
   <Real Name="EPOT0.99_act">-4807.1977541187725</Real>
   <Real Name="n2-1_act0.99 fX">585.41191804983896</Real>
   <Real Name="n2-1_act0.99 fY">-4798.9085237161153</Real>
@@ -50,8 +51,9 @@
   <Real Name="IMPROPER_DIHEDRALS1.06_act">0</Real>
   <Real Name="DISPERSION1.06_act">-8.5135791036816695</Real>
   <Real Name="EXCHANGE1.06_act">89.954091059706514</Real>
-  <Real Name="COULOMB1.06_act">-225.18392756839364</Real>
-  <Real Name="POLARIZATION1.06_act">9.3594190517697768</Real>
+  <Real Name="COULOMB1.06_act">-204.56808450206165</Real>
+  <Real Name="POLARIZATION1.06_act">0</Real>
+  <Real Name="INDUCTION1.06_act">-11.256424014562214</Real>
   <Real Name="EPOT1.06_act">-4759.6025357691569</Real>
   <Real Name="n2-1_act1.06 fX">241.89490547770356</Real>
   <Real Name="n2-1_act1.06 fY">-2060.3978681333542</Real>

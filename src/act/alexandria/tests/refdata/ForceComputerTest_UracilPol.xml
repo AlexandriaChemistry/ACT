@@ -6,8 +6,9 @@
   <Real Name="IMPROPER_DIHEDRALS_act">0</Real>
   <Real Name="DISPERSION_act">-10.096019437976086</Real>
   <Real Name="EXCHANGE_act">161.05724583689985</Real>
-  <Real Name="COULOMB_act">-229.16405312274969</Real>
-  <Real Name="POLARIZATION_act">8.8650467399360249</Real>
+  <Real Name="COULOMB_act">-209.54689876448316</Real>
+  <Real Name="POLARIZATION_act">0</Real>
+  <Real Name="INDUCTION_act">-10.752107618330507</Real>
   <Real Name="EPOT_act">-4818.6193624370653</Real>
   <Real Name="n2-1_act fX">527.34065249368587</Real>
   <Real Name="n2-1_act fY">-4318.027428514114</Real>

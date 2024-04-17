@@ -229,6 +229,7 @@ protected:
                 checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
                 checker_.checkReal(einter[InteractionType::COULOMB], "Coulomb");
                 checker_.checkReal(einter[InteractionType::POLARIZATION], "Polarization");
+                checker_.checkReal(einter[InteractionType::INDUCTION], "Induction");
                 checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
                 checker_.checkReal(einter[InteractionType::EXCHANGE], "Repulsion");
             }
