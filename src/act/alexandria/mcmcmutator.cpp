@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -86,7 +86,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     }
     if (genome->nBase() == 0)
     {
-        fprintf(stderr, "No parameters to optimize.\n");
+        fprintf(stderr, "No parameters to train. Did you run alexandria geometry_ff?\n");
         return;
     }
 
