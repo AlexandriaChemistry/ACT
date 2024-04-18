@@ -29,6 +29,7 @@ def extract_todo(topdir:str)->list:
 
 with open("TODO.md", "w", encoding='utf-8') as outf:
     outf.write("## Open questions in the ACT code\n")
+    outf.write("To update this list, run the get_todo.py script in the ACT root dir.\n")
     os.chdir("src/act")
     for ttt in extract_todo("."):
         outf.write("+ file: %s line: %d %s\n" % ( ttt[0], ttt[1], ttt[2] ))
