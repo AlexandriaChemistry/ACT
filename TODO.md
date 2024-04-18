@@ -1,4 +1,5 @@
 ## Open questions in the ACT code
+To update this list, run the get_todo.py script in the ACT root dir.
 + file: ./basics/identifier.h line: 64 : return a boolean instead of crashing
 + file: ./basics/identifier.h line: 137 check implementation
 + file: ./basics/identifier.cpp line: 187 only insert ones we do not already have
