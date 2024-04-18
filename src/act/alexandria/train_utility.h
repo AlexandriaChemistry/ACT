@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -92,6 +92,11 @@ private:
     bool diatomic_            = false;
     //! Dump outliers to xyz files if larger or equal to zero
     real dumpOutliers_        = -1;
+    //! Data structures for storing energies per molecule
+    std::map<std::string, std::vector<ACTEnergy> > molEnergyMap_;
+    //! Data structures for storing energy terms per dimer
+    std::map<std::string, ACTEnergyMapVector>      molInteractionEnergyMap_;
+
     //! Data structures for storing results of interaction energies
     std::map<InteractionType, std::map<iMolSelect, qtStats>> lsq_einter_;
     //! Comparison of epot, isoPol, anisoPol and alpha
@@ -133,6 +138,14 @@ private:
                              alexandria::ACTMol        *mol,
                              iMolSelect                ims,
                              const gmx_output_env_t   *oenv);
+    /*! \brief Print data on outliers.
+     */
+    void printOutliers(FILE                                  *fp,
+                       iMolSelect                             ims,
+                       double                                 sigma,
+                       bool                                   bIntermolecular,
+                       InteractionType                        itype,
+                       const std::vector<alexandria::ACTMol> *actmol);
 public:
     TrainForceFieldPrinter();
     
