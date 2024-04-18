@@ -4,8 +4,8 @@ import os, re
 
 def extract_todo(topdir:str)->list:
     todo_com = []
-    comment = r'\bTODO\b:(.*)'
-    comm2   = r'\bFixme\b:(.*)'
+    comment = r'\btodo\b(.*)'
+    comm2   = r'\bfixme\b(.*)'
     for root, dirs, files in os.walk(top = topdir):
         for cpp in files:
             filepath = os.path.join(root, cpp)
@@ -17,12 +17,13 @@ def extract_todo(topdir:str)->list:
             if found:
                 with open(filepath, 'r', encoding='utf-8') as file:
                     lines = file.readlines()
-                for i, line in enumerate(lines):
-                    match = re.search(comment, line)
-                    if not match:
-                        match = re.search(comm2, line)
-                    if match:
-                        todo_com.append((filepath, i+1, match.group(1).strip()))
+                    for i, line in enumerate(lines):
+                        lline = line.lower()
+                        match = re.search(comment, lline)
+                        if not match:
+                            match = re.search(comm2, lline)
+                        if match:
+                            todo_com.append((filepath, i+1, match.group(1).strip()))
 
     return todo_com
 
