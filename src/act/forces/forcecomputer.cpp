@@ -84,7 +84,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
     // Reset shells if needed
-    if (false)
+    if (true)
     {
         auto atoms = top->atoms();
         for(size_t i = 0; i < top->nAtoms(); i++)
