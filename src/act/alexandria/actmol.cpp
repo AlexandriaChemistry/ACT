@@ -389,7 +389,6 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
             (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
-            ACTEnergyMap aemap;
             if (eprops.size() > 1)
             {
                 gmx_fatal(FARGS, "Multiple energies for this experiment");

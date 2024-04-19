@@ -54,6 +54,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/coolstuff.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
@@ -981,6 +982,8 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     ACTEnergyMapVector                                                  interactionEnergyMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
                          &energyComponentMap);
+    molEnergyMap_.insert({mol->getMolname(), energyMap});
+    molInteractionEnergyMap_.insert({mol->getMolname(), interactionEnergyMap});
     if (diatomic_ && mol->nRealAtoms() == 2)
     {
         print_diatomics(mol, energyComponentMap, oenv);
@@ -1192,13 +1195,14 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     return eBefore[InteractionType::EPOT];
 }
 
-static void dump_xyz(const ACTMol    *mol,
-                     const ACTEnergy &actener)
+static void dump_xyz(const std::string &label,
+                     const ACTMol      *mol,
+                     const ACTEnergy   &actener)
 {
     auto expconst = mol->experimentConst();
     if (static_cast<size_t>(actener.id()) < expconst.size())
     {
-        auto filename = gmx::formatString("%s-%d.xyz", mol->getMolname().c_str(), actener.id());
+        auto filename = gmx::formatString("%s-%d.xyz", label.c_str(), actener.id());
         auto actatoms = mol->topology()->atoms();
         auto coords   = expconst[actener.id()].getCoordinates();
         FILE *fp = gmx_ffopen(filename.c_str(), "w");
@@ -1216,64 +1220,105 @@ static void dump_xyz(const ACTMol    *mol,
         }
         gmx_ffclose(fp);
     }
+    else
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find experiment id %d for %s (there are %zu only)",
+                                                       actener.id(),
+                                                       mol->getMolname().c_str(),
+                                                       expconst.size()).c_str()));
+    }
 }
 
-static void printOutliers(FILE              *fp, 
-                          iMolSelect         ims,
-                          double             sigma,
-                          const std::string &label,
-                          real               dumpFactor,
-                          const std::vector<alexandria::ACTMol>                *actmol,
-                          const std::map<std::string, std::vector<ACTEnergy> > &allEpot)
+static int printLow(FILE              *fp,
+                    const ACTMol      *mol,
+                    const ACTEnergy   &ener,
+                    const std::string &label,
+                    double             sigma,
+                    double             dumpOutliers)
+{
+    int    noutlier = 0;
+    double epotMax  = 1.5*sigma;
+    if (ener.haveQM() && ener.haveACT() && mol)
+    {
+        double deltaE = std::abs(ener.eqm()-ener.eact());
+        if (deltaE > epotMax)
+        {
+            fprintf(fp, "%-40s  %12g  %12g  %12g\n", mol->getMolname().c_str(),
+                    ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
+            noutlier++;
+        }
+        if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
+        {
+            std::string myfnm = gmx::formatString("%s-%s.xyz", 
+                                                  mol->getMolname().c_str(),
+                                                  label.c_str());
+            dump_xyz(myfnm, mol, ener);
+        }
+    }
+    return noutlier;
+}
+
+void TrainForceFieldPrinter::printOutliers(FILE                                  *fp,
+                                           iMolSelect                             ims,
+                                           double                                 sigma,
+                                           bool                                   bIntermolecular,
+                                           InteractionType                        itype,
+                                           const std::vector<alexandria::ACTMol> *actmol)
 {
     double epotMax = 1.5*sigma;
-    if (allEpot.size() > 0)
+    auto   label   = gmx::formatString("%s-%s",
+                                       interactionTypeToString(itype).c_str(), iMolSelectName(ims));
+    fprintf(fp, "\nOverview of %s outliers for %s (Diff > %.3f)\n",
+            label.c_str(), qTypeName(qType::Calc).c_str(), epotMax);
+    fprintf(fp, "----------------------------------\n");
+    fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
+            "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
+    int noutlier = 0;
+    if (bIntermolecular)
     {
-        fprintf(fp, "\nOverview of %s %s outliers for %s (Diff > %.3f)\n",
-                iMolSelectName(ims), label.c_str(),
-                qTypeName(qType::Calc).c_str(), epotMax);
-        fprintf(fp, "----------------------------------\n");
-        fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
-        int noutlier = 0;
-        for (auto emm : allEpot)
+        for (const auto &miem : molInteractionEnergyMap_)
         {
-            std::string toFind(emm.first);
+            std::string toFind(miem.first);
             auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
                                           [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
             if (actmolptr->datasetType() == ims)
             {
-                for (auto ener : emm.second)
+                for(const auto &emm : miem.second)
                 {
-                    if (ener.haveQM() && ener.haveACT())
+                    auto emmptr = emm.find(itype);
+                    if (emm.end() == emmptr)
                     {
-                        double deltaE = std::abs(ener.eqm()-ener.eact());
-                        if (deltaE > epotMax)
-                        {
-                            fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
-                                    ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
-                            noutlier++;
-                        }
-                        if (dumpFactor >= 0 && deltaE >= dumpFactor*sigma)
-                        {
-                            if (actmol->end() != actmolptr)
-                            {
-                                dump_xyz(&(*actmolptr), ener);
-                            }
-                        }
+                        continue;
                     }
+                    noutlier += printLow(fp, &(*actmolptr), emmptr->second, label, sigma, dumpOutliers_);
                 }
             }
         }
-        if (noutlier)
+    }
+    else
+    {
+        for (const auto &miem : molEnergyMap_)
         {
-            printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
-                   label.c_str(), iMolSelectName(ims));
+            std::string toFind(miem.first);
+            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
+                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
+            if (actmolptr->datasetType() == ims)
+            {
+                for(const auto &emm : miem.second)
+                {
+                    noutlier += printLow(fp, &(*actmolptr), emm, label, sigma, dumpOutliers_);
+                }
+            }
         }
-        else
-        {
-            printf("No %s outliers! Well done.\n", label.c_str());
-        }
+    }
+    if (noutlier)
+    {
+        printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
+               label.c_str(), iMolSelectName(ims));
+    }
+    else
+    {
+        printf("No %s outliers! Well done.\n", label.c_str());
     }
 }
 
@@ -1372,8 +1417,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
     std::map<std::string, double> molEpot;
-    std::map<std::string, std::vector<ACTEnergy > > allEpot; 
-    std::map<InteractionType, std::map<std::string, std::vector<ACTEnergy > > > allEinter; 
+    //    std::map<InteractionType, std::map<std::string, std::vector<ACTEnergy > > > allEinter; 
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
         auto topology = mol->topology();
@@ -1470,36 +1514,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             printAtoms(fp, &(*mol), coords, forces);
             // Energies
             std::vector<std::string> tcout;
-            auto nepot   = lsq_epot_[ims][qType::Calc].get_npoints();
             auto epot    = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol), ims, oenv);
-            {
-                // Copy the epot pairs
-                auto x = lsq_epot_[ims][qType::Calc].getX();
-                auto y = lsq_epot_[ims][qType::Calc].getY();
-                if (x.size() > nepot)
-                {
-                    std::vector<ACTEnergy> myEpot;
-                    for(size_t kk = nepot; kk < x.size(); kk++)
-                    {
-                        myEpot.push_back(ACTEnergy(kk-nepot, x[kk], y[kk]));
-                    }
-                    allEpot.insert({mol->getMolname(), myEpot});
-                }
-            }
-            {
-                // Copy the eInter pairs
-                for(const auto &tt : terms_)
-                {
-                    std::vector<ACTEnergy> myEinter;
-                    auto x = lsq_einter_[tt][ims][qType::Calc].getX();
-                    auto y = lsq_einter_[tt][ims][qType::Calc].getY();
-                    for(size_t kk = 0; kk < x.size(); kk++)
-                    {
-                        myEinter.push_back(ACTEnergy(kk, x[kk], y[kk]));
-                    }
-                    allEinter[tt].insert({ mol->getMolname(), myEinter });
-                }
-            }
             molEpot.insert({mol->getMolname(), epot});
             for(const auto &tout : tcout)
             {
@@ -1659,8 +1674,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             if (lsq_epot_[ims][qType::Calc].get_npoints() > 0)
             {
                 // List outliers based on the deviation in the Potential energy ...
-                printOutliers(fp, ims, epotRmsd, "Epot", dumpOutliers_,
-                              actmol, allEpot);
+                printOutliers(fp, ims, epotRmsd, false, InteractionType::EPOT, actmol);
             }
         }
     }
@@ -1674,8 +1688,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 if (lsq_einter_[tt][ims][qType::Calc].get_npoints() > 0)
                 {
                     // ... and the interaction energies.
-                    printOutliers(fp, ims, einterRmsd, interactionTypeToString(tt).c_str(),
-                                  dumpOutliers_, actmol, allEinter[tt]);
+                    printOutliers(fp, ims, einterRmsd, true, tt, actmol);
                 }
             }
         }
