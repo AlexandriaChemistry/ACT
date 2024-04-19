@@ -401,29 +401,45 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         if (fp)
         {
             fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
-            fprintf(fp, "Identifier Parameter     Minimum     Maximum\n");
+            fprintf(fp, "Identifier     Parameter     Minimum     Maximum\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
                 auto ff = fcs.find(i.iType());
-                if (fcs.end() == ff)
+                if (fcs.end() != ff)
                 {
-                    continue;
+                    auto pp = ff->second.parametersConst();
+                    auto gg = pp.find(i.id());
+                    if (pp.end() != gg)
+                    {
+                        const auto &fs = gg->second.find(i.parameterType());
+                        if (gg->second.end() != fs)
+                        {
+                            fprintf(fp, "%-12s %11s  %10g  %10g\n",
+                                    i.id().id().c_str(), i.parameterType().c_str(),
+                                    fs->second.minimum(), fs->second.maximum());
+                        }
+                    }
                 }
-                auto pp = ff->second.parametersConst();
-                auto gg = pp.find(i.id());
-                if (pp.end() == gg)
+                else if (InteractionType::CHARGE == i.iType())
                 {
-                    continue;
+                    auto pt = pd_.findParticleType(i.particleType());
+                    if (!pt->hasParameter(i.parameterType()))
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such parameter type '%s' for particle '%s'", i.parameterType().c_str(), i.particleType().c_str()).c_str()));
+                    }
+                    else
+                    {
+                        auto &pp = pt->parameterConst(i.parameterType());
+                        fprintf(fp, "%-12s %11s  %10g  %10g\n",
+                                i.particleType().c_str(), i.parameterType().c_str(),
+                                pp.minimum(), pp.maximum());
+                    }
                 }
-                const auto &fs = gg->second.find(i.parameterType());
-                if (gg->second.end() == fs)
+                else
                 {
-                    continue;
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Incomprehensible parameter '%s' to train", i.name().c_str()).c_str()));
                 }
-                fprintf(fp, "%-10s %9s  %10g  %10g\n",
-                        i.id().id().c_str(), i.parameterType().c_str(),
-                        fs->second.minimum(), fs->second.maximum());
             }
         }
         // Now send the data over to my helpers
