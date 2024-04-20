@@ -172,6 +172,16 @@ double ForceComputer::compute(const ForceField                  *pd,
         }
         energies->insert({InteractionType::INDUCTION, eInduction});
     }
+    else
+    {
+        auto iqt = InteractionType::CHARGETRANSFER;
+        auto tt  = energies->find(iqt);
+        if (energies->end() != tt)
+        {
+            energies->insert({InteractionType::INDUCTION, tt->second});
+            tt->second = 0;
+        }
+    }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce;
