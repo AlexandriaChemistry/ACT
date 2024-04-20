@@ -102,6 +102,8 @@ double ForceComputer::compute(const ForceField                  *pd,
 
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
+    // Induction energy
+    double eInduction = 0;
     // mean square shell force
     double msForce = 0;
     if (pd->polarizable() && top->hasEntry(itype))
@@ -157,11 +159,9 @@ double ForceComputer::compute(const ForceField                  *pd,
         // Extract electrostatics once more
         std::set<InteractionType> eTerms = {
             InteractionType::COULOMB,
-            InteractionType::POLARIZATION,
-            InteractionType::CHARGETRANSFER
+            InteractionType::POLARIZATION
         };
-        double eInduction = 0;
-        for(auto et : eTerms)
+        for(const auto et : eTerms)
         {
             auto tt = energies->find(et);
             if (energies->end() != tt)
@@ -170,17 +170,16 @@ double ForceComputer::compute(const ForceField                  *pd,
                 tt->second = eBefore[et];
             }
         }
-        energies->insert({InteractionType::INDUCTION, eInduction});
     }
-    else
     {
         auto iqt = InteractionType::CHARGETRANSFER;
         auto tt  = energies->find(iqt);
         if (energies->end() != tt)
         {
-            energies->insert({InteractionType::INDUCTION, tt->second});
+            eInduction += tt->second;
             tt->second = 0;
         }
+        energies->insert({InteractionType::INDUCTION, eInduction});
     }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
