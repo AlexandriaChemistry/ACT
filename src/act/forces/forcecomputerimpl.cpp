@@ -460,6 +460,12 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         auto jzeta  = params[coulZETAJ];
         auto irow   = atoms[ai].row();
         auto jrow   = atoms[aj].row();
+        if (1 != irow || 1 != jrow)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("For now only row 1 Slaters are supported. You have %s row = %d and %s row = %d",
+                                                               atoms[ai].name().c_str(), atoms[ai].row(),
+                                                               atoms[aj].name().c_str(), atoms[aj].row()).c_str()));
+        }
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
@@ -468,7 +474,7 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
         // The DCoulomb_SS code returns - the derivative of the energy.
         // or ... maybe it doesn't ...
-        real felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        real felec =  qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="4ee0c6c20f4d255d8c1cf6dc2d2d30d0" timestamp="2024-04-07 13:47:37"/>
+  <version checksum="fd630e6675e2be72b6eeb030e5f30698" timestamp="2024-04-21 11:45:55"/>
   <particletypes>
     <particletype identifier="Ar" type="Atom" description="ar">
       <option key="acmtype" value="ar_z"/>
@@ -427,7 +427,7 @@
       <option key="bondtype" value="f_b"/>
       <option key="element" value="F"/>
       <option key="poltype" value="f_s"/>
-      <option key="row" value="2"/>
+      <option key="row" value="1"/>
       <option key="vdwtype" value="f"/>
       <option key="zetatype" value="f_z"/>
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
@@ -436,7 +436,7 @@
     <particletype identifier="f_s" type="Shell" description="fluorine shell">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>
-      <option key="row" value="0"/>
+      <option key="row" value="1"/>
       <option key="vdwtype" value="f_s"/>
       <option key="zetatype" value="f_s_z"/>
       <parameter type="charge" unit="e" value="-1" uncertainty="0" minimum="-1" maximum="-1" ntrain="0" mutability="Fixed" nonnegative="no"/>
@@ -457,7 +457,7 @@
     <particletype identifier="h1_s" type="Shell" description="hydrogen shell">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>
-      <option key="row" value="0"/>
+      <option key="row" value="1"/>
       <option key="vdwtype" value="h1_s"/>
       <option key="zetatype" value="h1_s_z"/>
       <parameter type="charge" unit="e" value="-1" uncertainty="0" minimum="-1" maximum="-1" ntrain="0" mutability="Fixed" nonnegative="no"/>
@@ -655,7 +655,7 @@
     <particletype identifier="hf_s" type="Shell" description="hydrogen shell">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>
-      <option key="row" value="0"/>
+      <option key="row" value="1"/>
       <option key="vdwtype" value="hf_s"/>
       <option key="zetatype" value="hf_s_z"/>
       <parameter type="charge" unit="e" value="-1" uncertainty="0" minimum="-1" maximum="-1" ntrain="0" mutability="Fixed" nonnegative="no"/>
@@ -1142,7 +1142,7 @@
       <option key="atomnumber" value="0"/>
       <option key="bondtype" value="v2f1"/>
       <option key="element" value="VS"/>
-      <option key="row" value="0"/>
+      <option key="row" value="1"/>
       <option key="vdwtype" value="v2f1"/>
       <option key="zetatype" value="v2f1_z"/>
       <parameter type="charge" unit="e" value="-0.728644" uncertainty="0" minimum="-2" maximum="2" ntrain="2" mutability="Bounded" nonnegative="no"/>
@@ -2669,7 +2669,7 @@
     </parameterlist>
     <parameterlist identifier="hbr_s">
       <parameter type="alpha" unit="Angstrom3" value="0.184502" uncertainty="0" minimum="0.01" maximum="1" ntrain="2" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="753028" uncertainty="0" minimum="753028" maximum="753028" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="753029" uncertainty="0" minimum="753029" maximum="753029" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="hc_s">
       <parameter type="alpha" unit="Angstrom3" value="0.505" uncertainty="0" minimum="0.01" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -2685,7 +2685,7 @@
     </parameterlist>
     <parameterlist identifier="hf_s">
       <parameter type="alpha" unit="Angstrom3" value="0.172793" uncertainty="0" minimum="0.01" maximum="1" ntrain="2" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="804056" uncertainty="0" minimum="804056" maximum="804056" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="804057" uncertainty="0" minimum="804057" maximum="804057" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="hi_s">
       <parameter type="alpha" unit="Angstrom3" value="0.485321" uncertainty="0" minimum="0.01" maximum="1" ntrain="2" mutability="Bounded" nonnegative="yes"/>
