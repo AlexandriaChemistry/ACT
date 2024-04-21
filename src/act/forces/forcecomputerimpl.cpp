@@ -467,11 +467,12 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         real r1    = std::sqrt(dr2);
         real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
         // The DCoulomb_SS code returns - the derivative of the energy.
-        real felec =  qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        // or ... maybe it doesn't ...
+        real felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
-            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
+            fprintf(debug, "vcoul %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g\n", velec, felec, izeta, jzeta, atoms[ai].charge(), atoms[aj].charge(), qq/r1, qq/dr2, r1);
         }
         ebond += velec;
         if (dr2 > 0)
