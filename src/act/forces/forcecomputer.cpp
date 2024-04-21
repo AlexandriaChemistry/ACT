@@ -179,7 +179,10 @@ double ForceComputer::compute(const ForceField                  *pd,
             eInduction += tt->second;
             tt->second = 0;
         }
-        energies->insert({InteractionType::INDUCTION, eInduction});
+        if (eInduction != 0)
+        {
+            energies->insert({InteractionType::INDUCTION, eInduction});
+        }
     }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
