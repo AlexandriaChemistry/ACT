@@ -2,22 +2,22 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">0.18122894212805943</Real>
-  <Real Name="Angle before">1.6749064998308829</Real>
+  <Real Name="Angle before">1.6749064998308758</Real>
   <Real Name="Proper Dih. before">15.062394391986754</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="Dispersion before">-1.7472050946736563e-05</Real>
   <Real Name="Repulsion before">4.2569772129151275e-11</Real>
-  <Real Name="Coulomb (SR) before">-34.113162910249173</Real>
-  <Real Name="Potential before">-17.194650548311852</Real>
-  <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
+  <Real Name="Coulomb (SR) before">-34.11316291024918</Real>
+  <Real Name="Potential before">-17.194650548311866</Real>
+  <Real Name="Coordinate RMSD before minimizing">4.6860710317178802e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.013779319315087506</Real>
-  <Real Name="Bond after">0.02545117742785322</Real>
-  <Real Name="Angle after">0.37508880597076388</Real>
-  <Real Name="Proper Dih. after">8.039048283828695</Real>
-  <Real Name="Improper Dih. after">1.0009322048218207e-09</Real>
-  <Real Name="Dispersion after">-1.7785354318431389e-05</Real>
-  <Real Name="Repulsion after">4.2297853924398879e-11</Real>
-  <Real Name="Coulomb (SR) after">-34.45146979096139</Real>
-  <Real Name="Potential after">-26.011899308045166</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.013772918681422755</Real>
+  <Real Name="Bond after">0.02554431565699862</Real>
+  <Real Name="Angle after">0.37466211804024824</Real>
+  <Real Name="Proper Dih. after">8.039086848045617</Real>
+  <Real Name="Improper Dih. after">5.3178003571115878e-17</Real>
+  <Real Name="Dispersion after">-1.7785344521045596e-05</Real>
+  <Real Name="Repulsion after">4.231192473271172e-11</Real>
+  <Real Name="Coulomb (SR) after">-34.451231142988412</Real>
+  <Real Name="Potential after">-26.011955646547761</Real>
 </ReferenceData>

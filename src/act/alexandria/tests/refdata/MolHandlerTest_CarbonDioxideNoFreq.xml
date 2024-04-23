@@ -5,9 +5,9 @@
   <Real Name="Lin. Angle before">0</Real>
   <Real Name="Potential before">0.001925499999998507</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
-  <String Name="algorithm">Steep</String>
-  <Real Name="Coordinate RMSD after minimizing">4.0824829046415801e-05</Real>
-  <Real Name="Bond after">1.4833512431670491e-28</Real>
-  <Real Name="Lin. Angle after">0</Real>
-  <Real Name="Potential after">1.4833512431670491e-28</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">4.0824830709689385e-05</Real>
+  <Real Name="Bond after">6.4924619152029909e-18</Real>
+  <Real Name="Lin. Angle after">4.9087153866327135e-19</Real>
+  <Real Name="Potential after">6.983333453866262e-18</Real>
 </ReferenceData>

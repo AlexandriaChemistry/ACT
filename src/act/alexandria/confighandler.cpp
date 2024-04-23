@@ -396,6 +396,8 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
           "Force using displacement and reminimize even if converged in an attempt to overcome local minima (LBFGS only)" },
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
+        { "-oneH", FALSE, etBOOL, {&oneH_},
+          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
           "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
     };

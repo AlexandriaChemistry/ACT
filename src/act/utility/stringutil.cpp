@@ -98,7 +98,7 @@ std::vector<std::string> split(const std::string &s,
 
 std::string gmx_ftoa(double f)
 {
-    if (fabs(f) < 100)
+    if (fabs(f) < 100 && fabs(f) > 1)
     {
         return gmx::formatString("%.3f", f);
     }

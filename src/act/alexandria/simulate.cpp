@@ -200,7 +200,7 @@ int simulate(int argc, char *argv[])
         int                  nsymm  = 1;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
-                       false, box, false))
+                       false, box, sch.oneH()))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
             status = 1;
@@ -297,7 +297,7 @@ int simulate(int argc, char *argv[])
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose);
+            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, sch.oneH());
         }
         else if (actmol.errors().empty())
         {

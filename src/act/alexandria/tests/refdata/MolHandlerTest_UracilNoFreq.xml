@@ -2,22 +2,22 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">24.063389006139413</Real>
-  <Real Name="Angle before">25.427796327841154</Real>
+  <Real Name="Angle before">25.427796327841151</Real>
   <Real Name="Proper Dih. before">0</Real>
   <Real Name="Improper Dih. before">0</Real>
   <Real Name="Dispersion before">-2.4730634293295379</Real>
   <Real Name="Repulsion before">0.73657185932875591</Real>
-  <Real Name="Coulomb (SR) before">-8.3389346866784226</Real>
-  <Real Name="Potential before">39.415759077301367</Real>
-  <Real Name="Coordinate RMSD before minimizing">7.2305237604181833e-17</Real>
+  <Real Name="Coulomb (SR) before">-8.3389346866784102</Real>
+  <Real Name="Potential before">39.415759077301374</Real>
+  <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0072352403338492594</Real>
-  <Real Name="Bond after">0.22742945247804305</Real>
-  <Real Name="Angle after">7.3277336356656715</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0072351486042655034</Real>
+  <Real Name="Bond after">0.22726377143263846</Real>
+  <Real Name="Angle after">7.3279292342679403</Real>
   <Real Name="Proper Dih. after">0</Real>
-  <Real Name="Improper Dih. after">5.8851621073361601e-34</Real>
-  <Real Name="Dispersion after">-2.742721106668812</Real>
-  <Real Name="Repulsion after">0.80157827835304774</Real>
-  <Real Name="Coulomb (SR) after">-8.6423431845134928</Real>
-  <Real Name="Potential after">-3.0283229246855425</Real>
+  <Real Name="Improper Dih. after">2.8394676178456844e-34</Real>
+  <Real Name="Dispersion after">-2.7426774983985331</Real>
+  <Real Name="Repulsion after">0.80155012407908499</Real>
+  <Real Name="Coulomb (SR) after">-8.6423896546254024</Real>
+  <Real Name="Potential after">-3.0283240232442719</Real>
 </ReferenceData>

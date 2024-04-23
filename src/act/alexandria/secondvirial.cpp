@@ -232,7 +232,8 @@ void ReRunner::rerun(FILE                        *logFile,
                      const ACTMol                *actmol,
                      bool                         userqtot,
                      double                       qtot,
-                     bool                         verbose)
+                     bool                         verbose,
+                     bool                         oneH)
 {
     std::vector<std::vector<gmx::RVec> > dimers;
     std::string          method, basis;
@@ -261,7 +262,7 @@ void ReRunner::rerun(FILE                        *logFile,
         // Read compounds if we have a trajectory file
         matrix box;
         if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, false))
+                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
         {
             fprintf(stderr, "Could not read compounds from %s\n", trajname_);
             return;
@@ -720,6 +721,7 @@ int b2(int argc, char *argv[])
     double                    shellToler = 1e-6;
     int                       maxdimers  = 1024;
     bool                      verbose    = false;
+    bool                      oneH       = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
@@ -732,6 +734,8 @@ int b2(int argc, char *argv[])
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
+        { "-oneH", FALSE, etBOOL, {&oneH},
+          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-maxdimer", FALSE, etINT, {&maxdimers},
           "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -804,7 +808,7 @@ int b2(int argc, char *argv[])
         matrix box;
         bool   userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
         if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box, false))
+                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box, oneH))
         {
             if (mps.size() > 1)
             {
@@ -862,7 +866,7 @@ int b2(int argc, char *argv[])
         if (rerun.doRerun())
         {
             bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose);
+            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, oneH);
         }
         else
         {

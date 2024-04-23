@@ -157,13 +157,15 @@ public:
      * \param[in] userqtot Whether the user has explicitly set the qtot value below
      * \param[in] qtot     The total charge for when reading from a trajectory
      * \param[in] verbose  Whether or not to print a lot
+     * \param[in] oneH     Whether to map all H to one atom type
      */
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
                bool                         userqtot,
                double                       qtot,
-               bool                         verbose);
+               bool                         verbose,
+               bool                         oneH);
 
     /*! \brief Compute second virial coefficient including QM corrections
      * \param[in] cr       Communication Record for parallel calcs
