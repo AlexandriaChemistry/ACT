@@ -316,7 +316,7 @@ TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 2);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
@@ -370,7 +370,7 @@ TEST_F (MolHandlerTest, HydrogenChloridePol)
 TEST_F (MolHandlerTest, WaterPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", true);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 2);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
