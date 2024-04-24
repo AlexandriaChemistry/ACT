@@ -172,7 +172,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster(const char *fitnessFile)
+int OptACM::initMaster(const char *fitnessFile)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -207,7 +207,12 @@ void OptACM::initMaster(const char *fitnessFile)
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
-
+    // Check whether we have to do anything
+    if (fitComp_->numDevComputers() == 0)
+    {
+        fprintf(stderr, "Nothing to train! Check your input and your code.\n");
+        return 0;
+    }
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
     if (0 == seed)
@@ -347,6 +352,7 @@ void OptACM::initMaster(const char *fitnessFile)
         fprintf(logFile(), "Done initializing master node\n");
         fflush(logFile());
     }
+    return 1;
 }
 
 void OptACM::printNumCalcDevEstimate()
@@ -854,55 +860,71 @@ int train_ff(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    int initOK   = 0;
     if (opt.commRec()->isMaster())
     {
         bool bMinimum = false;
         if (opt.sii()->nParam() > 0)
         {
-            opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
-
+            initOK = opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
             // Master only
-            bMinimum = opt.runMaster(bOptimize, bSensitivity);
-            if (bOptimize)
+            if (initOK)
             {
-                printf("DONE WITH OPTIMIZATION\n");
+                bMinimum = opt.runMaster(bOptimize, bSensitivity);
+                if (bOptimize)
+                {
+                    printf("DONE WITH OPTIMIZATION\n");
+                }
             }
         }
-        if (bMinimum || bForceOutput || !bOptimize)
+        // Let the other nodes know whether all is well.
+        opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        if (initOK)
         {
-            if (bForceOutput && !bMinimum)
+            if (bMinimum || bForceOutput || !bOptimize)
             {
-                fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                opt.sii()->saveState(true);
+                if (bForceOutput && !bMinimum)
+                {
+                    fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
+                    opt.sii()->saveState(true);
+                }
+                MolGen *tmpMg = opt.mg();
+                printer.print(opt.logFile(), tmpMg->actmolsPtr(),
+                              opt.sii()->forcefield(),
+                              oenv, filenms);
+                print_memory_usage(debug);
             }
-            MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), tmpMg->actmolsPtr(),
-                          opt.sii()->forcefield(),
-                          oenv, filenms);
-            print_memory_usage(debug);
-        }
-        else if (!bMinimum)
-        {
-            printf("No improved parameters found. Please try again with more iterations.\n");
+            else if (!bMinimum)
+            {
+                printf("No improved parameters found. Please try again with more iterations.\n");
+            }
         }
     }
-    else if (opt.commRec()->isMiddleMan())
+    else
     {
-        if (opt.sii()->nParam() > 0)
+        // Verify that all is well with the master.
+        opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        if (initOK > 0)
         {
-            // Master and Individuals (middle-men) need to initialize more,
-            // so let's go.
-            ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                   opt.verbose(), opt.oenv(), opt.verbose());
-            middleman.run();
-        }
-    }
-    else if (bOptimize || bSensitivity)
-    {
-        if (opt.sii()->nParam() > 0)
-        {
-            ACTHelper helper(opt.sii(), opt.mg());
-            helper.run();
+            if (opt.commRec()->isMiddleMan())
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    // Master and Individuals (middle-men) need to initialize more,
+                    // so let's go.
+                    ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+                                           opt.verbose(), opt.oenv(), opt.verbose());
+                    middleman.run();
+                }
+            }
+            else if (bOptimize || bSensitivity)
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    ACTHelper helper(opt.sii(), opt.mg());
+                    helper.run();
+                }
+            }
         }
     }
     return 0;

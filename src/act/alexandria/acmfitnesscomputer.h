@@ -140,6 +140,8 @@ public:
     double calcDeviation(CalcDev    task,
                          iMolSelect ims);
 
+    //! \return the number of devComputers
+    size_t numDevComputers() const { return devComputers_.size(); }
 };
 
 
