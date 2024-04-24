@@ -190,6 +190,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         // Initialize the population and compute fitness
         fprintf(logFile_, "Initializing individuals and computing initial fitness...\n");
+        fflush(logFile_);
     }
 
     // Create the gene pools
@@ -205,6 +206,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     if (logFile_)
     {
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
+        fflush(logFile_);
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
     // Maybe not really needed but just to print the components
@@ -212,6 +214,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     if (logFile_)
     {
         fprintf(logFile_, "\n");
+        fflush(logFile_);
     }
 
     pool[pold]->addGenome(ind->genome());
@@ -228,7 +231,11 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         pool[pnew]->addGenome(genome);
     }
     // Now we have filled the gene pool and initial fitness values
-    pool[pold]->print(logFile_);
+    if (logFile_)
+    {
+        pool[pold]->print(logFile_);
+        fflush(logFile_);
+    }
     // Print fitness to surveillance files
     fprintFitness(*(pool[pold]));
 
@@ -241,9 +248,12 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
-    
-    fprintf(logFile_, "\nStarting %d generations of force field training.\n",
-            gach_->maxGenerations());
+    if (logFile_)
+    {
+        fprintf(logFile_, "\nStarting %d generations of force field training.\n",
+                gach_->maxGenerations());
+        fflush(logFile_);
+    }
     // Iterate and create new generation
     do
     {

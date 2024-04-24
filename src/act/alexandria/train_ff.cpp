@@ -863,24 +863,22 @@ int train_ff(int argc, char *argv[])
     int initOK   = 0;
     if (opt.commRec()->isMaster())
     {
-        bool bMinimum = false;
         if (opt.sii()->nParam() > 0)
         {
             initOK = opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
-            // Master only
-            if (initOK)
-            {
-                bMinimum = opt.runMaster(bOptimize, bSensitivity);
-                if (bOptimize)
-                {
-                    printf("DONE WITH OPTIMIZATION\n");
-                }
-            }
         }
         // Let the other nodes know whether all is well.
-        opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        if (opt.commRec()->isParallel())
+        {
+            opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        }
         if (initOK)
         {
+            bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
+            if (bOptimize)
+            {
+                printf("DONE WITH OPTIMIZATION\n");
+            }
             if (bMinimum || bForceOutput || !bOptimize)
             {
                 if (bForceOutput && !bMinimum)

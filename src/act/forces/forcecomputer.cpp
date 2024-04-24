@@ -184,6 +184,8 @@ double ForceComputer::compute(const ForceField                  *pd,
             energies->insert({InteractionType::INDUCTION, eInduction});
         }
     }
+    double allelec = (*energies)[InteractionType::COULOMB] + (*energies)[InteractionType::INDUCTION];
+    energies->insert({InteractionType::ALLELEC, allelec});
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce;
