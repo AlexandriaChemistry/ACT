@@ -872,30 +872,31 @@ int train_ff(int argc, char *argv[])
         {
             opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
         }
+        bool bMinimum = false;
         if (initOK)
         {
-            bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
+            bMinimum = opt.runMaster(bOptimize, bSensitivity);
             if (bOptimize)
             {
                 printf("DONE WITH OPTIMIZATION\n");
             }
-            if (bMinimum || bForceOutput || !bOptimize)
+        }
+        if (bMinimum || bForceOutput || !bOptimize)
+        {
+            if (bForceOutput && !bMinimum)
             {
-                if (bForceOutput && !bMinimum)
-                {
-                    fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                    opt.sii()->saveState(true);
-                }
-                MolGen *tmpMg = opt.mg();
-                printer.print(opt.logFile(), tmpMg->actmolsPtr(),
-                              opt.sii()->forcefield(),
-                              oenv, filenms);
-                print_memory_usage(debug);
+                fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
+                opt.sii()->saveState(true);
             }
-            else if (!bMinimum)
-            {
-                printf("No improved parameters found. Please try again with more iterations.\n");
-            }
+            MolGen *tmpMg = opt.mg();
+            printer.print(opt.logFile(), tmpMg->actmolsPtr(),
+                          opt.sii()->forcefield(),
+                          oenv, filenms);
+            print_memory_usage(debug);
+        }
+        else if (!bMinimum)
+        {
+            printf("No improved parameters found. Please try again with more iterations.\n");
         }
     }
     else
