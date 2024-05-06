@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS_act">0.001925499999998507</Real>
-  <Real Name="LINEAR_ANGLES_act">0</Real>
-  <Real Name="EPOT_act">0.001925499999998507</Real>
+  <Real Name="BONDS_act">0.0020025199999997301</Real>
+  <Real Name="LINEAR_ANGLES_act">1.1003299999991469e-05</Real>
+  <Real Name="EPOT_act">0.0020135232999997214</Real>
   <Real Name="o2-1_act fX">0</Real>
   <Real Name="o2-1_act fY">0</Real>
-  <Real Name="o2-1_act fZ">38.50999999998507</Real>
+  <Real Name="o2-1_act fZ">47.312330000003037</Real>
   <Real Name="c1-2_act fX">0</Real>
   <Real Name="c1-2_act fY">0</Real>
-  <Real Name="c1-2_act fZ">0</Real>
+  <Real Name="c1-2_act fZ">-17.604660000014555</Real>
   <Real Name="o2-3_act fX">0</Real>
   <Real Name="o2-3_act fY">0</Real>
-  <Real Name="o2-3_act fZ">-38.50999999998507</Real>
+  <Real Name="o2-3_act fZ">-29.707669999988482</Real>
 </ReferenceData>
