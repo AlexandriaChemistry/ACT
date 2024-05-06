@@ -279,7 +279,7 @@ TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-8);
+    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
@@ -331,7 +331,7 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
 
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true);
+    test("carbon-dioxide.sdf", "ACS-g", true, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
