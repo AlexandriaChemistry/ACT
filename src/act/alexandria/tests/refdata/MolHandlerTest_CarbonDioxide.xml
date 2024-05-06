@@ -3,12 +3,18 @@
 <ReferenceData>
   <Real Name="Bond before">0.0020024868155974823</Real>
   <Real Name="Lin. Angle before">2.2006599999991466e-05</Real>
+  <Real Name="Coulomb (SR) before">0</Real>
+  <Real Name="INDUCTION before">0</Real>
+  <Real Name="ALLELEC before">0</Real>
   <Real Name="Potential before">0.0020244934155974736</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332636692098e-17</Real>
   <String Name="algorithm">LBFGS</String>
   <Real Name="Coordinate RMSD after minimizing">4.1374402311306143e-05</Real>
   <Real Name="Bond after">6.1829736122490158e-18</Real>
   <Real Name="Lin. Angle after">5.7328211737925855e-19</Real>
+  <Real Name="Coulomb (SR) after">0</Real>
+  <Real Name="INDUCTION after">0</Real>
+  <Real Name="ALLELEC after">0</Real>
   <Real Name="Potential after">6.7562557296282746e-18</Real>
   <Real Name="RMS force">1.7456683252487198e-06</Real>
   <Sequence Name="Equilibrium force">

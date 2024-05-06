@@ -576,12 +576,10 @@ bool OptACM::runMaster(bool        optimize,
             {
                 it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
-                for (const auto &ims : iMolSelectNames())
-                {
-                    fitComp_->compute(&(it->second), ims.first, true);
-                    double chi2 = it->second.fitness(ims.first);
-                    fprintf(logFile(), "Minimum chi2 for %s %g\n", ims.second, chi2);
-                }
+                fitComp_->compute(&(it->second), it->first, true);
+                double chi2 = it->second.fitness(it->first);
+                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                        iMolSelectName(it->first), chi2);
             }
         }
         // Save force field of best individual(s)
@@ -774,7 +772,20 @@ int train_ff(int argc, char *argv[])
                 opt2fn("-sel", filenms.size(), filenms.data()));
         print_memory_usage(debug);
     }
-
+    gms.bcast(opt.commRec());
+    if (gms.count(iMolSelect::Test) > 0)
+    {
+        opt.sii()->fillFittingTargets(iMolSelect::Test);
+    }
+    else
+    {
+        opt.gach()->setEvaluateTestset(false);
+        opt.bch()->setEvaluateTestset(false);
+        if (opt.commRec()->isMaster())
+        {
+            fprintf(opt.logFile(), "Turning off the evaluate of test set since it is empty.\n");
+        }
+    }
     // Figure out a logfile to pass down :)
     FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
 

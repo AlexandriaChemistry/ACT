@@ -8,6 +8,7 @@
   <Real Name="COULOMB0.98_act">-78.340134624607231</Real>
   <Real Name="POLARIZATION0.98_act">0</Real>
   <Real Name="INDUCTION0.98_act">-0.24076046278498056</Real>
+  <Real Name="ALLELEC0.98_act">-78.580895087392207</Real>
   <Real Name="EPOT0.98_act">243.24774181593676</Real>
   <Real Name="o3-1_act0.98 fX">0</Real>
   <Real Name="o3-1_act0.98 fY">0</Real>
@@ -25,6 +26,7 @@
   <Real Name="COULOMB1.04_act">-78.041025184459613</Real>
   <Real Name="POLARIZATION1.04_act">0</Real>
   <Real Name="INDUCTION1.04_act">-0.26613175369568531</Real>
+  <Real Name="ALLELEC1.04_act">-78.307156938155302</Real>
   <Real Name="EPOT1.04_act">-148.4390843032931</Real>
   <Real Name="o3-1_act1.04 fX">0</Real>
   <Real Name="o3-1_act1.04 fY">0</Real>

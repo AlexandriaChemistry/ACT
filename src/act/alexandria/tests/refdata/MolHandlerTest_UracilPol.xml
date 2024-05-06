@@ -9,6 +9,7 @@
   <Real Name="Coulomb (SR) before">-209.54689876448339</Real>
   <Real Name="Polarization before">0</Real>
   <Real Name="INDUCTION before">-10.75210761832947</Real>
+  <Real Name="ALLELEC before">-220.29900638281285</Real>
   <Real Name="Potential before">-4818.6193624370644</Real>
   <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
@@ -21,6 +22,7 @@
   <Real Name="Coulomb (SR) after">-204.77991485834406</Real>
   <Real Name="Polarization after">0</Real>
   <Real Name="INDUCTION after">-11.851127625030129</Real>
+  <Real Name="ALLELEC after">-216.63104248337419</Real>
   <Real Name="Potential after">-4904.0785139448362</Real>
   <Real Name="RMS force">0.0032053038052455478</Real>
   <Sequence Name="Equilibrium force">

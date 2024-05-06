@@ -169,8 +169,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fflush(logFile_);
     }
     // Open surveillance files for fitness
-    openFitnessFiles(fitnessFile_);
-    
+    for(const auto &bg : *bestGenome)
+    {
+        openFitnessFiles(fitnessFile_, bg.first);
+    }
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()

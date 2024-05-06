@@ -139,8 +139,10 @@ public:
 
     /*! Open fitness output
      * \param[in] filename Name for output files (data set will be inserted in file name)
+     * \param[in] ims      Selection category
      */
-    void openFitnessFiles(const std::string &filename);
+    void openFitnessFiles(const std::string &filename,
+                          iMolSelect         ims);
 
     //! And close them when the time is due
     void closeFitnessFiles();

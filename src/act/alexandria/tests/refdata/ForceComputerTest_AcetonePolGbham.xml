@@ -40,5 +40,6 @@
   <Real Name="COULOMB">-186.91520776384516</Real>
   <Real Name="POLARIZATION">0</Real>
   <Real Name="INDUCTION">-8.5790093864903181</Real>
+  <Real Name="ALLELEC">-195.49421715033549</Real>
   <Real Name="EPOT">5722.7563990080953</Real>
 </ReferenceData>

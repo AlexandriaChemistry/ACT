@@ -181,9 +181,6 @@ private:
     //! Output file prefix
     std::string                                          prefix_;
 
-    //! \brief Fills the fitting targets data structure
-    void fillFittingTargets();
-
 public:
 
     /*!
@@ -191,6 +188,12 @@ public:
      * \param[in] cr The communication record
      */
     StaticIndividualInfo(CommunicationRecord *cr);
+
+    /*! \brief Fills the fitting targets data structure
+     * This needs to know what compounds are present in the input
+     * \param[in] ims Selection to add
+     */
+    void fillFittingTargets(iMolSelect ims);
 
     /*! \brief Fill the \p id_ and \p prefix_ fields
      * (to be called after the communication record structure has been initialized)

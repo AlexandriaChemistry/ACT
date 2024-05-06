@@ -8,6 +8,8 @@
   <Real Name="Dispersion before">-1.7472050946736563e-05</Real>
   <Real Name="Repulsion before">4.2569772129151275e-11</Real>
   <Real Name="Coulomb (SR) before">-34.11316291024918</Real>
+  <Real Name="INDUCTION before">0</Real>
+  <Real Name="ALLELEC before">-34.11316291024918</Real>
   <Real Name="Potential before">-17.194650548311866</Real>
   <Real Name="Coordinate RMSD before minimizing">4.6860710317178802e-17</Real>
   <String Name="algorithm">LBFGS</String>
@@ -19,6 +21,8 @@
   <Real Name="Dispersion after">-1.7785344521045756e-05</Real>
   <Real Name="Repulsion after">4.2311924732712541e-11</Real>
   <Real Name="Coulomb (SR) after">-34.451231142988455</Real>
+  <Real Name="INDUCTION after">0</Real>
+  <Real Name="ALLELEC after">-34.451231142988455</Real>
   <Real Name="Potential after">-26.011955646547754</Real>
   <Real Name="RMS force">6.3725176238030358e-05</Real>
   <Sequence Name="Equilibrium force">

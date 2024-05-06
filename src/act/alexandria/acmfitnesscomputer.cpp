@@ -68,13 +68,22 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     }
     if (verbose && logfile_)
     {
-        auto fts = sii_->targets().find(trgtFit)->second;
-        if (!fts.empty())
+        const auto &targets = sii_->targets();
+        if (targets.empty())
         {
-            fprintf(logfile_, "Components of training function for %s set\n", iMolSelectName(trgtFit));
-            for (const auto &ft : fts)
+            GMX_THROW(gmx::InternalError("No targets whatsoever!"));
+        }
+        auto ttt = targets.find(trgtFit);
+        if (targets.end() != ttt)
+        {
+            auto fts = ttt->second;
+            if (!fts.empty())
             {
-                ft.second.print(logfile_);
+                fprintf(logfile_, "Components of training function for %s set\n", iMolSelectName(trgtFit));
+                for (const auto &ft : fts)
+                {
+                    ft.second.print(logfile_);
+                }
             }
         }
     }
@@ -140,6 +149,16 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
 double ACMFitnessComputer::calcDeviation(CalcDev    task,
                                          iMolSelect ims)
 {
+    // Gather fitting targets
+    std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
+    if (nullptr == targets)
+    {
+        if (debug)
+        {
+            fprintf(debug, "Cannot find targets for %s\n", iMolSelectName(ims));
+        }
+        return 0;
+    }
     auto cr = sii_->commRec();
     // Send / receive parameters
     if (cr->isHelper())
@@ -158,9 +177,6 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
-
-    // Gather fitting targets
-    std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
 
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
@@ -229,7 +245,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
         }
     }
-    double chi2epot = targets->find(eRMS::EPOT)->second.chiSquared();
+    auto   ttt      = targets->find(eRMS::EPOT);
+    if (targets->end() == ttt)
+    {
+        GMX_THROW(gmx::InternalError("Cannot find EPOT in targets."));
+    }
+    double chi2epot = ttt->second.chiSquared();
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
     sii_->sumChiSquared(task == CalcDev::Compute, ims);

@@ -787,11 +787,6 @@ size_t MolGen::Read(FILE                                *fp,
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
-    std::map<iMolSelect, int> nLocal;
-    for(const auto &ims : iMolSelectNames())
-    {
-        nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
-    }
     std::map<MolPropObservable, iqmType> iqmMap = 
         {
             { MolPropObservable::DELTAE0,           iqmType::QM },
@@ -1062,10 +1057,6 @@ size_t MolGen::Read(FILE                                *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                if (actmol.support() == eSupport::Local)
-                {
-                    nLocal.find(actmol.datasetType())->second += 1;
-                }
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
