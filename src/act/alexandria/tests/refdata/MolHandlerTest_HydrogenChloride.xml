@@ -8,6 +8,7 @@
   <Real Name="Coordinate RMSD after minimizing">6.8783780180472332e-05</Real>
   <Real Name="Bond after">0</Real>
   <Real Name="Potential after">0</Real>
+  <Real Name="RMS force">4.63203251896073e-12</Real>
   <Sequence Name="Equilibrium force">
     <Int Name="Length">6</Int>
     <Real>0</Real>
@@ -16,15 +17,6 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>8.0229156651512328e-12</Real>
-  </Sequence>
-  <Sequence Name="DeltaX">
-    <Int Name="Length">6</Int>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>-1.8268791422376395e-17</Real>
-    <Real>0</Real>
-    <Real>2.7755190437155511e-17</Real>
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>

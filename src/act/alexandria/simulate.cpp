@@ -155,7 +155,7 @@ int simulate(int argc, char *argv[])
     (void) pd.verifyCheckSum(stderr);
 
     chargeMap qmap;
-    auto forceComp = new ForceComputer(shellToler, 100);
+    auto forceComp = new ForceComputer(shellToler, sch.maxIter());
     bool userqtot  = false;
     auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
     if (qfn)
@@ -200,7 +200,7 @@ int simulate(int argc, char *argv[])
         int                  nsymm  = 1;
         if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
                        &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
-                       false, box, false))
+                       false, box, sch.oneH()))
         {
             fprintf(logFile, "Reading %s failed.\n", filename);
             status = 1;
@@ -297,7 +297,7 @@ int simulate(int argc, char *argv[])
         {
             rerun.setFunctions(forceComp, &gendimers, oenv);
             rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose);
+            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, sch.oneH());
         }
         else if (actmol.errors().empty())
         {
@@ -325,6 +325,19 @@ int simulate(int argc, char *argv[])
                 }
                 
                 std::map<InteractionType, double> energies;
+                {
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+                    JsonTree jtener("Energies before");
+                    std::string unit("kJ/mol");
+                    for (const auto &ener : energies)
+                    {
+                        auto val = gmx::formatString("%.4f", ener.second);
+                        jtener.addValueUnit(interactionTypeToString(ener.first),
+                                            val.c_str(), unit);
+                    }
+                    jtree.addObject(jtener);
+                }
                 eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
                                                       &xmin, &energies, logFile, freeze);
                 if (eMinimizeStatus::OK == eMin)
@@ -346,7 +359,7 @@ int simulate(int argc, char *argv[])
                                     interactionTypeToString(ei.first).c_str(), ei.second);
                         }
                     }
-                    JsonTree jtener("Energies");
+                    JsonTree jtener("Energies after");
                     std::string unit("kJ/mol");
                     for (const auto &ener : energies)
                     {
@@ -357,7 +370,7 @@ int simulate(int argc, char *argv[])
                     jtree.addObject(jtener);
                 }
             }
-            if (eMinimizeStatus::OK == eMin)
+            if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
             {
                 molhandler.simulate(&pd, &actmol, forceComp, sch, logFile,
                                     opt2fn("-o", fnm.size(),fnm.data()),

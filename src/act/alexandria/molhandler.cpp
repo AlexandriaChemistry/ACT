@@ -667,7 +667,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         // Store the atom numbers for the frozen atoms in the counting incl. shells
-        if (myatoms[atom].pType() == eptAtom &&
+        if ((myatoms[atom].pType() == eptAtom || myatoms[atom].pType() == eptShell) &&
             freeze.end() == std::find(freeze.begin(), freeze.end(), atom))
         {
             theAtoms.push_back(atom);
@@ -704,7 +704,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     {
         lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
 
-        STLBFGS::Optimizer                      opt{func};
+        STLBFGS::Optimizer                      opt{func, 1000};
+        opt.ftol    = simConfig.forceTolerance();
+        // opt.verbose = true;
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;

@@ -12,7 +12,7 @@ namespace STLBFGS {
     typedef std::deque<vector> history;
 
     struct Optimizer {
-        Optimizer(func_grad_eval func_grad, int history_depth = 10, bool m1qn3_precond = true) : func_grad{func_grad}, invH{history_depth, m1qn3_precond} {}
+        Optimizer(func_grad_eval func_grad, int history_depth = 1000, bool m1qn3_precond = true) : func_grad{func_grad}, invH{history_depth, m1qn3_precond} {}
         bool run(vector &sol); // actual optimization loop
 
         const func_grad_eval func_grad;
