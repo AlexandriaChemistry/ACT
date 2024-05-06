@@ -3,7 +3,7 @@ OPT/carbon-dioxide/carbon-dioxide3-opt.log.gz
 Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Tight,Save,MaxCycl
   3  2  0  0  0  0  0  0  0  0999 V2000
     0.0000    0.0000    1.1605 O   0  0  0  0  0  0  0  0  0  0  0  0
-    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0
     0.0000    0.0000   -1.1605 O   0  0  0  0  0  0  0  0  0  0  0  0
   2  1  2  0  0  0  0
   3  2  2  0  0  0  0

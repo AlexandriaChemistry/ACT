@@ -279,7 +279,7 @@ TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false, 2);
+    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
@@ -316,7 +316,7 @@ TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false, 2);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
@@ -331,7 +331,7 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
 
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true, 2);
+    test("carbon-dioxide.sdf", "ACS-g", true);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
