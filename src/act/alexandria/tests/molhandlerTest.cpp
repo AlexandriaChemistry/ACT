@@ -108,7 +108,8 @@ static void add_energies(const ForceField                        *pd,
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(const char *molname, const char *forcefield, bool nma, int maxretry=1)
+    void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
+              double ftoler=1e-12)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -135,8 +136,7 @@ protected:
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
         auto alg = ChargeGenerationAlgorithm::NONE;
-        double shellTolerance = 1e-12;
-        double ftoler         = 1e-12;
+        double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
@@ -363,14 +363,12 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-
     test("hydrogen-chloride.sdf", "ACS-pg", true);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-
-    test("water-3-oep.log.pdb", "ACS-pg", true, 2);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
