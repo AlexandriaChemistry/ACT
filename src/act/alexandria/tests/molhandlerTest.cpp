@@ -109,7 +109,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
-              double ftoler=1e-12)
+              double ftoler=1e-14)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);

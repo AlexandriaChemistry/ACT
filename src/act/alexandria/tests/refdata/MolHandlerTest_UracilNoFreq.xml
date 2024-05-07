@@ -13,15 +13,15 @@
   <Real Name="Potential before">39.415759077301374</Real>
   <Real Name="Coordinate RMSD before minimizing">6.549037543073086e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0072351486055022918</Real>
-  <Real Name="Bond after">0.22726377422536057</Real>
-  <Real Name="Angle after">7.3279292322855616</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0072351485134084688</Real>
+  <Real Name="Bond after">0.2272638038932937</Real>
+  <Real Name="Angle after">7.3279291540561911</Real>
   <Real Name="Proper Dih. after">0</Real>
-  <Real Name="Improper Dih. after">3.0438225352322306e-34</Real>
-  <Real Name="Dispersion after">-2.7426774986246971</Real>
-  <Real Name="Repulsion after">0.80155012424116023</Real>
-  <Real Name="Coulomb (SR) after">-8.6423896553716695</Real>
+  <Real Name="Improper Dih. after">9.7082395430173573e-35</Real>
+  <Real Name="Dispersion after">-2.7426774801243221</Real>
+  <Real Name="Repulsion after">0.80155011078595273</Real>
+  <Real Name="Coulomb (SR) after">-8.6423896118556964</Real>
   <Real Name="INDUCTION after">0</Real>
-  <Real Name="ALLELEC after">-8.6423896553716695</Real>
-  <Real Name="Potential after">-3.0283240232442843</Real>
+  <Real Name="ALLELEC after">-8.6423896118556964</Real>
+  <Real Name="Potential after">-3.0283240232445809</Real>
 </ReferenceData>

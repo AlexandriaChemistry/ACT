@@ -673,10 +673,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             theAtoms.push_back(atom);
         }
     }
-    // Two sets of forces
-    std::vector<gmx::RVec> forces[2];
-    forces[0].resize(myatoms.size());
-    forces[1].resize(myatoms.size());
     bool                   firstStep = true;
     // Now start the minimization loop.
     if (logFile)
@@ -685,9 +681,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 mol->getMolname().c_str(),
                 eMinimizeAlgorithmToString(simConfig.minAlg()).c_str());
     }
-    std::vector<double> deltaX[2];
-    deltaX[0].resize(DIM*theAtoms.size(), 0.0);
-    deltaX[1].resize(DIM*theAtoms.size(), 0.0);
     double              epotMin = 1e8;
     double              msfMin  = 1e16;
     // Two sets of coordinates
@@ -706,7 +699,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
 
         STLBFGS::Optimizer                      opt{func, 1000};
         opt.ftol    = simConfig.forceTolerance();
-        // opt.verbose = true;
+        opt.gtol    = simConfig.forceTolerance();
+        if (logFile)
+        {
+            opt.verbose = true;
+        }
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;
@@ -737,15 +734,20 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (logFile)
                 {
-                    fprintf(logFile, "Minimization iteration %d/%d energy %g\n",
-                            retry+1, maxRetry, enew);
+                    double msf = 0;
+                    for(const auto &f : *lbfgs->forces())
+                    {
+                        msf += iprod(f,f);
+                    }
+                    msf /= theAtoms.size();
+                    fprintf(logFile, "Minimization iteration %d/%d energy %g RMS force %g\n",
+                            retry+1, maxRetry, enew, std::sqrt(msf));
                 }
                 if (enew < eMin)
                 {
                     // Store new structure only when it has lower energy.
                     newCoords[current]   = *lbfgs->coordinates();
                     newEnergies[current] = *lbfgs->energies();
-                    forces[current]      = *lbfgs->forces();
                     eMin                 = enew;
                 }
             }
@@ -755,6 +757,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     }
     else
     {
+    // Two sets of forces
+    std::vector<gmx::RVec> forces[2];
+    forces[0].resize(myatoms.size());
+    forces[1].resize(myatoms.size());
+    std::vector<double> deltaX[2];
+    deltaX[0].resize(DIM*theAtoms.size(), 0.0);
+    deltaX[1].resize(DIM*theAtoms.size(), 0.0);
     do
     {
         auto eMin = eMinimizeStatus::OK;
