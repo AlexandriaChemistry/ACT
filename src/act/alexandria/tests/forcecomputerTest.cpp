@@ -83,7 +83,7 @@ protected:
         // Get forcefield
         auto pd  = getForceField(forcefield);
         
-        double rmsToler = 0.0000001;
+        double rmsToler = 1e-12;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
         // The molecule
