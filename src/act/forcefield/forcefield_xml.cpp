@@ -94,7 +94,6 @@ enum class xmlEntry {
     DESC,
     GEOMETRY,
     NUMBONDS,
-    VANDERWAALS,
     INTERACTION,
     IDENTIFIER,
     CANSWAP,
@@ -157,7 +156,6 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "description",               xmlEntry::DESC             },
     { "geometry",                  xmlEntry::GEOMETRY         },
     { "numbonds",                  xmlEntry::NUMBONDS         },
-    { "vanderwaals",               xmlEntry::VANDERWAALS      },
     { "interaction",               xmlEntry::INTERACTION      },
     { "identifier",                xmlEntry::IDENTIFIER       },
     { "canswap",                   xmlEntry::CANSWAP          },
@@ -333,7 +331,7 @@ static void processAttr(FILE       *fp,
             std::string function = xbufString(xmlEntry::FUNCTION);
             std::string inter    = xbufString(xmlEntry::TYPE);
             currentItype = stringToInteractionType(inter.c_str());
-            // This is a hack to be able to read "old" force field files.
+            // TODO This is a hack to be able to read "old" force field files.
             std::map<InteractionType, CanSwap> csUpdate = {
                 { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
                 { InteractionType::POLARIZATION, CanSwap::Yes },

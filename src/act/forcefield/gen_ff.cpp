@@ -342,6 +342,7 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
+    ForceFieldParameterList qt("Exponential", CanSwap::Yes);
     // Combination rules
     crule.extract(&vdw);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
@@ -498,6 +499,7 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
     pd.addForces(interactionTypeToString(InteractionType::PROPER_DIHEDRALS), pdihs);
     pd.addForces(interactionTypeToString(InteractionType::VDW), vdw);
+    pd.addForces(interactionTypeToString(InteractionType::CHARGETRANSFER, qt);
     pd.addForces(interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION), eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
