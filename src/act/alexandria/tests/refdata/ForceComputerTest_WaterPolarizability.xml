@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="alpha[X][X]">2.3466463380133429</Real>
-  <Real Name="alpha[X][Y]">-1.1575040399446316e-05</Real>
-  <Real Name="alpha[X][Z]">5.7193709118045957e-11</Real>
-  <Real Name="alpha[Y][X]">-1.9983521521141785e-14</Real>
-  <Real Name="alpha[Y][Y]">2.3805419515590227</Real>
-  <Real Name="alpha[Y][Z]">-4.4017960961917015e-06</Real>
-  <Real Name="alpha[Z][X]">6.3177151581376461e-06</Real>
-  <Real Name="alpha[Z][Y]">7.1778227129111774e-06</Real>
-  <Real Name="alpha[Z][Z]">2.3577892729275725</Real>
+  <Real Name="alpha[X][X]">2.3466347554073117</Real>
+  <Real Name="alpha[X][Y]">0</Real>
+  <Real Name="alpha[X][Z]">0</Real>
+  <Real Name="alpha[Y][X]">1.9983521637990636e-14</Real>
+  <Real Name="alpha[Y][Y]">2.3805375494252252</Real>
+  <Real Name="alpha[Y][Z]">1.9983692315844708e-14</Real>
+  <Real Name="alpha[Z][X]">-6.124178598505507e-06</Real>
+  <Real Name="alpha[Z][Y]">-5.2626884338329615e-06</Real>
+  <Real Name="alpha[Z][Z]">2.3577681558366388</Real>
 </ReferenceData>

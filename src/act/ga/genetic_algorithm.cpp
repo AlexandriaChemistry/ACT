@@ -93,23 +93,22 @@ bool GeneticAlgorithm::penalize(      GenePool *pool,
     return penalized;
 }
 
-void GeneticAlgorithm::openFitnessFiles(const std::string &filename)
+void GeneticAlgorithm::openFitnessFiles(const std::string &filename,
+                                        iMolSelect         ims)
 {
-    for(const auto &im : iMolSelectNames())
+    std::string defname("ga_fitness");
+    if (!filename.empty())
     {
-        std::string defname("ga_fitness");
-        if (!filename.empty())
+        auto rpos = filename.rfind(".");
+        if (std::string::npos != rpos)
         {
-            auto rpos = filename.rfind(".");
-            if (std::string::npos != rpos)
-            {
-                defname = filename.substr(0, rpos);
-            }
+            defname = filename.substr(0, rpos);
         }
-        std::string fn = defname + gmx::formatString("_%s.dat", im.second);
-        fileFitness_.insert({im.first, gmx_fio_fopen(fn.c_str(), "w")});
-        GMX_RELEASE_ASSERT(fileFitness_[im.first] != NULL, "Could not open file");
     }
+    auto imsNames = iMolSelectNames();
+    std::string fn = defname + gmx::formatString("_%s.dat", imsNames[ims]);
+    fileFitness_.insert({ims, gmx_fio_fopen(fn.c_str(), "w")});
+    GMX_RELEASE_ASSERT(fileFitness_[ims] != NULL, "Could not open file");
 }
 
 void GeneticAlgorithm::closeFitnessFiles()

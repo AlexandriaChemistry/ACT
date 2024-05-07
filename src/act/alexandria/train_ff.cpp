@@ -172,7 +172,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster(const char *fitnessFile)
+int OptACM::initMaster(const char *fitnessFile)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -207,7 +207,12 @@ void OptACM::initMaster(const char *fitnessFile)
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
-
+    // Check whether we have to do anything
+    if (fitComp_->numDevComputers() == 0)
+    {
+        fprintf(stderr, "Nothing to train! Check your input and your code.\n");
+        return 0;
+    }
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
     if (0 == seed)
@@ -347,6 +352,7 @@ void OptACM::initMaster(const char *fitnessFile)
         fprintf(logFile(), "Done initializing master node\n");
         fflush(logFile());
     }
+    return 1;
 }
 
 void OptACM::printNumCalcDevEstimate()
@@ -570,12 +576,10 @@ bool OptACM::runMaster(bool        optimize,
             {
                 it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
-                for (const auto &ims : iMolSelectNames())
-                {
-                    fitComp_->compute(&(it->second), ims.first, true);
-                    double chi2 = it->second.fitness(ims.first);
-                    fprintf(logFile(), "Minimum chi2 for %s %g\n", ims.second, chi2);
-                }
+                fitComp_->compute(&(it->second), it->first, true);
+                double chi2 = it->second.fitness(it->first);
+                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                        iMolSelectName(it->first), chi2);
             }
         }
         // Save force field of best individual(s)
@@ -768,7 +772,20 @@ int train_ff(int argc, char *argv[])
                 opt2fn("-sel", filenms.size(), filenms.data()));
         print_memory_usage(debug);
     }
-
+    gms.bcast(opt.commRec());
+    if (gms.count(iMolSelect::Test) > 0)
+    {
+        opt.sii()->fillFittingTargets(iMolSelect::Test);
+    }
+    else
+    {
+        opt.gach()->setEvaluateTestset(false);
+        opt.bch()->setEvaluateTestset(false);
+        if (opt.commRec()->isMaster())
+        {
+            fprintf(opt.logFile(), "Turning off the evaluate of test set since it is empty.\n");
+        }
+    }
     // Figure out a logfile to pass down :)
     FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
 
@@ -854,14 +871,21 @@ int train_ff(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    int initOK   = 0;
     if (opt.commRec()->isMaster())
     {
-        bool bMinimum = false;
         if (opt.sii()->nParam() > 0)
         {
-            opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
-
-            // Master only
+            initOK = opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
+        }
+        // Let the other nodes know whether all is well.
+        if (opt.commRec()->isParallel())
+        {
+            opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        }
+        bool bMinimum = false;
+        if (initOK)
+        {
             bMinimum = opt.runMaster(bOptimize, bSensitivity);
             if (bOptimize)
             {
@@ -886,23 +910,31 @@ int train_ff(int argc, char *argv[])
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
     }
-    else if (opt.commRec()->isMiddleMan())
+    else
     {
-        if (opt.sii()->nParam() > 0)
+        // Verify that all is well with the master.
+        opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        if (initOK > 0)
         {
-            // Master and Individuals (middle-men) need to initialize more,
-            // so let's go.
-            ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                   opt.verbose(), opt.oenv(), opt.verbose());
-            middleman.run();
-        }
-    }
-    else if (bOptimize || bSensitivity)
-    {
-        if (opt.sii()->nParam() > 0)
-        {
-            ACTHelper helper(opt.sii(), opt.mg());
-            helper.run();
+            if (opt.commRec()->isMiddleMan())
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    // Master and Individuals (middle-men) need to initialize more,
+                    // so let's go.
+                    ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+                                           opt.verbose(), opt.oenv(), opt.verbose());
+                    middleman.run();
+                }
+            }
+            else if (bOptimize || bSensitivity)
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    ACTHelper helper(opt.sii(), opt.mg());
+                    helper.run();
+                }
+            }
         }
     }
     return 0;

@@ -248,8 +248,9 @@ static void print_polarizability(FILE              *fp,
 
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
-    terms_ =  { InteractionType::EPOT, InteractionType::COULOMB, InteractionType::INDUCTION,
-                InteractionType::DISPERSION, InteractionType::EXCHANGE };
+    terms_ = { InteractionType::EPOT, InteractionType::COULOMB,
+               InteractionType::INDUCTION, InteractionType::DISPERSION,
+               InteractionType::EXCHANGE, InteractionType::ALLELEC };
 }
 
 void TrainForceFieldPrinter::analyse_multipoles(FILE                                            *fp,

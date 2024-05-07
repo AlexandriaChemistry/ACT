@@ -53,7 +53,7 @@ namespace alexandria
 
 StaticIndividualInfo::StaticIndividualInfo(CommunicationRecord *cr) : cr_(cr)
 {
-    fillFittingTargets();
+    fillFittingTargets(iMolSelect::Train);
 }
 
 void StaticIndividualInfo::fillIdAndPrefix()
@@ -269,21 +269,18 @@ void StaticIndividualInfo::resetChiSquared(iMolSelect ims)
     }
 }
 
-void StaticIndividualInfo::fillFittingTargets()
+void StaticIndividualInfo::fillFittingTargets(iMolSelect ims)
 {
-    for (const auto &ims : iMolSelectNames()) 
+    std::map<eRMS, FittingTarget> ft;
+    for ( auto &rms : geteRMSNames() )
     {
-        std::map<eRMS, FittingTarget> ft;
-        for ( auto &rms : geteRMSNames() )
-        {
-            FittingTarget    fft(rms.first, ims.first);
-            ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
-        }
-        targets_.insert(std::pair<iMolSelect, std::map<eRMS, FittingTarget>>(ims.first, std::move(ft)));
-        auto etot = target(ims.first, eRMS::TOT);
-        GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
-        etot->setWeight(1);
+        FittingTarget    fft(rms.first, ims);
+        ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
     }
+    targets_.insert(std::pair<iMolSelect, std::map<eRMS, FittingTarget>>(ims, std::move(ft)));
+    auto etot = target(ims, eRMS::TOT);
+    GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
+    etot->setWeight(1);
 }
 
 void StaticIndividualInfo::propagateWeightFittingTargets()

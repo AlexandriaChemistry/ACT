@@ -7,15 +7,16 @@
   <Real Name="EXCHANGE_act">972.27536570167695</Real>
   <Real Name="COULOMB_act">-78.242686039374689</Real>
   <Real Name="POLARIZATION_act">0</Real>
-  <Real Name="INDUCTION_act">-0.24915677766383837</Real>
-  <Real Name="EPOT_act">91.092125349860481</Real>
+  <Real Name="INDUCTION_act">-0.24915677766411118</Real>
+  <Real Name="ALLELEC_act">-78.491842817038801</Real>
+  <Real Name="EPOT_act">91.092125349860211</Real>
   <Real Name="o3-1_act fX">0</Real>
   <Real Name="o3-1_act fY">0</Real>
-  <Real Name="o3-1_act fZ">43322.627731983826</Real>
+  <Real Name="o3-1_act fZ">43322.627675731237</Real>
   <Real Name="h-3_act fX">0</Real>
-  <Real Name="h-3_act fY">29335.067811232373</Real>
-  <Real Name="h-3_act fZ">-21661.313793906545</Real>
+  <Real Name="h-3_act fY">29335.067808979704</Real>
+  <Real Name="h-3_act fZ">-21661.313837381818</Real>
   <Real Name="h-5_act fX">0</Real>
-  <Real Name="h-5_act fY">-29335.067811232373</Real>
-  <Real Name="h-5_act fZ">-21661.313793906545</Real>
+  <Real Name="h-5_act fY">-29335.067808979704</Real>
+  <Real Name="h-5_act fZ">-21661.313837381818</Real>
 </ReferenceData>

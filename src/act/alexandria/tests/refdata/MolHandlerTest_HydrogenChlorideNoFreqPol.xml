@@ -6,16 +6,18 @@
   <Real Name="Repulsion before">392.13316508533296</Real>
   <Real Name="Coulomb (SR) before">-58.959008301747303</Real>
   <Real Name="Polarization before">0</Real>
-  <Real Name="INDUCTION before">-0.81818189559006183</Real>
-  <Real Name="Potential before">-68.889580543622358</Real>
+  <Real Name="INDUCTION before">-0.81818189558980148</Real>
+  <Real Name="ALLELEC before">-59.777190197337106</Real>
+  <Real Name="Potential before">-68.889580543622102</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.020409992761623249</Real>
-  <Real Name="Morse after">-319.47177695939655</Real>
-  <Real Name="Dispersion after">-1.2027533320331047</Real>
-  <Real Name="Repulsion after">67.488406891817078</Real>
-  <Real Name="Coulomb (SR) after">-204.28919779629484</Real>
-  <Real Name="Polarization after">2389.5572386938998</Real>
-  <Real Name="INDUCTION after">-2242.6247691952872</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.020409992761786056</Real>
+  <Real Name="Morse after">-319.47177695845971</Real>
+  <Real Name="Dispersion after">-1.2027533320325652</Real>
+  <Real Name="Repulsion after">67.488406890859139</Real>
+  <Real Name="Coulomb (SR) after">-56.301732286811443</Real>
+  <Real Name="Polarization after">0</Real>
+  <Real Name="INDUCTION after">-1.0549960108502463</Real>
+  <Real Name="ALLELEC after">-57.356728297661689</Real>
   <Real Name="Potential after">-310.54285169729479</Real>
 </ReferenceData>

@@ -243,6 +243,11 @@ public:
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return evaluateTestset_; }
 
+    /*! \brief Turn test set evaluation on or off
+     * \param[in] bOnOff On or Off
+     */
+    void setEvaluateTestset(bool bOnOff) {  evaluateTestset_ = bOnOff; }
+
     //! \return true whether the volume will be computed in log scale, false otherwise
     bool logVolume() const { return logVolume_; }
 
@@ -368,7 +373,11 @@ public:
 
     //! \return whether test set should be evaluated during the MCMC run
     bool evaluateTestset() const { return evaluate_testset_; }
-    
+
+    /*! \brief Turn test set evaluation on or off
+     * \param[in] bOnOff On or Off
+     */
+    void setEvaluateTestset(bool bOnOff) {  evaluate_testset_ = bOnOff; }
 };
 
 enum class eMinimizeAlgorithm {

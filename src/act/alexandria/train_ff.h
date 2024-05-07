@@ -176,8 +176,9 @@ public:
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
      * \param[in] fitnessFile Name of the genetic algorithm files
+     * \return 1 of all is well, 0 otherwise
      */
-    void initMaster(const char *fitnessFile);
+    int initMaster(const char *fitnessFile);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

@@ -1,13 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.001925499999998507</Real>
-  <Real Name="Lin. Angle before">0</Real>
-  <Real Name="Potential before">0.001925499999998507</Real>
-  <Real Name="Coordinate RMSD before minimizing">2.2662332591841973e-17</Real>
+  <Real Name="Bond before">0.0020024868155974823</Real>
+  <Real Name="Lin. Angle before">2.2006599999991466e-05</Real>
+  <Real Name="Coulomb (SR) before">0</Real>
+  <Real Name="INDUCTION before">0</Real>
+  <Real Name="ALLELEC before">0</Real>
+  <Real Name="Potential before">0.0020244934155974736</Real>
+  <Real Name="Coordinate RMSD before minimizing">2.2662332636692098e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">4.0824830709689385e-05</Real>
-  <Real Name="Bond after">6.4924619152029909e-18</Real>
-  <Real Name="Lin. Angle after">4.9087153866327135e-19</Real>
-  <Real Name="Potential after">6.983333453866262e-18</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.1230403428604904e-05</Real>
+  <Real Name="Bond after">1.0543356297313872e-09</Real>
+  <Real Name="Lin. Angle after">1.4151735304875502e-06</Real>
+  <Real Name="Coulomb (SR) after">0</Real>
+  <Real Name="INDUCTION after">0</Real>
+  <Real Name="ALLELEC after">0</Real>
+  <Real Name="Potential after">1.4162278661172816e-06</Real>
 </ReferenceData>

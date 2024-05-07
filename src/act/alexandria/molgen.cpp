@@ -95,7 +95,7 @@ void FittingTarget::print(FILE *fp) const
 {
   if (fp != nullptr && chiSquared_ > 0 && totalWeight_ > 0)
     {
-      fprintf(fp, "%-10s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
+      fprintf(fp, "%-15s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
               rmsName(erms_), chiSquared_, totalWeight_,
               weight_, chiSquaredWeighted(),
               iMolSelectName(ims_));
@@ -787,11 +787,6 @@ size_t MolGen::Read(FILE                                *fp,
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
-    std::map<iMolSelect, int> nLocal;
-    for(const auto &ims : iMolSelectNames())
-    {
-        nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
-    }
     std::map<MolPropObservable, iqmType> iqmMap = 
         {
             { MolPropObservable::DELTAE0,           iqmType::QM },
@@ -1062,10 +1057,6 @@ size_t MolGen::Read(FILE                                *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                if (actmol.support() == eSupport::Local)
-                {
-                    nLocal.find(actmol.datasetType())->second += 1;
-                }
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
