@@ -109,7 +109,7 @@ class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
-              double ftoler=1e-14)
+              double ftoler=1e-15)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -299,7 +299,7 @@ TEST_F (MolHandlerTest, AcetoneNoFreq)
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false);
+    test("uracil.sdf", "ACS-g", false, 1, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
@@ -353,7 +353,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true);
+    test("uracil.sdf", "ACS-g", true, 1, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
