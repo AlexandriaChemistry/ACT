@@ -216,17 +216,8 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         }
         // Force field parameter list
         auto &ffpl = pd->findForcesConst(entry.first);
-        auto qdist = ChargeType::Gaussian;
-        if (InteractionType::COULOMB == entry.first)
-        {
-            std::string option("chargetype");
-            if (ffpl.optionExists(option))
-            {
-                qdist = name2ChargeType(ffpl.optionValue(option));
-            }
-        }
         // The function we need to do the math
-        auto bfc   = getBondForceComputer(ffpl.gromacsType(), qdist);
+        auto bfc   = getBondForceComputer(ffpl.potential());
         if (bfc)
         {
             // Now do the calculations and store the energy
@@ -246,19 +237,19 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         else if (!isVsite(entry.first))
         {
             fprintf(stderr, "Please implement a force function for type %s\n",
-                    interaction_function[ffpl.gromacsType()].name);
+                    potentialToString(ffpl.potential()).c_str());
         }
     }
     energies->insert({ InteractionType::EPOT, epot });
 }
 
-int ForceComputer::ftype(const ForceField   *pd,
-                         InteractionType  itype) const
+Potential ForceComputer::ftype(const ForceField *pd,
+                               InteractionType   itype) const
 {
-    int ftype = F_EPOT;
+    Potential ftype = Potential::NONE;
     if (pd->interactionPresent(itype))
     {
-        ftype = pd->findForcesConst(itype).gromacsType();
+        ftype = pd->findForcesConst(itype).potential();
     }
     return ftype;
 }
@@ -286,20 +277,11 @@ void ForceComputer::plot(const ForceField  *pd,
     };
     auto &fs   = pd->findForcesConst(itype);
     // The function we need to do the math
-    auto qdist = ChargeType::Gaussian;
-    if (InteractionType::COULOMB == itype)
-    {
-        std::string option("chargetype");
-        if (fs.optionExists(option))
-        {
-            qdist = name2ChargeType(fs.optionValue(option));
-        }
-    }
-    auto bfc   = getBondForceComputer(fs.gromacsType(), qdist);
+    auto bfc   = getBondForceComputer(fs.potential());
     if (nullptr == bfc)
     {
         fprintf(stderr, "Please implement a force function for type %s\n",
-                interaction_function[fs.gromacsType()].name);
+                potentialToString(fs.potential()).c_str());
     }
     else
     {

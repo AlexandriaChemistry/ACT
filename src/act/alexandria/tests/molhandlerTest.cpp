@@ -72,7 +72,8 @@ static void add_energies(const ForceField                        *pd,
     std::map<InteractionType, int> i2f = {
         { InteractionType::EPOT,       F_EPOT },
         { InteractionType::EXCHANGE,   F_REPULSION },
-        { InteractionType::DISPERSION, F_DISPERSION }
+        { InteractionType::DISPERSION, F_DISPERSION },
+        { InteractionType::COULOMB,    F_COUL_SR }
     };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)
@@ -87,7 +88,7 @@ static void add_energies(const ForceField                        *pd,
             auto i = fsc.find(imf.first);
             if (fsc.end() != i)
             {
-                ftype = i->second.gromacsType();
+                ftype = potentialToGromacsType(i->second.potential());
             }
         }
         std::string fname;
@@ -100,7 +101,7 @@ static void add_energies(const ForceField                        *pd,
             fname = interactionTypeToString(imf.first);
         }
         std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
-        
+
         checker->checkReal(imf.second, mylabel.c_str());
     }
 }

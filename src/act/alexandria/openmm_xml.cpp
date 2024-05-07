@@ -54,6 +54,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
 #include "act/utility/stringutil.h"
@@ -436,7 +437,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
     xmlNodePtr fsPtr = nullptr;
     // Custom non-bonded force is needed if we use Buckingham (not LJ)
-    if (fs.gromacsType() != F_LJ)
+    if (fs.potential() != Potential::LJ12_6)
     {
         fsPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_xml_double(fsPtr, "energy", 0.0);
@@ -447,7 +448,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
         auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        if (fs.gromacsType() == F_WBHAM || fs.gromacsType() == F_LJ14_7)
+        if (fs.potential() == Potential::WANG_BUCKINGHAM || fs.potential() == Potential::LJ14_7)
         {
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
         }
@@ -459,7 +460,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
         auto grandchild4 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
-        if (fs.gromacsType() == F_GBHAM || fs.gromacsType() == F_LJ14_7)
+        if (fs.potential() == Potential::GENERALIZED_BUCKINGHAM || fs.potential() == Potential::LJ14_7)
         {
             auto grandchild9 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild9, exml_names(xmlEntryOpenMM::NAME), "delta");
@@ -510,9 +511,9 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
             }
             double sigma = 0, epsilon = 0;
-            switch (fs.gromacsType())
+            switch (fs.potential())
             {
-            case F_WBHAM:
+            case Potential::WANG_BUCKINGHAM:
                 // TODO: optimize values
                 sigma   = param[wbh_name[wbhSIGMA]].internalValue();
                 epsilon = param[wbh_name[wbhEPSILON]].internalValue();
@@ -524,7 +525,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;
-            case F_GBHAM:
+            case Potential::GENERALIZED_BUCKINGHAM:
                 // TODO: optimize values
                 sigma   = param[gbh_name[wbhSIGMA]].internalValue()/std::pow(2,1.0/6.0);
                 epsilon = param[gbh_name[wbhEPSILON]].internalValue();
@@ -536,7 +537,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;
-            case F_LJ14_7:
+            case Potential::LJ14_7:
                 // TODO: optimize values
                 sigma   = param[lj14_7_name[lj14_7SIGMA]].internalValue();
                 epsilon = param[lj14_7_name[lj14_7EPSILON]].internalValue();
@@ -548,7 +549,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     }
                 }
                 break;		
-            case F_LJ:
+            case Potential::LJ12_6:
                 if (nullptr == fsPtr)
                 {
                     // If we use "native" Lennard Jones we need to do this here:
@@ -566,8 +567,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 }
                 break;
             default:
-                fprintf(stderr, "Unknown non-bonded force type %d %s\n", fs.gromacsType(),
-                        interaction_function[fs.gromacsType()].longname);
+                fprintf(stderr, "Unknown non-bonded force type %d %s\n", fs.potential(),
+                        potentialToString(fs.potential()).c_str());
             }
             if (nullptr != fsPtr)
             {
@@ -653,14 +654,14 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
     for(const auto &fs: pd->forcesConst())
     {
         xmlNodePtr fsPtr = nullptr;
-        switch(fs.second.gromacsType())
+        switch(fs.second.potential())
         {
-        case F_BONDS:
+        case Potential::HARMONIC_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));
             }
             break;
-        case F_MORSE:
+        case Potential::MORSE_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 // The Morse bonds potential is written as a string here:
@@ -676,7 +677,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 }
             }
             break;
-        case F_CUBICBONDS:
+        case Potential::CUBIC_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 // The cubic bonds potential is written as a string here:
@@ -689,27 +690,27 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 }
             }
             break;
-        case F_ANGLES:
+        case Potential::HARMONIC_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_LINEAR_ANGLES:
+        case Potential::LINEAR_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_UREY_BRADLEY:
+        case Potential::UREY_BRADLEY_ANGLES:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_FOURDIHS:
+        case Potential::FOURIER_DIHEDRALS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_PDIHS:
+        case Potential::PROPER_DIHEDRALS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
-        case F_IDIHS:
+        case Potential::HARMONIC_DIHEDRALS:
             fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
             add_xml_double(fsPtr, "energy", 0);
             break;
@@ -748,63 +749,65 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
             if (ClassUsed.end() == ClassUsed.find(bondId))
             {
                 ClassUsed.insert(bondId);
-                switch(fs.second.gromacsType())
+                switch(fs.second.potential())
                 {
-                case F_BONDS:
+                case Potential::HARMONIC_BONDS:
                     {
                         const char *omm_bonds[] = { "k", "length", nullptr };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                    atoms, omm_bonds, entry->params());
                     }
                     break;
-                case F_CUBICBONDS:
+                case Potential::CUBIC_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                atoms, cubic_name, entry->params());
                     break;
-                case F_MORSE:
+                case Potential::MORSE_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                atoms, morse_name, entry->params());
                     break;
-                case F_ANGLES:
+                case Potential::HARMONIC_ANGLES:
                     {
                         const char *omm_angles[] = { "k", "angle" };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                    atoms, omm_angles, entry->params());
                     }
                     break;
-                case F_UREY_BRADLEY:
+                case Potential::UREY_BRADLEY_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, ub_name, entry->params());
                     break;
                     
-                case F_LINEAR_ANGLES:
+                case Potential::LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, linang_name, entry->params());
                     break;
                     
-                case F_FOURDIHS:
+                case Potential::FOURIER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::RBTORSIONFORCE,
                                atoms, fdih_name, entry->params());
                     break;
                     
-                case F_PDIHS:
+                case Potential::PROPER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PERIODICTORSIONFORCE,
                                atoms, pdih_name, entry->params());
                     break;
                     
-                case F_IDIHS:
+                case Potential::HARMONIC_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::IMPROPER,
                                atoms, idih_name, entry->params());
                     break;
                     
-                case F_COUL_SR:
-                case F_LJ:
-                case F_LJ14_7:
-                case F_LJ8_6:
-                case F_WBHAM:
-                case F_GBHAM:
-                case F_POLARIZATION:
-                case F_VSITE2:
+                case Potential::COULOMB_POINT:
+                case Potential::COULOMB_GAUSSIAN:
+                case Potential::COULOMB_SLATER:
+                case Potential::LJ12_6:
+                case Potential::LJ14_7:
+                case Potential::LJ8_6:
+                case Potential::WANG_BUCKINGHAM:
+                case Potential::GENERALIZED_BUCKINGHAM:
+                case Potential::POLARIZATION:
+                case Potential::VSITE2:
                     break;
                 default:
                     fprintf(stderr, "Wanrning: no OpenMM support for %s is present or implemented.\n",
@@ -1162,12 +1165,12 @@ void OpenMMWriter::writeDat(const std::string &fileName,
             if (InteractionType::VDW == a2o.first)
             {
                 fprintf(fp, "vanderwaals = %s\n", 
-                        interaction_function[fs.gromacsType()].name);
+                        potentialToString(fs.potential()).c_str());
                 const std::string crule("combination_rule");
                 if (fs.optionExists(crule))
                 {
                     writeCombinationRules(fp, oldCombinationRule(fs.optionValue(crule),
-                                                                 fs.gromacsType()));
+                                                                 fs.potential()));
                 }
                 else
                 {

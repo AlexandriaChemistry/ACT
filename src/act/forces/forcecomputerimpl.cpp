@@ -1124,40 +1124,34 @@ static void computePropers(const TopologyEntryVector             &propers,
     energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
 }
 
-std::map<int, bondForceComputer> bondForceComputerMap = {
-    { F_DUMMY,         computeDummy        },
-    { F_BONDS,         computeBonds        },
-    { F_MORSE,         computeMorse        },
-    { F_CUBICBONDS,    computeCubic        },
-    { F_ANGLES,        computeAngles       },
-    { F_LINEAR_ANGLES, computeLinearAngles },
-    { F_LJ,            computeLJ12_6       },
-    { F_LJ8_6,         computeLJ8_6        },
-    { F_LJ14_7,        computeLJ14_7       },
-    { F_WBHAM,         computeWBH          },
-    { F_GBHAM,         computeNonBonded    },
-    { F_COUL_SR,       computeCoulombGaussian },
-    { F_POLARIZATION,  computePolarization },
-    { F_IDIHS,         computeImpropers    },
-    { F_PDIHS,         computePropers      },
-    { F_FOURDIHS,      computeFourDihs     },
-    { F_UREY_BRADLEY,  computeUreyBradley  }
+std::map<Potential, bondForceComputer> bondForceComputerMap = {
+    { Potential::NONE,                   computeDummy           },
+    { Potential::HARMONIC_BONDS,         computeBonds           },
+    { Potential::MORSE_BONDS,            computeMorse           },
+    { Potential::CUBIC_BONDS,            computeCubic           },
+    { Potential::HARMONIC_ANGLES,        computeAngles          },
+    { Potential::LINEAR_ANGLES,          computeLinearAngles    },
+    { Potential::LJ12_6,                 computeLJ12_6          },
+    { Potential::LJ8_6,                  computeLJ8_6           },
+    { Potential::LJ14_7,                 computeLJ14_7          },
+    { Potential::WANG_BUCKINGHAM,        computeWBH             },
+    { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
+    { Potential::COULOMB_POINT,          computeCoulombGaussian },
+    { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
+    { Potential::COULOMB_SLATER,         computeCoulombSlater   },
+    { Potential::POLARIZATION,           computePolarization    },
+    { Potential::HARMONIC_DIHEDRALS,     computeImpropers       },
+    { Potential::PROPER_DIHEDRALS,       computePropers         },
+    { Potential::FOURIER_DIHEDRALS,      computeFourDihs        },
+    { Potential::UREY_BRADLEY_ANGLES,    computeUreyBradley     }
 };
 
-bondForceComputer getBondForceComputer(int        gromacs_index,
-                                       ChargeType qdist)
+bondForceComputer getBondForceComputer(Potential pot)
 {
-    if (F_COUL_SR == gromacs_index && ChargeType::Slater == qdist)
+    auto bfc = bondForceComputerMap.find(pot);
+    if (bondForceComputerMap.end() != bfc)
     {
-        return computeCoulombSlater;
-    }
-    else
-    {
-        auto bfc = bondForceComputerMap.find(gromacs_index);
-        if (bondForceComputerMap.end() != bfc)
-        {
-            return *bfc->second;
-        }
+        return *bfc->second;
     }
     // Keep the compiler happy
     return nullptr;

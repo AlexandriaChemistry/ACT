@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <version checksum="8b73a54d49c4b807b871db23f0ac2571" timestamp="2024-02-07 22:43:50"/>
+  <version checksum="3af822716c329c97c571cfe9d301b30f" timestamp="2024-05-07 22:48:22"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -726,7 +726,7 @@
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
   </particletypes>
-  <interaction type="BONDS" function="MORSE" canswap="true">
+  <interaction type="BONDS" function="MORSE_BONDS" canswap="true">
     <parameterlist identifier="br_b~br_b">
       <parameter type="De" unit="kJ/mol" value="400" uncertainty="0" minimum="320" maximum="500" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="beta" unit="1/nm" value="20" uncertainty="0" minimum="16" maximum="25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
@@ -1558,7 +1558,7 @@
       <parameter type="bondlength" unit="pm" value="209.9" uncertainty="16.6" minimum="167.92" maximum="262.375" ntrain="11" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="ANGLES" function="UREY_BRADLEY" canswap="true">
+  <interaction type="ANGLES" function="UREY_BRADLEY_ANGLES" canswap="true">
     <parameterlist identifier="br_b~c2_b~c2_b">
       <parameter type="angle" unit="degree" value="121" uncertainty="4.8" minimum="96.8" maximum="151.25" ntrain="34" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
@@ -4686,7 +4686,7 @@
       <parameter type="klin" unit="kJ/mol/nm2" value="150000" uncertainty="0" minimum="120000" maximum="187500" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="PROPER_DIHEDRALS" function="FOURDIHS" canswap="true">
+  <interaction type="PROPER_DIHEDRALS" function="FOURIER_DIHEDRALS" canswap="true">
     <parameterlist identifier="br_b~c1_b~c1_b~f_b">
       <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
@@ -11546,7 +11546,7 @@
       <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="IMPROPER_DIHEDRALS" function="IDIHS" canswap="true">
+  <interaction type="IMPROPER_DIHEDRALS" function="HARMONIC_DIHEDRALS" canswap="true">
     <parameterlist identifier="br_b~c2_b:c2_b:c2_b">
       <parameter type="kimp" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="7" mutability="Fixed" nonnegative="no"/>
@@ -14204,7 +14204,7 @@
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="3" mutability="Fixed" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="WBHAM" canswap="true">
+  <interaction type="VANDERWAALS" function="WANG_BUCKINGHAM" canswap="true">
     <option key="nexcl" value="0"/>
     <combinationrule parameter="epsilon" rule="Geometric"/>
     <combinationrule parameter="gamma" rule="Geometric"/>
@@ -14550,8 +14550,7 @@
       <parameter type="sigma" unit="nm" value="0" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="COULOMB" function="COUL_SR" canswap="true">
-    <option key="chargetype" value="Gaussian"/>
+  <interaction type="COULOMB" function="COULOMB_GAUSSIAN" canswap="true">
     <option key="epsilonr" value="1"/>
     <option key="nexcl" value="0"/>
     <option key="reference" value="Ghahremanpour2022a"/>
@@ -14760,8 +14759,8 @@
       <parameter type="zeta" unit="1/nm" value="30" uncertainty="0" minimum="30" maximum="30" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="POLARIZATION" function="Polarization" canswap="true"/>
-  <interaction type="VSITE2" function="vsite2" canswap="vsite2"/>
+  <interaction type="POLARIZATION" function="POLARIZATION" canswap="true"/>
+  <interaction type="VSITE2" function="VSITE2" canswap="vsite2"/>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="br_z">

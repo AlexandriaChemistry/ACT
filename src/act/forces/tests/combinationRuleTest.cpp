@@ -63,7 +63,7 @@ static void myCheckReal(gmx::test::TestReferenceChecker *checker,
 class CombinationRuleTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(int crule, int ftype)
+    void test(int crule, Potential ftype)
     {
         auto CombinationRule = oldCombinationRule(ecomb_names[crule], ftype);
 
@@ -194,167 +194,167 @@ protected:
 
 TEST_F (CombinationRuleTest, LjGeometric)
 {
-    test(eCOMB_GEOMETRIC, F_LJ);
+    test(eCOMB_GEOMETRIC, Potential::LJ12_6);
 }
 
 TEST_F (CombinationRuleTest, LjArithmetic)
 {
-    test(eCOMB_ARITHMETIC, F_LJ);
+    test(eCOMB_ARITHMETIC, Potential::LJ12_6);
 }
 
 TEST_F (CombinationRuleTest, LjLorentzBerthelot)
 {
-    test(eCOMB_LORENTZ_BERTHELOT, F_LJ);
+    test(eCOMB_LORENTZ_BERTHELOT, Potential::LJ12_6);
 }
 
 TEST_F (CombinationRuleTest, BhamGeometric)
 {
-    test(eCOMB_GEOMETRIC, F_WBHAM);
+    test(eCOMB_GEOMETRIC, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamArithmetic)
 {
-    test(eCOMB_ARITHMETIC, F_WBHAM);
+    test(eCOMB_ARITHMETIC, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamKongMason)
 {
-    test(eCOMB_KONG_MASON, F_WBHAM);
+    test(eCOMB_KONG_MASON, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamHogerVorst)
 {
-    test(eCOMB_HOGERVORST, F_WBHAM);
+    test(eCOMB_HOGERVORST, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamYang)
 {
-    test(eCOMB_YANG, F_WBHAM);
+    test(eCOMB_YANG, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQi)
 {
-    test(eCOMB_QI, F_WBHAM);
+    test(eCOMB_QI, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQi2)
 {
-    test(eCOMB_QI_2, F_WBHAM);
+    test(eCOMB_QI_2, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQyQy)
 {
-    test(eCOMB_QYQY, F_WBHAM);
+    test(eCOMB_QYQY, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamQKmQG)
 {
-    test(eCOMB_QKmQG, F_WBHAM);
+    test(eCOMB_QKmQG, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, BhamWaldmanHagler)
 {
-    test(eCOMB_WALDMAN_HAGLER, F_WBHAM);
+    test(eCOMB_WALDMAN_HAGLER, Potential::WANG_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamGeometric)
 {
-    test(eCOMB_GEOMETRIC, F_GBHAM);
+    test(eCOMB_GEOMETRIC, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamArithmetic)
 {
-    test(eCOMB_ARITHMETIC, F_GBHAM);
+    test(eCOMB_ARITHMETIC, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamKongMason)
 {
-    test(eCOMB_KONG_MASON, F_GBHAM);
+    test(eCOMB_KONG_MASON, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamHogerVorst)
 {
-    test(eCOMB_HOGERVORST, F_GBHAM);
+    test(eCOMB_HOGERVORST, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamYang)
 {
-    test(eCOMB_YANG, F_GBHAM);
+    test(eCOMB_YANG, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamQi)
 {
-    test(eCOMB_QI, F_GBHAM);
+    test(eCOMB_QI, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamQi2)
 {
-    test(eCOMB_QI_2, F_GBHAM);
+    test(eCOMB_QI_2, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamQyQy)
 {
-    test(eCOMB_QYQY, F_GBHAM);
+    test(eCOMB_QYQY, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamQKmQG)
 {
-    test(eCOMB_QKmQG, F_GBHAM);
+    test(eCOMB_QKmQG, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, GbhamWaldmanHagler)
 {
-    test(eCOMB_WALDMAN_HAGLER, F_GBHAM);
+    test(eCOMB_WALDMAN_HAGLER, Potential::GENERALIZED_BUCKINGHAM);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7Geometric)
 {
-    test(eCOMB_GEOMETRIC, F_LJ14_7);
+    test(eCOMB_GEOMETRIC, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7Arithmetic)
 {
-    test(eCOMB_ARITHMETIC, F_LJ14_7);
+    test(eCOMB_ARITHMETIC, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7KongMason)
 {
-    test(eCOMB_KONG_MASON, F_LJ14_7);
+    test(eCOMB_KONG_MASON, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7HogerVorst)
 {
-    test(eCOMB_HOGERVORST, F_LJ14_7);
+    test(eCOMB_HOGERVORST, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7Yang)
 {
-    test(eCOMB_YANG, F_LJ14_7);
+    test(eCOMB_YANG, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7Qi)
 {
-    test(eCOMB_QI, F_LJ14_7);
+    test(eCOMB_QI, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7Qi2)
 {
-    test(eCOMB_QI_2, F_LJ14_7);
+    test(eCOMB_QI_2, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7QyQy)
 {
-    test(eCOMB_QYQY, F_LJ14_7);
+    test(eCOMB_QYQY, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7QKmQG)
 {
-    test(eCOMB_QKmQG, F_LJ14_7);
+    test(eCOMB_QKmQG, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, LJ14_7WaldmanHagler)
 {
-    test(eCOMB_WALDMAN_HAGLER, F_LJ14_7);
+    test(eCOMB_WALDMAN_HAGLER, Potential::LJ14_7);
 }
 
 TEST_F (CombinationRuleTest, Geometric_1_2)

@@ -33,6 +33,7 @@
 #include "act/alexandria/topology.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
@@ -102,15 +103,15 @@ private:
                    std::map<InteractionType, double> *energies,
                    const gmx::RVec                   &field = { 0.0, 0.0, 0.0 }) const;
                  
-    /*! \brief Return the gromacs type used
+    /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
      * used within the force computer.
      * \param[in] pd      Pointer to force field structure
      * \param[in] itype The interaction type
-     * \return the force type
+     * \return the potential type
      */
-    int ftype(const ForceField  *pd,
-              InteractionType itype) const;
+    Potential ftype(const ForceField *pd,
+                    InteractionType   itype) const;
     
     //! \return the force tolerance
     double forceTolerance() const { return msForceToler_; }

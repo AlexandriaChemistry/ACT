@@ -116,9 +116,10 @@ void forceFieldSummary(JsonTree      *jtree,
         if (!ffpl.parametersConst().empty())
         {
             JsonTree fftree(interactionTypeToString(itype));
-            if (!ffpl.function().empty())
+            auto function = potentialToString(ffpl.potential());
+            if (!function.empty())
             {
-                fftree.addObject(JsonTree("Force function", ffpl.function()));
+                fftree.addObject(JsonTree("Force function", function));
             }
             fftree.addObject(JsonTree("# entries",
                                       gmx_itoa(ffpl.parametersConst().size())));

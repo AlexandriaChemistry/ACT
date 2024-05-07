@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -351,7 +351,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
     fs->eraseParameter();
-    auto fType = fs->gromacsType();
+    auto fType = fs->potential();
     for(auto &i : bondeds_[bType])
     {
         size_t N = 0;
@@ -363,7 +363,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         round_numbers(&av, &sig, 10);
         switch (fType)
         {
-        case F_MORSE:
+        case Potential::MORSE_BONDS:
             {
                 fs->addParameter(bondId, morse_name[morseLENGTH],
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
@@ -380,7 +380,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                                      Mutability::Bounded, false, false));
             }
             break;
-        case F_BONDS:
+        case Potential::HARMONIC_BONDS:
             {
                 fs->addParameter(bondId, bond_name[bondLENGTH],
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
@@ -391,7 +391,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
             }
             break;
-        case F_CUBICBONDS:
+        case Potential::CUBIC_BONDS:
             {
                 // Compute the numbers such that they make sense
                 fs->addParameter(bondId, cubic_name[cubicLENGTH],
@@ -406,7 +406,7 @@ void AllBondeds::updateForceField(FILE    *fp,
             }
             break;
         default:
-            gmx_fatal(FARGS, "Don't know what to do for ftype %s", interaction_function[fType].name);
+            gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
         }
 
         fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
@@ -417,7 +417,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     {
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
-        fType      = fs->gromacsType();
+        fType      = fs->potential();
         if (iType != bType &&
             iType != InteractionType::VDW &&
             iType != InteractionType::COULOMB)
@@ -445,7 +445,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
-                    if (fType == F_UREY_BRADLEY)
+                    if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
                         std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
@@ -475,7 +475,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                 {
                     switch (fType)
                     {
-                    case F_FOURDIHS:
+                    case Potential::FOURIER_DIHEDRALS:
                         {
                             double val = 1.0;
                             for(int i = 0; i < fdihNR; i++)
@@ -485,7 +485,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                             }
                         }
                         break;
-                    case F_PDIHS:
+                    case Potential::PROPER_DIHEDRALS:
                         {
                             round_numbers(&av, &sig, 10);
                             // Since the potential is (1+cos(mult*phi-phi0)) it will be at
@@ -503,7 +503,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                         break;
                     default:
                         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported dihedral type %s",
-                                                                       interaction_function[fType].name).c_str()));
+                                                                       potentialToString(fType).c_str()).c_str()));
                     }
                     fprintf(fp, "dihedral-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);

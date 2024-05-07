@@ -33,6 +33,7 @@
 
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
@@ -172,7 +173,7 @@ double combineMasonGamma(double g1, double g2, double s1, double s2)
 }
 
 std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
-                                                         int                ftype)
+                                                         Potential          ftype)
 {
     std::map<const std::string, CombRule> myCombRule;
     int  i;
@@ -186,7 +187,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
                                                        vdw_comb.c_str()).c_str());
     std::string cdist;
-    if (F_GBHAM == ftype)
+    if (Potential::GENERALIZED_BUCKINGHAM == ftype)
     {
         cdist = gbh_name[gbhRMIN];
     }
@@ -199,8 +200,8 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     const std::string cdelta(lj14_7_name[lj14_7DELTA]);
     const std::string caqt(lj14_7_name[lj14_7AQT]);
     const std::string cbqt(lj14_7_name[lj14_7BQT]);
-    bool haveDelta = F_GBHAM == ftype || F_LJ14_7 ==ftype;
-    bool haveGamma = haveDelta || F_WBHAM == ftype;
+    bool haveDelta = Potential::GENERALIZED_BUCKINGHAM == ftype || Potential::LJ14_7 ==ftype;
+    bool haveGamma = haveDelta || Potential::WANG_BUCKINGHAM == ftype;
     switch (i)
     {
     case eCOMB_GEOMETRIC:
@@ -270,11 +271,11 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cgamma,   CombRule::Arithmetic });
         if (haveDelta)
         {
-            if (F_GBHAM == ftype)
+            if (Potential::GENERALIZED_BUCKINGHAM == ftype)
             {
                myCombRule.insert({ cdelta, CombRule::Yang });
             }
-            else if (F_LJ14_7 == ftype)
+            else if (Potential::LJ14_7 == ftype)
             {
                 myCombRule.insert({ cdelta, CombRule::Geometric });
             }
@@ -289,18 +290,18 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cgamma,   CombRule::WaldmanSigma });
         if (haveDelta)
         {
-            if (F_GBHAM == ftype)
+            if (Potential::GENERALIZED_BUCKINGHAM == ftype)
             {
                 myCombRule.insert({ cdelta, CombRule::Yang });
             }
-            else if (F_LJ14_7 == ftype)
+            else if (Potential::LJ14_7 == ftype)
             {
                 myCombRule.insert({ cdelta, CombRule::Geometric });
             }
             else
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle delta for function type %s",
-                                                               interaction_function[ftype].name).c_str()));
+                                                               potentialToString(ftype).c_str()).c_str()));
             }
         }
         break;    
@@ -347,7 +348,7 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     std::string oldCombRule("combination_rule");
     if (vdw.optionExists(oldCombRule))
     {
-        return oldCombinationRule(vdw.optionValue(oldCombRule), vdw.gromacsType());
+        return oldCombinationRule(vdw.optionValue(oldCombRule), vdw.potential());
     }
     else
     {
@@ -367,7 +368,7 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     return myCombRule;
 }
 
-ForceFieldParameterMap evalCombinationRule(int                                          ftype,
+ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
                                            const std::map<const std::string, CombRule> &combrule,
                                            const ForceFieldParameterMap                &ivdw,
                                            const ForceFieldParameterMap                &jvdw)
@@ -396,7 +397,7 @@ ForceFieldParameterMap evalCombinationRule(int                                  
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
         std::string cdist;
-        if (F_GBHAM == ftype)
+        if (Potential::GENERALIZED_BUCKINGHAM == ftype)
         {
             cdist = gbh_name[gbhRMIN];
         }
@@ -479,7 +480,7 @@ static void generateVdwParameterPairs(ForceField *pd)
             }
             auto jparam = jvdw.second;
             // Fill the parameters, potential dependent
-            auto pmap = evalCombinationRule(forcesVdw->gromacsType(),
+            auto pmap = evalCombinationRule(forcesVdw->potential(),
                                             comb_rule, ivdw.second, jvdw.second);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),

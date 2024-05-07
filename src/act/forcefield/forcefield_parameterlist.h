@@ -40,7 +40,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "forcefield_parameter.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forcefield/potential.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 
@@ -72,26 +73,17 @@ class ForceFieldParameterList
                             CanSwap            canSwap);
    
     //! \brief Return the function name
-    const std::string &function() const { return function_; }
+    Potential potential() const { return pot_; }
 
     //! \brief Return whether or not identifiers can be swapped
     CanSwap canSwap() const { return canSwap_; }
-
-    /* \brief
-     * Return the GROMACS function type
-     */
-
-    unsigned int gromacsType() const { return fType_; }
 
     /*! \brief Add function specific options
      *
      * \param[in] option  Name of the option
      * \param[in] value   Value of the opton
      */
-    void addOption(const std::string &option, const std::string &value)
-    {
-        options_.insert({option, value});
-    }
+    void addOption(const std::string &option, const std::string &value);
     
     /*! \brief check whether an option exists
      *
@@ -299,14 +291,11 @@ class ForceFieldParameterList
     size_t counter() const { return counter_; };
 
  private:
-    //! The function type string
-    std::string  function_;
+    //! The potential
+    Potential    pot_ = Potential::NONE;
 
     //! Whether or not swapping is allowed
     CanSwap      canSwap_;
-
-    //! The GROMACS function type
-    unsigned int fType_;
 
     //! Map structure for the options associated with the parameter list
     std::map<std::string, std::string> options_;

@@ -336,8 +336,9 @@ int gen_ff(int argc, char*argv[])
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
     };
     ForceFieldParameterList pols("Polarization", CanSwap::No);
-    ForceFieldParameterList coulomb("COUL_SR", CanSwap::Yes);
-    coulomb.addOption("chargetype", qdn2[0]);
+    auto qdist = name2ChargeType(qdn2[0]);
+    auto qpot  = chargeTypeToPotential(qdist);
+    ForceFieldParameterList coulomb(potentialToString(qpot), CanSwap::Yes);
     coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
@@ -433,21 +434,21 @@ int gen_ff(int argc, char*argv[])
         {
             std::map<std::string, std::string> vdwlist;
             std::map<std::string, std::string> rename;
-            switch (vdw.gromacsType())
+            switch (vdw.potential())
             {
-            case F_LJ:
+            case Potential::LJ12_6:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
-            case F_LJ8_6:
+            case Potential::LJ8_6:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
-            case F_LJ14_7:
+            case Potential::LJ14_7:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" }, { "aqt", "kJ/mol" }, { "bqt", "1/nm"} };
                 break;
-            case F_WBHAM:
+            case Potential::WANG_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
                 break;
-            case F_GBHAM:
+            case Potential::GENERALIZED_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 rename.insert({"sigma", "rmin"});
                 break;

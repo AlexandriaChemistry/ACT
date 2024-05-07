@@ -42,13 +42,11 @@ typedef void (*bondForceComputer)(const TopologyEntryVector          &bonds,
                                   std::map<InteractionType, double>  *energies);
 
 /*! \brief Return a bonded force computer according to typedef.
- * \param[in] gromacs_index Number corresponding to GROMACS list of energy terms
- * \param[in] qdist         Charge distribution type
+ * \param[in] pot    The ACT potential type
  * \return pointer to the appropriate function
  * \throws with gmx::InternalError if no such function is implemented.
  */
-bondForceComputer getBondForceComputer(int        gromacs_index,
-                                       ChargeType qdist);
+bondForceComputer getBondForceComputer(Potential pot);
 
 } // namespace
 
