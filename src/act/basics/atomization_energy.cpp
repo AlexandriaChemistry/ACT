@@ -42,6 +42,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
     
 namespace alexandria
 {
@@ -87,7 +88,7 @@ class AtomizationEnergyTerm
 
     const std::string &source() const { return source_; }
 
-    const std::string prop() const { return prop_; }
+    const std::string &prop() const { return prop_; }
 
     double T() const { return T_; }
 
@@ -95,9 +96,9 @@ class AtomizationEnergyTerm
 
     int mult() const { return mult_; }
 
-    const std::string unit() const { return unit_; }
+    const std::string &unit() const { return unit_; }
 
-    const std::string ref() const { return ref_; }
+    const std::string &ref() const { return ref_; }
 };
 
 AtomizationEnergy::AtomizationEnergy()
@@ -192,6 +193,25 @@ double AtomizationEnergy::term(const std::string &elem,
         }
         return (*term)->value();
     }
+}
+
+void AtomizationEnergy::dump(const std::string &filenm)
+{
+    gmx::TextWriter tw(filenm);
+    for(const auto &t : terms_)
+    {
+        tw.writeStringFormatted("%s|%d|%s|%s|%g|%g|%d|%s|%s|",
+                                t->elem().c_str(), 
+                                t->charge(),
+                                t->source().c_str(),
+                                t->prop().c_str(),
+                                t->T(),
+                                t->value(),
+                                t->mult(),
+                                t->unit().c_str(),
+                                t->ref().c_str());
+    }
+    tw.close();
 }
 
 }
