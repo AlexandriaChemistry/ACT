@@ -70,6 +70,11 @@ namespace alexandria
                     std::string       *unit,
                     std::string       *ref) const;
 
+        /*! \brief Dump the data to a new file
+         * \param[in] filenm The name of the file to dump to
+         */
+        void dump(const std::string &filenm);
+
     private:
         //! All the terms in one array
         std::vector<AtomizationEnergyTerm *> terms_;

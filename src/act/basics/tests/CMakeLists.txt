@@ -40,6 +40,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     allmolsTest.cpp
+    atomizationenergyTest.cpp
     atompropTest.cpp
     basecontainerTest.cpp
     datasetTest.cpp

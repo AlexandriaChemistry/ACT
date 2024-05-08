@@ -233,12 +233,17 @@ double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
                                            DHf, temperature, &dhFunit, nullptr);
             if (debug)
             {
-                fprintf(debug, "Found atomization energy terms %s = %g (%s) %s = %g (%s)\n",
+                fprintf(debug, "Found atomization energy terms for %2s at T = %g K. %s: %g (%s) %s: %g (%s)\n",
+                        a.element().c_str(), temperature,
                         H0.c_str(), h0_hT, h0unit.c_str(),
                         DHf.c_str(), dhF, dhFunit.c_str());
             }
             atomizationEnergy += convertToGromacs(h0_hT, h0unit) + convertToGromacs(dhF, dhFunit);
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "Total atomization energy %g\n", atomizationEnergy);
     }
     return atomizationEnergy;
 }

@@ -9,11 +9,11 @@
   <Real Name="Potential before">0.55994035938589426</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.0022963684307881205</Real>
-  <Real Name="Bond after">8.8095159826676511e-18</Real>
-  <Real Name="Angle after">4.6266808961793616e-19</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.002296368432348715</Real>
+  <Real Name="Bond after">4.1428898466467974e-24</Real>
+  <Real Name="Angle after">1.2353282223177757e-23</Real>
   <Real Name="Coulomb (SR) after">0</Real>
   <Real Name="INDUCTION after">0</Real>
   <Real Name="ALLELEC after">0</Real>
-  <Real Name="Potential after">9.2721840722855873e-18</Real>
+  <Real Name="Potential after">1.6496172069824555e-23</Real>
 </ReferenceData>

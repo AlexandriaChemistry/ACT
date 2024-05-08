@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <source Name="B3LYP/aug-cc-pvtz">
+    <property Name="E0">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">-54.602891999999997</Real>
+      <String Name="unit">Hartree</String>
+      <String Name="reference">Unknown2023a</String>
+    </property>
+  </source>
+  <source Name="G4">
+    <property Name="G4(0K)">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">-54.573666000000003</Real>
+      <String Name="unit">Hartree</String>
+      <String Name="reference">Ghahremanpour2016a</String>
+    </property>
+  </source>
+  <source Name="W1U">
+    <property Name="W1U(0K)">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">-54.611176</Real>
+      <String Name="unit">Hartree</String>
+      <String Name="reference">Ghahremanpour2016a</String>
+    </property>
+  </source>
+  <source Name="exp">
+    <property Name="H(0)-H(T)">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">10.3035</Real>
+      <String Name="unit">kJ/mol</String>
+      <String Name="reference">http://kinetics.nist.gov/janaf</String>
+    </property>
+    <property Name="S0(T)">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">108.43300000000001</Real>
+      <String Name="unit">J/mol K</String>
+      <String Name="reference">http://kinetics.nist.gov/janaf</String>
+    </property>
+    <property Name="DHf(T)">
+      <String Name="element">N</String>
+      <Int64 Name="charge">0</Int64>
+      <Real Name="temperature">700</Real>
+      <Real Name="value">475.06700000000001</Real>
+      <String Name="unit">kJ/mol</String>
+      <String Name="reference">http://kinetics.nist.gov/janaf</String>
+    </property>
+  </source>
+</ReferenceData>

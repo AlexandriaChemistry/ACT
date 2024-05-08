@@ -242,6 +242,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
                                  const std::vector<gmx::RVec> &coords,
                                  const AtomizationEnergy      &atomenergy,
                                  const std::vector<double>    &frequencies,
+                                 double                        epot,
                                  double                        temperature,
                                  double                        pressure,
                                  double                        scale_factor)
@@ -275,7 +276,6 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
     }
     // Using the equations from Ochterski2000a
     double sumAtomicEps0 = 0;
-    double epot          = 0;
     double D0M           = sumAtomicEps0 - epot - zpe_;
     double sumAtomicH0   = computeAtomizationEnergy(actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;
