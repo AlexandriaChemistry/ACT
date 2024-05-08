@@ -249,7 +249,8 @@ protected:
                 
                 double scale_factor = 1;
                 AtomizationEnergy atomenergy;
-                ThermoChemistry tc(&mp, coords, atomenergy, freq, 298.15, 1, scale_factor);
+                ThermoChemistry tc(&mp, coords, atomenergy, freq, eAfter[InteractionType::EPOT],
+                                   298.15, 1, scale_factor);
                 checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
                 checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
                 for(const auto &tcc : tccmap())

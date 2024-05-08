@@ -753,30 +753,32 @@ static void plot_spectrum(const char                *filenm,
 }
 
 static void addThermo(JsonTree                  *jtree, 
-                      alexandria::ACTMol         *mol,
+                      alexandria::ACTMol        *mol,
                       std::vector<gmx::RVec>    *coords,
+                      double                     epot,
                       const AtomizationEnergy   &atomenergy,
                       const std::vector<double> &freq)
 {
     real scale_factor = 1;
     real roomTemp     = 298.15;
+    std::string eunit("kJ/mol");
+    std::string sunit("J/mol K");
+    jtree->addValueUnit("Epot", gmx_ftoa(epot), eunit);
     JsonTree jtc0("T=0");
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
-    ThermoChemistry tc0(mol, *coords, atomenergy, freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, roomTemp, 1, scale_factor);
+    ThermoChemistry tc0(mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
     {
-        std::string unit("kJ/mol");
-        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), unit);
-        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), unit);
+        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
+        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), eunit);
     }
     {
         JsonTree jtS0("Standard entropy");
         JsonTree jtSRT("Standard entropy");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("J/mol K");
-            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), unit);
-            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), unit);
+            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), sunit);
+            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), sunit);
         }
         jtc0.addObject(jtS0);
         jtcRT.addObject(jtSRT);
@@ -786,9 +788,8 @@ static void addThermo(JsonTree                  *jtree,
         JsonTree jtcvRT("Heat capacity cV");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("J/mol K");
-            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), unit);
-            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), unit);
+            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), sunit);
+            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), sunit);
         }
         jtc0.addObject(jtcv0);
         jtcRT.addObject(jtcvRT);
@@ -798,17 +799,15 @@ static void addThermo(JsonTree                  *jtree,
         JsonTree jtcERT("Internal energy");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("kJ/mol");
-            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), unit);
-            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), unit);
+            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), eunit);
+            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), eunit);
         }
         jtc0.addObject(jtcE0);
         jtcRT.addObject(jtcERT);
     }
     {
-        std::string unit("kJ/mol");
-        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), unit);
-        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), unit);
+        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), eunit);
+        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), eunit);
     }
     jtree->addObject(jtc0);
     jtree->addObject(jtcRT);
@@ -904,16 +903,20 @@ void doFrequencyAnalysis(const ForceField         *pd,
     }
     jtree->addObject(ftree);
     jtree->addObject(itree);
-    
+    // Energies
+    std::map<InteractionType, double> energies;
+    std::vector<gmx::RVec>    forces(coords->size());
+    (void) forceComp->compute(pd, mol->topology(), coords, &forces, &energies);
     // Now time for thermochemistry output
     JsonTree tctree("Thermochemistry");
     JsonTree ajtc("Alexandria");
-    addThermo(&ajtc, mol, coords, atomenergy, alex_freq);
+    auto     epot = energies[InteractionType::EPOT];
+    addThermo(&ajtc, mol, coords, epot, atomenergy, alex_freq);
     tctree.addObject(ajtc);
     if (!ref_freq.empty())
     {
         JsonTree rjtc("Reference");
-        addThermo(&rjtc, mol, coords, atomenergy, ref_freq);
+        addThermo(&rjtc, mol, coords, epot, atomenergy, ref_freq);
         tctree.addObject(rjtc);
     }
     jtree->addObject(tctree);

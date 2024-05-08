@@ -255,7 +255,7 @@ int nma(int argc, char *argv[])
             if (eMinimizeStatus::OK == eMin)
             {
                 AtomizationEnergy        atomenergy;
-                doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &coords,
+                doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
                                     atomenergy, nullptr, &jtree,
                                     opt2fn_null("-ir", fnm.size(), fnm.data()),
                                     linewidth, oenv, verbose);
