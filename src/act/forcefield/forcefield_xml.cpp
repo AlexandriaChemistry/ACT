@@ -720,7 +720,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     {
         auto child = add_xml_child(parent,  exml_names(xmlEntry::INTERACTION));
         add_xml_char(child, exml_names(xmlEntry::TYPE), interactionTypeToString(fs.first).c_str());
-        add_xml_char(child, exml_names(xmlEntry::FUNCTION), fs.second.function().c_str());
+        add_xml_char(child, exml_names(xmlEntry::FUNCTION), potentialToString(fs.second.potential()).c_str());
         add_xml_char(child, exml_names(xmlEntry::CANSWAP), 
                      canSwapToString(fs.second.canSwap()).c_str());
         for (auto &option : fs.second.option())

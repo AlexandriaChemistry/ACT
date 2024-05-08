@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -108,8 +108,8 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
     nAtom_   = atoms.size();
     qtot_    = qtotal;
     qshell_  = 0;
-    auto zzz = pd->findForcesConst(InteractionType::COULOMB);
-    auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
+    auto qt       = pd->findForcesConst(InteractionType::COULOMB);
+    auto eqtModel = potentialToChargeType(qt.potential());
     bool haveZeta = eqtModel != ChargeType::Point;
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
@@ -121,7 +121,7 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
         row_.push_back(atype->row());
         if (haveZeta)
         {
-            zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());
+            zeta_.push_back(qt.findParameterTypeConst(ztype, "zeta").value());
         }
         else
         {

@@ -57,7 +57,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
                  int                         qtotal)
 {
     auto qt     = pd->findForcesConst(InteractionType::COULOMB);
-    ChargeType_ = name2ChargeType(qt.optionValue("chargetype"));
+    ChargeType_ = potentialToChargeType(qt.potential());
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
@@ -97,8 +97,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
-        auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
-        if (eqtModel != ChargeType::Point)
+        if (qt.potential() != Potential::COULOMB_POINT)
         {
             auto qtype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
             zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
@@ -133,8 +132,7 @@ void QgenAcm::updateParameters(const ForceField           *pd,
                                const std::vector<ActAtom> &atoms)
 {
     auto qt = pd->findForcesConst(InteractionType::COULOMB);
-    auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
-    if (eqtModel != ChargeType::Point)
+    if (qt.potential() != Potential::COULOMB_POINT)
     {
         // Zeta must exist for atoms and shells in this case
         for (size_t i = 0; i < qdist_id_.size(); i++)

@@ -36,6 +36,7 @@
 #include <map>
 
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/potential.h"
 
 namespace alexandria
 {
@@ -105,7 +106,7 @@ namespace alexandria
      * \return the map
      */
     std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
-                                                             int                ftype);
+                                                             Potential          ftype);
     /*! \brief Extract a map of combination rules for each parameter
      * \param[in] vdw Van der Waals list of ff params
      * \return the map
@@ -119,7 +120,7 @@ namespace alexandria
      * \param[in] jvdw     Parameters for particle j
      * \return a Force Field Parameter Map with pair entries
      */
-    ForceFieldParameterMap evalCombinationRule(int                                          ftype,
+    ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
                                                const std::map<const std::string, CombRule> &combrule,
                                                const ForceFieldParameterMap                &ivdw,
                                                const ForceFieldParameterMap                &jvdw);

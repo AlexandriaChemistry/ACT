@@ -55,17 +55,6 @@ protected:
     
     ActCheckSumTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
-        checker_.setDefaultTolerance(tolerance);
-    }
-    
-    // Static initiation, only run once every test.
-    static void SetUpTestCase()
-    {
-    }
-    
-    static void TearDownTestCase()
-    {
     }
     
     void TestOne(const std::string &fileName)
@@ -75,6 +64,8 @@ protected:
         auto orig    = pd->checkSum();
         checker_.checkString(orig, "ForceField checksum");
         auto sumpd   = forcefieldCheckSum(pd);
+        printf("orig  = '%s'\n", orig.c_str());
+        printf("sumpd = '%s'\n", sumpd.c_str());
         EXPECT_TRUE(orig == sumpd);
     }
 };

@@ -67,14 +67,14 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
 
         void checkOption(const ForceFieldParameterList &ff, const std::string &option)
         {
-            checker_.checkString(ff.function(), "function");
+            checker_.checkString(potentialToGromacsString(ff.potential()), "function");
             checker_.checkString(ff.optionValue(option), "optionValue");
         }
         void runTest(ForceFieldParameterList *ff, bool modify)
         {
             std::vector<std::string> atoms = { "c2", "h3", "c3", "h3~h3" };
             
-            checker_.checkString(ff->function(), "function");
+            checker_.checkString(potentialToGromacsString(ff->potential()), "function");
             int i = 1;
             for(const auto &atom : atoms)
             {

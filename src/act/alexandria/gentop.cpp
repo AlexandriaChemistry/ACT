@@ -232,19 +232,14 @@ int gentop(int argc, char *argv[])
     (void) pd.verifyCheckSum(stderr);
 
     auto &fs = pd.findForcesConst(InteractionType::COULOMB);
-    const char *ct = "chargetype";
-    if (!fs.optionExists(ct))
-    {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The option %s is not defined in the force field file %s", ct, gentop_fnm).c_str()));
-    }
     std::string my_pol;
     if (pd.polarizable())
     {
         my_pol.assign(" polarizable");
     }
-    auto qType = fs.optionValue(ct);
+    auto qType = potentialToChargeType(fs.potential());
     printf("Using%s force field file %s and charge distribution model %s\n",
-           my_pol.c_str(), gentop_fnm, qType.c_str());
+           my_pol.c_str(), gentop_fnm, chargeTypeName(qType).c_str());
     if (bVerbose)
     {
         printf("Read force field information. There are %d atomtypes.\n",

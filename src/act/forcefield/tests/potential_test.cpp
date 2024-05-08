@@ -1,7 +1,7 @@
 /*
- * This source file is part of the Alexandria Chemistry Toolkit.
+ * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -25,28 +25,40 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include <vector>
 
-#include "act/basics/chargemodel.h"
-#include "act/basics/interactiontype.h"
-#include "act/alexandria/topology.h"
-#include "gromacs/math/vectypes.h"
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ */
+#include <math.h>
+
+#include <gtest/gtest.h>
+
+#include "act/forcefield/potential.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
+
+#include "gromacs/topology/atoms.h"
 
 namespace alexandria
 {
 
-typedef void (*bondForceComputer)(const TopologyEntryVector          &bonds,
-                                  const std::vector<ActAtom>         &atoms,
-                                  const std::vector<gmx::RVec>       *coordinates,
-                                  std::vector<gmx::RVec>             *forces,
-                                  std::map<InteractionType, double>  *energies);
+namespace
+{
 
-/*! \brief Return a bonded force computer according to typedef.
- * \param[in] pot    The ACT potential type
- * \return pointer to the appropriate function
- * \throws with gmx::InternalError if no such function is implemented.
- */
-bondForceComputer getBondForceComputer(Potential pot);
+TEST(PotentialToString, LJ8_6)
+{
+    EXPECT_TRUE(potentialToString(Potential::LJ8_6) == "LJ8_6");
+}
+
+TEST(PotentialToString, LJ12_6)
+{
+    EXPECT_TRUE(potentialToString(Potential::LJ12_6) == "LJ12_6");
+}
+
+}
 
 } // namespace
-

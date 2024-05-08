@@ -43,6 +43,7 @@ gmx_add_unit_test(
     forcefield_parameter_test.cpp
     forcefield_parameterlist_test.cpp
     forcefield_test.cpp
+    potential_test.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )

@@ -50,8 +50,9 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
-#include "act_checksum.h"
-#include "forcefield_xml.h"
+#include "act/forcefield/act_checksum.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/potential.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria
@@ -86,7 +87,7 @@ void ForceField::print(FILE *fp) const
     for(const auto &fs : forces_)
     {
         fprintf(fp, "  %s function %s\n", interactionTypeToString(fs.first).c_str(),
-                fs.second.function().c_str());
+                potentialToString(fs.second.potential()).c_str());
         for(const auto &opt : fs.second.option())
         {
             fprintf(fp, "    option %s value %s\n", opt.first.c_str(), opt.second.c_str());
@@ -889,11 +890,10 @@ void ForceField::checkConsistency(FILE *fp) const
     if (interactionPresent(itq))
     {
         auto fs  = findForcesConst(itq);
-        std::string zeta("zeta");
-        std::string opt("chargetype");
-        if (fs.optionExists(opt) &&
-            name2ChargeType(fs.optionValue(opt)) == ChargeType::Point)
+        if (fs.potential() == Potential::COULOMB_POINT)
         {
+            // Check for non-zero zeta
+            std::string zeta("zeta");
             for(const auto &myparam : fs.parametersConst())
             {
                 for(const auto &param : myparam.second)

@@ -1522,80 +1522,83 @@ void Topology::fillParameters(const ForceField *pd)
             const auto &topID = topentry->id();
 
             std::vector<double> param;
-            switch (fs.gromacsType())
+            switch (fs.potential())
             {
-            case F_LJ:
+            case Potential::LJ12_6:
                 fillParams(fs, topID, lj12_6NR, lj12_6_name, &param);
                 break;
-            case F_LJ8_6:
+            case Potential::LJ8_6:
                 fillParams(fs, topID, lj8_6NR, lj8_6_name, &param);
                 break;
-            case F_LJ14_7:
+            case Potential::LJ14_7:
                 fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
                 break;
-            case F_WBHAM:
+            case Potential::WANG_BUCKINGHAM:
                 fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
-            case F_GBHAM:
+            case Potential::GENERALIZED_BUCKINGHAM:
                 fillParams(fs, topID, gbhNR, gbh_name, &param);
                 break;
-            case F_COUL_SR:
+            case Potential::COULOMB_GAUSSIAN:
+            case Potential::COULOMB_SLATER:
+            case Potential::COULOMB_POINT:
                 fillParams(fs, topID, coulNR, coul_name, &param);
                 break;
-            case F_MORSE:
+            case Potential::MORSE_BONDS:
                 fillParams(fs, topID, morseNR, morse_name, &param);
                 break;
-            case F_CUBICBONDS:
+            case Potential::CUBIC_BONDS:
                 fillParams(fs, topID, cubicNR, cubic_name, &param);
                 break;
-            case F_BONDS:
+            case Potential::HARMONIC_BONDS:
                 fillParams(fs, topID, bondNR, bond_name, &param);
                 break;
-            case F_ANGLES:
+            case Potential::HARMONIC_ANGLES:
                 fillParams(fs, topID, angleNR, angle_name, &param);
                 break;
-            case F_UREY_BRADLEY:
+            case Potential::UREY_BRADLEY_ANGLES:
                 fillParams(fs, topID, ubNR, ub_name, &param);
                 break;
-            case F_LINEAR_ANGLES:
+            case Potential::LINEAR_ANGLES:
                 fillParams(fs, topID, linangNR, linang_name, &param);
                 break;
-            case F_IDIHS:
+            case Potential::HARMONIC_DIHEDRALS:
                 fillParams(fs, topID, idihNR, idih_name, &param);
                 break;
-            case F_FOURDIHS:
+            case Potential::FOURIER_DIHEDRALS:
                 fillParams(fs, topID, fdihNR, fdih_name, &param);
                 break;
-            case F_POLARIZATION:
+            case Potential::POLARIZATION:
                 fillParams(fs, topID, polNR, pol_name, &param);
                 break;
-            case F_PDIHS:
+            case Potential::PROPER_DIHEDRALS:
                 fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
-            case F_VSITE2:
+            case Potential::VSITE2:
                 fillParams(fs, topID, vsite2NR, vsite2_name, &param);
                 break;
-            case F_VSITE2FD:
+            case Potential::VSITE2FD:
                 fillParams(fs, topID, vsite2fdNR, vsite2fd_name, &param);
                 break;
-            case F_VSITE3:
+            case Potential::VSITE3:
                 fillParams(fs, topID, vsite3NR, vsite3_name, &param);
                 break;
-            case F_VSITE3FD:
+            case Potential::VSITE3FD:
                 fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
                 break;
-            case F_VSITE3OUT:
+            case Potential::VSITE3OUT:
                 fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
                 break;
-            case F_VSITE3OUTS:
+            case Potential::VSITE3OUTS:
                 fillParams(fs, topID, vsite3outsNR, vsite3outs_name, &param);
                 break;
                 //Commenting this out such that we do not generate incorrect results but crash instead.
-                //case F_VSITE3FAD:
+                //case Potential::VSITE3FAD:
                 //fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
                 //break;
             default:
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.gromacsType()].name).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
+                                                               potentialToString(fs.potential()).c_str()).c_str()));
             }
             topentry->setParams(param);
         }
