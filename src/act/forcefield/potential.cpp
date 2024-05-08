@@ -32,6 +32,7 @@
  */
 #include "potential.h"
 
+#include <cstring>
 #include <map>
 
 #include "gromacs/topology/ifunc.h"
@@ -111,8 +112,9 @@ bool stringToPotential(const std::string &pname, Potential *p)
     // Now search for old-style GROMACS names
     for (const auto &ps : act2gmx)
     {
-        int n = std::min(strlen(interaction_function[ps.second].name), pname.size());
-        if (gmx_strncasecmp(pname.c_str(), interaction_function[ps.second].name, n) == 0)
+        size_t n1 = strlen(interaction_function[ps.second].name);
+        if (n1 == pname.size() &&
+            (gmx_strncasecmp(pname.c_str(), interaction_function[ps.second].name, n1) == 0))
         {
             *p = ps.first;
             return true;
