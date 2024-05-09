@@ -325,10 +325,10 @@ class ForceField
      * Add a new force list. The routine checks for duplicate itypes
      * and will not add a second block of a certain type is one is
      * present already.
-     * \param[in] interaction The type of interaction being modeled
-     * \param[in] forces      The data structure
+     * \param[in] iType  The type of interaction being modeled
+     * \param[in] forces The data structure
      */
-    void addForces(const std::string             &interaction,
+    void addForces(InteractionType                iType,
                    const ForceFieldParameterList &forces);
     
     size_t nforces() const { return forces_.size(); }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -355,7 +355,7 @@ static void processAttr(FILE       *fp,
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
             }
             ForceFieldParameterList newparam(function, canSwap);
-            pd->addForces(inter, newparam);
+            pd->addForces(currentItype, newparam);
             parentEntry = elem;
         }
         break;

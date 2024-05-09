@@ -159,7 +159,6 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
 {
     double erep  = 0;
     double edisp = 0;
-    double eqt   = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto &b : pairs)
@@ -200,21 +199,6 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
             erep     += eerep;
             edisp    += eedisp;
         }
-        // Charge transfer correction, according to Eqn. 20, Walker et al. https://doi.org/10.1002/jcc.26954
-        real aqt    = params[lj14_7AQT_IJ];
-        if (aqt > 0)
-        {
-            real bqt   = params[lj14_7BQT_IJ];
-            auto eeqt  = -aqt*std::exp(-bqt*dr2*rinv);
-            if (debug)
-            {
-                fprintf(debug, "r  %g  eeqt %g erep %g edisp %g total %g epsilon %g\n", dr2*rinv, eeqt,
-                        eerep, eedisp, eeqt+eerep+eedisp, epsilon);
-            }
-            auto ffqt  = bqt*eeqt;
-            f147      += ffqt;
-            eqt       += eeqt;
-        }
         real fbond  = f147*rinv;
         for (int m = 0; (m < DIM); m++)
         {
@@ -223,9 +207,55 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
             f[indices[1]][m] -= fij;
         }
     }
-    energies->insert({InteractionType::CHARGETRANSFER, eqt});
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+}
+
+static void computeExponential(const TopologyEntryVector             &pairs,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
+{
+    double eqt   = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        // Charge transfer correction, according to Eqn. 20, Walker et al.
+        // https://doi.org/10.1002/jcc.26954
+        real aqt    = params[qtA_IJ];
+        if (aqt > 0)
+        {
+            real bqt   = params[qtB_IJ];
+            auto eeqt  = -aqt*std::exp(-bqt*dr2*rinv);
+            if (debug)
+            {
+                fprintf(debug, "r  %g  eeqt %g\n", dr2*rinv, eeqt);
+            }
+            real fqt  = bqt*eeqt;
+            eqt      += eeqt;
+
+            real fbond  = fqt*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::CHARGETRANSFER, eqt});
 }
 
 static void computeWBH(const TopologyEntryVector             &pairs,
@@ -1136,6 +1166,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::LJ14_7,                 computeLJ14_7          },
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
+    { Potential::EXPONENTIAL,            computeExponential     },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
     { Potential::COULOMB_SLATER,         computeCoulombSlater   },

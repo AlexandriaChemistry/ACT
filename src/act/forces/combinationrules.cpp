@@ -59,7 +59,8 @@ const std::map<CombRule, const std::string> combRuleName =
         { CombRule::MasonGamma, "MasonGamma" },
         { CombRule::Volumetric, "Volumetric" },
         { CombRule::InverseSquare, "InverseSquare" },
-        { CombRule::HalgrenEpsilon, "HalgrenEpsilon" }
+        { CombRule::HalgrenEpsilon, "HalgrenEpsilon" },
+        { CombRule::Kronecker, "Kronecker" }
     };
 
 const std::string &combinationRuleName(CombRule c)
@@ -198,8 +199,6 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
     const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
     const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
     const std::string cdelta(lj14_7_name[lj14_7DELTA]);
-    const std::string caqt(lj14_7_name[lj14_7AQT]);
-    const std::string cbqt(lj14_7_name[lj14_7BQT]);
     bool haveDelta = Potential::GENERALIZED_BUCKINGHAM == ftype || Potential::LJ14_7 ==ftype;
     bool haveGamma = haveDelta || Potential::WANG_BUCKINGHAM == ftype;
     switch (i)
@@ -371,7 +370,8 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
 ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
                                            const std::map<const std::string, CombRule> &combrule,
                                            const ForceFieldParameterMap                &ivdw,
-                                           const ForceFieldParameterMap                &jvdw)
+                                           const ForceFieldParameterMap                &jvdw,
+                                           bool                                         same)
 {
     // Fudge unit
     std::string unit("kJ/mol");
@@ -396,54 +396,81 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
             }
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
-        std::string cdist;
-        if (Potential::GENERALIZED_BUCKINGHAM == ftype)
+        double value = 0;
+        if (Potential::EXPONENTIAL == ftype)
         {
-            cdist = gbh_name[gbhRMIN];
+            auto crule = combrule.find(param.first)->second;
+            if (CombRule::Kronecker == crule)
+            {
+                if (same)
+                {
+                    value = 0;
+                }
+                else
+                {
+                    value = combineTwo(CombRule::Geometric,
+                                       ivdw.find(param.first)->second.value(),
+                                       jvdw.find(param.first)->second.value());
+                }
+            }
+            else
+            {
+                value = combineTwo(crule,
+                                   ivdw.find(param.first)->second.value(),
+                                   jvdw.find(param.first)->second.value());
+            }
         }
         else
         {
-            cdist = lj14_7_name[lj14_7SIGMA];
-        }
-        const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
-        const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
-        auto ieps = ivdw.find(cepsilon)->second.value();
-        auto jeps = jvdw.find(cepsilon)->second.value();
-        double igam = 0;
-        double jgam = 0;
-        if (ivdw.end() != ivdw.find(cgamma))
-        {
-            igam = ivdw.find(cgamma)->second.value();
-        }
-        if (jvdw.end() != jvdw.find(cgamma))
-        {
-            jgam = jvdw.find(cgamma)->second.value();
-        }
-        double isig = 0, jsig = 0;
-        if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing", cdist.c_str()).c_str()));
-        }
-        isig = ivdw.find(cdist)->second.value();
-        jsig = jvdw.find(cdist)->second.value();
-        double value    = 0;
-        auto   crule    = combrule.find(param.first)->second;
-        switch (crule)
-        {
-        case CombRule::HogervorstSigma:
-            value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
-            break;
-        case CombRule::WaldmanEpsilon:
-            value = combineWaldmanEpsilon(ieps, jeps, isig, jsig);
-            break;
-        case CombRule::MasonGamma:
-            value = combineMasonGamma(igam, jgam, isig, jsig);
-            break;
-        default:
-            value = combineTwo(crule,
-                               ivdw.find(param.first)->second.value(),
-                               jvdw.find(param.first)->second.value());
-            break;
+            // Defining some strings that we may or may not need
+            const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
+            const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
+            std::string       cdist;
+            if (ftype == Potential::GENERALIZED_BUCKINGHAM)
+            {
+                cdist = gbh_name[gbhRMIN];
+            }
+            else
+            {
+                cdist = lj14_7_name[lj14_7SIGMA];
+            }
+            auto ieps = ivdw.find(cepsilon)->second.value();
+            auto jeps = jvdw.find(cepsilon)->second.value();
+            double igam = 0;
+            double jgam = 0;
+            if (ivdw.end() != ivdw.find(cgamma))
+            {
+                igam = ivdw.find(cgamma)->second.value();
+            }
+            if (jvdw.end() != jvdw.find(cgamma))
+            {
+                jgam = jvdw.find(cgamma)->second.value();
+            }
+            double isig = 0, jsig = 0;
+            if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing", cdist.c_str()).c_str()));
+            }
+            isig = ivdw.find(cdist)->second.value();
+            jsig = jvdw.find(cdist)->second.value();
+            auto   crule    = combrule.find(param.first)->second;
+            switch (crule)
+            {
+            case CombRule::HogervorstSigma:
+                value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
+                break;
+            case CombRule::WaldmanEpsilon:
+                value = combineWaldmanEpsilon(ieps, jeps, isig, jsig);
+                break;
+            case CombRule::MasonGamma:
+                value = combineMasonGamma(igam, jgam, isig, jsig);
+                break;
+            default:
+                value = combineTwo(crule,
+                                   ivdw.find(param.first)->second.value(),
+                                   jvdw.find(param.first)->second.value());
+                break;
+            }
         }
         std::string pij = gmx::formatString("%s_ij", param.first.c_str());
         pmap.insert({ pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true)});
@@ -451,9 +478,15 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
     return pmap;
 }
 
-static void generateVdwParameterPairs(ForceField *pd)
+static void generateParameterPairs(ForceField      *pd,
+                                   InteractionType  itype)
 {
-    auto forcesVdw = pd->findForces(InteractionType::VDW);
+    // Do not crash if e.g. there is no CHARGETRANSFER.
+    if (!pd->interactionPresent(itype))
+    {
+        return;
+    }
+    auto forcesVdw = pd->findForces(itype);
     auto comb_rule = getCombinationRule(*forcesVdw);
 
     // We temporarily store the new parameters here
@@ -478,10 +511,11 @@ static void generateVdwParameterPairs(ForceField *pd)
             {
                 continue;
             }
+            bool same = jid.id() == iid.id();
             auto jparam = jvdw.second;
             // Fill the parameters, potential dependent
             auto pmap = evalCombinationRule(forcesVdw->potential(),
-                                            comb_rule, ivdw.second, jvdw.second);
+                                            comb_rule, ivdw.second, jvdw.second, same);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
@@ -598,7 +632,8 @@ static void generateShellForceConstants(ForceField *pd)
 
 void generateDependentParameter(ForceField *pd)
 {
-    generateVdwParameterPairs(pd);
+    generateParameterPairs(pd, InteractionType::VDW);
+    generateParameterPairs(pd, InteractionType::CHARGETRANSFER);
     generateCoulombParameterPairs(pd);
     generateShellForceConstants(pd);
 }

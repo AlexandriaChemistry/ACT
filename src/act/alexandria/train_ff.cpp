@@ -834,9 +834,12 @@ int train_ff(int argc, char *argv[])
 
 
     // StaticIndividualInfo things
-    opt.sii()->generateOptimizationIndex(fp, opt.mg(), opt.commRec());
-    opt.sii()->fillVectors(opt.mg()->mindata());
-    opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
+    {
+        FILE *myfp = opt.verbose() ? fp : debug;
+        opt.sii()->generateOptimizationIndex(myfp, opt.mg(), opt.commRec());
+        opt.sii()->fillVectors(opt.mg()->mindata());
+        opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
+    }
     // Set the output file names, has to be done before
     // creating a mutator.
     if (bOptimize)

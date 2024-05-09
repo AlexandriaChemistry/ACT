@@ -153,13 +153,20 @@ static void add_vsites(const char *vsfile,
     std::vector<std::string> value;
     int                      lineno = 1;
     std::map<InteractionType, ForceFieldParameterList> i2f = {
-        { InteractionType::VSITE2,     ForceFieldParameterList("vsite2",     CanSwap::Vsite2) },
-        { InteractionType::VSITE2FD,   ForceFieldParameterList("vsite2fd",   CanSwap::Vsite2) },
-        { InteractionType::VSITE3,     ForceFieldParameterList("vsite3",     CanSwap::Vsite3) },
-        { InteractionType::VSITE3FD,   ForceFieldParameterList("vsite3fd",   CanSwap::No)     },
-        { InteractionType::VSITE3FAD,  ForceFieldParameterList("vsite3fad",  CanSwap::No)     },
-        { InteractionType::VSITE3OUT,  ForceFieldParameterList("vsite3out",  CanSwap::No)     },
-        { InteractionType::VSITE3OUTS, ForceFieldParameterList("vsite3outs", CanSwap::No)     }
+        { InteractionType::VSITE2,
+          ForceFieldParameterList(potentialToString(Potential::VSITE2),     CanSwap::Vsite2) },
+        { InteractionType::VSITE2FD,
+          ForceFieldParameterList(potentialToString(Potential::VSITE2FD),   CanSwap::Vsite2) },
+        { InteractionType::VSITE3,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3),     CanSwap::Vsite3) },
+        { InteractionType::VSITE3FD,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3FD),   CanSwap::No)     },
+        { InteractionType::VSITE3FAD,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3FAD),  CanSwap::No)     },
+        { InteractionType::VSITE3OUT,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3OUT),  CanSwap::No)     },
+        { InteractionType::VSITE3OUTS,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3OUTS), CanSwap::No)     }
     };
     while (tr.readLine(&tmp))
     {
@@ -256,7 +263,7 @@ static void add_vsites(const char *vsfile,
     {
         if (!iii.second.empty())
         {
-            pd->addForces(interactionTypeToString(iii.first), iii.second);
+            pd->addForces(iii.first, iii.second);
         }
     }
 }
@@ -273,7 +280,7 @@ int gen_ff(int argc, char*argv[])
         "In order to work the ACTDATA environment variable should point to",
         "the directory where some input files are located, namely:[BR]",
         "atomprops.csv - containing properties for atoms.[BR]",
-        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges."
+        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges.",
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -342,9 +349,9 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
-    ForceFieldParameterList qt("Exponential", CanSwap::Yes);
+    ForceFieldParameterList qt(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
     // Combination rules
-    crule.extract(&vdw);
+    crule.extract(&vdw, &qt);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
     // Check for Point charges
@@ -384,8 +391,10 @@ int gen_ff(int argc, char*argv[])
         {
             atomnumber = apropsptr->second.atomnumber();
         }
+        std::string zetatype("zetatype");
         ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
         ptp.setOption("vdwtype", entry.first);
+        ptp.setOption("qttype", entry.first);
 
         // Now "parameters"
         auto mass       = aprops.find(elem)->second.mass();
@@ -419,8 +428,18 @@ int gen_ff(int argc, char*argv[])
                                   ForceFieldParameter("Angstrom3", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
             }
         }
+        // Charge transfer
+        std::map<std::string, std::string> qtparm = { { "aqt", "kJ/mol" }, { "bqt", "1/nm"} };
+        for(const auto &qtp : qtparm)
+        {
+            if (minmaxmut(entry.first, myatype, qtp.first, &vmin, &vmax, &vmut))
+            {
+                qt.addParameter(entry.first, qtp.first,
+                                ForceFieldParameter(qtp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            }
+        }
         // Charge distribution
-        if (!myatype["zetatype"].empty() &&
+        if (!myatype[zetatype].empty() &&
             minmaxmut(entry.first, myatype, "zeta", &vmin, &vmax, &vmut))
         {
             if (bPoint)
@@ -444,7 +463,7 @@ int gen_ff(int argc, char*argv[])
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
                 break;
             case Potential::LJ14_7:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" }, { "aqt", "kJ/mol" }, { "bqt", "1/nm"} };
+                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
             case Potential::WANG_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
@@ -480,27 +499,27 @@ int gen_ff(int argc, char*argv[])
             {
                 if (minmaxmut(entry.first, myatype, vl.first, &vmin, &vmax, &vmut))
                 {
-                    eem.addParameter(myatype["zetatype"], vl.first,
+                    eem.addParameter(myatype[zetatype], vl.first,
                                      ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 1, vmin, vmax, vmut, true, true));
                 }
             }
         }
     }
-    pd.addForces(interactionTypeToString(InteractionType::POLARIZATION), pols);
-    pd.addForces(interactionTypeToString(InteractionType::COULOMB), coulomb);
+    pd.addForces(InteractionType::POLARIZATION, pols);
+    pd.addForces(InteractionType::COULOMB, coulomb);
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
-    pd.addForces(interactionTypeToString(InteractionType::BONDS), bonds);
+    pd.addForces(InteractionType::BONDS, bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
-    pd.addForces(interactionTypeToString(InteractionType::ANGLES), angles);
+    pd.addForces(InteractionType::ANGLES, angles);
     ForceFieldParameterList linang("LINEAR_ANGLES", CanSwap::Linear);
-    pd.addForces(interactionTypeToString(InteractionType::LINEAR_ANGLES), linang);
+    pd.addForces(InteractionType::LINEAR_ANGLES, linang);
     ForceFieldParameterList idihs("IDIHS", CanSwap::Idih);
-    pd.addForces(interactionTypeToString(InteractionType::IMPROPER_DIHEDRALS), idihs);
+    pd.addForces(InteractionType::IMPROPER_DIHEDRALS, idihs);
     ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
-    pd.addForces(interactionTypeToString(InteractionType::PROPER_DIHEDRALS), pdihs);
-    pd.addForces(interactionTypeToString(InteractionType::VDW), vdw);
-    pd.addForces(interactionTypeToString(InteractionType::CHARGETRANSFER, qt);
-    pd.addForces(interactionTypeToString(InteractionType::ELECTRONEGATIVITYEQUALIZATION), eem);
+    pd.addForces(InteractionType::PROPER_DIHEDRALS, pdihs);
+    pd.addForces(InteractionType::VDW, vdw);
+    pd.addForces(InteractionType::CHARGETRANSFER, qt);
+    pd.addForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION, eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
     if (qsymm)

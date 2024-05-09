@@ -49,6 +49,7 @@ static const std::map<Potential, const std::string> pot2str =
         { Potential::LJ14_7,                 "LJ14_7" },
         { Potential::GENERALIZED_BUCKINGHAM, "GENERALIZED_BUCKINGHAM" },
         { Potential::WANG_BUCKINGHAM,        "WANG_BUCKINGHAM" },
+        { Potential::EXPONENTIAL,            "EXPONENTIAL" },
         { Potential::COULOMB_POINT,          "COULOMB_POINT" },
         { Potential::COULOMB_GAUSSIAN,       "COULOMB_GAUSSIAN" },
         { Potential::COULOMB_SLATER,         "COULOMB_SLATER" },
@@ -66,6 +67,7 @@ static const std::map<Potential, const std::string> pot2str =
         { Potential::VSITE2FD,               "VSITE2FD" },
         { Potential::VSITE3,                 "VSITE3" },
         { Potential::VSITE3FD,               "VSITE3FD" },
+        { Potential::VSITE3FAD,              "VSITE3FAD" },
         { Potential::VSITE3OUT,              "VSITE3OUT" },
         { Potential::VSITE3OUTS,             "VSITE3OUTS" }
     };
@@ -89,6 +91,7 @@ static const std::map<Potential, int> act2gmx = {
     { Potential::VSITE2FD,               F_VSITE2FD },
     { Potential::VSITE3,                 F_VSITE3 },
     { Potential::VSITE3FD,               F_VSITE3FD },
+    { Potential::VSITE3FAD,              F_VSITE3FAD },
     { Potential::VSITE3OUT,              F_VSITE3OUT },
     { Potential::VSITE3OUTS,             F_VSITE3OUTS }
 };

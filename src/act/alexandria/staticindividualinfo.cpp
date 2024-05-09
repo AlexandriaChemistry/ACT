@@ -376,9 +376,14 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                     {
                         if (mg->fit(param.first))
                         {
-                           if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
+                            if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                            }
+                            else if (fp)
+                            {
+                                fprintf(fp, "WARNING: Not enough data to train %s-%s\n",
+                                        fpl.first.id().c_str(), param.first.c_str());
                             }
                         }
                     }
