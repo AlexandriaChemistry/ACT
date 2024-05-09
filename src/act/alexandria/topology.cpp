@@ -1305,8 +1305,11 @@ void Topology::build(const ForceField             *pd,
     }
     makePairs(pd, InteractionType::VDW);
     makePairs(pd, InteractionType::COULOMB);
-    makePairs(pd, InteractionType::CHARGETRANSFER);
-
+    auto itqt = InteractionType::CHARGETRANSFER;
+    if (pd->interactionPresent(itqt))
+    {
+        makePairs(pd, itqt);
+    }
     if (missing != missingParameters::Generate)
     {
         fillParameters(pd);

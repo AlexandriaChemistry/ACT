@@ -835,7 +835,7 @@ int train_ff(int argc, char *argv[])
 
     // StaticIndividualInfo things
     {
-        FILE *myfp = opt.verbose() ? fp : debug;
+        FILE *myfp = opt.verbose() ? debug : fp;
         opt.sii()->generateOptimizationIndex(myfp, opt.mg(), opt.commRec());
         opt.sii()->fillVectors(opt.mg()->mindata());
         opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
