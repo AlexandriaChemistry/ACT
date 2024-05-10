@@ -1305,7 +1305,11 @@ void Topology::build(const ForceField             *pd,
     }
     makePairs(pd, InteractionType::VDW);
     makePairs(pd, InteractionType::COULOMB);
-
+    auto itqt = InteractionType::CHARGETRANSFER;
+    if (pd->interactionPresent(itqt))
+    {
+        makePairs(pd, itqt);
+    }
     if (missing != missingParameters::Generate)
     {
         fillParameters(pd);
@@ -1314,6 +1318,7 @@ void Topology::build(const ForceField             *pd,
     {
         dumpPairlist(debug, InteractionType::COULOMB);
         dumpPairlist(debug, InteractionType::VDW);
+        dumpPairlist(debug, InteractionType::CHARGETRANSFER);
     }
 }
 
@@ -1538,6 +1543,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case Potential::GENERALIZED_BUCKINGHAM:
                 fillParams(fs, topID, gbhNR, gbh_name, &param);
+                break;
+            case Potential::EXPONENTIAL:
+                fillParams(fs, topID, qtNR, qt_name, &param);
                 break;
             case Potential::COULOMB_GAUSSIAN:
             case Potential::COULOMB_SLATER:

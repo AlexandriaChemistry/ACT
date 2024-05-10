@@ -53,7 +53,8 @@ static std::map<std::string, InteractionType> stringToItype =
         { "zetatype", InteractionType::COULOMB },
         { "poltype",  InteractionType::POLARIZATION },
         { "bondtype", InteractionType::BONDS },
-        { "vdwtype",  InteractionType::VDW }
+        { "vdwtype",  InteractionType::VDW },
+        { "qttype",   InteractionType::CHARGETRANSFER }
     };
     
 //! List of potential options for a particle

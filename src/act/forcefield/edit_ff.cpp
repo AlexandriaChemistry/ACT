@@ -882,23 +882,33 @@ int edit_ff(int argc, char*argv[])
         }
     }
     // Fetch new combination rules if necessary
-    auto vdw = InteractionType::VDW;
-    int nRuleChanged = 0;
-    if (pd.interactionPresent(vdw))
+    std::map<InteractionType, ForceFieldParameterList *> its =
+        {
+            { InteractionType::VDW,            nullptr },
+            { InteractionType::CHARGETRANSFER, nullptr }
+        };
+
+    for(auto &fst : its)
     {
-        auto fsvdw   = pd.findForces(vdw);
-        nRuleChanged = crule.extract(fsvdw);
-        if (nRuleChanged > 0)
+        if (pd.interactionPresent(fst.first))
         {
-            printf("Inserted %d new style combination rules from command line.\n", nRuleChanged);
+            fst.second = pd.findForces(fst.first);
         }
-        else
-        {
-            nRuleChanged = crule.convert(fsvdw);
-            printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
-        }
-        fsvdw->removeOption("combination_rule");
     }
+    int nRuleChanged = crule.extract(its[InteractionType::VDW],
+                                     its[InteractionType::CHARGETRANSFER]);
+    if (nRuleChanged > 0)
+    {
+        printf("Inserted %d new style combination rules from command line.\n",
+               nRuleChanged);
+    }
+    else
+    {
+        nRuleChanged = crule.convert(its[InteractionType::VDW]);
+        printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
+    }
+    its[InteractionType::VDW]->removeOption("combination_rule");
+
     if (opt2bSet("-o", NFILE, fnm))
     {
         if (cr.isParallel())

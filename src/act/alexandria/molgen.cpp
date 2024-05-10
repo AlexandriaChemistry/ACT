@@ -321,17 +321,18 @@ void MolGen::checkDataSufficiency(FILE        *fp,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE
         };
-        // If we use a combination rule for Van der Waals, it should be
+        // If we use a combination rule for Van der Waals or QT, it should be
         // treated as an atomic type. If not, it should be a "bond"
         // potential.
-        auto itype_vdw  = InteractionType::VDW;
-        auto forces_vdw = pd->findForces(itype_vdw);
-        auto comb_rule  = getCombinationRule(*forces_vdw);
-        if (!comb_rule.empty())
+        for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
         {
-            atomicItypes.push_back(InteractionType::VDW);
+            auto forces    = pd->findForces(itype);
+            auto comb_rule = getCombinationRule(*forces);
+            if (!comb_rule.empty())
+            {
+                atomicItypes.push_back(itype);
+            }
         }
-        
         // Now loop over molecules and add interactions
         for(auto &mol : actmol_)
         {
@@ -381,23 +382,29 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                         }
                     }
                 }
-                if (comb_rule.empty() && optimize(itype_vdw))
+                for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
                 {
-                    // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
-                    for(size_t j = i+1; j < myatoms.size(); j++)
+                    auto forces    = pd->findForces(itype);
+                    auto comb_rule = getCombinationRule(*forces);
+                    if (!comb_rule.empty() && optimize(itype))
                     {
-                        auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype_vdw).id();
-                        auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype_vdw).id();
-                        auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces_vdw->canSwap());
-                        if (!forces_vdw->parameterExists(vdwId))
+                        // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
+                        for(size_t j = i+1; j < myatoms.size(); j++)
                         {
-                            GMX_THROW(gmx::InternalError("Unknown Van der Waals pair"));
-                        }
-                        for(auto &ff : *(forces_vdw->findParameters(vdwId)))
-                        {
-                            if (ff.second.isMutable())
+                            auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype).id();
+                            auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype).id();
+                            auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces->canSwap());
+                            if (!forces->parameterExists(vdwId))
                             {
-                                ff.second.incrementNtrain();
+                                GMX_THROW(gmx::InternalError(gmx::formatString("Unknown pair for %s",
+                                                                               interactionTypeToString(itype).c_str()).c_str()));
+                            }
+                            for(auto &ff : *(forces->findParameters(vdwId)))
+                            {
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
+                                }
                             }
                         }
                     }
@@ -792,6 +799,10 @@ size_t MolGen::Read(FILE                                *fp,
             { MolPropObservable::DELTAE0,           iqmType::QM },
             { MolPropObservable::POTENTIAL,         iqmType::QM },
             { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+            { MolPropObservable::ELECTROSTATICS,    iqmType::QM },
+            { MolPropObservable::INDUCTION,         iqmType::QM },
+            { MolPropObservable::EXCHANGE,          iqmType::QM },
+            { MolPropObservable::DISPERSION,        iqmType::QM },
             { MolPropObservable::DIPOLE,            iqmType::QM },
             { MolPropObservable::QUADRUPOLE,        iqmType::QM },
             { MolPropObservable::OCTUPOLE,          iqmType::QM },

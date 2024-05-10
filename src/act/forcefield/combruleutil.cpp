@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,8 +36,10 @@
 #include <cstring>
 
 #include <map>
+#include <string>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/forces/combinationrules.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
@@ -46,15 +48,30 @@
 namespace alexandria
 {
 
-const std::map<const char *, const char *> mycr = {
-    { "-cr_eps",  "epsilon" },
-    { "-cr_sig",  "sigma"   },
-    { "-cr_rmin", "rmin"    },
-    { "-cr_gam",  "gamma"   },
-    { "-cr_del",  "delta"   },
-    { "-cr_aqt",  "aqt"     },
-    { "-cr_bqt",  "bqt"     }
-};
+typedef struct {
+    const char *flag;
+    const char *var;
+    size_t index;
+} cr_param;
+
+const std::map<InteractionType, std::vector<cr_param> > mycr =
+    {
+        {
+            InteractionType::VDW, {
+                { "-cr_eps",  "epsilon", 0 },
+                { "-cr_sig",  "sigma",   1 },
+                { "-cr_rmin", "rmin",    2 },
+                { "-cr_gam",  "gamma",   3 },
+                { "-cr_del",  "delta",   4 }
+            },
+        },
+        {
+            InteractionType::CHARGETRANSFER, {
+                { "-cr_aqt",  "aqt", 5 },
+                { "-cr_bqt",  "bqt", 6 }
+            }
+        }
+    };
 
 void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
 {
@@ -67,59 +84,83 @@ void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
     }
     crinfo->push_back("[PAR]Make sure to use the exact strings above including capitalization.");
     crinfo->push_back("Some of the rules that include parameter names should only be used for that parameter.");
+    crinfo->push_back(gmx::formatString("If not specified, the %s rule will be selected.",
+                                        combinationRuleName(CombRule::Geometric).c_str()).c_str());
 }
 
 void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
-    cr_flag_.resize(mycr.size());
-    desc_.resize(mycr.size());
-    size_t i = 0;
-    for (const auto &mm : mycr)
+    for(const auto &cr : mycr)
     {
-        desc_[i] = gmx::formatString("Combination rule to use for Van der Waals interaction parameter %s",
-                                     mm.second);
-        t_pargs mp = { mm.first, FALSE, etSTR, {&cr_flag_[i]}, desc_[i].c_str() };
-        pa->push_back(mp);
-        i += 1;
+        desc_.resize(desc_.size() + cr.second.size());
+        cr_flag_.resize(cr_flag_.size() + cr.second.size());
+    }
+    for(const auto &cr : mycr)
+    {
+        for (const auto &mm : cr.second)
+        {
+            desc_[mm.index] = gmx::formatString("Combination rule to use for %s parameter %s",
+                                                interactionTypeToString(cr.first).c_str(),
+                                                mm.var);
+            t_pargs mp = { mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc_[mm.index].c_str() };
+            pa->push_back(mp);
+        }
     }
 }
 
-int CombRuleUtil::extract(ForceFieldParameterList *vdw)
+int CombRuleUtil::extract(ForceFieldParameterList *vdw,
+                          ForceFieldParameterList *qt)
 {
+    const char *defval = "Geometric";
     int changed = 0;
-    size_t i = 0;
-    for(const auto &mm : mycr)
+    for(const auto &mcr : mycr)
     {
-        if (cr_flag_[i] && strlen(cr_flag_[i]) > 0)
+        for(const auto &mm : mcr.second)
         {
+            auto value = cr_flag_[mm.index];
+            if (!value || strlen(value) == 0)
+            {
+                value = defval;
+            }
             // Will throw if incorrect string
             CombRule cr;
-            if (!combinationRuleRule(cr_flag_[i], &cr))
+            if (!combinationRuleRule(value, &cr))
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", cr_flag_[i], mm.second).c_str()));
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", value, mm.var).c_str()));
             }
             bool doChange = true;
-            if (vdw->combinationRuleExists(mm.second))
+            if (mcr.first == InteractionType::VDW)
             {
-                auto oldRule = vdw->combinationRule(mm.second);
-                if (oldRule != cr_flag_[i])
+                if (vdw)
                 {
-                    printf("Changing combination rule for %s from %s to %s\n",
-                           mm.second, oldRule.c_str(),
-                           cr_flag_[i]);
-                }
-                else
-                {
-                    doChange = false;
+                    if (vdw->combinationRuleExists(mm.var))
+                    {
+                        auto oldRule = vdw->combinationRule(mm.var);
+                        if (oldRule != value)
+                        {
+                            printf("Changing combination rule for %s from %s to %s\n",
+                                   mm.var, oldRule.c_str(), value);
+                        }
+                        else
+                        {
+                            doChange = false;
+                        }
+                    }
+                    if (doChange)
+                    {
+                        vdw->addCombinationRule(mm.var, value);
+                        changed += 1;
+                    }
                 }
             }
-            if (doChange)
+            else if (mcr.first == InteractionType::CHARGETRANSFER)
             {
-                vdw->addCombinationRule(mm.second, cr_flag_[i]);
-                changed += 1;
+                if (qt)
+                {
+                    qt->addCombinationRule(mm.var, value);
+                }
             }
         }
-        i += 1;
     }
     return changed;
 }

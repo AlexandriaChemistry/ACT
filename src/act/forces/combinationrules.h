@@ -47,7 +47,7 @@ namespace alexandria
         Geometric, Arithmetic, Volumetric, InverseSquare, 
             HogervorstEpsilon, HogervorstSigma, Yang,
             WaldmanSigma, WaldmanEpsilon, HalgrenEpsilon,
-            QiSigma, QiEpsilon, MasonGamma
+            QiSigma, QiEpsilon, MasonGamma, Kronecker
             };
 
     //! Map combination rules to strings            
@@ -114,16 +114,18 @@ namespace alexandria
     std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw);
     
     /*! \brief Generate combined force field parameter map
-     * \param[in] ftype    The force function GROMACS style
+     * \param[in] ftype    The force function ACT style
      * \param[in] combrule Map of combination rules per parameter
      * \param[in] ivdw     Parameters for particle i
      * \param[in] jvdw     Parameters for particle j
+     * \param[in] same     Should be true if i and j are the same particle
      * \return a Force Field Parameter Map with pair entries
      */
     ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
                                                const std::map<const std::string, CombRule> &combrule,
                                                const ForceFieldParameterMap                &ivdw,
-                                               const ForceFieldParameterMap                &jvdw);
+                                               const ForceFieldParameterMap                &jvdw,
+                                               bool                                         same);
 
     /*! \brief Generate nonbonded parameters for pairs of atoms
      * as well as force constants force shells.

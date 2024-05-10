@@ -296,15 +296,14 @@ void ForceField::addParticleType(const ParticleType &ptp)
     alexandria_.insert({ptp.id(), ptp});
 }
 
-void ForceField::addForces(const std::string             &interaction,
-                        const ForceFieldParameterList &forces)
+void ForceField::addForces(InteractionType                iType,
+                           const ForceFieldParameterList &forces)
 {
-    auto iType = stringToInteractionType(interaction.c_str());
     auto f     = forces_.find(iType);
     
     GMX_RELEASE_ASSERT(f == forces_.end(),
                        gmx::formatString("Will not add a second ForceFieldParameterList for %s\n",
-                                         interaction.c_str()).c_str());
+                                         interactionTypeToString(iType).c_str()).c_str());
     forces_.insert({iType, forces});
 }
 
@@ -750,7 +749,7 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
                 }
                 ForceFieldParameterList eem;
                 eem.Receive(cr, src);
-                addForces(interactionTypeToString(myeem), eem);
+                addForces(myeem, eem);
             }
         }
     }

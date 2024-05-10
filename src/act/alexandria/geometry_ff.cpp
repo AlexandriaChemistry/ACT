@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -80,7 +80,7 @@ static void generate_bcc(ForceField *pd,
     {
         auto canSwap = CanSwap::No;
         ForceFieldParameterList newparam("", canSwap);
-        pd->addForces(interactionTypeToString(itype), newparam);
+        pd->addForces(itype, newparam);
     }
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
