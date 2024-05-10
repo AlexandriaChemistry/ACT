@@ -527,8 +527,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 break;
             case Potential::GENERALIZED_BUCKINGHAM:
                 // TODO: optimize values
-                sigma   = param[gbh_name[wbhSIGMA]].internalValue()/std::pow(2,1.0/6.0);
-                epsilon = param[gbh_name[wbhEPSILON]].internalValue();
+                sigma   = param[gbh_name[gbhRMIN]].internalValue()/std::pow(2,1.0/6.0);
+                epsilon = param[gbh_name[gbhEPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
                 {
                     if (Mutability::Dependent != param[gbh_name[j]].mutability())
