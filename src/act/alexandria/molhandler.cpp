@@ -97,9 +97,9 @@ void MolHandler::computeHessian(const ForceField                  *pd,
         }
     }
     
-    double      stepSize = 1e-12; // nm
+    //double      stepSize = 1e-12; // nm
 #define GMX_DOUBLE_EPS 2.2204460492503131e-16
-    //    stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
+    double stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
 
     if (dpdq)
     {
