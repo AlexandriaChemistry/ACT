@@ -111,7 +111,8 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 int CombRuleUtil::extract(ForceFieldParameterList *vdw,
                           ForceFieldParameterList *qt)
 {
-    const char *defval = "Geometric";
+    // This will crash if there is no geometric combrule in the map...
+    const char *defval = combRuleName.find(CombRule::Geometric)->second.c_str();
     int changed = 0;
     for(const auto &mcr : mycr)
     {
@@ -120,6 +121,14 @@ int CombRuleUtil::extract(ForceFieldParameterList *vdw,
             auto value = cr_flag_[mm.index];
             if (!value || strlen(value) == 0)
             {
+                // Check whether we have existing values
+                if ((mcr.first == InteractionType::VDW && vdw && 
+                     vdw->combinationRuleExists(mm.var)) ||
+                    (mcr.first == InteractionType::CHARGETRANSFER && qt && 
+                     qt->combinationRuleExists(mm.var)))
+                {
+                    continue;
+                }
                 value = defval;
             }
             // Will throw if incorrect string
