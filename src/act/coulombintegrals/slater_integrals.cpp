@@ -642,10 +642,10 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         }
         else
         {
-            return -1/(r*r);
+            return 1/(r*r);
         }
     }
-    return double_approx(cS);
+    return -double_approx(cS);
 #else
     double S = 0;    
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
@@ -726,14 +726,14 @@ double DNuclear_SS(double r, int i, double xi)
     {
         if ((xi == 0) || (i <= 0))
         {
-            return -1/(r*r);
+            return 1/(r*r);
         }
         else
         {
             cxi = my_ftoa(xi);
             cr  = my_ftoa(r);
             cS  = DSlater_NS[i-1](cr, cxi);
-            return double_approx(cS);
+            return -double_approx(cS);
         }
     }
 #else

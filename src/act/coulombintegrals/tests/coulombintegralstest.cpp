@@ -55,6 +55,28 @@ namespace gmx
 namespace
 {
 
+void check_force(const std::vector<double> &potential,
+                 const std::vector<double> &force,
+                 double                     dx)
+{
+    // Check whether force is derivative of potential
+    double toler = 0.15;
+    for(size_t i = 1; i < force.size()-1; i++)
+    {
+        double deriv = -(potential[i+1]-potential[i-1])/(2*dx);
+        double relerror = std::abs(deriv-force[i])/(std::abs(deriv)+std::abs(force[i]));
+        if (relerror >= toler)
+        {
+            printf("Analytical force %g Numerical force %g relerror %g\n"
+                   "V %.8f %.8f %.8f F %.8f %.8f %.8f\n",
+                   force[i], deriv, relerror,
+                   potential[i-1], potential[i], potential[i+1],
+                   force[i-1], force[i], force[i+1]);
+        }
+        EXPECT_TRUE(relerror < toler);
+    }
+}
+
 /*! \brief Utility to do the real testing
  *
  * \param[in] cd    Charge distribution type
@@ -75,9 +97,10 @@ void testCoulomb(alexandria::ChargeType           cd,
     std::vector<double> force;
     std::vector<double> ncoulomb;
     std::vector<double> nforce;
-    for(int i = 0; i <= 5; i++)
+    double dx = 0.002;
+    for(int i = 0; i <= 50; i++)
     {
-        double r = 0.2*i;
+        double r = dx*i;
         
         switch (cd)
         {
@@ -114,6 +137,8 @@ void testCoulomb(alexandria::ChargeType           cd,
     checker->checkSequence(ncoulomb.begin(), ncoulomb.end(), buf);
     snprintf(buf, sizeof(buf), "NuclearForce-%s", name);
     checker->checkSequence(nforce.begin(), nforce.end(), buf);
+    check_force(coulomb, force, dx);
+    check_force(ncoulomb, nforce, dx);
 }
 
 class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, int>, std::tuple<double, double> > >
