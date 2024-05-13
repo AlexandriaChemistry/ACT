@@ -375,7 +375,7 @@ TEST_F (MolHandlerTest, WaterPol)
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true);
+    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-16);
 }
 
 TEST_F (MolHandlerTest, UracilPol)
