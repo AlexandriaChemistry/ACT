@@ -502,9 +502,10 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         auto dr2   = iprod(dx, dx);
         real r1    = std::sqrt(dr2);
         real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
-        // The DCoulomb_SS code returns - the derivative of the energy.
-        // or ... maybe it doesn't ...
-        real felec =  qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        // The DCoulomb_SS code returns the derivative of the energy
+        // so we still need a minus sign.
+        // https://github.com/dspoel/ACT/issues/369
+        real felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
