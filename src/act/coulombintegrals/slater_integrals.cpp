@@ -697,10 +697,10 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         }
         else
         {
-            return -1/(r*r);
+            return 1/(r*r);
         }
     }
-    return S;
+    return -S;
 #endif
 }
 
@@ -759,7 +759,7 @@ double DNuclear_SS(double r, int i, double xi)
         else
         {
             S  = DSlater_NS[i-1](r, xi);
-            return S;
+            return -S;
         }
     }
 #endif
