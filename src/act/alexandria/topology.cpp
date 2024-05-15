@@ -57,9 +57,9 @@ private:
     //! The atom information
     ActAtom   atom_;
     //! The original index
-    size_t    index_;
+    size_t    index_ = 0;
     //! Atomic coordinates
-    gmx::RVec x_;
+    gmx::RVec x_     = { 0, 0, 0 };
 public:
     //! constructor
     ActAtomListItem(const ActAtom   atom,
@@ -111,7 +111,8 @@ static void dump_entry(FILE                      *fp,
 
 bool Topology::hasVsites() const
 {
-    return (hasEntry(InteractionType::VSITE2) ||
+    return (hasEntry(InteractionType::VSITE1) ||
+            hasEntry(InteractionType::VSITE2) ||
             hasEntry(InteractionType::VSITE2FD) ||
             hasEntry(InteractionType::VSITE3) ||
             hasEntry(InteractionType::VSITE3FD) ||
@@ -701,6 +702,73 @@ void Topology::makePropers(const ForceField *pd)
     }
 }
 
+std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
+                                                        AtomList         *atomList)
+{
+    if (!pd)
+    {
+        GMX_THROW(gmx::InternalError("Why did you call makeVsite1s without a force field?"));
+        return {};
+    }
+    auto itype = InteractionType::VSITE1;
+    if (!pd->interactionPresent(itype))
+    {
+        return {};
+    }
+    const auto &fs = pd->findForcesConst(itype);
+    if (fs.empty())
+    {
+        return {};
+    }
+    TopologyEntryVector v1top;
+    for(auto atom = atomList->begin(); atom != atomList->end(); atom++)
+    {
+        auto aa = atom->atom();
+        for(const auto &mm : fs.parametersConst())
+        {
+            auto faa   = mm.first.atoms();
+            if (aa.ffType() == faa[0])
+            {
+                const auto ptype = pd->findParticleType(faa[1]);
+                std::string vstype;
+                ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
+                                ptype->gmxParticleType(),
+                                0, ptype->mass(), ptype->charge(),
+                                ptype->row());
+                // Put virtual site straight after the last atom.
+                int vs1 = atomList->size();
+                newatom.addCore(atom->index());
+                // Residue number
+                newatom.setResidueNumber(aa.residueNumber());
+                gmx::RVec vzero = { 0, 0, 0 };
+                atomList->insert(std::next(atom), ActAtomListItem(newatom, vs1, vzero));
+                // Create new topology entry
+                Vsite1 vsnew(atom->index(), vs1);
+                if (debug)
+                {
+                    fprintf(debug, "Adding vs1 %s-%lu %d\n",
+                            aa.element().c_str(), atom->index(), vs1);
+                }
+                // Special bond order for vsites
+                vsnew.addBondOrder(9);
+                v1top.push_back(std::any_cast<Vsite1>(std::move(vsnew)));
+                break;
+            }
+        }
+    }
+    // If we did find any vsite1 instances, add the whole vector to the topology.
+    // A very subtle programming issue arises here:
+    // after the std::move operation, the vector is empty
+    // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
+    std::map<InteractionType, size_t> num_v1;
+    if (!v1top.empty())
+    {
+        num_v1.insert({ itype, v1top.size() });
+        entries_.insert({ itype, std::move(v1top) });
+    }
+    return num_v1;
+}
+
 std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                                                         AtomList         *atomList)
 {
@@ -1204,6 +1272,7 @@ void Topology::build(const ForceField             *pd,
     setEntryIdentifiers(pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
+    auto nv1 = makeVsite1s(pd, &atomList);
     auto nv2 = makeVsite2s(pd, &atomList);
 
     // Before we can make three-particle vsites, we need to create
@@ -1213,6 +1282,10 @@ void Topology::build(const ForceField             *pd,
     if (debug && (nv2.size() > 0 || nv3.size() > 0))
     {
         fprintf(debug, "Added");
+        for(const auto nn : nv1)
+        {
+            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
+        }
         for(const auto nn : nv2)
         {
             fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
@@ -1279,6 +1352,10 @@ void Topology::build(const ForceField             *pd,
     // Renumber the atoms in the TopologyEntries that have been created so far.
     renumberAtoms(renumber);
     setEntryIdentifiers(pd, InteractionType::POLARIZATION);
+    for(const auto nn : nv1)
+    {
+        setEntryIdentifiers(pd, nn.first);
+    }
     for(const auto nn : nv2)
     {
         setEntryIdentifiers(pd, nn.first);
@@ -1382,6 +1459,16 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
                         exclusions[a[0]].push_back(a[1]);
                         exclusions[a[1]].push_back(a[0]);
                     }
+                }
+            }
+            break;
+        case InteractionType::VSITE1:
+            {
+                for(auto &b : myEntry.second)
+                {
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].push_back(a[1]);
+                    exclusions[a[1]].push_back(a[0]);
                 }
             }
             break;
@@ -1581,6 +1668,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case Potential::PROPER_DIHEDRALS:
                 fillParams(fs, topID, pdihNR, pdih_name, &param);
+                break;
+            case Potential::VSITE1:
+                fillParams(fs, topID, vsite1NR, vsite1_name, &param);
                 break;
             case Potential::VSITE2:
                 fillParams(fs, topID, vsite2NR, vsite2_name, &param);

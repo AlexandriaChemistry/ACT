@@ -808,6 +808,7 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case Potential::GENERALIZED_BUCKINGHAM:
                 case Potential::POLARIZATION:
                 case Potential::VSITE2:
+                case Potential::VSITE1:
                     break;
                 default:
                     fprintf(stderr, "Wanrning: no OpenMM support for %s is present or implemented.\n",
@@ -1009,8 +1010,9 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                         auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::VSITE_RES));
                         // Could be different vsite types, remember to implement those.
                         std::map<InteractionType, const char *> itypes = { 
+                            { InteractionType::VSITE1,    "average2"   },
                             { InteractionType::VSITE2,    "average2"   },
-                            { InteractionType::VSITE3OUT, "OutOfPlane" },
+                            { InteractionType::VSITE3OUT, "outOfPlane" },
                             { InteractionType::VSITE3FAD, "average3"   }
                         };
                         for(const auto &itp : itypes)

@@ -153,6 +153,8 @@ static void add_vsites(const char *vsfile,
     std::vector<std::string> value;
     int                      lineno = 1;
     std::map<InteractionType, ForceFieldParameterList> i2f = {
+        { InteractionType::VSITE1,
+          ForceFieldParameterList(potentialToString(Potential::VSITE1),     CanSwap::Yes) },
         { InteractionType::VSITE2,
           ForceFieldParameterList(potentialToString(Potential::VSITE2),     CanSwap::Vsite2) },
         { InteractionType::VSITE2FD,
@@ -181,6 +183,15 @@ static void add_vsites(const char *vsfile,
 
         switch (itype)
         {
+        case InteractionType::VSITE1:
+            {
+                std::string myId = ptr[2] + "!" + ptr[0];
+                Identifier vs(itype, myId, CanSwap::Yes);
+                // Not a lot of information here, but we need something for downstream processing.
+                ForceFieldParameter vs1param("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false);
+                i2f[itype].addParameter(vs, vsite1_name[vsite1A], vs1param);
+            }
+            break;
         case InteractionType::VSITE2:
         case InteractionType::VSITE2FD:
             {

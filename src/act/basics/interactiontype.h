@@ -71,6 +71,8 @@ enum class InteractionType
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.
     CONSTR,
+    //! Virtual interaction sites on top of atoms.
+    VSITE1,
     //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
     //! Virtual interaction sites along the bond between two atoms at a fixed distance

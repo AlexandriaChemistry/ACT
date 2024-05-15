@@ -110,6 +110,10 @@ namespace alexandria
 
     extern const char *pdih_name[pdihNR];
 
+    enum { vsite1A = 0, vsite1NR = 1 };
+
+    extern const char *vsite1_name[vsite1NR];
+
     enum { vsite2A = 0, vsite2NR = 1 };
 
     extern const char *vsite2_name[vsite2NR];

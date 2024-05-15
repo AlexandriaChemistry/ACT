@@ -218,6 +218,7 @@ void write_top(FILE             *out,
 {
     std::map<int, directive> toPrint = {
         { F_POLARIZATION, d_polarization },
+        { F_VSITEN,       d_vsitesn },
         { F_VSITE2,       d_vsites2 },
         { F_VSITE3,       d_vsites3 },
         { F_VSITE3FD,     d_vsites3 },

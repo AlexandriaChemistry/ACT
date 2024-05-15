@@ -244,6 +244,13 @@ void Bond::get(int *ai, int *aj, double *bondorder) const
     *bondorder = bondOrders()[0];
 }
 
+void Vsite1::get(int *ai, int *vs) const
+{
+    check(2);
+    *ai = atomIndex(0);
+    *vs = atomIndex(1);
+}
+
 void Vsite2::get(int *ai, int *aj, int *vs) const
 {
     check(3);

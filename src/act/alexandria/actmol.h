@@ -295,7 +295,7 @@ private:
     //! Energy terms for this compounds
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
-    Topology                      *topology_;
+    Topology                      *topology_      = nullptr;
     //! All the atoms, but not shells or vsites
     std::vector<int>               realAtoms_; 
     // Reference data for devcomputer
@@ -409,7 +409,7 @@ public:
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
 
     //! Return accumulated list of errors.    
-    const std::vector<std::string> &errors() const {return error_messages_;}
+    const std::vector<std::string> errors() const {return error_messages_;}
     
     /*! \brief
      * \return atoms data for editing
