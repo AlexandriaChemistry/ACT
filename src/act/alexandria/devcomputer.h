@@ -60,20 +60,19 @@ class DevComputer
 protected:
 
     //! Pointer to log file
-    FILE *logfile_;
+    FILE       *logfile_ = nullptr;
     //! Whether to print stuff in the logfile
-    bool verbose_;
-
+    bool        verbose_;
+    //! My name
+    std::string name_;
     /*! \brief Create a new DevComputer
      * @param logfile   pointer to log file
      * @param verbose   Whether to print stuff in the logfile
      */
-    DevComputer(      FILE *logfile,
-                const bool  verbose)
-    {
-        logfile_ = logfile;
-        verbose_ = verbose;
-    }
+    DevComputer(FILE             *logfile,
+                const bool        verbose,
+                const std::string name) : logfile_(logfile), verbose_(verbose), name_(name)
+    {}
 
 public:
 
@@ -86,11 +85,12 @@ public:
      * @param forcefield   pointer to ForceField structure, that should contain the newest parameters
      */
     virtual void calcDeviation(const ForceComputer           *forceComputer,
-                               ACTMol                         *actmol,
+                               ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                 *forcefield) = 0;
-
+                               const ForceField              *forcefield) = 0;
+    //! \brief Return my name
+    const std::string name() const { return name_; }
 };
 
 
@@ -117,7 +117,7 @@ public:
                       const bool                            verbose,
                             std::vector<OptimizationIndex> *optIndex,
                             double                          zetaDiff)
-    : DevComputer(logfile, verbose)
+        : DevComputer(logfile, verbose, "Bounds")
     {
         optIndex_ = optIndex;
         zetaDiff_ = zetaDiff;
@@ -177,7 +177,7 @@ public:
      */
     ChargeCM5DevComputer(      FILE *logfile,
                          const bool  verbose)
-    : DevComputer(logfile, verbose)
+        : DevComputer(logfile, verbose, "ChargeCM5")
     {}
 
     virtual void calcDeviation(const ForceComputer                 *forceComputer,
@@ -222,7 +222,7 @@ public:
     EspDevComputer(      FILE *logfile,
                    const bool  verbose,
                    const bool  fitZeta)
-    : DevComputer(logfile, verbose)
+        : DevComputer(logfile, verbose, "ESP")
     {
         fitZeta_ = fitZeta;
     }
@@ -280,7 +280,7 @@ public:
     MultiPoleDevComputer(FILE             *logfile,
                          const bool        verbose,
                          MolPropObservable mpo)
-        : DevComputer(logfile, verbose), mpo_(mpo)
+        : DevComputer(logfile, verbose, mpo_name(mpo)), mpo_(mpo)
     {
     }
 

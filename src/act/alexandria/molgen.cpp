@@ -326,6 +326,10 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         // potential.
         for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
         {
+            if (!pd->interactionPresent(itype))
+            {
+                continue;
+            }
             auto forces    = pd->findForces(itype);
             auto comb_rule = getCombinationRule(*forces);
             if (!comb_rule.empty())
@@ -384,6 +388,10 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                 }
                 for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
                 {
+                    if (!pd->interactionPresent(itype))
+                    {
+                        continue;
+                    }
                     auto forces    = pd->findForces(itype);
                     auto comb_rule = getCombinationRule(*forces);
                     if (!comb_rule.empty() && optimize(itype))
