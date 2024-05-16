@@ -221,6 +221,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::COULOMB:
     case InteractionType::VDW:
     case InteractionType::CHARGETRANSFER:
+    case InteractionType::VSITE1:
     case InteractionType::VSITE2:
     case InteractionType::VSITE2FD:
     case InteractionType::VSITE3:

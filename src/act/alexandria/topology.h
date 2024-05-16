@@ -195,6 +195,13 @@ private:
     //! The real atoms, that is, not the vsites or shells
     std::vector<int>                                          realAtoms_;
 
+    /*! Generate virtual sites for atoms.
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The atom and coordinate list that may be extended
+     * \return map containing number of entries added for each interaction type
+     */
+    std::map<InteractionType, size_t> makeVsite1s(const ForceField *pd,
+                                                  AtomList         *atomList);
     /*! Generate virtual sites for bonds.
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended

@@ -63,6 +63,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
     { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
+    { InteractionType::VSITE1,             { "VSITE1", "virtual sites with one constructing atom" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE2FD,           { "VSITE2FD", "virtual sites with two constructing atoms with fixed distance to atom" } },
     { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
@@ -139,6 +140,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::ALLELEC:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
+    case InteractionType::VSITE1:
     case InteractionType::BONDS:
     case InteractionType::CONSTR:
     case InteractionType::BONDCORRECTIONS:
@@ -146,13 +148,16 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::CHARGE:
     case InteractionType::EPOT:
         return 0;
+    default:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Missing support for interaction type %s",
+                                                       interactionTypeToString(iType).c_str()).c_str()));
     }
     return 0;
 }
 
 bool isVsite(InteractionType iType)
 {
-    std::set myvs = { InteractionType::VSITE2, InteractionType::VSITE2FD,
+    std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
                       InteractionType::VSITE3, InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
                       InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS };
     return (myvs.end() != myvs.find(iType));

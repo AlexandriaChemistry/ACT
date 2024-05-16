@@ -391,7 +391,6 @@ int gentop(int argc, char *argv[])
                 else
                 {
                     fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -generateCharges flag.\n", actmol->getMolname().c_str());
-                    actmol = actmols.erase(actmol);
                     imm = immStatus::ChargeGeneration;
                 }
             }
@@ -442,7 +441,7 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            errors.insert({actmol->getMolname(), { imm, actmol->errors() } });
+            errors.insert({ actmol->getMolname(), { imm, actmol->errors() } });
             actmol = actmols.erase(actmol);
         }
         mp_index++;

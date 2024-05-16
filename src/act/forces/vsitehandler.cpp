@@ -77,6 +77,12 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 
 /* Vsite construction routines */
 
+static void constr_vsite1(const rvec xi, rvec x)
+{
+    copy_rvec(xi, x);
+    /* TOTAL: 0 flops */
+}
+
 static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
 {
     real b = 1 - a;
@@ -312,6 +318,14 @@ static gmx_unused int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
     x[av][ZZ] = x1[ZZ] + dsum[ZZ];
 
     return n3;
+}
+
+static void spread_vsite1(const t_iatom ia[], rvec f[])
+{
+    t_iatom ai = ia[0];
+    t_iatom av = ia[1];
+    rvec_inc(f[ai], f[av]);
+    clear_rvec(f[av]);
 }
 
 static void spread_vsite2(const t_iatom ia[], real a,
@@ -1112,6 +1126,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     std::set<InteractionType>  vsites = {
+        InteractionType::VSITE1,
         InteractionType::VSITE2,
         InteractionType::VSITE2FD,
         InteractionType::VSITE3,
@@ -1138,11 +1153,15 @@ void VsiteHandler::constructPositions(const Topology         *top,
             }
             int ai = atomIndices[0];
             int aj = atomIndices[1];
-            int ak = atomIndices[2];
+            int ak = 0;
             int al = 0;
             switch(entry.first)
             {
+            case InteractionType::VSITE1:
+                constr_vsite1(x[ai], x[aj]);
+                break;
             case InteractionType::VSITE2:
+                ak = atomIndices[2];
                 constr_vsite2(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
                 if (debug)
                 {
@@ -1150,6 +1169,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 }
                 break;
             case InteractionType::VSITE2FD:
+                ak = atomIndices[2];
                 constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
                 if (debug)
                 {
@@ -1157,16 +1177,19 @@ void VsiteHandler::constructPositions(const Topology         *top,
                 }
                 break;
             case InteractionType::VSITE3:
+                ak = atomIndices[2];
                 al = atomIndices[3];
                 constr_vsite3(x[ai], x[aj],  x[ak], x[al],
                               params[vsite3A], params[vsite3B]);
                 break;
             case InteractionType::VSITE3FD:
+                ak = atomIndices[2];
                 al = atomIndices[3];
                 constr_vsite3FD(x[ai], x[aj], x[ak], x[al],
                                 params[vsite3fdA], params[vsite3fdB], &pbc_);
                 break;
             case InteractionType::VSITE3FAD:
+                ak = atomIndices[2];
                 al = atomIndices[3];
                 constr_vsite3FAD(x[ai], x[aj], x[ak], x[al],
                                  params[vsite3fadA], params[vsite3fadB], &pbc_);
@@ -1175,6 +1198,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
             case InteractionType::VSITE3OUT:
                 {
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    ak                 = atomIndices[2];
                     al                 = atomIndices[3];
                     constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
@@ -1190,6 +1214,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
             case InteractionType::VSITE3OUTS:
                 {
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
+                    ak                 = atomIndices[2];
                     al                 = atomIndices[3];
                     constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
                                      params[vsite3outsA], params[vsite3outsA],
@@ -1259,6 +1284,9 @@ void VsiteHandler::distributeForces(const Topology               *top,
             }
             switch(entry.first)
             {
+            case InteractionType::VSITE1:
+                spread_vsite1(ia.data(), f);
+                break;
             case InteractionType::VSITE2:
                 spread_vsite2(ia.data(), params[vsite2A], x, f, fshift, &pbc_, g);
                 break;

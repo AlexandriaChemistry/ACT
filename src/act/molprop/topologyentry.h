@@ -417,6 +417,47 @@ class Proper : public TopologyEntry
 };
 
 /*! \brief
+ * Virtual site on an atom.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Vsite1 : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    Vsite1() {}
+
+    //! Constructor setting the ids of the atoms and the bondorder
+    Vsite1(int ai, int vs)
+    {
+        addAtom(ai);
+        addAtom(vs);
+    }
+
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *vs) const;
+
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+
+    //! \return virtual site ID
+    int vs() const
+    {
+        return atomIndex(1);
+    }
+
+    /*! \brief Return whether two Vsite1 instances are the same
+     * \param[in] other The other Vsite1
+     * \return true if they are the same
+     */
+    //bool operator==(const Vsite1 &other) const;
+};
+
+/*! \brief
  * Virtual site on a linear bond.
  *
  * \inpublicapi
@@ -456,14 +497,6 @@ class Vsite2 : public TopologyEntry
     {
         return atomIndex(2);
     }
-    //! Return a Vsite2 with the order of atoms swapped
-    Vsite2 swap() const;
-
-    /*! \brief Return whether two Vsite2 instances are the same
-     * \param[in] other The other Vsite2
-     * \return true if they are the same
-     */
-    bool operator==(const Vsite2 &other) const;
 };
 
 /*! \brief
@@ -513,14 +546,6 @@ class Vsite3 : public TopologyEntry
     {
         return atomIndex(3);
     }
-    //! Return a Vsite3 with the order of atoms swapped
-    Vsite3 swap() const;
-
-    /*! \brief Return whether two Vsite3 instances are the same
-     * \param[in] other The other Vsite3
-     * \return true if they are the same
-     */
-    bool operator==(const Vsite3 &other) const;
 };
 
 
@@ -540,13 +565,13 @@ class Vsite3OUT : public TopologyEntry
         addAtom(vs);
     }
 
-       int sign() const
-       {
-            return sign_;
-       }
+    int sign() const
+    {
+        return sign_;
+    }
 
  private:
-    int sign_=0;
+    int sign_ = 0;
 
     //! Returns the ids of the atoms and the bondorder
     void get(int *ai, int *aj, int *ak, int *vs, int *sign) const;
@@ -573,10 +598,6 @@ class Vsite3OUT : public TopologyEntry
    {
         return atomIndex(3);
    }
-
-   Vsite3OUT swap() const;
-
-   bool operator==(const Vsite3OUT &other) const;
 };
 
 

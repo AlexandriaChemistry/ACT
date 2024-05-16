@@ -68,6 +68,8 @@ const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3", "c4", "c5", "c6" };
 
 const char *pdih_name[pdihNR] = { "phi0", "kp", "mult" };
 
+const char *vsite1_name[vsite1NR] = { "vs1a" };
+
 const char *vsite2_name[vsite2NR] = { "vs2a" };
 
 const char *vsite2fd_name[vsite2fdNR] = { "vs2fd_a" };
