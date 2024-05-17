@@ -197,7 +197,7 @@ void DimerGenerator::read(const ForceField                    *pd,
         int         nsymm  = 1;
         const char *molnm  = "MOL";
         if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, qtot, false, box))
+                       &basis, maxpot, nsymm, "Opt", userqtot, qtot, false, box, false))
         {
             printf("Could not read compounds from %s\n", trajname_);
             return;
