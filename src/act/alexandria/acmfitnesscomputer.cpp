@@ -259,8 +259,15 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     auto &etot = targets->find(eRMS::TOT)->second;
     if (etot.chiSquared() == 0 && ntrain > 0)
     {
-        printf("Zero total chi squared for %s, for epot it is %g before summation. This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d. %zu devComputers\n",
-               iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal, devComputers_.size());
+        printf("Zero total chi squared for %s, for epot it is %g before summation.\n"
+               "This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d.\n",
+               iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal);
+        printf("devComputers: ");
+        for(auto &d : devComputers_)
+        {
+            printf(" %s", d->name().c_str());
+        }
+        printf("\n");
     }
     
     return etot.chiSquared();

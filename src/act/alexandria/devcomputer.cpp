@@ -172,10 +172,10 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
 * * * * * * * * * * * * * * * * * * * * * */
 
 void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         ACTMol                                *actmol,
+                                         ACTMol                               *actmol,
                                          gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
-                                         const ForceField                        *forcefield)
+                                         const ForceField                     *forcefield)
 {
     double qtot = 0;
     int i = 0;
@@ -354,7 +354,7 @@ void EspDevComputer::dumpQX(FILE                         *fp,
 
 PolarDevComputer::PolarDevComputer(    FILE  *logfile,
                                    const bool verbose)
-    : DevComputer(logfile, verbose)
+    : DevComputer(logfile, verbose, mpo_name(MolPropObservable::POLARIZABILITY))
 {
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
@@ -471,7 +471,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
 HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
                                            const bool               verbose,
                                                  MolPropObservable  mpo)
-    : DevComputer(logfile, verbose), mpo_(mpo) 
+    : DevComputer(logfile, verbose, mpo_name(mpo)), mpo_(mpo) 
 {
 }
 
@@ -556,7 +556,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
 ForceEnergyDevComputer::ForceEnergyDevComputer(      FILE                   *logfile,
                                                const bool                    verbose,
                                                      std::map<eRMS, double>  boltzmannTemperature)
-    : DevComputer(logfile, verbose)
+    : DevComputer(logfile, verbose, "ForceEnergy")
 {
     boltzmannTemperature_ = boltzmannTemperature;
     if (verbose && logfile)
