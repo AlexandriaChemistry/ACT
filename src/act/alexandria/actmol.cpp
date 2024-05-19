@@ -1446,7 +1446,7 @@ CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const
     auto cs = MolProp::Send(cr, dest);
     if (CommunicationStatus::OK == cs)
     {
-        cr->send_int(dest, static_cast<int>(dataset_type_));
+        cr->send_iMolSelect(dest, dataset_type_);
     }
     return cs;
 }
@@ -1468,7 +1468,7 @@ CommunicationStatus ACTMol::Receive(const CommunicationRecord *cr, int src)
     auto cs = MolProp::Receive(cr, src);
     if (CommunicationStatus::OK == cs)
     {
-        set_datasetType(static_cast<iMolSelect>(cr->recv_int(src)));
+        set_datasetType(cr->recv_iMolSelect(src));
     }
     return cs;
 }

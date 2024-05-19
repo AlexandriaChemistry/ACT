@@ -200,9 +200,13 @@ CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&inputUnit_, comm);
         cr->bcast(&unit_, comm);
         cr->bcast(&T_, comm);
-        int ep = static_cast<int>(eP_);
-        cr->bcast(&ep, comm);
-        eP_ = static_cast<ePhase>(ep);
+        std::string phase;
+        if (cr->rank() == root)
+        {
+            phase = phase2string(eP_);
+        }
+        cr->bcast(&phase, comm);
+        eP_ = string2phase(phase);
         
     }
     else if (nullptr != debug)

@@ -165,14 +165,14 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     {
         // Now who is my middleman?
         int src  = cr->superior();
-        ims      = static_cast<iMolSelect>(cr->recv_int(src));
+        ims      = cr->recv_iMolSelect(src);
     }
     else if (CalcDev::ComputeAll != task)
     {
         // Send ims to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_int(dest, static_cast<int>(ims));
+            cr->send_iMolSelect(dest, ims);
         }
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
