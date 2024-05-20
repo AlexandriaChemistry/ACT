@@ -825,8 +825,8 @@ size_t MolGen::Read(FILE                                *fp,
     {
         if (fp)
         {
-            fprintf(fp, "Trying to generate topologies for %zu molecules!\n",
-                    mp.size());
+            fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
+                    gms.nMol(), mp.size());
         }
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
@@ -834,7 +834,7 @@ size_t MolGen::Read(FILE                                *fp,
             if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::ACTMol actmol;
-                if (fp && debug)
+                if (debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -37,9 +37,11 @@ namespace alexandria
 {
     
 ACTHelper::ACTHelper(StaticIndividualInfo *sii,
-                     MolGen               *mg)
+                     MolGen               *mg,
+                     double                shellToler,
+                     int                   shellMaxIter)
 {
-    forceComp_ = new ForceComputer();
+    forceComp_ = new ForceComputer(shellToler, shellMaxIter);
     fitComp_   = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
 }
 
@@ -50,6 +52,10 @@ void ACTHelper::run()
     cd = fitComp_->distributeTasks(cd);
     while (CalcDev::Stop != cd)
     {
+        if (debug)
+        {
+            fprintf(debug, "Received CalcDev %s\n", calcDevName(cd));
+        }
         switch (cd)
         {
         case CalcDev::Parameters:
@@ -63,12 +69,14 @@ void ACTHelper::run()
             }
             break;
         case CalcDev::Compute:
-            // Evaluate on my part of the dataset
+            // Evaluate on my part of the dataset. The second flag
+            // is not used inside the routine for helper, instead a
+            // new dataset is distributed from the master or middlemen.
             (void) fitComp_->calcDeviation(cd, iMolSelect::Train);
             break;
         case CalcDev::ComputeAll:
         case CalcDev::Stop:
-            gmx_fatal(FARGS, "Incorrect calcdev %d in helper", static_cast<int>(cd));
+            gmx_fatal(FARGS, "Incorrect calcdev %s in helper", calcDevName(cd));
             // This should never happen, but without the compiler will complain.
             break;
         }

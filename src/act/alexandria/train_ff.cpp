@@ -203,7 +203,7 @@ int OptACM::initMaster(const char *fitnessFile)
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
     // Force computer
-    forceComp_ = new ForceComputer;
+    forceComp_ = new ForceComputer();
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
@@ -934,7 +934,9 @@ int train_ff(int argc, char *argv[])
             {
                 if (opt.sii()->nParam() > 0)
                 {
-                    ACTHelper helper(opt.sii(), opt.mg());
+                    ACTHelper helper(opt.sii(), opt.mg(),
+                                     opt.bch()->shellToler(),
+                                     opt.bch()->shellMaxIter());
                     helper.run();
                 }
             }

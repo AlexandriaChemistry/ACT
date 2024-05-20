@@ -35,7 +35,8 @@
 #ifndef ALEXANDRIA_BAYES_H
 #define ALEXANDRIA_BAYES_H
 
-#include <cstdlib>
+#include <cstdio>
+#include <string>
 #include <vector>
 
 namespace alexandria
