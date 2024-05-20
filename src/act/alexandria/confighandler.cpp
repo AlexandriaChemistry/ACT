@@ -108,7 +108,7 @@ const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt)
 void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                      gmx_unused std::vector<t_filenm> *fnms)
 {
-    t_pargs pa[] = {
+    std::vector<t_pargs> pa = {
         { "-max_iter", FALSE, etINT, {&maxiter_},
           "Max number of iterations for MCMC optimization. Also applies for the mutation step in the HYBRID optimization algoroithm." },
         { "-temp",    FALSE, etREAL, {&temperature_},
@@ -124,9 +124,13 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
 	{ "-checkpoint", FALSE, etBOOL, {&checkPoint_},
 		 "Turn on regular checkpointing, i.e. write out intermediate force field files. Expensive." },
         { "-mcmc_evaltest", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the parameters on the test set during MCMC." }
+          "Evaluate the parameters on the test set during MCMC." },
+        { "-shellTolerance", FALSE, etREAL, {&shellToler_},
+          "Tolerance (RMS force) for minimizing shell positions" },
+        { "-shellMaxIter", FALSE, etINT, {&shellMaxIter_},
+          "Max number of iterations for minimizing shell positions" }
     };
-    for (int i = 0; i < asize(pa); i++)
+    for (size_t i = 0; i < pa.size(); i++)
     {
         pargs->push_back(pa[i]);
     }

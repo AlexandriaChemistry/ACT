@@ -292,6 +292,10 @@ private:
     bool  evaluate_testset_  = false;
     //! Checkpointing on or not?
     bool checkPoint_         = false;
+    //! Tolerance for shell
+    double shellToler_       = 1e-4;
+    //! Maxiter for shell optimization
+    int shellMaxIter_        = 10;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -378,6 +382,12 @@ public:
      * \param[in] bOnOff On or Off
      */
     void setEvaluateTestset(bool bOnOff) {  evaluate_testset_ = bOnOff; }
+
+    //!\return shell tolerance
+    double shellToler() const { return shellToler_; }
+
+    //! \return shell iterations
+    int shellMaxIter() const { return shellMaxIter_; }
 };
 
 enum class eMinimizeAlgorithm {

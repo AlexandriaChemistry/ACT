@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,27 +34,12 @@
 
 #include "bayes.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <functional>
+#include <cstdlib>
+#include <map>
 #include <string>
 #include <vector>
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "act/utility/memory_check.h"
 #include "act/utility/regression.h"
-
 
 namespace alexandria
 {
@@ -106,9 +91,9 @@ void Sensitivity::print(FILE *fp, const std::string &label)
     {
         fprintf(fp, "Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
                 label.c_str(), a_, b_, c_);
-        for(int i = 0; i < static_cast<int>(p_.size()); ++i)
+        for(size_t i = 0; i < p_.size(); ++i)
         {
-            fprintf(fp, "    p[%d] %g chi2[%d] %g\n", i, p_[i], i, chi2_[i]);
+            fprintf(fp, "    p[%zu] %g chi2[%zu] %g\n", i, p_[i], i, chi2_[i]);
         }
         if (a_ != 0.0)
         {

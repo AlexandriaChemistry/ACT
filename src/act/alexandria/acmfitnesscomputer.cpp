@@ -53,7 +53,7 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     {
         GMX_THROW(gmx::InternalError("Empty genome"));
     }
-    // First send around parameters
+    // First send around parameters. This code is run on master only.
     distributeTasks(CalcDev::Parameters);
     std::set<int> changed;
     distributeParameters(genome->basesPtr(), changed);
@@ -113,6 +113,10 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
 void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
+    if (debug)
+    {
+        fprintf(debug, "Starting to distribute parameters\n");
+    }
     auto cr = sii_->commRec();
     // Send / receive parameters
     if (cr->isHelper())
@@ -144,11 +148,36 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         }
         sii_->updateForceField(changed, *params);
     }
+    if (debug)
+    {
+        fprintf(debug, "Finished distributing parameters\n");
+    }
 }
 
 double ACMFitnessComputer::calcDeviation(CalcDev    task,
                                          iMolSelect ims)
 {
+    auto cr = sii_->commRec();
+    // Send / receive molselect group.ks
+    if (cr->isHelper())
+    {
+        // Now who is my middleman?
+        int src  = cr->superior();
+        ims      = cr->recv_iMolSelect(src);
+    }
+    else if (CalcDev::ComputeAll != task)
+    {
+        // Send ims to my helpers
+        for (auto &dest : cr->helpers())
+        {
+            cr->send_iMolSelect(dest, ims);
+        }
+    }
+    if (debug)
+    {
+        fprintf(debug, "Going to do calcDeviation for %s\n",
+                iMolSelectName(ims));
+    }
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
     if (nullptr == targets)
@@ -158,22 +187,6 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             fprintf(debug, "Cannot find targets for %s\n", iMolSelectName(ims));
         }
         return 0;
-    }
-    auto cr = sii_->commRec();
-    // Send / receive parameters
-    if (cr->isHelper())
-    {
-        // Now who is my middleman?
-        int src  = cr->superior();
-        ims      = static_cast<iMolSelect>(cr->recv_int(src));
-    }
-    else if (CalcDev::ComputeAll != task)
-    {
-        // Send ims to my helpers
-        for (auto &dest : cr->helpers())
-        {
-            cr->send_int(dest, static_cast<int>(ims));
-        }
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);

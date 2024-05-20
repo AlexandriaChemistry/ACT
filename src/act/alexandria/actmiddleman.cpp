@@ -60,7 +60,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Create force computer
-    forceComp_ = new ForceComputer();
+    forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
     fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,

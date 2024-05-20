@@ -41,6 +41,7 @@
 
 #include "bayes.h"
 #include "act/utility/memory_check.h"
+#include "gromacs/fileio/xvgr.h"
 
 namespace alexandria
 {
@@ -459,8 +460,8 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {
-        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
-                chi2_0, static_cast<int>(param->size()));
+        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
+                chi2_0, param->size());
         fflush(logfile_);
     }
     for (size_t i = 0; i < param->size(); ++i)

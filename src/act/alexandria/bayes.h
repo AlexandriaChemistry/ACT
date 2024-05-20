@@ -35,20 +35,9 @@
 #ifndef ALEXANDRIA_BAYES_H
 #define ALEXANDRIA_BAYES_H
 
-#include <functional>
-#include <random>
+#include <cstdio>
+#include <string>
 #include <vector>
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/real.h"
-
-#include "molselect.h"
-#include "confighandler.h"
 
 namespace alexandria
 {

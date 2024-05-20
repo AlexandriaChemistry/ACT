@@ -242,8 +242,8 @@ int gentop(int argc, char *argv[])
            my_pol.c_str(), gentop_fnm, chargeTypeName(qType).c_str());
     if (bVerbose)
     {
-        printf("Read force field information. There are %d atomtypes.\n",
-               static_cast<int>(pd.getNatypes()));
+        printf("Read force field information. There are %zu atomtypes.\n",
+               pd.getNatypes());
     }
 
     std::vector<ACTMol> actmols;

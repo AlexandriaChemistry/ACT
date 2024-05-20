@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -54,11 +54,15 @@ namespace alexandria
         ForceComputer      *forceComp_;
     public:
         /*! \brief Constructor
-         * \param[in] sii Static information
-         * \param[in] mg  Information about this helpers molecules
+         * \param[in] sii          Static information
+         * \param[in] mg           Information about this helpers molecules
+         * \param[in] shellToler   Tolerance for minimizing shell positions
+         * \param[in] shellMaxIter Max # iterations for the same
          */
         ACTHelper(StaticIndividualInfo *sii,
-                  MolGen               *mg);
+                  MolGen               *mg,
+                  double                shellToler,
+                  int                   shellMaxIter);
         
         //! \brief Run the helper process
         void run();    

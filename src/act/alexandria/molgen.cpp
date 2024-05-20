@@ -50,9 +50,8 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/arraysize.h"
 
 namespace alexandria
 {
@@ -116,7 +115,7 @@ void MolGen::addFilenames(std::vector<t_filenm> *filenms)
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
                         std::map<eRMS, FittingTarget> *targets)
 {
-    t_pargs pa_general[] =
+    std::vector<t_pargs> pa_general =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
@@ -175,7 +174,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-watoms", FALSE, etREAL, { &watoms_},
           "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." }
     };
-    doAddOptions(pargs, asize(pa_general), pa_general);
+    doAddOptions(pargs, pa_general.size(), pa_general.data());
 }
 
 bool MolGen::checkOptions(FILE                        *logFile,
@@ -267,8 +266,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         nmol = targetSize_.find(iMolSelect::Train)->second;
         if (fp)
         {
-            fprintf(fp, "Will check data sufficiency for %d training compounds.\n",
-                    static_cast<int>(nmol));
+            fprintf(fp, "Will check data sufficiency for %zu training compounds.\n",
+                    nmol);
         }
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
@@ -610,8 +609,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         }
         if (fp && removeMol.size() > 0)
         {
-            fprintf(fp, "Found %d molecules without sufficient support, will remove them.\n",
-                    static_cast<int>(removeMol.size()));
+            fprintf(fp, "Found %zu molecules without sufficient support, will remove them.\n",
+                    removeMol.size());
         }
         for(auto &rmol : removeMol)
         {
@@ -768,7 +767,7 @@ size_t MolGen::Read(FILE                                *fp,
         broadcastChargeMap(cr_, &qmap);
         if (fp)
         {
-            fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), molfn);
+            fprintf(fp, "Read %zu compounds from %s\n", mp.size(), molfn);
             if (qmap.size() > 0)
             {
                 fprintf(fp, "Read chargemap containing %lu entries from %s\n", qmap.size(), qmapfn);
@@ -826,8 +825,8 @@ size_t MolGen::Read(FILE                                *fp,
     {
         if (fp)
         {
-            fprintf(fp, "Trying to generate topologies for %d molecules!\n",
-                    static_cast<int>(mp.size()));
+            fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
+                    gms.nMol(), mp.size());
         }
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
@@ -835,7 +834,7 @@ size_t MolGen::Read(FILE                                *fp,
             if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::ACTMol actmol;
-                if (fp && debug)
+                if (debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
@@ -1147,10 +1146,10 @@ size_t MolGen::Read(FILE                                *fp,
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
-        fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                static_cast<int>(nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
-                                 nTargetSize(iMolSelect::Ignore)),
-                static_cast<int>(mp.size()));
+        fprintf(fp, "Made topologies for %zu out of %zu molecules.\n",
+                nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
+                nTargetSize(iMolSelect::Ignore),
+                mp.size());
 
         for (const auto &imm : imm_count)
         {

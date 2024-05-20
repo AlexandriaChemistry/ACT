@@ -349,8 +349,8 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
                                         ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/(2.*rmin);
             if (debug)
              {
-                 fprintf(debug, "vrep: %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n",
-                         eerep, eedisp, epsilon, gamma, rmin, delta);
+                 fprintf(debug, "vrep: ai %d aj %d %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g\n",
+                         indices[0], indices[1], eerep, eedisp, epsilon, gamma, rmin, delta);
              }
 
             erep     += eerep;
@@ -452,7 +452,8 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
-            fprintf(debug, "vcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n", velec, izeta, jzeta, 
+            fprintf(debug, "vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n",
+                    ai, aj, velec, izeta, jzeta, 
                     atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
         }
         ebond += velec;
@@ -503,7 +504,9 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
-            fprintf(debug, "vcoul %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g\n", velec, felec, izeta, jzeta, atoms[ai].charge(), atoms[aj].charge(), qq/r1, qq/dr2, r1);
+            fprintf(debug, "vcoul ai %d aj %d %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g\n",
+                    ai, aj, velec, felec, izeta, jzeta, atoms[ai].charge(),
+                    atoms[aj].charge(), qq/r1, qq/dr2, r1);
         }
         ebond += velec;
         if (dr2 > 0)
