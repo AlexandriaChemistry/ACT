@@ -258,32 +258,36 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
         }
     }
-    auto   ttt      = targets->find(eRMS::EPOT);
-    if (targets->end() == ttt)
-    {
-        GMX_THROW(gmx::InternalError("Cannot find EPOT in targets."));
-    }
-    double chi2epot = ttt->second.chiSquared();
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
     sii_->sumChiSquared(task == CalcDev::Compute, ims);
-
-    numberCalcDevCalled_ += 1;
-    auto &etot = targets->find(eRMS::TOT)->second;
-    if (etot.chiSquared() == 0 && ntrain > 0)
+    auto erms = eRMS::TOT;
+    auto etot = targets->find(erms);
+    if (targets->end() == etot)
     {
-        printf("Zero total chi squared for %s, for epot it is %g before summation.\n"
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in targets.",
+                                                       rmsName(erms)).c_str()));
+    }
+    numberCalcDevCalled_ += 1;
+    if (etot->second.chiSquared() == 0 && ntrain > 0)
+    {
+        printf("Zero %s chi squared for %s.\n"
                "This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d.\n",
-               iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal);
+               rmsName(erms), iMolSelectName(ims), ntrain, calcDevName(task), nlocal);
         printf("devComputers: ");
         for(auto &d : devComputers_)
         {
             printf(" %s", d->name().c_str());
         }
         printf("\n");
+        for(const auto &ttt: *targets)
+        {
+            printf("%s weight %g chi2 %g\n", rmsName(ttt.second.erms()),
+                   ttt.second.weight(), ttt.second.chiSquared());
+        }
     }
     
-    return etot.chiSquared();
+    return etot->second.chiSquared();
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,

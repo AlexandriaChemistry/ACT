@@ -36,17 +36,16 @@
 #define TRAIN_UTILITY_H
 
 #include <cstdio>
-
 #include <vector>
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/statistics/statistics.h"
-
-#include "actmol.h"
-#include "molhandler.h"
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/molhandler.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/statistics/statistics.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments
@@ -129,15 +128,15 @@ private:
                     const std::vector<gmx::RVec> &forces);
     
     /*! \brief do part of the printing, add to statistics
-     * \return the potential energy before minimization
      */
-    double printEnergyForces(std::vector<std::string> *tcout,
-                             const ForceField         *pd,
-                             const ForceComputer      *forceComp,
-                             const AtomizationEnergy  &atomenergy,
-                             alexandria::ACTMol        *mol,
-                             iMolSelect                ims,
-                             const gmx_output_env_t   *oenv);
+    void printEnergyForces(std::vector<std::string>            *tcout,
+                           const ForceField                    *pd,
+                           const ForceComputer                 *forceComp,
+                           const std::map<eRMS, FittingTarget> &targets,
+                           const AtomizationEnergy             &atomenergy,
+                           alexandria::ACTMol                  *mol,
+                           iMolSelect                          ims,
+                           const gmx_output_env_t              *oenv);
     /*! \brief Print data on outliers.
      */
     void printOutliers(FILE                                  *fp,
@@ -159,11 +158,11 @@ public:
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
     
-    void print(FILE                            *fp,
-               std::vector<alexandria::ACTMol> *actmol,
-               const ForceField                *pd,
-               const gmx_output_env_t          *oenv,
-               const std::vector<t_filenm>     &filenm);
+    void print(FILE                        *fp,
+               StaticIndividualInfo        *sii,
+               std::vector<ACTMol>         *actmol,
+               const gmx_output_env_t      *oenv,
+               const std::vector<t_filenm> &filenm);
 };
 
 /*! \brief Print header and command line arguments

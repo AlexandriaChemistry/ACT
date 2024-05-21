@@ -303,7 +303,14 @@ public:
             return &tt->second;
         }
     }
-
+    /*! \brief Check whether a dataset is present
+     * \param[in] ims The data set
+     * \return whether it is present
+     */
+    bool haveFittingTargetSelection(iMolSelect ims)
+    {
+        return (targets_.find(ims) != targets_.end());
+    }
     /*!
      * \brief Return the fitting targets for a given dataset as constant
      * \param[in] ims The selection dataset to return

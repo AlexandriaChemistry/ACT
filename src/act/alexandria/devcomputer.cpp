@@ -592,64 +592,14 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
     ACTEnergyMapVector                                                  interactionEnergyMap;
-    actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
-                            &interactionEnergyMap, &enerComponentMap);
-
-    auto tf = targets->find(eRMS::Force2);
-    if (tf != targets->end() && !forceMap.empty())
-    {
-        for(const auto &fstruct : forceMap)
-        {
-            for(const auto &ff : fstruct)
-            {
-                if (std::isnan(ff.second))
-                {
-                    printf("Force for %s is NaN\n", actmol->getMolname().c_str());
-                }
-                tf->second.increase(1, gmx::square(ff.first-ff.second));
-            }
-        }
-    }
-    auto ermse = eRMS::EPOT;
-    auto te = targets->find(ermse);
-    if (te != targets->end() && !energyMap.empty())
-    {
-        auto beta = computeBeta(ermse);
-        double eqmMin = 1e8;
-        if (beta > 0)
-        {
-            for(const auto &ff : energyMap)
-            {
-                if (ff.haveQM())
-                {
-                    eqmMin = std::min(eqmMin, ff.eqm());
-                }
-            }
-        }
-        for(const auto &ff : energyMap)
-        {
-            if (std::isnan(ff.eact()))
-            {
-                printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
-            }
-            else
-            {
-                if (ff.haveQM() && ff.haveACT())
-                {
-                    double eqm    = ff.eqm();
-                    double mydev2 = gmx::square(eqm-ff.eact());
-                    double weight = 1;
-                    if (beta > 0)
-                    {
-                        weight = exp(-beta*(eqm-eqmMin));
-                    }
-                    te->second.increase(weight, mydev2);
-                }
-            }
-        }
-    }
+    // Check what we need to do first!
+    auto ermse    = eRMS::EPOT;
+    auto te       = targets->find(ermse);
+    bool doEpot   = (te != targets->end() && te->second.weight() > 0);
+    auto tf       = targets->find(eRMS::Force2);
+    bool doForce2 = (tf != targets->end() && tf->second.weight() > 0);
     bool                            doInter = false;
-    std::map<eRMS, InteractionType> rmsE    = { 
+    std::map<eRMS, InteractionType> rmsE    = {
         { eRMS::Interaction,    InteractionType::EPOT         },
         { eRMS::Electrostatics, InteractionType::COULOMB      },
         { eRMS::Dispersion,     InteractionType::DISPERSION   },
@@ -659,56 +609,115 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     };
     for (auto &rms : rmsE)
     {
-        if (targets->find(rms.first) != targets->end())
+        auto ttt = targets->find(rms.first);
+        if (ttt != targets->end() && ttt->second.weight() > 0)
         {
             doInter = true;
         }
     }
-    if (doInter)
+    if (doForce2 || doEpot || doInter)
     {
-        std::map<eRMS, double> beta;
-        std::map<eRMS, double> eqmMin;
-        for(const auto &rms: rmsE)
+        actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
+                                &interactionEnergyMap, &enerComponentMap);
+
+        if (doForce2 && !forceMap.empty())
         {
-            // TODO fix beta (but how?)
-            eqmMin[rms.first] = 1e8;
-            beta[rms.first]   = computeBeta(rms.first);
-            if (beta[rms.first] > 0)
+            for(const auto &fstruct : forceMap)
             {
-                for(auto &iem : interactionEnergyMap)
+                for(const auto &ff : fstruct)
                 {
-                    auto &ff = iem.find(rms.second)->second;
+                    if (std::isnan(ff.second))
+                    {
+                        printf("Force for %s is NaN\n", actmol->getMolname().c_str());
+                    }
+                    tf->second.increase(1, gmx::square(ff.first-ff.second));
+                }
+            }
+        }
+        if (doEpot && !energyMap.empty())
+        {
+            auto beta = computeBeta(ermse);
+            double eqmMin = 1e8;
+            if (beta > 0)
+            {
+                for(const auto &ff : energyMap)
+                {
                     if (ff.haveQM())
                     {
-                        eqmMin[rms.first] = std::min(eqmMin[rms.first], ff.eqm());
+                        eqmMin = std::min(eqmMin, ff.eqm());
+                    }
+                }
+            }
+            for(const auto &ff : energyMap)
+            {
+                if (std::isnan(ff.eact()))
+                {
+                    printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
+                }
+                else
+                {
+                    if (ff.haveQM() && ff.haveACT())
+                    {
+                        double eqm    = ff.eqm();
+                        double mydev2 = gmx::square(eqm-ff.eact());
+                        double weight = 1;
+                        if (beta > 0)
+                        {
+                            weight = exp(-beta*(eqm-eqmMin));
+                        }
+                        te->second.increase(weight, mydev2);
                     }
                 }
             }
         }
-        for(auto &iem : interactionEnergyMap)
+        if (doInter)
         {
-            for(const auto &rms: rmsE)
+            // We can only use weighting on the total interaction energy not on
+            // components.
+            auto   rms    = eRMS::Interaction;
+            double beta   = computeBeta(rms);
+            double eqmMin = 1e8;
+            if (beta > 0)
             {
-                auto ti = targets->find(rms.first);
-                if (ti == targets->end())
+                for(auto &iem : interactionEnergyMap)
                 {
-                    continue;
-                }
-                if (iem.find(rms.second) == iem.end())
-                {
-                    continue;
-                }
-                auto &ff  = iem.find(rms.second)->second;
-                if (ff.haveQM() && ff.haveACT())
-                {
-                    auto eqm  = ff.eqm();
-                    auto eact = ff.eact();
-                    double weight = 1;
-                    if (beta[rms.first] > 0)
+                    auto ff = iem.find(InteractionType::EPOT);
+                    if (iem.end() != ff && ff->second.haveQM())
                     {
-                        weight = exp(-beta[rms.first]*(eqm-eqmMin[rms.first]));
+                        eqmMin = std::min(eqmMin, ff->second.eqm());
                     }
-                    ti->second.increase(weight, gmx::square(eqm-eact));
+                }
+            }
+            for(auto &iem : interactionEnergyMap)
+            {
+                double weight = 1;
+                if (beta > 0)
+                {
+                    auto ff = iem.find(InteractionType::EPOT);
+                    if (iem.end() != ff && ff->second.haveQM())
+                    {
+                        auto eqm =  ff->second.eqm();
+                        weight = exp(-beta*(eqm-eqmMin));
+                    }
+                }
+                for(const auto &rms: rmsE)
+                {
+                    auto ti = targets->find(rms.first);
+                    if (ti == targets->end() || ti->second.weight() == 0)
+                    {
+                        continue;
+                    }
+                    if (iem.find(rms.second) == iem.end())
+                    {
+                        continue;
+                    }
+                    auto &ff  = iem.find(rms.second)->second;
+                    if (ff.haveQM() && ff.haveACT())
+                    {
+                        auto eqm  = ff.eqm();
+                        auto eact = ff.eact();
+                        ti->second.increase(weight, gmx::square(eqm-eact));
+                    }
                 }
             }
         }
