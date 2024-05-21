@@ -971,14 +971,15 @@ static void print_diatomics(const alexandria::ACTMol                            
     }    
     xvgrclose(fp);
 }
-                                                
-double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                 const ForceField         *pd,
-                                                 const ForceComputer      *forceComp,
-                                                 const AtomizationEnergy  &atomenergy,
-                                                 alexandria::ACTMol       *mol,
-                                                 iMolSelect                ims,
-                                                 const gmx_output_env_t   *oenv)
+
+void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>            *tcout,
+                                               const ForceField                    *pd,
+                                               const ForceComputer                 *forceComp,
+                                               const std::map<eRMS, FittingTarget> &targets,
+                                               const AtomizationEnergy             &atomenergy,
+                                               alexandria::ACTMol                  *mol,
+                                               iMolSelect                           ims,
+                                               const gmx_output_env_t              *oenv)
 {
     std::vector<ACTEnergy>                                              energyMap;
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
@@ -1001,25 +1002,43 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         }
     }
     gmx_stats myepot;
-    for(const auto &ff : energyMap)
+    if (targets.find(eRMS::EPOT) != targets.end())
     {
-        if (ff.haveQM() && ff.haveACT())
+        for(const auto &ff : energyMap)
         {
-            lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
-            myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+            if (ff.haveQM() && ff.haveACT())
+            {
+                lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
+                myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+            }
         }
     }
     std::map<InteractionType, gmx_stats> myeinter;
+    std::map<eRMS, InteractionType> interE = {
+        { eRMS::Interaction,       InteractionType::EPOT           },
+        { eRMS::Electrostatics,    InteractionType::COULOMB        },
+        { eRMS::Dispersion,        InteractionType::DISPERSION     },
+        { eRMS::Exchange,          InteractionType::EXCHANGE       },
+        { eRMS::Induction,         InteractionType::INDUCTION      }
+    };
     for(const auto &iem : interactionEnergyMap)
     {
         for(const auto &ie: iem)
         {
-            if (ie.second.haveQM() && ie.second.haveACT())
+            auto val    = ie.first;
+            auto result = std::find_if(interE.begin(), interE.end(),
+                                       [val](const auto& mo) {return mo.second == val; });
+
+            auto tt = targets.find(result->first);
+            if (interE.end() != result &&  tt != targets.end() && tt->second.weight() > 0)
             {
-                auto eqm  = ie.second.eqm();
-                auto eact = ie.second.eact();
-                lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
-                myeinter[ie.first].add_point(eqm, eact, 0, 0);
+                if (ie.second.haveQM() && ie.second.haveACT())
+                {
+                    auto eqm  = ie.second.eqm();
+                    auto eact = ie.second.eact();
+                    lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
+                    myeinter[ie.first].add_point(eqm, eact, 0, 0);
+                }
             }
         }
     }
@@ -1136,67 +1155,66 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         low_print_stats(tcout, &myforce, "Force");
     }
 
-    // Energy
-    tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
-    std::map<InteractionType, double> eBefore;
-    std::vector<gmx::RVec> coords = mol->xOriginal();
-    std::vector<gmx::RVec> forces(coords.size());
-    (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
-
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
-        //deltaE0 += mol->atomizationEnergy();
+        // Energy
+        tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
+        std::map<InteractionType, double> eBefore;
+        std::vector<gmx::RVec> coords = mol->xOriginal();
+        std::vector<gmx::RVec> forces(coords.size());
+        (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
+
         tcout->push_back(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
                                            "Reference EPOT", deltaE0, 
                                            eBefore[InteractionType::EPOT]-deltaE0));
-    }
-    if (mol->jobType() == JobType::OPT && calcFrequencies_)
-    {
-        // Now get the minimized structure RMSD and Energy
-        SimulationConfigHandler simConfig;
-        std::vector<gmx::RVec>  xmin   = coords;
-        std::map<InteractionType, double> eAfter;
-        molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
-                                        &xmin, &eAfter, nullptr, {});
-        double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
-        
-        if (rmsd > 0.1) // nm
+
+        if (mol->jobType() == JobType::OPT && calcFrequencies_)
         {
-            auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
-            auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
-            writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
-        }
-        tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
+            // Now get the minimized structure RMSD and Energy
+            SimulationConfigHandler simConfig;
+            std::vector<gmx::RVec>  xmin   = coords;
+            std::map<InteractionType, double> eAfter;
+            molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
+                                            &xmin, &eAfter, nullptr, {});
+            double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
+
+            if (rmsd > 0.1) // nm
+            {
+                auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
+                auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
+                writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
+            }
+            tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
                                            "Term", "Before", "After", "Difference"));
-        for(auto &ep : eBefore)
-        {
-            auto eb = ep.second;
-            auto ea = eAfter[ep.first];
-            tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
-                                               interactionTypeToString(ep.first).c_str(),
-                                               eb, ea, ea-eb));
+            for(auto &ep : eBefore)
+            {
+                auto eb = ep.second;
+                auto ea = eAfter[ep.first];
+                tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
+                                                   interactionTypeToString(ep.first).c_str(),
+                                                   eb, ea, ea-eb));
+            }
+            tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
+
+            // Do normal-mode analysis etc.
+            JsonTree jtree("FrequencyAnalysis");
+            doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
+                                atomenergy, &lsq_freq_, &jtree,
+                                nullptr, 24, nullptr, false);
+            int indent = 0;
+            tcout->push_back(jtree.writeString(false, &indent));
         }
-        tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
-        
-        // Do normal-mode analysis etc.
-        JsonTree jtree("FrequencyAnalysis");
-        doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
-                            atomenergy, &lsq_freq_, &jtree,
-                            nullptr, 24, nullptr, false);
-        int indent = 0;
-        tcout->push_back(jtree.writeString(false, &indent));
-    }
-    else
-    {
-        for(auto &ep : eBefore)
+        else
         {
-            tcout->push_back(gmx::formatString("   %-20s  %10.3f",
-                                               interactionTypeToString(ep.first).c_str(),
-                                               ep.second));
+            for(auto &ep : eBefore)
+            {
+                tcout->push_back(gmx::formatString("   %-20s  %10.3f",
+                                                   interactionTypeToString(ep.first).c_str(),
+                                                   ep.second));
+            }
         }
     }
-    return eBefore[InteractionType::EPOT];
 }
 
 static void dump_xyz(const std::string &label,
@@ -1326,13 +1344,14 @@ void TrainForceFieldPrinter::printOutliers(FILE                                 
     }
 }
 
-void TrainForceFieldPrinter::print(FILE                            *fp,
-                                   std::vector<alexandria::ACTMol> *actmol,
-                                   const ForceField                *pd,
-                                   const gmx_output_env_t          *oenv,
-                                   const std::vector<t_filenm>      &filenm)
+void TrainForceFieldPrinter::print(FILE                        *fp,
+                                   StaticIndividualInfo        *sii,
+                                   std::vector<ACTMol>         *actmol,
+                                   const gmx_output_env_t      *oenv,
+                                   const std::vector<t_filenm> &filenm)
 {
-    int  n = 0;
+    const auto pd = sii->forcefield();
+    int        n  = 0;
     std::map<iMolSelect, qtStats>                               lsq_charge, lsq_esp;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::map<std::string, gmx_stats> >     lsqt;
@@ -1420,8 +1439,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
-    std::map<std::string, double> molEpot;
-    //    std::map<InteractionType, std::map<std::string, std::vector<ACTEnergy > > > allEinter; 
+
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
         auto topology = mol->topology();
@@ -1517,14 +1535,17 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             }
             printAtoms(fp, &(*mol), coords, forces);
             // Energies
-            std::vector<std::string> tcout;
-            auto epot    = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol), ims, oenv);
-            molEpot.insert({mol->getMolname(), epot});
-            for(const auto &tout : tcout)
+            if (sii->haveFittingTargetSelection(ims))
             {
-                fprintf(fp, "%s\n", tout.c_str());
+                std::vector<std::string> tcout;
+                printEnergyForces(&tcout, pd, forceComp, sii->fittingTargetsConst(ims),
+                                  atomenergy, &(*mol), ims, oenv);
+                for(const auto &tout : tcout)
+                {
+                    fprintf(fp, "%s\n", tout.c_str());
+                }
+                fprintf(fp, "\n");
             }
-            fprintf(fp, "\n");
             n++;
         }
     }
@@ -1671,7 +1692,8 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
         }
     }
     real epotRmsd = 0;
-    if (eStats::OK == lsq_epot_[iMolSelect::Train][qType::Calc].get_rmsd(&epotRmsd))
+    if (
+        eStats::OK == lsq_epot_[iMolSelect::Train][qType::Calc].get_rmsd(&epotRmsd))
     {
         for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
         {
