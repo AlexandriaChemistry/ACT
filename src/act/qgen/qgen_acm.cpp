@@ -56,13 +56,13 @@ QgenAcm::QgenAcm(const ForceField           *pd,
                  const std::vector<ActAtom> &atoms,
                  int                         qtotal)
 {
-    auto qt     = pd->findForcesConst(InteractionType::COULOMB);
+    auto qt     = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     ChargeType_ = potentialToChargeType(qt.potential());
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
     qtotal_     = qtotal;
-    if (!ffOption(*pd, InteractionType::COULOMB, 
+    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
                   "epsilonr", &epsilonr_))
     {
         epsilonr_ = 1;
@@ -99,7 +99,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
         }
         if (qt.potential() != Potential::COULOMB_POINT)
         {
-            auto qtype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
+            auto qtype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
             zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
             qdist_id_.push_back(qtype);
         }
@@ -131,7 +131,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
 void QgenAcm::updateParameters(const ForceField           *pd,
                                const std::vector<ActAtom> &atoms)
 {
-    auto qt = pd->findForcesConst(InteractionType::COULOMB);
+    auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     if (qt.potential() != Potential::COULOMB_POINT)
     {
         // Zeta must exist for atoms and shells in this case

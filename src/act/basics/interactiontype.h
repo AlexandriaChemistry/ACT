@@ -58,7 +58,7 @@ enum class InteractionType
     //! Repulsive interaction due to Pauli principle
     EXCHANGE,
     //! Charge interactions
-    COULOMB,
+    ELECTROSTATICS,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
     //! Induction energy

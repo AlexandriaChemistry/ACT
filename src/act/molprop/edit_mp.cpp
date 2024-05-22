@@ -116,7 +116,7 @@ static bool dump_molecule(FILE              *fp,
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
         std::vector<Identifier> atomId;
-        auto ztype = InteractionType::COULOMB;
+        auto ztype = InteractionType::ELECTROSTATICS;
         for (size_t i = 0; i < atoms.size(); i++)
         {
             const auto &atype = atoms[i].ffType();

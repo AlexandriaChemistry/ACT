@@ -292,7 +292,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     gmx::RVec fzero = { 0, 0, 0 };
     std::map<MolPropObservable, InteractionType> interE = { 
         { MolPropObservable::INTERACTIONENERGY, InteractionType::EPOT           },
-        { MolPropObservable::ELECTROSTATICS,    InteractionType::COULOMB        },
+        { MolPropObservable::ELECTROSTATICS,    InteractionType::ELECTROSTATICS        },
         { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
         { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
         { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
@@ -315,7 +315,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         {
             std::set<MolPropObservable> mpElec = { MolPropObservable::ELECTROSTATICS,
                                                    MolPropObservable::INDUCTION };
-            std::set<InteractionType> itElec = { InteractionType::COULOMB,
+            std::set<InteractionType> itElec = { InteractionType::ELECTROSTATICS,
                                                  InteractionType::INDUCTION };
             std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
@@ -880,7 +880,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 foundESP = true;
                 qresp->setAtomSymmetry(symmetric_charges_);
                 double epsilonr;
-                if (!ffOption(*pd, InteractionType::COULOMB, "epsilonr", &epsilonr))
+                if (!ffOption(*pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
                 {
                     epsilonr = 1;
                 }
@@ -1019,7 +1019,7 @@ void ACTMol::PrintTopology(const char                  *fn,
     std::vector<double>      vec;
     double                   T = -1;
     std::string              myref;
-    auto &qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     auto  iChargeType = potentialToChargeType(qt.potential());
     std::string              mylot       = makeLot(method, basis);
 
@@ -1165,14 +1165,14 @@ void ACTMol::GenerateCube(const ForceField             *pd,
                           const char                   *diffhistfn,
                           const gmx_output_env_t       *oenv)
 {
-    auto &qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     auto  iChargeType = potentialToChargeType(qt.potential());
     
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char   *act_version = (char *)"act v0.99b";
         double  epsilonr;
-        if (!ffOption(*pd, InteractionType::COULOMB, 
+        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
                       "epsilonr", &epsilonr))
         {
             epsilonr = 1;
@@ -1335,7 +1335,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             case MolPropObservable::POTENTIAL:
                 {
                     auto qgr         = actq.qgenResp();
-                    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
+                    auto qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
                     qgr->setChargeType(potentialToChargeType(qt.potential()));
                     qgr->setAtomInfo(atomsConst(), pd, totalCharge());
                     qgr->updateAtomCoords(xatom);

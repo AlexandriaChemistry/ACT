@@ -158,7 +158,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         }
         // Extract electrostatics once more
         std::set<InteractionType> eTerms = {
-            InteractionType::COULOMB,
+            InteractionType::ELECTROSTATICS,
             InteractionType::POLARIZATION
         };
         for(const auto et : eTerms)
@@ -184,7 +184,7 @@ double ForceComputer::compute(const ForceField                  *pd,
             energies->insert({InteractionType::INDUCTION, eInduction});
         }
     }
-    double allelec = (*energies)[InteractionType::COULOMB] + (*energies)[InteractionType::INDUCTION];
+    double allelec = (*energies)[InteractionType::ELECTROSTATICS] + (*energies)[InteractionType::INDUCTION];
     energies->insert({InteractionType::ALLELEC, allelec});
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
@@ -273,7 +273,7 @@ void ForceComputer::plot(const ForceField  *pd,
         { InteractionType::PROPER_DIHEDRALS,   btype },
         { InteractionType::IMPROPER_DIHEDRALS, btype },
         { InteractionType::VDW,                vdwtype },
-        { InteractionType::COULOMB,            vdwtype }
+        { InteractionType::ELECTROSTATICS,            vdwtype }
     };
     auto &fs   = pd->findForcesConst(itype);
     // The function we need to do the math
@@ -354,7 +354,7 @@ void ForceComputer::plot(const ForceField  *pd,
             {
             case InteractionType::BONDS:
             case InteractionType::VDW:
-            case InteractionType::COULOMB:
+            case InteractionType::ELECTROSTATICS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);

@@ -162,7 +162,7 @@ const std::string ForceField::ztype2elem(const std::string &ztype) const
     {
         for (auto i : alexandria_)
         {
-            if (i.second.interactionTypeToIdentifier(InteractionType::COULOMB).id() == ztype)
+            if (i.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS).id() == ztype)
             {
                 return i.second.element();
             }
@@ -701,7 +701,7 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
 /* Force Field Parameter Lists */
 static std::vector<InteractionType> eemlist = 
     { InteractionType::BONDCORRECTIONS,
-      InteractionType::COULOMB,
+      InteractionType::ELECTROSTATICS,
       InteractionType::POLARIZATION,
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
@@ -885,7 +885,7 @@ void ForceField::checkConsistency(FILE *fp) const
             fprintf(fp, "\n");
         }
     }
-    const auto itq = InteractionType::COULOMB;
+    const auto itq = InteractionType::ELECTROSTATICS;
     if (interactionPresent(itq))
     {
         auto fs  = findForcesConst(itq);

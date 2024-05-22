@@ -218,7 +218,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
             }
         }
         break;
-    case InteractionType::COULOMB:
+    case InteractionType::ELECTROSTATICS:
     case InteractionType::VDW:
     case InteractionType::CHARGETRANSFER:
     case InteractionType::VSITE1:
@@ -422,7 +422,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         fType      = fs->potential();
         if (iType != bType &&
             iType != InteractionType::VDW &&
-            iType != InteractionType::COULOMB)
+            iType != InteractionType::ELECTROSTATICS)
         {
             fs->eraseParameter();
         }

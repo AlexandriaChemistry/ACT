@@ -151,7 +151,7 @@ void alexandria_eemprops_table(FILE             *fp,
 {
     std::vector<InteractionType> itypes = {
         InteractionType::ELECTRONEGATIVITYEQUALIZATION,
-        InteractionType::COULOMB,
+        InteractionType::ELECTROSTATICS,
         InteractionType::POLARIZATION,
         InteractionType::BONDCORRECTIONS
     };

@@ -431,7 +431,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                                    const std::map<std::string, int> &ffTypeMap)
 {
     auto fs     = pd->findForcesConst(InteractionType::VDW);
-    auto fsCoul = pd->findForcesConst(InteractionType::COULOMB);
+    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     std::string nnn("nexcl");
     //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
     //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
@@ -830,7 +830,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
     auto xmlResiduePtr      = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
     makeXmlMap(parent, pd);
     // Compute epsilon r if relevant
-    auto coul       = pd->findForcesConst(InteractionType::COULOMB);
+    auto coul       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     double epsr_fac = 1;
     std::string epsr("epsilonr");
     if (coul.optionExists(epsr))
@@ -1140,7 +1140,7 @@ void OpenMMWriter::writeDat(const std::string &fileName,
                             const ForceField  *pd)
 {
     std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
-        { InteractionType::COULOMB, 
+        { InteractionType::ELECTROSTATICS, 
           { { "chargetype", "chargeDistribution" },
             { "epsilonr", "dielectricConstant" },
             { "nexcl", "nexclqq" } } },

@@ -231,7 +231,7 @@ int gentop(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);
 
-    auto &fs = pd.findForcesConst(InteractionType::COULOMB);
+    auto &fs = pd.findForcesConst(InteractionType::ELECTROSTATICS);
     std::string my_pol;
     if (pd.polarizable())
     {

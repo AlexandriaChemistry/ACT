@@ -217,8 +217,8 @@ TEST_F (ForceFieldTest, zeta)
         {
             auto pd  = getForceField(model);
             auto fa  = pd->findParticleType(atom);
-            auto ztp = fa->interactionTypeToIdentifier(InteractionType::COULOMB);
-            auto eep = pd->findForcesConst(InteractionType::COULOMB);
+            auto ztp = fa->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
+            auto eep = pd->findForcesConst(InteractionType::ELECTROSTATICS);
             auto p   = eep.findParameterTypeConst(ztp, "zeta");
             zetas.push_back(p.value());
         }

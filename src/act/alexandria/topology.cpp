@@ -588,7 +588,7 @@ void  Topology::addShellPairs()
     {
         auto &pol = entries_.find(InteractionType::POLARIZATION)->second;
         for (const auto &itype : { InteractionType::VDW,
-                                   InteractionType::COULOMB } )
+                                   InteractionType::ELECTROSTATICS } )
         {
             if (!hasEntry(itype))
             {
@@ -1381,7 +1381,7 @@ void Topology::build(const ForceField             *pd,
         }
     }
     makePairs(pd, InteractionType::VDW);
-    makePairs(pd, InteractionType::COULOMB);
+    makePairs(pd, InteractionType::ELECTROSTATICS);
     auto itqt = InteractionType::CHARGETRANSFER;
     if (pd->interactionPresent(itqt))
     {
@@ -1393,7 +1393,7 @@ void Topology::build(const ForceField             *pd,
     }
     if (debug)
     {
-        dumpPairlist(debug, InteractionType::COULOMB);
+        dumpPairlist(debug, InteractionType::ELECTROSTATICS);
         dumpPairlist(debug, InteractionType::VDW);
         dumpPairlist(debug, InteractionType::CHARGETRANSFER);
     }
@@ -1524,7 +1524,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
             break;
         case InteractionType::VDW:
-        case InteractionType::COULOMB:
+        case InteractionType::ELECTROSTATICS:
         case InteractionType::PROPER_DIHEDRALS:
         case InteractionType::IMPROPER_DIHEDRALS:
             break;
@@ -1753,7 +1753,7 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                     }
                     break;
                 }
-            case InteractionType::COULOMB:
+            case InteractionType::ELECTROSTATICS:
                 {
                     // For COULOMB there are two particles,
                     // but for polarization just one.
