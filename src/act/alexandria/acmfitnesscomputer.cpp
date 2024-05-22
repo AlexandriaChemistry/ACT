@@ -271,20 +271,25 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     numberCalcDevCalled_ += 1;
     if (etot->second.chiSquared() == 0 && ntrain > 0)
     {
-        printf("Zero %s chi squared for %s.\n"
-               "This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d.\n",
-               rmsName(erms), iMolSelectName(ims), ntrain, calcDevName(task), nlocal);
-        printf("devComputers: ");
+        std::string msg = gmx::formatString("Zero %s chi squared for %s - this cannot be correct.\n", 
+                                            iMolSelectName(ims), rmsName(erms));
+        msg += gmx::formatString("There are %d compounds. Task = %s. Nlocal = %d.\n",
+                                 ntrain, calcDevName(task), nlocal);
+        msg += "devComputers: ";
         for(auto &d : devComputers_)
         {
-            printf(" %s", d->name().c_str());
+            msg += ' ' + d->name();
         }
-        printf("\n");
+        msg += "\n";
         for(const auto &ttt: *targets)
         {
-            printf("%s weight %g chi2 %g\n", rmsName(ttt.second.erms()),
-                   ttt.second.weight(), ttt.second.chiSquared());
+            if (ttt.second.weight() > 0)
+            {
+                msg += gmx::formatString("Weight for %s is %g\n", rmsName(ttt.second.erms()),
+                                         ttt.second.weight());
+            }
         }
+        GMX_THROW(gmx::InvalidInputError(msg.c_str()));
     }
     
     return etot->second.chiSquared();

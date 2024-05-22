@@ -350,12 +350,15 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     auto tt = einter.find(ie.second);
                     if (einter.end() != tt)
                     {
-                        ae.setACT(tt->second);
-                    
-                        if (itElec.find(ie.second) != itElec.end())
+                        if (!std::isnan(tt->second))
                         {
-                            allelec_act += tt->second;
-                            foundACT    += 1;
+                            ae.setACT(tt->second);
+                    
+                            if (itElec.find(ie.second) != itElec.end())
+                            {
+                                allelec_act += tt->second;
+                                foundACT    += 1;
+                            }
                         }
                     }
                 }
