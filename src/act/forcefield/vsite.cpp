@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -91,12 +91,12 @@ CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
     {
         std::string vtype;
         vtype.assign(vsiteType2string(type_));
-        cr->send_str(dest, &atype_);
-        cr->send_str(dest, &vtype);
-        cr->send_int(dest, number_);
-        cr->send_double(dest, distance_);
-        cr->send_double(dest, angle_);
-        cr->send_int(dest, ncontrolatoms_);
+        cr->send(dest, atype_);
+        cr->send(dest, vtype);
+        cr->send(dest, number_);
+        cr->send(dest, distance_);
+        cr->send(dest, angle_);
+        cr->send(dest, ncontrolatoms_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Vsite %s %s %d %g %g %d, status %s\n",
@@ -141,13 +141,13 @@ CommunicationStatus Vsite::Receive(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         std::string type;
-        cr->recv_str(src, &atype_);
-        cr->recv_str(src, &type);
+        cr->recv(src, &atype_);
+        cr->recv(src, &type);
         type_          = string2vsiteType(type.c_str());
-        number_        = cr->recv_int(src);
-        distance_      = cr->recv_double(src);
-        angle_         = cr->recv_double(src);
-        ncontrolatoms_ = cr->recv_int(src);
+        cr->recv(src, &number_);
+        cr->recv(src, &distance_);
+        cr->recv(src, &angle_);
+        cr->recv(src, &ncontrolatoms_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Vsite %s %s %d %g %g %d, status %s\n",

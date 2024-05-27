@@ -104,7 +104,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
                 for(size_t i = 0; i < exp_U12_.size(); i++)
                 {
                     std::vector<double> d;
-                    cr->recv_double_vector(src, &d);
+                    cr->recv(src, &d);
                     for(size_t j = 0; j < d.size(); j++)
                     {
                         exp_U12_[i][j] += d[j];
@@ -112,17 +112,14 @@ void B2Data::aggregate(CommunicationRecord *cr)
                 }
                 for(size_t i = 0; i < n_U12_.size(); i++)
                 {
-                    for(size_t j = 0; j < n_U12_[i].size(); j++)
-                    {
-                        n_U12_[i][j] += cr->recv_int(src);
-                    }
+                    cr->recv(src, &n_U12_[i]);
                 }
                 for(int kk = 0; kk < 2; kk++)
                 {
                     for(size_t i = 0; i < exp_F2_[kk].size(); i++)
                     {
                         std::vector<double> d;
-                        cr->recv_double_vector(src, &d);
+                        cr->recv(src, &d);
                         for(size_t j = 0; j < d.size(); j++)
                         {
                             exp_F2_[kk][i][j] += d[j];
@@ -133,7 +130,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
                         for(size_t j = 0; j < exp_tau_[kk][i].size(); j++)
                         {
                             std::vector<double> d;
-                            cr->recv_double_vector(src, &d);
+                            cr->recv(src, &d);
                             for(size_t m = 0; m < d.size(); m++)
                             {
                                 exp_tau_[kk][i][j][m] += d[m];
@@ -152,21 +149,18 @@ void B2Data::aggregate(CommunicationRecord *cr)
             for(size_t i = 0; i < exp_U12_.size(); i++)
             {
                 std::vector<double> d = exp_U12_[i];
-                cr->send_double_vector(dest, &d);
+                cr->send(dest, d);
             }
             for(size_t i = 0; i < n_U12_.size(); i++)
             {
-                for(size_t j = 0; j < n_U12_[i].size(); j++)
-                {
-                    cr->send_int(dest, n_U12_[i][j]);
-                }
-                }
+                cr->send(dest, n_U12_[i]);
+            }
             for(int kk = 0; kk < 2; kk++)
             {
                 for(size_t i = 0; i < exp_F2_[kk].size(); i++)
                 {
                     std::vector<double> d = exp_F2_[kk][i];
-                    cr->send_double_vector(dest, &d);
+                    cr->send(dest, d);
                 }
                 for(size_t i = 0; i < exp_tau_[kk].size(); i++)
                 {
@@ -177,7 +171,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
                         {
                             d[m] = exp_tau_[kk][i][j][m];
                         }
-                        cr->send_double_vector(dest, &d);
+                        cr->send(dest, d);
                     }
                 }
             }

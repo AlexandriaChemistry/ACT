@@ -310,22 +310,22 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 
 CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) const
 {
-    cr->send_int(dest, ids_.size());
+    cr->send(dest, static_cast<int>(ids_.size()));
     for(const auto &ii : ids_)
     {
-        cr->send_str(dest, &ii);
+        cr->send(dest, ii);
     }
     auto tmp = canSwapToString(canSwap_);
-    cr->send_str(dest, &tmp);
-    cr->send_int(dest, static_cast<int>(atoms_.size()));
+    cr->send(dest, tmp);
+    cr->send(dest, static_cast<int>(atoms_.size()));
     for(auto &a : atoms_)
     {
-        cr->send_str(dest, &a);
+        cr->send(dest, a);
     }
-    cr->send_int(dest, static_cast<int>(bondOrders_.size()));
+    cr->send(dest, static_cast<int>(bondOrders_.size()));
     for(auto &b : bondOrders_)
     {
-        cr->send_double(dest, b);
+        cr->send(dest, b);
     }
     return CommunicationStatus::OK;
 }
@@ -392,29 +392,34 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
 
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
-    int nids = cr->recv_int(src);
+    int nids;
+    cr->recv(src, &nids);
     std::string tmp;
     for(int i = 0; i < nids; i++)
     {
-        cr->recv_str(src, &tmp);
+        cr->recv(src, &tmp);
         ids_.push_back(tmp);
     }
 
-    cr->recv_str(src, &tmp);
+    cr->recv(src, &tmp);
     canSwap_ = stringToCanSwap(tmp);
-    int natoms = cr->recv_int(src);
+    int natoms;
+    cr->recv(src, &natoms);
     atoms_.clear();
     for(int i = 0; i < natoms; i++)
     {
         std::string a;
-        cr->recv_str(src, &a);
+        cr->recv(src, &a);
         atoms_.push_back(a);
     }
-    int nbo = cr->recv_int(src);
+    int nbo;
+    cr->recv(src, &nbo);
     bondOrders_.clear();
     for(int i = 0; i < nbo; i++)
     {
-        bondOrders_.push_back(cr->recv_double(src));
+        double d;
+        cr->recv(src, &d);
+        bondOrders_.push_back(d);
     }
     return CommunicationStatus::OK;
 }

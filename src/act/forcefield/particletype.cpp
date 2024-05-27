@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -225,18 +225,18 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     id_.Send(cr, dest);
-    cr->send_str(dest, &desc_);
-    cr->send_int(dest, gmxParticleType_);
-    cr->send_int(dest, option_.size());
+    cr->send(dest, desc_);
+    cr->send(dest, gmxParticleType_);
+    cr->send(dest, static_cast<int>(option_.size()));
     for(const auto &opt : option_)
     {
-        cr->send_str(dest, &opt.first);
-        cr->send_str(dest, &opt.second);
+        cr->send(dest, opt.first);
+        cr->send(dest, opt.second);
     }
-    cr->send_int(dest, parameterMap_.size());
+    cr->send(dest, static_cast<int>(parameterMap_.size()));
     for(const auto &param : parameterMap_)
     {
-        cr->send_str(dest, &param.first);
+        cr->send(dest, param.first);
         cs = param.second.Send(cr, dest);
     }
     return cs;
@@ -305,23 +305,25 @@ CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     cs = id_.Receive(cr, src);
-    cr->recv_str(src, &desc_);
-    gmxParticleType_ = cr->recv_int(src);
-    int nopt = cr->recv_int(src);
+    cr->recv(src, &desc_);
+    cr->recv(src, & gmxParticleType_ );
+    int nopt;
+    cr->recv(src, &nopt);
     option_.clear();
     for(int i = 0; i < nopt; i++)
     {
         std::string key, value;
-        cr->recv_str(src, &key);
-        cr->recv_str(src, &value);
+        cr->recv(src, &key);
+        cr->recv(src, &value);
         setOption(key, value);
     }
-    int nparm = cr->recv_int(src);
+    int nparm;
+    cr->recv(src, &nparm);
     parameterMap_.clear();
     for(int i = 0; i < nparm; i++)
     {
         std::string type;
-        cr->recv_str(src, &type);
+        cr->recv(src, &type);
         ForceFieldParameter ff;
         ff.Receive(cr, src);
         parameterMap_.insert({type, ff});

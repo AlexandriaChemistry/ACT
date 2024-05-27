@@ -366,15 +366,15 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &filename_);
-        cr->send_str(dest, &checkSum_);
-        cr->send_str(dest, &timeStamp_);
-        cr->send_str(dest, &vsite_angle_unit_);
-        cr->send_str(dest, &vsite_length_unit_);
-        cr->send_int(dest, static_cast<int>(ChargeGenerationAlgorithm_));
-        cr->send_int(dest, polarizable_ ? 1 : 0);
+        cr->send(dest, filename_);
+        cr->send(dest, checkSum_);
+        cr->send(dest, timeStamp_);
+        cr->send(dest, vsite_angle_unit_);
+        cr->send(dest, vsite_length_unit_);
+        cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
+        cr->send(dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
-        cr->send_int(dest, alexandria_.size());
+        cr->send(dest, static_cast<int>(alexandria_.size()));
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.second.Send(cr, dest);
@@ -387,7 +387,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Send Vsite */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, vsite_.size());
+            cr->send(dest, static_cast<int>(vsite_.size()));
             for (auto &vsite : vsite_)
             {
                 cs = vsite.Send(cr, dest);
@@ -401,11 +401,11 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Force Field Parameter Lists */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, forces_.size());
+            cr->send(dest, static_cast<int>(forces_.size()));
             for (auto &force : forces_)
             {
                 std::string key(interactionTypeToString(force.first));
-                cr->send_str(dest, &key);
+                cr->send(dest, key);
                 cs = force.second.Send(cr, dest);
                 if (CommunicationStatus::OK != cs)
                 {
@@ -417,7 +417,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Send Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, symcharges_.size());
+            cr->send(dest, static_cast<int>(symcharges_.size()));
             for (auto &symcharges : symcharges_)
             {
                 cs = symcharges.Send(cr, dest);
@@ -556,17 +556,20 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &filename_);
-        cr->recv_str(src, &checkSum_);
-        cr->recv_str(src, &timeStamp_);
-        cr->recv_str(src, &vsite_angle_unit_);
-        cr->recv_str(src, &vsite_length_unit_);
-        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cr->recv_int(src));
-        polarizable_          = static_cast<bool>(cr->recv_int(src));
+        cr->recv(src, &filename_);
+        cr->recv(src, &checkSum_);
+        cr->recv(src, &timeStamp_);
+        cr->recv(src, &vsite_angle_unit_);
+        cr->recv(src, &vsite_length_unit_);
+        int cga;
+        cr->recv(src, &cga);
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
+        cr->recv(src, &polarizable_);
         /* Rceive Ffatype */
-        size_t nalexandria = cr->recv_int(src);
+        int nalexandria;
+        cr->recv(src, &nalexandria);
         alexandria_.clear();
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
         {
             ParticleType alexandria;
             cs = alexandria.Receive(cr, src);
@@ -582,9 +585,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         }
 
         /* Receive Vsites */
-        size_t nvsite = cr->recv_int(src);
+        int nvsite;
+        cr->recv(src, &nvsite);
         vsite_.clear();
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
         {
             Vsite vsite;
             cs = vsite.Receive(cr, src);
@@ -600,13 +604,14 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         }
 
         /* Receive Listed Forces */
-        size_t nforces           = cr->recv_int(src);
+        int nforces;
+        cr->recv(src, &nforces);
         forces_.clear();
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
         {
             ForceFieldParameterList fs;
             std::string             key;
-            cr->recv_str(src, &key);
+            cr->recv(src, &key);
             InteractionType iType = stringToInteractionType(key.c_str());
             cs                    = fs.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
@@ -627,9 +632,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         /* Receive Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            size_t nsymcharges = cr->recv_int(src);
+            int nsymcharges;
+            cr->recv(src, &nsymcharges);
             symcharges_.clear();
-            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
+            for (int n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
             {
                 Symcharges symcharges;
                 cs = symcharges.Receive(cr, src);
@@ -659,14 +665,14 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
                 if (Mutability::Free    == mut ||
                     Mutability::Bounded == mut)
                 {
-                    cr->send_int(dest, 1);
-                    cr->send_str(dest, &ax.second.id().id());
-                    cr->send_str(dest, &p.first);
-                    cr->send_double(dest, p.second.value());
+                    cr->send(dest, 1);
+                    cr->send(dest, ax.second.id().id());
+                    cr->send(dest, p.first);
+                    cr->send(dest, p.second.value());
                 }
             }
         }
-        cr->send_int(dest, 0);
+        cr->send(dest, 0);
     }
     cr->send_done(dest);
 }
@@ -677,14 +683,17 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive Particle info */
-        while (1 == cr->recv_int(src))
+        int status;
+        cr->recv(src, &status);
+        while (1 == status)
         {
             std::string axid, paramname;
             double value;
-            cr->recv_str(src, &axid);
-            cr->recv_str(src, &paramname);
-            value = cr->recv_double(src);
+            cr->recv(src, &axid);
+            cr->recv(src, &paramname);
+            cr->recv(src, &value);
             findParticleType(axid)->parameter(paramname)->setValue(value);
+            cr->recv(src, &status);
         }
     }
     else
@@ -719,13 +728,13 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
             auto fs = forces_.find(myeem);
             if (fs != forces_.end())
             {
-                cr->send_int(dest, 1);
+                cr->send(dest, 1);
                 // TODO do not ignore return value
                 (void) fs->second.Send(cr, dest);
             }
             else
             {
-                cr->send_int(dest, 0);
+                cr->send(dest, 0);
             }
         }
     }
@@ -739,7 +748,8 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
         /* Receive EEMprops and Bond Corrections */
         for(auto myeem : eemlist)
         {
-            int nbc = cr->recv_int(src);
+            int nbc;
+            cr->recv(src, &nbc);
             if (nbc == 1)
             {
                 auto fs = forces_.find(myeem);

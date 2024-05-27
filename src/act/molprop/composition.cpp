@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -82,33 +82,34 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &name_);
-        cr->recv_str(src, &obType_);
-        cr->recv_str(src, &residueName_);
-        residueNumber_ = cr->recv_int(src);
-        atomID_ = cr->recv_int(src);
-        cr->recv_str(src, &coord_unit_);
-        x_      = cr->recv_double(src);
-        y_      = cr->recv_double(src);
-        z_      = cr->recv_double(src);
-        cr->recv_str(src, &force_unit_);
-        fx_     = cr->recv_double(src);
-        fy_     = cr->recv_double(src);
-        fz_     = cr->recv_double(src);
-        Ncharge = cr->recv_int(src);
+        cr->recv(src, &name_);
+        cr->recv(src, &obType_);
+        cr->recv(src, &residueName_);
+        cr->recv(src, &residueNumber_);
+        cr->recv(src, &atomID_);
+        cr->recv(src, &coord_unit_);
+        cr->recv(src, &x_);
+        cr->recv(src, &y_);
+        cr->recv(src, &z_);
+        cr->recv(src, &force_unit_);
+        cr->recv(src, &fx_);
+        cr->recv(src, &fy_);
+        cr->recv(src, &fz_);
+        cr->recv(src, &Ncharge);
 
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
         {
             std::string type;
-            cr->recv_str(src, &type);
-            double q = cr->recv_double(src);
+            cr->recv(src, &type);
+            double q;
+            cr->recv(src, &q);
             AddCharge(stringToQtype(type), q);
         }
     }
     if (nullptr != debug)
     {
         fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
-     }
+    }
     return cs;
 }
 
@@ -169,26 +170,26 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &name_);
-        cr->send_str(dest, &obType_);
-        cr->send_str(dest, &residueName_);
-        cr->send_int(dest, residueNumber_);
-        cr->send_int(dest, atomID_);
-        cr->send_str(dest, &coord_unit_);
-        cr->send_double(dest, x_);
-        cr->send_double(dest, y_);
-        cr->send_double(dest, z_);
-        cr->send_str(dest, &force_unit_);
-        cr->send_double(dest, fx_);
-        cr->send_double(dest, fy_);
-        cr->send_double(dest, fz_);
-        cr->send_int(dest, q_.size());
+        cr->send(dest, name_);
+        cr->send(dest, obType_);
+        cr->send(dest, residueName_);
+        cr->send(dest, residueNumber_);
+        cr->send(dest, atomID_);
+        cr->send(dest, coord_unit_);
+        cr->send(dest, x_);
+        cr->send(dest, y_);
+        cr->send(dest, z_);
+        cr->send(dest, force_unit_);
+        cr->send(dest, fx_);
+        cr->send(dest, fy_);
+        cr->send(dest, fz_);
+        cr->send(dest, static_cast<int>(q_.size()));
 
         for (const auto &qi : q_)
         {
             std::string type = qTypeName(qi.first);
-            cr->send_str(dest, &type);
-            cr->send_double(dest, qi.second);
+            cr->send(dest, type);
+            cr->send(dest, qi.second);
         }
     }
     if (nullptr != debug)
@@ -204,8 +205,8 @@ CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &catom_);
-        cr->send_int(dest, cnumber_);
+        cr->send(dest, catom_);
+        cr->send(dest, cnumber_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent AtomNum %s %d, status %s\n",
@@ -222,8 +223,8 @@ CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &catom_);
-        cnumber_ = cr->recv_int(src);
+        cr->recv(src, &catom_);
+        cr->recv(src, &cnumber_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received AtomNum %s %d, status %s\n",
@@ -323,8 +324,8 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, atomnum_.size());
-        cr->send_str(dest, &compname_);
+        cr->send(dest, static_cast<int>(atomnum_.size()));
+        cr->send(dest, compname_);
         for (auto &ani : atomnum_)
         {
             cs = ani.Send(cr, dest);
@@ -349,8 +350,8 @@ CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr,
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        Natomnum = cr->recv_int(src);
-        cr->recv_str(src, &compname_);
+        cr->recv(src, &Natomnum);
+        cr->recv(src, &compname_);
         CommunicationStatus cs2;
         for (int n = 0; n < Natomnum; n++)
         {
