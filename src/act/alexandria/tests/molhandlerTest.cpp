@@ -73,7 +73,7 @@ static void add_energies(const ForceField                        *pd,
         { InteractionType::EPOT,       F_EPOT },
         { InteractionType::EXCHANGE,   F_REPULSION },
         { InteractionType::DISPERSION, F_DISPERSION },
-        { InteractionType::COULOMB,    F_COUL_SR }
+        { InteractionType::ELECTROSTATICS,    F_COUL_SR }
     };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)

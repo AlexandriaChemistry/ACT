@@ -228,7 +228,7 @@ protected:
                 std::map<InteractionType, double> einter;
                 mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
                 checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
-                checker_.checkReal(einter[InteractionType::COULOMB], "Coulomb");
+                checker_.checkReal(einter[InteractionType::ELECTROSTATICS], "Coulomb");
                 checker_.checkReal(einter[InteractionType::INDUCTION], "Induction");
                 checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
                 checker_.checkReal(einter[InteractionType::EXCHANGE], "Repulsion");

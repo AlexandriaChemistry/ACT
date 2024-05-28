@@ -108,14 +108,14 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
     nAtom_   = atoms.size();
     qtot_    = qtotal;
     qshell_  = 0;
-    auto qt       = pd->findForcesConst(InteractionType::COULOMB);
+    auto qt       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     auto eqtModel = potentialToChargeType(qt.potential());
     bool haveZeta = eqtModel != ChargeType::Point;
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto ztype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
+        auto ztype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         auto qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         row_.push_back(atype->row());
@@ -562,11 +562,11 @@ void QgenResp::optimizeCharges(double epsilonr)
 void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
                           const ForceField              *pd)
 {
-    auto    fs   = pd->findForcesConst(InteractionType::COULOMB);
+    auto    fs   = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     for (int i = 0; i < nAtom_; i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto myid  = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
+        auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }

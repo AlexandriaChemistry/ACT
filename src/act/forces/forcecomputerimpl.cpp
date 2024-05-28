@@ -468,7 +468,7 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
             }
         }
     }
-    energies->insert({InteractionType::COULOMB, ebond});
+    energies->insert({InteractionType::ELECTROSTATICS, ebond});
 }
 
 static void computeCoulombSlater(const TopologyEntryVector         &pairs,
@@ -520,7 +520,7 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
             }
         }
     }
-    energies->insert({InteractionType::COULOMB, ebond});
+    energies->insert({InteractionType::ELECTROSTATICS, ebond});
 }
 
 #ifdef FUTURE

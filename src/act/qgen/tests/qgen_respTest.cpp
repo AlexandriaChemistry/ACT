@@ -125,7 +125,7 @@ protected:
         
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
-        auto qt = pd->findForcesConst(InteractionType::COULOMB);
+        auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
         auto ct = potentialToChargeType(qt.potential());
         
         EXPECT_FALSE(ChargeType::Slater  == ct);

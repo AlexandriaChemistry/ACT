@@ -527,7 +527,7 @@ static void generateParameterPairs(ForceField      *pd,
 
 static void generateCoulombParameterPairs(ForceField *pd)
 {
-    auto forcesCoul = pd->findForces(InteractionType::COULOMB);
+    auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
     
     // We temporarily store the new parameters here
     ForceFieldParameterList newParams;

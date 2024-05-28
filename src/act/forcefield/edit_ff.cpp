@@ -337,7 +337,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
 {
     static std::set<InteractionType> bonds = {
         InteractionType::VDW,
-        InteractionType::COULOMB,
+        InteractionType::ELECTROSTATICS,
         InteractionType::BONDS,
         InteractionType::ANGLES,
         InteractionType::LINEAR_ANGLES,
@@ -354,7 +354,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
         InteractionType::VSITE3OUTS };
     static std::set<InteractionType> eem = {
         InteractionType::POLARIZATION,
-        InteractionType::COULOMB,
+        InteractionType::ELECTROSTATICS,
         InteractionType::BONDCORRECTIONS,
         InteractionType::ELECTRONEGATIVITYEQUALIZATION };
     static std::map<const std::string, std::set<InteractionType> > mymap = {

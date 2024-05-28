@@ -248,7 +248,7 @@ static void print_polarizability(FILE              *fp,
 
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
-    terms_ = { InteractionType::EPOT, InteractionType::COULOMB,
+    terms_ = { InteractionType::EPOT, InteractionType::ELECTROSTATICS,
                InteractionType::INDUCTION, InteractionType::DISPERSION,
                InteractionType::EXCHANGE, InteractionType::ALLELEC };
 }
@@ -955,7 +955,7 @@ static void print_diatomics(const alexandria::ACTMol                            
     for (const auto &ecm : energyComponentMap)
     {
         double eee = ecm.first;
-        for(const auto itype : { InteractionType::COULOMB, InteractionType::INDUCTION })
+        for(const auto itype : { InteractionType::ELECTROSTATICS, InteractionType::INDUCTION })
         {
             auto esm = ecm.second.find(itype);
             if (ecm.second.end() != esm)
@@ -1016,7 +1016,7 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
     std::map<InteractionType, gmx_stats> myeinter;
     std::map<eRMS, InteractionType> interE = {
         { eRMS::Interaction,       InteractionType::EPOT           },
-        { eRMS::Electrostatics,    InteractionType::COULOMB        },
+        { eRMS::Electrostatics,    InteractionType::ELECTROSTATICS        },
         { eRMS::Dispersion,        InteractionType::DISPERSION     },
         { eRMS::Exchange,          InteractionType::EXCHANGE       },
         { eRMS::Induction,         InteractionType::INDUCTION      }

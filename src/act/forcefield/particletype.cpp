@@ -50,7 +50,7 @@ namespace alexandria
 static std::map<std::string, InteractionType> stringToItype =
     {
         { "acmtype",  InteractionType::ELECTRONEGATIVITYEQUALIZATION },
-        { "zetatype", InteractionType::COULOMB },
+        { "zetatype", InteractionType::ELECTROSTATICS },
         { "poltype",  InteractionType::POLARIZATION },
         { "bondtype", InteractionType::BONDS },
         { "vdwtype",  InteractionType::VDW },

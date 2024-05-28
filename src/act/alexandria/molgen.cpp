@@ -181,7 +181,7 @@ bool MolGen::checkOptions(FILE                        *logFile,
                           const std::vector<t_filenm> &filenames,
                           ForceField                  *pd)
 {
-    std::set iTypeElec  = { InteractionType::COULOMB, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+    std::set iTypeElec  = { InteractionType::ELECTROSTATICS, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                             InteractionType::BONDCORRECTIONS, InteractionType::POLARIZATION };
     bool Electrostatics = false;
 
@@ -316,7 +316,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         
         std::vector<InteractionType> atomicItypes = {
             InteractionType::POLARIZATION,
-            InteractionType::COULOMB,
+            InteractionType::ELECTROSTATICS,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE
         };

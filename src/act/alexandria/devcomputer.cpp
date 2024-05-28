@@ -114,7 +114,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
     {
         double bound = 0;
         // Check whether shell zeta > core zeta. Only for polarizable models.
-        auto   itype = InteractionType::COULOMB;
+        auto   itype = InteractionType::ELECTROSTATICS;
         if (forcefield->polarizable() && forcefield->interactionPresent(itype))
         {
             auto &fs             = forcefield->findForcesConst(itype);
@@ -294,7 +294,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
         }
         dumpQX(logfile_, actmol, coords, "ESP");
         double epsilonr;
-        if (!ffOption(*forcefield, InteractionType::COULOMB, "epsilonr", &epsilonr))
+        if (!ffOption(*forcefield, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
         {
             epsilonr = 1;
         }
@@ -601,7 +601,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     bool                            doInter = false;
     std::map<eRMS, InteractionType> rmsE    = {
         { eRMS::Interaction,    InteractionType::EPOT         },
-        { eRMS::Electrostatics, InteractionType::COULOMB      },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
         { eRMS::Dispersion,     InteractionType::DISPERSION   },
         { eRMS::Exchange,       InteractionType::EXCHANGE     },
         { eRMS::Induction,      InteractionType::INDUCTION    },

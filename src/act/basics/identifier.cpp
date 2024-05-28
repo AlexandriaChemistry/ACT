@@ -247,7 +247,7 @@ Identifier::Identifier(InteractionType    iType,
     {
         atoms_.push_back(id.substr(c0, id.size()-c0));
     }
-    if (InteractionType::VDW != iType && InteractionType::COULOMB != iType &&
+    if (InteractionType::VDW != iType && InteractionType::ELECTROSTATICS != iType &&
         InteractionType::VSITE3OUT != iType && InteractionType::VSITE3OUTS != iType)
     {
         // Those InteractionTypes that have a fixed number of atom types

@@ -335,7 +335,7 @@ static void processAttr(FILE       *fp,
             std::map<InteractionType, CanSwap> csUpdate = {
                 { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
                 { InteractionType::POLARIZATION, CanSwap::Yes },
-                { InteractionType::COULOMB, CanSwap::Yes },
+                { InteractionType::ELECTROSTATICS, CanSwap::Yes },
                 { InteractionType::VSITE2, CanSwap::Vsite2 }
             };
             auto doUpdate = csUpdate.find(currentItype);
@@ -350,7 +350,7 @@ static void processAttr(FILE       *fp,
                 }
             }
 
-            if (function.empty() && currentItype == InteractionType::COULOMB)
+            if (function.empty() && currentItype == InteractionType::ELECTROSTATICS)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
             }

@@ -517,7 +517,7 @@ int gen_ff(int argc, char*argv[])
         }
     }
     pd.addForces(InteractionType::POLARIZATION, pols);
-    pd.addForces(InteractionType::COULOMB, coulomb);
+    pd.addForces(InteractionType::ELECTROSTATICS, coulomb);
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::BONDS, bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
