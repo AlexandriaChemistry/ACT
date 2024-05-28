@@ -131,18 +131,6 @@ void ForceField::setFilename(const std::string &fn2)
     filename_ = fn2;
 }
 
-bool ForceField::yang() const
-{
-    // Note that this is not a good way of doing things. Filenames may change.
-    return (filename_.find("Yang.dat") != std::string::npos);
-}
-
-bool ForceField::rappe() const
-{
-    // Note that this is not a good way of doing things. Filenames may change.
-    return (filename_.find("Rappe.dat") != std::string::npos);
-}
-
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Atom STUFF

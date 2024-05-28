@@ -46,7 +46,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
-#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/symcharges.h"
 #include "act/forcefield/vsite.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
@@ -123,12 +123,7 @@ class ForceField
          * \param[in] timeStamp the new value
          */
         void setTimeStamp(const std::string &timeStamp) { timeStamp_ = timeStamp; }
-        //! Return whether or not the original Rappe & Goddard is used
-        bool rappe() const;
-        
-        //! Return whether Yang & Sharp is used
-        bool yang() const;
-        
+
         /*! \brief Add an atom type
          * \param[in] ptp The new particle type
          * \throw if this particle type exists already

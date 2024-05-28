@@ -50,7 +50,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"

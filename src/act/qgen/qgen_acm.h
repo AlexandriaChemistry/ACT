@@ -147,8 +147,6 @@ private:
     
     //! Status of the algorithm
     eQgen                            eQGEN_       = eQgen::OK;
-    //! Whether or not a warning has been issued
-    gmx_bool                         bWarned_     = false;
     //! Total charge
     int                              qtotal_      = 0;
     //! Whether or not shells are present
@@ -247,12 +245,8 @@ private:
      * the total electrostatic potetential is correct nevertheless.
      * The diagonal is filled with the atomic hardness values.
      * \param[in] epsilonr Relative  dielectric constant
-     * \param[in] bYang    Whether or not the Yang and Sharp model is used
-     * \param[in] bRappe   Whether or not the Rappe and Goddard model is used
      */
-    void calcJcc(double epsilonr,
-                 bool   bYang,
-                 bool   bRappe);
+    void calcJcc(double epsilonr);
     
     /*! \brief Compute shell potential at atom position
      * This takes into account all the shells in the molecule.
@@ -286,13 +280,6 @@ private:
      * \param[in] x The new coordinates
      */        
     void updatePositions(const std::vector<gmx::RVec> &x);
-    
-    /*! \brief Compute shielding factor for some EEM algorithms
-     * \param[in] i Atom index
-     * \param[in] j Atom index
-     * \return Shielding factor
-     */
-    double calcSij(int i, int j);
     
     /*! \brief Compute the right/hand side of the matrix equation
      * \param[in] atoms    Atom information

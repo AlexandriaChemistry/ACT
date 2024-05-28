@@ -50,7 +50,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "forcefield.h"
-#include "forcefield_low.h"
+#include "symcharges.h"
 #include "act/utility/xml_util.h"
 
 namespace alexandria

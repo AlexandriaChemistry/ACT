@@ -32,118 +32,16 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefield_low.h"
+#include "symcharges.h"
 
-#include <cmath>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <algorithm>
-#include <map>
-#include <vector>
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
 {
-
-Bosque::Bosque(const std::string &bosque, double polarizability)
-    :
-      bosque_(bosque),
-      polarizability_(polarizability)
-{}
-
-CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, bosque_);
-        cr->send(dest, polarizability_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent Bosque %s %g, status %s\n",
-                    bosque_.c_str(), polarizability_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus Bosque::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &bosque_);
-        cr->recv(src, &polarizability_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received Bosque %s %g, status %s\n",
-                    bosque_.c_str(), polarizability_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-Miller::Miller(const std::string &miller,
-               int                atomnumber,
-               double             tauAhc,
-               double             alphaAhp,
-               const std::string &alexandria_equiv)
-    :
-      miller_(miller),
-      atomnumber_(atomnumber),
-      tauAhc_(tauAhc),
-      alphaAhp_(alphaAhp),
-      alexandria_equiv_(alexandria_equiv)
-{}
-
-CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, miller_);
-        cr->send(dest, atomnumber_);
-        cr->send(dest, tauAhc_);
-        cr->send(dest, alphaAhp_);
-        cr->send(dest, alexandria_equiv_);
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent Miller %s %d %g %g %s, status %s\n",
-                    miller_.c_str(), atomnumber_, tauAhc_,
-                    alphaAhp_, alexandria_equiv_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus Miller::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &miller_);
-        cr->recv(src, &atomnumber_);
-        cr->recv(src, &tauAhc_);
-        cr->recv(src, &alphaAhp_);
-        cr->recv(src, &alexandria_equiv_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
-                    miller_.c_str(), atomnumber_, tauAhc_,
-                    alphaAhp_, alexandria_equiv_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
 
 Symcharges::Symcharges(const std::string &central,
                        const std::string &attached,
