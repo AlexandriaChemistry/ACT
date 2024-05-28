@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020,2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -60,8 +60,8 @@ CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &bosque_);
-        cr->send_double(dest, polarizability_);
+        cr->send(dest, bosque_);
+        cr->send(dest, polarizability_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Bosque %s %g, status %s\n",
@@ -77,8 +77,8 @@ CommunicationStatus Bosque::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &bosque_);
-        polarizability_ = cr->recv_double(src);
+        cr->recv(src, &bosque_);
+        cr->recv(src, &polarizability_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Bosque %s %g, status %s\n",
@@ -107,11 +107,11 @@ CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &miller_);
-        cr->send_int(dest, atomnumber_);
-        cr->send_double(dest, tauAhc_);
-        cr->send_double(dest, alphaAhp_);
-        cr->send_str(dest, &alexandria_equiv_);
+        cr->send(dest, miller_);
+        cr->send(dest, atomnumber_);
+        cr->send(dest, tauAhc_);
+        cr->send(dest, alphaAhp_);
+        cr->send(dest, alexandria_equiv_);
 
         if (nullptr != debug)
         {
@@ -129,11 +129,11 @@ CommunicationStatus Miller::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &miller_);
-        atomnumber_ = cr->recv_int(src);
-        tauAhc_     = cr->recv_double(src);
-        alphaAhp_   = cr->recv_double(src);
-        cr->recv_str(src, &alexandria_equiv_);
+        cr->recv(src, &miller_);
+        cr->recv(src, &atomnumber_);
+        cr->recv(src, &tauAhc_);
+        cr->recv(src, &alphaAhp_);
+        cr->recv(src, &alexandria_equiv_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
@@ -159,9 +159,9 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &central_);
-        cr->send_str(dest, &attached_);
-        cr->send_int(dest, numattach_);
+        cr->send(dest, central_);
+        cr->send(dest, attached_);
+        cr->send(dest, numattach_);
 
         if (nullptr != debug)
         {
@@ -198,9 +198,9 @@ CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &central_);
-        cr->recv_str(src, &attached_);
-        numattach_ = cr->recv_int(src);
+        cr->recv(src, &central_);
+        cr->recv(src, &attached_);
+        cr->recv(src, &numattach_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",

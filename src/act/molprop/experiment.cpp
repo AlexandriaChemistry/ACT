@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -325,21 +325,21 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, static_cast<int>(dataSource_));
-        cr->send_str(dest, &reference_);
-        cr->send_str(dest, &conformation_);
-        cr->send_str(dest, &program_);
-        cr->send_str(dest, &method_);
-        cr->send_str(dest, &basisset_);
-        cr->send_str(dest, &datafile_);
+        cr->send(dest, static_cast<int>(dataSource_));
+        cr->send(dest, reference_);
+        cr->send(dest, conformation_);
+        cr->send(dest, program_);
+        cr->send(dest, method_);
+        cr->send(dest, basisset_);
+        cr->send(dest, datafile_);
         jobtype.assign(jobType2string(jobtype_));
-        cr->send_str(dest, &jobtype);
-        cr->send_int(dest, property_.size());
+        cr->send(dest, jobtype);
+        cr->send(dest, static_cast<int>(property_.size()));
         for(const auto &prop : property_)
         {
             std::string mpo_str(mpo_name(prop.first));
-            cr->send_str(dest, &mpo_str);
-            cr->send_int(dest, prop.second.size());
+            cr->send(dest, mpo_str);
+            cr->send(dest, static_cast<int>(prop.second.size()));
             for (const auto &p : prop.second)
             {
                 p->Send(cr, dest);
@@ -349,7 +349,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         //! Send Atoms
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, calcAtomConst().size());
+            cr->send(dest, static_cast<int>(calcAtomConst().size()));
             for (auto &cai : calcAtomConst())
             {
                 cs = cai.Send(cr, dest);
@@ -544,28 +544,32 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        dataSource_ = static_cast<DataSource>(cr->recv_int(src));
-        cr->recv_str(src, &reference_);
-        cr->recv_str(src, &conformation_);
-        cr->recv_str(src, &program_);
-        cr->recv_str(src, &method_);
-        cr->recv_str(src, &basisset_);
-        cr->recv_str(src, &datafile_);
-        cr->recv_str(src, &jobtype);
+        int i;
+        cr->recv(src, &i);
+        dataSource_ = static_cast<DataSource>(i);
+        cr->recv(src, &reference_);
+        cr->recv(src, &conformation_);
+        cr->recv(src, &program_);
+        cr->recv(src, &method_);
+        cr->recv(src, &basisset_);
+        cr->recv(src, &datafile_);
+        cr->recv(src, &jobtype);
         jobtype_    = string2jobType(jobtype);
-        int nmpo = cr->recv_int(src);
+        int nmpo;
+        cr->recv(src, &nmpo);
         
         //! Receive Properties
         for (int i = 0; i < nmpo; i++)
         {
             MolPropObservable mpo;
             std::string       mpo_str;
-            cr->recv_str(src, &mpo_str);
+            cr->recv(src, &mpo_str);
             if (!stringToMolPropObservable(mpo_str, &mpo))
             {
                 gmx_fatal(FARGS, "Unknown observable %s", mpo_str.c_str());
             }
-            int  ngp = cr->recv_int(src);
+            int  ngp;
+            cr->recv(src, &ngp);
             for (int n = 0; n < ngp; n++)
             {
                 GenericProperty *gp = nullptr;
@@ -633,7 +637,8 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         } 
         
         //! Receive Atoms
-        int Natom = cr->recv_int(src);
+        int Natom;
+        cr->recv(src, &Natom);
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
         {
             CalcAtom ca;

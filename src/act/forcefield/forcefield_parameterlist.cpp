@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -231,35 +231,35 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         std::string ppp = potentialToString(pot_);
-        cr->send_str(dest, &ppp);
+        cr->send(dest, ppp);
         std::string canSwapString = canSwapToString(canSwap_);
         if (canSwapString.empty())
         {
             GMX_THROW(gmx::InternalError("Empty canSwapString"));
         }
-        cr->send_str(dest, &canSwapString);
-        cr->send_int(dest, options_.size());
+        cr->send(dest, canSwapString);
+        cr->send(dest, static_cast<int>(options_.size()));
         for(auto const &x : options_)
         {
-            cr->send_str(dest, &x.first);
-            cr->send_str(dest, &x.second);
+            cr->send(dest, x.first);
+            cr->send(dest, x.second);
         }
-        cr->send_int(dest, combrules_.size());
+        cr->send(dest, static_cast<int>(combrules_.size()));
         for(auto const &x : combrules_)
         {
-            cr->send_str(dest, &x.first);
-            cr->send_str(dest, &x.second);
+            cr->send(dest, x.first);
+            cr->send(dest, x.second);
         }
-        cr->send_int(dest, parameters_.size());
+        cr->send(dest, static_cast<int>(parameters_.size()));
         for(auto const &x : parameters_)
         {
             cs = x.first.Send(cr, dest);
             if (CommunicationStatus::OK == cs)
             {
-                cr->send_int(dest, x.second.size());
+                cr->send(dest, static_cast<int>(x.second.size()));
                 for(auto const &p : x.second)
                 {
-                    cr->send_str(dest, &p.first);
+                    cr->send(dest, p.first);
                     cs = p.second.Send(cr, dest);
                     if (CommunicationStatus::OK != cs)
                     {
@@ -272,7 +272,7 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
                 break;
             }
         }
-        cr->send_int(dest, counter_);
+        cr->send(dest, counter_);
     }
     return cs;
 }
@@ -417,30 +417,32 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         std::string ppp = potentialToString(pot_);
-        cr->recv_str(src, &ppp);
+        cr->recv(src, &ppp);
         if (!stringToPotential(ppp, &pot_))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid potential function '%s'", ppp.c_str()).c_str()));
         }
         std::string canSwapString;
-        cr->recv_str(src, &canSwapString);
+        cr->recv(src, &canSwapString);
         canSwap_     = stringToCanSwap(canSwapString);
-        int noptions = cr->recv_int(src);
+        int noptions;
+        cr->recv(src, &noptions);
         options_.clear();
-        int ncrule = cr->recv_int(src);
+        int ncrule;
+        cr->recv(src, &ncrule);
         combrules_.clear();
         for(int i = 0; i < noptions; i++)
         {
             std::string key, value;
-            cr->recv_str(src, &key);
-            cr->recv_str(src, &value);
+            cr->recv(src, &key);
+            cr->recv(src, &value);
             options_.insert({key, value});
         }
         for(int i = 0; i < ncrule; i++)
         {
             std::string key, value;
-            cr->recv_str(src, &key);
-            cr->recv_str(src, &value);
+            cr->recv(src, &key);
+            cr->recv(src, &value);
             combrules_.insert({key, value});
         }
         if (debug)
@@ -448,7 +450,8 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam =  cr->recv_int(src);
+        int nparam;
+        cr->recv(src, &nparam);
         parameters_.clear();
         for(int i = 0; i < nparam; i++)
         {
@@ -461,7 +464,8 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             }
             if (CommunicationStatus::OK == cs)
             {
-                int ntype = cr->recv_int(src);
+                int ntype;
+                cr->recv(src, &ntype);
                 if (debug)
                 {
                     fprintf(debug, "Done receiving ntype = %d\n", ntype);
@@ -470,7 +474,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 for(int j = 0; j < ntype; j++)
                 {
                     std::string type;
-                    cr->recv_str(src, &type);
+                    cr->recv(src, &type);
                     ForceFieldParameter p;
                     cs = p.Receive(cr, src);
                     if (CommunicationStatus::OK == cs)
@@ -498,7 +502,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 break;
             }
         }
-        counter_ = cr->recv_int(src);
+        cr->recv(src, &counter_);
     }
     return cs;
 }

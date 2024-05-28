@@ -339,11 +339,11 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
                                             int                        dest)
 {
-    cr->send_str(dest, &particleType_);
+    cr->send(dest, particleType_);
     std::string itype = interactionTypeToString(iType_);
-    cr->send_str(dest, &itype);
+    cr->send(dest, itype);
     parameterId_.Send(cr, dest);
-    cr->send_str(dest, &parameterType_);
+    cr->send(dest, parameterType_);
     
     return CommunicationStatus::OK;
 }
@@ -351,12 +351,12 @@ CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
 CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
                                                int                        src)
 {
-    cr->recv_str(src, &particleType_);
+    cr->recv(src, &particleType_);
     std::string itype;
-    cr->recv_str(src, &itype);
+    cr->recv(src, &itype);
     iType_ = stringToInteractionType(itype);
     parameterId_.Receive(cr, src);
-    cr->recv_str(src, &parameterType_);
+    cr->recv(src, &parameterType_);
 
     return CommunicationStatus::OK;
 }
@@ -449,7 +449,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         // Now send the data over to my helpers
         for(const int dst : cr->helpers())
         {
-            cr->send_int(dst, optIndex_.size());
+            cr->send(dst, static_cast<int>(optIndex_.size()));
             for(size_t i = 0; i < optIndex_.size(); i++)
             {
                 optIndex_[i].send(cr, dst);
@@ -461,9 +461,10 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         // Receive the data from my superior
         int src = cr->superior();
         GMX_RELEASE_ASSERT(src >= 0, "No superior");
-        int nOpt = cr->recv_int(src);
-        optIndex_.resize(nOpt);
-        for(int i = 0; i < nOpt; i++)
+        int nopt;
+        cr->recv(src, &nopt);
+        optIndex_.resize(nopt);
+        for(int i = 0; i < nopt; i++)
         {
             optIndex_[i].receive(cr, src);
         }
@@ -512,36 +513,39 @@ void StaticIndividualInfo::fillVectors(const int mindata)
         }
         for(int dest : cr_->helpers())
         {
-            cr_->send_double_vector(dest, &defaultParam_);
-            cr_->send_double_vector(dest, &lowerBound_);
-            cr_->send_double_vector(dest, &upperBound_);
-            cr_->send_int(dest, paramNames_.size());
+            cr_->send(dest, defaultParam_);
+            cr_->send(dest, lowerBound_);
+            cr_->send(dest, upperBound_);
+            cr_->send(dest, static_cast<int>(paramNames_.size()));
             for(size_t i = 0; i < paramNames_.size(); i++)
             {
-                cr_->send_str(dest, &paramNames_[i]);
-                cr_->send_str(dest, &paramNamesWOClass_[i]);
-                cr_->send_int(dest, ntrain_[i]);
+                cr_->send(dest, paramNames_[i]);
+                cr_->send(dest, paramNamesWOClass_[i]);
+                cr_->send(dest, ntrain_[i]);
                 std::string mutab = mutabilityName(mutability_[i]);
-                cr_->send_str(dest, &mutab);
+                cr_->send(dest, mutab);
             }
         }
     }
     else
     {
         int src = cr_->superior();
-        cr_->recv_double_vector(src, &defaultParam_);
-        cr_->recv_double_vector(src, &lowerBound_);
-        cr_->recv_double_vector(src, &upperBound_);
-        int nparam = cr_->recv_int(src);
+        cr_->recv(src, &defaultParam_);
+        cr_->recv(src, &lowerBound_);
+        cr_->recv(src, &upperBound_);
+        int nparam;
+        cr_->recv(src, &nparam);
         for(int i = 0; i < nparam; i++)
         {
             std::string paramName, paramNameWOClass, mutab;
-            cr_->recv_str(src, &paramName);
-            cr_->recv_str(src, &paramNameWOClass);
+            cr_->recv(src, &paramName);
+            cr_->recv(src, &paramNameWOClass);
             paramNames_.push_back(paramName);
             paramNamesWOClass_.push_back(paramNameWOClass);
-            ntrain_.push_back(cr_->recv_int(src));
-            cr_->recv_str(src, &mutab);
+            int nt;
+            cr_->recv(src, &nt);
+            ntrain_.push_back(nt);
+            cr_->recv(src, &mutab);
             Mutability mmm;
             if (nameToMutability(mutab, &mmm))
             {

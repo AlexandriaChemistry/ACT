@@ -288,7 +288,7 @@ class ForceFieldParameterList
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     //! \return The counter \p counter_ for index
-    size_t counter() const { return counter_; };
+    int counter() const { return counter_; };
 
  private:
     //! The potential
@@ -307,7 +307,7 @@ class ForceFieldParameterList
     ForceFieldParameterListMap parameters_;
 
     //! Counter for index
-    size_t counter_ = 0;
+    int counter_ = 0;
 };
 
 } // namespace

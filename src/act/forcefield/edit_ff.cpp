@@ -931,7 +931,7 @@ int edit_ff(int argc, char*argv[])
                     for(int dest = 1; dest < cr.size(); dest++)
                     {
                         cs = pd.Send(&cr, dest);
-                        cr.send_str(dest, &outfile);
+                        cr.send(dest, outfile);
                     }
                 }
             }
@@ -946,7 +946,7 @@ int edit_ff(int argc, char*argv[])
                 else
                 {
                     cs = pd.Receive(&cr, 0);
-                    cr.recv_str(0, &outfile);
+                    cr.recv(0, &outfile);
                 }
                 if (CommunicationStatus::OK == cs && cr.rank() == 2)
                 {

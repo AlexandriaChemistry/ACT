@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -625,16 +625,16 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, index_);
-        cr->send_str(dest, &molname_);
-        cr->send_str(dest, &iupac_);
-        cr->send_str(dest, &cas_);
-        cr->send_str(dest, &cid_);
-        cr->send_str(dest, &inchi_);
-        cr->send_int(dest, bond_.size());
-        cr->send_int(dest, category_.size());
-        cr->send_int(dest, exper_.size());
-        cr->send_int(dest, fragment_.size());
+        cr->send(dest, index_);
+        cr->send(dest, molname_);
+        cr->send(dest, iupac_);
+        cr->send(dest, cas_);
+        cr->send(dest, cid_);
+        cr->send(dest, inchi_);
+        cr->send(dest, static_cast<int>(bond_.size()));
+        cr->send(dest, static_cast<int>(category_.size()));
+        cr->send(dest, static_cast<int>(exper_.size()));
+        cr->send(dest, static_cast<int>(fragment_.size()));
         
         /* Send Bonds */
         for (auto &bi : bondsConst())
@@ -653,8 +653,8 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
             {
                 if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
-                    std::string sii = si.c_str();
-                    cr->send_str(dest, &sii);
+                    std::string sii(si);
+                    cr->send(dest, sii);
                     if (nullptr != debug)
                     {
                         fprintf(debug, "Sent category %s\n", si.c_str());
@@ -833,16 +833,17 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         //! Receive index and more
-        index_        = cr->recv_int(src);
-        cr->recv_str(src, &molname_);
-        cr->recv_str(src, &iupac_);
-        cr->recv_str(src, &cas_);
-        cr->recv_str(src, &cid_);
-        cr->recv_str(src, &inchi_);
-        int Nbond     = cr->recv_int(src);
-        int Ncategory = cr->recv_int(src);
-        int Nexper    = cr->recv_int(src);
-        int Nfrag     = cr->recv_int(src);
+        cr->recv(src, &index_);
+        cr->recv(src, &molname_);
+        cr->recv(src, &iupac_);
+        cr->recv(src, &cas_);
+        cr->recv(src, &cid_);
+        cr->recv(src, &inchi_);
+        int Nbond, Ncategory, Nexper, Nfrag;
+        cr->recv(src, &Nbond);
+        cr->recv(src, &Ncategory);
+        cr->recv(src, &Nexper);
+        cr->recv(src, &Nfrag);
 
         if (nullptr != debug)
         {
@@ -866,7 +867,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
                 std::string str;
-                cr->recv_str(src, &str);
+                cr->recv(src, &str);
                 if (!str.empty())
                 {
                     AddCategory(str);

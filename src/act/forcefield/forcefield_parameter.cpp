@@ -134,25 +134,24 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &unit_);
-        cr->send_double(dest, value_);
-        cr->send_str(dest, &mutabilityName(mutability_));
-        cr->send_double(dest, originalValue_);
-        cr->send_double(dest, uncertainty_);
-        cr->send_double(dest, originalUncertainty_);
-        cr->send_int(dest, ntrain_);
-        cr->send_int(dest, originalNtrain_);
-        cr->send_double(dest, minimum_);
-        cr->send_double(dest, maximum_);
-        cr->send_bool(dest, nonNegative_);
-        cr->send_int(dest, strict_ ? 1 : 0);
+        cr->send(dest, unit_);
+        cr->send(dest, value_);
+        cr->send(dest, mutabilityName(mutability_));
+        cr->send(dest, originalValue_);
+        cr->send(dest, uncertainty_);
+        cr->send(dest, originalUncertainty_);
+        cr->send(dest, ntrain_);
+        cr->send(dest, originalNtrain_);
+        cr->send(dest, minimum_);
+        cr->send(dest, maximum_);
+        cr->send(dest, nonNegative_);
+        cr->send(dest, strict_ ? 1 : 0);
         if (debug)
         {
             fprintf(debug, "Sent most of a parameter\n");
             fflush(debug);
         }
-        std::string mname = mutabilityName(mutability_);
-        cr->send_str(dest, &mname);
+        cr->send(dest, mutabilityName(mutability_));
 
         if (nullptr != debug)
         {
@@ -217,32 +216,32 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &unit_);
-        value_               = cr->recv_double(src);
+        cr->recv(src, &unit_);
+        cr->recv(src, &value_);
         std::string mutstr;
-        cr->recv_str(src, &mutstr);
+        cr->recv(src, &mutstr);
         Mutability mut;
         if (!nameToMutability(mutstr, &mut))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
         }
         mutability_          = mut;
-        originalValue_       = cr->recv_double(src);
-        uncertainty_         = cr->recv_double(src);
-        originalUncertainty_ = cr->recv_double(src);
-        ntrain_              = cr->recv_int(src);
-        originalNtrain_      = cr->recv_int(src);
-        minimum_             = cr->recv_double(src);
-        maximum_             = cr->recv_double(src);
-        nonNegative_         = cr->recv_bool(src);
-        strict_              = cr->recv_int(src);
+        cr->recv(src, &originalValue_ );
+        cr->recv(src, &uncertainty_);
+        cr->recv(src, &originalUncertainty_);
+        cr->recv(src, &ntrain_);
+        cr->recv(src, &originalNtrain_);
+        cr->recv(src, &minimum_);
+        cr->recv(src, &maximum_);
+        cr->recv(src, &nonNegative_);
+        cr->recv(src, &strict_);
         if (debug)
         {
             fprintf(debug, "Received most of ff param\n");
             fflush(debug);
         }
         std::string mname;
-        cr->recv_str(src, &mname);
+        cr->recv(src, &mname);
         if (!nameToMutability(mname, &mutability_))
         {
             GMX_THROW(gmx::InternalError("Communicating mutability"));

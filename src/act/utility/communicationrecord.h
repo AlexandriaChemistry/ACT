@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -123,14 +123,14 @@ private:
      * \param[in] buf     Pointer to the byte-buffer
      * \param[in] bufsize The size of the buffer in bytes
      */
-    void send(int dest, const void *buf, int bufsize) const;
+    void send_low(int dest, const void *buf, int bufsize) const;
 
     /*! Receive a buffer from another processor.
      * \param[in] src     The source processor
      * \param[in] buf     Pointer to the byte-buffer
      * \param[in] bufsize The size of the buffer in bytes
      */
-    void recv(int src, void *buf, int bufsize) const;
+    void recv_low(int src, void *buf, int bufsize) const;
     /*! \brief Print the values to a file
      * \param[in] fp The file pointer to print to
      */
@@ -235,131 +235,28 @@ public:
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
-
-    /*! Broadcast a string to helpers or all processors from the master.
+    /*! Broadcast data to helpers or all processors from the master.
      * \param[inout] str  Pointer to the string
      * \param[in]    comm MPI communicator
      * \param[in]    root Who is the root of this communicatione
      */
-    void bcast(std::string *str, MPI_Comm comm, int root=0) const;
-    
-    /*! Broadcast an integer to all processors from the master.
-     * \param[inout] i    Pointer to the integer
-     * \param[in]    comm MPI communicator
-     * \param[in]    root Who is the root of this communicatione
-     */
-    void bcast(int *i, MPI_Comm comm, int root=0) const;
-    
-    /*! Broadcast a bool to all processors from the master.
-     * \param[inout] b    Pointer to the bool
-     * \param[in]    comm MPI communicator
-     * \param[in]    root Who is the root of this communicatione
-     */
-    void bcast(bool *b, MPI_Comm comm, int root=0) const;
-    
-    /*! Broadcast a double to all processors from the master.
-     * \param[inout] d    Pointer to the double
-     * \param[in]    comm MPI communicator
-     * \param[in]    root Who is the root of this communicatione
-     */
-    void bcast(double *d, MPI_Comm comm, int root=0) const;
-    
-    /*! Broadcast a double vector to all processors from the master.
-     * \param[inout] d    Pointer to vector of the doubles
-     * \param[in]    comm MPI communicator
-     * \param[in]    root Who is the root of this communicatione
-     */
-    void bcast(std::vector<double> *d,
-               MPI_Comm             comm,
-               int                  root=0) const;
+    template<typename T>
+    void bcast(T *t, MPI_Comm comm, int root=0) const;
 
-    /*! Send a string to another processor.
+    /*! Send data to another processor.
      * \param[in] dest The destination processor
-     * \param[in] str  Pointer to the string
+     * \param[in] t    Pointer to the data
      */
-    void send_str(int dest, const std::string *str) const;
+    template<typename T>
+    void send(int dest, const T &t) const;
     
-    /*! Receive a string from another processor.
+    /*! Receive data from another processor.
      * \param[in] src The destination processor
-     * \param[in] str Pointer to the string
+     * \param[in] t   Pointer to the data
      */
-    void recv_str(int src, std::string *str) const;
+    template<typename T>
+    void recv(int src, T *t) const;
     
-    /*! Send a double to another processor.
-     * \param[in] dest The destination processor
-     * \param[in] d    The value of the double
-     */
-    void send_double(int dest, double d) const;
-    
-    /*! \brief Receive a double
-     * \param[in] src The source processor
-     * \return The double received
-     */
-    double recv_double(int src) const;
-    
-    /*! Send a double vector to another processor.
-     * \param[in] dest The destination processor
-     * \param[in] d    Pointer to vector of the doubles
-     */
-    void send_double_vector(int dest, const std::vector<double> *d) const;
-    
-    /*! Receive a double vector from another processor.
-     * \param[in] dest The source processor
-     * \param[in] d    Pointer to vector of the doubles
-     */
-    void recv_double_vector(int src, std::vector<double> *d) const;
-    
-    /*! Send a bool to another processor.
-     * \param[in] dest The destination processor
-     * \param[in] b    The value of the boolean
-     */
-    void send_bool(int dest, bool b) const;
-    
-    /*! Send an int to another processor.
-     * \param[in] dest The destination processor
-     * \param[in] d    The value of the integer
-     */
-    void send_int(int dest, int d) const;
-    
-    /*! \brief Receive an int
-     * \param[in] src The source processor
-     * \return The int received
-     */
-    int recv_int(int src) const;
-
-    /*! \brief Receive a bool
-     * \param[in] src The source processor
-     * \return The boolean received
-     */
-    bool recv_bool(int src) const;
-
-    /*!
-     * \brief Send a train_ff middleman mode to another processor
-     * \param[in] dest the destination processor
-     * \param[in] mode the middleman mode to send
-     */
-    void send_ff_middleman_mode(int dest, TrainFFMiddlemanMode mode) const;
-
-    /*!
-     * \brief Receive a train_ff middleman mode from another processor
-     * \param[in] the source node
-     * \return the train_ff middleman mode
-     */
-    TrainFFMiddlemanMode recv_ff_middleman_mode(int src) const;
- 
-    /*! Send an iMolSelect to another processor.
-     * \param[in] dest The destination processor
-     * \param[in] ims  The value of the iMolSelect
-     */
-    void send_iMolSelect(int dest, iMolSelect ims) const;
-    
-    /*! \brief Receive an iMolSelect
-     * \param[in] src The source processor
-     * \return The iMolSelect received
-     * \throws if something is wrong
-     */
-    iMolSelect recv_iMolSelect(int src) const;
- 
     /*! \brief Calculate the global sum of an array of doubles
      * but only on my act helpers.
      * \param[in]    nr The number of doubles

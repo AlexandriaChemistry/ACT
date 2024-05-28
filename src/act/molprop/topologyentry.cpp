@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -125,16 +125,8 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, indices_.size());
-        for(auto &ai : indices_)
-        {
-            cr->send_int(dest, ai);
-        }
-        cr->send_int(dest, bondOrder_.size());
-        for(auto &bo : bondOrder_)
-        {
-            cr->send_double(dest, bo);
-        }
+        cr->send(dest, indices_);
+        cr->send(dest, bondOrder_);
     }
     else if (nullptr != debug)
     {
@@ -191,15 +183,17 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        int nai = cr->recv_int(src);
-        for (int i=0; i < nai; i++)
+        std::vector<int> atomIndices;
+        cr->recv(src, &atomIndices);
+        for (auto a : atomIndices)
         {
-            addAtom(cr->recv_int(src));
+            addAtom(a);
         }
-        int nbo = cr->recv_int(src);
-        for (int i=0; i < nbo; i++)
+        std::vector<double> bondOrders;
+        cr->recv(src, &bondOrders);
+        for (auto b : bondOrders)
         {
-            addBondOrder(cr->recv_double(src));
+            addBondOrder(b);
         }
     }
     else if (nullptr != debug)

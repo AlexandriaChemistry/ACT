@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -494,7 +494,7 @@ int edit_mp(int argc, char *argv[])
         {
             for(int dest = 1; dest < cr.size(); dest++)
             {
-                cr.send_int(dest, mptsize);
+                cr.send(dest, mptsize);
                 for(const auto &mm : mpt)
                 {
                     mm.Send(&cr, dest);
@@ -517,7 +517,8 @@ int edit_mp(int argc, char *argv[])
         }
         else
         {
-            int nmpt = cr.recv_int(cr.superior());
+            int nmpt;
+            cr.recv(cr.superior(), &nmpt);
             for(int i = 0; i < nmpt; i++)
             {
                 MolProp mp;

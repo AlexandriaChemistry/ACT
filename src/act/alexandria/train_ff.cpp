@@ -231,7 +231,7 @@ int OptACM::initMaster(const char *fitnessFile)
     {
         // Generate new seed for each of the middlemen
         // and send it over.
-        sii_->commRec()->send_int(mman, dis(gen));
+        sii_->commRec()->send(mman, dis(gen));
     }
 
     // Initializer

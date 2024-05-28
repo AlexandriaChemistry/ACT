@@ -96,15 +96,16 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
     if (cr->isHelper())
     {
         // Now who is my middleman?
-        int src = cr->superior();
-        return static_cast<CalcDev>(cr->recv_int(src));
+        int cd;
+        cr->recv(cr->superior(), &cd);
+        return static_cast<CalcDev>(cd);
     }
     else 
     {
         // Send only to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_int(dest, static_cast<int>(task));
+            cr->send(dest, static_cast<int>(task));
         }
         return task;
     }
@@ -125,12 +126,15 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         // Find out who to talk to
         int src = cr->superior();
         std::vector<double> myparams;
-        cr->recv_double_vector(src, &myparams);
+        cr->recv(src, &myparams);
         std::set<int>       mychanged;
-        int nchanged = cr->recv_int(src);
+        int nchanged;
+        cr->recv(src, &nchanged);
         for(int i = 0; i < nchanged; i++)
         {
-            mychanged.insert(cr->recv_int(src));
+            int mc;
+            cr->recv(src, &mc);
+            mychanged.insert(mc);
         }
         sii_->updateForceField(mychanged, myparams);
     }
@@ -139,11 +143,11 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         // Send only to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_double_vector(dest, params);
-            cr->send_int(dest, changed.size());
+            cr->send(dest, *params);
+            cr->send(dest, static_cast<int>(changed.size()));
             for(int iset : changed)
             {
-                cr->send_int(dest, iset);
+                cr->send(dest, iset);
             }
         }
         sii_->updateForceField(changed, *params);
@@ -162,15 +166,14 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     if (cr->isHelper())
     {
         // Now who is my middleman?
-        int src  = cr->superior();
-        ims      = cr->recv_iMolSelect(src);
+        cr->recv(cr->superior(), &ims);
     }
     else if (CalcDev::ComputeAll != task)
     {
         // Send ims to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_iMolSelect(dest, ims);
+            cr->send(dest, ims);
         }
     }
     if (debug)

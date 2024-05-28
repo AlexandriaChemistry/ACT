@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -101,11 +101,11 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // Tell the middle man to continue
             cr->send_data(dest);
             // Send the data set
-            cr->send_iMolSelect(dest, imstr);
+            cr->send(dest, imstr);
             // Now resend the bases
-            cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
+            cr->send(dest, pool.genomePtr(i)->bases());
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
             i += 1;
         }
     }
@@ -120,9 +120,10 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         int src      = cr->middlemen()[i-1];
         // Receiving the mutated parameters
-        cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());
+        cr->recv(src, pool.genomePtr(i)->basesPtr());
         // Receiving the new training fitness
-        auto fitness = cr->recv_double(src);
+        double fitness;
+        cr->recv(src, &fitness);
         pool.genomePtr(i)->setFitness(imstr, fitness);
     }
 
@@ -282,12 +283,12 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 // Signify the middlemen to continue
                 cr->send_data(dest);
                 // Send the data set FIXME: is this necessary? It will always be train?
-                cr->send_iMolSelect(dest, imstr);
+                cr->send(dest, imstr);
                 // Now send the new bases
-                cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
+                cr->send(dest, pool[pold]->genomePtr(i)->bases());
                 // III.
                 // Tell the middleman to carry the MUTATION mode
-                cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
+                cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
             }
             // Recompute my fitness
             fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, true);
@@ -295,7 +296,8 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
                 int src = cr->middlemen()[i-1];
-                auto fitness = cr->recv_double(src);  // Receiving the new training fitness
+                double fitness;
+                cr->recv(src, &fitness);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
             }
             // Sort again if needed
@@ -406,12 +408,12 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // Signify the middlemen to continue
             cr->send_data(dest);
             // Send the data set FIXME: is this necessary? It will always be train?
-            cr->send_iMolSelect(dest, imstr);
+            cr->send(dest, imstr);
             // Now send the new bases
-            cr->send_double_vector(dest, pool[pnew]->genomePtr(i)->basesPtr());
+            cr->send(dest, pool[pnew]->genomePtr(i)->bases());
             // III.
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
         }
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)  // FIXME: can we just negate instead of comparing?
@@ -444,14 +446,16 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             int src      = cr->middlemen()[i-1];
             // IV.
             // Receive the mutated parameters
-            cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());
+            cr->recv(src, pool[pnew]->genomePtr(i)->basesPtr());
             // V.
             // and the fitness.
-            auto fitness = cr->recv_double(src);
+            double fitness;
+            cr->recv(src, &fitness);
             pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
             if (gach_->evaluateTestset())
             {
-                auto fitnessTest = cr->recv_double(src);  // Receiving the new test fitness
+                double fitnessTest;
+                cr->recv(src, &fitnessTest);  // Receiving the new test fitness
                 pool[pnew]->genomePtr(i)->setFitness(imste, fitnessTest);
             }
         }
