@@ -45,7 +45,7 @@
 #include "gromacs/utility/cstringutil.h"
 
 #include "act/basics/chargemodel.h"
-#include "forcefield_low.h"
+#include "symcharges.h"
 #include "act/utility/latex_util.h"
 
 namespace alexandria

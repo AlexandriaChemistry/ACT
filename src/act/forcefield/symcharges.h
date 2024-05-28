@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,8 +31,8 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef FORCEFIELD_LOW_H
-#define FORCEFIELD_LOW_H
+#ifndef SYMCHARGES_H
+#define SYMCHARGES_H
 
 #include <string>
 
@@ -72,11 +72,11 @@ class Symcharges
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;
 using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator;
 
-
 /*! \brief Utility to make command line information about combrules
  * \param[inout] crinfo Array of strings to be edited
  */
 void add_comb_rule_info(std::vector<const char *> *crinfo);
 
 } // namespace aleaxndria
+
 #endif

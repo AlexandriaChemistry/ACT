@@ -36,7 +36,7 @@
 
 #include "gromacs/utility/exceptions.h"
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_xml.h"
 
 #include "testutils/testfilemanager.h"

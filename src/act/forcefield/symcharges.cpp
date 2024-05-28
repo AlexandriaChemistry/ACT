@@ -32,7 +32,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "forcefield_low.h"
+#include "symcharges.h"
 
 #include <cstdio>
 

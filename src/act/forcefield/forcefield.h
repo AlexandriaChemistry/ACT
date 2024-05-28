@@ -46,7 +46,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
-#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/symcharges.h"
 #include "act/forcefield/vsite.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
