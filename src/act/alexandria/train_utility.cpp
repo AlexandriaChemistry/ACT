@@ -1804,6 +1804,10 @@ void print_header(FILE                        *fp,
     };
     for(const auto &f : filenms)
     {
+        if ((f.flag & ffOPT) == ffOPT && (f.flag & ffSET) == 0)
+        {
+            continue;
+        }
         std::string flag;
         for(auto fm : fmap)
         {

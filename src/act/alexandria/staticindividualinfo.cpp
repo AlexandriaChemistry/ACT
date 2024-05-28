@@ -382,9 +382,9 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                             }
-                            else if (fp)
+                            else if (debug)
                             {
-                                fprintf(fp, "WARNING: Not enough data to train %s-%s\n",
+                                fprintf(debug, "WARNING: Not enough data to train %s-%s\n",
                                         fpl.first.id().c_str(), param.first.c_str());
                             }
                         }
@@ -405,7 +405,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         if (fp)
         {
             fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
-            fprintf(fp, "Identifier     Parameter     Minimum     Maximum\n");
+            fprintf(fp, "Identifier        Parameter     Minimum     Maximum\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
@@ -419,7 +419,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                         const auto &fs = gg->second.find(i.parameterType());
                         if (gg->second.end() != fs)
                         {
-                            fprintf(fp, "%-12s %11s  %10g  %10g\n",
+                            fprintf(fp, "%-15s %11s  %10g  %10g\n",
                                     i.id().id().c_str(), i.parameterType().c_str(),
                                     fs->second.minimum(), fs->second.maximum());
                         }
@@ -435,7 +435,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                     else
                     {
                         auto &pp = pt->parameterConst(i.parameterType());
-                        fprintf(fp, "%-12s %11s  %10g  %10g\n",
+                        fprintf(fp, "%-15s %11s  %10g  %10g\n",
                                 i.particleType().c_str(), i.parameterType().c_str(),
                                 pp.minimum(), pp.maximum());
                     }

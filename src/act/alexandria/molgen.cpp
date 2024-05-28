@@ -195,7 +195,11 @@ bool MolGen::checkOptions(FILE                        *logFile,
         }
         else
         {
-            fprintf(stderr, "Ignoring unknown training parameter '%s'\n", toFit->first.c_str());
+            if (debug)
+            {
+                fprintf(debug, "Ignoring unknown training parameter '%s'\n",
+                        toFit->first.c_str());
+            }
             toFit = fit_.erase(toFit);
         }
     }
@@ -828,6 +832,7 @@ size_t MolGen::Read(FILE                                *fp,
             fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
                     gms.nMol(), mp.size());
         }
+        bool chargeWarned = false;
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
@@ -863,11 +868,11 @@ size_t MolGen::Read(FILE                                *fp,
                     }
                     else
                     {
-                        if (fp)
+                        if (fp && !chargeWarned)
                         {
-                            fprintf(fp, "WARNING: Could not find charges for %s in charge map, will generate them using %s.\n",
-                                    actmol.getMolname().c_str(),
+                            fprintf(fp, "Could not find charges for some compounds in charge map, will generate them using %s.\n",
                                     chargeGenerationAlgorithmName(alg).c_str());
+                            chargeWarned = true;
                         }
                         std::vector<double> dummy;
                         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
