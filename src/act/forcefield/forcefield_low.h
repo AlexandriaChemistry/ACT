@@ -34,132 +34,12 @@
 #ifndef FORCEFIELD_LOW_H
 #define FORCEFIELD_LOW_H
 
-#include <map>
 #include <string>
-#include <vector>
-
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "act/utility/communicationrecord.h"
 
-struct t_excls;
-struct t_symtab;
-
 namespace alexandria
 {
-
-
-/*! \brief
- * Contains Bosque polarizability.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Bosque
-{
-    public:
-
-        Bosque () {}
-
-        /*! \brief
-         * Bosque constructor
-         *
-         * \param[in] bosque          Bosque atom type name
-         * \param[in] polarizability  Polarizability value
-         */
-        Bosque(const std::string &bosque, double polarizability);
-
-        /*! \brief
-         * Return Bosque equivalent of the polarizability type
-         */
-        const std::string &getBosque() const { return bosque_; }
-
-        /*! \brief
-         * Return polarizability value
-         */
-        double getPolarizability() const { return polarizability_; }
-
-        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
-
-        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
-
-    private:
-        std::string bosque_;
-        double      polarizability_;
-
-};
-
-using BosqueIterator      = typename std::vector<Bosque>::iterator;
-using BosqueConstIterator = typename std::vector<Bosque>::const_iterator;
-
-
-/*! \brief
- * Contains Miller polarizability.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Miller
-{
-    public:
-
-        Miller () {}
-
-        /*! \brief
-         * Miller constructor
-         *
-         * \param[in] miller            Miller atom type name
-         * \param[in] atomnumber        Atomic number
-         * \param[in] tauAhc            Polarizability description tau
-         * \param[in] alphaAhp          Polarizability description alpha
-         * \param[in] alexandria_equiv  Alexandria type
-         */
-        Miller(const std::string &miller,
-               int                atomnumber,
-               double             tauAhc,
-               double             alphaAhp,
-               const std::string &alexandria_equiv);
-
-        /*! \brief
-         * Return Miller atom type name
-         */
-        const std::string &getMiller() const { return miller_; }
-
-        /*! \brief
-         * Return atomic number
-         */
-        int getAtomnumber() const { return atomnumber_; }
-
-        /*! \brief
-         * Return polarizability description tau
-         */
-        double getTauAhc() const { return tauAhc_; }
-
-        /*! \brief
-         * Return polarizability description alpha
-         */
-        double getAlphaAhp() const { return alphaAhp_; }
-
-        /*! \brief
-         * Return Alexandria type
-         */
-        const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
-
-        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
-
-        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
-
-    private:
-        std::string miller_;
-        int         atomnumber_;
-        double      tauAhc_;
-        double      alphaAhp_;
-        std::string alexandria_equiv_;
-};
-
-using MillerIterator      = typename std::vector<Miller>::iterator;
-using MillerConstIterator = typename std::vector<Miller>::const_iterator;
 
 class Symcharges
 {
@@ -179,7 +59,7 @@ class Symcharges
 
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-    CommunicationStatus BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm);
+        CommunicationStatus BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm);
 
         CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
