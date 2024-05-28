@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -73,7 +73,7 @@ private:
     //! Vector of iMolSelect entries
     std::vector<IMolSelect> ims_;
     //! Look up iupac
-    const std::vector<const IMolSelect>::iterator findIupac(const std::string &iupac) const;
+    const IMolSelect *findIupac(const std::string &iupac) const;
 public:
     
     MolSelect() {};
