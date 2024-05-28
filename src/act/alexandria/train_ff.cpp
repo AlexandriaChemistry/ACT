@@ -247,7 +247,7 @@ int OptACM::initMaster(const char *fitnessFile)
         // TODO Only open these files when we are optimizing in verbose mode.
         if (verbose_)
         {
-            printf("Will open param conv fle on the master!\n");
+            fprintf(logFile(), "Will open param conv file on the master!\n");
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
