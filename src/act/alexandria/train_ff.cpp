@@ -757,9 +757,6 @@ int train_ff(int argc, char *argv[])
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(filenms);
 
-    // Propagate weights from training set to other sets
-    opt.sii()->propagateWeightFittingTargets();
-
     if (opt.commRec()->isMaster())
     {
         opt.openLogFile(filenms);
@@ -786,6 +783,9 @@ int train_ff(int argc, char *argv[])
             fprintf(opt.logFile(), "Turning off the evaluate of test set since it is empty.\n");
         }
     }
+    // Propagate weights from training set to other sets
+    opt.sii()->propagateWeightFittingTargets();
+
     // Figure out a logfile to pass down :)
     FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
 

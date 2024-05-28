@@ -211,7 +211,6 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
-            nlocal++;
             std::vector<InteractionType> itUpdate;
             for(auto &io : molgen_->iopt())
             {
@@ -256,6 +255,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                         targets->find(eRMS::EPOT)->second.totalWeight());
             }
+            nlocal++;
         }
     }
     // Sum the terms of the chi-squared once we have done calculations
@@ -273,8 +273,8 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     {
         std::string msg = gmx::formatString("Zero %s chi squared for %s - this cannot be correct.\n", 
                                             iMolSelectName(ims), rmsName(erms));
-        msg += gmx::formatString("There are %d compounds. Task = %s. Nlocal = %d.\n",
-                                 ntrain, calcDevName(task), nlocal);
+        msg += gmx::formatString("There are %d compounds. Task = %s. Nlocal = %d, ntrain = %d.\n",
+                                 ntrain, calcDevName(task), nlocal, ntrain);
         msg += "devComputers: ";
         for(auto &d : devComputers_)
         {
