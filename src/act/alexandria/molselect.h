@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -72,7 +72,8 @@ class MolSelect
 private:
     //! Vector of iMolSelect entries
     std::vector<IMolSelect> ims_;
-    
+    //! Look up iupac
+    const IMolSelect *findIupac(const std::string &iupac) const;
 public:
     
     MolSelect() {};
@@ -96,7 +97,7 @@ public:
      * \param[out] ims   The data set
      * \return true if found, false otherwise
      */    
-    bool status(const std::string &iupac, iMolSelect *ims) const;
+    bool status(const std::string iupac, iMolSelect *ims) const;
     
     /*! \brief Get index for iupac
      * \param[in]  iupac The molecule name

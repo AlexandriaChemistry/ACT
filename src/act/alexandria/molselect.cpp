@@ -104,15 +104,39 @@ void MolSelect::read(const char *fn)
     }
 }
 
-bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
+const IMolSelect *MolSelect::findIupac(const std::string &iupac) const
 {
-    auto imi = std::find_if(ims_.begin(), ims_.end(),
-                            [iupac](IMolSelect const &i)
-                            {
-                                return i.iupac().compare(iupac) == 0;
-                            });
-
+    std::string newiupac;
+    auto ii = split(iupac, '#');
+    if (ii.size() == 2)
+    {
+        newiupac.assign(ii[1] + "#" + ii[0]);
+    }
+    auto imi = ims_.begin();
+    for( ; imi < ims_.end(); ++imi)
+    {
+        if (imi->iupac() == iupac ||
+            (!newiupac.empty() &&
+             imi->iupac() == newiupac))
+        {
+            break;
+        }
+    }
     if (imi == ims_.end())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &(*imi);
+    }
+}
+
+bool MolSelect::status(const std::string iupac, iMolSelect *ims) const
+{
+    auto imi = findIupac(iupac);
+
+    if (!imi)
     {
         return false;
     }
@@ -122,12 +146,9 @@ bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
 
 bool MolSelect::index(const std::string &iupac, int *index) const
 {
-    auto imi = std::find_if(ims_.begin(), ims_.end(),
-                            [iupac](IMolSelect const &i)
-                            {
-                                return i.iupac().compare(iupac) == 0;
-                            });
-    if (imi == ims_.end())
+    auto imi = findIupac(iupac);
+
+    if (!imi)
     {
         return false;
     }
