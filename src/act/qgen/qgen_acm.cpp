@@ -258,109 +258,6 @@ const char *QgenAcm::status() const
     return stat[eQGEN_];
 }
 
-double QgenAcm::calcSij(int i, int j)
-{
-    double dist, dism, Sij = 1.0;
-    rvec   dx;
-    int    l, m, tag;
-
-    if (atomicNumber_[i] == 0 || atomicNumber_[j] == 0)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot compute Sij for shells").c_str()));
-    }
-    rvec_sub(x_[i], x_[j], dx);
-    dist = norm(dx);
-    if ((dist < 0.118) && (atomicNumber_[i] != 1) && (atomicNumber_[j] != 1))
-    {
-        Sij = Sij*1.64;
-    }
-    else if ((dist < 0.122) && (atomicNumber_[i] != 1) && (atomicNumber_[j] != 1))
-    {
-        if ((atomicNumber_[i] != 8) && (atomicNumber_[j] != 8))
-        {
-            Sij = Sij*2.23;
-        }
-        else
-        {
-            Sij = Sij*2.23;
-        }
-    }
-    else if (dist < 0.125)
-    {
-        tag = 0;
-        if ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 8))
-        {
-            tag = i;
-        }
-        else if ((atomicNumber_[i] == 8) && (atomicNumber_[j] == 6))
-        {
-            tag = j;
-        }
-        if (tag != 0)
-        {
-            printf("found CO\n");
-            for (l = 0; (l < natom_); l++)
-            {
-                if (atomicNumber_[l] == 1)
-                {
-                    printf("found H\n");
-                    dism = 0.0;
-                    for (m = 0; (m < DIM); m++)
-                    {
-                        dism = dism+gmx::square(x_[tag][m] - x_[l][m]);
-                    }
-
-                    printf("dist: %8.3f\n", sqrt(dism));
-                    if (sqrt(dism) < 0.105)
-                    {
-                        printf("dist %5d %5d %5s  %5s %8.3f\n",
-                               i, l, qdist_id_[tag].id().c_str(), qdist_id_[l].id().c_str(), sqrt(dism));
-                        Sij = Sij*1.605;
-                    }
-                }
-            }
-        }
-    }
-    else if ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 8))
-    {
-        Sij = Sij*1.03;
-    }
-    else if (((atomicNumber_[j] == 6) && (atomicNumber_[i] == 7) && (dist < 0.15)) ||
-             ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 7) && (dist < 0.15)))
-    {
-        if (atomicNumber_[i] == 6)
-        {
-            tag = i;
-        }
-        else
-        {
-            tag = j;
-        }
-        for (l = 0; (l < natom_); l++)
-        {
-            if (atomicNumber_[l] == 8)
-            {
-                printf("found Oxy\n");
-                dism = 0.0;
-                for (m = 0; (m < DIM); m++)
-                {
-                    dism = dism+gmx::square(x_[tag][m] - x_[l][m]);
-                }
-                if (sqrt(dism) < 0.130)
-                {
-                    printf("found peptide bond\n");
-                    Sij = Sij*0.66;
-                }
-                else
-                {
-                    Sij = Sij*1.1;
-                }
-            }
-        }
-    }
-    return Sij;
-}
-
 double QgenAcm::calcJ(rvec    xI,
                       rvec    xJ,
                       double  zetaI,
@@ -400,9 +297,7 @@ double QgenAcm::calcJ(rvec    xI,
     return (ONE_4PI_EPS0*eTot)/(epsilonr*ELECTRONVOLT);
 }
 
-void QgenAcm::calcJcc(double epsilonr,
-                      bool   bYang, 
-                      bool   bRappe)
+void QgenAcm::calcJcc(double epsilonr)
 {
     auto Jcc = 0.0;
     for (size_t n = 0; n < nonFixed_.size(); n++)
@@ -420,24 +315,11 @@ void QgenAcm::calcJcc(double epsilonr,
                             row_[i],
                             row_[j],
                             epsilonr);
-                if (bYang)
-                {
-                    Jcc *= calcSij(i, j);
-                }
                 Jcc_[n][m] = Jcc_[m][n] = (0.5 * Jcc);
             }
             else
             {
                 auto j0 = eta_[j];
-                if ((bYang || bRappe) && (atomicNumber_[i] == 1))
-                {
-                    auto zetaH = 1.0698;
-                    j0 = (1+q_[i]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
-                    if (j0 < 0 && !bWarned_)
-                    {
-                        bWarned_ = true;
-                    }
-                }
                 Jcc_[n][n] = (j0 > 0) ? j0 : 0;
             }
         }
@@ -835,7 +717,7 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
     {
         updateParameters(pd, *atoms);
         updatePositions(x);
-        calcJcc(epsilonr_, pd->yang(), pd->rappe());
+        calcJcc(epsilonr_);
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
