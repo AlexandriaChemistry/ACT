@@ -567,7 +567,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 }
                 break;
             default:
-                fprintf(stderr, "Unknown non-bonded force type %d %s\n", fs.potential(),
+                fprintf(stderr, "Unknown non-bonded force type %d %s\n", 
+                        static_cast<int>(fs.potential()),
                         potentialToString(fs.potential()).c_str());
             }
             if (nullptr != fsPtr)
