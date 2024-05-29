@@ -56,7 +56,7 @@ const char *ub_name[ubNR] = { "kt", "ub_angle", "r13", "kub" };
 
 const char *ps_names[psNR] = { "ps_angle", "rij0", "rjk0" };
 
-const char *pol_name[polNR] = { "alpha", "kshell" };
+const char *pol_name[polNR] = { "alpha" };
 
 const char *morse_name[morseNR] = { "beta", "De", "D0", "bondlength" };
 

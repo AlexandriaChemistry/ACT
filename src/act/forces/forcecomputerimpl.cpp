@@ -940,11 +940,19 @@ static void computePolarization(const TopologyEntryVector             &bonds,
     const  real half = 0.5;
     for (const auto &b : bonds)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params   = b->params();
-        auto ksh       = params[polKSH];
         // Get the atom indices
         auto &indices  = b->atomIndices();
+        // Get the parameters. We have to know their names to do this.
+        auto &params   = b->params();
+        // Get shell charge
+        auto q         = atoms[indices[1]].charge();
+        // Get polarizability
+        double ksh     = 0;
+        auto alpha     = params[polALPHA];
+        if (alpha > 0)
+        {
+            ksh       = ONE_4PI_EPS0*q*q/alpha;
+        }
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);

@@ -141,19 +141,15 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     }
     for(int n : mychanged)
     {
-        auto                 iType = optIndex_[n].iType();
-        ForceFieldParameter *p     = nullptr;
-        if (iType != InteractionType::CHARGE)
+        auto p = optIndex_[n].forceFieldParameter();
+        if (!p)
         {
-            p = pd_.findForces(iType)->findParameterType(optIndex_[n].id(), optIndex_[n].parameterType());
+            optIndex_[n].findForceFieldParameter(&pd_);
         }
-        else if (pd_.hasParticleType(optIndex_[n].particleType()))
-        {
-            p = pd_.findParticleType(optIndex_[n].particleType())->parameter(optIndex_[n].parameterType());
-        }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
+        p = optIndex_[n].forceFieldParameter();
         if (p)
         {
+            auto iType = optIndex_[n].iType();
             if (debug && isVsite(iType))
             {
                 fprintf(debug, "Updating %s parameter to %g\n",

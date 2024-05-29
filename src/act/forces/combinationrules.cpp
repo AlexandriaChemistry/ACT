@@ -583,59 +583,11 @@ static void generateCoulombParameterPairs(ForceField *pd)
     // Phew, we're done!
 }
 
-static void generateShellForceConstants(ForceField *pd)
-{
-    if (!pd->polarizable())
-    {
-        return;
-    }
-    auto itype = InteractionType::POLARIZATION;
-    auto ffpl  = pd->findForces(itype)->parameters();
-    // Loop over particles
-    for(const auto &part : pd->particleTypesConst())
-    {
-        if (part.second.hasOption("poltype"))
-        {
-            auto shellType = part.second.optionValue("poltype");
-            if (ffpl->find(shellType) == ffpl->end())
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing polarization term for %s", shellType.c_str()).c_str()));
-            }
-            auto  &parms   = ffpl->find(shellType)->second;
-            auto   alpha   = parms.find("alpha")->second.internalValue();
-            auto   qshell  = pd->findParticleType(shellType)->charge();
-            double kshell  = 0;
-            if (alpha > 0 && qshell != 0)
-            {
-                kshell = gmx::square(qshell)*ONE_4PI_EPS0/alpha;
-            }
-            std::string fc_name("kshell");
-            auto fc_parm = parms.find(fc_name);
-            if (parms.end() == fc_parm)
-            {
-                ForceFieldParameter fc_new("kJ/mol nm2", kshell, 0, 1,
-                                           kshell, kshell,
-                                           Mutability::Dependent, true, true);
-                parms.insert({ fc_name, fc_new });
-            }
-            else
-            {
-                fc_parm->second.setMutability(Mutability::Free);
-                fc_parm->second.setMinimum(kshell);
-                fc_parm->second.setMaximum(kshell);
-                fc_parm->second.setValue(kshell);
-                fc_parm->second.setMutability(Mutability::Dependent);
-            }
-        }
-    }
-}
-
 void generateDependentParameter(ForceField *pd)
 {
     generateParameterPairs(pd, InteractionType::VDW);
     generateParameterPairs(pd, InteractionType::CHARGETRANSFER);
     generateCoulombParameterPairs(pd);
-    generateShellForceConstants(pd);
 }
 
 } // namespace alexandria

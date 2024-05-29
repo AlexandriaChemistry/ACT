@@ -33,6 +33,7 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/forces/forcecomputerimpl.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
@@ -122,10 +123,11 @@ double ForceComputer::compute(const ForceField                  *pd,
             if (bIS)
             {
                 Identifier atID(aa.ffType());
-                auto fc = ffpl.findParameterTypeConst(atID, "kshell").internalValue();
-                if (fc != 0)
+                auto alpha = ffpl.findParameterTypeConst(atID, pol_name[polALPHA]).internalValue();
+                auto q     = aa.charge();
+                if (alpha > 0 && q != 0)
                 {
-                    fc_1 = 1.0/fc;
+                    fc_1 = alpha/(q*q*ONE_4PI_EPS0);
                 }
                 nshell += 1;
             }

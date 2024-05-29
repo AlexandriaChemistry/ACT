@@ -58,6 +58,7 @@ target_sources(actLib
            molselect.cpp
            normalmodes.cpp
            openmm_xml.cpp
+           optimizationindex.cpp
            pdbwriter.cpp
            percentmutator.cpp
            princ.cpp
