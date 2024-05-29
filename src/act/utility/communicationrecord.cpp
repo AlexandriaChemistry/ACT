@@ -526,6 +526,7 @@ template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) c
                         iMolSelectName(ims.first), src);
             }
             *t = ims.first;
+            return;
         }
     }
     GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown iMolSelect, int code %d", d).c_str()));
