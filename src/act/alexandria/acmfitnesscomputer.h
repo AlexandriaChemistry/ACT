@@ -33,7 +33,6 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 

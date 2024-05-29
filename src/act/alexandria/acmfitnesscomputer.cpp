@@ -37,6 +37,7 @@
 
 #include "act/basics/dataset.h"
 #include "act/ga/genome.h"
+#include "act/utility/communicationrecord.h"
 
 namespace alexandria
 {
@@ -161,6 +162,10 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
 double ACMFitnessComputer::calcDeviation(CalcDev    task,
                                          iMolSelect ims)
 {
+    if (debug)
+    {
+        fprintf(debug, "CalcDev starting\n");
+    }
     auto cr = sii_->commRec();
     // Send / receive molselect group.ks
     if (cr->isHelper())
@@ -178,7 +183,7 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     }
     if (debug)
     {
-        fprintf(debug, "Going to do calcDeviation for %s\n",
+        fprintf(debug, "CalcDev Going to compute dataset %s\n",
                 iMolSelectName(ims));
     }
     // Gather fitting targets
@@ -206,6 +211,13 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     auto mymols = molgen_->actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
+        if (debug)
+        {
+            fprintf(debug, "CalcDev: mol %s dataset %s\n",
+                    actmol->getMolname().c_str(),
+                    iMolSelectName(actmol->datasetType()));
+            fflush(debug);
+        }
         if (ims != actmol->datasetType())
         {
             continue;
@@ -254,9 +266,10 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             if (debug)
             {
-                fprintf(debug, "rank %d mol %s #energies %zu tw %g\n",
+                fprintf(debug, "CalcDev: rank %d mol %s #energies %zu tw %g\n",
                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                         targets->find(eRMS::EPOT)->second.totalWeight());
+                fflush(debug);
             }
             nlocal++;
         }
