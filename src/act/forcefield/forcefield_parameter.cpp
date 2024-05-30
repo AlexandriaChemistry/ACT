@@ -50,6 +50,11 @@ bool stringToBoolean(const std::string &str)
 namespace alexandria
 {
 
+void ForceFieldParameter::forceSetValue(double value)
+{
+    value_ = value;
+}
+
 void ForceFieldParameter::setValue(double value)
 {
     switch (mutability_)

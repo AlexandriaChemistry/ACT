@@ -1,5 +1,4 @@
-
-    /*
+/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2022,2023
@@ -130,8 +129,9 @@ namespace alexandria
     /*! \brief Generate nonbonded parameters for pairs of atoms
      * as well as force constants force shells.
      * \param[inout] pd The force field structure
+     * \param[in]    force Update all parameters in the matrices
      */
-    void generateDependentParameter(ForceField *pd);
+    void generateDependentParameter(ForceField *pd, bool force = false);
 
 } // namespace alexandria
 

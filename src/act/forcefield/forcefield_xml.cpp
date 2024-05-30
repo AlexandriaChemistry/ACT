@@ -617,7 +617,7 @@ void readForceField(const std::string &fileName,
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(debug);
-    generateDependentParameter(pd);
+    generateDependentParameter(pd, true);
     if (nullptr != debug)
     {
         writeForceField("pdout.dat", pd, false);

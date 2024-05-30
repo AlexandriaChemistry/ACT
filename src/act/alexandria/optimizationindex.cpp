@@ -71,4 +71,29 @@ std::string OptimizationIndex::name() const
     }
 }
 
+CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
+                                            int                        dest)
+{
+    cr->send(dest, particleType_);
+    std::string itype = interactionTypeToString(iType_);
+    cr->send(dest, itype);
+    parameterId_.Send(cr, dest);
+    cr->send(dest, parameterType_);
+    
+    return CommunicationStatus::OK;
 }
+
+CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
+                                               int                        src)
+{
+    cr->recv(src, &particleType_);
+    std::string itype;
+    cr->recv(src, &itype);
+    iType_ = stringToInteractionType(itype);
+    parameterId_.Receive(cr, src);
+    cr->recv(src, &parameterType_);
+
+    return CommunicationStatus::OK;
+}
+
+} // namespace

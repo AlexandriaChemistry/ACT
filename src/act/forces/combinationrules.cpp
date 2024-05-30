@@ -479,7 +479,8 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
 }
 
 static void generateParameterPairs(ForceField      *pd,
-                                   InteractionType  itype)
+                                   InteractionType  itype,
+                                   bool             force)
 {
     // Do not crash if e.g. there is no CHARGETRANSFER.
     if (!pd->interactionPresent(itype))
@@ -502,6 +503,11 @@ static void generateParameterPairs(ForceField      *pd,
             continue;
         }
         auto iparam = ivdw.second;
+        bool iupdated = false;
+        for(const auto &ip : iparam)
+        {
+            iupdated = iupdated || ip.second.updated();
+        }
         for (auto &jvdw : *forcesVdw->parameters())
         {
             auto jid    = jvdw.first;
@@ -513,6 +519,15 @@ static void generateParameterPairs(ForceField      *pd,
             }
             bool same = jid.id() == iid.id();
             auto jparam = jvdw.second;
+            bool jupdated = false;
+            for(const auto &jp : jparam)
+            {
+                jupdated = jupdated || jp.second.updated();
+            }
+            if ((!iupdated || !iupdated) && !force)
+            {
+                continue;
+            }
             // Fill the parameters, potential dependent
             auto pmap = evalCombinationRule(forcesVdw->potential(),
                                             comb_rule, ivdw.second, jvdw.second, same);
@@ -525,19 +540,18 @@ static void generateParameterPairs(ForceField      *pd,
     // Phew, we're done!
 }
 
-static void generateCoulombParameterPairs(ForceField *pd)
+static void generateCoulombParameterPairs(ForceField *pd, bool force)
 {
     auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
-    
-    // We temporarily store the new parameters here
-    ForceFieldParameterList newParams;
     
     // Fudge unit
     std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-
+    auto zeta = coul_name[coulZETA];
+    // Finally add the new parameters to the exisiting list
+    auto fold = forcesCoul->parameters();
     // Now do the double loop
     for (auto &icoul : *forcesCoul->parameters())
     {
@@ -547,47 +561,47 @@ static void generateCoulombParameterPairs(ForceField *pd)
         {
             continue;
         }
-        auto iparam = icoul.second;
-        double izeta = icoul.second["zeta"].internalValue();
+        double izeta = icoul.second[zeta].internalValue();
         for (auto &jcoul : *forcesCoul->parameters())
         {
             auto jid    = jcoul.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id())
+            if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
+                (!icoul.second[zeta].updated() && !jcoul.second[zeta].updated() && !force))
             {
                 continue;
             }
-            auto jparam = jcoul.second;
-            double jzeta  = jcoul.second["zeta"].internalValue();
+            double     jzeta  = jcoul.second[zeta].internalValue();
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
-            ForceFieldParameter pi(unit, izeta, 0, 0, izeta, izeta, mutd, true, true);
-            ForceFieldParameter pj(unit, jzeta, 0, 0, jzeta, jzeta, mutd, true, true);
-            newParams.addParameter(pairID, coul_name[coulZETAI], pi);
-            newParams.addParameter(pairID, coul_name[coulZETAJ], pj);
+            auto       oldfp  = fold->find(pairID);
+            if (oldfp == fold->end())
+            {
+                ForceFieldParameterMap ffpm = {
+                    { coul_name[coulZETAI], 
+                      ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
+                    { coul_name[coulZETAJ],
+                      ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
+                };
+                fold->insert({pairID, ffpm});
+            }
+            else
+            {
+                auto &pi = oldfp->second.find(coul_name[coulZETAI])->second;
+                pi.forceSetValue(izeta);
+                auto &pj = oldfp->second.find(coul_name[coulZETAJ])->second;
+                pj.forceSetValue(jzeta);
+            }
         }
-    }
-    // Finally add the new parameters to the exisiting list
-    auto fold = forcesCoul->parameters();
-    for(const auto &np : newParams.parametersConst())
-    {
-        // Remove old copy if it exists
-        auto oldfp = fold->find(np.first);
-        if (oldfp != fold->end())
-        {
-            fold->erase(oldfp);
-        }
-        // Now add the new one
-        fold->insert({ np.first, np.second });
     }
     // Phew, we're done!
 }
 
-void generateDependentParameter(ForceField *pd)
+void generateDependentParameter(ForceField *pd, bool force)
 {
-    generateParameterPairs(pd, InteractionType::VDW);
-    generateParameterPairs(pd, InteractionType::CHARGETRANSFER);
-    generateCoulombParameterPairs(pd);
+    generateParameterPairs(pd, InteractionType::VDW, force);
+    generateParameterPairs(pd, InteractionType::CHARGETRANSFER, force);
+    generateCoulombParameterPairs(pd, force);
 }
 
 } // namespace alexandria

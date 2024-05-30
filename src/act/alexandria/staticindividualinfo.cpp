@@ -156,6 +156,7 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
                         interactionTypeToString(iType).c_str(), bases[n]);
             }
             p->setValue(bases[n]);
+            p->setUpdated(true);
             // TODO fix the uncertainty
             // p->setUncertainty(psigma_[n]);
         }
@@ -164,6 +165,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     // It would be more efficient to only generate the atom type pair parameters for
     // which one of the atomic Van der Waals or Coulomb parameters changed.
     generateDependentParameter(&pd_);
+    for(int n : mychanged)
+    {
+        optIndex_[n].forceFieldParameter()->setUpdated(false);
+    }
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
@@ -327,36 +332,6 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: OptimizationIndex stuff           *
-* * * * * * * * * * * * * * * * * * * * * */
-
-CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
-                                            int                        dest)
-{
-    cr->send(dest, particleType_);
-    std::string itype = interactionTypeToString(iType_);
-    cr->send(dest, itype);
-    parameterId_.Send(cr, dest);
-    cr->send(dest, parameterType_);
-    
-    return CommunicationStatus::OK;
-}
-
-CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
-                                               int                        src)
-{
-    cr->recv(src, &particleType_);
-    std::string itype;
-    cr->recv(src, &itype);
-    iType_ = stringToInteractionType(itype);
-    parameterId_.Receive(cr, src);
-    cr->recv(src, &parameterType_);
-
-    return CommunicationStatus::OK;
-}
-
 
 void StaticIndividualInfo::generateOptimizationIndex(FILE                      *fp,
                                                      const MolGen              *mg,
