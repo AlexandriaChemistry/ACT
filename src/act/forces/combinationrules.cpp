@@ -496,7 +496,7 @@ static void generateParameterPairs(ForceField      *pd,
     // Now do the double loop
     for (auto &ivdw : *forcesVdw->parameters())
     {
-        auto iid    = ivdw.first;
+        auto &iid    = ivdw.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
@@ -510,7 +510,7 @@ static void generateParameterPairs(ForceField      *pd,
         }
         for (auto &jvdw : *forcesVdw->parameters())
         {
-            auto jid    = jvdw.first;
+            auto &jid    = jvdw.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
             if (jid.atoms().size() > 1 || jid.id() < iid.id())
@@ -553,9 +553,10 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parameters();
     // Now do the double loop
+    int nid = 0;
     for (auto &icoul : *forcesCoul->parameters())
     {
-        auto iid    = icoul.first;
+        auto &iid    = icoul.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
@@ -564,7 +565,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
         double izeta = icoul.second[zeta].internalValue();
         for (auto &jcoul : *forcesCoul->parameters())
         {
-            auto jid    = jcoul.first;
+            auto &jid    = jcoul.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
             if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
@@ -574,6 +575,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             }
             double     jzeta  = jcoul.second[zeta].internalValue();
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            nid += 1;
             auto       oldfp  = fold->find(pairID);
             if (oldfp == fold->end())
             {
@@ -593,6 +595,11 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
                 pj.forceSetValue(jzeta);
             }
         }
+    }
+    if (debug)
+    {
+        int np = forcesCoul->parameters()->size();
+        fprintf(debug, "Made %d/%d identifiers in generateCoulombParameterPairs\n", nid, np);
     }
     // Phew, we're done!
 }

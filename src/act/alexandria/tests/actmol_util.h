@@ -18,7 +18,7 @@ namespace alexandria
      * \param[out] mps      The ACTMol structures
      */
     void initACTMol(const char          *molname, 
-                    const ForceField    *pd,
+                    ForceField          *pd,
                     ForceComputer       *fcomp,
                     std::vector<ACTMol> *mps);
 

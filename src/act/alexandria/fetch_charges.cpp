@@ -40,7 +40,7 @@
 namespace alexandria
 {
 
-chargeMap fetchChargeMap(const ForceField           *pd,
+chargeMap fetchChargeMap(ForceField                 *pd,
                          ForceComputer              *forceComp,
                          const std::vector<MolProp> &mps)
 {
@@ -81,9 +81,9 @@ chargeMap fetchChargeMap(const ForceField           *pd,
     return qmap;
 }
 
-chargeMap fetchChargeMap(const ForceField *pd,
-                         ForceComputer    *forceComp,
-                         const char       *charge_fn)
+chargeMap fetchChargeMap(ForceField    *pd,
+                         ForceComputer *forceComp,
+                         const char    *charge_fn)
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);

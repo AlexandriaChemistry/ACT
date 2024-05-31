@@ -59,9 +59,9 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * \param[in] charge_fn The name of a molprop file
  * \return the map.
  */
-chargeMap fetchChargeMap(const ForceField *pd,
-                         ForceComputer    *forceComp,
-                         const char       *charge_fn);
+chargeMap fetchChargeMap(ForceField    *pd,
+                         ForceComputer *forceComp,
+                         const char    *charge_fn);
 
 /*! \brief Generate charges for all compounds in a molprop file.
  * \param[in] pd        The force field structure
@@ -69,7 +69,7 @@ chargeMap fetchChargeMap(const ForceField *pd,
  * \param[in] mps       Vector of molprops
  * \return the map, see above.
  */
-chargeMap fetchChargeMap(const ForceField           *pd,
+chargeMap fetchChargeMap(ForceField                 *pd,
                          ForceComputer              *forceComp,
                          const std::vector<MolProp> &mps);
 

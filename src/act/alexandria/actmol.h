@@ -452,7 +452,7 @@ public:
      * \return status
      */
     immStatus GenerateTopology(FILE              *fp,
-                               const ForceField  *pd,
+                               ForceField        *pd,
                                missingParameters  missing);
     
     //! Return the ACT topology structure

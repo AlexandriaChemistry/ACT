@@ -537,7 +537,7 @@ void AllBondeds::updateForceField(FILE    *fp,
 void AllBondeds::extractGeometries(FILE                       *fp,
                                    const std::vector<MolProp> &mp,
                                    std::vector<ACTMol>        *actmols,
-                                   const ForceField           &pd,
+                                   ForceField                 *pd,
                                    const MolSelect            &gms)
 {
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
@@ -554,8 +554,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         mmi.formula().c_str());
                 continue;
             }
-            auto imm = mmi.GenerateTopology(fp, &pd,
-                                            missingParameters::Generate);
+            auto imm = mmi.GenerateTopology(fp, pd, missingParameters::Generate);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
@@ -572,7 +571,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 for (i = 0; i < myatoms.size(); i++)
                 {
                     std::string btpi;
-                    if (!pd.atypeToBtype(myatoms[i].ffType(), &btpi))
+                    if (!pd->atypeToBtype(myatoms[i].ffType(), &btpi))
                     {
                         if (nullptr != debug)
                         {

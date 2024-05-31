@@ -71,7 +71,7 @@ namespace alexandria
          * \param[in] fragments     The fragmentation information
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const ForceField             *pd,
+        FragmentHandler(ForceField                   *pd,
                         const std::vector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>   &atoms,
                         const std::vector<Bond>      &bonds,

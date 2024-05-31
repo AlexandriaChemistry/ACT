@@ -461,7 +461,7 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
 }
 
 immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
-                                   const ForceField  *pd,
+                                   ForceField        *pd,
                                    missingParameters  missing)
 {
     immStatus   imm = immStatus::OK;
@@ -1334,8 +1334,8 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                 }
             case MolPropObservable::POTENTIAL:
                 {
-                    auto qgr         = actq.qgenResp();
-                    auto qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+                    auto qgr = actq.qgenResp();
+                    auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
                     qgr->setChargeType(potentialToChargeType(qt.potential()));
                     qgr->setAtomInfo(atomsConst(), pd, totalCharge());
                     qgr->updateAtomCoords(xatom);
