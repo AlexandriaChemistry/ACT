@@ -133,39 +133,37 @@ QgenAcm::QgenAcm(ForceField                 *pd,
             acm_id_.push_back(nullptr);
         }
     }
-    auto fs = pd->findForces(bctype);
-    for(auto &b : bonds)
+    if (pd->interactionPresent(bctype))
     {
-        if (!acmtypes.empty())
+        auto fs = pd->findForces(bctype);
+        for(auto &b : bonds)
         {
-            Identifier bccId({acmtypes[nonFixed_[b.aI()]],
-                    acmtypes[nonFixed_[b.aJ()]] },
-                             { b.bondOrder() }, fs->canSwap());
-            double dcf = 1;
-            if (!fs->parameterExists(bccId))
+            if (!acmtypes.empty())
             {
-                if (CanSwap::Yes == fs->canSwap())
+                Identifier bccId({acmtypes[nonFixed_[b.aI()]],
+                        acmtypes[nonFixed_[b.aJ()]] },
+                    { b.bondOrder() }, fs->canSwap());
+                double dcf = 1;
+                if (!fs->parameterExists(bccId))
                 {
-                    eQGEN_ = eQgen::NOSUPPORT;
-                    return;
+                    if (CanSwap::Yes == fs->canSwap())
+                    {
+                        eQGEN_ = eQgen::NOSUPPORT;
+                        return;
+                    }
+                    else
+                    {
+                        bccId = Identifier({acmtypes[nonFixed_[b.aJ()]], acmtypes[nonFixed_[b.aI()]] },
+                                           { b.bondOrder() }, fs->canSwap());
+                        dcf = -1;
+                    }
                 }
-                else
+                if (fs->parameterExists(bccId))
                 {
-                    bccId = Identifier({acmtypes[nonFixed_[b.aJ()]], acmtypes[nonFixed_[b.aI()]] },
-                                       { b.bondOrder() }, fs->canSwap());
-                    dcf = -1;
+                    bcc_.push_back(fs->findParameters(bccId));
+                    dchi_factor_.push_back(dcf);
                 }
             }
-            if (fs->parameterExists(bccId))
-            {
-                bcc_.push_back(fs->findParameters(bccId));
-                dchi_factor_.push_back(dcf);
-            }
-            //else
-            //{
-            //eQGEN_ = eQgen::NOSUPPORT;
-            //return;
-            //}
         }
     }
 

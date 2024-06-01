@@ -328,7 +328,7 @@ static void spread_vsite1(const t_iatom ia[], rvec f[])
     clear_rvec(f[av]);
 }
 
-static void spread_vsite2(const std::vector<t_iatom> &ia, real a,
+static void spread_vsite2(const std::vector<int> &ia, real a,
                           const rvec x[],
                           rvec f[], rvec fshift[],
                           const t_pbc *pbc, const t_graph *g)
@@ -338,9 +338,9 @@ static void spread_vsite2(const std::vector<t_iatom> &ia, real a,
     ivec    di;
     int     siv, sij;
 
-    av = ia[3];
-    ai = ia[1];
-    aj = ia[2];
+    av = ia[2];
+    ai = ia[0];
+    aj = ia[1];
 
     svmul(1 - a, f[av], fi);
     svmul(    a, f[av], fj);
@@ -1148,7 +1148,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
             auto &params      = vs->params();
             if (params.empty())
             {
-                fprintf(stderr, "WARNING: No parameters to generate virtual sites in topology (yet).\n");
+                if (debug)
+                {
+                    fprintf(debug, "WARNING: No parameters to generate virtual sites in topology (yet).\n");
+                }
                 continue;
             }
             int ai = atomIndices[0];
@@ -1288,7 +1291,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite1(ia.data(), f);
                 break;
             case InteractionType::VSITE2:
-                spread_vsite2(ia, params[vsite2A], x, f, fshift, &pbc_, g);
+                spread_vsite2(atomIndices, params[vsite2A], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE2FD:
                 spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
