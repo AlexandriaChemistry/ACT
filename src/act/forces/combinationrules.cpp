@@ -367,19 +367,31 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     return myCombRule;
 }
 
-ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
-                                           const std::map<const std::string, CombRule> &combrule,
-                                           const ForceFieldParameterMap                &ivdw,
-                                           const ForceFieldParameterMap                &jvdw,
-                                           bool                                         same)
+void evalCombinationRule(Potential                                    ftype,
+                         const std::map<const std::string, CombRule> &combrule,
+                         const ForceFieldParameterMap                &ivdw,
+                         const ForceFieldParameterMap                &jvdw,
+                         bool                                         same,
+                         ForceFieldParameterMap                      *pmap)
 {
     // Fudge unit
     std::string unit("kJ/mol");
-    
+    // Defining some strings that we may or may not need
+    const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
+    const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
+
+    std::string       cdist;
+    if (ftype == Potential::GENERALIZED_BUCKINGHAM)
+    {
+        cdist = gbh_name[gbhRMIN];
+    }
+    else
+    {
+        cdist = lj14_7_name[lj14_7SIGMA];
+    }
+
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-
-    ForceFieldParameterMap pmap;
 
     for(const auto &param : ivdw)
     {
@@ -422,18 +434,6 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
         }
         else
         {
-            // Defining some strings that we may or may not need
-            const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
-            const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
-            std::string       cdist;
-            if (ftype == Potential::GENERALIZED_BUCKINGHAM)
-            {
-                cdist = gbh_name[gbhRMIN];
-            }
-            else
-            {
-                cdist = lj14_7_name[lj14_7SIGMA];
-            }
             auto ieps = ivdw.find(cepsilon)->second.value();
             auto jeps = jvdw.find(cepsilon)->second.value();
             double igam = 0;
@@ -472,10 +472,9 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
                 break;
             }
         }
-        std::string pij = gmx::formatString("%s_ij", param.first.c_str());
-        pmap.insert({ pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true)});
+        std::string pij = param.first + "_ij";
+        pmap->insert_or_assign(pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
     }
-    return pmap;
 }
 
 static void generateParameterPairs(ForceField      *pd,
@@ -502,7 +501,7 @@ static void generateParameterPairs(ForceField      *pd,
         {
             continue;
         }
-        auto iparam = ivdw.second;
+        auto &iparam = ivdw.second;
         bool iupdated = false;
         for(const auto &ip : iparam)
         {
@@ -518,7 +517,7 @@ static void generateParameterPairs(ForceField      *pd,
                 continue;
             }
             bool same = jid.id() == iid.id();
-            auto jparam = jvdw.second;
+            auto &jparam = jvdw.second;
             bool jupdated = false;
             for(const auto &jp : jparam)
             {
@@ -529,12 +528,12 @@ static void generateParameterPairs(ForceField      *pd,
                 continue;
             }
             // Fill the parameters, potential dependent
-            auto pmap = evalCombinationRule(forcesVdw->potential(),
-                                            comb_rule, ivdw.second, jvdw.second, same);
+            ForceFieldParameterMap pmap;
+            evalCombinationRule(forcesVdw->potential(),
+                                comb_rule, ivdw.second, jvdw.second, same, &pmap);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
-            
         }
     }
     // Phew, we're done!

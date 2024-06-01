@@ -134,7 +134,8 @@ protected:
                                             (!sigEpsDone))
                                         {
                                             bool same = false;
-                                            auto pmap = evalCombinationRule(ftype, CombinationRule, ivdw, jvdw, same);
+                                            ForceFieldParameterMap pmap;
+                                            evalCombinationRule(ftype, CombinationRule, ivdw, jvdw, same, &pmap);
                                             for(const auto &pm : pmap)
                                             {
                                                 myCheckReal(&checker_, pm.second.value(), pm.first.c_str(), index);

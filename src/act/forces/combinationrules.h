@@ -118,13 +118,14 @@ namespace alexandria
      * \param[in] ivdw     Parameters for particle i
      * \param[in] jvdw     Parameters for particle j
      * \param[in] same     Should be true if i and j are the same particle
-     * \return a Force Field Parameter Map with pair entries
+     * \param[out] pmap    Force Field Parameter Map with pair entries
      */
-    ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
-                                               const std::map<const std::string, CombRule> &combrule,
-                                               const ForceFieldParameterMap                &ivdw,
-                                               const ForceFieldParameterMap                &jvdw,
-                                               bool                                         same);
+    void evalCombinationRule(Potential                                    ftype,
+                             const std::map<const std::string, CombRule> &combrule,
+                             const ForceFieldParameterMap                &ivdw,
+                             const ForceFieldParameterMap                &jvdw,
+                             bool                                         same,
+                             ForceFieldParameterMap                      *pmap);
 
     /*! \brief Generate nonbonded parameters for pairs of atoms
      * as well as force constants force shells.
