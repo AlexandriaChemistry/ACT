@@ -236,9 +236,9 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                 epot += me.second;
             }
         }
-        else if (!isVsite(entry.first))
+        else if (debug && !isVsite(entry.first))
         {
-            fprintf(stderr, "Please implement a force function for type %s\n",
+            fprintf(debug, "Please implement a force function for type %s\n",
                     potentialToString(ffpl.potential()).c_str());
         }
     }
