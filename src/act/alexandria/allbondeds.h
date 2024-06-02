@@ -160,8 +160,8 @@ namespace alexandria
          * \param[in]  fp  A file to print information to
          * \param[out] pd  The force field structure to update
          */
-        void updateForceField(FILE             *fp,
-                           ForceField          *pd);
+        void updateForceField(FILE       *fp,
+                              ForceField *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  fp     File pointer for information
@@ -173,7 +173,7 @@ namespace alexandria
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
                                std::vector<ACTMol>        *actmols,
-                               const ForceField           &pd,
+                               ForceField                 *pd,
                                const MolSelect            &gms);
 
         /*! \brief Write how many bonds etc. were found

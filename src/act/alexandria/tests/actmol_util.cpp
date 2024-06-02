@@ -11,7 +11,7 @@ namespace alexandria
 {
 
 void initACTMol(const char          *molname, 
-                const ForceField    *pd,
+                ForceField          *pd,
                 ForceComputer       *fcomp,
                 std::vector<ACTMol> *mps)
     {

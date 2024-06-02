@@ -52,12 +52,13 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const ForceField           *pd,
+QgenAcm::QgenAcm(ForceField                 *pd,
                  const std::vector<ActAtom> &atoms,
+                 const std::vector<Bond>    &bonds,
                  int                         qtotal)
 {
-    auto qt     = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    ChargeType_ = potentialToChargeType(qt.potential());
+    auto qt     = pd->findForces(InteractionType::ELECTROSTATICS);
+    ChargeType_ = potentialToChargeType(qt->potential());
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
@@ -67,25 +68,36 @@ QgenAcm::QgenAcm(const ForceField           *pd,
     {
         epsilonr_ = 1;
     }
-    
-    auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+    auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    auto bctype = InteractionType::BONDCORRECTIONS;
+    auto eem = pd->findForces(entype);
+    std::vector<std::string> acmtypes;
     for (size_t i = 0; i < atoms.size(); i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         atomicNumber_.push_back(atype->atomnumber());
-        auto qparam = atype->parameterConst("charge");
-        if (qparam.mutability() == Mutability::ACM)
+        auto &qparam = atype->parameterConst("charge");
+        if (atype->hasInteractionType(entype))
         {
-            auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            const auto &acmtype = atype->interactionTypeToIdentifier(entype);
             if (acmtype.id().empty())
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No ACM information for %s",
                                                                atype->id().id().c_str()).c_str()));
             }
-            eta_.push_back(eem.findParameterTypeConst(acmtype, "eta").value());
+            acmtypes.push_back(acmtype.id());
+        }
+        else
+        {
+            acmtypes.push_back("");
+        }
+        if (atype->hasInteractionType(entype) &&
+            (qparam.mutability() == Mutability::ACM))
+        {
+            eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
             row_.push_back(myrow);
-            chi0_.push_back(eem.findParameterTypeConst(acmtype, "chi").value());
+            chi0_.push_back(eem->findParameterTypeConst(acmtypes.back(), "chi").value());
             nonFixed_.push_back(i);
             q_.push_back(0.0);
         }
@@ -93,31 +105,68 @@ QgenAcm::QgenAcm(const ForceField           *pd,
         {
             fixed_.push_back(i);
             q_.push_back(atoms[i].charge());
+            charge_.push_back(atype->parameter("charge"));
             eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
-        if (qt.potential() != Potential::COULOMB_POINT)
+        if (qt->potential() != Potential::COULOMB_POINT)
         {
             auto qtype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-            zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
-            qdist_id_.push_back(qtype);
+            auto qdist = &(qt->findParameters(qtype)->find("zeta")->second);
+            zeta_.push_back(qdist->value());
+            qdist_id_.push_back(qdist);
         }
         else
         {
             zeta_.push_back(0.0);
         }
-        auto acmtp = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-        if (atype->hasInteractionType(acmtp))
+        if (atype->hasInteractionType(bctype))
         {
-            auto acmtype = atype->interactionTypeToIdentifier(acmtp);
-            acm_id_.push_back(acmtype);
+            auto acmtype = atype->interactionTypeToIdentifier(bctype);
+            auto acm     = eem->findParameters(acmtype);
+            acm_id_.push_back(acm);
         }
         else
         {
-            acm_id_.push_back(Identifier(""));
+            // TODO check whether this actually can occur
+            acm_id_.push_back(nullptr);
         }
     }
+    if (pd->interactionPresent(bctype))
+    {
+        auto fs = pd->findForces(bctype);
+        for(auto &b : bonds)
+        {
+            if (!acmtypes.empty())
+            {
+                Identifier bccId({acmtypes[nonFixed_[b.aI()]],
+                        acmtypes[nonFixed_[b.aJ()]] },
+                    { b.bondOrder() }, fs->canSwap());
+                double dcf = 1;
+                if (!fs->parameterExists(bccId))
+                {
+                    if (CanSwap::Yes == fs->canSwap())
+                    {
+                        eQGEN_ = eQgen::NOSUPPORT;
+                        return;
+                    }
+                    else
+                    {
+                        bccId = Identifier({acmtypes[nonFixed_[b.aJ()]], acmtypes[nonFixed_[b.aI()]] },
+                                           { b.bondOrder() }, fs->canSwap());
+                        dcf = -1;
+                    }
+                }
+                if (fs->parameterExists(bccId))
+                {
+                    bcc_.push_back(fs->findParameters(bccId));
+                    dchi_factor_.push_back(dcf);
+                }
+            }
+        }
+    }
+
     rhs_.resize(nonFixed_.size() + 1, 0);
     Jcc_.resize(nonFixed_.size() + 1, {0});
     x_.resize(atoms.size(), {0, 0, 0});
@@ -128,43 +177,30 @@ QgenAcm::QgenAcm(const ForceField           *pd,
     }
 }
 
-void QgenAcm::updateParameters(const ForceField           *pd,
-                               const std::vector<ActAtom> &atoms)
+void QgenAcm::updateParameters()
 {
-    auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    if (qt.potential() != Potential::COULOMB_POINT)
+    if (!zeta_.empty())
     {
         // Zeta must exist for atoms and shells in this case
         for (size_t i = 0; i < qdist_id_.size(); i++)
         {
-            if (!qt.parameterExists(qdist_id_[i]))
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
-                                                               qdist_id_[i].id().c_str()).c_str()));
-            }
-            zeta_[i] = qt.findParameterTypeConst(qdist_id_[i], "zeta").value();
+            zeta_[i] = qdist_id_[i]->value();
         }
     }
     // ACM typically for atoms only
-    auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (size_t i = 0; i < acm_id_.size(); i++)
     {
-        if (!acm_id_[i].id().empty())
+        if (acm_id_[i])
         {
-            if (!fs.parameterExists(acm_id_[i]))
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
-                                                               acm_id_[i].id().c_str()).c_str()));
-            }
-            chi0_[i] = fs.findParameterTypeConst(acm_id_[i], "chi").value();
-            eta_[i]  = fs.findParameterTypeConst(acm_id_[i], "eta").value();
+            chi0_[i] = acm_id_[i]->find("chi")->second.value();
+            eta_[i]  = acm_id_[i]->find("eta")->second.value();
         }
     }
     // Update fixed charges
-    for (auto &i : fixed_)
+    for (size_t i = 0 ; i < fixed_.size(); i++)
     {
         // TODO if fixed charges are in the atoms struct we do not need to look them up
-        q_[i] = pd->findParticleType(atoms[i].ffType())->paramValue("charge");
+        q_[fixed_[i]] = charge_[i]->value();
     }
 }
 
@@ -414,33 +450,6 @@ void QgenAcm::updatePositions(const std::vector<gmx::RVec> &x)
     }
 }
 
-void QgenAcm::checkSupport(const ForceField *pd)
-{
-    bool bSupport = true;
-    auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-    for (size_t i = 0; i < acm_id_.size(); i++)
-    {
-        if (!acm_id_[i].id().empty())
-        {
-            if (!fs.parameterExists(acm_id_[i]))
-            {
-                fprintf(stderr, "No %s charge generation support for atom %s.\n",
-                        chargeTypeName(ChargeType_).c_str(),
-                        acm_id_[i].id().c_str());
-                bSupport = false;
-            }
-        }
-    }
-    if (bSupport)
-    {
-        eQGEN_ = eQgen::OK;
-    }
-    else
-    {
-        eQGEN_ = eQgen::NOSUPPORT;
-    }
-}
-
 void QgenAcm::solveEEM(FILE *fp)
 {
     std::vector<double> q;
@@ -484,60 +493,12 @@ void QgenAcm::solveEEM(FILE *fp)
     }    
 }
 
-void QgenAcm::getBccParams(const ForceField  *pd,
-                           int                ai,
-                           int                aj,
-                           double             bondorder,
-                           double            *delta_chi,
-                           double            *delta_eta)
-{
-    auto itype    = InteractionType::BONDCORRECTIONS;
-    auto fs       = pd->findForcesConst(itype);
-    bool swapped = false;
-    int  nf      = static_cast<int>(nonFixed_.size());
-    if (ai >= nf || aj >= nf)
-    {
-        fprintf(stderr, "Atom index %d or %d out of range (max %zu). Check your input.\n", ai, aj, nonFixed_.size());
-        eQGEN_ = eQgen::INCORRECTMOL;
-        return;
-    }
-    Identifier bccId({acm_id_[nonFixed_[ai]].id(), 
-            acm_id_[nonFixed_[aj]].id()}, { bondorder }, fs.canSwap());
-    if (!fs.parameterExists(bccId))
-    {
-        if (CanSwap::Yes == fs.canSwap())
-        {
-            eQGEN_ = eQgen::NOSUPPORT;
-            return;
-        }
-        else
-        {
-            bccId   = Identifier({acm_id_[nonFixed_[aj]].id(),
-                    acm_id_[nonFixed_[ai]].id()},
-                { bondorder }, fs.canSwap());
-            swapped = true;
-        }
-    }
-    if (!fs.parameterExists(bccId))
-    {
-        eQGEN_ = eQgen::NOSUPPORT;
-        return;
-    }
-    *delta_chi = fs.findParameterTypeConst(bccId, "delta_chi").value();
-    if (swapped)
-    {
-        *delta_chi *= -1;
-    }
-    *delta_eta = fs.findParameterTypeConst(bccId, "delta_eta").value();
-}
-
 void QgenAcm::solveSQE(FILE                    *fp,
-                      const ForceField        *pd,
-                      const std::vector<Bond> &bonds)
+                       const std::vector<Bond> &bonds)
 {
     std::vector<double> myq(nonFixed_.size(), 0.0);
-    int info   = 0;
-    int nbonds = bonds.size();
+    int    info   = 0;
+    size_t nbonds = bonds.size();
     if (nbonds > 0)
     {
         MatrixWrapper lhs(nbonds, nbonds);
@@ -545,14 +506,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
 
         std::vector<double> delta_chis;
         // First fill the matrix
-        for (int bij = 0; bij < nbonds; bij++)
+        for (size_t bij = 0; bij < nbonds; bij++)
         {
             auto ai      = bonds[bij].aI();
             auto aj      = bonds[bij].aJ();
             
-            double delta_chi = 0, delta_eta = 0;
-            getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
-                         &delta_chi, &delta_eta);
+            double delta_chi = 0;
+            double delta_eta = 0;
+            if (bcc_.size() == nbonds)
+            {
+                delta_chi = bcc_[bij]->find("delta_chi")->second.value() * dchi_factor_[bij];
+                delta_eta = bcc_[bij]->find("delta_eta")->second.value();
+            }
             if (eQgen::OK != eQGEN_)
             {
                 return;
@@ -566,7 +531,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             // we have to map to numbers including shells.
             delta_chis.push_back(delta_chi);
             
-            for (int bkl = 0; bkl < nbonds; bkl++)
+            for (size_t bkl = 0; bkl < nbonds; bkl++)
             {
                 auto ak  = bonds[bkl].aI();
                 auto al  = bonds[bkl].aJ();
@@ -582,9 +547,9 @@ void QgenAcm::solveSQE(FILE                    *fp,
         if (debug)
         {
             fprintf(debug, "Jsqe\n");
-            for(int i = 0; i < nbonds; i++)
+            for(size_t i = 0; i < nbonds; i++)
             {
-                for(int j = 0; j <= i; j++)
+                for(size_t j = 0; j <= i; j++)
                 {
                     fprintf(debug, " %7.2f", lhs.get(i, j));
                 }
@@ -599,7 +564,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             int  ai  = static_cast<int>(i);
             auto nfi = nonFixed_[ai];
             chi_corr[i] += chi0_[nfi];
-            for (int bij = 0; bij < nbonds; bij++)
+            for (size_t bij = 0; bij < nbonds; bij++)
             {
                 if (ai == bonds[bij].aI())
                 {
@@ -622,7 +587,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             //   chi_corr[i] += 0.5*calcJcs(nfi, epsilonr_);
             //}
         }
-        for (int bij = 0; bij < nbonds; bij++)
+        for (size_t bij = 0; bij < nbonds; bij++)
         {
             auto ai    = bonds[bij].aI();
             auto aj    = bonds[bij].aJ();
@@ -651,7 +616,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             }
             fprintf(fp, "\n");
         }
-        for (int bij = 0; bij < nbonds; bij++)
+        for (size_t bij = 0; bij < nbonds; bij++)
         {
             auto ai  = bonds[bij].aI();
             auto aj  = bonds[bij].aJ();
@@ -712,16 +677,15 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
                 molname.c_str(), 
                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     }
-    checkSupport(pd);
     if (eQgen::OK == eQGEN_)
     {
-        updateParameters(pd, *atoms);
+        updateParameters();
         updatePositions(x);
         calcJcc(epsilonr_);
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
-            solveSQE(fp, pd, bonds);
+            solveSQE(fp, bonds);
         }
         else
         {

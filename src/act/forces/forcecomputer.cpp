@@ -33,6 +33,7 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/forces/forcecomputerimpl.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
@@ -86,7 +87,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     // Reset shells if needed
     if (true)
     {
-        auto atoms = top->atoms();
+        auto &atoms = top->atoms();
         for(size_t i = 0; i < top->nAtoms(); i++)
         {
             for(int sh : atoms[i].shells())
@@ -97,7 +98,7 @@ double ForceComputer::compute(const ForceField                  *pd,
     }
     // Do first calculation every time.
     computeOnce(pd, top, coordinates, forces, energies, field);
-    // Store total electrostatics energy
+    // Store total electrostatics energy in independent copy.
     std::map<InteractionType, double> eBefore = *energies;
 
     // Now let's have a look whether we are polarizable
@@ -122,10 +123,11 @@ double ForceComputer::compute(const ForceField                  *pd,
             if (bIS)
             {
                 Identifier atID(aa.ffType());
-                auto fc = ffpl.findParameterTypeConst(atID, "kshell").internalValue();
-                if (fc != 0)
+                auto alpha = ffpl.findParameterTypeConst(atID, pol_name[polALPHA]).internalValue();
+                auto q     = aa.charge();
+                if (alpha > 0 && q != 0)
                 {
-                    fc_1 = 1.0/fc;
+                    fc_1 = alpha/(q*q*ONE_4PI_EPS0);
                 }
                 nshell += 1;
             }
@@ -201,7 +203,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     // Clear energies
     energies->clear();
     // Clear forces
-    auto atoms = top->atoms();
+    auto &atoms = top->atoms();
     for(size_t ff = 0; ff < forces->size(); ++ff)
     {
         real fac = FIELDFAC*atoms[ff].charge();
@@ -222,7 +224,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
-            bfc(entry.second, top->atoms(), coordinates, forces, &my_energy);
+            bfc(entry.second, atoms, coordinates, forces, &my_energy);
             for(const auto &me : my_energy)
             {
                 if (energies->find(me.first) != energies->end())
@@ -234,9 +236,9 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                 epot += me.second;
             }
         }
-        else if (!isVsite(entry.first))
+        else if (debug && !isVsite(entry.first))
         {
-            fprintf(stderr, "Please implement a force function for type %s\n",
+            fprintf(debug, "Please implement a force function for type %s\n",
                     potentialToString(ffpl.potential()).c_str());
         }
     }

@@ -367,19 +367,31 @@ std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParamet
     return myCombRule;
 }
 
-ForceFieldParameterMap evalCombinationRule(Potential                                    ftype,
-                                           const std::map<const std::string, CombRule> &combrule,
-                                           const ForceFieldParameterMap                &ivdw,
-                                           const ForceFieldParameterMap                &jvdw,
-                                           bool                                         same)
+void evalCombinationRule(Potential                                    ftype,
+                         const std::map<const std::string, CombRule> &combrule,
+                         const ForceFieldParameterMap                &ivdw,
+                         const ForceFieldParameterMap                &jvdw,
+                         bool                                         same,
+                         ForceFieldParameterMap                      *pmap)
 {
     // Fudge unit
     std::string unit("kJ/mol");
-    
+    // Defining some strings that we may or may not need
+    const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
+    const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
+
+    std::string       cdist;
+    if (ftype == Potential::GENERALIZED_BUCKINGHAM)
+    {
+        cdist = gbh_name[gbhRMIN];
+    }
+    else
+    {
+        cdist = lj14_7_name[lj14_7SIGMA];
+    }
+
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-
-    ForceFieldParameterMap pmap;
 
     for(const auto &param : ivdw)
     {
@@ -422,18 +434,6 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
         }
         else
         {
-            // Defining some strings that we may or may not need
-            const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
-            const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
-            std::string       cdist;
-            if (ftype == Potential::GENERALIZED_BUCKINGHAM)
-            {
-                cdist = gbh_name[gbhRMIN];
-            }
-            else
-            {
-                cdist = lj14_7_name[lj14_7SIGMA];
-            }
             auto ieps = ivdw.find(cepsilon)->second.value();
             auto jeps = jvdw.find(cepsilon)->second.value();
             double igam = 0;
@@ -472,14 +472,14 @@ ForceFieldParameterMap evalCombinationRule(Potential                            
                 break;
             }
         }
-        std::string pij = gmx::formatString("%s_ij", param.first.c_str());
-        pmap.insert({ pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true)});
+        std::string pij = param.first + "_ij";
+        pmap->insert_or_assign(pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
     }
-    return pmap;
 }
 
 static void generateParameterPairs(ForceField      *pd,
-                                   InteractionType  itype)
+                                   InteractionType  itype,
+                                   bool             force)
 {
     // Do not crash if e.g. there is no CHARGETRANSFER.
     if (!pd->interactionPresent(itype))
@@ -495,16 +495,21 @@ static void generateParameterPairs(ForceField      *pd,
     // Now do the double loop
     for (auto &ivdw : *forcesVdw->parameters())
     {
-        auto iid    = ivdw.first;
+        auto &iid    = ivdw.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
             continue;
         }
-        auto iparam = ivdw.second;
+        auto &iparam = ivdw.second;
+        bool iupdated = false;
+        for(const auto &ip : iparam)
+        {
+            iupdated = iupdated || ip.second.updated();
+        }
         for (auto &jvdw : *forcesVdw->parameters())
         {
-            auto jid    = jvdw.first;
+            auto &jid    = jvdw.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
             if (jid.atoms().size() > 1 || jid.id() < iid.id())
@@ -512,130 +517,97 @@ static void generateParameterPairs(ForceField      *pd,
                 continue;
             }
             bool same = jid.id() == iid.id();
-            auto jparam = jvdw.second;
+            auto &jparam = jvdw.second;
+            bool jupdated = false;
+            for(const auto &jp : jparam)
+            {
+                jupdated = jupdated || jp.second.updated();
+            }
+            if ((!iupdated || !iupdated) && !force)
+            {
+                continue;
+            }
             // Fill the parameters, potential dependent
-            auto pmap = evalCombinationRule(forcesVdw->potential(),
-                                            comb_rule, ivdw.second, jvdw.second, same);
+            ForceFieldParameterMap pmap;
+            evalCombinationRule(forcesVdw->potential(),
+                                comb_rule, ivdw.second, jvdw.second, same, &pmap);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
-            
         }
     }
     // Phew, we're done!
 }
 
-static void generateCoulombParameterPairs(ForceField *pd)
+static void generateCoulombParameterPairs(ForceField *pd, bool force)
 {
     auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
-    
-    // We temporarily store the new parameters here
-    ForceFieldParameterList newParams;
     
     // Fudge unit
     std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-
+    auto zeta = coul_name[coulZETA];
+    // Finally add the new parameters to the exisiting list
+    auto fold = forcesCoul->parameters();
     // Now do the double loop
+    int nid = 0;
     for (auto &icoul : *forcesCoul->parameters())
     {
-        auto iid    = icoul.first;
+        auto &iid    = icoul.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
             continue;
         }
-        auto iparam = icoul.second;
-        double izeta = icoul.second["zeta"].internalValue();
+        double izeta = icoul.second[zeta].internalValue();
         for (auto &jcoul : *forcesCoul->parameters())
         {
-            auto jid    = jcoul.first;
+            auto &jid    = jcoul.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id())
+            if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
+                (!icoul.second[zeta].updated() && !jcoul.second[zeta].updated() && !force))
             {
                 continue;
             }
-            auto jparam = jcoul.second;
-            double jzeta  = jcoul.second["zeta"].internalValue();
+            double     jzeta  = jcoul.second[zeta].internalValue();
             Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
-            ForceFieldParameter pi(unit, izeta, 0, 0, izeta, izeta, mutd, true, true);
-            ForceFieldParameter pj(unit, jzeta, 0, 0, jzeta, jzeta, mutd, true, true);
-            newParams.addParameter(pairID, coul_name[coulZETAI], pi);
-            newParams.addParameter(pairID, coul_name[coulZETAJ], pj);
+            nid += 1;
+            auto       oldfp  = fold->find(pairID);
+            if (oldfp == fold->end())
+            {
+                ForceFieldParameterMap ffpm = {
+                    { coul_name[coulZETAI], 
+                      ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
+                    { coul_name[coulZETAJ],
+                      ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
+                };
+                fold->insert({pairID, ffpm});
+            }
+            else
+            {
+                auto &pi = oldfp->second.find(coul_name[coulZETAI])->second;
+                pi.forceSetValue(izeta);
+                auto &pj = oldfp->second.find(coul_name[coulZETAJ])->second;
+                pj.forceSetValue(jzeta);
+            }
         }
     }
-    // Finally add the new parameters to the exisiting list
-    auto fold = forcesCoul->parameters();
-    for(const auto &np : newParams.parametersConst())
+    if (debug)
     {
-        // Remove old copy if it exists
-        auto oldfp = fold->find(np.first);
-        if (oldfp != fold->end())
-        {
-            fold->erase(oldfp);
-        }
-        // Now add the new one
-        fold->insert({ np.first, np.second });
+        int np = forcesCoul->parameters()->size();
+        fprintf(debug, "Made %d/%d identifiers in generateCoulombParameterPairs\n", nid, np);
     }
     // Phew, we're done!
 }
 
-static void generateShellForceConstants(ForceField *pd)
+void generateDependentParameter(ForceField *pd, bool force)
 {
-    if (!pd->polarizable())
-    {
-        return;
-    }
-    auto itype = InteractionType::POLARIZATION;
-    auto ffpl  = pd->findForces(itype)->parameters();
-    // Loop over particles
-    for(const auto &part : pd->particleTypesConst())
-    {
-        if (part.second.hasOption("poltype"))
-        {
-            auto shellType = part.second.optionValue("poltype");
-            if (ffpl->find(shellType) == ffpl->end())
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing polarization term for %s", shellType.c_str()).c_str()));
-            }
-            auto  &parms   = ffpl->find(shellType)->second;
-            auto   alpha   = parms.find("alpha")->second.internalValue();
-            auto   qshell  = pd->findParticleType(shellType)->charge();
-            double kshell  = 0;
-            if (alpha > 0 && qshell != 0)
-            {
-                kshell = gmx::square(qshell)*ONE_4PI_EPS0/alpha;
-            }
-            std::string fc_name("kshell");
-            auto fc_parm = parms.find(fc_name);
-            if (parms.end() == fc_parm)
-            {
-                ForceFieldParameter fc_new("kJ/mol nm2", kshell, 0, 1,
-                                           kshell, kshell,
-                                           Mutability::Dependent, true, true);
-                parms.insert({ fc_name, fc_new });
-            }
-            else
-            {
-                fc_parm->second.setMutability(Mutability::Free);
-                fc_parm->second.setMinimum(kshell);
-                fc_parm->second.setMaximum(kshell);
-                fc_parm->second.setValue(kshell);
-                fc_parm->second.setMutability(Mutability::Dependent);
-            }
-        }
-    }
-}
-
-void generateDependentParameter(ForceField *pd)
-{
-    generateParameterPairs(pd, InteractionType::VDW);
-    generateParameterPairs(pd, InteractionType::CHARGETRANSFER);
-    generateCoulombParameterPairs(pd);
-    generateShellForceConstants(pd);
+    generateParameterPairs(pd, InteractionType::VDW, force);
+    generateParameterPairs(pd, InteractionType::CHARGETRANSFER, force);
+    generateCoulombParameterPairs(pd, force);
 }
 
 } // namespace alexandria

@@ -141,25 +141,22 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     }
     for(int n : mychanged)
     {
-        auto                 iType = optIndex_[n].iType();
-        ForceFieldParameter *p     = nullptr;
-        if (iType != InteractionType::CHARGE)
+        auto p = optIndex_[n].forceFieldParameter();
+        if (!p)
         {
-            p = pd_.findForces(iType)->findParameterType(optIndex_[n].id(), optIndex_[n].parameterType());
+            optIndex_[n].findForceFieldParameter(&pd_);
         }
-        else if (pd_.hasParticleType(optIndex_[n].particleType()))
-        {
-            p = pd_.findParticleType(optIndex_[n].particleType())->parameter(optIndex_[n].parameterType());
-        }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
+        p = optIndex_[n].forceFieldParameter();
         if (p)
         {
+            auto iType = optIndex_[n].iType();
             if (debug && isVsite(iType))
             {
                 fprintf(debug, "Updating %s parameter to %g\n",
                         interactionTypeToString(iType).c_str(), bases[n]);
             }
             p->setValue(bases[n]);
+            p->setUpdated(true);
             // TODO fix the uncertainty
             // p->setUncertainty(psigma_[n]);
         }
@@ -168,6 +165,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     // It would be more efficient to only generate the atom type pair parameters for
     // which one of the atomic Van der Waals or Coulomb parameters changed.
     generateDependentParameter(&pd_);
+    for(int n : mychanged)
+    {
+        optIndex_[n].forceFieldParameter()->setUpdated(false);
+    }
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
@@ -331,36 +332,6 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: OptimizationIndex stuff           *
-* * * * * * * * * * * * * * * * * * * * * */
-
-CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
-                                            int                        dest)
-{
-    cr->send(dest, particleType_);
-    std::string itype = interactionTypeToString(iType_);
-    cr->send(dest, itype);
-    parameterId_.Send(cr, dest);
-    cr->send(dest, parameterType_);
-    
-    return CommunicationStatus::OK;
-}
-
-CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
-                                               int                        src)
-{
-    cr->recv(src, &particleType_);
-    std::string itype;
-    cr->recv(src, &itype);
-    iType_ = stringToInteractionType(itype);
-    parameterId_.Receive(cr, src);
-    cr->recv(src, &parameterType_);
-
-    return CommunicationStatus::OK;
-}
-
 
 void StaticIndividualInfo::generateOptimizationIndex(FILE                      *fp,
                                                      const MolGen              *mg,

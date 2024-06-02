@@ -37,7 +37,7 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const ForceField             *pd,
+FragmentHandler::FragmentHandler(ForceField                   *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
@@ -120,7 +120,7 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         // ID
         ids_.push_back(f->id());
         // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), f->charge()));
+        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
         // Total number of atoms
         natoms_ += top->atoms().size();
         // Extend topologies_ array

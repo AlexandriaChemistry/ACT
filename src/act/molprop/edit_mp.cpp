@@ -68,7 +68,7 @@ static bool dump_molecule(FILE              *fp,
                           ForceComputer     *forceComp,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
-                          const ForceField  &pd,
+                          ForceField        &pd,
                           MolProp           *mp)
 {
     alexandria::ACTMol actmol;

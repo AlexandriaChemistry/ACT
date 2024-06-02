@@ -64,6 +64,8 @@ enum class eQgen {
 namespace alexandria
 {
 
+class ForceFieldParameter;
+
 /*! \brief Class governing charge generation
  *
  * The QgenACM supports two algorithms:
@@ -82,10 +84,12 @@ public:
      * 
      * \param[in] pd     Force field information
      * \param[in] atoms  Atoms data
+     * \param[in] bonds  Bond data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const ForceField              *pd,
+    QgenAcm(ForceField                 *pd,
             const std::vector<ActAtom> &atoms,
+            const std::vector<Bond>    &bonds,
             int                         qtotal);
     
     /*! \brief Routine that computes the charges
@@ -140,11 +144,6 @@ private:
     void dump(FILE                       *fp, 
               const std::vector<ActAtom> *atoms) const;
     
-    /*! \brief Check whether the compound has support in the force field
-     * \param[in] pd The force field data structure
-     */
-    void checkSupport(const ForceField *pd);
-    
     //! Status of the algorithm
     eQgen                            eQGEN_       = eQgen::OK;
     //! Total charge
@@ -167,10 +166,16 @@ private:
     std::vector<double>              rhs_;
     //! Atomic coordinates
     std::vector<gmx::RVec>           x_;
-    // Store ids locally, first for chargedistristribution
-    std::vector<Identifier>          qdist_id_;
-    // Store ids locally, second for EEM and bond charge corrections
-    std::vector<Identifier>          acm_id_;
+    //! Store ids locally, first for charge distristribution
+    std::vector<ForceFieldParameter *> qdist_id_;
+    //! Store parameters locally, first for charges
+    std::vector<ForceFieldParameter *> charge_;
+    //! Store ids locally, second for EEM and bond charge corrections
+    std::vector<ForceFieldParameterMap *> acm_id_;
+    //! Store bcc paramas
+    std::vector<ForceFieldParameterMap *> bcc_;
+    //! Factor to multiply delta chi by ( 1 or -1 )
+    std::vector<double>                   dchi_factor_;
     //! The atoms/shells to optimize charges for
     std::vector<int>                 nonFixed_;
     //! The atoms/shells not to optimize charges for
@@ -190,11 +195,8 @@ private:
      * This includes, chi, eta, zeta. In case a split charge
      * equilibration algorithm is used also the bond charge
      * correction parameters will be updated.
-     * \param[in] pd    Force field database
-     * \param[in] atoms Atoms data structure
      */
-    void updateParameters(const ForceField              *pd,
-                          const std::vector<ActAtom> &atoms);
+    void updateParameters();
     
     /*! \brief Compute Coulomb interaction
      * \param[in] xI       Coordinates for atom I
@@ -213,22 +215,6 @@ private:
                  int    rowI,
                  int    rowJ,
                  double epsilonr);
-    
-    /*! \brief Return delta_chi and delta_eta for atom pair
-     *
-     * \param[in]  pd  ForceField structure
-     * \param[in]  ai  Atom id i
-     * \param[in]  aj  Atom id j
-     * \param[in]  bondorder The bond order for this bond
-     * \param[out] delta_chi the electronegativity correction
-     * \param[out] delta_eta the bond hardness
-     */
-    void getBccParams(const ForceField *pd,
-                      int               ai,
-                      int               aj,
-                      double            bondorder,
-                      double           *delta_chi,
-                      double           *delta_eta);
     
     /*! \brief Store the atoms in their destination structure
      * \param[inout] atoms The array with atom properties
@@ -268,12 +254,10 @@ private:
     /*! \brief Perform the split charge equilibration algorithm
      *
      * \param[in] fp    File for logging
-     * \param[in] pd    Force field information
      * \param[in] bonds List of bonds in the compound
      * If something goes wrong, eQGEN_ will be set.
      */
     void solveSQE(FILE                    *fp,
-                  const ForceField        *pd,
                   const std::vector<Bond> &bonds);
     
     /*! \brief update the positions
