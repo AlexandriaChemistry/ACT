@@ -979,7 +979,8 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
                                                const AtomizationEnergy             &atomenergy,
                                                alexandria::ACTMol                  *mol,
                                                iMolSelect                           ims,
-                                               const gmx_output_env_t              *oenv)
+                                               const gmx_output_env_t              *oenv,
+                                               bool                                 printAll)
 {
     std::vector<ACTEnergy>                                              energyMap;
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
@@ -1016,7 +1017,7 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
     std::map<InteractionType, gmx_stats> myeinter;
     std::map<eRMS, InteractionType> interE = {
         { eRMS::Interaction,       InteractionType::EPOT           },
-        { eRMS::Electrostatics,    InteractionType::ELECTROSTATICS        },
+        { eRMS::Electrostatics,    InteractionType::ELECTROSTATICS },
         { eRMS::Dispersion,        InteractionType::DISPERSION     },
         { eRMS::Exchange,          InteractionType::EXCHANGE       },
         { eRMS::Induction,         InteractionType::INDUCTION      }
@@ -1030,7 +1031,7 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
                                        [val](const auto& mo) {return mo.second == val; });
 
             auto tt = targets.find(result->first);
-            if (interE.end() != result &&  tt != targets.end() && tt->second.weight() > 0)
+            if (interE.end() != result && (printAll || ( tt != targets.end() && tt->second.weight() > 0)))
             {
                 if (ie.second.haveQM() && ie.second.haveACT())
                 {
@@ -1348,7 +1349,8 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                                    StaticIndividualInfo        *sii,
                                    std::vector<ACTMol>         *actmol,
                                    const gmx_output_env_t      *oenv,
-                                   const std::vector<t_filenm> &filenm)
+                                   const std::vector<t_filenm> &filenm,
+                                   bool                         printAll)
 {
     const auto pd = sii->forcefield();
     int        n  = 0;
@@ -1539,7 +1541,7 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
             {
                 std::vector<std::string> tcout;
                 printEnergyForces(&tcout, pd, forceComp, sii->fittingTargetsConst(ims),
-                                  atomenergy, &(*mol), ims, oenv);
+                                  atomenergy, &(*mol), ims, oenv, printAll);
                 for(const auto &tout : tcout)
                 {
                     fprintf(fp, "%s\n", tout.c_str());
@@ -1575,7 +1577,7 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                 {
                     print_stats(fp, interactionTypeToString(tt).c_str(),
                                 "kJ/mol", 1.0, &lsq_einter_[tt][ims.first][qt],
-                                header, "QM/DFT", name, useOffset_);
+                                header, "SAPT", name, useOffset_);
                     header = false;
                 }
             }
