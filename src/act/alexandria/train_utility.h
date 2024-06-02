@@ -136,7 +136,8 @@ private:
                            const AtomizationEnergy             &atomenergy,
                            alexandria::ACTMol                  *mol,
                            iMolSelect                          ims,
-                           const gmx_output_env_t              *oenv);
+                           const gmx_output_env_t              *oenv,
+                           bool                                 printAll);
     /*! \brief Print data on outliers.
      */
     void printOutliers(FILE                                  *fp,
@@ -157,12 +158,23 @@ public:
      * \param[out] pargs The vector to add to
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
-    
+
+    /*! \brief Do the force field info printing to the log file.
+     * By default only the interactions/energies/observables that are
+     * used in optimization will be printed.
+     * \param[in] fp       File to print to
+     * \param[in] sii      Information on the training
+     * \param[in] actmol   The compounds/dimers
+     * \param[in] oenv     For printing xvg files
+     * \param[in] filenm   Filenames for additional output files
+     * \param[in] printAll Tell the printer to print all observables.
+     */
     void print(FILE                        *fp,
                StaticIndividualInfo        *sii,
                std::vector<ACTMol>         *actmol,
                const gmx_output_env_t      *oenv,
-               const std::vector<t_filenm> &filenm);
+               const std::vector<t_filenm> &filenm,
+               bool                         printAll);
 };
 
 /*! \brief Print header and command line arguments

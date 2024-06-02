@@ -903,7 +903,7 @@ int train_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms);
+            printer.print(opt.logFile(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
             print_memory_usage(debug);
         }
         else if (!bMinimum)
