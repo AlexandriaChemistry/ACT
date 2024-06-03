@@ -334,12 +334,12 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         cr->send(dest, datafile_);
         jobtype.assign(jobType2string(jobtype_));
         cr->send(dest, jobtype);
-        cr->send(dest, static_cast<int>(property_.size()));
+        cr->send(dest, property_.size());
         for(const auto &prop : property_)
         {
             std::string mpo_str(mpo_name(prop.first));
             cr->send(dest, mpo_str);
-            cr->send(dest, static_cast<int>(prop.second.size()));
+            cr->send(dest, prop.second.size());
             for (const auto &p : prop.second)
             {
                 p->Send(cr, dest);
@@ -349,7 +349,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         //! Send Atoms
         if (CommunicationStatus::OK == cs)
         {
-            cr->send(dest, static_cast<int>(calcAtomConst().size()));
+            cr->send(dest, calcAtomConst().size());
             for (auto &cai : calcAtomConst())
             {
                 cs = cai.Send(cr, dest);
@@ -390,7 +390,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&jobtype, comm);
         jobtype_  = string2jobType(jobtype);
         // BroadCast number of properties
-        int nprop = property_.size();
+        size_t nprop = property_.size();
         cr->bcast(&nprop, comm);
         if (debug && cr->rank() == root)
         {
@@ -401,9 +401,9 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
             }
         }
         auto thisProp = property_.begin();
-        for(int n = 0; n < nprop; n++)
+        for(size_t n = 0; n < nprop; n++)
         {
-            int np = 0;
+            size_t np = 0;
             if (root == cr->rank())
             {
                 np = thisProp->second.size();
@@ -428,7 +428,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown string '%s' for a MolPropObservable", mpo_str.c_str()).c_str()));
             }
-            for(int propid = 0; propid < np; propid++)
+            for(size_t propid = 0; propid < np; propid++)
             {
                 GenericProperty *gp = nullptr;
                 if (root == cr->rank())
@@ -555,11 +555,11 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &datafile_);
         cr->recv(src, &jobtype);
         jobtype_    = string2jobType(jobtype);
-        int nmpo;
+        size_t nmpo;
         cr->recv(src, &nmpo);
         
         //! Receive Properties
-        for (int i = 0; i < nmpo; i++)
+        for (size_t i = 0; i < nmpo; i++)
         {
             MolPropObservable mpo;
             std::string       mpo_str;
@@ -568,9 +568,9 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
             {
                 gmx_fatal(FARGS, "Unknown observable %s", mpo_str.c_str());
             }
-            int  ngp;
+            size_t  ngp;
             cr->recv(src, &ngp);
-            for (int n = 0; n < ngp; n++)
+            for (size_t n = 0; n < ngp; n++)
             {
                 GenericProperty *gp = nullptr;
                 switch (mpo)
@@ -637,9 +637,9 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         } 
         
         //! Receive Atoms
-        int Natom;
+        size_t Natom;
         cr->recv(src, &Natom);
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
         {
             CalcAtom ca;
             cs = ca.Receive(cr, src);
