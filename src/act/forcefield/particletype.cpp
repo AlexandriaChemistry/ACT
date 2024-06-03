@@ -227,13 +227,13 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
     id_.Send(cr, dest);
     cr->send(dest, desc_);
     cr->send(dest, gmxParticleType_);
-    cr->send(dest, static_cast<int>(option_.size()));
+    cr->send(dest, option_.size());
     for(const auto &opt : option_)
     {
         cr->send(dest, opt.first);
         cr->send(dest, opt.second);
     }
-    cr->send(dest, static_cast<int>(parameterMap_.size()));
+    cr->send(dest, parameterMap_.size());
     for(const auto &param : parameterMap_)
     {
         cr->send(dest, param.first);
@@ -252,7 +252,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
         cs = id_.BroadCast(cr, root, comm);
         cr->bcast(&desc_, comm);
         cr->bcast(&gmxParticleType_, comm);
-        int nopt = option_.size();
+        size_t nopt = option_.size();
         cr->bcast(&nopt, comm);
         if (cr->rank() == root)
         {
@@ -266,7 +266,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
         else
         {
             option_.clear();
-            for(int i = 0; i < nopt; i++)
+            for(size_t i = 0; i < nopt; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -275,7 +275,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
             }
         }
     }
-    int nparm = parameterMap_.size();
+    size_t nparm = parameterMap_.size();
     cr->bcast(&nparm, comm);
     if (cr->rank() == root)
     {
@@ -289,7 +289,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     else
     {
         parameterMap_.clear();
-        for(int i = 0; i < nparm; i++)
+        for(size_t i = 0; i < nparm; i++)
         {
             std::string type;
             cr->bcast(&type, comm);
@@ -307,20 +307,20 @@ CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src
     cs = id_.Receive(cr, src);
     cr->recv(src, &desc_);
     cr->recv(src, & gmxParticleType_ );
-    int nopt;
+    size_t nopt;
     cr->recv(src, &nopt);
     option_.clear();
-    for(int i = 0; i < nopt; i++)
+    for(size_t i = 0; i < nopt; i++)
     {
         std::string key, value;
         cr->recv(src, &key);
         cr->recv(src, &value);
         setOption(key, value);
     }
-    int nparm;
+    size_t nparm;
     cr->recv(src, &nparm);
     parameterMap_.clear();
-    for(int i = 0; i < nparm; i++)
+    for(size_t i = 0; i < nparm; i++)
     {
         std::string type;
         cr->recv(src, &type);
