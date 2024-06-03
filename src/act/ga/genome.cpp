@@ -107,7 +107,7 @@ void Genome::setBase(size_t index, double value)
 void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 {
     cr->send(dest, genome_);
-    cr->send(dest, static_cast<int>(fitness_.size()));
+    cr->send(dest, fitness_.size());
     for(auto &f : fitness_)
     {
         std::string imsName(iMolSelectName(f.first));
@@ -120,7 +120,7 @@ void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_Comm comm)
 {
     cr->bcast(&genome_, comm);
-    int nfmap = fitness_.size();
+    size_t nfmap = fitness_.size();
     cr->bcast(&nfmap, comm);
     if (cr->rank() == root)
     {
@@ -134,7 +134,7 @@ void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_
     else
     {
         fitness_.clear();
-        for (int i = 0; i < nfmap; i++)
+        for (size_t i = 0; i < nfmap; i++)
         {
             std::string imsName;
             cr->bcast(&imsName, comm);
@@ -155,10 +155,10 @@ void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_
 void Genome::Receive(const alexandria::CommunicationRecord *cr, int src)
 {
     cr->recv(src, &genome_);
-    int nfmap;
+    size_t nfmap;
     cr->recv(src, &nfmap);
     fitness_.clear();
-    for (int i = 0; i < nfmap; i++)
+    for (size_t i = 0; i < nfmap; i++)
     {
         std::string imsName;
         cr->recv(src, &imsName);

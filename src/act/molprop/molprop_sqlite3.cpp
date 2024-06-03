@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -156,8 +156,8 @@ static void getSynonyms(sqlite3              *db,
         }
         else
         {
-            printf("There are %d synonyms for %d molecules.\n",
-                   static_cast<int>(syn.size()), nMol);
+            printf("There are %zu synonyms for %d molecules.\n",
+                   syn.size(), nMol);
         }
     }
     while (SQLITE_ROW == rc);
@@ -213,8 +213,8 @@ static void getClasses(sqlite3              *db,
         }
         else
         {
-            printf("There are %d classes for %d molecules.\n",
-                   static_cast<int>(classes.size()), nMol);
+            printf("There are %zu classes for %d molecules.\n",
+                   classes.size(), nMol);
         }
     }
     while (SQLITE_ROW == rc);
