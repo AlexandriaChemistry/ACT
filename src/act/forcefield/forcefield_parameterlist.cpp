@@ -140,9 +140,9 @@ const ForceFieldParameterMap &ForceFieldParameterList::findParametersConst(const
     auto iter = parameters_.find(identifier);
     if (parameters_.end() == iter)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %d entries for function '%s'",
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %zu entries for function '%s'",
                                                            identifier.id().c_str(),
-                                                           static_cast<int>(parameters_.size()),
+                                                           parameters_.size(),
                                                            potentialToString(pot_).c_str()).c_str()));
     }
     
@@ -238,25 +238,25 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
             GMX_THROW(gmx::InternalError("Empty canSwapString"));
         }
         cr->send(dest, canSwapString);
-        cr->send(dest, static_cast<int>(options_.size()));
+        cr->send(dest, options_.size());
         for(auto const &x : options_)
         {
             cr->send(dest, x.first);
             cr->send(dest, x.second);
         }
-        cr->send(dest, static_cast<int>(combrules_.size()));
+        cr->send(dest, combrules_.size());
         for(auto const &x : combrules_)
         {
             cr->send(dest, x.first);
             cr->send(dest, x.second);
         }
-        cr->send(dest, static_cast<int>(parameters_.size()));
+        cr->send(dest, parameters_.size());
         for(auto const &x : parameters_)
         {
             cs = x.first.Send(cr, dest);
             if (CommunicationStatus::OK == cs)
             {
-                cr->send(dest, static_cast<int>(x.second.size()));
+                cr->send(dest, x.second.size());
                 for(auto const &p : x.second)
                 {
                     cr->send(dest, p.first);
@@ -297,9 +297,9 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         }
         cr->bcast(&canSwapString, comm);
         canSwap_ = stringToCanSwap(canSwapString);
-        int noptions = options_.size();
+        size_t noptions = options_.size();
         cr->bcast(&noptions, comm);
-        int ncrule = combrules_.size();
+        size_t ncrule = combrules_.size();
         cr->bcast(&ncrule, comm);
         if (cr->rank() == root)
         {
@@ -321,7 +321,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         else
         {
             options_.clear();
-            for(int i = 0; i < noptions; i++)
+            for(size_t i = 0; i < noptions; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -329,7 +329,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 options_.insert({key, value});
             }
             combrules_.clear();
-            for(int i = 0; i < ncrule; i++)
+            for(size_t i = 0; i < ncrule; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -342,7 +342,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam = parameters_.size();
+        size_t nparam = parameters_.size();
         cr->bcast(&nparam, comm);
         if (cr->rank() == root)
         {
@@ -350,7 +350,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
             {
                 Identifier pp = p.first;
                 pp.BroadCast(cr, root, comm);
-                int ntype = p.second.size();
+                size_t ntype = p.second.size();
                 cr->bcast(&ntype, comm);
                 for(auto &q : p.second)
                 {
@@ -363,7 +363,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         else
         {
             parameters_.clear();
-            for(int i = 0; i < nparam; i++)
+            for(size_t i = 0; i < nparam; i++)
             {
                 Identifier key;
                 cs = key.BroadCast(cr, root, comm);
@@ -374,9 +374,9 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 }
                 if (CommunicationStatus::OK == cs)
                 {
-                    int ntype;
+                    size_t ntype;
                     cr->bcast(&ntype, comm);
-                    for(int j = 0; j < ntype; j++)
+                    for(size_t j = 0; j < ntype; j++)
                     {
                         std::string type;
                         cr->bcast(&type, comm);
@@ -399,12 +399,12 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fprintf(debug, "Done receiving %zu parameters\n", nparam);
                     fflush(debug);
                 }
             }
         }
-        int ctr = counter_;
+        size_t ctr = counter_;
         cr->bcast(&ctr, comm);
         counter_ = ctr;
     }
@@ -425,20 +425,20 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
         std::string canSwapString;
         cr->recv(src, &canSwapString);
         canSwap_     = stringToCanSwap(canSwapString);
-        int noptions;
+        size_t noptions;
         cr->recv(src, &noptions);
         options_.clear();
-        int ncrule;
+        size_t ncrule;
         cr->recv(src, &ncrule);
         combrules_.clear();
-        for(int i = 0; i < noptions; i++)
+        for(size_t i = 0; i < noptions; i++)
         {
             std::string key, value;
             cr->recv(src, &key);
             cr->recv(src, &value);
             options_.insert({key, value});
         }
-        for(int i = 0; i < ncrule; i++)
+        for(size_t i = 0; i < ncrule; i++)
         {
             std::string key, value;
             cr->recv(src, &key);
@@ -450,10 +450,10 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam;
+        size_t nparam;
         cr->recv(src, &nparam);
         parameters_.clear();
-        for(int i = 0; i < nparam; i++)
+        for(size_t i = 0; i < nparam; i++)
         {
             Identifier key;
             cs = key.Receive(cr, src);
@@ -464,14 +464,14 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             }
             if (CommunicationStatus::OK == cs)
             {
-                int ntype;
+                size_t ntype;
                 cr->recv(src, &ntype);
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving ntype = %d\n", ntype);
+                    fprintf(debug, "Done receiving ntype = %zu\n", ntype);
                     fflush(debug);
                 }
-                for(int j = 0; j < ntype; j++)
+                for(size_t j = 0; j < ntype; j++)
                 {
                     std::string type;
                     cr->recv(src, &type);
@@ -493,7 +493,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fprintf(debug, "Done receiving %zu parameters\n", nparam);
                     fflush(debug);
                 }
             }
