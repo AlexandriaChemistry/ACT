@@ -354,11 +354,17 @@ template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int ro
     check_return("MPI_Bcast", MPI_Bcast((void *)&d, 1, MPI_INT, root, comm));
     *b = d;
 }
-    
+
 template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
+}
+
+template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
+{
+    check_init_done();
+    check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_UNSIGNED_LONG, root, comm));
 }
 
 template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<double> *d,
