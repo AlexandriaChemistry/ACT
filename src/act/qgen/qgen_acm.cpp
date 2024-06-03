@@ -204,18 +204,18 @@ void QgenAcm::updateParameters()
     }
 }
 
-double QgenAcm::getQ(int atom)
+double QgenAcm::getQ(size_t atom)
 {
-    if ((0 <= atom) && (atom < natom_))
+    if (atom < natom_)
     {
         return q_[atom];
     }
     return 0;
 }
 
-int QgenAcm::getRow( int atom)
+int QgenAcm::getRow(size_t atom)
 {
-    if ((0 <= atom) && (atom < natom_))
+    if (atom < natom_)
     {
         return row_[atom];
     }
@@ -223,9 +223,9 @@ int QgenAcm::getRow( int atom)
 
 }
 
-double QgenAcm::getZeta(int atom)
+double QgenAcm::getZeta(size_t atom)
 {
-    if ((0 <= atom) && (atom < natom_))
+    if (atom < natom_)
     {
         return zeta_[atom];
     }

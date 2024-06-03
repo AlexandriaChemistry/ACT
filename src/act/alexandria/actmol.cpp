@@ -86,7 +86,7 @@ void ACTQprop::copyRespQ()
         {
             if (isAtom_[i])
             {
-                GMX_RELEASE_ASSERT(j < QgenResp_.natoms(), "Atom index out of range copying charges from RESP to Qprops");
+                GMX_RELEASE_ASSERT(QgenResp_.natoms() - j > 0, "Atom index out of range copying charges from RESP to Qprops");
                 q[i] = QgenResp_.getCharge(j++);
             }
         }
@@ -1135,7 +1135,7 @@ void ACTMol::PrintTopology(const char                  *fn,
             auto ftype = fs.potential();
             if (entry.second.size() > 0)
             {
-                printf("There are %4d %s interactions\n", static_cast<int>(entry.second.size()),
+                printf("There are %4zu %s interactions\n", entry.second.size(),
                        potentialToString(ftype).c_str());
             }
         }
@@ -1341,7 +1341,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                     qgr->updateAtomCoords(xatom);
                     qgr->setAtomSymmetry(symmetric_charges_);
                     qgr->summary(debug);
-                    int natoms = nRealAtoms();
+                    size_t natoms = nRealAtoms();
                         
                     std::random_device               rd;
                     std::mt19937                     gen(rd());  
@@ -1357,7 +1357,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                         for(size_t ll = 0; ll < V.size(); ll++)
                         {
                             auto val = uniform(gen);
-                            if ((ll >= static_cast<size_t>(natoms) || watoms > 0) && val <= cutoff)
+                            if ((ll >= natoms || watoms > 0) && val <= cutoff)
                             {
                                 qgr->addEspPoint(xyz[ll][XX], xyz[ll][YY], xyz[ll][ZZ], V[ll]);
                             }

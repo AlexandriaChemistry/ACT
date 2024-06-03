@@ -121,19 +121,19 @@ public:
      * \param[in] atom index of the atom in the compound
      * \return the charge
      */
-    double getQ(int atom);
+    double getQ(size_t atom);
     
     /*! \brief Return the charge distribution width of the atom
      * \param[in] atom index of the atom in the compound
      * \return the charge distribution width
      */
-    double getZeta(int atom);
+    double getZeta(size_t atom);
     
     /*! \brief Return the row corresponding to the atom
      * \param[in] atom index of the atom in the compound
      * \return the corresponding row in the periodic table
      */
-    int getRow(int atom);
+    int getRow(size_t atom);
     
     
 private:
@@ -153,7 +153,7 @@ private:
     //! The charge type used in the force field
     ChargeType                       ChargeType_  = ChargeType::Point;
     //! Number of particles in the compound
-    int                              natom_       = 0;
+    size_t                           natom_       = 0;
     //! Epsilon R
     double                           epsilonr_    = 1;
     //! Atomic number for each of the atoms

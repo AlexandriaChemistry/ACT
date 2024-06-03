@@ -348,9 +348,9 @@ class ForceField
         auto force = forces_.find(iType);
         if (force == forces_.end())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %zu interaction types)",
                                                            interactionTypeToString(iType).c_str(), 
-                                                           static_cast<int>(forces_.size())).c_str()));
+                                                           forces_.size()).c_str()));
         }
         return &force->second;
     }
@@ -360,9 +360,9 @@ class ForceField
         const auto &force = forces_.find(iType);
         if (force == forces_.end())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %zu interaction types)",
                                                            interactionTypeToString(iType).c_str(),
-                                                           static_cast<int>(forces_.size())).c_str()));
+                                                           forces_.size()).c_str()));
         }
         return force->second;
     }

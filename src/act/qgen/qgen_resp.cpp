@@ -64,7 +64,7 @@ namespace alexandria
 void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
 {
     x_.resize(nAtom_);
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         x_[i] = x[i];
     }
@@ -72,11 +72,11 @@ void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
 
 void QgenResp::updateAtomCharges(const std::vector<double> &q)
 {
-    if (static_cast<size_t>(nAtom_) != q.size())
+    if (nAtom_ != q.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %d and charge array entries %lu", nAtom_, q.size()).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %zu and charge array entries %lu", nAtom_, q.size()).c_str()));
     }
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         q_[i] = q[i];
     }
@@ -84,11 +84,11 @@ void QgenResp::updateAtomCharges(const std::vector<double> &q)
 
 void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 {
-    if (static_cast<size_t>(nAtom_) != atoms.size())
+    if (nAtom_ != atoms.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, atoms.size()).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %zu and topology atoms %lu", nAtom_, atoms.size()).c_str()));
     }
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         q_[i] = atoms[i].charge();
     }
@@ -103,8 +103,8 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
         fprintf(stderr, "setAtomInfo called more than once. Ignoring second time.\n");
         return;
     }
-    GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ - atoms.size() == 0),
-                       gmx::formatString("Changing the number of atoms from %d to %lu", nAtom_, atoms.size()).c_str());
+    GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ == atoms.size()),
+                       gmx::formatString("Changing the number of atoms from %lu to %lu", nAtom_, atoms.size()).c_str());
     nAtom_   = atoms.size();
     qtot_    = qtotal;
     qshell_  = 0;
@@ -141,10 +141,10 @@ void QgenResp::summary(FILE *fp)
 {
     if (nullptr != fp)
     {
-        fprintf(fp, "There are %d atoms for (R)ESP fitting.\n", nAtom_);
-        for (int i = 0; (i < nAtom_); i++)
+        fprintf(fp, "There are %zu atoms for (R)ESP fitting.\n", nAtom_);
+        for (size_t i = 0; (i < nAtom_); i++)
         {
-            fprintf(fp, " %d", symmetricAtoms_[i]);
+            fprintf(fp, " %zu", symmetricAtoms_[i]);
         }
         fprintf(fp, "\n");
     }
@@ -152,32 +152,35 @@ void QgenResp::summary(FILE *fp)
 
 void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 {
-    std::string msg = gmx::formatString("Please pass me a correct symmetric atoms vector. There are %d symmetricAtoms and %d RespAtoms",
-                                        static_cast<int>(symmetricAtoms.size()),
+    std::string msg = gmx::formatString("Please pass me a correct symmetric atoms vector. There are %zu symmetricAtoms and %zu RespAtoms",
+                                        symmetricAtoms.size(),
                                         nAtom_);
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
-                       symmetricAtoms.size() == static_cast<size_t>(nAtom_),
+                       symmetricAtoms.size() == nAtom_,
                        msg.c_str());
 
     if (symmetricAtoms.size() == 0)
     {
-        for (int i = 0; i < nAtom_; i++)
+        for (size_t i = 0; i < nAtom_; i++)
         {
             symmetricAtoms_.push_back(i);
         }
     }
     else
     {
-        symmetricAtoms_ = symmetricAtoms;
+        for(auto s : symmetricAtoms)
+        {
+            symmetricAtoms_.push_back(s);
+        }
     }
     uniqueQ_ = 0;
     fitQ_    = 0;
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         if (mutable_[i])
         {
             fitQ_ += 1;
-            if (symmetricAtoms_[i] == static_cast<int>(i))
+            if (i - symmetricAtoms_[i] == 0)
             {
                 uniqueQ_ += 1;
             }
@@ -266,7 +269,7 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv,
 void QgenResp::regularizeCharges()
 {
     double qtot   = 0;
-    for (int ii = 0; ii < nAtom_; ii++)
+    for (size_t ii = 0; ii < nAtom_; ii++)
     {
         if (mutable_[ii])
         {
@@ -279,7 +282,7 @@ void QgenResp::regularizeCharges()
         fprintf(debug, "Found qtot %g, should be %d. Subtracting %g from each atom.\n",
                 qtot, qtot_, dq);
     }
-    for (int ii = 0; ii < nAtom_; ii++)
+    for (size_t ii = 0; ii < nAtom_; ii++)
     {
         if (mutable_[ii])
         {
@@ -298,7 +301,7 @@ void QgenResp::calcStatistics()
         double vesp  = ep_[i].v();
         double vcalc = ep_[i].vCalc();
         double diff  = vesp - vcalc;
-        if (debug && (i < static_cast<size_t>(4*nAtom_)))
+        if (debug && (i < 4*nAtom_))
         {
             fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
@@ -396,7 +399,7 @@ void QgenResp::calcPot(double epsilonr)
         auto   espx  = ep_[i].esp();
         
         // Loop over RESP atoms
-        for (int j = 0; j < nAtom_; j++)
+        for (size_t j = 0; j < nAtom_; j++)
         {
             auto epot = calcJ(ChargeType_, espx, x_[j], zeta_[j],
                               row_[j]);
@@ -405,8 +408,8 @@ void QgenResp::calcPot(double epsilonr)
         }
         if (debug)
         {
-            fprintf(debug, "CalcESP[%d]: vv = %8.5f qtot = %g Vqm = %8.5f\n",
-                    static_cast<int>(i), vv, qtot, ep_[i].v());
+            fprintf(debug, "CalcESP[%lu]: vv = %8.5f qtot = %g Vqm = %8.5f\n",
+                    i, vv, qtot, ep_[i].v());
         }
         ep_[i].setVCalc(vv);
     }
@@ -432,9 +435,9 @@ void QgenResp::optimizeCharges(double epsilonr)
     std::vector<double>   rhs;
     double                scale_factor = 1.0/std::sqrt(epsilonr);
 
-    if (nEsp() < static_cast<size_t>(fitQ_))
+    if (nEsp() < fitQ_)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("WARNING: Only %zu ESP points for %d atoms. Cannot generate charges.", nEsp(), nAtom_).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_).c_str()));
     }
     
     // Algorithm as described in Ghahremanpour et al., JCTC 14 (2018)
@@ -445,8 +448,8 @@ void QgenResp::optimizeCharges(double epsilonr)
         rhs.push_back(ep_[j].v());
         // Get grid point coordinates
         auto espx  = ep_[j].esp();
-        int i = 0;
-        for (int ii = 0; ii < nAtom_; ii++)
+        size_t i = 0;
+        for (size_t ii = 0; ii < nAtom_; ii++)
         {
             // Compute potential due to this partice at grid
             // position j
@@ -471,8 +474,8 @@ void QgenResp::optimizeCharges(double epsilonr)
         }
     }
     // Now fix the total charge
-    int i = 0;
-    for (int ii = 0; ii < nAtom_; ii++)
+    size_t i = 0;
+    for (size_t ii = 0; ii < nAtom_; ii++)
     {
         if (mutable_[ii])
         {
@@ -484,10 +487,10 @@ void QgenResp::optimizeCharges(double epsilonr)
     
     if (debug)
     {
-        for (int j = 0; j < 4*nAtom_; j++)
+        for (size_t j = 0; j < 4*nAtom_; j++)
         {
             auto espx = ep_[j].esp();
-            fprintf(debug, "ESP[%d] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
+            fprintf(debug, "ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
                     j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]);
         }
     }
@@ -496,7 +499,7 @@ void QgenResp::optimizeCharges(double epsilonr)
     // We store the index of the mutable cores in ii1.
     std::map<int, int> ii1;
     int                i1   = 0;
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         if (mutable_[i])
         {
@@ -504,8 +507,8 @@ void QgenResp::optimizeCharges(double epsilonr)
             i1++;
         }
     }
-    int j1 = rhs.size();
-    for (int i = 0; i < nAtom_; i++)
+    size_t j1 = rhs.size();
+    for (size_t i = 0; i < nAtom_; i++)
     {
         if (symmetricAtoms_[i] < i)
         {
@@ -516,11 +519,11 @@ void QgenResp::optimizeCharges(double epsilonr)
         }
 
     }
-    GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
-    GMX_RELEASE_ASSERT(j1 == nrow, gmx::formatString("Something fishy adding equations for symmetric charges. j1 = %d, nrow = %d", j1, nrow).c_str());
+    GMX_RELEASE_ASSERT(j1 == rhs.size(), "Inconsistency adding equations for symmetric charges");
+    GMX_RELEASE_ASSERT(j1 - nrow == 0, gmx::formatString("Something fishy adding equations for symmetric charges. j1 = %zu, nrow = %d", j1, nrow).c_str());
     if (debug)
     {
-        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n",
+        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %zu nUnique = %d\n",
                 ncolumn, nrow, nEsp(), fitQ_, uniqueQ_);
         for (int i = 0; i < nrow; i++)
         {
@@ -544,14 +547,14 @@ void QgenResp::optimizeCharges(double epsilonr)
         fprintf(debug, "Fitted Charges from optimizeCharges:\n");
     }
     i = 0;
-    for (int ii = 0; ii < nAtom_; ii++)
+    for (size_t ii = 0; ii < nAtom_; ii++)
     {
         if (mutable_[ii])
         {
             q_[ii] = q[i];
             if (debug)
             {
-                fprintf(debug, "q[%d] = %0.3f\n", i, q_[ii]);
+                fprintf(debug, "q[%zu] = %0.3f\n", i, q_[ii]);
             }
             i++;
         }
@@ -563,7 +566,7 @@ void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
                           const ForceField              *pd)
 {
     auto    fs   = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    for (int i = 0; i < nAtom_; i++)
+    for (size_t i = 0; i < nAtom_; i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
