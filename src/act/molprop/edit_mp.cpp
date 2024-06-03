@@ -290,8 +290,8 @@ static void check_mp(FILE                 *mylog,
                         {
                             for(size_t i = 0; i < Xcalc.size(); i++)
                             {
-                                fprintf(mylog, "%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                                        static_cast<int>(i+1),
+                                fprintf(mylog, "%2zu %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                                        i+1,
                                         Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
                                         fac*xyz[i][XX], fac*xyz[i][YY], fac*xyz[i][ZZ]);
                             }

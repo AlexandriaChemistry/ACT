@@ -631,10 +631,10 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         cr->send(dest, cas_);
         cr->send(dest, cid_);
         cr->send(dest, inchi_);
-        cr->send(dest, static_cast<int>(bond_.size()));
-        cr->send(dest, static_cast<int>(category_.size()));
-        cr->send(dest, static_cast<int>(exper_.size()));
-        cr->send(dest, static_cast<int>(fragment_.size()));
+        cr->send(dest, bond_.size());
+        cr->send(dest, category_.size());
+        cr->send(dest, exper_.size());
+        cr->send(dest, fragment_.size());
         
         /* Send Bonds */
         for (auto &bi : bondsConst())
@@ -715,7 +715,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&cas_, comm);
         cr->bcast(&cid_, comm);
         cr->bcast(&inchi_, comm);
-        int Nbond = bond_.size();
+        size_t Nbond = bond_.size();
         cr->bcast(&Nbond, comm);
         if (cr->rank() == root)
         {
@@ -728,7 +728,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         {
             //! Receive Bonds
             cs = CommunicationStatus::OK;
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
             {
                 Bond b;
                 cs = b.BroadCast(cr, root, comm);
@@ -739,10 +739,10 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Ncategory = category_.size();
+        size_t Ncategory = category_.size();
         cr->bcast(&Ncategory, comm);
         //! Receive Categories
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
             if (CommunicationStatus::OK == cr->bcast_data(comm))
             {
@@ -764,7 +764,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Nfrag     = fragment_.size();
+        size_t Nfrag     = fragment_.size();
         cr->bcast(&Nfrag, comm);
         if (cr->rank() == root)
         {
@@ -776,7 +776,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         else
         {
             //! Receive Fragments
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
             {
                 Fragment f;
                 cs = f.BroadCast(cr, root, comm);
@@ -787,12 +787,12 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Nexper    = exper_.size();
+        size_t Nexper    = exper_.size();
         cr->bcast(&Nexper, comm);
         //! Receive Experiments
         if (cr->rank() == root)
         {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 exper_[n].BroadCast(cr, root, comm);
             }
@@ -805,7 +805,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         }
         else
         {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 Experiment ex;
                 cs = ex.BroadCast(cr, root, comm);
@@ -839,7 +839,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &cas_);
         cr->recv(src, &cid_);
         cr->recv(src, &inchi_);
-        int Nbond, Ncategory, Nexper, Nfrag;
+        size_t Nbond, Ncategory, Nexper, Nfrag;
         cr->recv(src, &Nbond);
         cr->recv(src, &Ncategory);
         cr->recv(src, &Nexper);
@@ -851,7 +851,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
         //! Receive Bonds
         cs = CommunicationStatus::OK;
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
         {
             Bond b;
             cs = b.Receive(cr, src);
@@ -862,7 +862,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Categories
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
             if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
@@ -885,7 +885,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Fragments
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
         {
             Fragment f;
             cs = f.Receive(cr, src);
@@ -896,7 +896,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Experiments
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
         {
             Experiment ex;
             cs = ex.Receive(cr, src);
