@@ -444,6 +444,16 @@ template <> void CommunicationRecord::send<int>(int dest, const int &d) const
     send_low(dest, &d, sizeof(d));
 }
 
+template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) const
+{
+    check_init_done();
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Sending size_t '%zu' to %d\n", d, dest);
+    }
+    send_low(dest, &d, sizeof(d));
+}
+
 template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
 {
     check_init_done();
@@ -462,6 +472,16 @@ template <> void CommunicationRecord::recv<int>(int src, int *t) const
     if (nullptr != debug)
     {
         fprintf(debug, "Received int '%d' from %d\n", *t, src);
+    }
+}
+
+template <> void CommunicationRecord::recv<size_t>(int src, size_t *t) const
+{
+    check_init_done();
+    recv_low(src, t, sizeof(*t));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received size_t '%zu' from %d\n", *t, src);
     }
 }
 
