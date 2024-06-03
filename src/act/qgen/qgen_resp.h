@@ -141,7 +141,7 @@ class QgenResp
                          const ForceField             *pd,
                          const int                     qtotal);
 
-        int natoms() const { return nAtom_; }
+        size_t natoms() const { return nAtom_; }
         
         /*! \brief Copy input coordinates to internal ones
          * \param[in] x Input coordinates
@@ -289,10 +289,10 @@ class QgenResp
         dvec                      space_       = { 0, 0, 0 };
         ivec                      nxyz_        = { 0, 0, 0 };
         int                       uniqueQ_     = 0;
-        int                       fitQ_        = 0;
-        int                       nAtom_       = 0;
-        int                       nParticle_   = 0;
-        int                       nFixed_      = 0;
+        size_t                    fitQ_        = 0;
+        size_t                    nAtom_       = 0;
+        size_t                    nParticle_   = 0;
+        size_t                    nFixed_      = 0;
 
         //! Total number of parameters
         std::vector<double>      q_;
@@ -304,7 +304,7 @@ class QgenResp
         std::vector<std::string> dzatoms_;
         std::string              stoichiometry_;
         std::vector<EspPoint>    ep_;
-        std::vector<int>         symmetricAtoms_;
+        std::vector<size_t>      symmetricAtoms_;
 };
 
 } // namespace

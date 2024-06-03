@@ -362,7 +362,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
         cr->send(dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
-        cr->send(dest, static_cast<int>(alexandria_.size()));
+        cr->send(dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.second.Send(cr, dest);
@@ -375,7 +375,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Send Vsite */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send(dest, static_cast<int>(vsite_.size()));
+            cr->send(dest, vsite_.size());
             for (auto &vsite : vsite_)
             {
                 cs = vsite.Send(cr, dest);
@@ -389,7 +389,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Force Field Parameter Lists */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send(dest, static_cast<int>(forces_.size()));
+            cr->send(dest, forces_.size());
             for (auto &force : forces_)
             {
                 std::string key(interactionTypeToString(force.first));
@@ -405,7 +405,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Send Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send(dest, static_cast<int>(symcharges_.size()));
+            cr->send(dest, symcharges_.size());
             for (auto &symcharges : symcharges_)
             {
                 cs = symcharges.Send(cr, dest);
@@ -438,7 +438,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&pol, comm);
         polarizable_ = pol == 1;
         /* Bcast Ffatype */
-        int asize = alexandria_.size();
+        size_t asize = alexandria_.size();
         cr->bcast(&asize, comm);
         if (cr->rank() == root)
         {
@@ -449,7 +449,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         }
         else
         {
-            for(int as = 0; as < asize; as++)
+            for(size_t as = 0; as < asize; as++)
             {
                 ParticleType pt;
                 cs = pt.BroadCast(cr, root, comm);
@@ -463,13 +463,13 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         /* Bcast Vsite */
         if (CommunicationStatus::OK == cs)
         {
-            int vsize = vsite_.size();
+            size_t vsize = vsite_.size();
             cr->bcast(&vsize, comm);
             if (cr->rank() != root)
             {
                 vsite_.resize(vsize);
             }
-            for (int vs = 0; vs < vsize; vs++)
+            for (size_t vs = 0; vs < vsize; vs++)
             {
                 cs = vsite_[vs].BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK != cs)
@@ -482,7 +482,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         /* Force Field Parameter Lists */
         if (CommunicationStatus::OK == cs)
         {
-            int fsize = forces_.size();
+            size_t fsize = forces_.size();
             cr->bcast(&fsize, comm);
             if (cr->rank() == root)
             {
@@ -497,7 +497,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
             {
                 forces_.clear();
             
-                for (int n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
+                for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
                 {
                     ForceFieldParameterList fs;
                     std::string             key;
@@ -520,13 +520,13 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         /* Bcast Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            int scsize = symcharges_.size();
+            size_t scsize = symcharges_.size();
             cr->bcast(&scsize, comm);
             if (cr->rank() != root)
             {
                 symcharges_.resize(scsize);
             }
-            for(int scs = 0; scs < scsize; scs++)
+            for(size_t scs = 0; scs < scsize; scs++)
             {
                 cs = symcharges_[scs].BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK != cs)
@@ -554,10 +554,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
         cr->recv(src, &polarizable_);
         /* Rceive Ffatype */
-        int nalexandria;
+        size_t nalexandria;
         cr->recv(src, &nalexandria);
         alexandria_.clear();
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
         {
             ParticleType alexandria;
             cs = alexandria.Receive(cr, src);
@@ -573,10 +573,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         }
 
         /* Receive Vsites */
-        int nvsite;
+        size_t nvsite;
         cr->recv(src, &nvsite);
         vsite_.clear();
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
         {
             Vsite vsite;
             cs = vsite.Receive(cr, src);
@@ -592,10 +592,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         }
 
         /* Receive Listed Forces */
-        int nforces;
+        size_t nforces;
         cr->recv(src, &nforces);
         forces_.clear();
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
         {
             ForceFieldParameterList fs;
             std::string             key;
@@ -620,10 +620,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         /* Receive Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            int nsymcharges;
+            size_t nsymcharges;
             cr->recv(src, &nsymcharges);
             symcharges_.clear();
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
             {
                 Symcharges symcharges;
                 cs = symcharges.Receive(cr, src);

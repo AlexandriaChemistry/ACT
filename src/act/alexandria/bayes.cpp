@@ -80,8 +80,8 @@ void Sensitivity::computeForceConstants(FILE *fp)
     }
     else if (fp)
     {
-        fprintf(fp, "Not enough parameters %d to do sensitivty analysis\n",
-                static_cast<int>(p_.size()));
+        fprintf(fp, "Not enough parameters %zu to do sensitivty analysis\n",
+                p_.size());
     }
 }
 

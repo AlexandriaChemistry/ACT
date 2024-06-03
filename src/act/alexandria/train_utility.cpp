@@ -170,7 +170,7 @@ static void xvgr_symbolize(FILE                           *xvgf,
     for (size_t i = 0; (i < leg.size()); i++)
     {
         xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
-        fprintf(xvgf, "@ s%d symbol %d\n", static_cast<int>(i), static_cast<int>(i+1));
+        fprintf(xvgf, "@ s%zu symbol %zu\n", i, i+1);
     }
 }
 
