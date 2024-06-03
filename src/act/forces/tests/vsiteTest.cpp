@@ -56,6 +56,26 @@ namespace alexandria
 namespace
 {
 
+TEST(Vsite1, HF)
+{
+    std::string forcefield("ACS-pg-vs2");
+    // Get forcefield
+    auto pd  = getForceField(forcefield);
+
+    auto fh = Identifier({ "f", "v2f1" }, { 9 }, CanSwap::Yes);
+
+    auto itype = InteractionType::VSITE1;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(fh));
+    auto param_fh = fs.findParameterType(fh, vsite1_name[vsite1A]);
+    EXPECT_TRUE(param_fh->internalValue() == 1);
+    auto fh2 = Identifier({ "g", "v2f1" }, { 9 }, CanSwap::Yes);
+    EXPECT_FALSE(fs.parameterExists(fh2));
+    
+}
+
 TEST(Vsite2, HF)
 {
     std::string forcefield("ACS-pg-vs2");

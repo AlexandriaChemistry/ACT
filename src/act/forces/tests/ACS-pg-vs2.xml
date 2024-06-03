@@ -22364,6 +22364,20 @@
       <parameter type="alpha" unit="Angstrom3" value="4.005" uncertainty="0" minimum="4.005" maximum="4.005" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
+  <interaction type="VSITE1" function="VSITE1" canswap="true">
+    <parameterlist identifier="br!v2br1">
+      <parameter type="vs1a" unit="" value="1" uncertainty="0" minimum="1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="cl!v2cl1">
+      <parameter type="vs1a" unit="" value="1" uncertainty="0" minimum="1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="f!v2f1">
+      <parameter type="vs1a" unit="" value="1" uncertainty="0" minimum="1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="i!v2i1">
+      <parameter type="vs1a" unit="" value="1" uncertainty="0" minimum="1" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </parameterlist>
+  </interaction>
   <interaction type="VSITE2" function="vsite2" canswap="false">
     <parameterlist identifier="br_b~h_b!v2">
       <parameter type="vs2a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
