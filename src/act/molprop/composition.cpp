@@ -78,7 +78,7 @@ bool CalcAtom::Equal(CalcAtom ca)
 CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs       = CommunicationStatus::OK;
-    int                 Ncharge;
+    size_t              Ncharge;
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
@@ -97,7 +97,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &fz_);
         cr->recv(src, &Ncharge);
 
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
         {
             std::string type;
             cr->recv(src, &type);
@@ -134,7 +134,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&fx_, comm);
         cr->bcast(&fy_, comm);
         cr->bcast(&fz_, comm);
-        int Ncharge = q_.size();
+        size_t Ncharge = q_.size();
         cr->bcast(&Ncharge, comm);
         if (cr->rank() == root)
         {
@@ -147,7 +147,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
         }
         else
         {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
             {
                 std::string type;
                 cr->bcast(&type, comm);
@@ -183,7 +183,7 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
         cr->send(dest, fx_);
         cr->send(dest, fy_);
         cr->send(dest, fz_);
-        cr->send(dest, static_cast<int>(q_.size()));
+        cr->send(dest, q_.size());
 
         for (const auto &qi : q_)
         {
@@ -324,7 +324,7 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send(dest, static_cast<int>(atomnum_.size()));
+        cr->send(dest, atomnum_.size());
         cr->send(dest, compname_);
         for (auto &ani : atomnum_)
         {
@@ -346,14 +346,14 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
 
 CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr, int src)
 {
-    int                 Natomnum;
+    size_t              Natomnum;
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv(src, &Natomnum);
         cr->recv(src, &compname_);
         CommunicationStatus cs2;
-        for (int n = 0; n < Natomnum; n++)
+        for (size_t n = 0; n < Natomnum; n++)
         {
             AtomNum an;
             cs2 = an.Receive(cr, src);
