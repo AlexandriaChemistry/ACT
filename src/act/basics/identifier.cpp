@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -300,7 +300,7 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 {
     if (bondOrders.size()+1 != atoms.size())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %zu bond orders for %zu atoms, but got %zu", atoms.size()-1, atoms.size(), bondOrders.size()).c_str()));
     }
     atoms_      = atoms;
     bondOrders_ = bondOrders;
@@ -310,19 +310,19 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 
 CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) const
 {
-    cr->send(dest, static_cast<int>(ids_.size()));
+    cr->send(dest, ids_.size());
     for(const auto &ii : ids_)
     {
         cr->send(dest, ii);
     }
     auto tmp = canSwapToString(canSwap_);
     cr->send(dest, tmp);
-    cr->send(dest, static_cast<int>(atoms_.size()));
+    cr->send(dest, atoms_.size());
     for(auto &a : atoms_)
     {
         cr->send(dest, a);
     }
-    cr->send(dest, static_cast<int>(bondOrders_.size()));
+    cr->send(dest, bondOrders_.size());
     for(auto &b : bondOrders_)
     {
         cr->send(dest, b);
@@ -392,10 +392,10 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
 
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
-    int nids;
+    size_t nids;
     cr->recv(src, &nids);
     std::string tmp;
-    for(int i = 0; i < nids; i++)
+    for(size_t i = 0; i < nids; i++)
     {
         cr->recv(src, &tmp);
         ids_.push_back(tmp);
@@ -403,19 +403,19 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 
     cr->recv(src, &tmp);
     canSwap_ = stringToCanSwap(tmp);
-    int natoms;
+    size_t natoms;
     cr->recv(src, &natoms);
     atoms_.clear();
-    for(int i = 0; i < natoms; i++)
+    for(size_t i = 0; i < natoms; i++)
     {
         std::string a;
         cr->recv(src, &a);
         atoms_.push_back(a);
     }
-    int nbo;
+    size_t nbo;
     cr->recv(src, &nbo);
     bondOrders_.clear();
-    for(int i = 0; i < nbo; i++)
+    for(size_t i = 0; i < nbo; i++)
     {
         double d;
         cr->recv(src, &d);
