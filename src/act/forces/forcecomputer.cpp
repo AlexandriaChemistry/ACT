@@ -490,7 +490,7 @@ void ForceComputer::plot(const ForceField  *pd,
                     }
                 }
                 break;
-            default:
+            default: // will not plot this interaction
                 break;
             }
             gmx_ffclose(fp);

@@ -122,7 +122,7 @@ void testCoulomb(alexandria::ChargeType           cd,
             ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
             nforce.push_back(-DNuclear_SS(r, irow, izeta));
             break;
-        default:
+        case alexandria::ChargeType::Point:
             break;
         }
     }

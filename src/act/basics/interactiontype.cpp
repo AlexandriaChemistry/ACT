@@ -148,7 +148,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::CHARGE:
     case InteractionType::EPOT:
         return 0;
-    default:
+    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Missing support for interaction type %s",
                                                        interactionTypeToString(iType).c_str()).c_str()));
     }

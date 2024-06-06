@@ -1778,7 +1778,7 @@ void print_header(FILE                        *fp,
             break;
         case etTIME:
         case etNR:
-        default:
+        default: // Output only, non-training related code.
             value.assign("help");
         }
         {

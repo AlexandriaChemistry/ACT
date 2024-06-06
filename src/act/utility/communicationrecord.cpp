@@ -690,7 +690,7 @@ CommunicationStatus CommunicationRecord::recv_data(int src) const
         return CommunicationStatus::RECV_DATA;
     case ACT_SEND_DONE:
         return CommunicationStatus::DONE;
-    default:
+    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in recv_data. Was expecting either %d or %d\n.", kk, src, (int)ACT_SEND_DATA, (int)ACT_SEND_DONE).c_str()));
     }
     return CommunicationStatus::ERROR;

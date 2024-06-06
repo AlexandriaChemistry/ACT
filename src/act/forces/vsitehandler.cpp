@@ -1254,7 +1254,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 inc = constr_vsiten(ia, ip, x, pbc_null2);
                 break;
 #endif
-            default:
+            default: // throws
                 GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site type %s not implemented yet.", interactionTypeToString(entry.first).c_str()).c_str()));
             }
         }
@@ -1335,7 +1335,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 //case F_VSITEN:
                 //      inc = spread_vsiten(ia, ip, x, f, fshift, &pbc_2, g);
                 //break;
-            default:
+            default: // check
                 break;
             }
         }

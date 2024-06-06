@@ -231,7 +231,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::VSITE3OUTS:
         // Nothing to be done for non-bonded interactions.
         return;
-    default:
+    default: // gmx_fatal called
         {
             gmx_fatal(FARGS, "Help interactiontypes==%s!", interactionTypeToString(iType).c_str());
         }
@@ -407,7 +407,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
             }
             break;
-        default:
+        default: // gmx_fatal called
             gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
         }
 
@@ -503,7 +503,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                              ForceFieldParameter("", mult, 0, 1, mult, mult, Mutability::Fixed, true, true));
                         }
                         break;
-                    default:
+                    default: // throws
                         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported dihedral type %s",
                                                                        potentialToString(fType).c_str()).c_str()));
                     }
@@ -527,8 +527,8 @@ void AllBondeds::updateForceField(FILE    *fp,
                             bondId.id().c_str(), av, sig);
                 }
                 break;
-            default:
-                break;
+            default: // throws
+                GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported InteractionType %s", interactionTypeToString(iType).c_str()).c_str()));
             }
         }
     }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020,2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -215,7 +215,7 @@ static void gmx_unused gen_alexandria_rho(ForceField                 &pd,
                 case eqtSlater:
                     A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
                     break;
-                default:
+                default: // gmx_fatal called
                     gmx_fatal(FARGS, "Don't know how to handle model %s",
                               chargeTypeName(pd.chargeType()).c_str());
                 }
@@ -242,7 +242,7 @@ static void gmx_unused gen_alexandria_rho(ForceField                 &pd,
                         case eqtSlater:
                             rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
                             break;
-                        default:
+                        default: // gmx_fatal called
                             gmx_fatal(FARGS, "Don't know how to handle model %s",
                                       chargeTypeName(iType).c_str());
                         }
@@ -355,7 +355,7 @@ static void gen_alexandria_tables(ForceField                 &pd,
                                 cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
                             }
                             break;
-                        default:
+                        default: // gmx_fatal called
                             gmx_fatal(FARGS, "Don't know how to handle model %s",
                                       chargeTypeName(iType).c_str());
                         }
