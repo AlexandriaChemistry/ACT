@@ -102,12 +102,9 @@ static void print_bondeds(FILE                      *out,
                     params[morseBETA],
                     entry->id().id().c_str());
             break;
-        default:
-            for (const double &j : entry->params())
-            {
-                fprintf(out, "  %10g", j);
-            }
-            fprintf(out, "; %s\n", entry->id().id().c_str());
+        default: // throws
+            GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported function type %s",
+                                                           interaction_function[ftype].name).c_str()));
         }
     }
     fprintf(out, "\n");

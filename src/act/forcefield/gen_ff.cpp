@@ -264,7 +264,8 @@ static void add_vsites(const char *vsfile,
                 }
             }
             break;
-        default:
+        default: // prints message
+            fprintf(stderr, "Ignoring non-vsite interaction type %s\n", ptr[1].c_str());
             break;
         }
 
@@ -483,7 +484,7 @@ int gen_ff(int argc, char*argv[])
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 rename.insert({"sigma", "rmin"});
                 break;
-            default:
+            default: // throws
                 GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));
             }
             for(const auto &vl : vdwlist)

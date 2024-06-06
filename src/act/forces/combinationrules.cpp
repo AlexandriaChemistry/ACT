@@ -131,7 +131,7 @@ double combineTwo(CombRule comb, double x1, double x2)
     case CombRule::HalgrenEpsilon:
         // Halgren1992a, Eqn. 14
         return 4*x1*x2/sqr(std::sqrt(x1) + std::sqrt(x2));
-    default:
+    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown combination rule %s",
                                                        combRuleName.find(comb)->second.c_str()).c_str()));
     }
@@ -335,7 +335,7 @@ std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_
         myCombRule.insert({ cgamma,   CombRule::MasonGamma });
         myCombRule.insert({ cdelta,   CombRule::Geometric });
         break;	    
-    default:
+    default: // throws
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s not supported anymore. Sorry.", ECOMBNAME(i)).c_str()));
     }
     return myCombRule;
@@ -465,7 +465,7 @@ void evalCombinationRule(Potential                                    ftype,
             case CombRule::MasonGamma:
                 value = combineMasonGamma(igam, jgam, isig, jsig);
                 break;
-            default:
+            default: // perform correct default action, replace by all values
                 value = combineTwo(crule,
                                    ivdw.find(param.first)->second.value(),
                                    jvdw.find(param.first)->second.value());

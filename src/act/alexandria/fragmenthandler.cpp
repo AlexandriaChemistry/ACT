@@ -179,7 +179,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
             case ChargeGenerationAlgorithm::Read:
                 (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
                 break;
-            default:
+            default: // throws
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                                    chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
                 break;
@@ -228,7 +228,7 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
         break;
     case ChargeGenerationAlgorithm::Read:
         break;
-    default:
+    default: // throws
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                            chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
     }

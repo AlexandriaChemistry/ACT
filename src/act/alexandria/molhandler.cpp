@@ -769,6 +769,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         auto eMin = eMinimizeStatus::OK;
         switch (simConfig.minAlg())
         {
+        case eMinimizeAlgorithm::LBFGS:
+            // handled above
+            break;
         case eMinimizeAlgorithm::Newton:
             {
                 // Below is a Newton-Rhapson algorithm
@@ -867,8 +870,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                     }
                 }
             }
-            break;
-        default:
             break;
         }
         if (firstStep)

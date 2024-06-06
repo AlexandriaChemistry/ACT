@@ -240,7 +240,7 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
                 copy_rvec(coords[cores[0]], coords[i]);
             }
             break;
-        default:
+        default: // throws
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
             }
@@ -1399,6 +1399,10 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                     }
                 }
                 break;
+            case MolPropObservable::ELECTROSTATICS:
+            case MolPropObservable::INDUCTION:
+            case MolPropObservable::EXCHANGE:
+            case MolPropObservable::DISPERSION:
             case MolPropObservable::DELTAE0:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:
@@ -1412,7 +1416,18 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                     }
                 }
                 break;
-            default:
+            case MolPropObservable::FREQUENCY:
+            case MolPropObservable::INTENSITY:
+            case MolPropObservable::HF:
+            case MolPropObservable::CHARGETRANSFER:
+            case MolPropObservable::DSFORM:
+            case MolPropObservable::ENTROPY:
+            case MolPropObservable::STRANS:
+            case MolPropObservable::SROT:
+            case MolPropObservable::SVIB:
+            case MolPropObservable::CP:
+            case MolPropObservable::CV:
+            case MolPropObservable::COORDINATES:
                 break;
             }
         }
