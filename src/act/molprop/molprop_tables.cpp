@@ -972,7 +972,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                                     case 1:
                                         snprintf(mylbuf, sizeof(mylbuf), "& {\\bf %s} ", vbuf);
                                         break;
-                                    default:
+                                    default: // probably ok
                                         snprintf(mylbuf, sizeof(mylbuf), "& %s ", vbuf);
                                 }
                             }

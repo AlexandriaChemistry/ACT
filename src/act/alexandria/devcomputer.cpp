@@ -230,13 +230,13 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
                 {
                     if (qparm.maximum() > qparm.minimum())
                     {
-                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(),
-                                                                                         qparm.maximum()));
+                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(), qparm.maximum()));
                     }
                 }
             }
             break;
-        default:
+        case Mutability::Dependent:
+        case Mutability::Free:
             break;
         }
         if (!qcm5.empty() &&
@@ -453,7 +453,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
     case MolPropObservable::HEXADECAPOLE:
         rms = eRMS::HEXADEC;
         break;
-    default:
+    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str()));
     }
     
@@ -538,9 +538,8 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
             }
         }
         break;
-    default:
-        fprintf(stderr, "Don't know how to handle %s in this devcomputer\n",
-                mpo_name(mpo_));
+    default: // throws
+        GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s in this devcomputer\n", mpo_name(mpo_)).c_str()));
     }
 }
 

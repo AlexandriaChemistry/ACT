@@ -1111,7 +1111,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                                 v3top.push_back(std::any_cast<Vsite3OUT>(std::move(vsnew)));
                             }
                             break;
-                        default:
+                        default: // This is ok?
                             break;
                         }
                     }
@@ -1528,7 +1528,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
         case InteractionType::PROPER_DIHEDRALS:
         case InteractionType::IMPROPER_DIHEDRALS:
             break;
-        default:
+        default: // throws
             GMX_THROW(gmx::InternalError(gmx::formatString("Interaction type %s not handled when making exclusions.",
                                                            interactionTypeToString(myEntry.first).c_str()).c_str()));
             break;
@@ -1694,7 +1694,7 @@ void Topology::fillParameters(const ForceField *pd)
                 //case Potential::VSITE3FAD:
                 //fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
                 //break;
-            default:
+            default: // throws
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
                                                                potentialToString(fs.potential()).c_str()).c_str()));
             }
@@ -1763,7 +1763,7 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                     }
                     break;
                 }
-            default:
+            default: // does something
                 {
                     auto itype = InteractionType::BONDS;
                     if (atype->hasInteractionType(itype))
