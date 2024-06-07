@@ -421,7 +421,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
             cr->bcast(&mpo_str, comm);
             if (debug && root != cr->rank())
             {
-                fprintf(debug, "Received broadcast string '%s' n = %d\n", mpo_str.c_str(), n);
+                fprintf(debug, "Received broadcast string '%s' n = %zu\n", mpo_str.c_str(), n);
             }
             MolPropObservable mpo;
             if (!stringToMolPropObservable(mpo_str, &mpo))

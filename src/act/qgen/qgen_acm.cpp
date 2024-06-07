@@ -641,7 +641,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
     }
 
     double qtot    = 0;
-    for (int i = 0; i < natom_; i++)
+    for (size_t i = 0; i < natom_; i++)
     {
         qtot += q_[i];
     }

@@ -46,8 +46,8 @@ void TopologyEntry::check(size_t nAtom) const
 {
     if (indices_.size() != nAtom)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Expected %d atom indices, found %d",
-                                                       static_cast<int>(nAtom), static_cast<int>(indices_.size())).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Expected %lu atom indices, found %lu",
+                                                       nAtom, indices_.size()).c_str()));
     }
 }
 
