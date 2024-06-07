@@ -386,9 +386,8 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     }
     if (!bOK)
     {
-        gmx_fatal(FARGS, "Error reading %s. Found %d potential values, %d coordinates and %lu atoms",
-                  fn.c_str(), static_cast<int>(pot.size()), static_cast<int>(ep_.size()),
-                  nAtom_);
+        gmx_fatal(FARGS, "Error reading %s. Found %lu potential values, %lu coordinates and %lu atoms",
+                  fn.c_str(), pot.size(), ep_.size(), nAtom_);
     }
 }
 
