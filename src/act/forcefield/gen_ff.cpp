@@ -225,8 +225,16 @@ static void add_vsites(const char *vsfile,
                                                Mutability::Bounded, false, false);
                 ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                Mutability::Bounded, false, false);
-                i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
-                i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
+                if (itype == InteractionType::VSITE3)
+                {
+                    i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
+                    i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
+                }
+                else
+                {
+                    i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
+                    i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
+                }
             }
             break;
         case InteractionType::VSITE3OUT:
