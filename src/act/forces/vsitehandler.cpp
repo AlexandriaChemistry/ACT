@@ -1130,6 +1130,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
         InteractionType::VSITE2,
         InteractionType::VSITE2FD,
         InteractionType::VSITE3,
+        InteractionType::VSITE3S,
         InteractionType::VSITE3FD,
         InteractionType::VSITE3FAD,
         InteractionType::VSITE3OUT,
@@ -1184,6 +1185,12 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 al = atomIndices[3];
                 constr_vsite3(x[ai], x[aj],  x[ak], x[al],
                               params[vsite3A], params[vsite3B]);
+                break;
+            case InteractionType::VSITE3S:
+                ak = atomIndices[2];
+                al = atomIndices[3];
+                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
+                              params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
                 ak = atomIndices[2];
@@ -1298,6 +1305,9 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 break;
             case InteractionType::VSITE3:
                 spread_vsite3(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                break;
+            case InteractionType::VSITE3S:
+                spread_vsite3(atomIndices, params[vsite3sA], params[vsite3sA], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE3FD:
                 spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,

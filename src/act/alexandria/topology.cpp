@@ -115,6 +115,7 @@ bool Topology::hasVsites() const
             hasEntry(InteractionType::VSITE2) ||
             hasEntry(InteractionType::VSITE2FD) ||
             hasEntry(InteractionType::VSITE3) ||
+            hasEntry(InteractionType::VSITE3S) ||
             hasEntry(InteractionType::VSITE3FD) ||
             hasEntry(InteractionType::VSITE3FAD) ||
             hasEntry(InteractionType::VSITE3OUT) ||
@@ -947,6 +948,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
         return {};
     }
     std::vector<InteractionType> v3s = { InteractionType::VSITE3,
+                                         InteractionType::VSITE3S,
                                          InteractionType::VSITE3FD,
                                          InteractionType::VSITE3OUT,
                                          InteractionType::VSITE3OUTS };
@@ -1080,6 +1082,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                         switch(myffvs.first)
                         {
                         case InteractionType::VSITE3:
+                        case InteractionType::VSITE3S:
                         case InteractionType::VSITE3FD:
                             {
                                 Vsite3 vsnew(ai, aj, ak, vs3);
@@ -1510,6 +1513,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
             break;
         case InteractionType::VSITE3:
+        case InteractionType::VSITE3S:
         case InteractionType::VSITE3OUT:
             {
                 for(auto &b : myEntry.second)
@@ -1680,6 +1684,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case Potential::VSITE3:
                 fillParams(fs, topID, vsite3NR, vsite3_name, &param);
+                break;
+            case Potential::VSITE3S:
+                fillParams(fs, topID, vsite3sNR, vsite3s_name, &param);
                 break;
             case Potential::VSITE3FD:
                 fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
