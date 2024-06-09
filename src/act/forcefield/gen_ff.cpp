@@ -161,6 +161,8 @@ static void add_vsites(const char *vsfile,
           ForceFieldParameterList(potentialToString(Potential::VSITE2FD),   CanSwap::Vsite2) },
         { InteractionType::VSITE3,
           ForceFieldParameterList(potentialToString(Potential::VSITE3),     CanSwap::Vsite3) },
+        { InteractionType::VSITE3S,
+          ForceFieldParameterList(potentialToString(Potential::VSITE3S),    CanSwap::Vsite3) },
         { InteractionType::VSITE3FD,
           ForceFieldParameterList(potentialToString(Potential::VSITE3FD),   CanSwap::No)     },
         { InteractionType::VSITE3FAD,
@@ -212,6 +214,7 @@ static void add_vsites(const char *vsfile,
             }
             break;
         case InteractionType::VSITE3:
+        case InteractionType::VSITE3S:
         case InteractionType::VSITE3FD:
             {
                 std::string myId = ptr[2] + "!" + ptr[0];
@@ -229,6 +232,10 @@ static void add_vsites(const char *vsfile,
                 {
                     i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
+                }
+                else if (itype == InteractionType::VSITE3S)
+                {
+                    i2f[itype].addParameter(vs, vsite3s_name[vsite3sA], vs3param_a);
                 }
                 else
                 {

@@ -225,6 +225,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::VSITE2:
     case InteractionType::VSITE2FD:
     case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
     case InteractionType::VSITE3FD:
     case InteractionType::VSITE3FAD:
     case InteractionType::VSITE3OUT:

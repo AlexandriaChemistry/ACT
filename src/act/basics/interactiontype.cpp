@@ -67,6 +67,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE2FD,           { "VSITE2FD", "virtual sites with two constructing atoms with fixed distance to atom" } },
     { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
+    { InteractionType::VSITE3S,            { "VSITE3S", "virtual sites with three constructing atoms, symmetric on bisector" } },
     { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual site with three constructing atoms and fixed distance" } },
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
@@ -124,6 +125,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::VSITE3OUT:
     case InteractionType::VSITE3OUTS:
     case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
         return 4;
     case InteractionType::ANGLES:
     case InteractionType::LINEAR_ANGLES:
@@ -158,7 +160,8 @@ int interactionTypeToNatoms(InteractionType iType)
 bool isVsite(InteractionType iType)
 {
     std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
-                      InteractionType::VSITE3, InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
+                      InteractionType::VSITE3, InteractionType::VSITE3S,
+                      InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
                       InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS };
     return (myvs.end() != myvs.find(iType));
 }
