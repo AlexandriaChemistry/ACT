@@ -139,6 +139,21 @@ static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk
     /* TOTAL: 17 flops */
 }
 
+static gmx_unused void constr_vsite3s(const rvec xi, const rvec xj, const rvec xk, rvec x, real a)
+{
+    real c = 1 - a;
+    for(int m = 0; m < DIM; m++)
+    {
+        // Point half-way the two substituents
+        real half = 0.5*(xi[XX] + xk[XX]);
+        // Point on bisector between half and the central atom
+        x[m]      = a*half + c*xj[m];
+    }
+    /* 15 Flops */
+
+    /* TOTAL: 16 flops */
+}
+
 static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
                             const t_pbc *pbc)
 {
@@ -473,6 +488,31 @@ static void spread_vsite3(const std::vector<int> &indices,
         rvec_dec(fshift[sij], fj);
         rvec_dec(fshift[sik], fk);
     }
+    clear_rvec(f[av]);
+    /* TOTAL: 20 flops */
+}
+
+static void spread_vsite3s(const std::vector<int> &indices,
+                           real a, rvec f[])
+{
+    rvec    fi, fj, fk;
+    int     av, ai, aj, ak;
+
+    ai = indices[0];
+    aj = indices[1];
+    ak = indices[2];
+    av = indices[3];
+
+    svmul(1 - a, f[av], fj);
+    svmul(0.5*a, f[av], fi);
+    svmul(0.5*a, f[av], fk);
+    /* 11 flops */
+
+    rvec_inc(f[ai], fi);
+    rvec_inc(f[aj], fj);
+    rvec_inc(f[ak], fk);
+    /* 9 Flops */
+
     clear_rvec(f[av]);
     /* TOTAL: 20 flops */
 }
@@ -1189,8 +1229,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
             case InteractionType::VSITE3S:
                 ak = atomIndices[2];
                 al = atomIndices[3];
-                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
-                              params[vsite3sA], params[vsite3sA]);
+                constr_vsite3s(x[ai], x[aj],  x[ak], x[al], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
                 ak = atomIndices[2];
@@ -1307,7 +1346,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite3(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE3S:
-                spread_vsite3(atomIndices, params[vsite3sA], params[vsite3sA], x, f, fshift, &pbc_, g);
+                spread_vsite3s(atomIndices, params[vsite3sA], f);
                 break;
             case InteractionType::VSITE3FD:
                 spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,
