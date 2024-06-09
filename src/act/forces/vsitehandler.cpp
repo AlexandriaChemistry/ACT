@@ -145,7 +145,7 @@ static gmx_unused void constr_vsite3s(const rvec xi, const rvec xj, const rvec x
     for(int m = 0; m < DIM; m++)
     {
         // Point half-way the two substituents
-        real half = 0.5*(xi[XX] + xk[XX]);
+        real half = 0.5*(xi[m] + xk[m]);
         // Point on bisector between half and the central atom
         x[m]      = a*half + c*xj[m];
     }
