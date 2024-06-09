@@ -7,7 +7,6 @@ set(ACT_PYTHON_LIB_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}/a
 
 # Configure 'sys.path' in the executable scripts, so they may find the library.
 configure_file(gauss2molprop.cmakein gauss2molprop @ONLY)
-configure_file(generate_ff.cmakein generate_ff @ONLY)
 configure_file(generate_mp.cmakein generate_mp @ONLY)
 configure_file(mol_csv_api.py.cmakein mol_csv_api.py @ONLY)
 configure_file(molselect.cmakein molselect @ONLY)
