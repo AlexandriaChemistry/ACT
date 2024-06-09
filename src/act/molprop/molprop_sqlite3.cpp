@@ -433,7 +433,7 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
     
 #else
     fprintf(stderr, "No support for sqlite3 database in this executable.\n");
-    fprintf(stderr, "Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
+    fprintf(stderr, "Please rebuild ACT with cmake flag -DGMX_SQLITE3=ON set.\n");
 #endif
 }
 
