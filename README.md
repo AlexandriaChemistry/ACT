@@ -9,7 +9,7 @@ ACT is begin developed by
 + [Mohammad Ghahremanpour](https://github.com/mmghahremanpour) and
 + [Paul J. van Maaren](https://github.com/maaren)
 
-with contibutions from
+with contributions from
 
 + [Julian Marrades](https://github.com/jCodingStuff),
 + [Marie-Madeleine Walz](https://github.com/MMW1),
