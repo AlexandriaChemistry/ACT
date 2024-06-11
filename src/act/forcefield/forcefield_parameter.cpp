@@ -53,6 +53,8 @@ namespace alexandria
 void ForceFieldParameter::forceSetValue(double value)
 {
     value_ = value;
+    // Need to update the intervalue since this is what the code will extract
+    calculateInternalValue();
 }
 
 void ForceFieldParameter::setValue(double value)
