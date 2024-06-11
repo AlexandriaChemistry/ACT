@@ -185,7 +185,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX17_FLAGS} ${GMX_STDLIB_CXX_FLAG
 # User input options                                                   #
 ########################################################################
 include(gmxOptionUtilities)
-
+set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
 gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)

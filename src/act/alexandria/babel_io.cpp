@@ -75,6 +75,7 @@
 #endif
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
