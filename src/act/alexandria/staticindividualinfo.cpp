@@ -150,10 +150,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
         if (p)
         {
             auto iType = optIndex_[n].iType();
-            if (debug && isVsite(iType))
+            if (debug)
             {
-                fprintf(debug, "Updating %s parameter to %g\n",
-                        interactionTypeToString(iType).c_str(), bases[n]);
+                fprintf(debug, "Updating %s parameter %d (set size %lu) to %g\n",
+                        interactionTypeToString(iType).c_str(), n, mychanged.size(), bases[n]);
             }
             p->setValue(bases[n]);
             p->setUpdated(true);
