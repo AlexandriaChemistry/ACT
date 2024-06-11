@@ -215,8 +215,8 @@ static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
 {
     if (xbuf->find(xml) == xbuf->end())
     {
-        std::string buf = gmx::formatString("Missing%s variable %d (%s)", obligatory ? " required" : "",
-                                            xml, exml_names(xml));
+        std::string buf = gmx::formatString("Missing%s variable %s", obligatory ? " required" : "",
+                                            exml_names(xml));
         if (obligatory)
         {
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
@@ -262,7 +262,7 @@ static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
     if (xb == xbuf->end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such entry '%d' in xbuf",
-                                                       xbuf_index).c_str()));
+                                                       static_cast<int>(xbuf_index)).c_str()));
     }
     auto rm = exml_names(xbuf_index);
     return my_atof(xb->second.c_str(), rm);

@@ -34,7 +34,7 @@ jobs:
         run: |
           cd ${{ github.workspace }} 
           mkdir build; cd build
-          cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_EXTERNAL_BLAS=OFF -DGMX_EXTERNAL_LAPACK=OFF -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
+          cmake -DGMX_DOUBLE=ON -DCMAKE_C_COMPILER=/usr/bin/mpicc.openmpi -DCMAKE_CXX_COMPILER=/usr/bin/mpicxx.openmpi -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
           make -j 4 install tests
       - name: Test the ACT
         run: |
