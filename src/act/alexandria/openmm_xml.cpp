@@ -119,6 +119,7 @@ enum class xmlEntryOpenMM {
     ANGLE_CLASS,
     ANGLE_VALUE,
     VSITE2_CLASS,
+    VSITE3_CLASS,
     AMOEBA_UB_FORCE,
     UREY_BRADLEY_FORCE,
     CUSTOMBONDFORCE,
@@ -184,6 +185,7 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "Angle",                     xmlEntryOpenMM::ANGLE_CLASS        },
     { "angle",                     xmlEntryOpenMM::ANGLE_VALUE        },
     { "Vsite2",                    xmlEntryOpenMM::VSITE2_CLASS       },
+    { "Vsite3",                    xmlEntryOpenMM::VSITE3_CLASS       },
     { "AmoebaUreyBradleyForce",    xmlEntryOpenMM::AMOEBA_UB_FORCE    },
     { "UreyBradley",               xmlEntryOpenMM::UREY_BRADLEY_FORCE },
     { "CustomBondForce",           xmlEntryOpenMM::CUSTOMBONDFORCE    },
@@ -817,6 +819,8 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case Potential::WANG_BUCKINGHAM:
                 case Potential::GENERALIZED_BUCKINGHAM:
                 case Potential::POLARIZATION:
+                case Potential::VSITE3S:
+                case Potential::VSITE3:
                 case Potential::VSITE2:
                 case Potential::VSITE1:
                     break;
@@ -1023,6 +1027,8 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                             { InteractionType::VSITE1,    "average2"   },
                             { InteractionType::VSITE2,    "average2"   },
                             { InteractionType::VSITE3OUT, "outOfPlane" },
+                            { InteractionType::VSITE3,    "average3"   },
+                            { InteractionType::VSITE3S,   "average3"   },
                             { InteractionType::VSITE3FAD, "average3"   }
                         };
                         for(const auto &itp : itypes)
@@ -1062,20 +1068,35 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                         }
                                         ppp += 1;
                                     }
-                                    // TODO look up this number!
-                                    ppp = 1;
-                                    double ptot = 0;
-                                    for(auto &p : ee->params())
+                                    switch (itp.first)
                                     {
-                                        // TODO Check that the parameters are correct.
-                                        // should it be 1-p for other than vsite2 as well?
-                                        auto an = gmx::formatString("weight%d", ppp);
-                                        add_xml_double(baby, an.c_str(), 1-p);
-                                        ptot += 1-p;
-                                        ppp  += 1;
+                                    case InteractionType::VSITE2:
+                                        {
+                                            auto p = ee->params()[0];
+                                            add_xml_double(baby, "weight1", 1-p);
+                                            add_xml_double(baby, "weight2", p);
+                                        }
+                                        break;
+                                    case InteractionType::VSITE3S:
+                                        {
+                                            auto p = ee->params()[0];
+                                            add_xml_double(baby, "weight1", p);
+                                            add_xml_double(baby, "weight2", 1-p);
+                                            add_xml_double(baby, "weight3", p);
+                                        }
+                                        break;
+                                    case InteractionType::VSITE3:
+                                        {
+                                            auto p = ee->params();
+                                            add_xml_double(baby, "weight1", p[0]);
+                                            add_xml_double(baby, "weight2", 1-p[0]-p[1]);
+                                            add_xml_double(baby, "weight3", p[1]);
+                                        }
+                                        break;
+                                    default:
+                                        GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s not supported yet.",
+                                                                                       interactionTypeToString(itp.first).c_str()).c_str()));
                                     }
-                                    auto an = gmx::formatString("weight%d", ppp);
-                                    add_xml_double(baby, an.c_str(), 1-ptot);
                                 }
                             }
                         }
