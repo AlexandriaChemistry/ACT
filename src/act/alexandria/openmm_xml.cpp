@@ -745,6 +745,15 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
         
         for(auto &entry : topology->entry(fs.first))
         {
+            if (entry->id().atoms().empty())
+            {
+                if (debug)
+                {
+                    fprintf(debug, "Skipping interaction %s\n",
+                           interactionTypeToString(fs.first).c_str());
+                }
+                continue;
+            }
             const auto &bondId = entry->id().id();
             const auto &atoms  = entry->id().atoms();
             if (ClassUsed.end() == ClassUsed.find(bondId))
