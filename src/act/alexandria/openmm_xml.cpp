@@ -1081,7 +1081,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                         {
                                             auto p = ee->params()[0];
                                             add_xml_double(baby, "weight1", p);
-                                            add_xml_double(baby, "weight2", 1-p);
+                                            add_xml_double(baby, "weight2", 1-2*p);
                                             add_xml_double(baby, "weight3", p);
                                         }
                                         break;
