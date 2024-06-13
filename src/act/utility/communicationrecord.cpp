@@ -611,7 +611,7 @@ template <> void CommunicationRecord::send<std::vector<int>>(int dest,
     if (!d.empty())
     {
         send_low(dest, static_cast<const void *>(d.data()),
-                 d.size()*sizeof(double));
+                 d.size()*sizeof(int));
     }
 }
 
@@ -623,7 +623,7 @@ template <> void CommunicationRecord::recv<std::vector<int>>(int src,
     d->resize(len);
     if (len > 0)
     {
-        recv_low(src, static_cast<void *>(d->data()), len*sizeof(double));
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof(int));
     }
 }
 
