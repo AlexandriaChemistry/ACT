@@ -92,18 +92,17 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
     for(const auto &cr : mycr)
     {
-        desc_.resize(desc_.size() + cr.second.size());
         cr_flag_.resize(cr_flag_.size() + cr.second.size());
     }
     for(const auto &cr : mycr)
     {
         for (const auto &mm : cr.second)
         {
-            desc_[mm.index] = gmx::formatString("Combination rule to use for %s parameter %s",
-                                                interactionTypeToString(cr.first).c_str(),
-                                                mm.var);
-            t_pargs mp = { mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc_[mm.index].c_str() };
-            pa->push_back(mp);
+            auto desc = gmx::formatString("Combination rule to use for %s parameter %s",
+                                          interactionTypeToString(cr.first).c_str(),
+                                          mm.var);
+            pa_.push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc.c_str() });
+            pa->push_back(pa_.back());
         }
     }
 }
@@ -118,6 +117,11 @@ int CombRuleUtil::extract(ForceFieldParameterList *vdw,
     {
         for(const auto &mm : mcr.second)
         {
+            // If this has not been touched on the command line, do nothing.
+            if (!pa_[mm.index].bSet)
+            {
+                continue;
+            }
             auto value = cr_flag_[mm.index];
             if (!value || strlen(value) == 0)
             {
