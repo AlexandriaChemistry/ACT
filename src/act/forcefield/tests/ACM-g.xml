@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
-<gentop>
-  <version checksum="3af822716c329c97c571cfe9d301b30f" timestamp="2024-05-07 22:48:22"/>
+<!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
+<alexandria_chemistry>
+  <version checksum="0b190d6d59475f2ef2bdc7bd519390a9" timestamp="2024-06-17 11:39:04"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -14860,4 +14860,4 @@
     <sym_charge central="C" attached="I" numattach="3"/>
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
-</gentop>
+</alexandria_chemistry>

@@ -84,6 +84,7 @@ const char *xmltypes[] = {
 //! The different entries to excpect in force field file
 enum class xmlEntry {
     GENTOP,
+    ACT,
     TIMESTAMP,
     CHECKSUM,
     REFERENCE,
@@ -144,6 +145,7 @@ enum class xmlEntry {
 std::map<const std::string, xmlEntry> xml_pd =
 {
     { "gentop",                    xmlEntry::GENTOP           },
+    { "alexandria_chemistry",      xmlEntry::ACT              },
     { "timestamp",                 xmlEntry::TIMESTAMP        },
     { "checksum",                  xmlEntry::CHECKSUM         },
     { "reference",                 xmlEntry::REFERENCE        },
@@ -772,8 +774,8 @@ void writeForceField(const std::string &fileName,
     xmlChar    *libdtdname, *dtdname, *gmx;
 
     rmap_pd.clear();
-    gmx        = (xmlChar *) "gentop";
-    dtdname    = (xmlChar *) "gentop.dtd";
+    gmx        = (xmlChar *) "alexandria_chemistry";
+    dtdname    = (xmlChar *) "alexandria_chemistry.dtd";
     libdtdname = dtdname;
 
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)

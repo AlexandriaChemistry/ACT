@@ -46,9 +46,8 @@ namespace alexandria
     private:
         // Storage for the command line options
         std::vector<const char *> cr_flag_;
-        // Description of options
-        std::vector<std::string>  desc_;
-
+        // Command line options
+        std::vector<t_pargs>      pa_;
     public:
         /*! \brief Utility to make command line information about combrules
          * \param[inout] crinfo Array of strings to be edited
