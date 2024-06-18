@@ -176,6 +176,16 @@ void pdbWriter(FILE                           *out,
     {
         natoms = index.size();
     }
+    int minres = 0;
+    for (size_t ii = 0; ii < natoms; ii++)
+    {
+        size_t i = ii;
+        if (!index.empty())
+        {
+            i = index[ii];
+        }
+        minres = std::min(minres, atoms[i].residueNumber());
+    }
     for (size_t ii = 0; ii < natoms; ii++)
     {
         size_t i = ii;
@@ -185,9 +195,11 @@ void pdbWriter(FILE                           *out,
         }
         resind        = atoms[i].residueNumber();
         resnr         = resind;
-        //p_lastrestype = p_restype;
+        if (minres == 0)
+        {
+            resnr += 1;
+        }
 
-        //ch = 0;
         if (resnr >= 10000)
         {
             resnr = resnr % 10000;
@@ -224,8 +236,6 @@ void pdbWriter(FILE                           *out,
                                  atoms[i].element().c_str());
     }
 
-    fprintf(out, "TER\n");
-
     if (nullptr != gc)
     {
         /* Write conect records */
@@ -242,6 +252,7 @@ void pdbWriter(FILE                           *out,
         }
     }
     fprintf(out, "ENDMDL\n");
+    fprintf(out, "TER\n");
 }
 
 } // namespace
