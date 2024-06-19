@@ -67,7 +67,7 @@ Sn,Sn,Tin,50,118.71,0,1
 Sb,Sb,Antimony,51,121.76,0,2
 Te,Te,Tellurium,52,127.6,0,1
 I,I,Iodine,53,126.904,0,2
-I-,I,Iodine,53,126.904,1,1
+I-,I,Iodine,53,126.904,-1,1
 Xe,Xe,Xenon,54,131.293,0,1
 Cs,Cs,Cesium,55,132.905,0,2
 Cs+,Cs,Cesium,55,132.905,1,1
