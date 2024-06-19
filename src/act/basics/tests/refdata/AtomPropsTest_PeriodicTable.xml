@@ -700,7 +700,7 @@
     <String Name="name">Sulfur</String>
     <Int Name="atomnumber">16</Int>
     <Int Name="charge">0</Int>
-    <Int Name="multiplicity">1</Int>
+    <Int Name="multiplicity">3</Int>
   </element>
   <element Name="S2-">
     <Real Name="mass">32.064999999999998</Real>
@@ -742,7 +742,7 @@
     <String Name="name">Silicon</String>
     <Int Name="atomnumber">14</Int>
     <Int Name="charge">0</Int>
-    <Int Name="multiplicity">1</Int>
+    <Int Name="multiplicity">3</Int>
   </element>
   <element Name="Sm">
     <Real Name="mass">150.36000000000001</Real>
