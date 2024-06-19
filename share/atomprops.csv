@@ -47,7 +47,7 @@ Ge,Ge,Germanium,32,72.64,0,1
 As,As,Arsenic,33,74.9216,0,2
 Se,Se,Selenium,34,78.96,0,1
 Br,Br,Bromine,35,79.904,0,2
-Br-,Br-,Bromine,35,79.904,-1,1
+Br-,Br,Bromine,35,79.904,-1,1
 Kr,Kr,Krypton,36,83.8,0,1
 Rb,Rb,Rubidium,37,85.4678,0,2
 Rb+,Rb,Rubidium,37,85.4678,1,1
