@@ -11,7 +11,7 @@ def get_atomprops():
     adata = act_library_filename("atomprops.csv")
     for row in get_csv_rows(adata, 7, delim=","):
         try:
-            atomprops[row[0]] = { "sybmol": row[1], "name": row[2], "atomicnumber": int(row[3]), "mass": float(row[4]),
+            atomprops[row[0]] = { "symbol": row[1], "name": row[2], "atomicnumber": int(row[3]), "mass": float(row[4]),
                                   "charge": int(row[5]), "mult": int(row[6]) }
         except ValueError:
             print("Could not understand line {}".format(row))
