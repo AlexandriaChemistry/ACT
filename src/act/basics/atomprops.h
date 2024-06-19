@@ -42,7 +42,9 @@ namespace alexandria
 class AtomProp
 {
 private:
-    //! Element name in full
+    //! Symbol according to periodic table
+    std::string symbol_;
+    //! Name in full, including charge
     std::string name_;
     //! Atomic number
     int         atomnumber_;
@@ -54,15 +56,18 @@ private:
     int        mult_;
 public:
     //! Constructor
-    AtomProp(std::string name, int atomnumber, double mass, int charge, int mult) :
-        name_(name), atomnumber_(atomnumber), mass_(mass), charge_(charge), mult_(mult) {};
-    
+    AtomProp(const std::string &symbol, const std::string &name, int atomnumber, double mass, int charge, int mult) :
+        symbol_(symbol), name_(name), atomnumber_(atomnumber), mass_(mass), charge_(charge), mult_(mult) {};
+
     //! \return full name
     const std::string &name() const { return name_; }
-    
+
+    //! \return symbol
+    const std::string &symbol() const { return symbol_; }
+
     //! \return the atomic number
     int atomnumber() const { return atomnumber_; }
-    
+
     //! \return the atomic mass
     double mass() const { return mass_; }
 
