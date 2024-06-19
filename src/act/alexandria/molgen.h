@@ -263,6 +263,8 @@ private:
     bool                            qsymm_      = false;
     //! String for command line to harvest the options to fit
     char                           *fitString_ = nullptr;
+    //! Charge type to use
+    char                           *qTypeString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! The molecules used in the optimization

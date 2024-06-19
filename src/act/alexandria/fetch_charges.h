@@ -57,21 +57,25 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] charge_fn The name of a molprop file
+ * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map.
  */
 chargeMap fetchChargeMap(ForceField    *pd,
                          ForceComputer *forceComp,
-                         const char    *charge_fn);
+                         const char    *charge_fn,
+                         qType          qt = qType::ACM);
 
 /*! \brief Generate charges for all compounds in a molprop file.
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] mps       Vector of molprops
+ * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map, see above.
  */
 chargeMap fetchChargeMap(ForceField                 *pd,
                          ForceComputer              *forceComp,
-                         const std::vector<MolProp> &mps);
+                         const std::vector<MolProp> &mps,
+                         qType                       qt = qType::ACM);
 
 /*! \brief Broadcast a charge map to processors
  * \param[in]    cr   The communication data structure

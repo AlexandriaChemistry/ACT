@@ -172,7 +172,9 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-maxpot", FALSE, etINT, { &maxpot_},
           "Fraction of ESP points to use when training on it. Number given in percent." },
         { "-watoms", FALSE, etREAL, { &watoms_},
-          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." }
+          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." },
+        { "-qtype", FALSE, etSTR, {&qTypeString_},
+          "Charge type to use" }
     };
     doAddOptions(pargs, pa_general.size(), pa_general.data());
 }
@@ -765,7 +767,12 @@ size_t MolGen::Read(FILE                                *fp,
         auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
         if (qmapfn && strlen(qmapfn) > 0)
         {
-            qmap = fetchChargeMap(pd, forceComp, qmapfn);
+            auto qt = qType::ACM;
+            if (nullptr != qTypeString_)
+            {
+                qt = stringToQtype(qTypeString_);
+            }
+            qmap = fetchChargeMap(pd, forceComp, qmapfn, qt);
         }
         // Even if we did not read a file, we have to tell the other processors
         // about it.

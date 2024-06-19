@@ -42,7 +42,8 @@ namespace alexandria
 
 chargeMap fetchChargeMap(ForceField                 *pd,
                          ForceComputer              *forceComp,
-                         const std::vector<MolProp> &mps)
+                         const std::vector<MolProp> &mps,
+                         qType                       qt)
 {
     chargeMap qmap;
     for(auto mp = mps.begin(); mp < mps.end(); mp++)
@@ -64,8 +65,13 @@ chargeMap fetchChargeMap(ForceField                 *pd,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(pd, forceComp, pd->chargeGenerationAlgorithm(),
-                                         qType::ACM, dummy, &coords, &forces);
+            auto alg = pd->chargeGenerationAlgorithm();
+            if (qType::ACM != qt)
+            {
+                alg = ChargeGenerationAlgorithm::Read;
+            }
+            imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                         qt, dummy, &coords, &forces);
             if (immStatus::OK == imm)
             {
                 // Add ACM charges
@@ -83,11 +89,12 @@ chargeMap fetchChargeMap(ForceField                 *pd,
 
 chargeMap fetchChargeMap(ForceField    *pd,
                          ForceComputer *forceComp,
-                         const char    *charge_fn)
+                         const char    *charge_fn,
+                         qType          qt)
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
-    return fetchChargeMap(pd, forceComp, mps);
+    return fetchChargeMap(pd, forceComp, mps, qt);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,
