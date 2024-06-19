@@ -97,8 +97,8 @@
     <Real Name="mass">9.0122</Real>
     <String Name="name">Beryllium</String>
     <Int Name="atomnumber">4</Int>
-    <Int Name="charge">1</Int>
-    <Int Name="multiplicity">2</Int>
+    <Int Name="charge">2</Int>
+    <Int Name="multiplicity">1</Int>
   </element>
   <element Name="Bh">
     <Real Name="mass">264</Real>
@@ -377,7 +377,7 @@
     <Real Name="mass">126.904</Real>
     <String Name="name">Iodine</String>
     <Int Name="atomnumber">53</Int>
-    <Int Name="charge">1</Int>
+    <Int Name="charge">-1</Int>
     <Int Name="multiplicity">1</Int>
   </element>
   <element Name="In">
