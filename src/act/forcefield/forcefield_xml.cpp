@@ -121,8 +121,6 @@ enum class xmlEntry {
     REFVALUE,
     UNIT,
     NTRAIN,
-    GT_VSITES,
-    GT_VSITE,
     SYMMETRIC_CHARGES,
     SYM_CHARGE,
     CENTRAL,
@@ -178,8 +176,6 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "refValue",                  xmlEntry::REFVALUE         },
     { "unit",                      xmlEntry::UNIT             },
     { "ntrain",                    xmlEntry::NTRAIN           },
-    { "gt_vsites",                 xmlEntry::GT_VSITES        },
-    { "gt_vsite",                  xmlEntry::GT_VSITE         },
     { "symmetric_charges",         xmlEntry::SYMMETRIC_CHARGES},
     { "sym_charge",                xmlEntry::SYM_CHARGE       },
     { "central",                   xmlEntry::CENTRAL          },
@@ -449,13 +445,6 @@ static void processAttr(FILE       *fp,
             }
         }
         break;
-    case xmlEntry::GT_VSITES:
-        if (NN(xbuf, xmlEntry::ANGLE_UNIT) && NN(xbuf, xmlEntry::LENGTH_UNIT))
-        {
-            pd->setVsite_angle_unit(xbufString(xmlEntry::ANGLE_UNIT));
-            pd->setVsite_length_unit(xbufString(xmlEntry::LENGTH_UNIT));
-        }
-        break;
     case xmlEntry::PARTICLETYPE:
         if (NN(xbuf, xmlEntry::TYPE) &&
             NN(xbuf, xmlEntry::IDENTIFIER) &&
@@ -478,19 +467,6 @@ static void processAttr(FILE       *fp,
                                              xbufString(xmlEntry::DESC), ept));
             parentEntry = elem;
         }
-        break;
-    case xmlEntry::GT_VSITE:
-        if (NN(xbuf, xmlEntry::ATYPE)  && NN(xbuf, xmlEntry::VTYPE)    &&
-            NN(xbuf, xmlEntry::NUMBER) && NN(xbuf, xmlEntry::DISTANCE) &&
-            NN(xbuf, xmlEntry::ANGLE)  && NN(xbuf, xmlEntry::NCONTROLATOMS))
-            {
-                pd->addVsite(xbufString(xmlEntry::ATYPE),
-                             xbufString(xmlEntry::VTYPE),
-                             atoi(xbufString(xmlEntry::NUMBER).c_str()),
-                             atof(xbufString(xmlEntry::DISTANCE).c_str()),
-                             atof(xbufString(xmlEntry::ANGLE).c_str()),
-                             atoi(xbufString(xmlEntry::NCONTROLATOMS).c_str()));
-            }
         break;
     case xmlEntry::SYM_CHARGE:
         if (NN(xbuf, xmlEntry::CENTRAL) && NN(xbuf, xmlEntry::ATTACHED) &&
@@ -694,27 +670,6 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
         {
             addParameter(grandchild, param.first, param.second);
         }
-    }
-    tmp   = pd->getVsite_angle_unit();
-    if (0 != tmp.size())
-    {
-        child = add_xml_child(parent, exml_names(xmlEntry::GT_VSITES));
-        add_xml_char(child, exml_names(xmlEntry::ANGLE_UNIT), tmp.c_str());
-    }
-    tmp   = pd->getVsite_length_unit();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(xmlEntry::LENGTH_UNIT), tmp.c_str());
-    }
-    for (auto vsite = pd->getVsiteBegin(); vsite != pd->getVsiteEnd(); vsite++)
-    {
-        auto grandchild = add_xml_child(child, exml_names(xmlEntry::GT_VSITE));
-        add_xml_char(grandchild, exml_names(xmlEntry::ATYPE), vsite->atype().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntry::VTYPE), vsiteType2string(vsite->type()));
-        add_xml_int(grandchild, exml_names(xmlEntry::NUMBER), vsite->nvsite());
-        add_xml_double(grandchild, exml_names(xmlEntry::DISTANCE), vsite->distance());
-        add_xml_double(grandchild, exml_names(xmlEntry::ANGLE), vsite->angle());
-        add_xml_int(grandchild, exml_names(xmlEntry::NCONTROLATOMS), vsite->ncontrolatoms());
     }
     for (auto &fs : pd->forcesConst())
     {

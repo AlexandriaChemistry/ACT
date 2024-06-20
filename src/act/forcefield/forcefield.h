@@ -47,7 +47,6 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/symcharges.h"
-#include "act/forcefield/vsite.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
 
@@ -129,42 +128,6 @@ class ForceField
          * \throw if this particle type exists already
          */
         void  addParticleType(const ParticleType &ptp);
-        /*! \brief
-         *  Add a virtual site type
-         *
-         * \param[in] atype           The name specifying the vsite type
-         * \param[in] type            Unknown
-         * \param[in] number
-         * \param[in] distance
-         * \param[in] angle
-         * \param[in] ncontrolatoms
-         */
-        void  addVsite(const std::string &atype,
-                       const std::string &type,
-                       int                number,
-                       double             distance,
-                       double             angle,
-                       int                ncontrolatoms);
-
-        /*! \brief
-         * Set the vsite angle unit.
-         */
-        void setVsite_angle_unit(const std::string &angle_unit)
-        {
-            vsite_angle_unit_ = angle_unit;
-        }
-
-        /*! \brief
-         * Set the vsite angle unit.
-         */
-        void setVsite_length_unit(const std::string &length_unit)
-        {
-            vsite_length_unit_ = length_unit;
-        }
-
-        std::vector<Vsite> &getVsite() { return vsite_; }
-
-        const std::vector<Vsite> &getVsiteConst() const { return vsite_; }
 
         size_t getNatypes() const { return alexandria_.size(); }
 
@@ -262,32 +225,6 @@ class ForceField
      */
     const std::map<Identifier, ParticleType> &particleTypesConst() const { return alexandria_; }
     
-    VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
-    
-    VsiteConstIterator getVsiteBegin()  const { return vsite_.begin(); }
-    
-    VsiteIterator getVsiteEnd() { return vsite_.end(); }
-    
-    VsiteConstIterator getVsiteEnd() const { return vsite_.end(); }
-    
-    VsiteIterator findVsite(std::string  atype)
-    {
-        return std::find_if(vsite_.begin(), vsite_.end(),
-                            [atype](const Vsite &vs)
-                            {
-                                return (atype == vs.atype());
-                            });
-    }
-    
-    VsiteConstIterator findVsite(std::string atype) const
-    {
-        return std::find_if(vsite_.begin(), vsite_.end(),
-                            [atype](const Vsite &vs)
-                            {
-                                return (atype == vs.atype());
-                            });
-    }
-    
     /*! \brief
      * Return the poltype corresponding to atype and true if successful
      *
@@ -375,10 +312,6 @@ class ForceField
      */
     bool typeToInteractionType(const std::string &type, InteractionType *itype);
     
-    const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
-    
-    const std::string &getVsite_length_unit() const { return vsite_length_unit_; }
-    
     void addSymcharges(const std::string &central,
                        const std::string &attached,
                        int                numattach);
@@ -463,9 +396,6 @@ private:
     std::map<std::string, InteractionType> type2Itype_;
     std::string                           filename_;
     std::map<Identifier, ParticleType>    alexandria_;
-    std::vector<Vsite>                    vsite_;
-    std::string                           vsite_angle_unit_;
-    std::string                           vsite_length_unit_;
     std::map<InteractionType, ForceFieldParameterList> forces_;
     std::vector<Symcharges>               symcharges_;
     bool                                  polarizable_ = false;
