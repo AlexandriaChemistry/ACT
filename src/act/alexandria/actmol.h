@@ -262,16 +262,6 @@ private:
     immStatus checkAtoms(const ForceField *pd);
     
     /*! \brief
-     * Return true if atom type needs to have virtual site.
-     *
-     * \param[in] atype  Atom type
-     * \param[in] pd     Data structure containing atomic properties
-     * \return true if vsite is needed
-     */
-    bool IsVsiteNeeded(std::string        atype,
-                       const ForceField     *pd) const;
-    
-    /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
      *
      * \param[in]  ca     The index of the central atom

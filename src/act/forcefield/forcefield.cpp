@@ -235,39 +235,6 @@ bool ForceField::atypeToPtype(const std::string &atype,
     return false;
 }
 
-/*
- *-+-+-+-+-+-+-+-+-+-+-+
- * Virtual Site STUFF
- *-+-+-+-+-+-+-+-+-+-+-+
- */
-
-void  ForceField::addVsite(const std::string &atype,
-                        const std::string &type,
-                        int                number,
-                        double             distance,
-                        double             angle,
-                        int                ncontrolatoms)
-{
-    size_t i;
-    for (i = 0; i < vsite_.size(); i++)
-    {
-        if (vsite_[i].atype() == atype &&
-            vsite_[i].type()  == string2vsiteType(atype.c_str()))
-        {
-            break;
-        }
-    }
-    if (i == vsite_.size())
-    {
-        Vsite vs(atype, type, number, distance, angle, ncontrolatoms);
-        vsite_.push_back(vs);
-    }
-    else
-    {
-        fprintf(stderr, "vsite type %s was already added to ForceField record\n", atype.c_str());
-    }
-}
-
 void ForceField::checkForPolarizability()
 {
     auto f = forces_.find(InteractionType::POLARIZATION);
@@ -357,8 +324,6 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, filename_);
         cr->send(dest, checkSum_);
         cr->send(dest, timeStamp_);
-        cr->send(dest, vsite_angle_unit_);
-        cr->send(dest, vsite_length_unit_);
         cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
         cr->send(dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
@@ -369,20 +334,6 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
             if (CommunicationStatus::OK != cs)
             {
                 break;
-            }
-        }
-
-        /* Send Vsite */
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send(dest, vsite_.size());
-            for (auto &vsite : vsite_)
-            {
-                cs = vsite.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
             }
         }
 
@@ -429,8 +380,6 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&filename_, comm);
         cr->bcast(&checkSum_, comm);
         cr->bcast(&timeStamp_, comm);
-        cr->bcast(&vsite_angle_unit_, comm);
-        cr->bcast(&vsite_length_unit_, comm);
         int icq = static_cast<int>(ChargeGenerationAlgorithm_);
         cr->bcast(&icq, comm);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
@@ -456,25 +405,6 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                 if (CommunicationStatus::OK == cs)
                 {
                     alexandria_.insert({pt.id(), pt});
-                }
-            }
-        }
-
-        /* Bcast Vsite */
-        if (CommunicationStatus::OK == cs)
-        {
-            size_t vsize = vsite_.size();
-            cr->bcast(&vsize, comm);
-            if (cr->rank() != root)
-            {
-                vsite_.resize(vsize);
-            }
-            for (size_t vs = 0; vs < vsize; vs++)
-            {
-                cs = vsite_[vs].BroadCast(cr, root, comm);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
                 }
             }
         }
@@ -547,8 +477,6 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &filename_);
         cr->recv(src, &checkSum_);
         cr->recv(src, &timeStamp_);
-        cr->recv(src, &vsite_angle_unit_);
-        cr->recv(src, &vsite_length_unit_);
         int cga;
         cr->recv(src, &cga);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
@@ -569,25 +497,6 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         if (debug)
         {
             fprintf(debug, "Done receiving atomtypes\n");
-            fflush(debug);
-        }
-
-        /* Receive Vsites */
-        size_t nvsite;
-        cr->recv(src, &nvsite);
-        vsite_.clear();
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
-        {
-            Vsite vsite;
-            cs = vsite.Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                vsite_.push_back(vsite);
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "Done receiving vsites\n");
             fflush(debug);
         }
 

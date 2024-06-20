@@ -165,13 +165,6 @@ void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-bool ACTMol::IsVsiteNeeded(std::string       atype,
-                           const ForceField *pd) const
-{
-    auto vsite = pd->findVsite(atype);
-    return vsite != pd->getVsiteEnd();
-}
-
 immStatus ACTMol::checkAtoms(const ForceField *pd)
 {
     int nmissing        = 0;
