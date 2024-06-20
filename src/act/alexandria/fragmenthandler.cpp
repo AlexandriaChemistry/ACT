@@ -268,8 +268,8 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
                 {
                     if (!((*aptr)[a].id() == qptr->second[a].first))
                     {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom mismatch when reading charges from chargemap. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
-                                                                           (*aptr)[a].id().id().c_str(), qptr->second[a].first.id().c_str()).c_str()));
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
+                                                                           ids_[i].c_str(), (*aptr)[a].id().id().c_str(), qptr->second[a].first.id().c_str()).c_str()));
                         // Program will throw before this, but success there was not.
                         success = false;
                     }

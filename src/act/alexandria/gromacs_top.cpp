@@ -102,6 +102,17 @@ static void print_bondeds(FILE                      *out,
                     params[morseBETA],
                     entry->id().id().c_str());
             break;
+        case F_ANGLES:
+            fprintf(out, "  %10g  %10g ; %s\n",
+                    params[angleKT],
+                    params[angleANGLE],
+                    entry->id().id().c_str());
+            break;
+        case F_IDIHS:
+            fprintf(out, "  0.0 %10g ; %s\n",
+                    params[idihKPHI],
+                    entry->id().id().c_str());
+            break;
         default: // throws
             GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported function type %s",
                                                            interaction_function[ftype].name).c_str()));
