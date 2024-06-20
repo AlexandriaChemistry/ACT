@@ -140,6 +140,10 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             if (!acmtypes.empty())
             {
+                if (nonFixed_.empty())
+                {
+                    GMX_THROW(gmx::InvalidInputError("Inconsistent EEM parameters in force field"));
+                }
                 Identifier bccId({acmtypes[nonFixed_[b.aI()]],
                         acmtypes[nonFixed_[b.aJ()]] },
                     { b.bondOrder() }, fs->canSwap());
