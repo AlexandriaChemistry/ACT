@@ -924,7 +924,8 @@ void doFrequencyAnalysis(const ForceField         *pd,
 
 static void low_print_stats(std::vector<std::string> *tcout,
                             gmx_stats                *stats,
-                            const char               *label)
+                            const char               *label,
+                            const char               *compound)
 {
     real mse, mae, rmsd, R = 0;
     stats->get_mse_mae(&mse, &mae);
@@ -933,8 +934,8 @@ static void low_print_stats(std::vector<std::string> *tcout,
     {
         stats->get_corr_coeff(&R);
     }
-    tcout->push_back(gmx::formatString("%18s RMSD %8.2f MSE %8.2f (kJ/mol) R %4.1f%% #points = %zu",
-                                       label, rmsd, mse, 100*R, stats->get_npoints()));
+    tcout->push_back(gmx::formatString("%18s RMSD %8.2f MSE %8.2f (kJ/mol) R %5.1f%% #points = %5zu %s",
+                                       label, rmsd, mse, 100*R, stats->get_npoints(), compound));
 }
 
 static void print_diatomics(const alexandria::ACTMol                                                  *mol,
@@ -1129,14 +1130,15 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
     // RMS energy
     if (energyMap.size() > 0)
     {
-        low_print_stats(tcout, &myepot, "Energy");
+        low_print_stats(tcout, &myepot, "Energy", mol->getMolname().c_str());
     }
     for(const auto &tt : terms_)
     {
         auto mystat = &myeinter[tt];
         if (mystat->get_npoints() > 0)
         {
-            low_print_stats(tcout, mystat, interactionTypeToString(tt).c_str());
+            low_print_stats(tcout, mystat, interactionTypeToString(tt).c_str(),
+                            mol->getMolname().c_str());
         }
     }
     if (!forceMap.empty())
@@ -1153,7 +1155,7 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
                 }
             }
         }
-        low_print_stats(tcout, &myforce, "Force");
+        low_print_stats(tcout, &myforce, "Force", mol->getMolname().c_str());
     }
 
     double deltaE0 = 0;

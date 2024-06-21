@@ -45,6 +45,12 @@ chargeMap fetchChargeMap(ForceField                 *pd,
                          const std::vector<MolProp> &mps,
                          qType                       qt)
 {
+    auto alg = pd->chargeGenerationAlgorithm();
+    if (qType::ACM != qt)
+    {
+        alg = ChargeGenerationAlgorithm::Read;
+        
+    }
     chargeMap qmap;
     for(auto mp = mps.begin(); mp < mps.end(); mp++)
     {
@@ -65,11 +71,6 @@ chargeMap fetchChargeMap(ForceField                 *pd,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            auto alg = pd->chargeGenerationAlgorithm();
-            if (qType::ACM != qt)
-            {
-                alg = ChargeGenerationAlgorithm::Read;
-            }
             imm = actmol.GenerateCharges(pd, forceComp, alg,
                                          qt, dummy, &coords, &forces);
             if (immStatus::OK == imm)

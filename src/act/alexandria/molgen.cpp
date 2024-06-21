@@ -840,7 +840,6 @@ size_t MolGen::Read(FILE                                *fp,
             fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
                     gms.nMol(), mp.size());
         }
-        bool chargeWarned = false;
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
@@ -869,19 +868,20 @@ size_t MolGen::Read(FILE                                *fp,
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
-                    if (fragments->setCharges(qmap))
+                    if (!qmap.empty())
                     {
-                        // Copy charges to the high-level topology as well
-                        fragments->fetchCharges(actmol.atoms());
+                        if (fragments->setCharges(qmap))
+                        {
+                            // Copy charges to the high-level topology as well
+                            fragments->fetchCharges(actmol.atoms());
+                        }
+                        else
+                        {
+                            imm = immStatus::NoMolpropCharges;
+                        }
                     }
                     else
                     {
-                        if (fp && !chargeWarned)
-                        {
-                            fprintf(fp, "Could not find charges for some compounds in charge map, will generate them using %s.\n",
-                                    chargeGenerationAlgorithmName(alg).c_str());
-                            chargeWarned = true;
-                        }
                         std::vector<double> dummy;
                         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                         imm = actmol.GenerateCharges(pd, forceComp, alg,

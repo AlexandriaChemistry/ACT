@@ -274,6 +274,11 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
                         success = false;
                     }
                     (*aptr)[a].setCharge(qptr->second[a].second);
+                    if (debug)
+                    {
+                        fprintf(debug, "qmap Charge %zu = %g\n", a,
+                                (*aptr)[a].charge());
+                    }
                 }
             }
             else
@@ -287,6 +292,15 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
         }
     }
     fixedQ_ = success;
+    // Set algorithm to reading charges for the future
+    if (debug)
+    {
+        fprintf(debug, "Copied charges from chargemap to fragments\n");
+    }
+    if (success)
+    {
+        algorithm_ = ChargeGenerationAlgorithm::Read;
+    }
     return success;
 }
 
