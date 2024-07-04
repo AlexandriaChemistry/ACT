@@ -101,14 +101,17 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
             auto desc = gmx::formatString("Combination rule to use for %s parameter %s",
                                           interactionTypeToString(cr.first).c_str(),
                                           mm.var);
-            pa_.push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc.c_str() });
-            pa->push_back(pa_.back());
+            //pa_.push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc.c_str() });
+            //pa->push_back(pa_.back());
+            pa->push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]},
+                    desc.c_str() });
         }
     }
 }
 
-int CombRuleUtil::extract(ForceFieldParameterList *vdw,
-                          ForceFieldParameterList *qt)
+int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
+                          ForceFieldParameterList    *vdw,
+                          ForceFieldParameterList    *qt)
 {
     // This will crash if there is no geometric combrule in the map...
     const char *defval = combRuleName.find(CombRule::Geometric)->second.c_str();
@@ -118,7 +121,7 @@ int CombRuleUtil::extract(ForceFieldParameterList *vdw,
         for(const auto &mm : mcr.second)
         {
             // If this has not been touched on the command line, do nothing.
-            if (!pa_[mm.index].bSet)
+            if (!opt2parg_bSet(mm.flag, pa.size(), pa.data()))
             {
                 continue;
             }

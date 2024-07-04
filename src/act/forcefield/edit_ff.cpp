@@ -898,7 +898,8 @@ int edit_ff(int argc, char*argv[])
             fst.second = pd.findForces(fst.first);
         }
     }
-    int nRuleChanged = crule.extract(its[InteractionType::VDW],
+    int nRuleChanged = crule.extract(pa,
+                                     its[InteractionType::VDW],
                                      its[InteractionType::CHARGETRANSFER]);
     if (nRuleChanged > 0)
     {
