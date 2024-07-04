@@ -378,7 +378,7 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     ForceFieldParameterList qt(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
     // Combination rules
-    crule.extract(&vdw, &qt);
+    crule.extract(pa, &vdw, &qt);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
     // Check for Point charges
