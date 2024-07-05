@@ -1021,7 +1021,8 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
         { eRMS::Electrostatics,    InteractionType::ELECTROSTATICS },
         { eRMS::Dispersion,        InteractionType::DISPERSION     },
         { eRMS::Exchange,          InteractionType::EXCHANGE       },
-        { eRMS::Induction,         InteractionType::INDUCTION      }
+        { eRMS::Induction,         InteractionType::INDUCTION      },
+        { eRMS::AllElec,           InteractionType::ALLELEC        }
     };
     for(const auto &iem : interactionEnergyMap)
     {
