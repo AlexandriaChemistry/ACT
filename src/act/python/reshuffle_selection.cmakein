@@ -23,7 +23,7 @@ if __name__ == "__main__":
     ntrain = 0
     ntotal = 0
     with open(args.outfile, "w") as outf:
-        for row in get_csv_rows(args.infile, 2):
+        for row in get_csv_rows(args.infile, 2, comment='%'):
             ntotal += 1
             r = random.uniform(0, 1)
             if r < args.train:
