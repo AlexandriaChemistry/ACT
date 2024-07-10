@@ -285,9 +285,10 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
     gmx::RVec fzero = { 0, 0, 0 };
     std::map<MolPropObservable, InteractionType> interE = { 
         { MolPropObservable::INTERACTIONENERGY, InteractionType::EPOT           },
-        { MolPropObservable::ELECTROSTATICS,    InteractionType::ELECTROSTATICS        },
+        { MolPropObservable::ELECTROSTATICS,    InteractionType::ELECTROSTATICS },
         { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
         { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
+        { MolPropObservable::VDWCORRECTION,     InteractionType::VDWCORRECTION  },
         { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
@@ -1395,6 +1396,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             case MolPropObservable::ELECTROSTATICS:
             case MolPropObservable::INDUCTION:
             case MolPropObservable::EXCHANGE:
+            case MolPropObservable::VDWCORRECTION:
             case MolPropObservable::DISPERSION:
             case MolPropObservable::DELTAE0:
             case MolPropObservable::DHFORM:

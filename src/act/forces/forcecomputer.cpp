@@ -242,6 +242,12 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                     potentialToString(ffpl.potential()).c_str());
         }
     }
+    auto ivdwcorr = energies->find(InteractionType::VDWCORRECTION);
+    if (energies->end() != ivdwcorr)
+    {
+        energies->find(InteractionType::EXCHANGE)->second += ivdwcorr->second;
+        ivdwcorr->second = 0;
+    }
     energies->insert({ InteractionType::EPOT, epot });
 }
 
@@ -387,10 +393,10 @@ void ForceComputer::plot(const ForceField  *pd,
                             {
                                 ener = energies[irep] + energies[idsp];
                             }
-                            auto iqt = InteractionType::CHARGETRANSFER;
-                            if (energies.find(iqt) != energies.end())
+                            auto iec = InteractionType::VDWCORRECTION;
+                            if (energies.find(iec) != energies.end())
                             {
-                                ener += energies[iqt];
+                                ener += energies[iec];
                             }
                         }
                         fprintf(fp, "%10g  %10g\n", x, ener);

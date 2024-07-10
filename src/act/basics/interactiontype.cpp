@@ -57,6 +57,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VDW,                { "VANDERWAALS", "Van der Waals interactions" } },
     { InteractionType::DISPERSION,         { "DISPERSION", "London dispersion" } },
     { InteractionType::EXCHANGE,           { "EXCHANGE", "Exchange repulsion due to Pauli principle" } },
+    { InteractionType::VDWCORRECTION,      { "VDWCORRECTION", "Correction to van der Waals due to anisotropy" } },
     { InteractionType::CHARGETRANSFER,     { "CHARGETRANSFER", "Charge transfer energy correction" } },
     { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
@@ -135,6 +136,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::VDW:
     case InteractionType::DISPERSION:
     case InteractionType::EXCHANGE:
+    case InteractionType::VDWCORRECTION:
     case InteractionType::CHARGETRANSFER:
     case InteractionType::POLARIZATION:
     case InteractionType::INDUCTION:

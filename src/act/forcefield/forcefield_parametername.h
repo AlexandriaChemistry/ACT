@@ -54,9 +54,9 @@ namespace alexandria
 
     extern const char *lj14_7_name[lj14_7NR];
 
-    enum { qtA = 0, qtB = 1, qtA_IJ = 2, qtB_IJ = 3, qtNR = 4 };
+    enum { expA = 0, expB = 1, expA_IJ = 2, expB_IJ = 3, expNR = 4 };
 
-    extern const char *qt_name[qtNR];
+    extern const char *exp_name[expNR];
 
     enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
 
