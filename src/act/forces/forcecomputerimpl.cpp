@@ -217,7 +217,7 @@ static void computeExponential(const TopologyEntryVector             &pairs,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies)
 {
-    double eqt   = 0;
+    double eexp  = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto &b : pairs)
@@ -234,19 +234,19 @@ static void computeExponential(const TopologyEntryVector             &pairs,
         auto rinv       = gmx::invsqrt(dr2);
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
-        real aqt    = params[qtA_IJ];
-        if (aqt > 0)
+        real aexp       = params[expA_IJ];
+        if (aexp > 0)
         {
-            real bqt   = params[qtB_IJ];
-            auto eeqt  = -aqt*std::exp(-bqt*dr2*rinv);
+            real bexp   = params[expB_IJ];
+            auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
             if (debug)
             {
-                fprintf(debug, "r  %g  eeqt %g\n", dr2*rinv, eeqt);
+                fprintf(debug, "r  %g  eeexp %g\n", dr2*rinv, eeexp);
             }
-            real fqt  = bqt*eeqt;
-            eqt      += eeqt;
+            real fexp  = bexp*eeexp;
+            eexp      += eeexp;
 
-            real fbond  = fqt*rinv;
+            real fbond  = fexp*rinv;
             for (int m = 0; (m < DIM); m++)
             {
                 auto fij          = fbond*dx[m];
@@ -255,7 +255,7 @@ static void computeExponential(const TopologyEntryVector             &pairs,
             }
         }
     }
-    energies->insert({InteractionType::CHARGETRANSFER, eqt});
+    energies->insert({InteractionType::VDWCORRECTION, eexp});
 }
 
 static void computeWBH(const TopologyEntryVector             &pairs,

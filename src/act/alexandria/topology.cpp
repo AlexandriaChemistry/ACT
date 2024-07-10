@@ -1385,7 +1385,7 @@ void Topology::build(const ForceField             *pd,
     }
     makePairs(pd, InteractionType::VDW);
     makePairs(pd, InteractionType::ELECTROSTATICS);
-    auto itqt = InteractionType::CHARGETRANSFER;
+    auto itqt = InteractionType::VDWCORRECTION;
     if (pd->interactionPresent(itqt))
     {
         makePairs(pd, itqt);
@@ -1398,7 +1398,7 @@ void Topology::build(const ForceField             *pd,
     {
         dumpPairlist(debug, InteractionType::ELECTROSTATICS);
         dumpPairlist(debug, InteractionType::VDW);
-        dumpPairlist(debug, InteractionType::CHARGETRANSFER);
+        dumpPairlist(debug, InteractionType::VDWCORRECTION);
     }
 }
 
@@ -1636,7 +1636,7 @@ void Topology::fillParameters(const ForceField *pd)
                 fillParams(fs, topID, gbhNR, gbh_name, &param);
                 break;
             case Potential::EXPONENTIAL:
-                fillParams(fs, topID, qtNR, qt_name, &param);
+                fillParams(fs, topID, expNR, exp_name, &param);
                 break;
             case Potential::COULOMB_GAUSSIAN:
             case Potential::COULOMB_SLATER:
@@ -1750,20 +1750,12 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                     btype.push_back(atoms_[jj].ffType());
                     break;
                 }
+            case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:
-                {
-                    // For COULOMB there are two particles,
-                    // but for polarization just one.
-                    if (atype->hasInteractionType(itype))
-                    {
-                        btype.push_back(atype->interactionTypeToIdentifier(itype).id());
-                    }
-                    break;
-                }
             case InteractionType::ELECTROSTATICS:
                 {
                     // For COULOMB there are two particles,
-                    // but for polarization just one.
+                    // but for POLARIZATION or VDWCORRECTION just one.
                     if (atype->hasInteractionType(itype))
                     {
                         btype.push_back(atype->interactionTypeToIdentifier(itype).id());
@@ -1795,7 +1787,7 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
         }
         else if (debug)
         {
-            fprintf(debug, "Could not find identifier for %s for atomtype '%s'",
+            fprintf(debug, "Could not find identifier for %s for atomtype '%s'\n",
                     interactionTypeToString(itype).c_str(), atypes.c_str());
         }
     }

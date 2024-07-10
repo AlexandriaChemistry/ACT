@@ -38,7 +38,7 @@ const char *lj8_6_name[lj8_6NR] = { "sigma", "epsilon", "sigma_ij", "epsilon_ij"
 const char *lj14_7_name[lj14_7NR] = { "sigma", "epsilon", "gamma", "delta",
                                       "sigma_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
 
-const char *qt_name[qtNR] = { "aqt", "bqt", "aqt_ij", "bqt_ij" };
+const char *exp_name[expNR] = { "aexp", "bexp", "aexp_ij", "bexp_ij" };
 
 const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilon_ij", "gamma_ij" };
 

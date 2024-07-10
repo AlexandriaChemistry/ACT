@@ -606,7 +606,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
 void generateDependentParameter(ForceField *pd, bool force)
 {
     generateParameterPairs(pd, InteractionType::VDW, force);
-    generateParameterPairs(pd, InteractionType::CHARGETRANSFER, force);
+    generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);
     generateCoulombParameterPairs(pd, force);
 }
 

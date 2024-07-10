@@ -49,12 +49,13 @@ namespace alexandria
 //! Map to convert a std::string to an InteractionType
 static std::map<std::string, InteractionType> stringToItype =
     {
-        { "acmtype",  InteractionType::ELECTRONEGATIVITYEQUALIZATION },
-        { "zetatype", InteractionType::ELECTROSTATICS },
-        { "poltype",  InteractionType::POLARIZATION },
-        { "bondtype", InteractionType::BONDS },
-        { "vdwtype",  InteractionType::VDW },
-        { "qttype",   InteractionType::CHARGETRANSFER }
+        { "acmtype",     InteractionType::ELECTRONEGATIVITYEQUALIZATION },
+        { "zetatype",    InteractionType::ELECTROSTATICS },
+        { "poltype",     InteractionType::POLARIZATION },
+        { "bondtype",    InteractionType::BONDS },
+        { "vdwtype",     InteractionType::VDW },
+        { "vdwcorrtype", InteractionType::VDWCORRECTION },
+        { "qttype",      InteractionType::CHARGETRANSFER }
     };
     
 //! List of potential options for a particle

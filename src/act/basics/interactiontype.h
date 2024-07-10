@@ -57,7 +57,9 @@ enum class InteractionType
     DISPERSION,
     //! Repulsive interaction due to Pauli principle
     EXCHANGE,
-    //! Charge interactions
+    //! Correction to van der Waals due to anisotropy
+    VDWCORRECTION,
+    //! Electrostatic interactions
     ELECTROSTATICS,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,

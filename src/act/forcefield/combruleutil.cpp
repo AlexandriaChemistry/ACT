@@ -66,9 +66,9 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
             },
         },
         {
-            InteractionType::CHARGETRANSFER, {
-                { "-cr_aqt",  "aqt", 5 },
-                { "-cr_bqt",  "bqt", 6 }
+            InteractionType::VDWCORRECTION, {
+                { "-cr_aexp",  "aexp", 5 },
+                { "-cr_bexp",  "bexp", 6 }
             }
         }
     };
@@ -131,7 +131,7 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                 // Check whether we have existing values
                 if ((mcr.first == InteractionType::VDW && vdw && 
                      vdw->combinationRuleExists(mm.var)) ||
-                    (mcr.first == InteractionType::CHARGETRANSFER && qt && 
+                    (mcr.first == InteractionType::VDWCORRECTION && qt && 
                      qt->combinationRuleExists(mm.var)))
                 {
                     continue;
@@ -169,7 +169,7 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                     }
                 }
             }
-            else if (mcr.first == InteractionType::CHARGETRANSFER)
+            else if (mcr.first == InteractionType::VDWCORRECTION)
             {
                 if (qt)
                 {

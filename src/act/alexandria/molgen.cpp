@@ -329,7 +329,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         // If we use a combination rule for Van der Waals or QT, it should be
         // treated as an atomic type. If not, it should be a "bond"
         // potential.
-        for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
+        for(const auto itype : { InteractionType::VDW,  InteractionType::VDWCORRECTION })
         {
             if (!pd->interactionPresent(itype))
             {
@@ -391,7 +391,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                         }
                     }
                 }
-                for(const auto itype : { InteractionType::VDW,  InteractionType::CHARGETRANSFER })
+                for(const auto itype : { InteractionType::VDW,  InteractionType::VDWCORRECTION })
                 {
                     if (!pd->interactionPresent(itype))
                     {
