@@ -80,12 +80,13 @@ double ForceComputer::compute(const ForceField                  *pd,
                               std::vector<gmx::RVec>            *coordinates,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
-                              const gmx::RVec                   &field) const
+                              const gmx::RVec                   &field,
+                              bool                               resetShells) const
 {
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
     // Reset shells if needed
-    if (true)
+    if (resetShells)
     {
         auto &atoms = top->atoms();
         for(size_t i = 0; i < top->nAtoms(); i++)

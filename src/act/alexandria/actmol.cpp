@@ -580,12 +580,6 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     {
         fprintf(debug, "Will compute interaction energy\n");
     }
-    (void) forceComputer->compute(pd, topology_, coords, interactionForces, einter);
-    double edimer = (*einter)[InteractionType::EPOT];
-    if (debug)
-    {
-        fprintf(debug, "%s: edimer = %g\n", getMolname().c_str(), edimer);
-    }
     // Now compute interaction energies if there are fragments
     auto   &astart = fraghandler_->atomStart();
     for(size_t ff = 0; ff < tops.size(); ff++)
@@ -601,13 +595,21 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         std::map<InteractionType, double> energies;
         (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &energies);
-        edimer -= energies[InteractionType::EPOT];
         
         if (debug)
         {
             fprintf(debug, "%s initial:", getMolname().c_str());
             printEmap(debug, einter);
         }
+        // Move monomer induction energy to the electrostatics.
+        auto eelec  = energies.find(InteractionType::ELECTROSTATICS);
+        auto einduc = energies.find(InteractionType::INDUCTION);
+        if (energies.end() != eelec && energies.end() != einduc)
+        {
+            eelec->second += einduc->second;
+            einduc->second = 0;
+        }
+        // Subtract the monomer energies from the total interaction energy
         for(const auto &ee : energies)
         {
             auto eptr = einter->find(ee.first);
@@ -623,6 +625,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         j = 0;
         for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
+            // Copy back coordinates to original array to store relaxed shell positions
+            copy_rvec(myx[j], (*coords)[i]);
             for(int m = 0; m < DIM; m++)
             {
                 (*interactionForces)[i][m] -= forces[j][m];
@@ -635,6 +639,49 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             printEmap(debug, &energies);
         }
     }
+    std::vector<gmx::RVec> forces(topology_->atoms().size(), fzero);
+    std::map<InteractionType, double> energies;
+    // Abuse fzero to give a zero electric field.
+    // Do not reset the position of the shells.
+    bool resetShells = false;
+    (void) forceComputer->compute(pd, topology_, coords, &forces, &energies, fzero, resetShells);
+    // Since the dimer calculation did not start from shell positions on the atoms,
+    // there may be residual (intramolecular) polarization that we have to move to
+    // the electrostatics.
+    auto epol = energies.find(InteractionType::POLARIZATION);
+    auto eelec = energies.find(InteractionType::ELECTROSTATICS);
+    if (energies.end() != epol && energies.end() != eelec)
+    {
+        eelec->second += epol->second;
+        epol->second = 0;
+    }
+    if (debug)
+    {
+        fprintf(debug, "%s dimer ", getMolname().c_str());
+        printEmap(debug, &energies);
+    }
+    // Add dimer energies to the interaction energies
+    for(const auto &ee : energies)
+    {
+        auto eptr = einter->find(ee.first);
+        if (einter->end() != eptr)
+        {
+            eptr->second += ee.second;
+        }
+        else
+        {
+            einter->insert({ee.first, ee.second});
+        }
+    }
+    // Add dimer forces to the interaction forces
+    for(size_t i = 0; i < topology_->atoms().size(); i++)
+    {
+        for(int m = 0; m< DIM; m++)
+        {
+            (*interactionForces)[i][m] += forces[i][m];
+        }
+    }
+    (*einter)[InteractionType::EPOT];
     if (debug)
     {
         fprintf(debug, "%s result:", getMolname().c_str());
