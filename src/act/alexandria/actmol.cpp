@@ -653,6 +653,11 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     if (energies.end() != epol && energies.end() != eelec)
     {
         eelec->second += epol->second;
+        auto eall = energies.find(InteractionType::ALLELEC);
+        if (energies.end() != eall)
+        {
+            eall->second += epol->second;
+        }
         epol->second = 0;
     }
     if (debug)
@@ -681,7 +686,6 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             (*interactionForces)[i][m] += forces[i][m];
         }
     }
-    (*einter)[InteractionType::EPOT];
     if (debug)
     {
         fprintf(debug, "%s result:", getMolname().c_str());
