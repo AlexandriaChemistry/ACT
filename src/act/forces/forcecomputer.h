@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -94,6 +94,7 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
+     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms 
      * \return The mean square force on the shells, or zero if not present.
      */
     double compute(const ForceField                  *pd,
@@ -101,7 +102,8 @@ private:
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
                    std::map<InteractionType, double> *energies,
-                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 }) const;
+                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                   bool                               resetShells = true) const;
                  
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
