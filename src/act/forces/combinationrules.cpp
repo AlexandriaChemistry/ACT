@@ -36,6 +36,7 @@
 #include "act/forcefield/potential.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -371,7 +372,7 @@ void evalCombinationRule(Potential                                    ftype,
                          const std::map<const std::string, CombRule> &combrule,
                          const ForceFieldParameterMap                &ivdw,
                          const ForceFieldParameterMap                &jvdw,
-                         bool                                         same,
+                         bool                                         includePair,
                          ForceFieldParameterMap                      *pmap)
 {
     // Fudge unit
@@ -414,15 +415,15 @@ void evalCombinationRule(Potential                                    ftype,
             auto crule = combrule.find(param.first)->second;
             if (CombRule::Kronecker == crule)
             {
-                if (same)
-                {
-                    value = 0;
-                }
-                else
+                if (includePair)
                 {
                     value = combineTwo(CombRule::Geometric,
                                        ivdw.find(param.first)->second.value(),
                                        jvdw.find(param.first)->second.value());
+                }
+                else
+                {
+                    value = 0;
                 }
             }
             else
@@ -481,7 +482,7 @@ static void generateParameterPairs(ForceField      *pd,
                                    InteractionType  itype,
                                    bool             force)
 {
-    // Do not crash if e.g. there is no CHARGETRANSFER.
+    // Do not crash if e.g. there is no VDWCORRECTION.
     if (!pd->interactionPresent(itype))
     {
         return;
@@ -516,7 +517,23 @@ static void generateParameterPairs(ForceField      *pd,
             {
                 continue;
             }
-            bool same = jid.id() == iid.id();
+            // Test whether or not to include this pair.
+            // This will only be used in case the potential is exponential.
+            bool includePair = true;
+            if (Potential::EXPONENTIAL == forcesVdw->potential())
+            {
+                auto ai = iid.atoms()[0];
+                auto aj = jid.atoms()[0];
+                if (pd->hasParticleType(ai) && pd->hasParticleType(aj))
+                {
+                    auto pti = pd->findParticleType(ai)->gmxParticleType();
+                    auto ptj = pd->findParticleType(aj)->gmxParticleType();
+                    // The pair will be included only if one particle is a vsite
+                    // and the other an atom.
+                    includePair = ((eptVSite == pti && eptAtom == ptj) ||
+                                   (eptVSite == ptj && eptAtom == pti));
+                }
+            }
             auto &jparam = jvdw.second;
             bool jupdated = false;
             for(const auto &jp : jparam)
@@ -530,7 +547,7 @@ static void generateParameterPairs(ForceField      *pd,
             // Fill the parameters, potential dependent
             ForceFieldParameterMap pmap;
             evalCombinationRule(forcesVdw->potential(),
-                                comb_rule, ivdw.second, jvdw.second, same, &pmap);
+                                comb_rule, ivdw.second, jvdw.second, includePair, &pmap);
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
