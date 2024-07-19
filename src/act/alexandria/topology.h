@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
@@ -67,7 +68,7 @@ private:
     //! The atom type in the force field
     std::string      ffType_;
     //! The particle type
-    int              pType_;
+    ActParticle      apType_;
     //! My shell particles, if any
     std::vector<int> shells_;
     //! My vsite particles, if any
@@ -86,17 +87,17 @@ public:
     ActAtom(const std::string &name,
             const std::string &elem,
             const std::string &ffType,
-            int                pType,
+            ActParticle        apType,
             int                atomicNumber,
             double             newmass,
             double             newcharge,
             int                row) :
-        id_({ name }), name_(name), elem_(elem), row_(row), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
+        id_({ name }), name_(name), elem_(elem), row_(row), ffType_(ffType), apType_(apType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
 
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
-        pType_( pt.gmxParticleType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
+        apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
     {}
 
     //! \return Identifier
@@ -115,7 +116,7 @@ public:
     const std::string &ffType() const { return ffType_; }
 
     //! \return the particle type
-    int pType() const { return pType_; }
+    ActParticle pType() const { return apType_; }
 
     //! \return the list of shells for this particle
     const std::vector<int> &shells() const { return shells_; }

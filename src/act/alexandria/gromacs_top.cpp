@@ -354,7 +354,7 @@ void print_top_header(FILE                    *fp,
                         !bType.empty() ? bType.c_str() : gt_type.c_str(), 
                         aType.second.atomnumber(), 
                         aType.second.mass(), 0.0,
-                        ptype_str[aType.second.gmxParticleType()],
+                        actParticleToString(aType.second.apType()).c_str(),
                         sigma, epsilon, gamma);
                 if (false && bPol)
                 {

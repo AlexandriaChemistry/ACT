@@ -136,7 +136,7 @@ void Topology::addShells(const ForceField *pd,
     // Loop through the atomList.
     for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {
-        if (iter->atom().pType() == eptAtom || iter->atom().pType() == eptVSite)
+        if (iter->atom().pType() == ActParticle::Atom || iter->atom().pType() == ActParticle::Vsite)
         {
             std::string atomtype(iter->atom().ffType());
             if (pd->hasParticleType(atomtype))
@@ -165,7 +165,7 @@ void Topology::addShells(const ForceField *pd,
 
                     // Insert shell atom
                     auto shellName = iter->atom().name() + "s";
-                    ActAtom newshell(shellName, "EP", ptype.id(), eptShell,
+                    ActAtom newshell(shellName, "EP", ptype.id(), ActParticle::Shell,
                                      0, 0, charge, fa->row());
                     newshell.setResidueNumber(iter->atom().residueNumber());
                     auto olditer = iter;
@@ -493,14 +493,14 @@ void Topology::fixExclusions(TopologyEntryVector                 *pairs,
     // Loop over all exclusions
     for(size_t ai = 0; ai < exclusions.size(); ++ai)
     {
-        if (eptAtom != atoms_[ai].pType())
+        if (ActParticle::Atom != atoms_[ai].pType())
         {
             continue;
         }
         for(size_t jj = 0; jj < exclusions[ai].size(); ++jj)
         {
             size_t aj = exclusions[ai][jj];
-            if (eptAtom != atoms_[aj].pType())
+            if (ActParticle::Atom != atoms_[aj].pType())
             {
                 continue;
             }
@@ -543,7 +543,7 @@ void Topology::fixExclusions(TopologyEntryVector                 *pairs,
     // from the constructing atoms.
     for(size_t i = 0; i < atoms_.size(); i++)
     {
-        if (eptVSite == atoms_[i].pType())
+        if (ActParticle::Vsite == atoms_[i].pType())
         {
             // Each vsite has two or more cores
             for (size_t core : atoms_[i].cores())
@@ -733,7 +733,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
                 const auto ptype = pd->findParticleType(faa[1]);
                 std::string vstype;
                 ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                ptype->gmxParticleType(),
+                                ptype->apType(),
                                 0, ptype->mass(), ptype->charge(),
                                 ptype->row());
                 // Put virtual site straight after the last atom.
@@ -893,7 +893,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                         }
                         std::string vstype = ptype->optionValue(bondtype);
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                        ptype->gmxParticleType(),
+                                        ptype->apType(),
                                         0, ptype->mass(), ptype->charge(),
                                         ptype->row());
                         // Put virtual site straight after the last atom.
@@ -1056,7 +1056,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                     for (int pid=0; pid<maxpid; pid++)
                     {
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
-                                        ptype->gmxParticleType(),
+                                        ptype->apType(),
                                         0, ptype->mass(), ptype->charge(), ptype->row());
 
                         int vs3 = atomList->size();
@@ -1135,7 +1135,7 @@ void Topology::addVsitesToCores()
 {
     for(size_t i = 0; i < atoms_.size(); i++)
     {
-        if (eptVSite == atoms_[i].pType())
+        if (ActParticle::Vsite == atoms_[i].pType())
         {
             for(const auto cj : atoms_[i].cores())
             {
@@ -1222,7 +1222,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
             {
                 auto atype = pd->findParticleType(cai.getObtype());
 
-                ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), eptAtom,
+                ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), ActParticle::Atom,
                                 atype->atomnumber(), atype->mass(), atype->charge(), atype->row());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);

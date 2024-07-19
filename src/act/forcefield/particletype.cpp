@@ -227,7 +227,7 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     id_.Send(cr, dest);
     cr->send(dest, desc_);
-    cr->send(dest, gmxParticleType_);
+    cr->send(dest, actParticleToString(apType_));
     cr->send(dest, option_.size());
     for(const auto &opt : option_)
     {
@@ -252,7 +252,16 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     {
         cs = id_.BroadCast(cr, root, comm);
         cr->bcast(&desc_, comm);
-        cr->bcast(&gmxParticleType_, comm);
+        std::string aptype;
+        if (cr->isMaster())
+        {
+            aptype = actParticleToString(apType_);
+        }
+        cr->bcast(&aptype, comm);
+        if (!stringToActParticle(aptype, &apType_))
+        {
+            GMX_THROW(gmx::InternalError("Communicating ActParticle"));
+        }
         size_t nopt = option_.size();
         cr->bcast(&nopt, comm);
         if (cr->rank() == root)
@@ -307,7 +316,12 @@ CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src
     CommunicationStatus cs = CommunicationStatus::OK;
     cs = id_.Receive(cr, src);
     cr->recv(src, &desc_);
-    cr->recv(src, & gmxParticleType_ );
+    std::string aptype;
+    cr->recv(src, &aptype);
+    if (!stringToActParticle(aptype, &apType_))
+    {
+        GMX_THROW(gmx::InternalError("Problem receiving ActParticle"));
+    }
     size_t nopt;
     cr->recv(src, &nopt);
     option_.clear();

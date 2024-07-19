@@ -450,15 +450,8 @@ static void processAttr(FILE       *fp,
             NN(xbuf, xmlEntry::IDENTIFIER) &&
             NN(xbuf, xmlEntry::DESC))
         {
-            int ept;
-            for(ept = 0; ept < eptNR; ept++)
-            {
-                if (xbufString(xmlEntry::TYPE).compare(ptype_str[ept]) == 0)
-                {
-                    break;
-                }
-            }
-            if (ept == eptNR)
+            ActParticle ept;
+            if (!stringToActParticle(xbufString(xmlEntry::TYPE), &ept))
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such particle type %s", xbufString(xmlEntry::TYPE).c_str()).c_str()));
             }
@@ -660,7 +653,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     {
         auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
         add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.second.id().id().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), ptype_str[aType.second.gmxParticleType()]);
+        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), actParticleToString(aType.second.apType()).c_str());
         add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.second.description().c_str());
         for(const auto &opt: aType.second.optionsConst())
         {

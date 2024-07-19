@@ -187,7 +187,7 @@ static void calcTheta(const ACTMol                 *actmol,
     std::vector<gmx::RVec> xx;
     for(size_t i = 0; i < atoms.size(); i++)
     {
-        if (atoms[i].pType() == eptAtom)
+        if (atoms[i].pType() == ActParticle::Atom)
         {
             index.push_back(i);
         }

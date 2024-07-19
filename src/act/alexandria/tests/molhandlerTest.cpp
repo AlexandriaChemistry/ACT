@@ -207,7 +207,7 @@ protected:
                 auto &atoms = mp.atomsConst();
                 for(size_t atom = 0; atom < atoms.size(); atom++)
                 {
-                    if (atoms[atom].pType() == eptAtom)
+                    if (atoms[atom].pType() == ActParticle::Atom)
                     {
                         atomIndex.push_back(atom);
                     }

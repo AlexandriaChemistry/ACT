@@ -392,18 +392,18 @@ int gen_ff(int argc, char*argv[])
     for(const auto &entry : table)
     {
         // Generate particle type
-        int gmxtype = eptAtom;
+        auto apType = ActParticle::Atom;
         std::string elem = table[entry.first]["element"];
         if (elem == "X")
         {
-            gmxtype = eptShell;
+            apType = ActParticle::Shell;
         }
         else if (elem == "VS")
         {
-            gmxtype = eptVSite;
+            apType = ActParticle::Vsite;
         }
         auto ptp = ParticleType(Identifier(entry.first),
-                                table[entry.first]["comment"], gmxtype);
+                                table[entry.first]["comment"], apType);
 
         // Now add the "options"
         for(const auto &opt : options)
@@ -448,7 +448,7 @@ int gen_ff(int argc, char*argv[])
 
         auto myatype = table[entry.first];
         // Now add force field parameters
-        if (eptShell == gmxtype)
+        if (ActParticle::Shell == apType)
         {
             if (minmaxmut(entry.first, myatype, "alpha", &vmin, &vmax, &vmut))
             {

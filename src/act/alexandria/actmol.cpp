@@ -71,7 +71,7 @@ ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
     qPact_.initializeMoments();
     for(const auto &aa : atoms)
     {
-        bool b = (eptAtom == aa.pType());
+        bool b = (ActParticle::Atom == aa.pType());
         isAtom_.push_back(b);
     }
 }
@@ -209,7 +209,7 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
     int j = 0;
     for(size_t i = 0; i < myatoms.size(); i++)
     {
-        if (myatoms[i].pType() == eptAtom)
+        if (myatoms[i].pType() == ActParticle::Atom)
         {
             // Read coords from the experimental structure without shells or vsites
             copy_rvec(xxx[j], coords[i]);
@@ -222,11 +222,11 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
     {
         switch (myatoms[i].pType())
         {
-        case eptAtom:
+        case ActParticle::Atom:
             // Do nothing
             break;
-        case eptShell:
-        case eptVSite:
+        case ActParticle::Shell:
+        case ActParticle::Vsite:
             {
                 auto cores = myatoms[i].cores();
                 GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
@@ -235,7 +235,7 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
             break;
         default: // throws
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", ptype_str[myatoms[i].pType()]).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", actParticleToString(myatoms[i].pType()).c_str()).c_str()));
             }
         }
     }
@@ -404,7 +404,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                 std::vector<std::pair<double, double> > thisForce;
                 for (size_t i = 0; i < myatoms.size(); i++)
                 {
-                    if (myatoms[i].pType() == eptAtom)
+                    if (myatoms[i].pType() == ActParticle::Atom)
                     {
                         if (ifff >= fff.size())
                         {
@@ -429,7 +429,7 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
     std::vector<int> core;
     for(size_t i = 0; i < myatoms.size(); i++)
     {
-        if (myatoms[i].pType() == eptAtom)
+        if (myatoms[i].pType() == ActParticle::Atom)
         {
             core.push_back(i);
         }
@@ -513,7 +513,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
         realAtoms_.clear();
         for(size_t i = 0; i < myatoms.size(); i++)
         {
-            if (myatoms[i].pType() == eptAtom)
+            if (myatoms[i].pType() == ActParticle::Atom)
             {
                 realAtoms_.push_back(i);
             }
@@ -877,11 +877,11 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             size_t j = 0;
             for(size_t i = 0; i < myatoms->size(); i++)
             {
-                if ((*myatoms)[i].pType() == eptAtom)
+                if ((*myatoms)[i].pType() == ActParticle::Atom)
                 {
                     (*myatoms)[i].setCharge(qread[j++]);
                 }
-                else if ((*myatoms)[i].pType() == eptShell)
+                else if ((*myatoms)[i].pType() == ActParticle::Shell)
                 {
                     const auto &pId = (*myatoms)[i].ffType();
                     if (!pd->hasParticleType(pId))
