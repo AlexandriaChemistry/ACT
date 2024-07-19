@@ -88,7 +88,7 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
             std::string          elem("U");
             std::string          desc("temporary test atom");
             Identifier   atpId("U");
-            ParticleType atp(atpId, desc, eptAtom);
+            ParticleType atp(atpId, desc, ActParticle::Atom);
             atp.setOption("poltype", "p_U");
             atp.setOption("zetatype", "z_U");
             atp.setOption("bondtype", "b_U");

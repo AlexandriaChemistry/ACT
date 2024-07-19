@@ -245,7 +245,7 @@ static int tellme_RealAtom(int                         index,
 
 	for (size_t i = 0; i < myatoms.size(); i++)
     {
-		if (myatoms[i].pType() == eptAtom) 
+		if (myatoms[i].pType() == ActParticle::Atom) 
 		{
 			realAtoms = realAtoms + 1;
 		}
@@ -330,9 +330,9 @@ public:
 
 void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
 {
-    switch (aType->gmxParticleType())
+    switch (aType->apType())
     {
-    case eptAtom:
+    case ActParticle::Atom:
         {
             add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
                          aType->element().c_str());
@@ -344,10 +344,10 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
             add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mAtom);
         }
         break;
-    case eptShell:
+    case ActParticle::Shell:
         add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
         break;
-    case eptVSite:
+    case ActParticle::Vsite:
         if (0 != aType->mass())
         {
             fprintf(stderr, "Warning: mass should be zero for vsites in OpenMM, not %g. Setting it to zero.\n", aType->mass());
@@ -622,7 +622,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
         auto aType = pd->findParticleType(fft.first);
         for(int i = 1; i <= fft.second; i++)
         {
-            if (eptAtom == aType->gmxParticleType())
+            if (ActParticle::Atom == aType->apType())
             {
                 if (aType->hasOption("poltype"))
                 {
@@ -988,7 +988,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                 }
                 int reali = tellme_RealAtom(i, myatoms);
 
-                if (myatoms[i].pType() == eptAtom || myatoms[i].pType() == eptVSite)
+                if (myatoms[i].pType() == ActParticle::Atom || myatoms[i].pType() == ActParticle::Vsite)
                 {
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     auto iname = nameIndex(myatoms[i].name(), reali);
@@ -1019,7 +1019,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                         add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge()*epsr_fac);
                         ishell += 1;
                     }
-                    if (myatoms[i].pType() == eptVSite)
+                    if (myatoms[i].pType() == ActParticle::Vsite)
                     {
                         auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::VSITE_RES));
                         // Could be different vsite types, remember to implement those.

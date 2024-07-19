@@ -585,8 +585,7 @@ void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
     auto    &myatoms = mol->atomsConst();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
-        if (myatoms[j].pType() == eptAtom ||
-            myatoms[j].pType() == eptNucleus)
+        if (myatoms[j].pType() == ActParticle::Atom)
         {
             real qCalc = myatoms[j].charge();
             fprintf(fp, "%-2d%3lu  %-5s  %12g",
@@ -1507,14 +1506,14 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
             auto lll   = lsqt.find(ims);
             for(size_t ai = 0; ai < atoms.size(); ai++)
             {
-                if (atoms[ai].pType() == eptAtom)
+                if (atoms[ai].pType() == ActParticle::Atom)
                 {
                     auto llF = lll->second.find(atoms[ai].ffType());
                     if (lll->second.end() != llF)
                     {
                         auto qa = atoms[ai].charge();
                         if (ai < atoms.size() -1 && 
-                            atoms[ai+1].pType() == eptShell)
+                            atoms[ai+1].pType() == ActParticle::Shell)
                         {
                             qa += atoms[ai+1].charge();
                         }

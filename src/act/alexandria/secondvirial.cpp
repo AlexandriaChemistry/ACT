@@ -322,7 +322,7 @@ void ReRunner::rerun(FILE                        *logFile,
                 {
                     GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].size(), atoms.size()).c_str()));
                 }
-                if (atoms[i].pType() == eptAtom)
+                if (atoms[i].pType() == ActParticle::Atom)
                 {
                     index++;
                 }
@@ -489,7 +489,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     {
                         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].size(), atoms.size()).c_str()));
                     }
-                    if (atoms[i].pType() == eptAtom)
+                    if (atoms[i].pType() == ActParticle::Atom)
                     {
                         index++;
                     }

@@ -39,8 +39,9 @@
 #include <map>
 #include <string>
 
-#include "forcefield_parameter.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
+#include "act/forcefield/forcefield_parameter.h"
 
 namespace alexandria
 {
@@ -68,8 +69,8 @@ class ParticleType
      */
     ParticleType(const Identifier  &id,
                  const std::string &desc,
-                 int               gmxParticleType) :
-    id_(id), desc_(desc), gmxParticleType_(gmxParticleType) {}
+                 ActParticle        apType) :
+    id_(id), desc_(desc), apType_(apType) {}
 
     /*! \brief Return the identifier
      */
@@ -79,9 +80,9 @@ class ParticleType
      */
     const std::string &description() const { return desc_; }
 
-    /*! \brief Return the type of particle according to GROMACS
+    /*! \brief Return the type of particle
      */
-    int gmxParticleType() const { return gmxParticleType_; }
+    ActParticle apType() const { return apType_; }
 
     /*! \brief Set optional values
      * 
@@ -221,8 +222,8 @@ class ParticleType
     Identifier                         id_;
     //! String with particle type description
     std::string                        desc_;
-    //! GROMACS particle type (eptAtom, eptShell etc.)
-    int                                gmxParticleType_;
+    //! Particle type (Atom,  etc.)
+    ActParticle                        apType_;
     //! Map of options including sub types
     std::map<std::string, std::string> option_;
     //! The force field parameters associated with this particle type

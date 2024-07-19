@@ -144,7 +144,7 @@ protected:
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {
-                    bool shell = atoms[i].pType() == eptShell;
+                    bool shell = atoms[i].pType() == ActParticle::Shell;
                     for(int m = 0; m < DIM; m++)
                     {
                         if (!shell)
@@ -197,7 +197,7 @@ protected:
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {
-                    bool shell = atoms[i].pType() == eptShell;
+                    bool shell = atoms[i].pType() == ActParticle::Shell;
                     for(int m = 0; m < DIM; m++)
                     {
                         if (!shell)

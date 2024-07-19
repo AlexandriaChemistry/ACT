@@ -434,7 +434,7 @@ void MolHandler::nma(const ForceField         *pd,
     std::vector<int> atomIndex;
     for(size_t atom = 0; atom < atoms.size(); atom++)
     {
-        if (atoms[atom].pType() == eptAtom)
+        if (atoms[atom].pType() == ActParticle::Atom)
         {
             atomIndex.push_back(atom);
         }
@@ -669,7 +669,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         // Store the atom numbers for the frozen atoms in the counting incl. shells
-        if ((myatoms[atom].pType() == eptAtom || myatoms[atom].pType() == eptShell) &&
+        if ((myatoms[atom].pType() == ActParticle::Atom || myatoms[atom].pType() == ActParticle::Shell) &&
             freeze.end() == std::find(freeze.begin(), freeze.end(), atom))
         {
             theAtoms.push_back(atom);
@@ -1179,7 +1179,7 @@ void MolHandler::simulate(const ForceField              *pd,
         auto atoms = mol->atomsConst();
         for(size_t ii = 0; ii < atoms.size(); ii++)
         {
-            if (simConfig.writeShells() || eptAtom == atoms[ii].pType())
+            if (simConfig.writeShells() || ActParticle::Atom == atoms[ii].pType())
             {
                 trajIndex.push_back(ii);
             }

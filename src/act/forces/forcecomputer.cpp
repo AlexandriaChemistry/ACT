@@ -117,7 +117,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         int  nshell = 0;
         for(auto &aa : top->atoms())
         {
-            bool bIS = aa.pType() == eptShell;
+            bool bIS = aa.pType() == ActParticle::Shell;
             isShell.push_back(bIS);
             double fc_1 = 0;
             if (bIS)

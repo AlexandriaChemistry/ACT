@@ -222,8 +222,7 @@ double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
     std::string DHf("DHf(T)");
     for (auto &a : atoms)
     {
-        if (a.pType() == eptAtom ||
-            a.pType() == eptNucleus)
+        if (a.pType() == ActParticle::Atom)
         {
             std::string h0unit;
             double h0_hT = atomenergy.term(a.element(), 0, "exp",

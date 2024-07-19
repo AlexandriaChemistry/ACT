@@ -200,7 +200,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
     // Iterate over the atoms
     for (size_t j = 0; j < myatoms.size(); j++)
     {
-        if (myatoms[j].pType() == eptShell)
+        if (myatoms[j].pType() == ActParticle::Shell)
         {
             continue;
         }
