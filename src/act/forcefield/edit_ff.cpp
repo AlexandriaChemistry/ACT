@@ -911,8 +911,10 @@ int edit_ff(int argc, char*argv[])
         nRuleChanged = crule.convert(its[InteractionType::VDW]);
         printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
     }
-    its[InteractionType::VDW]->removeOption("combination_rule");
-
+    if (its[InteractionType::VDW])
+    {
+        its[InteractionType::VDW]->removeOption("combination_rule");
+    }
     if (opt2bSet("-o", NFILE, fnm))
     {
         if (cr.isParallel())
@@ -951,7 +953,7 @@ int edit_ff(int argc, char*argv[])
                     cs = pd.Receive(&cr, 0);
                     cr.recv(0, &outfile);
                 }
-                if (CommunicationStatus::OK == cs && cr.rank() == 2)
+                if (CommunicationStatus::OK == cs && cr.rank() == 1)
                 {
                     alexandria::writeForceField(outfile, &pd, 0);
                 }

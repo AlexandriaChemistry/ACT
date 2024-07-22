@@ -184,13 +184,16 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
 int CombRuleUtil::convert(ForceFieldParameterList *vdw)
 {
     int changed = 0;
-    std::string crule("combination_rule");
-    if (vdw->optionExists(crule))
+    if (vdw)
     {
-        for(auto &crule : getCombinationRule(*vdw))
+        std::string crule("combination_rule");
+        if (vdw->optionExists(crule))
         {
-            vdw->addCombinationRule(crule.first, combinationRuleName(crule.second));
-            changed += 1;
+            for(auto &crule : getCombinationRule(*vdw))
+            {
+                vdw->addCombinationRule(crule.first, combinationRuleName(crule.second));
+                changed += 1;
+            }
         }
     }
         
