@@ -540,7 +540,7 @@ static void generateParameterPairs(ForceField      *pd,
             {
                 jupdated = jupdated || jp.second.updated();
             }
-            if ((!iupdated || !iupdated) && !force)
+            if (!(iupdated || jupdated || force))
             {
                 continue;
             }
