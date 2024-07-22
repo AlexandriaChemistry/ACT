@@ -429,8 +429,6 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
         cr->recv(src, &noptions);
         options_.clear();
         size_t ncrule;
-        cr->recv(src, &ncrule);
-        combrules_.clear();
         for(size_t i = 0; i < noptions; i++)
         {
             std::string key, value;
@@ -438,6 +436,8 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             cr->recv(src, &value);
             options_.insert({key, value});
         }
+        cr->recv(src, &ncrule);
+        combrules_.clear();
         for(size_t i = 0; i < ncrule; i++)
         {
             std::string key, value;
