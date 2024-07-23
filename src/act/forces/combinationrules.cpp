@@ -526,12 +526,12 @@ static void generateParameterPairs(ForceField      *pd,
                 auto aj = jid.atoms()[0];
                 if (pd->hasParticleType(ai) && pd->hasParticleType(aj))
                 {
-                    auto pti = pd->findParticleType(ai)->gmxParticleType();
-                    auto ptj = pd->findParticleType(aj)->gmxParticleType();
+                    auto pti = pd->findParticleType(ai)->apType();
+                    auto ptj = pd->findParticleType(aj)->apType();
                     // The pair will be included only if one particle is a vsite
                     // and the other an atom.
-                    includePair = ((eptVSite == pti && eptAtom == ptj) ||
-                                   (eptVSite == ptj && eptAtom == pti));
+                    includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
+                                   (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
                 }
             }
             auto &jparam = jvdw.second;
