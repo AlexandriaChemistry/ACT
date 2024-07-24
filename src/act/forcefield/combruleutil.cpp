@@ -84,8 +84,8 @@ void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
     }
     crinfo->push_back("[PAR]Make sure to use the exact strings above including capitalization.");
     crinfo->push_back("Some of the rules that include parameter names should only be used for that parameter.");
-    crinfo->push_back(gmx::formatString("If not specified, the %s rule will be selected.",
-                                        combinationRuleName(CombRule::Geometric).c_str()).c_str());
+    std::string last = gmx::formatString("If not specified, the %s rule will be selected.", combinationRuleName(CombRule::Geometric).c_str());
+    crinfo->push_back(strdup(last.c_str()));
 }
 
 void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
@@ -101,10 +101,8 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
             auto desc = gmx::formatString("Combination rule to use for %s parameter %s",
                                           interactionTypeToString(cr.first).c_str(),
                                           mm.var);
-            //pa_.push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]}, desc.c_str() });
-            //pa->push_back(pa_.back());
             pa->push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]},
-                    desc.c_str() });
+                    strdup(desc.c_str()) });
         }
     }
 }

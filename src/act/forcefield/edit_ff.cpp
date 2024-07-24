@@ -715,7 +715,7 @@ int edit_ff(int argc, char*argv[])
         "input and output files and what parameters to change.",
         "If the value, the minimum",
         "or the maximum is to be changed, the actual value may be set to the",
-        "new minmum or maximum if it falls outside the new bounds.",
+        "new minimum or maximum if it falls outside the new bounds."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
