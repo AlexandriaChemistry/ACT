@@ -253,14 +253,14 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
         cs = id_.BroadCast(cr, root, comm);
         cr->bcast(&desc_, comm);
         std::string aptype;
-        if (cr->isMaster())
+        if (cr->isMasterOrMiddleMan())
         {
             aptype = actParticleToString(apType_);
         }
         cr->bcast(&aptype, comm);
         if (!stringToActParticle(aptype, &apType_))
         {
-            GMX_THROW(gmx::InternalError("Communicating ActParticle"));
+            GMX_THROW(gmx::InternalError(gmx::formatString("Communicating ActParticle. Received '%s'", aptype.c_str()).c_str()));
         }
         size_t nopt = option_.size();
         cr->bcast(&nopt, comm);
