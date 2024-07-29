@@ -120,6 +120,7 @@ def plot_once(ax, args):
             print("Found the following command-line labels {}".format(arglabel))
     filenumber = 0
     datasets   = []
+    setcount   = 0
     for fn in args.filename:
         label, legend, dataset = read_xvg(fn, args.residual, args.filelabel)
         if len(dataset) == 0:
@@ -149,10 +150,11 @@ def plot_once(ax, args):
                         mylabel = label[n]
                 mymarker = None
                 if args.marker:
-                    mymarker=markers[n % len(markers)]
+                    mymarker  = markers[setcount % len(markers)]
+                    setcount += 1
                 if viewDebug:
                     print("mylabel = {}".format(mylabel))
-                    
+                    print("mymarker = {}".format(mymarker))
                 ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=mymarker)
         for aa in [ 'x', 'y' ]:
             ax.tick_params(axis=aa, labelsize=args.tickfontsize)
