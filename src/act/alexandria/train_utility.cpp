@@ -340,7 +340,7 @@ static void print_corr(const char                    *outfile,
                 int N = i.second.get_npoints();
                 if (N > 0)
                 {
-                    eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
+                    eprnm.push_back(gmx::formatString("%s", ims.second));
                     lsq.push_back(i.second);
                     haveData = true;
                 }
@@ -349,7 +349,7 @@ static void print_corr(const char                    *outfile,
     }
     if (haveData && outfile)
     {
-        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        FILE *muc = xvgropen(outfile, title ? title : "", xaxis, yaxis, oenv);
         xvgr_symbolize(muc, eprnm, oenv);
         for(size_t i = 0; i < lsq.size(); i++)
         {
@@ -385,7 +385,7 @@ static void print_corr(const char                      *outfile,
     }
     if (haveData && outfile)
     {
-        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        FILE *muc = xvgropen(outfile, title ? title : "", xaxis, yaxis, oenv);
         xvgr_symbolize(muc, eprnm, oenv);
         for(size_t i = 0; i < lsq.size(); i++)
         {
@@ -1621,44 +1621,44 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                   &(lsq_charge[iMolSelect::Train]), useOffset_);
 
     const char *alex  = "Alexandria";
-    const char *qmref = "QM Reference";
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
         std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
-                   title.c_str(), qmref, alex, lsq_multi[mpo], oenv);
+                   nullptr, title.c_str(), alex, lsq_multi[mpo], oenv);
     }
     print_corr(opt2fn_null("-epotcorr", filenm.size(), filenm.data()),
-               "Potential energy (kJ/mol)", qmref, alex,
+               nullptr, "Potential energy (kJ/mol)", alex,
                lsq_epot_, oenv);
     for(const auto &tt : terms_)
     {
         std::string fnm   = gmx::formatString("%s.xvg", interactionTypeToString(tt).c_str());
         std::string title = gmx::formatString("%s (kJ/mol)", interactionTypeToString(tt).c_str());
-        print_corr(fnm.c_str(), title.c_str(), qmref, alex, lsq_einter_[tt], oenv);
+        print_corr(fnm.c_str(), nullptr, title.c_str(), alex, lsq_einter_[tt], oenv);
     }
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
-               "Forces (kJ/mol nm)", qmref, alex,
+               nullptr, "Forces (kJ/mol nm)", alex,
                lsq_rmsf, oenv);
     print_corr(opt2fn_null("-freqcorr", filenm.size(), filenm.data()),
-               "Frequencies (cm^-1)", qmref, alex,
+               nullptr, "Frequencies (cm^-1)", alex,
                lsq_freq, oenv);
     print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
-               "Electrostatic Potential (kJ/mol e)", qmref, alex,
+               nullptr, "Electrostatic Potential (kJ/mol e)", alex,
                lsq_esp, oenv);
     print_corr(opt2fn_null("-qcorr", filenm.size(), filenm.data()),
-               "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
+               nullptr, "Atomic Partial Charge (e)", "a.u.",
+               lsq_charge, oenv);
     
     if (bPolar)
     {
         print_corr(opt2fn_null("-alphacorr", filenm.size(), filenm.data()),
-                   "Pricipal Components of Polarizability Tensor (A\\S3\\N)", qmref, alex, lsq_alpha_, oenv);
+                   nullptr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", alex, lsq_alpha_, oenv);
         print_corr(opt2fn_null("-isopol", filenm.size(), filenm.data()),
-                   "Isotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_isoPol_, oenv);
+                   nullptr, "Isotropic Polarizability (A\\S3\\N)", alex, lsq_isoPol_, oenv);
         print_corr(opt2fn_null("-anisopol", filenm.size(), filenm.data()),
-                   "Anisotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_anisoPol_, oenv);
+                   nullptr, "Anisotropic Polarizability (A\\S3\\N)", alex, lsq_anisoPol_, oenv);
     }
     // List outliers based on the deviation in the Electrostatic Potential
     real espAver;
