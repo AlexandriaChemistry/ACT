@@ -737,9 +737,9 @@ static void mp_process_tree(FILE                              *fp,
                                                                xbuf_atof(xbuf, MolPropXml::ERROR, false));
                                 last->addProperty(mpo, me);
                             }
-                            else
+                            else if (debug)
                             {
-                                fprintf(stderr, "Ignoring unknown property %s\n",
+                                fprintf(debug, "Ignoring unknown property %s\n",
                                         (*xbuf)[MolPropXml::TYPE].c_str());
                             }
                             clean_xbuf(xbuf, clean1);
