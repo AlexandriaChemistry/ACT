@@ -406,7 +406,7 @@ class CombinationRules:
             
     def zetaString(self)->str:
         if self.qdist == qDist.Gaussian:
-            return ("(zeta1*zeta2/sqrt(zeta1^2+zeta2^2))")
+            return ("(select(zeta1-zeta2, zeta1*zeta2/sqrt(zeta1^2+zeta2^2), 0))")
         elif qDist.Point == self.qdist:
             return "1"
         else:
