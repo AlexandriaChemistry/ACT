@@ -520,9 +520,9 @@ gmx_option_trivalue(
 if (GMX_HWLOC)
     # Find quietly the second time.
     if(DEFINED HWLOC_LIBRARIES)
-        set(Hwloc_FIND_QUIETLY TRUE)
+        set(HWLOC_FIND_QUIETLY TRUE)
     endif()
-    find_package(Hwloc 1.5)
+    find_package(HWLOC 1.5)
 
     if (HWLOC_FOUND)
         if (HWLOC_LIBRARIES MATCHES ".a$")
@@ -542,7 +542,7 @@ if (GMX_HWLOC)
             list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
         endif()
     elseif(GMX_HWLOC_FORCE)
-        message(FATAL_ERROR "Hwloc package support required, but not found.")
+        message(FATAL_ERROR "HWLOC package support required, but not found.")
     endif()
 endif()
 
