@@ -249,6 +249,12 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         energies->find(InteractionType::EXCHANGE)->second += ivdwcorr->second;
         ivdwcorr->second = 0;
     }
+    auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
+    if (energies->end() != induccorr)
+    {
+        energies->find(InteractionType::INDUCTION)->second += induccorr->second;
+        induccorr->second = 0;
+    }
     energies->insert({ InteractionType::EPOT, epot });
 }
 

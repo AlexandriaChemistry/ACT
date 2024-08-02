@@ -58,6 +58,10 @@ namespace alexandria
 
     extern const char *exp_name[expNR];
 
+    enum { dexpA1 = 0, dexpA2 = 1, dexpB = 2, dexpA1_IJ = 3, dexpA2_IJ = 4, dexpB_IJ = 5, dexpNR = 6 };
+
+    extern const char *dexp_name[dexpNR];
+
     enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
 
     extern const char *gbh_name[gbhNR];

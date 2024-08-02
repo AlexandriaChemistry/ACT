@@ -1399,6 +1399,7 @@ void Topology::build(const ForceField             *pd,
         dumpPairlist(debug, InteractionType::ELECTROSTATICS);
         dumpPairlist(debug, InteractionType::VDW);
         dumpPairlist(debug, InteractionType::VDWCORRECTION);
+        dumpPairlist(debug, InteractionType::INDUCTIONCORRECTION);
     }
 }
 
@@ -1750,6 +1751,7 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                     btype.push_back(atoms_[jj].ffType());
                     break;
                 }
+            case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:
             case InteractionType::ELECTROSTATICS:

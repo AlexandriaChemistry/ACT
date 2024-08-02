@@ -55,6 +55,7 @@ static std::map<std::string, InteractionType> stringToItype =
         { "bondtype",    InteractionType::BONDS },
         { "vdwtype",     InteractionType::VDW },
         { "vdwcorrtype", InteractionType::VDWCORRECTION },
+        { "induccorrtype", InteractionType::INDUCTIONCORRECTION },
         { "qttype",      InteractionType::CHARGETRANSFER }
     };
     

@@ -282,6 +282,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
         { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
         { MolPropObservable::VDWCORRECTION,     InteractionType::VDWCORRECTION  },
+        { MolPropObservable::INDUCTIONCORRECTION, InteractionType::INDUCTIONCORRECTION  },
         { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
@@ -1441,6 +1442,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             case MolPropObservable::INDUCTION:
             case MolPropObservable::EXCHANGE:
             case MolPropObservable::VDWCORRECTION:
+            case MolPropObservable::INDUCTIONCORRECTION:
             case MolPropObservable::DISPERSION:
             case MolPropObservable::DELTAE0:
             case MolPropObservable::DHFORM:

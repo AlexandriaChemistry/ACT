@@ -50,6 +50,7 @@ static const std::map<Potential, const std::string> pot2str =
         { Potential::GENERALIZED_BUCKINGHAM, "GENERALIZED_BUCKINGHAM" },
         { Potential::WANG_BUCKINGHAM,        "WANG_BUCKINGHAM" },
         { Potential::EXPONENTIAL,            "EXPONENTIAL" },
+        { Potential::DOUBLEEXPONENTIAL,      "DOUBLEEXPONENTIAL" },
         { Potential::COULOMB_POINT,          "COULOMB_POINT" },
         { Potential::COULOMB_GAUSSIAN,       "COULOMB_GAUSSIAN" },
         { Potential::COULOMB_SLATER,         "COULOMB_SLATER" },

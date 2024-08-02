@@ -247,7 +247,8 @@ Identifier::Identifier(InteractionType    iType,
     {
         atoms_.push_back(id.substr(c0, id.size()-c0));
     }
-    if (InteractionType::VDW != iType && InteractionType::VDWCORRECTION != iType && 
+    if (InteractionType::VDW != iType && InteractionType::VDWCORRECTION != iType &&
+        InteractionType::INDUCTIONCORRECTION != iType &&
         InteractionType::ELECTROSTATICS != iType &&
         InteractionType::VSITE3OUT != iType && InteractionType::VSITE3OUTS != iType)
     {

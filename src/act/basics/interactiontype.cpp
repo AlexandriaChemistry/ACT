@@ -63,6 +63,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
     { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
+    { InteractionType::INDUCTIONCORRECTION,{ "INDUCTIONCORRECTION", "induction correction" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE1,             { "VSITE1", "virtual sites with one constructing atom" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
@@ -137,6 +138,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::DISPERSION:
     case InteractionType::EXCHANGE:
     case InteractionType::VDWCORRECTION:
+    case InteractionType::INDUCTIONCORRECTION:
     case InteractionType::CHARGETRANSFER:
     case InteractionType::POLARIZATION:
     case InteractionType::INDUCTION:

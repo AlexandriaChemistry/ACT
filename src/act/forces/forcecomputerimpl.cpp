@@ -258,6 +258,51 @@ static void computeExponential(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::VDWCORRECTION, eexp});
 }
 
+static void computeDoubleExponential(const TopologyEntryVector             &pairs,
+                                     gmx_unused const std::vector<ActAtom> &atoms,
+                                     const std::vector<gmx::RVec>          *coordinates,
+                                     std::vector<gmx::RVec>                *forces,
+                                     std::map<InteractionType, double>     *energies)
+{
+    double eexp  = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
+        if (aexp > 0)
+        {
+            real bexp   = params[dexpB_IJ];
+            auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
+            if (debug)
+            {
+                fprintf(debug, "r  %g  dexp %g\n", dr2*rinv, eeexp);
+            }
+            real fexp  = bexp*eeexp;
+            eexp      += eeexp;
+
+            real fbond  = fexp*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
+}
+
 static void computeWBH(const TopologyEntryVector             &pairs,
                        gmx_unused const std::vector<ActAtom> &atoms,
                        const std::vector<gmx::RVec>          *coordinates,
@@ -1173,6 +1218,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::EXPONENTIAL,            computeExponential     },
+    { Potential::DOUBLEEXPONENTIAL,      computeDoubleExponential },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
     { Potential::COULOMB_SLATER,         computeCoulombSlater   },
