@@ -1159,7 +1159,7 @@ class ActOpenMMSim:
                 qq_pme_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1]])
                 if self.debug:
                     self.txt.write("Adding Coul PME corr i %d j %d q1 %g q2 %g\n" %
-                                   ( iatom, jatom, allParam["charge"][0]._value, allParam["charge"][1]._value ))
+                                   ( iatom, jatom, allParam["charge"][0], allParam["charge"][1] ))
             # Now check wheter our exclusions are fewer than OpenMM
             if qq_excl_corr and not self.real_exclusion(nexclqq, iatom, jatom):
                 if not "zeta" in allParam or (0 == allParam["zeta"][0] * allParam["zeta"][1]):
