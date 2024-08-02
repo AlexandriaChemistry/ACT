@@ -65,6 +65,8 @@ enum class InteractionType
     POLARIZATION,
     //! Induction energy
     INDUCTION,
+    //! Correction to induction
+    INDUCTIONCORRECTION,
     //! Charge transfer correction energy
     CHARGETRANSFER,
     //! Sum of electrostatic terms

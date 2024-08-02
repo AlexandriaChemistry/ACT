@@ -221,6 +221,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::ELECTROSTATICS:
     case InteractionType::VDW:
     case InteractionType::VDWCORRECTION:
+    case InteractionType::INDUCTIONCORRECTION:
     case InteractionType::CHARGETRANSFER:
     case InteractionType::VSITE1:
     case InteractionType::VSITE2:

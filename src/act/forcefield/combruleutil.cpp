@@ -70,6 +70,13 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
                 { "-cr_aexp",  "aexp", 5 },
                 { "-cr_bexp",  "bexp", 6 }
             }
+        },
+        {
+            InteractionType::INDUCTIONCORRECTION, {
+                { "-cr_a1dexp",  "a1dexp", 7 },
+                { "-cr_a2dexp",  "a2dexp", 8 },
+                { "-cr_bdexp",  "bdexp",  9 },
+            }
         }
     };
 
@@ -109,7 +116,8 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 
 int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                           ForceFieldParameterList    *vdw,
-                          ForceFieldParameterList    *qt)
+                          ForceFieldParameterList    *vdwcorr,
+                          ForceFieldParameterList    *induccorr)
 {
     // This will crash if there is no geometric combrule in the map...
     const char *defval = combRuleName.find(CombRule::Geometric)->second.c_str();
@@ -129,8 +137,10 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                 // Check whether we have existing values
                 if ((mcr.first == InteractionType::VDW && vdw && 
                      vdw->combinationRuleExists(mm.var)) ||
-                    (mcr.first == InteractionType::VDWCORRECTION && qt && 
-                     qt->combinationRuleExists(mm.var)))
+                    (mcr.first == InteractionType::VDWCORRECTION && vdwcorr && 
+                     vdwcorr->combinationRuleExists(mm.var)) ||
+                    (mcr.first == InteractionType::INDUCTIONCORRECTION && induccorr && 
+                     induccorr->combinationRuleExists(mm.var)))
                 {
                     continue;
                 }
@@ -169,9 +179,16 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
             }
             else if (mcr.first == InteractionType::VDWCORRECTION)
             {
-                if (qt)
+                if (vdwcorr)
                 {
-                    qt->addCombinationRule(mm.var, value);
+                    vdwcorr->addCombinationRule(mm.var, value);
+                }
+            }
+            else if (mcr.first == InteractionType::INDUCTIONCORRECTION)
+            {
+                if (induccorr)
+                {
+                    induccorr->addCombinationRule(mm.var, value);
                 }
             }
         }

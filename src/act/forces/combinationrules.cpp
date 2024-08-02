@@ -409,10 +409,11 @@ void evalCombinationRule(Potential                                    ftype,
             }
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
+        auto   crule = combrule.find(param.first)->second;
         double value = 0;
-        if (Potential::EXPONENTIAL == ftype)
+        if (Potential::EXPONENTIAL == ftype ||
+            Potential::DOUBLEEXPONENTIAL == ftype)
         {
-            auto crule = combrule.find(param.first)->second;
             if (CombRule::Kronecker == crule)
             {
                 if (includePair)
@@ -450,11 +451,13 @@ void evalCombinationRule(Potential                                    ftype,
             double isig = 0, jsig = 0;
             if (ivdw.find(cdist) == ivdw.end() || jvdw.find(cdist) == jvdw.end())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing", cdist.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing trying to apply combination rule %s for potential %s",
+                                                               cdist.c_str(),
+                                                               combinationRuleName(crule).c_str(),
+                                                               potentialToString(ftype).c_str()).c_str()));
             }
             isig = ivdw.find(cdist)->second.value();
             jsig = jvdw.find(cdist)->second.value();
-            auto   crule    = combrule.find(param.first)->second;
             switch (crule)
             {
             case CombRule::HogervorstSigma:
@@ -624,6 +627,7 @@ void generateDependentParameter(ForceField *pd, bool force)
 {
     generateParameterPairs(pd, InteractionType::VDW, force);
     generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);
+    generateParameterPairs(pd, InteractionType::INDUCTIONCORRECTION, force);
     generateCoulombParameterPairs(pd, force);
 }
 

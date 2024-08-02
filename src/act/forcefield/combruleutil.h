@@ -58,14 +58,16 @@ namespace alexandria
         void addPargs(std::vector<t_pargs> *pa);
 
         /*! \brief Utility to convert strings to combination rules in the FF
-         * \param[inout] pa  Command line arguments after processing  
-         * \param[inout] vdw The parameter list for Van der Waals (may be nullptr)
-         * \param[inout] qt  The parameter list for Charge Transfer (may be nullptr)
+         * \param[inout] pa        Command line arguments after processing  
+         * \param[inout] vdw       The parameter list for Van der Waals (may be nullptr)
+         * \param[inout] vdwcorr   The parameter list for VdW correction (may be nullptr)
+         * \param[inout] induccorr The parameter list for Induction correction (may be nullptr)
          * \return the number of rules that were changed.
          */
         int extract(const std::vector<t_pargs> &pa,
                     ForceFieldParameterList    *vdw,
-                    ForceFieldParameterList    *qt);
+                    ForceFieldParameterList    *vdwcorr,
+                    ForceFieldParameterList    *iccorr);
 
         /*! \brief Utility to convert old-style combination rule to new
          * \param[inout] vdw     The parameter list

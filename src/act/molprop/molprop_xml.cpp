@@ -911,6 +911,7 @@ static void add_properties(xmlNodePtr        exp,
             case MolPropObservable::VDWCORRECTION:
             case MolPropObservable::DISPERSION:
             case MolPropObservable::INDUCTION:
+            case MolPropObservable::INDUCTIONCORRECTION:
             case MolPropObservable::CHARGETRANSFER:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:

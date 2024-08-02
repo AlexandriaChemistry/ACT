@@ -40,6 +40,8 @@ const char *lj14_7_name[lj14_7NR] = { "sigma", "epsilon", "gamma", "delta",
 
 const char *exp_name[expNR] = { "aexp", "bexp", "aexp_ij", "bexp_ij" };
 
+const char *dexp_name[dexpNR] = { "a1dexp", "a2dexp", "bdexp", "a1dexp_ij", "a2dexp_ij", "bdexp_ij" };
+
 const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilon_ij", "gamma_ij" };
 
 const char *gbh_name[gbhNR] = { "rmin", "epsilon", "gamma", "delta", "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };

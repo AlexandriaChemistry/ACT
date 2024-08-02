@@ -377,8 +377,9 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
+    ForceFieldParameterList induccorr(potentialToString(Potential::DOUBLEEXPONENTIAL), CanSwap::Yes);
     // Combination rules
-    crule.extract(pa, &vdw, &vdwcorr);
+    crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     vdwcorr.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
@@ -423,7 +424,7 @@ int gen_ff(int argc, char*argv[])
         ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
         ptp.setOption("vdwtype", entry.first);
         ptp.setOption("vdwcorrtype", entry.first);
-
+        ptp.setOption("induccorrtype", entry.first);
         // Now "parameters"
         auto mass       = aprops.find(elem)->second.mass();
         ptp.addForceFieldParameter("mass",
@@ -456,7 +457,7 @@ int gen_ff(int argc, char*argv[])
                                   ForceFieldParameter("Angstrom3", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
             }
         }
-        // Charge transfer
+        // Charge transfer / Van der waals correction
         std::map<std::string, std::string> vdwcorrparm = { { exp_name[expA], "kJ/mol" },
                                                            { exp_name[expB], "1/nm"} };
         for(const auto &vdwcorrp : vdwcorrparm)
@@ -465,6 +466,18 @@ int gen_ff(int argc, char*argv[])
             {
                 vdwcorr.addParameter(entry.first, vdwcorrp.first,
                                 ForceFieldParameter(vdwcorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            }
+        }
+        // Induction correction
+        std::map<std::string, std::string> iccorrparm = { { dexp_name[dexpA1], "kJ/mol" },
+                                                          { dexp_name[dexpA2], "kJ/mol" },
+                                                          { dexp_name[dexpB], "1/nm"} };
+        for(const auto &iccorrp : iccorrparm)
+        {
+            if (minmaxmut(entry.first, myatype, iccorrp.first, &vmin, &vmax, &vmut))
+            {
+                induccorr.addParameter(entry.first, iccorrp.first,
+                                       ForceFieldParameter(iccorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
             }
         }
         // Charge distribution
@@ -548,6 +561,7 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(InteractionType::PROPER_DIHEDRALS, pdihs);
     pd.addForces(InteractionType::VDW, vdw);
     pd.addForces(InteractionType::VDWCORRECTION, vdwcorr);
+    pd.addForces(InteractionType::INDUCTIONCORRECTION, induccorr);
     pd.addForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION, eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);

@@ -887,8 +887,9 @@ int edit_ff(int argc, char*argv[])
     // Fetch new combination rules if necessary
     std::map<InteractionType, ForceFieldParameterList *> its =
         {
-            { InteractionType::VDW,            nullptr },
-            { InteractionType::CHARGETRANSFER, nullptr }
+            { InteractionType::VDW,                  nullptr },
+            { InteractionType::VDWCORRECTION ,       nullptr },
+            { InteractionType::INDUCTIONCORRECTION , nullptr }
         };
 
     for(auto &fst : its)
@@ -900,7 +901,8 @@ int edit_ff(int argc, char*argv[])
     }
     int nRuleChanged = crule.extract(pa,
                                      its[InteractionType::VDW],
-                                     its[InteractionType::CHARGETRANSFER]);
+                                     its[InteractionType::VDWCORRECTION],
+                                     its[InteractionType::INDUCTIONCORRECTION]);
     if (nRuleChanged > 0)
     {
         printf("Inserted %d new style combination rules from command line.\n",
