@@ -404,9 +404,9 @@ class CombinationRules:
                 mydict[param] = self.combTwoString(self.comb[param], param+"1", param+"2")
         return mydict
             
-    def zetaString(self)->str:
+    def gaussianString(self)->str:
         if self.qdist == qDist.Gaussian:
-            return ("(select(zeta1+zeta2, zeta1*zeta2/sqrt(zeta1^2+zeta2^2), 0))")
+            return "select(zeta1*zeta2, erf((zeta1*zeta2*r)/sqrt((zeta1^2)+(zeta2^2))), select(zeta1+zeta2, select(zeta1, erf(zeta1*r), erf(zeta2*r)), 1))"
         elif qDist.Point == self.qdist:
             return "1"
         else:
@@ -968,14 +968,13 @@ class ActOpenMMSim:
             elec_string = ("(1/r)")
         if qDist.Gaussian == self.qdist:
             # Electrostatics is our screened Coulomb minus the point charge based potential
-            expression          = ( "(%s*charge1*charge2*erf(zeta*r)*%s);" %
+            expression          = ( "(%s*charge1*charge2*Gaussian*%s);" %
                                     ( ONE_4PI_EPS0, elec_string ) )
-            self.qq_expression  = expression
-            expression         += ( "zeta = %s;" % self.comb.zetaString())
+            expression         += ( "Gaussian = %s;" % self.comb.gaussianString())
         elif qDist.Point == self.qdist:
             # Or a simple point charge
             expression = ( '(%s*charge1*charge2*%s);' % ( ONE_4PI_EPS0, elec_string  ) )
-            self.qq_expression  = expression
+        self.qq_expression  = expression
 
         self.custom_coulomb = openmm.CustomNonbondedForce(expression)
         self.custom_coulomb.setName("Coulomb"+dictQdist[self.qdist])
@@ -1115,7 +1114,7 @@ class ActOpenMMSim:
             if self.qdist == qDist.Point:
                 myexpression =  ( "(%s*charge1*charge2/r)" % ( ONE_4PI_EPS0 ) )
             else:
-                myexpression =  ( "(%s*charge1*charge2*erf(zeta*r)/r)" % ( ONE_4PI_EPS0 ) )
+                myexpression =  ( "(%s*charge1*charge2*Gaussian/r)" % ( ONE_4PI_EPS0 ) )
             qq_excl_corr = openmm.CustomBondForce(myexpression)
             qq_excl_corr.setName("CoulombExclusionCorrection")
             qq_excl_corr.addPerBondParameter("charge1")
