@@ -187,6 +187,16 @@ double ForceComputer::compute(const ForceField                  *pd,
             energies->insert({InteractionType::INDUCTION, eInduction});
         }
     }
+    auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
+    if (energies->end() != induccorr)
+    {
+        auto induc = energies->find(InteractionType::INDUCTION);
+        if (energies->end() != induc)
+        {
+            induc->second += induccorr->second;
+            induccorr->second = 0;
+        }
+    }
     double allelec = (*energies)[InteractionType::ELECTROSTATICS] + (*energies)[InteractionType::INDUCTION];
     energies->insert({InteractionType::ALLELEC, allelec});
     // Spread forces to atoms
@@ -248,12 +258,6 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
     {
         energies->find(InteractionType::EXCHANGE)->second += ivdwcorr->second;
         ivdwcorr->second = 0;
-    }
-    auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
-    if (energies->end() != induccorr)
-    {
-        energies->find(InteractionType::INDUCTION)->second += induccorr->second;
-        induccorr->second = 0;
     }
     energies->insert({ InteractionType::EPOT, epot });
 }
