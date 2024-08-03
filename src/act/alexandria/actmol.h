@@ -115,7 +115,10 @@ public:
     //! \return The QM energy    
     double eqm() const
     {
-        GMX_RELEASE_ASSERT(haveQM_, "Trying to extract a QM energy when there is none");
+        if (!haveQM_)
+        {
+            GMX_THROW(gmx::InvalidInputError("Trying to extract a QM energy when there is none"));
+        }
         return eqm_;
     }
 
