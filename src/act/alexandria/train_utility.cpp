@@ -1075,8 +1075,16 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
         std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end(),
                   [](const ACTEnergyMap &a, const ACTEnergyMap &b)
         { 
-            return (a.find(InteractionType::EPOT)->second.eqm() < 
-                    b.find(InteractionType::EPOT)->second.eqm());
+            auto &aa = a.find(InteractionType::EPOT)->second;
+            auto &bb = b.find(InteractionType::EPOT)->second;
+            if (aa.haveQM() && bb.haveQM())
+            {
+                return (aa.eqm() < bb.eqm());
+            }
+            else
+            {
+                return false;
+            }
         });
         auto expers = mol->experimentConst();
         for(const auto &iem : interactionEnergyMap)
