@@ -280,24 +280,21 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
         real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
-        if (aexp > 0)
+        real bexp       = params[dexpB_IJ];
+        auto eeexp      = -aexp*std::exp(-bexp*dr2*rinv);
+        if (debug)
         {
-            real bexp   = params[dexpB_IJ];
-            auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
-            if (debug)
-            {
-                fprintf(debug, "r  %g  dexp %g\n", dr2*rinv, eeexp);
-            }
-            real fexp  = bexp*eeexp;
-            eexp      += eeexp;
-
-            real fbond  = fexp*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            fprintf(debug, "r  %g  dexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
+        }
+        real fexp  = bexp*eeexp;
+        eexp      += eeexp;
+        
+        real fbond  = fexp*rinv;
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
         }
     }
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
