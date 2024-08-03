@@ -1390,6 +1390,11 @@ void Topology::build(const ForceField             *pd,
     {
         makePairs(pd, itqt);
     }
+    auto itic = InteractionType::INDUCTIONCORRECTION;
+    if (pd->interactionPresent(itic))
+    {
+        makePairs(pd, itic);
+    }
     if (missing != missingParameters::Generate)
     {
         fillParameters(pd);
@@ -1529,6 +1534,8 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
             break;
         case InteractionType::VDW:
+        case InteractionType::VDWCORRECTION:
+        case InteractionType::INDUCTIONCORRECTION:
         case InteractionType::ELECTROSTATICS:
         case InteractionType::PROPER_DIHEDRALS:
         case InteractionType::IMPROPER_DIHEDRALS:
@@ -1638,6 +1645,9 @@ void Topology::fillParameters(const ForceField *pd)
                 break;
             case Potential::EXPONENTIAL:
                 fillParams(fs, topID, expNR, exp_name, &param);
+                break;
+            case Potential::DOUBLEEXPONENTIAL:
+                fillParams(fs, topID, dexpNR, dexp_name, &param);
                 break;
             case Potential::COULOMB_GAUSSIAN:
             case Potential::COULOMB_SLATER:
