@@ -604,6 +604,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
         { eRMS::Dispersion,     InteractionType::DISPERSION   },
         { eRMS::Exchange,       InteractionType::EXCHANGE     },
         { eRMS::Induction,      InteractionType::INDUCTION    },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
         { eRMS::AllElec,        InteractionType::ALLELEC      }
     };
     for (auto &rms : rmsE)

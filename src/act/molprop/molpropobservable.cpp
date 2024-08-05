@@ -65,7 +65,7 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::INDUCTION, "Induction" },
     { MolPropObservable::EXCHANGE, "Exchange" },
     { MolPropObservable::VDWCORRECTION, "VdWcorrection" },
-    { MolPropObservable::INDUCTIONCORRECTION, "Induction correction" },
+    { MolPropObservable::INDUCTIONCORRECTION, "InductionCorrection" },
     { MolPropObservable::DISPERSION, "Dispersion" },
     { MolPropObservable::CHARGETRANSFER, "Charge transfer" },
     { MolPropObservable::DHFORM, "DeltaHform" }, 
