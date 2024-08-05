@@ -248,9 +248,13 @@ static void print_polarizability(FILE              *fp,
 
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
-    terms_ = { InteractionType::EPOT, InteractionType::ELECTROSTATICS,
-               InteractionType::INDUCTION, InteractionType::DISPERSION,
-               InteractionType::EXCHANGE, InteractionType::ALLELEC };
+    terms_ = { InteractionType::EPOT,
+               InteractionType::ELECTROSTATICS,
+               InteractionType::INDUCTION, 
+               InteractionType::INDUCTIONCORRECTION,
+               InteractionType::DISPERSION,
+               InteractionType::EXCHANGE,
+               InteractionType::ALLELEC };
 }
 
 void TrainForceFieldPrinter::analyse_multipoles(FILE                                            *fp,
@@ -1016,12 +1020,13 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
     }
     std::map<InteractionType, gmx_stats> myeinter;
     std::map<eRMS, InteractionType> interE = {
-        { eRMS::Interaction,       InteractionType::EPOT           },
-        { eRMS::Electrostatics,    InteractionType::ELECTROSTATICS },
-        { eRMS::Dispersion,        InteractionType::DISPERSION     },
-        { eRMS::Exchange,          InteractionType::EXCHANGE       },
-        { eRMS::Induction,         InteractionType::INDUCTION      },
-        { eRMS::AllElec,           InteractionType::ALLELEC        }
+        { eRMS::Interaction,    InteractionType::EPOT                },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION          },
+        { eRMS::Exchange,       InteractionType::EXCHANGE            },
+        { eRMS::Induction,      InteractionType::INDUCTION           },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
+        { eRMS::AllElec,        InteractionType::ALLELEC             }
     };
     for(const auto &iem : interactionEnergyMap)
     {

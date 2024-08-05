@@ -86,7 +86,7 @@ enum class MolPropObservable {
     EXCHANGE,
     //! SAPT component Dispersion and Exchange, correction due to anisotropy
     VDWCORRECTION,
-    //! SAPT component Inudction, correction due to delta HF and polarization
+    //! SAPT component Induction, correction due to delta HF and polarization
     INDUCTIONCORRECTION,
     //! SAPT component Dispersion
     DISPERSION,

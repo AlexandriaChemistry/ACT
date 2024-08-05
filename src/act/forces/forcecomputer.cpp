@@ -81,7 +81,8 @@ double ForceComputer::compute(const ForceField                  *pd,
                               std::vector<gmx::RVec>            *forces,
                               std::map<InteractionType, double> *energies,
                               const gmx::RVec                   &field,
-                              bool                               resetShells) const
+                              bool                               resetShells,
+                              std::set<int>                      relax) const
 {
     // Spread virtual sites
     vsiteHandler_->constructPositions(top, coordinates, box_);
@@ -149,9 +150,12 @@ double ForceComputer::compute(const ForceField                  *pd,
                 // F = k dx -> dx = F / k
                 // TODO Optimize this protocol using overrelaxation
                 int shell = p->atomIndex(1);
-                for(int m = 0; m < DIM; m++)
+                if (relax.empty() || relax.end() != relax.find(shell))
                 {
-                    (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                    }
                 }
             }
             // Do next calculation
@@ -187,16 +191,16 @@ double ForceComputer::compute(const ForceField                  *pd,
             energies->insert({InteractionType::INDUCTION, eInduction});
         }
     }
-    auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
-    if (energies->end() != induccorr)
-    {
-        auto induc = energies->find(InteractionType::INDUCTION);
-        if (energies->end() != induc)
-        {
-            induc->second += induccorr->second;
-            induccorr->second = 0;
-        }
-    }
+    //auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
+    //if (energies->end() != induccorr)
+    //{
+    //  auto induc = energies->find(InteractionType::INDUCTION);
+    //  if (energies->end() != induc)
+    //  {
+    //      induc->second += induccorr->second;
+    //      induccorr->second = 0;
+    //  }
+    //}
     double allelec = (*energies)[InteractionType::ELECTROSTATICS] + (*energies)[InteractionType::INDUCTION];
     energies->insert({InteractionType::ALLELEC, allelec});
     // Spread forces to atoms
