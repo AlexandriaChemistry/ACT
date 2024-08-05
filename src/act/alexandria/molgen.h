@@ -86,6 +86,8 @@ enum class eRMS {
     Induction,
     //! Sum of electrostatic terms
     AllElec,
+    //! Rest term for SAPT
+    DeltaHF,
     //! Mean square force on the atoms
     Force2,
     //! Deviation of polarizability components

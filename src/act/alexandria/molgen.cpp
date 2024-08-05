@@ -75,6 +75,7 @@ std::map<eRMS, const char *> ermsNames = {
     { eRMS::Dispersion, "Dispersion" },
     { eRMS::Induction,  "Induction"  },
     { eRMS::AllElec,    "AllElec"    },
+    { eRMS::DeltaHF,    "DeltaHF"    },
     { eRMS::Force2,     "Force2"     },
     { eRMS::Polar,      "Polar"      },
     { eRMS::TOT,        "TOT"        }
@@ -145,6 +146,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of the exchange component of the interaction energies of multimers from the reference." },
         { "-fc_induc",    FALSE, etREAL, {targets->find(eRMS::Induction)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the induction component of the interaction energies of multimers from the reference." },
+        { "-fc_deltahf",  FALSE, etREAL, {targets->find(eRMS::DeltaHF)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the DeltaHF term that is part of the SAPT induction energy from the reference." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." },
         { "-fc_freq",  FALSE, etREAL, {targets->find(eRMS::FREQUENCY)->second.weightPtr()},
@@ -712,6 +715,7 @@ static double computeCost(const ACTMol                         *actmol,
             case eRMS::Electrostatics:
             case eRMS::Dispersion:
             case eRMS::Induction:
+            case eRMS::DeltaHF:
             case eRMS::Exchange:
             case eRMS::AllElec:
                 // All versus all interactions for dimer and monomers separately

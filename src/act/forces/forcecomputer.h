@@ -27,7 +27,8 @@
  */
 #ifndef ACT_FORCECOMPUTER_H
 #define ACT_FORCECOMPUTER_H
-    
+
+#include <set>
 #include <vector>
 
 #include "act/alexandria/topology.h"
@@ -94,7 +95,8 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
-     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms 
+     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
+     * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
      * \return The mean square force on the shells, or zero if not present.
      */
     double compute(const ForceField                  *pd,
@@ -103,7 +105,8 @@ private:
                    std::vector<gmx::RVec>            *forces,
                    std::map<InteractionType, double> *energies,
                    const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
-                   bool                               resetShells = true) const;
+                   bool                               resetShells = true,
+                   std::set<int>                      relax = {}) const;
                  
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype

@@ -635,10 +635,45 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     }
     std::vector<gmx::RVec> forces(topology_->atoms().size(), fzero);
     std::map<InteractionType, double> energies;
+    auto myatoms = topology_->atoms();
+    double einduc = 0;
+    for(size_t ff = 0; ff < tops.size(); ff++)
+    { 
+        // Relax molecule ff only
+        std::set<int> myshells;
+        int natom = tops[ff]->atoms().size();
+        for(size_t i = astart[ff]; i < astart[ff]+natom; i++)
+        {
+            if (myatoms[i].pType() == ActParticle::Shell)
+            {
+                myshells.insert(i);
+            }
+        }
+        (void) forceComputer->compute(pd, topology_, coords, &forces, &energies, fzero, true, myshells);
+        einduc += energies[InteractionType::INDUCTION];
+        if (debug)
+        {
+            fprintf(debug, "Induction after relaxing atoms");
+            for(int k : myshells)
+            {
+                fprintf(debug, " %d", k);
+            }
+            fprintf(debug, " in molecule %lu is %g\n", ff, energies[InteractionType::INDUCTION]);
+        }
+    }
+    // Now compute energies full relexation
+    (void) forceComputer->compute(pd, topology_, coords, &forces, &energies);
+    double UshellDeltaSCF = energies[InteractionType::INDUCTION] - einduc;
+    if (debug)
+    {
+        fprintf(debug, "Induction after relaxing all molecules is %g Ushell(DeltaSCF) = %g\n",
+                energies[InteractionType::INDUCTION], UshellDeltaSCF);
+    }
+    energies[InteractionType::INDUCTIONCORRECTION] +=  UshellDeltaSCF;
     // Abuse fzero to give a zero electric field.
     // Do not reset the position of the shells.
-    bool resetShells = false;
-    (void) forceComputer->compute(pd, topology_, coords, &forces, &energies, fzero, resetShells);
+    //bool resetShells = false;
+    //(void) forceComputer->compute(pd, topology_, coords, &forces, &energies, fzero, resetShells);
     // Since the dimer calculation did not start from shell positions on the atoms,
     // there may be residual (intramolecular) polarization that we have to move to
     // the electrostatics.
