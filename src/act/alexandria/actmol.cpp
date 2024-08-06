@@ -599,21 +599,21 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         // Move monomer induction energy to the electrostatics.
         // TODO: Is this still correct?
-        auto eelec  = e_monomer.find(InteractionType::ELECTROSTATICS);
-        auto einduc = e_monomer.find(InteractionType::INDUCTION);
-        if (e_monomer.end() != eelec && e_monomer.end() != einduc)
-        {
-            eelec->second += einduc->second;
-            einduc->second = 0;
-        }
+        // auto eelec  = e_monomer.find(InteractionType::ELECTROSTATICS);
+        //auto einduc = e_monomer.find(InteractionType::INDUCTION);
+        //if (e_monomer.end() != eelec && e_monomer.end() != einduc)
+        //{
+        //  eelec->second += einduc->second;
+        //  einduc->second = 0;
+        //}
         // Also copy the induction correction in that case
         // But is that correct?
-        auto eiccorr = e_monomer.find(InteractionType::INDUCTIONCORRECTION);
-        if (e_monomer.end() != eelec && e_monomer.end() != eiccorr)
-        {
-            eelec->second += eiccorr->second;
-            eiccorr->second = 0;
-        }
+        //auto eiccorr = e_monomer.find(InteractionType::INDUCTIONCORRECTION);
+        //if (e_monomer.end() != eelec && e_monomer.end() != eiccorr)
+        //{
+        //  eelec->second += eiccorr->second;
+        //  eiccorr->second = 0;
+        //}
         // Subtract the monomer energies from the total interaction energy,
         // which is zero the first time around.
         for(const auto &ee : e_monomer)
