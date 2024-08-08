@@ -565,7 +565,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
 {
     auto &tops = fraghandler_->topologies();
     einter->clear();
-    if (tops.size() <= 1)
+    if (tops.size() != 2)
     {
         return;
     }
@@ -576,8 +576,12 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     {
         fprintf(debug, "Will compute interaction energy\n");
     }
-    // Now compute interaction energies if there are fragments
-    auto   &astart = fraghandler_->atomStart();
+    // First compute the monomer energies
+    std::map<InteractionType, double> e_monomer[2];
+    auto &astart = fraghandler_->atomStart();
+    auto itInduc = InteractionType::INDUCTION;
+    auto itElec  = InteractionType::ELECTROSTATICS;
+    auto itPolar = InteractionType::POLARIZATION;
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
         int natom = tops[ff]->atoms().size();
@@ -589,45 +593,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             copy_rvec((*coords)[i], myx[j]);
             j++;
         }
-        std::map<InteractionType, double> e_monomer;
-        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &e_monomer);
+        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &e_monomer[ff]);
         
-        if (debug)
-        {
-            fprintf(debug, "%s initial:", getMolname().c_str());
-            printEmap(debug, einter);
-        }
-        // Move monomer induction energy to the electrostatics.
-        // TODO: Is this still correct?
-        // auto eelec  = e_monomer.find(InteractionType::ELECTROSTATICS);
-        //auto einduc = e_monomer.find(InteractionType::INDUCTION);
-        //if (e_monomer.end() != eelec && e_monomer.end() != einduc)
-        //{
-        //  eelec->second += einduc->second;
-        //  einduc->second = 0;
-        //}
-        // Also copy the induction correction in that case
-        // But is that correct?
-        //auto eiccorr = e_monomer.find(InteractionType::INDUCTIONCORRECTION);
-        //if (e_monomer.end() != eelec && e_monomer.end() != eiccorr)
-        //{
-        //  eelec->second += eiccorr->second;
-        //  eiccorr->second = 0;
-        //}
-        // Subtract the monomer energies from the total interaction energy,
-        // which is zero the first time around.
-        for(const auto &ee : e_monomer)
-        {
-            auto eptr = einter->find(ee.first);
-            if (einter->end() != eptr)
-            {
-                eptr->second -= ee.second;
-            }
-            else
-            {
-                einter->insert({ee.first, -ee.second});
-            }
-        }
         j = 0;
         for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
@@ -641,15 +608,41 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         if (debug)
         {
-            fprintf(debug, "%s Fragment %zu ", getMolname().c_str(), ff);
-            printEmap(debug, &e_monomer);
+            fprintf(debug, "%s monomer[%zu]:", getMolname().c_str(), ff);
+            printEmap(debug, &e_monomer[ff]);
+        }
+        // Move induction in monomer to electrostatics if present
+        auto ei = e_monomer[ff].find(itInduc);
+        if (e_monomer[ff].end() != ei)
+        {
+            e_monomer[ff][itElec] += ei->second;
+            ei->second = 0;
+            if (debug)
+            {
+                fprintf(debug, "%s 'corrected' monomer[%zu]:", getMolname().c_str(), ff);
+                printEmap(debug, &e_monomer[ff]);
+            }
         }
     }
+    // TODO forces are overwritten, not trustable!
     std::vector<gmx::RVec> forces(topology_->atoms().size(), fzero);
-    std::map<InteractionType, double> e_dimer;
+    std::map<InteractionType, double> e_total;
     auto myatoms = topology_->atoms();
+    // Now compute the total relaxed energy
+    {
+        // Make a copy of the content
+        std::vector<gmx::RVec> mycoords = *coords;
+        (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_total, fzero, false);
+        // Move remaining polarisation energy to the electrostatics
+        if (e_total.end() != e_total.find(itPolar) &&
+            e_total.end() != e_total.find(itElec))
+        {
+            e_total.find(itElec)->second += e_total.find(itPolar)->second;
+            e_total.find(itPolar)->second = 0;
+        }
+    }
     // Now time to compute mutual induction for the dimer
-    double einduc = 0;
+    std::map<InteractionType, double> e_dimer[2];
     for(size_t ff = 0; ff < tops.size(); ff++)
     { 
         // Relax molecule ff only
@@ -662,71 +655,88 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 myshells.insert(i);
             }
         }
-        (void) forceComputer->compute(pd, topology_, coords, &forces, &e_dimer, fzero, true, myshells);
-        // Store the true induction but not the correction to it.
-        einduc += e_dimer[InteractionType::INDUCTION];
+        // Make a copy of the content
+        std::vector<gmx::RVec> mycoords = *coords;
+        // Eqn 6
+        (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_dimer[ff],
+                                      fzero, false, myshells);
+                                      
+        // Move remaining polarisation energy to the electrostatics
+        if (e_dimer[ff].end() != e_dimer[ff].find(itPolar) &&
+            e_dimer[ff].end() != e_dimer[ff].find(itElec))
+        {
+            e_dimer[ff].find(itElec)->second += e_dimer[ff].find(itPolar)->second;
+            e_dimer[ff].find(itPolar)->second = 0;
+        }
         if (debug)
         {
-            fprintf(debug, "Induction after relaxing atoms");
-            for(int k : myshells)
-            {
-                fprintf(debug, " %d", k);
-            }
-            fprintf(debug, " in molecule %lu is %g\n", ff, e_dimer[InteractionType::INDUCTION]);
+            fprintf(debug, "%s dimer[%lu]:", getMolname().c_str(), ff);
+            printEmap(debug, &e_dimer[ff]);
         }
     }
-    // Now compute energies full relexation
-    (void) forceComputer->compute(pd, topology_, coords, &forces, &e_dimer);
-    double UshellDeltaSCF = e_dimer[InteractionType::INDUCTION] - einduc;
-    if (debug)
+    // Now compute interaction energy terms
+    *einter = e_total;
+
+    // First subtract everything from the monomers.
+    // This gives us correct electrostatics to get Eqn. 5
+    for(size_t ff = 0; ff < tops.size(); ff++)
     {
-        fprintf(debug, "Induction after relaxing all molecules is %g Ushell(DeltaSCF) = %g\n",
-                e_dimer[InteractionType::INDUCTION], UshellDeltaSCF);
-    }
-    // There should already be an induction correction (but can be zero of course)
-    e_dimer[InteractionType::INDUCTIONCORRECTION] += UshellDeltaSCF;
-    // Now compensate the total induction for the same amount to avoid double counting
-    e_dimer[InteractionType::INDUCTION] -= UshellDeltaSCF;
-    
-    // Abuse fzero to give a zero electric field.
-    // Do not reset the position of the shells.
-    //bool resetShells = false;
-    //(void) forceComputer->compute(pd, topology_, coords, &forces, &e_dimer, fzero, resetShells);
-    // Gather the terms for ALLELEC output.
-    auto eall = e_dimer.find(InteractionType::ALLELEC);
-    if (e_dimer.end() != eall)
-    {
-        std::set<InteractionType> allelec = { 
-            InteractionType::POLARIZATION,  InteractionType::ELECTROSTATICS,
-            InteractionType::INDUCTIONCORRECTION, InteractionType::INDUCTION };
-        for(auto itype : allelec)
+        for(const auto &ee : e_monomer[ff])
         {
-            auto ee = e_dimer.find(itype);
-            if (e_dimer.end() != ee)
-            {
-                eall->second += ee->second;
-            }
+            einter->find(ee.first)->second -= ee.second;
         }
     }
     if (debug)
     {
-        fprintf(debug, "%s dimer ", getMolname().c_str());
-        printEmap(debug, &e_dimer);
+        fprintf(debug, "%s total:", getMolname().c_str());
+        printEmap(debug, &e_total);
+        fprintf(debug, "%s einter:", getMolname().c_str());
+        printEmap(debug, einter);
     }
-    // Add dimer energies to the interaction energies
-    for(const auto &ee : e_dimer)
     {
-        auto eptr = einter->find(ee.first);
-        if (einter->end() != eptr)
+        // Now compute the induction energy to the second order, Eqn. 6
+        double delta_einduc2 = 0;
+        
+        for(size_t ff = 0; ff < tops.size(); ff++)
         {
-            eptr->second += ee.second;
+            for(const auto itype : {itInduc})
+            {
+                auto ee = e_dimer[ff].find(itype);
+                if (e_dimer[ff].end() != ee)
+                {
+                    delta_einduc2 += ee->second;
+                    ee->second = 0;
+                }
+            }
         }
-        else
+        einter->insert_or_assign(itInduc, delta_einduc2);
+
+        // Finally, compute the remaining (garbage bin) terms, Eqn. 7
+        auto eic = einter->find(InteractionType::INDUCTIONCORRECTION);
+        if (einter->end() != eic && e_total.end() != e_total.find(itInduc))
         {
-            einter->insert({ee.first, ee.second});
+            double delta_einduc3 = e_total[itInduc] - delta_einduc2;
+            eic->second += delta_einduc3;
+        }
+    }
+    {
+        // Gather the terms for ALLELEC output.
+        auto eall = einter->find(InteractionType::ALLELEC);
+        eall->second = 0;
+        if (einter->end() != eall)
+        {
+            for(auto itype : { itElec, itInduc, InteractionType::INDUCTIONCORRECTION })
+            {
+                auto ee = einter->find(itype);
+                if (einter->end() != ee)
+                {
+                    eall->second += ee->second;
+                }
+            }
         }
     }
     // Add dimer forces to the interaction forces
+    // TODO this is not correct anymore, see above.
     for(size_t i = 0; i < topology_->atoms().size(); i++)
     {
         for(int m = 0; m< DIM; m++)
