@@ -105,8 +105,6 @@ double ForceComputer::compute(const ForceField                  *pd,
 
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
-    // Induction energy
-    double eInduction = 0;
     // mean square shell force
     double msForce = 0;
     if (pd->polarizable() && top->hasEntry(itype))
@@ -163,46 +161,45 @@ double ForceComputer::compute(const ForceField                  *pd,
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
         }
+    }
+    {
+        // Induction energy
+        double eInduction = 0;
         // Extract electrostatics once more
+        // Note that the INDUCTIONCORRECTION is treated in the calling routine
         std::set<InteractionType> eTerms = {
             InteractionType::ELECTROSTATICS,
-            InteractionType::POLARIZATION
+            InteractionType::POLARIZATION,
+            InteractionType::CHARGETRANSFER
         };
         for(const auto et : eTerms)
         {
             auto tt = energies->find(et);
-            if (energies->end() != tt)
+            if (energies->end() != tt &&
+                eBefore.end() != eBefore.find(et))
             {
                 eInduction += tt->second - eBefore[et];
                 tt->second = eBefore[et];
             }
         }
-    }
-    {
-        auto iqt = InteractionType::CHARGETRANSFER;
-        auto tt  = energies->find(iqt);
-        if (energies->end() != tt)
-        {
-            eInduction += tt->second;
-            tt->second = 0;
-        }
         if (eInduction != 0)
         {
-            energies->insert({InteractionType::INDUCTION, eInduction});
+            energies->insert_or_assign(InteractionType::INDUCTION, eInduction);
         }
     }
-    //auto induccorr = energies->find(InteractionType::INDUCTIONCORRECTION);
-    //if (energies->end() != induccorr)
-    //{
-    //  auto induc = energies->find(InteractionType::INDUCTION);
-    //  if (energies->end() != induc)
-    //  {
-    //      induc->second += induccorr->second;
-    //      induccorr->second = 0;
-    //  }
-    //}
-    double allelec = (*energies)[InteractionType::ELECTROSTATICS] + (*energies)[InteractionType::INDUCTION];
-    energies->insert({InteractionType::ALLELEC, allelec});
+    {
+        // Sum of all electrostatic terms
+        double allelec = 0;
+        for(const auto &itype : { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
+        {
+            auto ee = energies->find(itype);
+            if (energies->end() != ee)
+            {
+                allelec += ee->second;
+            }
+        }
+        energies->insert_or_assign(InteractionType::ALLELEC, allelec);
+    }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce;
@@ -247,7 +244,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
                     GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
                                                                    interactionTypeToString(me.first).c_str()).c_str()));
                 }
-                energies->insert({ me.first, me.second });
+                energies->insert_or_assign( me.first, me.second );
                 epot += me.second;
             }
         }
@@ -263,7 +260,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         energies->find(InteractionType::EXCHANGE)->second += ivdwcorr->second;
         ivdwcorr->second = 0;
     }
-    energies->insert({ InteractionType::EPOT, epot });
+    energies->insert_or_assign( InteractionType::EPOT, epot );
 }
 
 Potential ForceComputer::ftype(const ForceField *pd,
