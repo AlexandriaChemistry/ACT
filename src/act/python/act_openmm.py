@@ -1611,14 +1611,19 @@ class ActOpenMMSim:
 
     def run(self):
         self.setup()
+        # load previous state; no equilibration
         if self.chkReporter and self.chkfile and os.path.isfile(self.chkfile):
             with open(self.chkfile, 'rb') as chk:
                 self.simulation.context.loadCheckpoint(chk.read())
             self.print_energy("After loading checkpoint")
+        # start fresh; start by equilibration
         else:
             self.minimize(maxIter=100)
             self.equilibrate()
             self.print_energy("After equilibration")
+        # reset time (former outputs will be overwritten anyway)
+        self.simulation.context.setTime(0.0)
+        # finally, run production
         self.production()
         self.print_energy("After production")
 
