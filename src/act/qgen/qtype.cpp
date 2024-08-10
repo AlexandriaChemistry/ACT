@@ -51,12 +51,14 @@ namespace alexandria
 
 static std::map<qType, std::string> qTypeNames = {
     { qType::ESP,       "qESP"        },
+    { qType::RESP,      "qRESP"       },
+    { qType::BCC,       "qBCC"        },
     { qType::Mulliken,  "qMulliken"   },
     { qType::Hirshfeld, "qHirshfeld"  },
     { qType::CM5,       "qCM5"        },
-    { qType::Calc,      "Alexandria" },
-    { qType::Gasteiger, "Gasteiger"  },
-    { qType::Elec,      "Electronic" },
+    { qType::Calc,      "Alexandria"  },
+    { qType::Gasteiger, "Gasteiger"   },
+    { qType::Elec,      "Electronic"  },
     { qType::ACM,       "qACM"        }
 };
 
