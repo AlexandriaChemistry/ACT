@@ -561,7 +561,8 @@ void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
 {
     std::map<qType, const std::vector<double> > qQM;
     std::vector<qType>                          typeQM = { 
-        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken
+        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken,
+        qType::RESP, qType::BCC
     };
     for(auto &qt : typeQM)
     {
