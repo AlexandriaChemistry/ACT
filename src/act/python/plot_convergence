@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+import argparse, os, sys
+
+def extract(logfn:str, filter)->list:
+    mydata  = []
+    nparam  = 0
+    mygen   = 0
+    pfilter = []
+    with open(logfn, "r") as inf:
+        lines = inf.readlines()
+        for ll in range(len(lines)):
+            line = lines[ll]
+            if line.find("parameters to train") >= 0:
+                words = line.split()
+                try:
+                    nparam = int(words[2])
+                except ValueError:
+                    sys.exit("1 Incomprehensible line in %s: '%s'" % ( logfn, line.strip()))
+                for kk in range(nparam):
+                    words = lines[ll+2+kk].strip().split()
+                    if len(words) != 4:
+                        sys.exit("2 Incomprehensible line in %s: '%s'" % ( logfn, lines[2+kk].strip()))
+                    param = words[1]
+                    if None == filter:
+                        pfilter.append(True)
+                    else:
+                        pfilter.append(param == filter)
+                    if pfilter[-1]:
+                        try:
+                            mydata.append({ "identifier": words[0],
+                                            "parameter": param,
+                                            "minimum": float(words[2]),
+                                            "maximum": float(words[3]),
+                                            "data": [] })
+                        except ValueError:
+                            sys.exit("3 Incomprehensible line in %s: '%s'" % ( logfn, lines[2+k].strip()))
+                ll += nparam+2
+            elif line.find("New best individual for train") >= 0:
+                try:
+                    gen   = int(line.split()[1].split("/")[0])
+                except ValueError:
+                    sys.exit("4 Incomprehensible line in %s: '%s'" % ( logfn, lines[2+k].strip()))
+                # Copy previous generations if more than one
+                nindex = 0
+                for nn in range(nparam):
+                    if pfilter[nn]:
+                        for kk in range(mygen, gen-1):
+                            mydata[nindex]["data"].append(mydata[nindex]["data"][kk-1])
+                        nindex += 1
+                mygen = gen
+                words = lines[ll+1].split()
+                if len(words) < 2+nparam:
+                    sys.exit("5 Incomprehensible line in %s: '%s'" % ( logfn, lines[ll+1].strip()))
+                nindex = 0
+                for nn in range(nparam):
+                    if pfilter[nn]:
+                        mydata[nindex]["data"].append(float(words[nn+2]))
+                        nindex += 1
+    return mydata
+    
+def write_conv(outfn:str, mydata:list):
+    with open(outfn, "w") as outf:
+        outf.write("@    title \"Convergence\"\n")
+        outf.write("@    xaxis  label \"Generation\"\n")
+        for i in range(len(mydata)):
+            outf.write("@ s%d legend \"%s-%s\"\n" % ( i,
+                                                      mydata[i]["identifier"],
+                                                      mydata[i]["parameter"] ))
+        outf.write("@type nxy\n")
+        for j in range(len(mydata[0]["data"])):
+            outf.write("%5d" % j)
+            for i in range(len(mydata)):
+                outf.write("  %10g" % ( mydata[i]["data"][j] ) )
+            outf.write("\n")
+        outf.write("\n")
+
+def parseArguments():
+    desc = '''This script will read an ACT training log file and plot the converge of
+    the parameters as a function of generations in the evolution of the gene pool.
+    '''
+    parser = argparse.ArgumentParser(description=desc)
+    inf = "train_ff.log"
+    parser.add_argument("-i", "--infile", help="ACT log file for reading, default "+inf, type=str, default=inf)
+    outf = "convergence.xvg"
+    parser.add_argument("-o", "--outfile", help="Output xvg file, default "+outf, type=str, default=outf)
+    parser.add_argument("-p", "--param", help="Select which parameter to plot, default all", type=str, default=None)
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args  = parseArguments()
+    if os.path.exists(args.infile):
+        mydata = extract(args.infile, args.param)
+        print("There are %d generations. Now storing the convergence to %s" %
+              ( len(mydata[0]["data"]), args.outfile ))
+        write_conv(args.outfile, mydata)
+    else:
+        print("No such file: %s" % args.infile)
