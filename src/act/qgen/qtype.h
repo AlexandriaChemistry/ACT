@@ -58,6 +58,10 @@ enum class qType {
     Calc,
     //! Electrostatic potential derived point charges
     ESP,
+    //! Restrained electrostatic potential method
+    RESP,
+    //! AM1 Bond-charge correction method
+    BCC,
     //! Mulliken charges
     Mulliken,
     //! Hirshfeld charges
