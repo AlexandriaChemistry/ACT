@@ -619,7 +619,6 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     {
         actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
                                 &interactionEnergyMap, &enerComponentMap);
-
         if (doForce2 && !forceMap.empty())
         {
             for(const auto &fstruct : forceMap)
@@ -688,6 +687,16 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                     }
                 }
             }
+            // Check whether we should sum the induction terms
+            bool sumInductionTerms = false;
+            if (targets->find(eRMS::DeltaHF) == targets->end())
+            {
+                // No -fc_deltahf option was passed
+                if (targets->find(eRMS::Induction) != targets->end())
+                {
+                    sumInductionTerms = true;
+                }
+            }
             for(auto &iem : interactionEnergyMap)
             {
                 double weight = 1;
@@ -711,12 +720,37 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                     {
                         continue;
                     }
-                    auto &ff  = iem.find(rms.second)->second;
-                    if (ff.haveQM() && ff.haveACT())
+                    if (sumInductionTerms &&
+                        (eRMS::DeltaHF == rms.first || eRMS::Induction == rms.first))
                     {
-                        auto eqm  = ff.eqm();
-                        auto eact = ff.eact();
-                        ti->second.increase(weight, gmx::square(eqm-eact));
+                        if (eRMS::Induction == rms.first)
+                        {
+                            auto &find = iem.find(InteractionType::INDUCTION)->second;
+                            auto &fic  = iem.find(InteractionType::INDUCTIONCORRECTION)->second;
+                            if (find.haveQM() && find.haveACT())
+                            {
+                                // Difficult to make this fool-proof. If the data is not consistent
+                                // with the command-line options used, things may break.
+                                auto eqm  = find.eqm();
+                                auto eact = find.eact();
+                                if (fic.haveQM() && fic.haveACT())
+                                {
+                                    eqm  += fic.eqm();
+                                    eact += fic.eact();
+                                }
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        auto &ff  = iem.find(rms.second)->second;
+                        if (ff.haveQM() && ff.haveACT())
+                        {
+                            auto eqm  = ff.eqm();
+                            auto eact = ff.eact();
+                            ti->second.increase(weight, gmx::square(eqm-eact));
+                        }
                     }
                 }
             }
