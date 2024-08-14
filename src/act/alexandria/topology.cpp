@@ -1521,6 +1521,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
         case InteractionType::VSITE3:
         case InteractionType::VSITE3S:
         case InteractionType::VSITE3OUT:
+        case InteractionType::VSITE3OUTS:
             {
                 for(auto &b : myEntry.second)
                 {
