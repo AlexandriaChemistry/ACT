@@ -492,14 +492,15 @@ class ActOpenMMSim:
         self.gen_ff()
     
     def __del__(self):
-        if None != self.txt:
-            self.txt.write("Please check output in %s" % self.txtfile )
-            self.txt.write("Energies are in %s" % self.enefile )
+        if self.verbose:
+            if None != self.txt:
+                print("Please check output in %s" % self.txtfile )
+                self.txt.close()
+            print("Energies are in %s" % self.enefile )
             if None != self.dcdtraj:
-                self.txt.write("DCD trajectory is in %s" % self.dcdtraj )
+                print("DCD trajectory is in %s" % self.dcdtraj )
             if None != self.pdbtraj:
-                self.txt.write("PDB trajectory in %s" % self.pdbtraj )
-            self.txt.close()
+                print("PDB trajectory in %s" % self.pdbtraj )
 
     def txt_header(self):
         self.txt.write("Starting OpenMM calculation using the ActOpenMMSim interface.\n")
