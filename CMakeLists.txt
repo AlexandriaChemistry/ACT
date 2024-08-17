@@ -512,40 +512,6 @@ if (GMX_ALEXANDRIA)
 
 endif (GMX_ALEXANDRIA)
 
-gmx_option_trivalue(
-    GMX_HWLOC
-    "Use hwloc portable hardware locality library"
-    "AUTO")
-
-if (GMX_HWLOC)
-    # Find quietly the second time.
-    if(DEFINED HWLOC_LIBRARIES)
-        set(HWLOC_FIND_QUIETLY TRUE)
-    endif()
-    find_package(HWLOC 1.5)
-
-    if (HWLOC_FOUND)
-        if (HWLOC_LIBRARIES MATCHES ".a$")
-            set(_STATIC_HWLOC TRUE)
-        endif()
-
-        gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
-        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
-            message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
-            set(GMX_USE_HWLOC OFF)
-        else()
-            set(GMX_USE_HWLOC ON)
-        endif()
-
-        if (GMX_USE_HWLOC)
-            include_directories(SYSTEM ${HWLOC_INCLUDE_DIRS})
-            list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
-        endif()
-    elseif(GMX_HWLOC_FORCE)
-        message(FATAL_ERROR "HWLOC package support required, but not found.")
-    endif()
-endif()
-
 option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version bundled with GROMACS." OFF)
 mark_as_advanced(GMX_EXTERNAL_TINYXML2)
 if(GMX_EXTERNAL_TINYXML2)
