@@ -178,25 +178,18 @@ def plot_once(axs, ncolumn:int, args):
         if args.panels:
             ipanel += 1
         xxmin, xxmax, yymin, yymax = set_extent(datasets)
-#    if viewDebug:
-#        print("Extent of graphs xmin %g ymin %g xmax %g ymax %g" % ( xxmin, yymin, xxmax, yymax ))
-#    plt.xlim(xxmin, xxmax)
-#    plt.ylim(yymin, yymax)
         if args.title:
             plt.title(args.title, fontsize=args.titlefontsize)
         elif "title" in legends:
             plt.title(legends["title"], fontsize=args.titlefontsize)
-        for ax in axs.flat:
-            if "xlabel" in legends:
-                ax.set_xlabel(legends["xlabel"], fontsize=args.axislabelfontsize)
-            if "ylabel" in legends:
-                ax.set_ylabel(legends["ylabel"], fontsize=args.axislabelfontsize)
-            if args.legendfontsize > 0 and have_labels or args.labels:
-                xlegend = xxmin + args.legend_x*(xxmax-xxmin)
-                ylegend = yymin + args.legend_y*(yymax-yymin)
-                ax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
-    for ax in axs.flat:
-        ax.label_outer()
+        if "xlabel" in legends:
+            thisax.set_xlabel(legends["xlabel"], fontsize=args.axislabelfontsize)
+        if "ylabel" in legends:
+            thisax.set_ylabel(legends["ylabel"], fontsize=args.axislabelfontsize)
+        if args.legendfontsize > 0 and have_labels or args.labels:
+            xlegend = xxmin + args.legend_x*(xxmax-xxmin)
+            ylegend = yymin + args.legend_y*(yymax-yymin)
+            thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
     if args.pdf:
         # Print just once!
         fig.savefig(args.pdf, bbox_inches='tight')
