@@ -215,26 +215,7 @@ gmx_option_multichoice(
     "SIMD instruction set for CPU kernels and compiler optimization"
     "None"
     None Reference)
-#    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
-
-if(GMX_TARGET_MIC)
-    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
-else()
-    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
-endif()
-
-gmx_option_multichoice(
-    GMX_FFT_LIBRARY
-    "FFT library"
-    "${GMX_FFT_LIBRARY_DEFAULT}"
-    fftw3 mkl)
-gmx_dependent_option(
-    GMX_DISABLE_FFTW_MEASURE
-    "Do not optimize FFTW setups (not needed with SSE)"
-    OFF
-    "GMX_FFT_LIBRARY STREQUAL FFTW3")
-mark_as_advanced(GMX_BUILD_OWN_FFTW)
-mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
+#    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL  ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_QMMM_PROGRAM
@@ -690,12 +671,6 @@ elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
 else()
     gmx_invalid_option_value(GMX_QMMM_PROGRAM)
 endif()
-
-
-##################################################
-# Process FFT library settings
-##################################################
-include(gmxManageFFTLibraries)
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
