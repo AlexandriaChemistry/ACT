@@ -241,7 +241,7 @@ static void computeExponential(const TopologyEntryVector             &pairs,
             auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
             if (debug)
             {
-                fprintf(debug, "r  %g  eeexp %g\n", dr2*rinv, eeexp);
+                fprintf(debug, "vdwcorr r  %g  eeexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
             }
             real fexp  = bexp*eeexp;
             eexp      += eeexp;
