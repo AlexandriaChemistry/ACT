@@ -253,13 +253,14 @@ void GenePool::read(const std::string &fileName)
                 double d = std::stod(w, &pos);
                 g.addBase(d);
             }
-            catch (std::invalid_argument)
+            catch (std::invalid_argument const &ex)
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Something wrong with element %d '%s' on line %d in %s\n", iw, w.c_str(), lineNumber, fileName.c_str()).c_str()));
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Something wrong '%s' with element %d '%s' on line %d in %s\n", 
+                                                                   ex.what(), iw, w.c_str(), lineNumber, fileName.c_str()).c_str()));
             }
-            catch (std::out_of_range)
+            catch (std::out_of_range const &ex)
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Value out of range for element %d on line %d in %s\n", iw, lineNumber, fileName.c_str()).c_str()));
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Value '%s' out of range for element %d on line %d in %s\n", ex.what(), iw, lineNumber, fileName.c_str()).c_str()));
             }
         }
         genomes_.push_back(std::move(g));
