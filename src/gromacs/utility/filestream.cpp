@@ -109,40 +109,18 @@ class FileStreamImpl
         FileStreamImpl(const char *filename, const char *mode)
             : fp_(nullptr), bClose_(true)
         {
-            if (std::ifstream(filename))
+            fp_ = std::fopen(filename, mode);
+            if (fp_ == nullptr)
             {
-                fp_ = std::fopen(filename, mode);
-                if (fp_ == nullptr)
-                {
-                    GMX_THROW_WITH_ERRNO(
-                                         FileIOError(formatString("Could not open file '%s'", filename)),
-                                         "fopen", errno);
-                }
-            }
-            else
-            {
-                std::string fgz = filename;
-                fgz.append(".gz");
-                if (std::ifstream(fgz.c_str()))
-                {
-                    std::string buf = "gunzip -c < " + fgz;
-                    fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
-                    if ((fp_ = popen(buf.c_str(), mode)) == nullptr)
-                    {
-                        GMX_THROW_WITH_ERRNO(
-                                             FileIOError(formatString("Could not open file '%s'", fgz.c_str())),
-                                             "fopen", errno);
-                    }
-                    gzip_ = true;
-                }
+                GMX_THROW_WITH_ERRNO(
+                                     FileIOError(formatString("Could not open file '%s'", filename)), "fopen", errno);
             }
         }
         ~FileStreamImpl()
         {
             if (fp_ != nullptr && bClose_)
             {
-                if ((!gzip_ && std::fclose(fp_) != 0) ||
-                    (gzip_ && pclose(fp_) != 0))
+                if (std::fclose(fp_) != 0)
                 {
                     // TODO: Log the error somewhere
                 }
@@ -176,8 +154,6 @@ class FileStreamImpl
         FILE  *fp_;
         //! Whether \p fp_ should be closed by this object.
         bool   bClose_;
-        //! Whether this is zipped
-        bool gzip_ = false;
 };
 
 }   // namespace internal
