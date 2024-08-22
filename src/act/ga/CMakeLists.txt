@@ -28,7 +28,7 @@
 file(GLOB GA_SOURCES *.cpp *.h)
 target_sources(actLib PRIVATE ${GA_SOURCES})
 
-#if (BUILD_TESTING)
-#   add_subdirectory(tests)
-#endif()
+if (BUILD_TESTING)
+   add_subdirectory(tests)
+endif()
 

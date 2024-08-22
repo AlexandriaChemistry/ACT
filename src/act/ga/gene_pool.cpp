@@ -1,8 +1,7 @@
-
-    /*
+/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,10 +34,12 @@
 #include <cstdio>
 #include <cmath>
 
+#include "act/ga/genome.h"
+#include "act/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "genome.h"
 
 namespace ga
 {
@@ -110,6 +111,12 @@ const Genome &GenePool::getBest(const iMolSelect ims) const
 
 void GenePool::addGenome(const std::vector<double> &genome, double fitness)
 {
+    // First time we add a genome, set the genome size
+    if (genomes_.size() == 0)
+    {
+        genomeSize_ = genome.size();
+    }
+    // At all later additions the genome size should be identical
     if (genome.size() != genomeSize_)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("All genes must be the same length. Expected %zu, got %zu.", genomeSize_, genome.size()).c_str()));
@@ -121,6 +128,12 @@ void GenePool::addGenome(const std::vector<double> &genome, double fitness)
 
 void GenePool::addGenome(const Genome &genome)
 {
+    // First time we add a genome, set the genome size
+    if (genomes_.size() == 0)
+    {
+        genomeSize_ = genome.bases().size();
+    }
+    // At all later additions the genome size should be identical
     if (genome.nBase() != genomeSize_)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("All genes must be the same length. Expected %zu, got %zu.", genomeSize_, genome.nBase()).c_str()));
@@ -207,6 +220,66 @@ std::vector<double> GenePool::median() const
         }
     }
     return vec;
+}
+
+void GenePool::read(const std::string &fileName)
+{
+    gmx::TextReader tr(fileName);
+    // Reset existing genome if present
+    genomes_.clear();
+    genomeSize_ = 0;
+    std::string line;
+    int lineNumber = 0;
+    while (tr.readLine(&line))
+    {
+        lineNumber += 1;
+        auto words = split(line, ' ');
+        if (0 == genomeSize_)
+        {
+            genomeSize_ = words.size();
+        }
+        if (genomeSize_ != words.size())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Inconsistent input in %s. Expected %lu elements on line %d but found %lu\n", fileName.c_str(), genomeSize_, lineNumber, words.size()).c_str()));
+        }
+        Genome g;
+        int    iw = 0;
+        for(const auto &w : words)
+        {
+            iw += 1;
+            try
+            {
+                std::size_t pos;
+                double d = std::stod(w, &pos);
+                g.addBase(d);
+            }
+            catch (std::invalid_argument)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Something wrong with element %d '%s' on line %d in %s\n", iw, w.c_str(), lineNumber, fileName.c_str()).c_str()));
+            }
+            catch (std::out_of_range)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Value out of range for element %d on line %d in %s\n", iw, lineNumber, fileName.c_str()).c_str()));
+            }
+        }
+        genomes_.push_back(std::move(g));
+    }
+}
+
+void GenePool::write(const std::string &fileName) const
+{
+    auto tw = gmx::TextWriter(fileName);
+    for(const auto &g : genomes_)
+    {
+        std::string line;
+        for(const auto &b : g.bases())
+        {
+            line += " ";
+            line += std::to_string(b);
+        }
+        tw.writeString(line);
+        tw.ensureLineBreak();
+    }
 }
 
 } // namespace ga
