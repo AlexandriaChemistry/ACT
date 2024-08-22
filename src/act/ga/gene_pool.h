@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,7 +91,17 @@ public:
     
     //! Return the mutable gene pool
     std::vector<Genome> *genePoolPtr() { return &genomes_; }
-    
+
+    /*! \brief Read a genepool from a space and new-line separated file
+     * \param[in] fileName The name of the file to read from
+     */
+    void read(const std::string &fileName);
+
+    /*! \brief Write a genepool to a space and new-line separated file
+     * \param[in] fileName The name of the file to write to
+     */
+    void write(const std::string &fileName) const;
+
     //! Return the population size
     size_t popSize() const { return genomes_.size(); }
     
