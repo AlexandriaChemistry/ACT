@@ -44,7 +44,8 @@ class MoleculeDict:
         self.mol_weight = obmol.GetMolWt()
         self.numb_atoms = obmol.NumAtoms()
         self.formula    = obmol.GetFormula()
-        self.charge     = obmol.GetTotalCharge()
+        if self.charge == 0:
+            self.charge     = obmol.GetTotalCharge()
         obmol.AssignTotalChargeToAtoms(self.charge)
         obmol.SetAromaticPerceived(False) 
         obconversion.SetOutFormat("inchi")
@@ -109,7 +110,7 @@ class MoleculeDict:
         obconversion = ob.OBConversion()
         obconversion.SetInFormat(fileformat)
         obmol    = ob.OBMol()
-        obmol.SetTotalCharge(charge)
+        self.charge = charge
         notatend = obconversion.ReadFile(obmol,filename)
         success  = self.analyse_obmol(obconversion, obmol, forcefield)
         # Help garbage collecting
@@ -141,7 +142,7 @@ class MoleculeDict:
                 print("Coordinates messed up {}".format(coords[i]))
                 return False
         obmol = ob.OBMol()
-        obmol.SetTotalCharge(charge)
+        self.charge = charge
         obConversion.ReadString(obmol, xyzstring)
         success      = self.analyse_obmol(obConversion, obmol, forcefield)
         # Help garbage collecting
