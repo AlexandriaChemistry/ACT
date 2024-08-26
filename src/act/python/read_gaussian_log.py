@@ -612,7 +612,7 @@ class GaussianReader:
             self.exper.extract_thermo(self.tcmap, self.atomname, ahof)
             
             md = MoleculeDict()
-            if not md.from_coords_elements(self.atomname, self.coordinates(), "alexandria"):
+            if not md.from_coords_elements(self.atomname, self.coordinates(), "alexandria", self.charge):
                 print("Cannot deduce weight or formula from %s" % infile)
                 return None
             self.atomtypes = []
