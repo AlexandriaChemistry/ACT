@@ -105,10 +105,11 @@ class MoleculeDict:
             
         return True
 
-    def read(self, filename, fileformat, forcefield="alexandria"):
+    def read(self, filename, fileformat, forcefield="alexandria", charge:int=0):
         obconversion = ob.OBConversion()
         obconversion.SetInFormat(fileformat)
         obmol    = ob.OBMol()
+        obmol.SetTotalCharge(charge)
         notatend = obconversion.ReadFile(obmol,filename)
         success  = self.analyse_obmol(obconversion, obmol, forcefield)
         # Help garbage collecting
@@ -117,7 +118,7 @@ class MoleculeDict:
         del obmol
         return success
         
-    def from_coords_elements_obc(self, elements, coords, obConversion, forcefield="alexandria"):
+    def from_coords_elements_obc(self, elements, coords, obConversion, forcefield="alexandria", charge:int=0):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
             return False
@@ -140,6 +141,7 @@ class MoleculeDict:
                 print("Coordinates messed up {}".format(coords[i]))
                 return False
         obmol = ob.OBMol()
+        obmol.SetTotalCharge(charge)
         obConversion.ReadString(obmol, xyzstring)
         success      = self.analyse_obmol(obConversion, obmol, forcefield)
         # Help garbage collecting
@@ -147,18 +149,19 @@ class MoleculeDict:
         del xyzstring
         return success
         
-    def from_coords_elements(self, elements, coords, forcefield="alexandria"):
+    def from_coords_elements(self, elements, coords, forcefield="alexandria", charge:int=0):
         obConversion = ob.OBConversion()
         obConversion.SetInFormat("xyz")
-        success = self.from_coords_elements_obc(elements, coords, obConversion, forcefield)
+        success = self.from_coords_elements_obc(elements, coords, obConversion, forcefield, charge)
         # Help garbage collecting
         del obConversion
         return success
         
-    def from_smiles(self, smiles:str, addH:bool, forcefield="alexandria"):
+    def from_smiles(self, smiles:str, addH:bool, forcefield="alexandria", charge:int=0):
         obConversion = ob.OBConversion()
         obConversion.SetInFormat("smi")
         obmol = ob.OBMol()
+        obmol.SetTotalCharge(charge)
         obConversion.ReadString(obmol, smiles)
         if addH:
             obmol.AddHydrogens()
