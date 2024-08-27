@@ -452,8 +452,9 @@ int MolProp::Merge(const MolProp *src)
     {
         for (auto &bi : src->bondsConst())
         {
-            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
-            if (!BondExists(bb))
+            alexandria::Bond bb1(bi.aI(), bi.aJ(), bi.bondOrder());
+            alexandria::Bond bb2(bi.aJ(), bi.aI(), bi.bondOrder());
+            if (!BondExists(bb1) && !BondExists(bb2))
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s.\n",
                         bi.aI(), bi.aJ(), getMolname().c_str());
