@@ -98,8 +98,10 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
         pargs->push_back(pa[i]);
     }
     std::vector<t_filenm> filenames = {
-        { efXML, "-o",    "train_ff",    ffWRITE  },
-        { efLOG, "-g",    "train_ff",    ffWRITE  }
+        { efXML, "-o",     "train_ff", ffWRITE },
+        { efLOG, "-g",     "train_ff", ffWRITE },
+        { efCSV, "-gpin",  "genepool", ffOPTRD },
+        { efCSV, "-gpout", "genepool", ffWRITE }
     };
     for (size_t i = 0; i < filenames.size(); ++i)
     {
@@ -145,7 +147,8 @@ void OptACM::openLogFile(const std::vector<t_filenm> &filenms)
     fplog_.reset(gmx_ffopen(logfileName, "w"));
 }
 
-FILE *OptACM::logFile() {
+FILE *OptACM::logFile()
+{
     if (fplog_)
     {
         return fplog_.get();

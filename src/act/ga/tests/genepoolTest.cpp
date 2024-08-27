@@ -122,6 +122,12 @@ TEST_F (GenePoolTest, Read)
     read();
 }
 
+TEST_F (GenePoolTest, WrongInput)
+{
+    GenePool gp;
+    EXPECT_THROW(gp.read(gmx::test::TestFileManager::getInputFilePath("gpwrong.csv")), gmx::InvalidInputError);
+ }
+
 }
 
 } 
