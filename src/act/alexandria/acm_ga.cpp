@@ -479,10 +479,14 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = (*bestGenome)[imstr];
+        time_t my_t;
+        time(&my_t);
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            auto mess = gmx::formatString("Generation %d/%d. New best individual for train",
-                                          generation, gach_->maxGenerations());
+            auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for train",
+                                          generation,
+                                          gach_->maxGenerations(),
+                                          ctime(&my_t));
             tmpGenome.print(mess.c_str(), logFile_);
             (*bestGenome)[imstr] = tmpGenome;
             bMinimum = true;
@@ -493,8 +497,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             const auto tmpBestTest = (*bestGenome)[imste];
             if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
             { 
-                auto mess = gmx::formatString("Generation %d/%d. New best individual for test",
-                                              generation, gach_->maxGenerations());
+                auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for test",
+                                              generation,
+                                              gach_->maxGenerations(),
+                                              ctime(&my_t));
                 (*bestGenome)[imste] = tmpGenome;
                 tmpGenome.print(mess.c_str(), logFile_);
                 fflush(logFile_);
