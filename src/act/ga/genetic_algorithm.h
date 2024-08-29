@@ -115,7 +115,10 @@ public:
             GMX_RELEASE_ASSERT(!terminators_->empty(), "There are no terminators!");
         }
     }
-
+    /*! \brief Update the genepool 
+     * \param gpin New gene pool
+     */
+    void updateGenePool(const GenePool &gpin);
  
     /*! \brief Evolve the initial population
      * \param[out] bestGenome The best genome(s) found during the evolution (for different datasets, if applicable).

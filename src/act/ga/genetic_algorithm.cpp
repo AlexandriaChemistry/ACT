@@ -55,6 +55,10 @@ Terminator *GeneticAlgorithm::terminator(const int index)
     return terminators_->at(index);
 }
 
+void GeneticAlgorithm::updateGenePool(const GenePool &gpin)
+{
+}
+
 bool GeneticAlgorithm::terminate(const GenePool *pool,
                                  const int       generationNumber)
 {
