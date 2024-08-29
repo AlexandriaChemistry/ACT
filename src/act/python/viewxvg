@@ -171,7 +171,6 @@ def plot_once(axs, ncolumn:int, args):
                 mymarker = None
                 if args.marker:
                     mymarker  = markers[setcount % len(markers)]
-                    setcount += 1
                 if viewDebug:
                     print("mylabel = {}".format(mylabel))
                     print("mymarker = {}".format(mymarker))
@@ -193,6 +192,7 @@ def plot_once(axs, ncolumn:int, args):
             xlegend = xxmin + args.legend_x*(xxmax-xxmin)
             ylegend = yymin + args.legend_y*(yymax-yymin)
             thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
+        setcount += 1
     if args.pdf:
         # Print just once!
         fig.savefig(args.pdf, bbox_inches='tight')
