@@ -175,7 +175,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-int OptACM::initMaster(const char *fitnessFile)
+int OptACM::initMaster(const std::vector<t_filenm> &fnm)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -347,7 +347,10 @@ int OptACM::initMaster(const char *fitnessFile)
         ga_ = new ga::HybridGAMC(
             logFile(), initializer, fitComp_, probComputer, selector, crossover,
             mutator_, terminators, penalizers, sii_, &gach_, 
-            fitnessFile, dis(gen)
+            opt2fn("-fitness", fnm.size(), fnm.data()),
+            opt2fn_null("-gpin", fnm.size(), fnm.data()),
+            opt2fn("-gpout", fnm.size(), fnm.data()),
+            dis(gen)
         );
     }
     if (logFile())
@@ -882,7 +885,7 @@ int train_ff(int argc, char *argv[])
     {
         if (opt.sii()->nParam() > 0)
         {
-            initOK = opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
+            initOK = opt.initMaster(filenms);
         }
         // Let the other nodes know whether all is well.
         if (opt.commRec()->isParallel())

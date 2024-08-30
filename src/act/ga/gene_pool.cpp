@@ -264,6 +264,8 @@ void GenePool::read(const std::string &fileName)
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Value '%s' out of range for element %d on line %d in %s\n", ex.what(), iw, lineNumber, fileName.c_str()).c_str()));
             }
         }
+        g.setFitness(iMolSelect::Train, 1e12);
+        g.setFitness(iMolSelect::Test, 1e12);
         genomes_.push_back(std::move(g));
     }
 }

@@ -48,7 +48,7 @@ private:
     //! The values of each "base"
     std::vector<double> genome_;
     //! And the fitness corresponding to this genome
-    FitnessMap          fitness_;
+    FitnessMap          fitness_ = {};
     //! Probability of training selection
     double              probability_ = 0.0;
 public:

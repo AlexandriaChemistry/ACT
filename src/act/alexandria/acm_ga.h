@@ -66,7 +66,11 @@ private:
     //! logFile
     FILE                             *logFile_;
     //! Output filename for fitness files
-    std::string                       fitnessFile_;
+    const char                       *fitnessFile_;
+    //! Gene pool input (may be null pointer)
+    const char                       *gpin_;
+    //! Gene pool output
+    const char                       *gpout_;
     //! seed for random numbers
     int                               seed_;
 public:
@@ -84,11 +88,14 @@ public:
                std::vector<Penalizer*>             *penalizers,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach,
-               const std::string                   &fitnessFileName,
+               const char                          *fitnessFileName,
+               const char                          *genePoolIn,
+               const char                          *genePoolOut,
                int                                  seed)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
                        mutator, terminators, penalizers, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), fitnessFile_(fitnessFileName), seed_(seed)
+      sii_(sii), gach_(gach), logFile_(logFile), fitnessFile_(fitnessFileName),
+      gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {
         forceComp_ = new alexandria::ForceComputer();
     }
