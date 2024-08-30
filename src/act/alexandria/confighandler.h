@@ -424,7 +424,7 @@ private:
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
-    double             forceToler_           = 1e-4;
+    double             forceToler_           = 1e-6;
     //! Number of retries for minimizing
     int                minimizeRetries_      = 3;
     //! Max random displacement (nm) before re-trying to minize a structure
