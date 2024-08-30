@@ -8,7 +8,6 @@
   <Real Name="Dispersion before">-1.7472050946736563e-05</Real>
   <Real Name="Repulsion before">4.2569772129151275e-11</Real>
   <Real Name="Coulomb (SR) before">-34.113162904831434</Real>
-  <Real Name="INDUCTION before">0</Real>
   <Real Name="ALLELEC before">-34.113162904831434</Real>
   <Real Name="Potential before">-17.192005186071786</Real>
   <Real Name="Coordinate RMSD before minimizing">2.9834425524378666e-19</Real>
@@ -21,7 +20,6 @@
   <Real Name="Dispersion after">-1.7785344671671792e-05</Real>
   <Real Name="Repulsion after">4.2311925293624761e-11</Real>
   <Real Name="Coulomb (SR) after">-34.451231151649012</Real>
-  <Real Name="INDUCTION after">0</Real>
   <Real Name="ALLELEC after">-34.451231151649012</Real>
   <Real Name="Potential after">-26.011955632160447</Real>
 </ReferenceData>
