@@ -15,7 +15,7 @@ with contributions from
 + [Marie-Madeleine Walz](https://github.com/MMW1),
 + [A. Najla Hosseini](https://github.com/najla23),
 + [Kristian Kriz](https://github.com/kkriz26),
-+ [Alfred T. Andersson](https://github.com/pastaalfredo) and
++ [Alfred T. Nordman](https://github.com/pastaalfredo) and
 + [Oskar Tegby](https://github.com/OskarTegby)
 
 In addition there are many past contributions to the GROMACS part of the code by developers from that software package.
