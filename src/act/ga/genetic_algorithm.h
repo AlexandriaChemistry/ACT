@@ -117,6 +117,7 @@ public:
     }
     /*! \brief Update the genepool 
      * \param gpin New gene pool
+     * \throws if the dimensions do not match to lastPop_ if lastPop_ not empty
      */
     void updateGenePool(const GenePool &gpin);
  

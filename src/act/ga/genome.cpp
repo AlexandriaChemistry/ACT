@@ -100,7 +100,10 @@ double Genome::base(size_t index) const
 
 void Genome::setBase(size_t index, double value)
 {
-    GMX_RELEASE_ASSERT(index < genome_.size(), "Index out of range");
+    if (index >= genome_.size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Index (%zu) out of range (should be < %zu)", index, genome_.size()).c_str()));
+    }
     genome_[index] = value;
 }
     
