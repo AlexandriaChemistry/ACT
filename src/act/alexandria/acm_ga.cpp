@@ -193,7 +193,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         // Initialize the population and compute fitness
         fprintf(logFile_, "Initializing individuals and computing initial fitness...\n");
-        fflush(logFile_);
     }
 
     // Create the gene pools
@@ -205,11 +204,37 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // Check whether we need to read a gene pool
+    int read = 0;
+    if (gpin_)
+    {
+        pool[pold]->read(gpin_);
+        if (pool[pold]->popSize() - gach_->popSize() != 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Read a gene pool with %zu individuals but that does not match the population size of %d", pool[pold]->popSize(), gach_->popSize()).c_str()));
+        }
+        *pool[pnew] = *pool[pold];
+        if (logFile_)
+        {
+            fprintf(logFile_, "\nRead gene pool with %zu individuals and %zu bases from file %s\n\n", 
+                    pool[pold]->popSize(), pool[pold]->genome(0).nBase(), gpin_);
+        }
+        ind->copyGenome(pool[pold]->genome(0));
+        read = 1;
+    }
+    for(auto &ii : cr->middlemen())
+    {
+        cr->send(ii, read);
+        if (read == 1)
+        {
+            cr->send(ii, pool[pold]->genomePtr(ii)->bases());
+        }
+    }
+
     // Compute its fitness
     if (logFile_)
     {
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
-        fflush(logFile_);
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
     // Maybe not really needed but just to print the components
@@ -219,29 +244,31 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fprintf(logFile_, "\n");
         fflush(logFile_);
     }
-
-    pool[pold]->addGenome(ind->genome());
-    pool[pnew]->addGenome(ind->genome());
-    // I. Match numbers to corresponding ones in actmiddleman.cpp
-    // Load the initial genomes from the middlemen. 
-    // This is needed since they have read their own parameters
-    // from the ForceField structures.
-    for(auto &src : cr->middlemen())
+    if (read == 0)
     {
-        ga::Genome genome;
-        genome.Receive(cr, src);
-        pool[pold]->addGenome(genome);
-        pool[pnew]->addGenome(genome);
+        pool[pold]->addGenome(ind->genome());
+        pool[pnew]->addGenome(ind->genome());
+    
+        // I. Match numbers to corresponding ones in actmiddleman.cpp
+        // Load the initial genomes from the middlemen. 
+        // This is needed since they have read their own parameters
+        // from the ForceField structures.
+        for(auto &src : cr->middlemen())
+        {
+            ga::Genome genome;
+            genome.Receive(cr, src);
+            pool[pold]->addGenome(genome);
+            pool[pnew]->addGenome(genome);
+        }
     }
-    // Now we have filled the gene pool and initial fitness values
     if (logFile_)
     {
+        // Now we have filled the gene pool and initial fitness values
         pool[pold]->print(logFile_);
         fflush(logFile_);
     }
     // Print fitness to surveillance files
     fprintFitness(*(pool[pold]));
-
     // TODO: Check whether we need to update this at all here
     (*bestGenome)[imstr] = pool[pold]->getBest(imstr);
     if (gach_->evaluateTestset())
@@ -491,6 +518,10 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             (*bestGenome)[imstr] = tmpGenome;
             bMinimum = true;
             fflush(logFile_);
+            if (gpout_)
+            {
+                pool[pold]->write(gpout_);
+            }
         }
         if (gach_->evaluateTestset())
         {

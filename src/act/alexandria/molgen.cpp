@@ -942,6 +942,13 @@ size_t MolGen::Read(FILE                                *fp,
         int  actmolIndex = 0;
         auto cs         = CommunicationStatus::OK;
         int  bcint      = 1;
+        if (actmol_.size() < static_cast<size_t>(1+cr_->nhelper_per_middleman()))
+        {
+            // Send a 0 to signify more is coming
+            bcint = 0;
+            cr_->bcast(&bcint, mycomms[0]);
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than number of helpers per middle man (%d). Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
+        }
         std::set<int> comm_used;
         std::vector<double> totalCost;
         totalCost.resize(1+cr_->nhelper_per_middleman(), 0);

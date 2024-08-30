@@ -91,6 +91,14 @@ void ACTMiddleMan::run()
 {
     auto cr = ind_->sii()->commRec();
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
+    // Check whether we need to accept a genome from the master
+    int read;
+    int master = cr->superior();
+    cr->recv(master, &read);
+    if (read == 1)
+    {
+        cr->recv(master, ind_->genomePtr()->basesPtr());
+    }
     // Start by computing my own fitness
     fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
@@ -98,9 +106,11 @@ void ACTMiddleMan::run()
         fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
     }
     // I.
-    // Send my initial genome and fitness to the master
-    int master = cr->superior();
-    ind_->genome().Send(cr, master);
+    // Send my initial genome and fitness to the master if needed
+    if (read == 0)
+    {
+        ind_->genome().Send(cr, master);
+    }
     auto cont = CommunicationStatus::OK;
 
     // II.

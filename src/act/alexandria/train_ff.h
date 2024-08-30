@@ -175,10 +175,10 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
-     * \param[in] fitnessFile Name of the genetic algorithm files
+     * \param[in] fnm Names of files selected by user
      * \return 1 of all is well, 0 otherwise
      */
-    int initMaster(const char *fitnessFile);
+    int initMaster(const std::vector<t_filenm> &fnm);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *
