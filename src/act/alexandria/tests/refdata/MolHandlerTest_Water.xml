@@ -3,8 +3,6 @@
 <ReferenceData>
   <Real Name="Bond before">0.0026570465668230014</Real>
   <Real Name="Angle before">0.55728331281907129</Real>
-  <Real Name="Coulomb (SR) before">0</Real>
-  <Real Name="INDUCTION before">0</Real>
   <Real Name="ALLELEC before">0</Real>
   <Real Name="Potential before">0.55994035938589426</Real>
   <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
@@ -12,8 +10,6 @@
   <Real Name="Coordinate RMSD after minimizing">0.002296368432348715</Real>
   <Real Name="Bond after">4.1428898466467974e-24</Real>
   <Real Name="Angle after">1.2353282223177757e-23</Real>
-  <Real Name="Coulomb (SR) after">0</Real>
-  <Real Name="INDUCTION after">0</Real>
   <Real Name="ALLELEC after">0</Real>
   <Real Name="Potential after">1.6496172069824555e-23</Real>
   <Real Name="RMS force">1.2801209663594444e-09</Real>
@@ -31,28 +27,28 @@
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
-    <Real>1361.9444191013622</Real>
-    <Real>3701.8348024700877</Real>
-    <Real>3771.9174597481961</Real>
+    <Real>1361.9517091771925</Real>
+    <Real>3701.8278364872149</Real>
+    <Real>3771.9107016657881</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">3</Int>
-    <Real>0.019423899308227143</Real>
-    <Real>0.026627499234132906</Real>
-    <Real>0.026503032788243102</Real>
+    <Real>0.019423770906487212</Real>
+    <Real>0.026627504738712726</Real>
+    <Real>0.026503028343977737</Real>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">52.849197824524246</Real>
-  <Real Name="Delta H form (kJ/mol)">772.89858495365957</Real>
+  <Real Name="Zero point energy (kJ/mol)">52.849159340724547</Real>
+  <Real Name="Delta H form (kJ/mol)">772.898507304399</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">144.91364529173316</Real>
   <Real Name="Standard entropy -    Rotation  (J/mol K)">49.580170222362</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.088172968818454586</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">194.5819884829136</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.088170272879393122</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">194.58198578697454</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471692120587631</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471692120587631</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.5037758094085758</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">25.44716005058384</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.50376343475749696</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">25.447147675932762</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184350057532018</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184350057532018</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">52.872017117628815</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">60.308887129135215</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">52.871977952167896</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">60.308847963674296</Real>
 </ReferenceData>

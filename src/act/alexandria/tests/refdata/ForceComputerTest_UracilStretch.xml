@@ -8,7 +8,6 @@
   <Real Name="DISPERSION0.9_act">-4.6535051404216068</Real>
   <Real Name="EXCHANGE0.9_act">2.6079845082730273</Real>
   <Real Name="COULOMB0.9_act">-9.3078679672129478</Real>
-  <Real Name="INDUCTION0.9_act">0</Real>
   <Real Name="ALLELEC0.9_act">-9.3078679672129478</Real>
   <Real Name="EPOT0.9_act">234.09582788872854</Real>
   <Real Name="n2-1_act0.9 fX">572.59794671348391</Real>
@@ -54,7 +53,6 @@
   <Real Name="DISPERSION1.1_act">-1.3959798309687319</Real>
   <Real Name="EXCHANGE1.1_act">0.23469449272273754</Real>
   <Real Name="COULOMB1.1_act">-7.5667275593856278</Real>
-  <Real Name="INDUCTION1.1_act">0</Real>
   <Real Name="ALLELEC1.1_act">-7.5667275593856278</Real>
   <Real Name="EPOT1.1_act">412.40858362553314</Real>
   <Real Name="n2-1_act1.1 fX">726.88003756530532</Real>

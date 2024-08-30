@@ -3,8 +3,6 @@
 <ReferenceData>
   <Real Name="BONDS_act">0.0026570465668230014</Real>
   <Real Name="ANGLES_act">0.55728331281907129</Real>
-  <Real Name="COULOMB_act">0</Real>
-  <Real Name="INDUCTION_act">0</Real>
   <Real Name="ALLELEC_act">0</Real>
   <Real Name="EPOT_act">0.55994035938589426</Real>
   <Real Name="o3-1_act fX">0</Real>
