@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -83,7 +83,7 @@ std::vector<std::string> split(const std::string        &s,
     std::string       item;
     while (std::getline(ss, item, delim))
     {
-        if (!item.empty())
+        if (!item.empty() or !isspace(delim))
         {
             elems.push_back(item);
         }
