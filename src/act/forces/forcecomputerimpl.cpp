@@ -351,6 +351,54 @@ static void computeWBH(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
+static void computeBuckingham(const TopologyEntryVector             &pairs,
+                              gmx_unused const std::vector<ActAtom> &atoms,
+                              const std::vector<gmx::RVec>          *coordinates,
+                              std::vector<gmx::RVec>                *forces,
+                              std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto Abh  = params[bhA];
+        auto bbh  = params[bhB];
+        auto c6bh = params[bhC6];
+        if (Abh > 0 && bbh > 0 && c6bh > 0)
+        {
+            // Get the atom indices
+            auto &indices   = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
+            auto rinv2  = rinv*rinv;
+            real eerep  = Abh*std::exp(-bbh*dr2*rinv);
+            real eedisp = -c6bh*rinv2*rinv2*rinv2;
+            erep     += eerep;
+            edisp    += eedisp;
+            if (debug)
+            {
+                fprintf(debug, "BHAM ai %d aj %d A %g b %g c6 %g erep: %g edisp: %g\n",
+                        indices[0], indices[1], Abh, bbh, c6bh, eerep, eedisp);
+            }
+            real fbond  = (bbh*eerep + 6*edisp*rinv)*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+}
+
 static void computeNonBonded(const TopologyEntryVector             &pairs,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
@@ -1212,6 +1260,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::LJ12_6,                 computeLJ12_6          },
     { Potential::LJ8_6,                  computeLJ8_6           },
     { Potential::LJ14_7,                 computeLJ14_7          },
+    { Potential::BUCKINGHAM,             computeBuckingham      },
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::EXPONENTIAL,            computeExponential     },
