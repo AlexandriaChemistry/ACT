@@ -44,6 +44,8 @@ const char *dexp_name[dexpNR] = { "a1dexp", "a2dexp", "bdexp", "a1dexp_ij", "a2d
 
 const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilon_ij", "gamma_ij" };
 
+const char *bh_name[bhNR] = { "Abh", "bbh", "c6bh", "Abh_ij", "bbh_ij", "c6bh_ij" };
+
 const char *gbh_name[gbhNR] = { "rmin", "epsilon", "gamma", "delta", "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
 
 const char *coul_name[coulNR] = { "zeta", "zeta_i", "zeta_j" };
