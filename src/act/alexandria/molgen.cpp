@@ -414,7 +414,9 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                             auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces->canSwap());
                             if (!forces->parameterExists(vdwId))
                             {
-                                GMX_THROW(gmx::InternalError(gmx::formatString("Unknown pair for %s",
+                                GMX_THROW(gmx::InternalError(gmx::formatString("Unknown pair %s-%s for %s",
+                                                                               myatoms[i].ffType().c_str(),
+                                                                               myatoms[j].ffType().c_str(),
                                                                                interactionTypeToString(itype).c_str()).c_str()));
                             }
                             for(auto &ff : *(forces->findParameters(vdwId)))
