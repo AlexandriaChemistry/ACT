@@ -1638,6 +1638,12 @@ void Topology::fillParameters(const ForceField *pd)
             case Potential::LJ14_7:
                 fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
                 break;
+            case Potential::BUCKINGHAM:
+                fillParams(fs, topID, bhNR, bh_name, &param);
+                break;
+            case Potential::TANG_TOENNIES:
+                fillParams(fs, topID, ttNR, tt_name, &param);
+                break;
             case Potential::WANG_BUCKINGHAM:
                 fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
