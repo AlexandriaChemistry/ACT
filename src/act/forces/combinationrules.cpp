@@ -244,7 +244,9 @@ void evalCombinationRule(Potential                                    ftype,
         auto   crule = combrule.find(param.first)->second;
         double value = 0;
         if (Potential::EXPONENTIAL == ftype ||
-            Potential::DOUBLEEXPONENTIAL == ftype)
+            Potential::DOUBLEEXPONENTIAL == ftype ||
+            Potential::BUCKINGHAM == ftype ||
+            Potential::TANG_TOENNIES == ftype)
         {
             if (CombRule::Kronecker == crule)
             {
