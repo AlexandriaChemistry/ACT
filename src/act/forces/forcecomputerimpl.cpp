@@ -399,6 +399,72 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
+static void computeTangToennies(const TopologyEntryVector             &pairs,
+                                gmx_unused const std::vector<ActAtom> &atoms,
+                                const std::vector<gmx::RVec>          *coordinates,
+                                std::vector<gmx::RVec>                *forces,
+                                std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto Abh   = params[ttA];
+        auto bbh   = params[ttB];
+        double cbh[3] = { params[ttC6], params[ttC8], params[ttC10] };
+        if (Abh > 0 && bbh > 0 && cbh[0] > 0)
+        {
+            // Get the atom indices
+            auto &indices   = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
+            auto rinv2  = rinv*rinv;
+            real br     = bbh*dr2*rinv;
+            real ebr    = std::exp(-br);
+            real eerep  = Abh*ebr;
+            real frep   = bbh*eerep;
+            real eedisp = 0;
+            real fdisp  = 0;
+            real rinvn  = rinv2*rinv2*rinv2;
+            for (int m = 0; m < 3; m++)
+            {
+                real fk = 0;
+                real pp = 1;
+                for (int k = 0; k < 2*(m+3); k++)
+                {
+                    fk += pp/fac[k];
+                    pp  = pp*br;
+                }
+                eedisp -= cbh[0]*rinvn*(1-ebr*fk);
+                rinvn  *= rinv2;
+            }
+            erep     += eerep;
+            edisp    += eedisp;
+            if (debug)
+            {
+                fprintf(debug, "BHAM ai %d aj %d A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
+                        indices[0], indices[1], Abh, bbh, cbh[0], cbh[1], cbh[2], eerep, eedisp);
+            }
+            real fbond = frep+fdisp;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
+        }
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+}
+
 static void computeNonBonded(const TopologyEntryVector             &pairs,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
@@ -1262,6 +1328,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::LJ14_7,                 computeLJ14_7          },
     { Potential::BUCKINGHAM,             computeBuckingham      },
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
+    { Potential::TANG_TOENNIES,          computeTangToennies    },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::EXPONENTIAL,            computeExponential     },
     { Potential::DOUBLEEXPONENTIAL,      computeDoubleExponential },
