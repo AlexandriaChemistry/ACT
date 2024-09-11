@@ -1199,16 +1199,7 @@ void OpenMMWriter::writeDat(const std::string &fileName,
             {
                 fprintf(fp, "vanderwaals = %s\n", 
                         potentialToString(fs.potential()).c_str());
-                const std::string crule("combination_rule");
-                if (fs.optionExists(crule))
-                {
-                    writeCombinationRules(fp, oldCombinationRule(fs.optionValue(crule),
-                                                                 fs.potential()));
-                }
-                else
-                {
-                    writeCombinationRules(fp, getCombinationRule(fs));
-                }
+                writeCombinationRules(fp, getCombinationRule(fs));
             }
         }
     }
