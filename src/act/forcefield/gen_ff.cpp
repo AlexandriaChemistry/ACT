@@ -320,8 +320,17 @@ int gen_ff(int argc, char*argv[])
     const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    const char *vdwfn[]   = { nullptr, "WBHAM", "GBHAM", "LJ12_6", "LJ8_6", "LJ14_7", nullptr };
-
+    std::vector<Potential> nbpot = {
+        Potential::LJ8_6, Potential::LJ12_6, Potential::LJ14_7,
+        Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
+        Potential::BUCKINGHAM, Potential::TANG_TOENNIES };
+    std::vector<const char *> vdwfn = { nullptr };
+    for(const auto &nbp : nbpot)
+    {
+        vdwfn.push_back(potentialToString(nbp).c_str());
+    }
+    vdwfn.push_back(nullptr);
+    
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
         { efCSV, "-vs",  "vsites",    ffOPTRD },
@@ -345,7 +354,7 @@ int gen_ff(int argc, char*argv[])
           "Function to use for covalent angles, can be either" },
         { "-dihfn", FALSE, etENUM, {dihfn},
           "Function to use for proper dihedrals, can be either" },
-        { "-vdwfn", FALSE, etENUM, {vdwfn},
+        { "-vdwfn", FALSE, etENUM, {vdwfn.data()},
           "Function to use for Van der Waals interactions, can be either" }
     };
     crule.addPargs(&pa);
@@ -465,7 +474,7 @@ int gen_ff(int argc, char*argv[])
             if (minmaxmut(entry.first, myatype, vdwcorrp.first, &vmin, &vmax, &vmut))
             {
                 vdwcorr.addParameter(entry.first, vdwcorrp.first,
-                                ForceFieldParameter(vdwcorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+                                     ForceFieldParameter(vdwcorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
             }
         }
         // Induction correction
@@ -507,6 +516,9 @@ int gen_ff(int argc, char*argv[])
             case Potential::LJ14_7:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
+            case Potential::BUCKINGHAM:
+                vdwlist = { { "abh", "kJ/mol" }, { "bbh", "1/nm" }, { "cbh", "kJ/mol nm^6" } };
+                break;
             case Potential::WANG_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
                 break;
@@ -528,6 +540,10 @@ int gen_ff(int argc, char*argv[])
                     }
                     vdw.addParameter(entry.first, key,
                                      ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+                }
+                else
+                {
+                    // Use default values
                 }
             }
         }
