@@ -62,7 +62,10 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
                 { "-cr_sig",  "sigma",   1 },
                 { "-cr_rmin", "rmin",    2 },
                 { "-cr_gam",  "gamma",   3 },
-                { "-cr_del",  "delta",   4 }
+                { "-cr_del",  "delta",   4 },
+                { "-cr_abh",  "Abh",     5 },
+                { "-cr_bbh",  "bbh",     6 },
+                { "-cr_c6bh", "c6bh",    7 },
             },
         },
         {

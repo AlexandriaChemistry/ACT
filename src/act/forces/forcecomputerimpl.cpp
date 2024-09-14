@@ -365,9 +365,9 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Abh  = params[bhA];
-        auto bbh  = params[bhB];
-        auto c6bh = params[bhC6];
+        auto Abh  = params[bhA_IJ];
+        auto bbh  = params[bhB_IJ];
+        auto c6bh = params[bhC6_IJ];
         if (Abh > 0 && bbh > 0 && c6bh > 0)
         {
             // Get the atom indices

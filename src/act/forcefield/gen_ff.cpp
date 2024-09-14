@@ -399,6 +399,12 @@ int gen_ff(int argc, char*argv[])
     {
         printf("You selected point charges. Oh dear...\n");
     }
+    // Default VDW params
+    std::map<std::string, ForceFieldParameter> DP = {
+        { bh_name[bhA],  ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
+        { bh_name[bhB],  ForceFieldParameter("1/nm", 10, 10, 1, 0, 50, Mutability::Bounded, true, true) },
+        { bh_name[bhC6], ForceFieldParameter("kJ/mol nm6", 0, 0, 1, 0, 0.01, Mutability::Bounded, true, true) }
+    };
     for(const auto &entry : table)
     {
         // Generate particle type
@@ -517,7 +523,9 @@ int gen_ff(int argc, char*argv[])
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 break;
             case Potential::BUCKINGHAM:
-                vdwlist = { { "abh", "kJ/mol" }, { "bbh", "1/nm" }, { "cbh", "kJ/mol nm^6" } };
+                vdwlist = { { bh_name[bhA], "kJ/mol" }, 
+                            { bh_name[bhB], "1/nm" },
+                            { bh_name[bhC6], "kJ/mol nm^6" } };
                 break;
             case Potential::WANG_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
@@ -544,6 +552,11 @@ int gen_ff(int argc, char*argv[])
                 else
                 {
                     // Use default values
+                    auto dp = DP.find(vl.first);
+                    if (DP.end() != dp)
+                    {
+                        vdw.addParameter(entry.first, vl.first, dp->second);
+                    }
                 }
             }
         }
