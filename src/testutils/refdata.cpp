@@ -176,7 +176,7 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
 {
     if (g_referenceData)
     {
-        GMX_RELEASE_ASSERT(g_referenceData.unique(),
+        GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
                            "Test cannot create multiple TestReferenceData instances");
         g_referenceData->onTestEnd(true);
         g_referenceData.reset();
@@ -192,7 +192,7 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
         {
             if (g_referenceData)
             {
-                GMX_RELEASE_ASSERT(g_referenceData.unique(),
+                GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
                                    "Test leaked TestRefeferenceData objects");
                 g_referenceData->onTestEnd(test_info.result()->Passed());
                 g_referenceData.reset();
