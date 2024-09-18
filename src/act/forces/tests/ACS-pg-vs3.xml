@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
-<gentop>
-  <version checksum="82866f8c56ef54808ac68620435df1f3" timestamp="2024-01-11 10:21:19"/>
+<!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
+<alexandria_chemistry>
+  <version checksum="8f640770f765c99110c4cc5e0a7359bc" timestamp="2024-09-18 12:11:14"/>
   <particletypes>
     <particletype identifier="Ar" type="Atom" description="ar">
       <option key="acmtype" value="ar_z"/>
@@ -842,12 +842,12 @@
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
   </particletypes>
-  <interaction type="BONDS" function="MORSE" canswap="true"/>
-  <interaction type="ANGLES" function="ANGLES" canswap="true"/>
+  <interaction type="BONDS" function="MORSE_BONDS" canswap="true"/>
+  <interaction type="ANGLES" function="HARMONIC_ANGLES" canswap="true"/>
   <interaction type="LINEAR_ANGLES" function="LINEAR_ANGLES" canswap="linear"/>
-  <interaction type="PROPER_DIHEDRALS" function="FOURDIHS" canswap="true"/>
-  <interaction type="IMPROPER_DIHEDRALS" function="IDIHS" canswap="idih"/>
-  <interaction type="VANDERWAALS" function="GBHAM" canswap="true">
+  <interaction type="PROPER_DIHEDRALS" function="FOURIER_DIHEDRALS" canswap="true"/>
+  <interaction type="IMPROPER_DIHEDRALS" function="HARMONIC_DIHEDRALS" canswap="idih"/>
+  <interaction type="VANDERWAALS" function="GENERALIZED_BUCKINGHAM" canswap="true">
     <option key="nexcl" value="1"/>
     <combinationrule parameter="delta" rule="Arithmetic"/>
     <combinationrule parameter="epsilon" rule="Geometric"/>
@@ -1346,8 +1346,7 @@
       <parameter type="rmin" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="COULOMB" function="COUL_SR" canswap="true">
-    <option key="chargetype" value="Gaussian"/>
+  <interaction type="COULOMB" function="COULOMB_GAUSSIAN" canswap="true">
     <option key="epsilonr" value="1.000"/>
     <option key="nexcl" value="1"/>
     <parameterlist identifier="Be2+_s_z">
@@ -1597,7 +1596,7 @@
       <parameter type="zeta" unit="1/nm" value="13" uncertainty="0" minimum="6" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="POLARIZATION" function="Polarization" canswap="false">
+  <interaction type="POLARIZATION" function="POLARIZATION" canswap="true">
     <parameterlist identifier="Be2+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.3" uncertainty="0" minimum="0.3" maximum="0.3" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kshell" unit="kJ/mol nm2" value="463118" uncertainty="0" minimum="463118" maximum="463118" ntrain="1" mutability="Dependent" nonnegative="yes"/>
@@ -1763,7 +1762,7 @@
       <parameter type="kshell" unit="kJ/mol nm2" value="22201.9" uncertainty="0" minimum="22201.9" maximum="22201.9" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE2" function="vsite2" canswap="vsite2">
+  <interaction type="VSITE2" function="VSITE2" canswap="vsite2">
     <parameterlist identifier="br~h!v2">
       <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
@@ -1777,20 +1776,20 @@
       <parameter type="a" unit="" value="1.05" uncertainty="0" minimum="-1.55" maximum="1.55" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE3" function="vsite3" canswap="vsite3">
+  <interaction type="VSITE3" function="VSITE3" canswap="vsite3">
     <parameterlist identifier="h_b~o3_b~h_b!v3">
-      <parameter type="vs3a" unit="" value="0.2" uncertainty="0" minimum="-1" maximum="1.0" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="vs3b" unit="" value="0.2" uncertainty="0" minimum="-1" maximum="1.0" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3a" unit="" value="0.2" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs3b" unit="" value="0.2" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE3OUT" function="vsite3out" canswap="false">
+  <interaction type="VSITE3OUT" function="VSITE3OUT" canswap="false">
     <parameterlist identifier="h_b~o3_b~h_b!v3out">
       <parameter type="vs3out_a" unit="" value="0.35" uncertainty="0" minimum="-1" maximum="2.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3out_b" unit="" value="0.35" uncertainty="0" minimum="-1" maximum="2.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3out_c" unit="" value="-6.4" uncertainty="0" minimum="-12.8" maximum="0" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
+  <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
     <parameterlist identifier="Br-_z">
       <parameter type="chi" unit="eV" value="3.5" uncertainty="0" minimum="2" maximum="5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="eta" unit="eV" value="14" uncertainty="0" minimum="4" maximum="24" ntrain="1" mutability="Bounded" nonnegative="yes"/>
@@ -1958,4 +1957,4 @@
     <sym_charge central="S" attached="O" numattach="4"/>
     <sym_charge central="P" attached="O" numattach="4"/>
   </symmetric_charges>
-</gentop>
+</alexandria_chemistry>
