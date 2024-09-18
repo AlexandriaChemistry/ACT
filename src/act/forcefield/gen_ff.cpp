@@ -401,9 +401,9 @@ int gen_ff(int argc, char*argv[])
     }
     // Default VDW params
     std::map<std::string, ForceFieldParameter> DP = {
-        { bh_name[bhA],  ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
+        { bh_name[bhA],  ForceFieldParameter("kJ/mol", 1e4, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
         { bh_name[bhB],  ForceFieldParameter("1/nm", 10, 10, 1, 0, 50, Mutability::Bounded, true, true) },
-        { bh_name[bhC6], ForceFieldParameter("kJ/mol nm6", 0, 0, 1, 0, 0.01, Mutability::Bounded, true, true) }
+        { bh_name[bhC6], ForceFieldParameter("kJ/mol nm6", 0.001, 0, 1, 0, 0.01, Mutability::Bounded, true, true) }
     };
     for(const auto &entry : table)
     {
