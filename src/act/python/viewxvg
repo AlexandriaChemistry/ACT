@@ -130,6 +130,7 @@ def plot_once(axs, ncolumn:int, args):
     ipanel     = 0
     colors = args.colors if args.colors else ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
 
+    markers = [ "+", "x", ".", "v", "s", "o" ]
     for fn in args.filename:
         label, legend, dataset = read_xvg(fn, args.residual, args.filelabel)
         if len(dataset) == 0:
@@ -154,13 +155,13 @@ def plot_once(axs, ncolumn:int, args):
             print("Doing bar graphs")
             for xy in dataset:
                 thisax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=fn)
+                setcount += 1
         else:
             print_label = False
             if len(arglabel) > 0:
                 print_label = True
             else:
                 print_label = len(label) == len(dataset)
-            markers = [ "+", "x", ".", "v", "s", "o" ]
             for n in range(len(dataset)):
                 mylabel  = None
                 if viewDebug:
@@ -175,6 +176,7 @@ def plot_once(axs, ncolumn:int, args):
                     print("mylabel = {}".format(mylabel))
                     print("mymarker = {}".format(mymarker))
                 thisax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=mymarker, color = colors[setcount % len(colors)])
+                setcount += 1
         for aa in [ 'x', 'y' ]:
             thisax.tick_params(axis=aa, labelsize=args.tickfontsize)
         if args.panels:
@@ -192,7 +194,6 @@ def plot_once(axs, ncolumn:int, args):
             xlegend = xxmin + args.legend_x*(xxmax-xxmin)
             ylegend = yymin + args.legend_y*(yymax-yymin)
             thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
-        setcount += 1
     if args.pdf:
         # Print just once!
         fig.savefig(args.pdf, bbox_inches='tight')
