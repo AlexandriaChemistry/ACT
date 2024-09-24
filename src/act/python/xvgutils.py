@@ -53,8 +53,8 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
     with open(filename, "r") as inf:
         for line in inf:
             nhash = line.find("#")
-            if nhash == 0:
-                line = line[:nhash]
+            line = line[:nhash]
+            if len(line) == 0:
                 continue
             
             nleg = line.find("@")
