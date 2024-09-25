@@ -46,6 +46,7 @@
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/topologyentry.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/utility/stringutil.h"
@@ -144,13 +145,23 @@ static bool dump_molecule(FILE              *fp,
             }
             fprintf(fp, "\n");
         }
-        // Bonds!
+        // Bonds! We cannot use the bonds in the molprop anymore
+        // since there may be vsites or shells and the numbering
+        // is messed up.
         auto bctype = InteractionType::BONDCORRECTIONS;
-        for (const auto &b : mp->bondsConst())
+        const auto &mybonds = actmol.topology()->entry(InteractionType::BONDS);
+        for (size_t i = 0; i < mybonds.size(); i++)
         {
-            int ai = b.aI();
-            int aj = b.aJ();
-            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, b.bondOrder());
+            auto mybond = static_cast<const Bond &>(*mybonds[i]->self());
+            auto aa = mybond.atomIndices();
+            if (aa.size() != 2)
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Bond with %zu atoms", aa.size()).c_str()));
+            }
+            int    ai = aa[0];
+            int    aj = aa[1];
+            double bo = mybond.bondOrders()[0];
+            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, bo);
             if (pd.hasParticleType(atomId[ai]) && pd.hasParticleType(atomId[aj]))
             {
                 auto pidI = pd.findParticleType(atomId[ai]);
@@ -159,7 +170,7 @@ static bool dump_molecule(FILE              *fp,
                 {
                     auto zidI = pidI->interactionTypeToIdentifier(ztype);
                     auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
-                    Identifier mybond({ zidI.id(), zidJ.id()}, { b.bondOrder() }, CanSwap::No);
+                    Identifier mybond({ zidI.id(), zidJ.id()}, { bo }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;
                     auto fs         = pd.findForcesConst(bctype);
@@ -170,7 +181,7 @@ static bool dump_molecule(FILE              *fp,
                     }
                     else
                     {
-                        Identifier mybond2({ zidJ.id(), zidI.id()}, { b.bondOrder() }, CanSwap::No);
+                        Identifier mybond2({ zidJ.id(), zidI.id()}, { bo }, CanSwap::No);
                         mybond = mybond2;
                         btypeMap   = bccTypeCount->find(mybond.id());
                         auto fs = pd.findForcesConst(bctype);
@@ -178,6 +189,10 @@ static bool dump_molecule(FILE              *fp,
                         {
                             fprintf(fp, "  %s", mybond.id().c_str());
                             bondExists = true;
+                        }
+                        else
+                        {
+                            fprintf(fp, "  N/A");
                         }
                     }
                     if (bondExists)
