@@ -48,6 +48,13 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     auto cr = sii_->commRec();
 
+    // Tell the middleman no genepool was read.
+    // TODO: Implement genepool reading in MCMC
+    int read = 0;
+    for(auto &ii : cr->middlemen())
+    {
+        cr->send(ii, read);
+    }
     // Dataset(s)
     const auto imstr = iMolSelect::Train;
     const auto imste = iMolSelect::Test;
