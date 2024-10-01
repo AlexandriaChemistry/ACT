@@ -155,6 +155,8 @@ enum class MolPropXml {
     qCM5,
     qHirshfeld,
     qMulliken,
+    qRESP,
+    qBCC,
     qACM
 };
 
@@ -171,7 +173,7 @@ const std::map<MolPropXml, MolPropObservable> xoMap = {
 
 const std::set<MolPropXml> allCharges = {
     MolPropXml::qESP, MolPropXml::qCM5, MolPropXml::qMulliken,
-    MolPropXml::qHirshfeld, MolPropXml::qACM
+    MolPropXml::qHirshfeld, MolPropXml::qACM, MolPropXml::qBCC, MolPropXml::qRESP
 };
 
 std::map<const std::string, MolPropXml> xmlxxx =
@@ -238,6 +240,8 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "espid",            MolPropXml::ESPID          },
     { "V",                MolPropXml::dV             },
     { "qESP",             MolPropXml::qESP           },
+    { "qRESP",            MolPropXml::qRESP          },
+    { "qBCC",             MolPropXml::qBCC           },
     { "qCM5",             MolPropXml::qCM5           },
     { "qHirshfeld",       MolPropXml::qHirshfeld     },
     { "qMulliken",        MolPropXml::qMulliken      },
