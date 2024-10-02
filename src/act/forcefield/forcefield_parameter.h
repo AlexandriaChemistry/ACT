@@ -254,7 +254,6 @@ class ForceFieldParameter
     bool isMutable() const
     { 
         return (mutability_ != Mutability::Fixed && 
-                mutability_ != Mutability::ACM &&
                 mutability_ != Mutability::Dependent); 
     }
     

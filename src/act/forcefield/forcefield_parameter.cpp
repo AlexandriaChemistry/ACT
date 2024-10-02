@@ -65,6 +65,7 @@ void ForceFieldParameter::setValue(double value)
         value_ = value;
         break;
     case Mutability::Bounded:
+    case Mutability::ACM:
         if (value >= minimum_ && value <= maximum_)
         {
             value_ = value;
@@ -81,7 +82,6 @@ void ForceFieldParameter::setValue(double value)
             value_ = newval;
         }
         break;
-    case Mutability::ACM:
     case Mutability::Dependent:
     case Mutability::Fixed:
         if (strict_)
