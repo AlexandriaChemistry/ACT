@@ -213,7 +213,7 @@ ChargeGenerationAlgorithm ForceField::chargeGenerationAlgorithm() const
     }
     else
     {
-        return ChargeGenerationAlgorithm::ESP;
+        return ChargeGenerationAlgorithm::NONE;
     } 
 }
 
