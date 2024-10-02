@@ -64,8 +64,11 @@ void ForceFieldParameter::setValue(double value)
     case Mutability::Free:
         value_ = value;
         break;
-    case Mutability::Bounded:
     case Mutability::ACM:
+        // Setting this value will not affect anything but it is needed for edit_ff
+        value_ = value;
+        break;
+    case Mutability::Bounded:
         if (value >= minimum_ && value <= maximum_)
         {
             value_ = value;
