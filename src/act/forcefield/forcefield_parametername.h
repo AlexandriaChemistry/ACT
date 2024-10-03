@@ -98,7 +98,7 @@ namespace alexandria
 
     extern const char *ps_names[psNR];
 
-    enum { polALPHA = 0, polNR = 1 };
+    enum { polALPHA = 0, polRHYPER = 1, polFCHYPER = 2, polNR = 3 };
 
     extern const char *pol_name[polNR];
 
