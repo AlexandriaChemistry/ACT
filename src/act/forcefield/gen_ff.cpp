@@ -470,6 +470,10 @@ int gen_ff(int argc, char*argv[])
             {
                 pols.addParameter(entry.first, "alpha",
                                   ForceFieldParameter("Angstrom3", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+                pols.addParameter(entry.first, "rhyper",
+                                  ForceFieldParameter("nm", 0, 0, 0, vmin, vmax, Mutability::Fixed, true, true));
+                pols.addParameter(entry.first, "fchyper",
+                                  ForceFieldParameter("fchyper", 0, 0, 0, vmin, vmax, Mutability::Fixed, true, true));
             }
         }
         // Charge transfer / Van der waals correction

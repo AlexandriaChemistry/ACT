@@ -1105,17 +1105,36 @@ static void computePolarization(const TopologyEntryVector             &bonds,
         // Get polarizability
         double ksh     = 0;
         auto alpha     = params[polALPHA];
+        auto rhyper    = params[polRHYPER];
+        auto fchyper   = params[polFCHYPER];
         if (alpha > 0)
         {
             ksh       = ONE_4PI_EPS0*q*q/alpha;
         }
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2        = iprod(dx, dx);
+        auto dr2  = iprod(dx, dx);
+        auto dr   = dr2 * gmx::invsqrt(dr2);             /*  10		*/
         
+        if (dr2 == 0.0)
+        {
+            continue;
+        }
+
         auto fbond      = -ksh;
         ebond          += half*ksh*dr2;
         
+        if (dr > rhyper && fchyper > 0)
+        {
+            auto ddr  = dr - rhyper;
+            auto ddr3 = ddr * ddr * ddr;
+            ebond += fchyper * ddr * ddr3;
+            fbond -= 4 * fchyper * ddr3;
+            if (debug)
+            {
+                fprintf(debug, "Adding hyperpolarization energy correction %g kJ/mol.\n", fchyper * ddr * ddr3);
+            }
+        }
         for (int m = 0; m < DIM; m++)
         {
             auto fij          = fbond*dx[m];
