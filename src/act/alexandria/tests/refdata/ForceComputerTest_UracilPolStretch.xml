@@ -10,6 +10,7 @@
   <Real Name="POLARIZATION0.99_act">0</Real>
   <Real Name="INDUCTION0.99_act">-10.661861249665321</Real>
   <Real Name="ALLELEC0.99_act">-221.04352894580757</Real>
+  <Real Name="EXCHIND0.99_act">166.73050465971824</Real>
   <Real Name="EPOT0.99_act">-4807.1977561615749</Real>
   <Real Name="n2-1_act0.99 fX">585.41190690352573</Real>
   <Real Name="n2-1_act0.99 fY">-4798.908237733749</Real>
@@ -56,6 +57,7 @@
   <Real Name="POLARIZATION1.06_act">0</Real>
   <Real Name="INDUCTION1.06_act">-11.25642401051115</Real>
   <Real Name="ALLELEC1.06_act">-215.82450852024462</Real>
+  <Real Name="EXCHIND1.06_act">78.697665594134747</Real>
   <Real Name="EPOT1.06_act">-4759.6025341995864</Real>
   <Real Name="n2-1_act1.06 fX">241.89489900340436</Real>
   <Real Name="n2-1_act1.06 fY">-2060.3977461418699</Real>

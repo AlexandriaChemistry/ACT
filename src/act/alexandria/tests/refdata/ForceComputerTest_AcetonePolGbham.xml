@@ -41,5 +41,6 @@
   <Real Name="POLARIZATION">0</Real>
   <Real Name="INDUCTION">-8.5790089010452881</Real>
   <Real Name="ALLELEC">-195.49421991885228</Real>
+  <Real Name="EXCHIND">5913.6498291954804</Real>
   <Real Name="EPOT">5722.7607592813511</Real>
 </ReferenceData>

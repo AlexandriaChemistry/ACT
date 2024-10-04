@@ -9,6 +9,7 @@
   <Real Name="EXCHANGE0.98_act">5.4248585306738046e-11</Real>
   <Real Name="COULOMB0.98_act">-34.80457169964788</Real>
   <Real Name="ALLELEC0.98_act">-34.80457169964788</Real>
+  <Real Name="EXCHIND0.98_act">5.4248585306738046e-11</Real>
   <Real Name="EPOT0.98_act">-12.017845537607439</Real>
   <Real Name="o2-1_act0.98 fX">-0.036326541167895687</Real>
   <Real Name="o2-1_act0.98 fY">504.22460390873988</Real>
@@ -48,6 +49,7 @@
   <Real Name="EXCHANGE1.07_act">1.8901487927496088e-11</Real>
   <Real Name="COULOMB1.07_act">-31.890495740517864</Real>
   <Real Name="ALLELEC1.07_act">-31.890495740517864</Real>
+  <Real Name="EXCHIND1.07_act">1.8901487927496088e-11</Real>
   <Real Name="EPOT1.07_act">73.328896865842097</Real>
   <Real Name="o2-1_act1.07 fX">-0.032663349837864342</Real>
   <Real Name="o2-1_act1.07 fY">-2758.7820537353527</Real>

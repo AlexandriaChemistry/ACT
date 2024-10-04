@@ -10,6 +10,7 @@
   <Real Name="POLARIZATION_act">0</Real>
   <Real Name="INDUCTION_act">-10.752107615189573</Real>
   <Real Name="ALLELEC_act">-220.29900638625668</Real>
+  <Real Name="EXCHIND_act">150.30513582390341</Real>
   <Real Name="EPOT_act">-4818.6193638570348</Real>
   <Real Name="n2-1_act fX">527.34064207252891</Real>
   <Real Name="n2-1_act fY">-4318.0271732540823</Real>
