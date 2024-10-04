@@ -71,6 +71,8 @@ enum class InteractionType
     CHARGETRANSFER,
     //! Sum of electrostatic terms
     ALLELEC,
+    //! Sum of exchange and induction
+    EXCHIND,
     //! Potential energy, sum over the above
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.

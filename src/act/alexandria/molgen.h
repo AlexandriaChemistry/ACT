@@ -86,6 +86,8 @@ enum class eRMS {
     Induction,
     //! Sum of electrostatic terms
     AllElec,
+    //! Sum of exchange and induction terms
+    ExchInd,
     //! Rest term for SAPT
     DeltaHF,
     //! Mean square force on the atoms

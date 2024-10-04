@@ -384,6 +384,7 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
         sii_->target(iMolSelect::Train, eRMS::Dispersion)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Induction)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::AllElec)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::ExchInd)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
     {
         auto T = molgen_->enerBoltzTemp();

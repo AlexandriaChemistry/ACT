@@ -4,6 +4,7 @@
   <Real Name="BONDS0.98_act">1.8783132929795117</Real>
   <Real Name="ANGLES0.98_act">0.55728331281907129</Real>
   <Real Name="ALLELEC0.98_act">0</Real>
+  <Real Name="EXCHIND0.98_act">0</Real>
   <Real Name="EPOT0.98_act">2.4355966057985832</Real>
   <Real Name="o3-1_act0.98 fX">0</Real>
   <Real Name="o3-1_act0.98 fY">0</Real>
@@ -17,6 +18,7 @@
   <Real Name="BONDS1.02_act">1.6063600676421459</Real>
   <Real Name="ANGLES1.02_act">0.55728331281906729</Real>
   <Real Name="ALLELEC1.02_act">0</Real>
+  <Real Name="EXCHIND1.02_act">0</Real>
   <Real Name="EPOT1.02_act">2.1636433804612132</Real>
   <Real Name="o3-1_act1.02 fX">0</Real>
   <Real Name="o3-1_act1.02 fY">0</Real>

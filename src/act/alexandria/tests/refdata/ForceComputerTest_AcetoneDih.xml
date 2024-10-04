@@ -9,6 +9,7 @@
   <Real Name="EXCHANGE_act">8226.6930751936598</Real>
   <Real Name="COULOMB_act">-67.268622039040935</Real>
   <Real Name="ALLELEC_act">-67.268622039040935</Real>
+  <Real Name="EXCHIND_act">8226.6930751936598</Real>
   <Real Name="EPOT_act">8153.6567770222264</Real>
   <Real Name="o2-1_act fX">-0.02159184333969888</Real>
   <Real Name="o2-1_act fY">98971.215147061142</Real>

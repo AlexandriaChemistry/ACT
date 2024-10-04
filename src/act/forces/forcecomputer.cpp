@@ -200,6 +200,19 @@ double ForceComputer::compute(const ForceField                  *pd,
         }
         energies->insert_or_assign(InteractionType::ALLELEC, allelec);
     }
+    {
+        // Sum of exchange and induction terms
+        double exchind = 0;
+        for(const auto &itype : { InteractionType::EXCHANGE, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
+        {
+            auto ee = energies->find(itype);
+            if (energies->end() != ee)
+            {
+                exchind += ee->second;
+            }
+        }
+        energies->insert_or_assign(InteractionType::EXCHIND, exchind);
+    }
     // Spread forces to atoms
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
     return msForce;

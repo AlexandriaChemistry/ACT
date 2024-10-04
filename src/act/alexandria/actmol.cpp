@@ -287,113 +287,130 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
     GMX_RELEASE_ASSERT(forceComp, "No force computer supplied");
-    for (auto &ei : experimentConst())
+    for (auto &exper : experimentConst())
     {
         // We compute either interaction energies or normal energies for one experiment
-        auto coords  = experCoords(ei.getCoordinates(), topology_);
+        auto coords  = experCoords(exper.getCoordinates(), topology_);
         bool doInter = false;
         for(auto &ie : interE)
         {
-            if (ei.hasProperty(ie.first))
+            if (exper.hasProperty(ie.first))
             {
                 doInter = true;
             }
         }
         if (doInter)
         {
-            std::set<MolPropObservable> mpElec = { MolPropObservable::ELECTROSTATICS,
-                                                   MolPropObservable::INDUCTION,
-                                                   MolPropObservable::INDUCTIONCORRECTION };
-            std::set<InteractionType> itElec = { InteractionType::ELECTROSTATICS,
-                                                 InteractionType::INDUCTION,
-                                                 InteractionType::INDUCTIONCORRECTION };
+            // Complicated way of combined multiple terms into one observable
+            std::map<InteractionType,  std::set<MolPropObservable>> combined = {
+                { InteractionType::ALLELEC, { MolPropObservable::ELECTROSTATICS,
+                                              MolPropObservable::INDUCTION,
+                                              MolPropObservable::INDUCTIONCORRECTION } },
+                { InteractionType::EXCHIND,  { MolPropObservable::EXCHANGE,
+                                               MolPropObservable::INDUCTION,
+                                               MolPropObservable::INDUCTIONCORRECTION } }
+            };
             std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
             calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
             ACTEnergyMap aemap;
-            double allelec_qm  = 0;
-            double allelec_act = 0;
-            size_t foundQM     = 0;
-            size_t foundACT    = 0;
-            for (auto &ie : interE)
             {
-                auto ae = ACTEnergy(ei.id());
-                if (ei.hasProperty(ie.first))
+                // Loop over sets of interactions to combine them
+                for(const auto &combine : combined)
                 {
-                    auto propvec = ei.propertyConst(ie.first);
-                    if (propvec.size() != 1)
+                    // Generate set of interaction corresponding to molpropobservables
+                    std::set<InteractionType> my_int;
+                    for(const auto &c : combine.second)
                     {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", interactionTypeToString(ie.second).c_str(), propvec.size()).c_str()));
+                        my_int.insert(interE[c]);
                     }
-                    auto value = propvec[0]->getValue();
-                    ae.setQM(value);
-                    if (mpElec.find(ie.first) != mpElec.end())
+                    double my_qm    = 0;
+                    double my_act   = 0;
+                    size_t foundQM  = 0;
+                    size_t foundACT = 0;
+                    for (auto &ie : interE)
                     {
-                        allelec_qm += value;
-                        foundQM    += 1;
-                    }
-                }
-                if (einter.find(ie.second) != einter.end())
-                {
-                    auto tt = einter.find(ie.second);
-                    if (einter.end() != tt)
-                    {
-                        if (!std::isnan(tt->second))
+                        auto ae = ACTEnergy(exper.id());
+                        if (exper.hasProperty(ie.first))
                         {
-                            ae.setACT(tt->second);
-                    
-                            if (itElec.find(ie.second) != itElec.end())
+                            auto propvec = exper.propertyConst(ie.first);
+                            if (propvec.size() != 1)
                             {
-                                allelec_act += tt->second;
-                                foundACT    += 1;
+                                GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", interactionTypeToString(ie.second).c_str(), propvec.size()).c_str()));
+                            }
+                            auto value = propvec[0]->getValue();
+                            ae.setQM(value);
+                            if (combine.second.find(ie.first) != combine.second.end())
+                            {
+                                my_qm += value;
+                                foundQM    += 1;
                             }
                         }
+                        if (einter.find(ie.second) != einter.end())
+                        {
+                            auto tt = einter.find(ie.second);
+                            if (einter.end() != tt)
+                            {
+                                if (!std::isnan(tt->second))
+                                {
+                                    ae.setACT(tt->second);
+                                
+                                    if (my_int.find(ie.second) != my_int.end())
+                                    {
+                                        my_act += tt->second;
+                                        foundACT    += 1;
+                                    }
+                                }
+                            }
+                        }
+                        if (ae.haveQM() || ae.haveACT())
+                        {
+                            aemap.insert({ie.second, ae});
+                        }
+                    }
+                
+                    // TODO Store the interaction forces
+                
+                    ACTEnergy my_all(exper.id());
+                    if (foundACT == my_int.size())
+                    {
+                        my_all.setACT(my_act);
+                    }
+                    if (foundQM == combine.second.size())
+                    {
+                        my_all.setQM(my_qm);
+                    }
+                    if (foundACT == my_int.size() || foundQM == combine.second.size())
+                    {
+                        aemap.insert({combine.first, my_all});
                     }
                 }
-                if (ae.haveQM() || ae.haveACT())
-                {
-                    aemap.insert({ie.second, ae});
-                }
-                // TODO Store the interaction forces
-            }
-            ACTEnergy allelec(ei.id());
-            if (foundACT == itElec.size())
-            {
-                allelec.setACT(allelec_act);
-            }
-            if (foundQM == mpElec.size())
-            {
-                allelec.setQM(allelec_qm);
-            }
-            if (foundACT == itElec.size() || foundQM == mpElec.size())
-            {
-                aemap.insert({InteractionType::ALLELEC, allelec});
             }
             if (aemap.size() > 0)
             {
                 interactionEnergyMap->push_back(aemap);
             }
         }
-        else if (ei.hasProperty(MolPropObservable::DELTAE0))
+        else if (exper.hasProperty(MolPropObservable::DELTAE0))
         {
             std::map<InteractionType, double> energies;
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
             (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
-            auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
+            auto eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
                 gmx_fatal(FARGS, "Multiple energies for this experiment");
             }
             else if (eprops.size() == 1)
             {
-                energyMap->push_back(ACTEnergy(ei.id(), eprops[0]->getValue(),
+                energyMap->push_back(ACTEnergy(exper.id(), eprops[0]->getValue(),
                                                energies[InteractionType::EPOT]));
                 energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }
         
-            const std::vector<gmx::RVec> &fff = ei.getForces();
+            const std::vector<gmx::RVec> &fff = exper.getForces();
             if (!fff.empty())
             {
                 size_t ifff = 0;
@@ -726,6 +743,22 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         if (einter->end() != eall)
         {
             for(auto itype : { itElec, itInduc, InteractionType::INDUCTIONCORRECTION })
+            {
+                auto ee = einter->find(itype);
+                if (einter->end() != ee)
+                {
+                    eall->second += ee->second;
+                }
+            }
+        }
+    }
+    {
+        // Gather the terms for EXCHIND output.
+        auto eall = einter->find(InteractionType::EXCHIND);
+        eall->second = 0;
+        if (einter->end() != eall)
+        {
+            for(auto itype : { InteractionType::EXCHANGE, itInduc, InteractionType::INDUCTIONCORRECTION })
             {
                 auto ee = einter->find(itype);
                 if (einter->end() != ee)
