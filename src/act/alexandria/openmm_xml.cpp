@@ -819,13 +819,15 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case Potential::WANG_BUCKINGHAM:
                 case Potential::GENERALIZED_BUCKINGHAM:
                 case Potential::POLARIZATION:
+                case Potential::VSITE3OUTS:
+                case Potential::VSITE3OUT:
                 case Potential::VSITE3S:
                 case Potential::VSITE3:
                 case Potential::VSITE2:
                 case Potential::VSITE1:
                     break;
                 default:
-                    fprintf(stderr, "Wanrning: no OpenMM support for %s is present or implemented.\n",
+                    fprintf(stderr, "Warning: no OpenMM support for %s is present or implemented.\n",
                             interactionTypeToString(fs.first).c_str());
                 }
             }
@@ -1024,12 +1026,13 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                         auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::VSITE_RES));
                         // Could be different vsite types, remember to implement those.
                         std::map<InteractionType, const char *> itypes = { 
-                            { InteractionType::VSITE1,    "average2"   },
-                            { InteractionType::VSITE2,    "average2"   },
-                            { InteractionType::VSITE3OUT, "outOfPlane" },
-                            { InteractionType::VSITE3,    "average3"   },
-                            { InteractionType::VSITE3S,   "average3"   },
-                            { InteractionType::VSITE3FAD, "average3"   }
+                            { InteractionType::VSITE1,     "average2"   },
+                            { InteractionType::VSITE2,     "average2"   },
+                            { InteractionType::VSITE3OUT,  "outOfPlane" },
+                            { InteractionType::VSITE3OUTS, "outOfPlane" },
+                            { InteractionType::VSITE3,     "average3"   },
+                            { InteractionType::VSITE3S,    "average3"   },
+                            { InteractionType::VSITE3FAD,  "average3"   }
                         };
                         for(const auto &itp : itypes)
                         {
@@ -1049,8 +1052,16 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
                                     
                                     // TODO get data from topology instead of making stuff up.
+                                    
+                                    std::vector<int> cores = myatoms[i].cores();
+                                    if (itp.first ==  InteractionType::VSITE3OUTS ||
+                                        itp.first ==  InteractionType::VSITE3OUT)
+                                    {
+                                        // We have to swap cores 0 and 1
+                                        std::swap(cores[0], cores[1]);
+                                    }
                                     int ppp = 1;
-                                    for(const auto &parent : myatoms[i].cores())
+                                    for(const auto &parent : cores)
                                     {
                                         auto an = gmx::formatString("atomName%d", ppp);
                                         if (static_cast<size_t>(parent) < inames.size())
@@ -1091,6 +1102,27 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                             add_xml_double(baby, "weight1", p[0]);
                                             add_xml_double(baby, "weight2", 1-p[0]-p[1]);
                                             add_xml_double(baby, "weight3", p[1]);
+                                        }
+                                        break;
+                                    case InteractionType::VSITE3OUT:
+                                        {
+                                            auto p = ee->params();
+                                            add_xml_double(baby, "weight1", p[0]);
+                                            add_xml_double(baby, "weight2", p[1]);
+                                            // To make the two vsites different, we assume they are next to each other
+                                            // in the row of atoms. In which order the vsites have +/- does not matter.
+                                            int sign = 2*(i % 2)-1;
+                                            add_xml_double(baby, "weight3", sign*p[2]);
+                                        }
+                                        break;
+                                    case InteractionType::VSITE3OUTS:
+                                        {
+                                            auto p = ee->params();
+                                            add_xml_double(baby, "weight1", p[0]);
+                                            add_xml_double(baby, "weight2", p[0]);
+                                            // See above
+                                            int sign = 2*(i % 2)-1;
+                                            add_xml_double(baby, "weight3", sign*p[1]);
                                         }
                                         break;
                                     default:
