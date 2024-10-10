@@ -1593,13 +1593,13 @@ static void fillParams(const ForceFieldParameterList &fs,
                        const char                    *param_names[],
                        std::vector<double>           *param)
 {
-    if (param->empty())
-    {
-        param->resize(nr, 0);
-    }
     auto ff = fs.findParameterMapConst(btype);
     if (!ff.empty())
     {
+        if (param->empty())
+        {
+            param->resize(nr, 0);
+        }
         for (int i = 0; i < nr; i++)
         {
             auto fp      = ff.find(param_names[i]);
@@ -1622,10 +1622,12 @@ void Topology::fillParameters(const ForceField *pd)
             continue;
         }
         auto &fs = pd->findForcesConst(entry.first);
-        for(auto &topentry : entry.second)
+        // Loop over entries, incremebt of tp handled at end.
+        for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
-            const auto &topID = topentry->id();
+            auto &topentry = *tp;
 
+            const auto &topID = topentry->id();
             std::vector<double> param;
             switch (fs.potential())
             {
@@ -1723,7 +1725,21 @@ void Topology::fillParameters(const ForceField *pd)
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
                                                                potentialToString(fs.potential()).c_str()).c_str()));
             }
-            topentry->setParams(param);
+            if (param.empty())
+            {
+                if (debug)
+                {
+                    fprintf(debug, "Force field does not contain %s parameters for %s, removing topology entry.",
+                            potentialToString(fs.potential()).c_str(),
+                            topID.id().c_str());
+                }
+                tp = entry.second.erase(tp);
+            }
+            else
+            {
+                topentry->setParams(param);
+                ++tp;
+            }
         }
     }
 }

@@ -641,10 +641,10 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
     int     svi, sji, skj, d;
     ivec    di;
 
-    av = ia[1];
-    ai = ia[2];
-    aj = ia[3];
-    ak = ia[4];
+    av = ia[4];
+    ai = ia[1];
+    aj = ia[2];
+    ak = ia[3];
     copy_rvec(f[ia[1]], fv);
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
@@ -760,10 +760,10 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     ivec    di;
     int     svi, sji, ski;
 
-    av = ia[1];
-    ai = ia[2];
-    aj = ia[3];
-    ak = ia[4];
+    av = ia[4];
+    ai = ia[1];
+    aj = ia[2];
+    ak = ia[3];
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     ski = pbc_rvec_sub(pbc, x[ak], x[ai], xik);
