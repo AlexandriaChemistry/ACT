@@ -316,76 +316,54 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::map<InteractionType, double> einter;
             calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
             ACTEnergyMap aemap;
+            for (auto &ener : einter)
             {
-                // Loop over sets of interactions to combine them
-                for(const auto &combine : combined)
+                std::set<MolPropObservable> mpos;
+                // Check whether one is enough or we have to look up multiple
+                auto combine = combined.find(ener.first);
+                if (combine != combined.end())
                 {
-                    // Generate set of interaction corresponding to molpropobservables
-                    std::set<InteractionType> my_int;
-                    for(const auto &c : combine.second)
+                    // Combine multiple QM observable
+                    for(const auto &mpo : combine->second)
                     {
-                        my_int.insert(interE[c]);
+                        mpos.insert(mpo);
                     }
-                    double my_qm    = 0;
-                    double my_act   = 0;
-                    size_t foundQM  = 0;
-                    size_t foundACT = 0;
-                    for (auto &ie : interE)
+                }
+                else
+                {
+                    // Find the correct QM observable
+                    for(const auto &ie : interE)
                     {
-                        auto ae = ACTEnergy(exper.id());
-                        if (exper.hasProperty(ie.first))
+                        if (ie.second == ener.first)
                         {
-                            auto propvec = exper.propertyConst(ie.first);
-                            if (propvec.size() != 1)
-                            {
-                                GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", interactionTypeToString(ie.second).c_str(), propvec.size()).c_str()));
-                            }
-                            auto value = propvec[0]->getValue();
-                            ae.setQM(value);
-                            if (combine.second.find(ie.first) != combine.second.end())
-                            {
-                                my_qm += value;
-                                foundQM    += 1;
-                            }
-                        }
-                        if (einter.find(ie.second) != einter.end())
-                        {
-                            auto tt = einter.find(ie.second);
-                            if (einter.end() != tt)
-                            {
-                                if (!std::isnan(tt->second))
-                                {
-                                    ae.setACT(tt->second);
-                                
-                                    if (my_int.find(ie.second) != my_int.end())
-                                    {
-                                        my_act += tt->second;
-                                        foundACT    += 1;
-                                    }
-                                }
-                            }
-                        }
-                        if (ae.haveQM() || ae.haveACT())
-                        {
-                            aemap.insert({ie.second, ae});
+                            mpos.insert(ie.first);
+                            break;
                         }
                     }
-                
-                    // TODO Store the interaction forces
-                
+                }
+                // Loop over sets of observable to combine QM data
+                double my_qm    = 0;
+                size_t foundQM  = 0;
+                for(const auto &mpo : mpos)
+                {
+                    if (exper.hasProperty(mpo))
+                    {
+                        auto propvec = exper.propertyConst(mpo);
+                        if (propvec.size() != 1)
+                        {
+                            GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str()));
+                        }
+                        my_qm += propvec[0]->getValue();
+                        foundQM    += 1;
+                    }
+                }
+                // TODO Store the interaction forces
+                if (foundQM == mpos.size())
+                {
                     ACTEnergy my_all(exper.id());
-                    if (foundACT == my_int.size())
-                    {
-                        my_all.setACT(my_act);
-                    }
-                    if (foundQM == combine.second.size())
-                    {
-                        my_all.setQM(my_qm);
-                    }
-                    if (foundACT == my_int.size() || foundQM == combine.second.size())
-                    {
-                        aemap.insert({combine.first, my_all});
-                    }
+                    my_all.setACT(ener.second);
+                    my_all.setQM(my_qm);
+                    aemap.insert({ener.first, my_all});
                 }
             }
             if (aemap.size() > 0)
