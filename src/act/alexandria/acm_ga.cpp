@@ -176,11 +176,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fprintf(logFile_, "\nStarting GA/HYBRID evolution\n");
         fflush(logFile_);
     }
-    // Open surveillance files for fitness
-    for(const auto &bg : *bestGenome)
-    {
-        openFitnessFiles(fitnessFile_, bg.first);
-    }
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -282,7 +277,12 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         (*bestGenome)[imste] = pool[pold]->getBest(imstr);
     }
-    
+    // Open surveillance files for fitness, after initialization of bestGenome
+    for(const auto &bg : *bestGenome)
+    {
+        openFitnessFiles(fitnessFile_, bg.first);
+    }
+
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
     if (logFile_)
