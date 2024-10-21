@@ -152,7 +152,7 @@ void Topology::addShells(const ForceField *pd,
                     auto pol    = convertToGromacs(param.value(), param.unit());
                     if (pol <= 0)
                     {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
+                        continue;
                     }
                     // TODO Multiple shell support
                     TopologyEntry pp;
