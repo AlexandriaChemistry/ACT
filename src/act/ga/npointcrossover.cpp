@@ -37,10 +37,10 @@ namespace ga
 {
 
 
-void NPointCrossover::offspring(ga::Genome  *parent1,
-                                ga::Genome  *parent2,
-                                ga::Genome  *child1,
-                                ga::Genome  *child2)
+void NPointCrossover::offspring(const ga::Genome  *parent1,
+                                const ga::Genome  *parent2,
+                                ga::Genome        *child1,
+                                ga::Genome        *child2)
 {
 
     // Iteration variable(s)
