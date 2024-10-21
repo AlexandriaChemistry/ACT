@@ -92,10 +92,10 @@ public:
         crossoverPoints_[crossoverPoints_.size() - 1] = chromosomeLength;
     }
 
-    virtual void offspring(ga::Genome *parent1,
-                           ga::Genome *parent2,
-                           ga::Genome *child1,
-                           ga::Genome *child2);
+    virtual void offspring(const ga::Genome *parent1,
+                           const ga::Genome *parent2,
+                           ga::Genome       *child1,
+                           ga::Genome       *child2);
 
 };
 
