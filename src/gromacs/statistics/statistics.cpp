@@ -133,12 +133,38 @@ eStats gmx_stats::add_points(int n, real *xx, real *yy,
     return eStats::OK;
 }
 
+static double KahanSum(const std::vector<double> &input)
+{
+    // Implemented this algorithm to prevent loss of precision
+    // https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+
+    // Prepare the accumulator.
+    double sum = 0.0;
+    // A running compensation for lost low-order bits.
+    double c = 0.0;
+    // The array input has elements indexed input[1] to input[input.length].
+    for(const auto &ii : input)
+    {
+        // c is zero the first time around.
+        double y = ii - c;
+        // Alas, sum is big, y small, so low-order digits of y are lost.         
+        double t = sum + y;
+        // (t - sum) cancels the high-order part of y;
+        // subtracting y recovers negative (low part of y)
+        c = (t - sum) - y;
+        // Algebraically, c should always be zero. Beware
+        // overly-aggressive optimizing compilers!
+        sum = t;
+    }
+
+    return sum;
+}
+
 eStats gmx_stats::compute(int weight)
 {
-    // double yy;
-    double yx, xx, sx, sy, d2;
-    double ssxx, ssyy, ssxy;
-    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
+    //double yx, xx, sx, sy, d2;
+    //double ssxx, ssyy, ssxy;
+    //double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
 
     int    N = x_.size();
 
@@ -149,55 +175,52 @@ eStats gmx_stats::compute(int weight)
 
     if (!computed_)
     {
-        xx   = xx_nw = 0;
-        // yy   = 
-        yy_nw = 0;
-        yx   = yx_nw = 0;
-        sx   = sx_nw = 0;
-        sy   = sy_nw = 0;
-        wtot = 0;
-        d2   = 0;
-        mae_ = 0, mse_ = 0;
+        double sx_nw = KahanSum(x_)/N;
+        double sy_nw = KahanSum(y_)/N;
+
+        std::vector<double> xx_nw_acc;
+        std::vector<double> yx_nw_acc;
+        std::vector<double> yy_nw_acc;
+        std::vector<double> x_acc;
+        std::vector<double> y_acc;
+        std::vector<double> xx_acc;
+        std::vector<double> yx_acc;
+        std::vector<double> yy_acc;
+        std::vector<double> dd_acc;
+        std::vector<double> mae_acc, mse_acc;
+        std::vector<double> w_acc;
         for (int i = 0; (i < N); i++)
         {
-            double dd = y_[i]-x_[i];
-            d2 += gmx::square(dd);
-            
-            mae_ += std::abs(dd);
-            mse_ += dd;
-            if ((dy_[i] != 0.0) && (weight == elsqWEIGHT_Y))
+            xx_nw_acc.push_back(gmx::square(x_[i]));
+            yx_nw_acc.push_back(y_[i]*x_[i]);
+            yy_nw_acc.push_back(gmx::square(y_[i]));
             {
-                w = 1/gmx::square(dy_[i]);
+                double dd = y_[i]-x_[i];
+                dd_acc.push_back(gmx::square(dd));
+                mae_acc.push_back(std::abs(dd));
+                mse_acc.push_back(dd);
             }
-            else
             {
-                w = 1;
+                double w = 1;
+                if ((dy_[i] != 0.0) && (weight == elsqWEIGHT_Y))
+                {
+                    w = 1/gmx::square(dy_[i]);
+                }
+                xx_acc.push_back(w*gmx::square(x_[i]));
+                yx_acc.push_back(w*y_[i]*x_[i]);
+                yy_acc.push_back(w*gmx::square(y_[i]));
+                x_acc.push_back(w*x_[i]);
+                y_acc.push_back(w*y_[i]);
+                w_acc.push_back(w);
             }
-
-            wtot  += w;
-
-            xx    += w*gmx::square(x_[i]);
-            xx_nw += gmx::square(x_[i]);
-
-            // yy    += w*gmx::square(y_[i]);
-            yy_nw += gmx::square(y_[i]);
-
-            yx    += w*y_[i]*x_[i];
-            yx_nw += y_[i]*x_[i];
-
-            sx    += w*x_[i];
-            sx_nw += x_[i];
-
-            sy    += w*y_[i];
-            sy_nw += y_[i];
         }
+        double wtot  = KahanSum(w_acc);
+        mae_   = KahanSum(mae_acc)/N;
+        mse_   = KahanSum(mse_acc)/N;
+        aver_  = sy_nw;
 
-        /* Compute average, sigma and error */
-        mae_        = mae_/N;
-        mse_        = mse_/N; 
-        aver_       = sy_nw/N;
-
-        double variance = yy_nw/N - gmx::square(aver_);
+        double yy_nw    = KahanSum(yy_nw_acc)/N;
+        double variance = yy_nw - gmx::square(aver_);
         if (variance > 0)
         {
             sigma_aver_ = std::sqrt(variance);
@@ -213,17 +236,14 @@ eStats gmx_stats::compute(int weight)
         error_      = sigma_aver_/std::sqrt(static_cast<double>(N));
 
         /* Compute RMSD between x and y */
-        rmsd_ = std::sqrt(d2/N);
+        rmsd_ = std::sqrt(KahanSum(dd_acc)/N);
 
         /* Correlation coefficient for data */
-        yx_nw       /= N;
-        xx_nw       /= N;
-        yy_nw       /= N;
-        sx_nw       /= N;
-        sy_nw       /= N;
-        ssxx         = N*(xx_nw - gmx::square(sx_nw));
-        ssyy         = N*(yy_nw - gmx::square(sy_nw));
-        ssxy         = N*(yx_nw - (sx_nw*sy_nw));
+        double yx_nw = KahanSum(yx_nw_acc)/N;
+        double xx_nw = KahanSum(xx_nw_acc)/N;
+        double ssxx  = N*(xx_nw - gmx::square(sx_nw));
+        double ssyy  = N*(yy_nw - gmx::square(sy_nw));
+        double ssxy  = N*(yx_nw - (sx_nw*sy_nw));
         if (ssxx*ssyy != 0)
         {
             Rdata_       = std::sqrt(gmx::square(ssxy)/(ssxx*ssyy));
@@ -231,10 +251,10 @@ eStats gmx_stats::compute(int weight)
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
            and b) */
-        yx = yx/wtot;
-        xx = xx/wtot;
-        sx = sx/wtot;
-        sy = sy/wtot;
+        double yx = KahanSum(yx_acc)/wtot;
+        double xx = KahanSum(xx_acc)/wtot;
+        double sx = KahanSum(x_acc)/wtot;
+        double sy = KahanSum(y_acc)/wtot;
 
         if (xx != 0)
         {
@@ -263,7 +283,7 @@ eStats gmx_stats::compute(int weight)
             chi2aa_ = std::sqrt(chi2aa_/(N-2));
 
             /* Look up equations! */
-            dx2            = (xx-sx*sx);
+            double dx2  = (xx-sx*sx);
             // dy2            = (yy-sy*sy);
             sigma_a_ = std::sqrt(chi2_/((N-2)*dx2));
             sigma_b_ = sigma_a_*std::sqrt(xx);
