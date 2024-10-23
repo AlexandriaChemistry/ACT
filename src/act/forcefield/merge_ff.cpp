@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -34,6 +34,7 @@
 #include "actpre.h"
 
 #include <map>
+#include <set>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -206,6 +207,7 @@ int merge_ff(int argc, char *argv[])
     gmx_bool    bcompress   = false;    
     //! String for command line to harvest the options to fit
     char       *mergeString = nullptr;
+    char       *info        = nullptr;
     int         ntrain      = 1;
     real        limits      = 0;
     t_pargs     pa[]        =
@@ -214,6 +216,8 @@ int merge_ff(int argc, char *argv[])
           "Compress output XML files" },
         { "-merge", FALSE, etSTR, {&mergeString},
           "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." },
+        { "-info", FALSE, etSTR, {&info},
+          "Extra information to print in table captions" },
         { "-ntrain", FALSE, etINT, {&ntrain},
           "Include only variables that have their ntrain values larger or equal to this number." },
         { "-limits", FALSE, etREAL, {&limits},
@@ -261,12 +265,14 @@ int merge_ff(int argc, char *argv[])
     readForceField(filenames[0].c_str(), &pdout);
     
     // We now update different parts of pdout
+    std::set <alexandria::InteractionType> itypes;
     for(const auto &type : gmx::splitString(mergeString))
     {
         alexandria::InteractionType itype;
         if (pdout.typeToInteractionType(type, &itype))
         {
             merge_parameter(pds, itype, type, &pdout, limits);
+            itypes.insert(itype);
         }
         else
         {
@@ -279,10 +285,19 @@ int merge_ff(int argc, char *argv[])
     if (opt2bSet("-latex", NFILE, fnm))
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-        alexandria_subtype_table(tp, &pdout);
-        alexandria_charge_table(tp, &pdout, ntrain);
-        alexandria_eemprops_table(tp, &pdout, ntrain);
-        //alexandria_eemprops_corr(tp, &pdout, ntrain);
+        ForceFieldTable fft(tp, &pdout, ntrain);
+        std::string myinfo;
+        if (info != nullptr)
+        {
+            myinfo.assign(info);
+        }
+        fft.subtype_table(myinfo);
+        fft.zeta_table(myinfo);
+        fft.eemprops_table(myinfo);
+        for(auto itype : itypes)
+        {
+            fft.itype_table(itype, myinfo);
+        }
         gmx_ffclose(tp);
     }           
     
