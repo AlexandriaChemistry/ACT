@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,51 +41,73 @@
 
 namespace alexandria
 {
+
+class ForceFieldTable
+{
+ private:
+    //! File to write to
+    FILE  *fp_            = nullptr;
+
+    //! Force field
+    const ForceField *pd_ = nullptr;
+
+    //! Minimum number of training points to print
+    int   ntrain_         = 1;
+
+ public:
+    /*! \brief
+     * Generates a LaTeX tables containing force field data.
+     *
+     * \param[in] fp     File pointer to write to
+     * \param[in] pd     Force field data
+     * \param[in] ntrain Minimum number of training points to include
+     */
+    ForceFieldTable(FILE              *fp, 
+                    const ForceField  *pd,
+                    int                ntrain) : fp_(fp), pd_(pd), ntrain_(ntrain) {}
+
     /*! \brief
      * Generates a LaTeX table containing the zeta values 
      * for gaussian and/or slater charge models
      *
-     * \param[out] fp   File pointer to write to
-     * \param[in]  pd   Force field data
-     * \param[in]  ntrain Minimum number of training points to include
+     * \param[in] info   Text to add to the caption of the table
      */
-    void alexandria_charge_table(FILE             *fp, 
-                                 const ForceField *pd,
-                                 int               ntrain);  
+    void zeta_table(const std::string &info);
                                
     /*! \brief
      * Generates a LaTeX table containing the chi and eta values 
      * for Alexandria Charge Models
      *
-     * \param[out] fp   File pointer to write to
-     * \param[in]  pd   Force field data
-     * \param[in]  ntrain Minimum number of training points to include
+     * \param[in] info   Text to add to the caption of the table
      */
-    void alexandria_eemprops_table(FILE             *fp, 
-                                   const ForceField *pd,
-                                   int               ntrain);  
-                               
+    void eemprops_table(const std::string &info);  
+
     /*! \brief
      * Generates a LaTeX table containing the delta_chi and 
      * bond hardness values for Alexandria Charge Models
      *
-     * \param[out] fp   File pointer to write to
-     * \param[in]  pd   Force field data
-     * \param[in]  ntrain Minimum number of training points to include
+     * \param[in] info   Text to add to the caption of the table
      */
-    void alexandria_eemprops_corr(const ForceField *pd,
-                                  FILE             *fp,
-                                  int               ntrain);                             
+    void eemprops_corr_table(const std::string &info);
+
     /*! \brief
      * Generates a LaTeX table containing the subtypes
      * for particle types
      *
-     * \param[out] fp   File pointer to write to
-     * \param[in]  pd   Force field data
+     * \param[in]info Text to add to the caption of the table
      */
-    void alexandria_subtype_table(FILE             *fp,
-                                  const ForceField *pd);
-             
+    void subtype_table(const std::string &info);
+
+    /*! \brief
+     * Generate a LaTeX table for the interaction specified.
+     *
+     * \param[in] info   Text to add to the caption of the table
+     */
+    void itype_table(InteractionType    itype,
+                     const std::string &info);
+
+};
+
 } //namespace
 
 #endif

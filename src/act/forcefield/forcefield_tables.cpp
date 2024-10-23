@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -51,20 +51,19 @@
 namespace alexandria
 {
 
-void alexandria_subtype_table(FILE          *fp,
-                              const ForceField *pd)
+void ForceFieldTable::subtype_table(const std::string &info)
 {
-    LongTable  lt(fp, false, nullptr);
+    LongTable  lt(fp_, false, nullptr);
 
     lt.setColumns("lcccc");
-    auto longbuf = gmx::formatString("Mapping from atom type to subtypes: Alexandria Charge Model (ACM), Charge distribution (Beta), Bond and Polarizability (Pol) types.");
+    auto longbuf = gmx::formatString("Mapping from atom type to subtypes: Alexandria Charge Model (ACM), Charge distribution (Beta), Bond and Polarizability (Pol) types. %s", info.c_str());
     lt.setCaption(longbuf.c_str());
     lt.setLabel("subtype");
     auto header = gmx::formatString("Atom type & ACM & Beta & Bond & Pol");
     lt.addHeadLine(header.c_str());
     lt.printHeader();
     std::vector<std::string> subtypes = { "acmtype", "zetatype", "bondtype", "poltype" };
-    for (const auto &pt : pd->particleTypesConst())
+    for (const auto &pt : pd_->particleTypesConst())
     {
         if (pt.second.mass() == 0)
         {
@@ -88,16 +87,15 @@ void alexandria_subtype_table(FILE          *fp,
     lt.printFooter();
 }
 
-static void alexandria_itype_table(FILE             *fp,
-                                   const ForceField *pd,
-                                   InteractionType   itype,
-                                   int               min_ntrain)
+void ForceFieldTable::itype_table(InteractionType    itype,
+                                  const std::string &info)
 {
-    LongTable  lt(fp, false, nullptr);
-    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$.", 
-                                    interactionTypeToDescription(itype).c_str()).c_str());
+    LongTable  lt(fp_, false, nullptr);
+    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s",
+                                    interactionTypeToDescription(itype).c_str(),
+                                    info.c_str()).c_str());
     lt.setLabel(interactionTypeToString(itype).c_str());
-    auto        eep      = pd->findForcesConst(itype);
+    auto        eep      = pd_->findForcesConst(itype);
     bool        first    = true;
     std::string header;
     int         ncolumns = 1;
@@ -109,24 +107,28 @@ static void alexandria_itype_table(FILE             *fp,
             header = "Type";
         }
         int ntrain = 0;
-        for (const auto &fp : ep.second)
+        for (const auto &ffp : ep.second)
         {
-            // Round upwards the sigma values.
-            if (fp.second.ntrain() >= min_ntrain)
+            if (ffp.second.mutability() == Mutability::Dependent)
             {
-                line += gmx::formatString(" & %.2f(%d, %.2f)",
-                                          fp.second.value(),
-                                          fp.second.ntrain(),
-                                          fp.second.uncertainty()+0.005);
+                continue;
+            }
+            // Round upwards the sigma values.
+            if (ffp.second.ntrain() >= ntrain_)
+            {
+                line += gmx::formatString(" & %.3f(%d, %.3f)",
+                                          ffp.second.value(),
+                                          ffp.second.ntrain(),
+                                          ffp.second.uncertainty()+0.005);
             }
             else
             {
                 line += " & - ";
             }
-            ntrain += fp.second.ntrain();
+            ntrain += ffp.second.ntrain();
             if (first)
             {
-                header   += gmx::formatString(" & %s (N, $\\sigma$)", fp.first.c_str());
+                header   += gmx::formatString(" & %s (N, $\\sigma$)", ffp.first.c_str());
                 ncolumns += 1;
             }
         }
@@ -137,7 +139,7 @@ static void alexandria_itype_table(FILE             *fp,
             lt.printHeader();
             first = false;
         }
-        if (ntrain >= min_ntrain)
+        if (ntrain >= ntrain_)
         {
             lt.printLine(line);
         }
@@ -145,41 +147,38 @@ static void alexandria_itype_table(FILE             *fp,
     lt.printFooter();
 }
 
-void alexandria_eemprops_table(FILE             *fp,
-                               const ForceField *pd,
-                               int               ntrain)
+void ForceFieldTable::eemprops_table(const std::string &info)
 {
     std::vector<InteractionType> itypes = {
         InteractionType::ELECTRONEGATIVITYEQUALIZATION,
         InteractionType::ELECTROSTATICS,
         InteractionType::POLARIZATION,
+        InteractionType::INDUCTIONCORRECTION,
         InteractionType::BONDCORRECTIONS
     };
-    for (const auto &itype : itypes)
+    for (const auto &my_itype : itypes)
     { 
-        if (pd->interactionPresent(itype))
+        if (pd_->interactionPresent(my_itype))
         {
-            auto fs = pd->findForcesConst(itype);
+            auto fs = pd_->findForcesConst(my_itype);
             if (fs.numberOfParameters() > 0)
             {
-                alexandria_itype_table(fp, pd, itype, ntrain);
+                itype_table(my_itype, info);
             }
         }
     }
 }
 
-void alexandria_charge_table(FILE             *fp,
-                             const ForceField *pd,
-                             int               ntrain)
+void ForceFieldTable::zeta_table(const std::string &info)
 {
-    LongTable   lt(fp, false, nullptr);
+    LongTable   lt(fp_, false, nullptr);
     std::string qq("charge");
-    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$.", qq.c_str()).c_str());
+    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s", qq.c_str(), info.c_str()).c_str());
     lt.setLabel(qq.c_str());
     lt.setColumns(4);
     lt.addHeadLine("Particle type & q & $\\Delta$q & N");
     lt.printHeader();
-    for (const auto &ptype : pd->particleTypesConst())
+    for (const auto &ptype : pd_->particleTypesConst())
     {
 
         if (ptype.second.hasParameter(qq))
@@ -187,7 +186,7 @@ void alexandria_charge_table(FILE             *fp,
             auto pp = ptype.second.parameterConst(qq);
             if ((pp.mutability() == Mutability::Free ||
                  pp.mutability() == Mutability::Bounded) &&
-                pp.ntrain() >= ntrain)
+                pp.ntrain() >= ntrain_)
             {
                 auto line = gmx::formatString("%s & %.4f & %.4f & %d",
                                               ptype.second.id().id().c_str(),
