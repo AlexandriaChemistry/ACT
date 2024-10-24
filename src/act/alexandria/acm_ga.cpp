@@ -385,7 +385,14 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         {
             // Select parents
             auto parent1 = selector()->select(gp);
-            auto parent2 = selector()->select(gp);
+            // We do not want the same two parents for a child.
+            // https://github.com/dspoel/ACT/issues/549
+            auto parent2 = parent1;
+            // Potential for an infinite loop here
+            while (parent1 == parent2)
+            {
+                parent2 = selector()->select(gp);
+            }
             auto child1  = i;
             auto child2  = i+1;
             if (debug)
