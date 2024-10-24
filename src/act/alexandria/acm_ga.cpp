@@ -388,10 +388,16 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // We do not want the same two parents for a child.
             // https://github.com/dspoel/ACT/issues/549
             auto parent2 = parent1;
-            // Potential for an infinite loop here
-            while (parent1 == parent2)
+            int  mytry   = 0;
+            int  maxtry  = 5000;
+            while (parent1 == parent2 && mytry < maxtry)
             {
                 parent2 = selector()->select(gp);
+                mytry++;
+            }
+            if (mytry == maxtry)
+            {
+                parent2 = (parent1 + 1) % pool[pold]->popSize();
             }
             auto child1  = i;
             auto child2  = i+1;
