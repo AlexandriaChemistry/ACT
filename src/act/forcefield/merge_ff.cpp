@@ -64,7 +64,7 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             const std::string                         &parameter,
                             alexandria::ForceField                    *pdout,
                             double                                     limits)
-{  
+{
     std::vector<gmx_stats> lsq;
     std::vector<int>       ntrain;
     bool                   first = true;
@@ -204,7 +204,8 @@ int merge_ff(int argc, char *argv[])
     };
     int         NFILE       = asize(fnm);;
     
-    gmx_bool    bcompress   = false;    
+    gmx_bool    bcompress   = false;
+    gmx_bool    bAtypeMap   = false;
     //! String for command line to harvest the options to fit
     char       *mergeString = nullptr;
     char       *info        = nullptr;
@@ -216,6 +217,8 @@ int merge_ff(int argc, char *argv[])
           "Compress output XML files" },
         { "-merge", FALSE, etSTR, {&mergeString},
           "Quoted list of parameters to merge,  e.g. 'alpha zeta'. An empty string means all parameters will be merged." },
+        { "-amap", FALSE, etBOOL, {&bAtypeMap},
+          "Add latex table for mapping from particletype to subtypes" },
         { "-info", FALSE, etSTR, {&info},
           "Extra information to print in table captions" },
         { "-ntrain", FALSE, etINT, {&ntrain},
@@ -266,18 +269,37 @@ int merge_ff(int argc, char *argv[])
     
     // We now update different parts of pdout
     std::set <alexandria::InteractionType> itypes;
-    for(const auto &type : gmx::splitString(mergeString))
+    auto allparams = gmx::splitString(mergeString);
+    if (allparams.empty())
     {
-        alexandria::InteractionType itype;
-        if (pdout.typeToInteractionType(type, &itype))
+        for(const auto &fs : pds[0].forcesConst())
         {
-            merge_parameter(pds, itype, type, &pdout, limits);
-            itypes.insert(itype);
+            if (!fs.second.empty())
+            {
+                auto pp = fs.second.parametersConst().begin();
+                for(const auto &type : pp->second)
+                {
+                    merge_parameter(pds, fs.first, type.first, &pdout, limits);
+                    itypes.insert(fs.first);
+                }
+            }
         }
-        else
+    }
+    else
+    {
+        for(const auto &type : allparams)
         {
-            fprintf(stderr, "No such parameter type '%s' in %s\n",
-                    type.c_str(), filenames[0].c_str());
+            alexandria::InteractionType itype;
+            if (pdout.typeToInteractionType(type, &itype))
+            {
+                merge_parameter(pds, itype, type, &pdout, limits);
+                itypes.insert(itype);
+            }
+            else
+            {
+                fprintf(stderr, "No such parameter type '%s' in %s\n",
+                        type.c_str(), filenames[0].c_str());
+            }
         }
     }
 
@@ -291,9 +313,12 @@ int merge_ff(int argc, char *argv[])
         {
             myinfo.assign(info);
         }
-        fft.subtype_table(myinfo);
-        fft.zeta_table(myinfo);
-        fft.eemprops_table(myinfo);
+        if (bAtypeMap)
+        {
+            fft.subtype_table(myinfo);
+        }
+        //fft.zeta_table(myinfo);
+        //fft.eemprops_table(myinfo);
         for(auto itype : itypes)
         {
             fft.itype_table(itype, myinfo);

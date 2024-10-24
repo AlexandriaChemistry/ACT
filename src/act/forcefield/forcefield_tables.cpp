@@ -90,12 +90,20 @@ void ForceFieldTable::subtype_table(const std::string &info)
 void ForceFieldTable::itype_table(InteractionType    itype,
                                   const std::string &info)
 {
+    if (!pd_->interactionPresent(itype))
+    {
+        return;
+    }
+    auto eep = pd_->findForcesConst(itype);
+    if (eep.parametersConst().empty())
+    {
+        return;
+    }
     LongTable  lt(fp_, false, nullptr);
     lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s",
                                     interactionTypeToDescription(itype).c_str(),
                                     info.c_str()).c_str());
     lt.setLabel(interactionTypeToString(itype).c_str());
-    auto        eep      = pd_->findForcesConst(itype);
     bool        first    = true;
     std::string header;
     int         ncolumns = 1;
