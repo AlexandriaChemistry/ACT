@@ -212,21 +212,40 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Read a gene pool with %zu individuals but that does not match the population size of %d", pool[pold]->popSize(), gach_->popSize()).c_str()));
         }
+        for(int ii = 0; ii < gach_->popSize(); ++ii)
+        {
+            if (pool[pold]->genome(ii).nBase() != sii_->nParam())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Genome %d in genepool read from '%s' has %zu elements, but I expected %zu", ii, gpin_, pool[pold]->genome(ii).nBase(), sii_->nParam()).c_str()));
+            }
+        }
         *pool[pnew] = *pool[pold];
         if (logFile_)
         {
             fprintf(logFile_, "\nRead gene pool with %zu individuals and %zu bases from file %s\n\n", 
                     pool[pold]->popSize(), pool[pold]->genome(0).nBase(), gpin_);
+            fflush(logFile_);
         }
         ind->copyGenome(pool[pold]->genome(0));
         read = 1;
+        if (debug)
+        {
+            fprintf(debug, "Will send genomes to %zu middlemen\n", cr->middlemen().size());
+        }
     }
     for(auto &ii : cr->middlemen())
     {
         cr->send(ii, read);
         if (read == 1)
         {
-            cr->send(ii, pool[pold]->genomePtr(ii)->bases());
+            // Genome index is not the same thing as middleman index...
+            // https://github.com/dspoel/ACT/issues/560
+            int genome_index = ii/(1+cr->nhelper_per_middleman());
+            cr->send(ii, pool[pold]->genomePtr(genome_index)->bases());
+            if (debug)
+            {
+                fprintf(debug, "Sent genome to middleman %d\n", ii);
+            }
         }
     }
 
