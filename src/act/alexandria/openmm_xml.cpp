@@ -438,8 +438,8 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
     //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
     xmlNodePtr fsPtr = nullptr;
-    // Custom non-bonded force is needed if we use Buckingham (not LJ)
-    if (fs.potential() != Potential::LJ12_6)
+    // Custom non-bonded force is needed if we do not use LJ and Point charges.
+    if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
     {
         fsPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_xml_double(fsPtr, "energy", 0.0);
