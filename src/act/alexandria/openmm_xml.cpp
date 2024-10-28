@@ -437,20 +437,22 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     std::string nnn("nexcl");
     //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
     //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
-    xmlNodePtr fsPtr = nullptr;
+    xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
     if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
     {
-        fsPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
-        add_xml_double(fsPtr, "energy", 0.0);
-        add_xml_int(fsPtr, "bondCutoff", 3);
-        auto uafr = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
+        customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
+        add_xml_double(customNBPtr, "energy", 0.0);
+        add_xml_int(customNBPtr, "bondCutoff", 3);
+        auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
         // This order is important!
         // Do not change the order of these parameters, otherwise the force field is not working
-        auto grandchild2 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        if (fs.potential() == Potential::WANG_BUCKINGHAM || fs.potential() == Potential::LJ14_7)
+        auto grandchild2 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+        if (fs.potential() == Potential::WANG_BUCKINGHAM ||
+            fs.potential() == Potential::LJ14_7 ||
+            fs.potential() == Potential::LJ12_6)
         {
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
         }
@@ -458,19 +460,24 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         {
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "rmin");
         }
-        auto grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+        auto grandchild3 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
-        auto grandchild4 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
+        if (fs.potential() == Potential::GENERALIZED_BUCKINGHAM || 
+            fs.potential() == Potential::WANG_BUCKINGHAM ||
+            fs.potential() == Potential::LJ14_7)
+        {
+            auto grandchild4 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+            add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
+        }
         if (fs.potential() == Potential::GENERALIZED_BUCKINGHAM || fs.potential() == Potential::LJ14_7)
         {
-            auto grandchild9 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+            auto grandchild9 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild9, exml_names(xmlEntryOpenMM::NAME), "delta");
         }
         
-        auto grandchild5 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+        auto grandchild5 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild5, exml_names(xmlEntryOpenMM::NAME), "charge");
-        auto grandchild6 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+        auto grandchild6 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
         add_xml_char(grandchild6, exml_names(xmlEntryOpenMM::NAME), "zeta");
     }
     
@@ -506,12 +513,13 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             {
                 type1 = nameIndex(type1, i);
             }
-            xmlNodePtr grandchild3 = nullptr;
-            if (nullptr != fsPtr)
+            xmlNodePtr nbParamPtr = nullptr;
+            if (nullptr != customNBPtr)
             {
-                grandchild3 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
+                nbParamPtr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+                add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
             }
+            double scaleSigma = std::pow(2.0, -1.0/6.0);
             double sigma = 0, epsilon = 0;
             switch (fs.potential())
             {
@@ -523,7 +531,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 {
                     if (Mutability::Dependent != param[wbh_name[j]].mutability())
                     {
-                        add_xml_double(grandchild3, wbh_name[j], param[wbh_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, wbh_name[j], param[wbh_name[j]].internalValue());
                     }
                 }
                 break;
@@ -535,7 +543,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 {
                     if (Mutability::Dependent != param[gbh_name[j]].mutability())
                     {
-                        add_xml_double(grandchild3, gbh_name[j], param[gbh_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, gbh_name[j], param[gbh_name[j]].internalValue());
                     }
                 }
                 break;
@@ -547,24 +555,19 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 {
                     if (Mutability::Dependent != param[lj14_7_name[j]].mutability())
                     {
-                        add_xml_double(grandchild3, lj14_7_name[j], param[lj14_7_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, lj14_7_name[j], param[lj14_7_name[j]].internalValue());
                     }
                 }
                 break;		
             case Potential::LJ12_6:
-                if (nullptr == fsPtr)
+                sigma   = param[lj12_6_name[lj12_6SIGMA]].internalValue();
+                epsilon = param[lj12_6_name[lj12_6EPSILON]].internalValue();
+                scaleSigma = 1.0;
+                for(size_t j = 0; j < param.size(); j++)
                 {
-                    // If we use "native" Lennard Jones we need to do this here:
-                    auto ljchild = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    add_xml_char(ljchild, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
-                    sigma   = param[lj12_6_name[lj12_6SIGMA]].internalValue();
-                    epsilon = param[lj12_6_name[lj12_6EPSILON]].internalValue();
-                    for(size_t j = 0; j < param.size(); j++)
+                    if (Mutability::Dependent != param[lj12_6_name[j]].mutability())
                     {
-                        if (Mutability::Dependent != param[lj12_6_name[j]].mutability())
-                        {
-                            add_xml_double(ljchild, lj12_6_name[j], param[lj12_6_name[j]].internalValue());
-                        }
+                        add_xml_double(nbParamPtr, lj12_6_name[j], param[lj12_6_name[j]].internalValue());
                     }
                 }
                 break;
@@ -573,7 +576,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                         static_cast<int>(fs.potential()),
                         potentialToString(fs.potential()).c_str());
             }
-            if (nullptr != fsPtr)
+            if (nullptr != customNBPtr)
             {
                 auto ztype = "zetatype";
                 if (aType->hasOption(ztype))
@@ -584,15 +587,14 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                     {
                         zeta = fsCoul.findParameterTypeConst(ztp, "zeta").internalValue();
                     }
-                    add_xml_double(grandchild3, "zeta", zeta); 
+                    add_xml_double(nbParamPtr, "zeta", zeta); 
                 }
                 // Normal Lennard Jones is always needed
                 {
                     auto ljchild = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     add_xml_char(ljchild, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
-                    // Convert the sigma to get the correct position of the minimum.
-                    double fac2 = std::pow(2.0, 1.0/6.0);
-                    std::vector<double> se_param = { sigma/fac2, epsilon };
+                    // Convert the sigma to get the correct position of the minimum (only if needed).
+                    std::vector<double> se_param = { sigma*scaleSigma, epsilon };
                     const char *se_name[] = { "sigma", "epsilon" };
                     
                     for(size_t j = 0; j < se_param.size(); j++)

@@ -34,6 +34,18 @@
   <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
+  <CustomNonbondedForce energy="0" bondCutoff="3">
+    <UseAttributeFromResidue name="charge"/>
+    <PerParticleParameter name="sigma"/>
+    <PerParticleParameter name="epsilon"/>
+    <PerParticleParameter name="charge"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="o2_1" sigma="0.2" epsilon="0.75" zeta="13"/>
+    <Atom type="o2_2" sigma="0.2" epsilon="0.75" zeta="13"/>
+    <Atom type="o2_3" sigma="0.2" epsilon="0.75" zeta="13"/>
+    <Atom type="o2_4" sigma="0.2" epsilon="0.75" zeta="13"/>
+    <Atom type="s3_1" sigma="0.375" epsilon="1.05" zeta="13"/>
+  </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
     <UseAttributeFromResidue name="charge"/>
     <Atom type="o2_1" sigma="0.2" epsilon="0.75"/>

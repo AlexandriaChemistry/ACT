@@ -41,7 +41,7 @@
     <Real>0</Real>
     <Real>0</Real>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">31.305692313793582</Real>
+  <Real Name="Zero point energy (kJ/mol)">31.305692313793578</Real>
   <Real Name="Delta H form (kJ/mol)">1253.9911502511641</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">156.05323190748459</Real>
   <Real Name="Standard entropy -    Rotation  (J/mol K)">60.466092147902216</Real>
