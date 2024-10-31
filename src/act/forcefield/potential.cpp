@@ -59,6 +59,7 @@ static const std::map<Potential, const std::string> pot2str =
         { Potential::HARMONIC_BONDS,         "HARMONIC_BONDS" },
         { Potential::MORSE_BONDS,            "MORSE_BONDS" },
         { Potential::CUBIC_BONDS,            "CUBIC_BONDS" },
+        { Potential::HUA_BONDS,              "HUA_BONDS" },
         { Potential::HARMONIC_ANGLES,        "HARMONIC_ANGLES" },
         { Potential::LINEAR_ANGLES,          "LINEAR_ANGLES" },
         { Potential::UREY_BRADLEY_ANGLES,    "UREY_BRADLEY_ANGLES" },

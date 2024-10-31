@@ -317,7 +317,7 @@ int gen_ff(int argc, char*argv[])
     double            epsilonr = 1;
     bool              qsymm    = true;
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", nullptr };
+    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", "HUA", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     std::vector<Potential> nbpot = {
