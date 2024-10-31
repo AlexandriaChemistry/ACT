@@ -106,6 +106,10 @@ namespace alexandria
 
     extern const char *morse_name[morseNR];
 
+    enum { huaLENGTH = 0, huaDE = 1, huaB = 2, huaC = 3, huaNR = 4 };
+
+    extern const char *hua_name[huaNR];
+
     enum { linangA = 0, linangKLIN = 1, linangNR = 2 };
 
     extern const char *linang_name[linangNR];

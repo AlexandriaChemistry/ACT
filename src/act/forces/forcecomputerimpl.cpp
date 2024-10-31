@@ -896,6 +896,46 @@ static void computeMorse(const TopologyEntryVector             &bonds,
     energies->insert({InteractionType::BONDS, ebond});
 }
 
+static void computeHua(const TopologyEntryVector             &bonds,
+                       gmx_unused const std::vector<ActAtom> &atoms,
+                       const std::vector<gmx::RVec>          *coordinates,
+                       std::vector<gmx::RVec>                *forces,
+                       std::map<InteractionType, double>     *energies)
+{
+    double  ebond = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
+    for (const auto &b : bonds)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params = b->params();
+        auto re      = params[huaLENGTH];
+        auto hb      = params[huaB];
+        auto De      = params[huaDE];
+        auto c       = params[huaC];
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        auto dr         = std::sqrt(dr2);
+        auto expterm    = std::exp(-hb*(dr-re));
+        auto exp2       = (1-expterm)/(1-c*expterm);
+        auto vbond      = De*(exp2*exp2-1);
+        auto denom      = (expterm - c);
+        auto fbond      = 2*De*expterm*(expterm-1)*hb*(c-1)/(dr*denom*denom*denom);
+        ebond          += vbond;
+
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    energies->insert({InteractionType::BONDS, ebond});
+}
+
 static void computeLinearAngles(const TopologyEntryVector             &angles,
                                 gmx_unused const std::vector<ActAtom> &atoms,
                                 const std::vector<gmx::RVec>          *coordinates,
@@ -1339,6 +1379,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::NONE,                   computeDummy           },
     { Potential::HARMONIC_BONDS,         computeBonds           },
     { Potential::MORSE_BONDS,            computeMorse           },
+    { Potential::HUA_BONDS,              computeHua             },
     { Potential::CUBIC_BONDS,            computeCubic           },
     { Potential::HARMONIC_ANGLES,        computeAngles          },
     { Potential::LINEAR_ANGLES,          computeLinearAngles    },

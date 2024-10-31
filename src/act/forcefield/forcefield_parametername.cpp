@@ -66,6 +66,8 @@ const char *pol_name[polNR] = { "alpha", "rhyper", "fchyper" };
 
 const char *morse_name[morseNR] = { "beta", "De", "D0", "bondlength" };
 
+const char *hua_name[morseNR] = { "bondlength", "De", "b", "c" };
+
 const char *linang_name[linangNR] = { "a", "klin" };
 
 const char *idih_name[idihNR] = { "kimp" };

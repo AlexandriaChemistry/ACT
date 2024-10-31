@@ -112,7 +112,7 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
             { "-De",    FALSE, etREAL, {&De_},
               "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
             { "-beta",    FALSE, etREAL, {&beta_},
-              "Steepness of the Morse potential (1/nm)" },
+              "Steepness of the Morse or Hua potential (1/nm)" },
             { "-kt",    FALSE, etREAL, {&kt_},
               "Angle force constant (kJ/mol/rad^2)" },
             { "-klin",  FALSE, etREAL, {&klin_},
@@ -382,6 +382,22 @@ void AllBondeds::updateForceField(FILE    *fp,
                 real D0_ = 0;
                 fs->addParameter(bondId, morse_name[morseD0],
                                  ForceFieldParameter("kJ/mol", D0_, 0, 1, -800, 0,
+                                                     Mutability::Bounded, false, false));
+            }
+            break;
+        case Potential::HUA_BONDS:
+            {
+                fs->addParameter(bondId, hua_name[huaLENGTH],
+                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaDE],
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaB],
+                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaC],
+                                 ForceFieldParameter("", 0, 0, 1, -1, 1,
                                                      Mutability::Bounded, false, false));
             }
             break;

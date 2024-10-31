@@ -1666,6 +1666,9 @@ void Topology::fillParameters(const ForceField *pd)
             case Potential::MORSE_BONDS:
                 fillParams(fs, topID, morseNR, morse_name, &param);
                 break;
+            case Potential::HUA_BONDS:
+                fillParams(fs, topID, huaNR, hua_name, &param);
+                break;
             case Potential::CUBIC_BONDS:
                 fillParams(fs, topID, cubicNR, cubic_name, &param);
                 break;
