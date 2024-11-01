@@ -85,6 +85,7 @@ static const std::map<Potential, int> act2gmx = {
     { Potential::COULOMB_POINT,          F_COUL_SR },
     { Potential::HARMONIC_BONDS,         F_BONDS },
     { Potential::MORSE_BONDS,            F_MORSE },
+    { Potential::HUA_BONDS,              F_HUA },
     { Potential::CUBIC_BONDS,            F_CUBICBONDS },
     { Potential::HARMONIC_ANGLES,        F_ANGLES },
     { Potential::LINEAR_ANGLES,          F_LINEAR_ANGLES },

@@ -84,6 +84,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bond    ("BONDS",    "Bond",            2, 2, 2),
     def_bond    ("G96BONDS", "G96Bond",         2, 2, 2),
     def_bond    ("MORSE",    "Morse",           2, 4, 4),
+    def_bond    ("HUA",       "Hua",           2, 4, 4),
     def_bond    ("CUBICBONDS", "Cubic Bonds",    2, 3, 0),
     def_bondnb  ("CONNBONDS", "Connect Bonds",   2, 0, 0),
     def_bonded  ("HARMONIC", "Harmonic Pot.",   2, 2, 2),
