@@ -199,5 +199,3 @@ def write_molprops(output_name, ESP_results_dict, charge, multiplicity, filename
 if __name__ == "__main__":
 
     write_molprops(output_name, ESP_results_dict, charge, multiplicity, filename, fileformat, gridfile, datasource, reference, program, method, basisset, conformation, jobtype, esp_data)
-
-    
