@@ -922,8 +922,8 @@ static void computeHua(const TopologyEntryVector             &bonds,
         auto expterm    = std::exp(-hb*(dr-re));
         auto exp2       = (1-expterm)/(1-c*expterm);
         auto vbond      = De*(exp2*exp2-1);
-        auto denom      = (expterm - c);
-        auto fbond      = 2*De*expterm*(expterm-1)*hb*(c-1)/(dr*denom*denom*denom);
+        auto denom      = (c*expterm - 1);
+        auto fbond      = 2*De*hb*expterm*(expterm-1)*(c-1)/(dr*denom*denom*denom);
         ebond          += vbond;
 
         for (int m = 0; (m < DIM); m++)

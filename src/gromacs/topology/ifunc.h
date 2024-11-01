@@ -123,6 +123,7 @@ enum
     F_BONDS,
     F_G96BONDS,
     F_MORSE,
+    F_HUA,
     F_CUBICBONDS,
     F_CONNBONDS,
     F_HARMONIC,
