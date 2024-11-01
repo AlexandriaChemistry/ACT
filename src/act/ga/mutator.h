@@ -27,7 +27,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #ifndef GA_MUTATOR_H
 #define GA_MUTATOR_H
