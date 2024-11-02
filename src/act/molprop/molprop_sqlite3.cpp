@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -42,7 +42,7 @@
 #include <algorithm>
 #include <vector>
 
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
 #include "act/molprop/molpropobservable.h"
@@ -102,7 +102,7 @@ class Classes
         const std::vector<std::string> &classes() { return classes_; }
 };
 
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
 static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
 {
     const char *msg;
@@ -122,7 +122,6 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
         gmx_fatal(FARGS, "%s", extra);
     }
 }
-#endif
 
 static void getSynonyms(sqlite3              *db,
                         std::vector<Synonym> &syn,
@@ -157,8 +156,8 @@ static void getSynonyms(sqlite3              *db,
         }
         else
         {
-            printf("There are %d synonyms for %d molecules.\n",
-                   static_cast<int>(syn.size()), nMol);
+            printf("There are %zu synonyms for %d molecules.\n",
+                   syn.size(), nMol);
         }
     }
     while (SQLITE_ROW == rc);
@@ -214,8 +213,8 @@ static void getClasses(sqlite3              *db,
         }
         else
         {
-            printf("There are %d classes for %d molecules.\n",
-                   static_cast<int>(classes.size()), nMol);
+            printf("There are %zu classes for %d molecules.\n",
+                   classes.size(), nMol);
         }
     }
     while (SQLITE_ROW == rc);
@@ -224,12 +223,13 @@ static void getClasses(sqlite3              *db,
     check_sqlite3(db, "Finalizing sqlite3 statement",
                   sqlite3_finalize(stmt2));
 }
+#endif
 
-void ReadSqlite3(const char           *sqlite_file,
-                 std::vector<MolProp> *mp,
-                 double                ref_temperature)
+void ReadSqlite3(gmx_unused const char           *sqlite_file,
+                 gmx_unused std::vector<MolProp> *mp,
+                 gmx_unused double                ref_temperature)
 {
-#ifdef HAVE_LIBSQLITE3
+#if HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
 
     sqlite3                    *db   = nullptr;
@@ -433,7 +433,7 @@ void ReadSqlite3(const char           *sqlite_file,
     
 #else
     fprintf(stderr, "No support for sqlite3 database in this executable.\n");
-    fprintf(stderr, "Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
+    fprintf(stderr, "Please rebuild ACT with cmake flag -DGMX_SQLITE3=ON set.\n");
 #endif
 }
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,15 +50,16 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
-#include "act_checksum.h"
-#include "forcefield_xml.h"
+#include "act/forcefield/act_checksum.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/potential.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria
 {
 
 bool ForceField::verifyCheckSum(FILE              *fp,
-                             const std::string &checkSum)
+                                const std::string &checkSum)
 {
     bool match = checkSum == checkSum_;
     if (!match && fp)
@@ -68,6 +69,31 @@ bool ForceField::verifyCheckSum(FILE              *fp,
                 checkSum_.c_str(), checkSum.c_str());
     }
     return match;
+}
+
+void ForceField::print(FILE *fp) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    fprintf(fp, "Force field information\n");
+    fprintf(fp, "-----------------------------------------------\n");
+    fprintf(fp, "Filename:    %s\n", filename_.c_str());
+    fprintf(fp, "CheckSum:    %s\n", checkSum_.c_str());
+    fprintf(fp, "TimeStamp:   %s\n", timeStamp_.c_str());
+    fprintf(fp, "Polarizable: %s\n", polarizable() ? "True" : "False");
+    fprintf(fp, "Interactions:\n");
+    for(const auto &fs : forces_)
+    {
+        fprintf(fp, "  %s function %s\n", interactionTypeToString(fs.first).c_str(),
+                potentialToString(fs.second.potential()).c_str());
+        for(const auto &opt : fs.second.option())
+        {
+            fprintf(fp, "    option %s value %s\n", opt.first.c_str(), opt.second.c_str());
+        }
+    }
+    fprintf(fp, "-----------------------------------------------\n");
 }
 
 bool ForceField::verifyCheckSum(FILE *fp)
@@ -105,18 +131,6 @@ void ForceField::setFilename(const std::string &fn2)
     filename_ = fn2;
 }
 
-bool ForceField::yang() const
-{
-    // Note that this is not a good way of doing things. Filenames may change.
-    return (filename_.find("Yang.dat") != std::string::npos);
-}
-
-bool ForceField::rappe() const
-{
-    // Note that this is not a good way of doing things. Filenames may change.
-    return (filename_.find("Rappe.dat") != std::string::npos);
-}
-
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Atom STUFF
@@ -136,7 +150,7 @@ const std::string ForceField::ztype2elem(const std::string &ztype) const
     {
         for (auto i : alexandria_)
         {
-            if (i.second.interactionTypeToIdentifier(InteractionType::COULOMB).id() == ztype)
+            if (i.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS).id() == ztype)
             {
                 return i.second.element();
             }
@@ -199,7 +213,7 @@ ChargeGenerationAlgorithm ForceField::chargeGenerationAlgorithm() const
     }
     else
     {
-        return ChargeGenerationAlgorithm::ESP;
+        return ChargeGenerationAlgorithm::NONE;
     } 
 }
 
@@ -221,39 +235,6 @@ bool ForceField::atypeToPtype(const std::string &atype,
     return false;
 }
 
-/*
- *-+-+-+-+-+-+-+-+-+-+-+
- * Virtual Site STUFF
- *-+-+-+-+-+-+-+-+-+-+-+
- */
-
-void  ForceField::addVsite(const std::string &atype,
-                        const std::string &type,
-                        int                number,
-                        double             distance,
-                        double             angle,
-                        int                ncontrolatoms)
-{
-    size_t i;
-    for (i = 0; i < vsite_.size(); i++)
-    {
-        if (vsite_[i].atype() == atype &&
-            vsite_[i].type()  == string2vsiteType(atype.c_str()))
-        {
-            break;
-        }
-    }
-    if (i == vsite_.size())
-    {
-        Vsite vs(atype, type, number, distance, angle, ncontrolatoms);
-        vsite_.push_back(vs);
-    }
-    else
-    {
-        fprintf(stderr, "vsite type %s was already added to ForceField record\n", atype.c_str());
-    }
-}
-
 void ForceField::checkForPolarizability()
 {
     auto f = forces_.find(InteractionType::POLARIZATION);
@@ -270,15 +251,14 @@ void ForceField::addParticleType(const ParticleType &ptp)
     alexandria_.insert({ptp.id(), ptp});
 }
 
-void ForceField::addForces(const std::string             &interaction,
-                        const ForceFieldParameterList &forces)
+void ForceField::addForces(InteractionType                iType,
+                           const ForceFieldParameterList &forces)
 {
-    auto iType = stringToInteractionType(interaction.c_str());
     auto f     = forces_.find(iType);
     
     GMX_RELEASE_ASSERT(f == forces_.end(),
                        gmx::formatString("Will not add a second ForceFieldParameterList for %s\n",
-                                         interaction.c_str()).c_str());
+                                         interactionTypeToString(iType).c_str()).c_str());
     forces_.insert({iType, forces});
 }
 
@@ -341,15 +321,13 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &filename_);
-        cr->send_str(dest, &checkSum_);
-        cr->send_str(dest, &timeStamp_);
-        cr->send_str(dest, &vsite_angle_unit_);
-        cr->send_str(dest, &vsite_length_unit_);
-        cr->send_int(dest, static_cast<int>(ChargeGenerationAlgorithm_));
-        cr->send_int(dest, polarizable_ ? 1 : 0);
+        cr->send(dest, filename_);
+        cr->send(dest, checkSum_);
+        cr->send(dest, timeStamp_);
+        cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
+        cr->send(dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
-        cr->send_int(dest, alexandria_.size());
+        cr->send(dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.second.Send(cr, dest);
@@ -359,28 +337,14 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
             }
         }
 
-        /* Send Vsite */
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send_int(dest, vsite_.size());
-            for (auto &vsite : vsite_)
-            {
-                cs = vsite.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
         /* Force Field Parameter Lists */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, forces_.size());
+            cr->send(dest, forces_.size());
             for (auto &force : forces_)
             {
                 std::string key(interactionTypeToString(force.first));
-                cr->send_str(dest, &key);
+                cr->send(dest, key);
                 cs = force.second.Send(cr, dest);
                 if (CommunicationStatus::OK != cs)
                 {
@@ -392,7 +356,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         /* Send Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            cr->send_int(dest, symcharges_.size());
+            cr->send(dest, symcharges_.size());
             for (auto &symcharges : symcharges_)
             {
                 cs = symcharges.Send(cr, dest);
@@ -416,8 +380,6 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&filename_, comm);
         cr->bcast(&checkSum_, comm);
         cr->bcast(&timeStamp_, comm);
-        cr->bcast(&vsite_angle_unit_, comm);
-        cr->bcast(&vsite_length_unit_, comm);
         int icq = static_cast<int>(ChargeGenerationAlgorithm_);
         cr->bcast(&icq, comm);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(icq);
@@ -425,7 +387,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&pol, comm);
         polarizable_ = pol == 1;
         /* Bcast Ffatype */
-        int asize = alexandria_.size();
+        size_t asize = alexandria_.size();
         cr->bcast(&asize, comm);
         if (cr->rank() == root)
         {
@@ -436,7 +398,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         }
         else
         {
-            for(int as = 0; as < asize; as++)
+            for(size_t as = 0; as < asize; as++)
             {
                 ParticleType pt;
                 cs = pt.BroadCast(cr, root, comm);
@@ -447,29 +409,10 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        /* Bcast Vsite */
-        if (CommunicationStatus::OK == cs)
-        {
-            int vsize = vsite_.size();
-            cr->bcast(&vsize, comm);
-            if (cr->rank() != root)
-            {
-                vsite_.resize(vsize);
-            }
-            for (int vs = 0; vs < vsize; vs++)
-            {
-                cs = vsite_[vs].BroadCast(cr, root, comm);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
         /* Force Field Parameter Lists */
         if (CommunicationStatus::OK == cs)
         {
-            int fsize = forces_.size();
+            size_t fsize = forces_.size();
             cr->bcast(&fsize, comm);
             if (cr->rank() == root)
             {
@@ -484,7 +427,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
             {
                 forces_.clear();
             
-                for (int n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
+                for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < fsize); n++)
                 {
                     ForceFieldParameterList fs;
                     std::string             key;
@@ -507,13 +450,13 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         /* Bcast Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            int scsize = symcharges_.size();
+            size_t scsize = symcharges_.size();
             cr->bcast(&scsize, comm);
             if (cr->rank() != root)
             {
                 symcharges_.resize(scsize);
             }
-            for(int scs = 0; scs < scsize; scs++)
+            for(size_t scs = 0; scs < scsize; scs++)
             {
                 cs = symcharges_[scs].BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK != cs)
@@ -531,15 +474,16 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &filename_);
-        cr->recv_str(src, &checkSum_);
-        cr->recv_str(src, &timeStamp_);
-        cr->recv_str(src, &vsite_angle_unit_);
-        cr->recv_str(src, &vsite_length_unit_);
-        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cr->recv_int(src));
-        polarizable_          = static_cast<bool>(cr->recv_int(src));
+        cr->recv(src, &filename_);
+        cr->recv(src, &checkSum_);
+        cr->recv(src, &timeStamp_);
+        int cga;
+        cr->recv(src, &cga);
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
+        cr->recv(src, &polarizable_);
         /* Rceive Ffatype */
-        size_t nalexandria = cr->recv_int(src);
+        size_t nalexandria;
+        cr->recv(src, &nalexandria);
         alexandria_.clear();
         for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
         {
@@ -556,32 +500,15 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
             fflush(debug);
         }
 
-        /* Receive Vsites */
-        size_t nvsite = cr->recv_int(src);
-        vsite_.clear();
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
-        {
-            Vsite vsite;
-            cs = vsite.Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                vsite_.push_back(vsite);
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "Done receiving vsites\n");
-            fflush(debug);
-        }
-
         /* Receive Listed Forces */
-        size_t nforces           = cr->recv_int(src);
+        size_t nforces;
+        cr->recv(src, &nforces);
         forces_.clear();
         for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
         {
             ForceFieldParameterList fs;
             std::string             key;
-            cr->recv_str(src, &key);
+            cr->recv(src, &key);
             InteractionType iType = stringToInteractionType(key.c_str());
             cs                    = fs.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
@@ -602,7 +529,8 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
         /* Receive Symcharges */
         if (CommunicationStatus::OK == cs)
         {
-            size_t nsymcharges = cr->recv_int(src);
+            size_t nsymcharges;
+            cr->recv(src, &nsymcharges);
             symcharges_.clear();
             for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
             {
@@ -634,14 +562,14 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
                 if (Mutability::Free    == mut ||
                     Mutability::Bounded == mut)
                 {
-                    cr->send_int(dest, 1);
-                    cr->send_str(dest, &ax.second.id().id());
-                    cr->send_str(dest, &p.first);
-                    cr->send_double(dest, p.second.value());
+                    cr->send(dest, 1);
+                    cr->send(dest, ax.second.id().id());
+                    cr->send(dest, p.first);
+                    cr->send(dest, p.second.value());
                 }
             }
         }
-        cr->send_int(dest, 0);
+        cr->send(dest, 0);
     }
     cr->send_done(dest);
 }
@@ -652,14 +580,17 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive Particle info */
-        while (1 == cr->recv_int(src))
+        int status;
+        cr->recv(src, &status);
+        while (1 == status)
         {
             std::string axid, paramname;
             double value;
-            cr->recv_str(src, &axid);
-            cr->recv_str(src, &paramname);
-            value = cr->recv_double(src);
+            cr->recv(src, &axid);
+            cr->recv(src, &paramname);
+            cr->recv(src, &value);
             findParticleType(axid)->parameter(paramname)->setValue(value);
+            cr->recv(src, &status);
         }
     }
     else
@@ -676,7 +607,7 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
 /* Force Field Parameter Lists */
 static std::vector<InteractionType> eemlist = 
     { InteractionType::BONDCORRECTIONS,
-      InteractionType::COULOMB,
+      InteractionType::ELECTROSTATICS,
       InteractionType::POLARIZATION,
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
@@ -694,13 +625,13 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
             auto fs = forces_.find(myeem);
             if (fs != forces_.end())
             {
-                cr->send_int(dest, 1);
+                cr->send(dest, 1);
                 // TODO do not ignore return value
                 (void) fs->second.Send(cr, dest);
             }
             else
             {
-                cr->send_int(dest, 0);
+                cr->send(dest, 0);
             }
         }
     }
@@ -714,7 +645,8 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
         /* Receive EEMprops and Bond Corrections */
         for(auto myeem : eemlist)
         {
-            int nbc = cr->recv_int(src);
+            int nbc;
+            cr->recv(src, &nbc);
             if (nbc == 1)
             {
                 auto fs = forces_.find(myeem);
@@ -724,7 +656,7 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
                 }
                 ForceFieldParameterList eem;
                 eem.Receive(cr, src);
-                addForces(interactionTypeToString(myeem), eem);
+                addForces(myeem, eem);
             }
         }
     }
@@ -858,6 +790,27 @@ void ForceField::checkConsistency(FILE *fp) const
         if (nullptr != fp)
         {
             fprintf(fp, "\n");
+        }
+    }
+    const auto itq = InteractionType::ELECTROSTATICS;
+    if (interactionPresent(itq))
+    {
+        auto fs  = findForcesConst(itq);
+        if (fs.potential() == Potential::COULOMB_POINT)
+        {
+            // Check for non-zero zeta
+            std::string zeta("zeta");
+            for(const auto &myparam : fs.parametersConst())
+            {
+                for(const auto &param : myparam.second)
+                {
+                    auto myval = param.second.internalValue();
+                    if (param.first == zeta && myval != 0)
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force field specifies Point charges but %s = %g for %s", zeta.c_str(), myval, myparam.first.id().c_str()).c_str()));
+                    }
+                }
+            }
         }
     }
     if (nerror > 0)

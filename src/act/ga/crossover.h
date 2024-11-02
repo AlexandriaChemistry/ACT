@@ -89,10 +89,10 @@ public:
      * \param[in] child1    the first child to write to
      * \param[in] child2    the second child to write to
      */
-    virtual void offspring(Genome *parent1,
-                           Genome *parent2,
-                           Genome *child1,
-                           Genome *child2) = 0;
+    virtual void offspring(const Genome *parent1,
+                           const Genome *parent2,
+                           Genome       *child1,
+                           Genome       *child2) = 0;
 
 };
 

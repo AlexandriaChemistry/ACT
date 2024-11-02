@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
+#include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
@@ -62,13 +63,17 @@ private:
     std::string      name_;
     //! The chemical element
     std::string      elem_;
+    //! Row in the periodic table (for Slater electrostatics)
+    int              row_ = 0;
     //! The atom type in the force field
     std::string      ffType_;
     //! The particle type
-    int              pType_;
+    ActParticle      apType_;
     //! My shell particles, if any
     std::vector<int> shells_;
-    //! My atom particle, if any,or -1
+    //! My vsite particles, if any
+    std::vector<int> vsites_;
+    //! My atom particles, if any. Both VSite and Shell particles have "cores"
     std::vector<int> cores_;
     //! The atomic number
     int              atomicNumber_;
@@ -82,35 +87,42 @@ public:
     ActAtom(const std::string &name,
             const std::string &elem,
             const std::string &ffType,
-            int                pType,
+            ActParticle        apType,
             int                atomicNumber,
             double             newmass,
-            double             newcharge) :
-        id_({ name }), name_(name), elem_(elem), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
+            double             newcharge,
+            int                row) :
+        id_({ name }), name_(name), elem_(elem), row_(row), ffType_(ffType), apType_(apType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
-    
+
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
-        pType_( pt.gmxParticleType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
+        apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
     {}
-    
+
     //! \return Identifier
     const Identifier &id() const { return id_; }
 
     //! \return the name
     const std::string &name() const { return name_; }
-    
+
     //! \return the element
     const std::string &element() const { return elem_; }
-    
+
+    //! \return the row
+    int row() const { return row_; }
+
     //! \return the ffType
     const std::string &ffType() const { return ffType_; }
-    
+
     //! \return the particle type
-    int pType() const { return pType_; }
+    ActParticle pType() const { return apType_; }
 
     //! \return the list of shells for this particle
     const std::vector<int> &shells() const { return shells_; }
+
+    //! \return the list of vsites for this particle
+    const std::vector<int> &vsites() const { return vsites_; }
 
     //! \return the list of shells for this particle for editing
     std::vector<int> *shellsPtr() { return &shells_; }
@@ -119,7 +131,12 @@ public:
      * \param[in] index The index
      */
     void addShell(int index) { shells_.push_back(index); }
-    
+
+    /*! \brief Add a vsite particle index
+     * \param[in] index The index
+     */
+    void addVsite(int index) { vsites_.push_back(index); }
+
     /*! \brief Set the core particle index
      * \param[in] index The index
      */
@@ -140,10 +157,10 @@ public:
 
     //! \return the mass
     double mass() const { return mass_; }
-    
+
     //! \return the charge
     double charge() const { return charge_; }
-    
+
     /*! set the charge
      * \param[in] charge The new value
      */
@@ -151,7 +168,7 @@ public:
 
     //! return the residue number
     int residueNumber() const { return residueNumber_; }
-    
+
     /*! set the residue number
      * \param[in] resnr the new number
      */
@@ -178,29 +195,40 @@ private:
     std::vector<std::string>                                  residueNames_;
     //! The real atoms, that is, not the vsites or shells
     std::vector<int>                                          realAtoms_;
-         
+
+    /*! Generate virtual sites for atoms.
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The atom and coordinate list that may be extended
+     * \return map containing number of entries added for each interaction type
+     */
+    std::map<InteractionType, size_t> makeVsite1s(const ForceField *pd,
+                                                  AtomList         *atomList);
     /*! Generate virtual sites for bonds.
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
-     * \return the number of vsites added
+     * \return map containing number of entries added for each interaction type
      */
-    int makeVsite2s(const ForceField *pd,
-                    AtomList         *atomList);
-    
+    std::map<InteractionType, size_t> makeVsite2s(const ForceField *pd,
+                                                  AtomList         *atomList);
+
+    /*! \brief Generate three body vsites
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The linked list of particles
+     * \return map containing number of entries added for each interaction type
+     */
+    std::map<InteractionType, size_t> makeVsite3s(const ForceField *pd,
+                                                  AtomList         *atomList);
+
     /*! \brief Add identifiers to interactions
      * \param[in] pd The force field structure
      * \param[in] itype The interaction type for which to do this
-     */                              
+     */
     void setEntryIdentifiers(const ForceField *pd,
                              InteractionType   itype);
-    /*! \brief Add identifiers to interactions
-     * \param[in] pd The force field structure
-     */                              
-    void setIdentifiers(const ForceField *pd);
 
     /*! Add polarizabilities to the topology if needed
      * \param[in]    pd       Force field
-     * \param[inout] atomList The atoms and coordinates will be updated as well  
+     * \param[inout] atomList The atoms and coordinates will be updated as well
      */
     void addShells(const ForceField *pd,
                    AtomList         *atomList);
@@ -226,7 +254,7 @@ private:
      */
     void fixExclusions(TopologyEntryVector                 *pairs,
                        const std::vector<std::vector<int>> &exclusions);
-    
+
     /*! \brief Generate exclusions and remove pairs
      * \param[inout] pairs The list of all atom pairs
      * \param[in] nrexcl   The number of exclusions to generate for Coulomb interactions (max 2)
@@ -234,7 +262,9 @@ private:
      */
     std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
                                                      int                  nrexcl);
-    
+    //! \brief Add vsite identifiers to the cores such that they can be used for exclusions
+    void addVsitesToCores();
+
  public:
     Topology()
     {
@@ -264,7 +294,7 @@ private:
 
     //! Add an atom to the topology
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
-    
+
     //! Debugging stuff
     void dumpPairlist(FILE *fp, InteractionType itype) const;
 
@@ -306,20 +336,20 @@ private:
 
     //! \return the residue names
     const std::vector<std::string> residueNames() const { return residueNames_; }
-    
+
     /*! \brief Add residue information
      * \param[in] residueNumber The original number
      * \param[in] residueName   The new number
      */
-    void addResidue(int                residueNumber, 
+    void addResidue(int                residueNumber,
                     const std::string &residueName);
-    
+
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }
-    
+
     //! \return the mass of the compound
     double mass() const;
-    
+
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
@@ -354,9 +384,9 @@ private:
     void addEntry(InteractionType            itype,
                   const TopologyEntryVector &entry);
 
-    //! \return the number of atoms                    
+    //! \return the number of atoms
     size_t nAtoms() const { return atoms_.size(); }
-        
+
     /*! Generate the non-bonded pair list based on just the atoms
      * \param[in] pd     Force field needed to set identifiers.
      * \param[in] natoms The number of atoms
@@ -371,7 +401,7 @@ private:
      * have been added.
      */
     void addShellPairs();
-    
+
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
 
@@ -380,6 +410,9 @@ private:
      * \return true if found
      */
     bool hasEntry(InteractionType itype) const { return entries_.find(itype) != entries_.end(); }
+
+    //! \return whether there are any virtual sites
+    bool hasVsites() const;
 
     /*! \brief Return the desired entry or throw
      * \param[in] itype The desired interaction type
@@ -393,7 +426,23 @@ private:
 
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, TopologyEntryVector> &entries() const { return entries_; }
-    
+
+    /*! \brief Determine whether an exclusion type is present
+     * \param[in] itype the InteractionType (COULOMB or VANDERWAALS)
+     * \return the result
+     */
+    bool hasExclusions(InteractionType itype) const
+    {
+        return exclusions_.find(itype) != exclusions_.end();
+    }
+
+    /*! \brief Return exclusions for interaction type
+     * \param[in] itype the InteractionType (COULOMB or VANDERWAALS)
+     * \return the exclusions.
+     * \throws if itype is not found 
+     */
+    const std::vector<std::vector<int>> &exclusions(InteractionType itype) const;
+
     /*! \brief Print structure to a file
      * \param[in] fp The file pointer
      */

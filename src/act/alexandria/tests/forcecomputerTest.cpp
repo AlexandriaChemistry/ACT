@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,6 +50,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -82,7 +83,7 @@ protected:
         // Get forcefield
         auto pd  = getForceField(forcefield);
         
-        double rmsToler = 0.0000001;
+        double rmsToler = 1e-12;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
         // The molecule
@@ -143,7 +144,7 @@ protected:
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {
-                    bool shell = atoms[i].pType() == eptShell;
+                    bool shell = atoms[i].pType() == ActParticle::Shell;
                     for(int m = 0; m < DIM; m++)
                     {
                         if (!shell)
@@ -196,7 +197,7 @@ protected:
                 const char *xyz[DIM] = { "X", "Y", "Z" };
                 for(size_t i = 0; i < forces.size(); i++)
                 {
-                    bool shell = atoms[i].pType() == eptShell;
+                    bool shell = atoms[i].pType() == ActParticle::Shell;
                     for(int m = 0; m < DIM; m++)
                     {
                         if (!shell)

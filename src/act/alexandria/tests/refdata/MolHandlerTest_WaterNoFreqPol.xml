@@ -1,21 +1,27 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Morse before">-799.99014184846351</Real>
+  <Real Name="Morse before">-799.99014184846362</Real>
   <Real Name="Angle before">0.00062492073723482847</Real>
   <Real Name="Dispersion before">-2.7018806070515495</Real>
   <Real Name="Repulsion before">972.27536570167695</Real>
-  <Real Name="Coulomb (SR) before">-78.722849368074719</Real>
-  <Real Name="Polarization before">0.23100655103535167</Real>
-  <Real Name="Potential before">91.092125349859757</Real>
-  <Real Name="Coordinate RMSD before minimizing">1.6055956768885907e-17</Real>
-  <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.023280077072316614</Real>
-  <Real Name="Morse after">-642.14592573675009</Real>
-  <Real Name="Angle after">0.045809218852085679</Real>
-  <Real Name="Dispersion after">-2.4673206782969523</Real>
-  <Real Name="Repulsion after">104.34664314852861</Real>
-  <Real Name="Coulomb (SR) after">-77.240459522980018</Real>
-  <Real Name="Polarization after">0.35309867121446342</Real>
-  <Real Name="Potential after">-617.10815489943184</Real>
+  <Real Name="Coulomb (SR) before">-78.242686039374689</Real>
+  <Real Name="Polarization before">0</Real>
+  <Real Name="INDUCTION before">-0.24915677766383837</Real>
+  <Real Name="ALLELEC before">-78.491842817038531</Real>
+  <Real Name="EXCHIND before">972.02620892401308</Real>
+  <Real Name="Potential before">91.092125349860481</Real>
+  <Real Name="Coordinate RMSD before minimizing">1.6055975807798596e-17</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">0.023280106097634638</Real>
+  <Real Name="Morse after">-642.14581294516415</Real>
+  <Real Name="Angle after">0.04582380026838187</Real>
+  <Real Name="Dispersion after">-2.467319661745123</Real>
+  <Real Name="Repulsion after">104.34652159563677</Real>
+  <Real Name="Coulomb (SR) after">-76.511178564950001</Real>
+  <Real Name="Polarization after">0</Real>
+  <Real Name="INDUCTION after">-0.37618912477267863</Real>
+  <Real Name="ALLELEC after">-76.88736768972268</Real>
+  <Real Name="EXCHIND after">103.97033247086409</Real>
+  <Real Name="Potential after">-617.10815490072684</Real>
 </ReferenceData>

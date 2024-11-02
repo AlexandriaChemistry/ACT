@@ -63,10 +63,10 @@ include(gmxBuildTreeInfo)
 include(gmxVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
-    set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
+    set(CMAKE_INSTALL_PREFIX "/usr/local/ACT" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 if("${CMAKE_INSTALL_PREFIX}" STREQUAL "${CMAKE_BINARY_DIR}")
-    message(FATAL_ERROR "GROMACS cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
+    message(FATAL_ERROR "ACT cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
 endif()
 
 include(gmxBuildTypeReference)
@@ -83,7 +83,7 @@ if(NOT CMAKE_BUILD_TYPE)
         "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
-    # Add appropriate GROMACS-specific build types for the Visual
+    # Add appropriate ACT-specific build types for the Visual
     # Studio generator (Debug, Release, MinSizeRel and RelWithDebInfo
     # are already present by default).
     list(APPEND CMAKE_CONFIGURATION_TYPES "RelWithAssert" "Reference")
@@ -110,7 +110,7 @@ set(INSTALLED_HEADER_DEFINITIONS "")
 # Global non-cache variables for implementing the build system
 ########################################################################
 
-# These variables collect libraries that GROMACS requires for
+# These variables collect libraries that ACT requires for
 # linking. They should be appended to with list(APPEND ${name}
 # new-library) calls. They are:
 #  - Libraries that are required for libactgromacs (only)
@@ -156,12 +156,11 @@ mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
 mark_as_advanced(GMX_STDLIB_LIBRARIES)
 
 ########################################################################
-# Detect CXX11 support and flags
+# Detect CXX17 support and flags
 ########################################################################
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v3.0.0 so that GROMACS can detect
-# invalid options with the Intel Compilers, and we have added a line
-# to detect warnings with the Fujitsu compilers on K computer and ICC.
+# The cmake/Check{C,CXX}CompilerFlag.cmake files in the ACT distribution
+# are used with permission from CMake v3.0.0 so that ACT can detect
+# invalid options with the Intel Compilers.
 # CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
 # a semicolon. Since this is also used as a separator in lists inside CMake,
 # that string ends up being split into two separate patterns, and the last
@@ -169,33 +168,32 @@ mark_as_advanced(GMX_STDLIB_LIBRARIES)
 # by replacing the semicolon with a period that matches any character.
 #
 # These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building GROMACS.
+# includes the features in question becomes required for building ACT.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # This must come early, since some of our configuration flag tests
-# depend on being able to compile C++11 source files.
-include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
+# depend on being able to compile C++17 source files.
+include(gmxTestCXX17)
+gmx_test_cxx17(GMX_CXX17_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
 
 # Make sure all C++ code will be compiled in C++11 mode, with the
 # expected standard library.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX17_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 ########################################################################
 # User input options                                                   #
 ########################################################################
 include(gmxOptionUtilities)
-
+set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-# Fujitsu only has SIMD in double precision, so this will be faster
 gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
 option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
 mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
 
-option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" ON)
+option(GMX_MPI    "Build a parallel (message-passing) version of ACT" ON)
 gmx_dependent_option(
     GMX_MPI_IN_PLACE
     "Enable MPI_IN_PLACE for MPIs that have it defined"
@@ -217,26 +215,7 @@ gmx_option_multichoice(
     "SIMD instruction set for CPU kernels and compiler optimization"
     "None"
     None Reference)
-#    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
-
-if(GMX_TARGET_MIC)
-    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
-else()
-    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
-endif()
-
-gmx_option_multichoice(
-    GMX_FFT_LIBRARY
-    "FFT library"
-    "${GMX_FFT_LIBRARY_DEFAULT}"
-    fftw3 mkl)
-gmx_dependent_option(
-    GMX_DISABLE_FFTW_MEASURE
-    "Do not optimize FFTW setups (not needed with SSE)"
-    OFF
-    "GMX_FFT_LIBRARY STREQUAL FFTW3")
-mark_as_advanced(GMX_BUILD_OWN_FFTW)
-mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
+#    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL  ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_QMMM_PROGRAM
@@ -412,17 +391,6 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
 
-# Management of GROMACS options for specific toolchains should go
-# here. Because the initial settings for some of the main options have
-# already happened, but things like library detection and MPI compiler
-# feature detection have not, the docstrings for any over-rides of
-# GROMACS defaults or user settings will make sense. Also, any
-# toolchain-related reasons for choosing whether to detect various
-# things can be sorted out now, before the detection takes place.
-if(GMX_TARGET_FUJITSU_SPARC64)
-    include(gmxManageFujitsuSparc64)
-endif()
-
 ########################################################################
 #Process MPI settings
 ########################################################################
@@ -500,15 +468,13 @@ if (GMX_ALEXANDRIA)
     set(HAVE_LIBCLN 0)
   endif()
 
-  find_package(sqlite3 REQUIRED)
+  find_package(sqlite3)
   set(PKG_SQLITE3 "")
   if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIR})
     set(PKG_SQLITE3 sqlite3)
     set(HAVE_LIBSQLITE3 1)
     list(APPEND	GMX_EXTRA_LIBRARIES ${SQLITE3_LIBRARIES})
-  else(SQLITE3_FOUND)
-    message(FATAL_ERROR "SQLite3 library not found.")
   endif(SQLITE3_FOUND)
 
   set(PKG_OPENBABEL3 "")
@@ -526,40 +492,6 @@ if (GMX_ALEXANDRIA)
   endif(OPENBABEL3_FOUND)
 
 endif (GMX_ALEXANDRIA)
-
-gmx_option_trivalue(
-    GMX_HWLOC
-    "Use hwloc portable hardware locality library"
-    "AUTO")
-
-if (GMX_HWLOC)
-    # Find quietly the second time.
-    if(DEFINED HWLOC_LIBRARIES)
-        set(Hwloc_FIND_QUIETLY TRUE)
-    endif()
-    find_package(Hwloc 1.5)
-
-    if (HWLOC_FOUND)
-        if (HWLOC_LIBRARIES MATCHES ".a$")
-            set(_STATIC_HWLOC TRUE)
-        endif()
-
-        gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
-        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
-            message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
-            set(GMX_USE_HWLOC OFF)
-        else()
-            set(GMX_USE_HWLOC ON)
-        endif()
-
-        if (GMX_USE_HWLOC)
-            include_directories(SYSTEM ${HWLOC_INCLUDE_DIRS})
-            list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
-        endif()
-    elseif(GMX_HWLOC_FORCE)
-        message(FATAL_ERROR "Hwloc package support required, but not found.")
-    endif()
-endif()
 
 option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version bundled with GROMACS." OFF)
 mark_as_advanced(GMX_EXTERNAL_TINYXML2)
@@ -694,7 +626,7 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
+check_include_file_cxx(regex     HAVE_CXX17_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -739,14 +671,6 @@ elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
 else()
     gmx_invalid_option_value(GMX_QMMM_PROGRAM)
 endif()
-
-
-##################################################
-# Process FFT library settings
-##################################################
-include(gmxManageFFTLibraries)
-
-include(gmxManageLinearAlgebraLibraries)
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.

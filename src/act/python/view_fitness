@@ -53,7 +53,7 @@ def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
     ax.set_xlabel("Generation")
     if args.log:
         ax.set_yscale('log')
-        ax.set_ylabel("log10(Fitness)")
+        ax.set_ylabel("Fitness")
     else:
         if not args.ymin:  # Weird matplotlib things
             args.ymin = 0

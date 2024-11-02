@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "act/basics/dataset.h"
+#include "act/utility/communicationrecord.h"
 
 namespace alexandria
 {
@@ -68,38 +69,52 @@ class IMolSelect
 
 class MolSelect
 {
-    private:
-        //! Vector of iMolSelect entries
-        std::vector<IMolSelect> ims_;
-
-    public:
+private:
+    //! Vector of iMolSelect entries
+    std::vector<IMolSelect> ims_;
+    //! Look up iupac
+    const IMolSelect *findIupac(const std::string &iupac) const;
+public:
     
-        MolSelect() {};
-
-        void read(const char *filename);
-        
-        size_t nMol() const { return ims_.size(); }
+    MolSelect() {};
+    /*! \brief Add one entry
+     * \param[in] iupac The molecule name
+     * \param[in] index A number
+     * \param[in] ims   The selection group
+     */
+    void addOne(const std::string &iupac,
+                int                index,
+                iMolSelect         ims);
+    /*! \brief Read selection from a file
+     * \param[in] filename
+     */
+    void read(const char *filename);
     
-        /*! \brief Get data set for iupac
-         * \param[in]  iupac The molecule name
-         * \param[out] ims   The data set
-         * \return true if found, false otherwise
-         */    
-        bool status(const std::string &iupac, iMolSelect *ims) const;
-        
-        /*! \brief Get index for iupac
-         * \param[in]  iupac The molecule name
-         * \param[out] index The index
-         * \return true if found, false otherwise
-         */    
-        bool index(const std::string &iupac, int *index) const;
-        
-        int count(iMolSelect ims) const
-        {
-            return std::count_if(ims_.begin(), ims_.end(),
-                                 [ims](IMolSelect const &i)
+    size_t nMol() const { return ims_.size(); }
+    
+    /*! \brief Get data set for iupac
+     * \param[in]  iupac The molecule name
+     * \param[out] ims   The data set
+     * \return true if found, false otherwise
+     */    
+    bool status(const std::string iupac, iMolSelect *ims) const;
+    
+    /*! \brief Get index for iupac
+     * \param[in]  iupac The molecule name
+     * \param[out] index The index
+     * \return true if found, false otherwise
+     */    
+    bool index(const std::string &iupac, int *index) const;
+    
+    int count(iMolSelect ims) const
+    {
+        return std::count_if(ims_.begin(), ims_.end(),
+                             [ims](IMolSelect const &i)
                                  { return i.status() == ims; });
-        }
+    }
+
+    //! Broadcast my data
+    void bcast(const CommunicationRecord *cr);
 };
 
 } // namespace

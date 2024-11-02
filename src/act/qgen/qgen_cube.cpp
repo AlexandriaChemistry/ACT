@@ -164,7 +164,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[ZZ],
                 0.0, 0.0, convertFromGromacs(space_[ZZ], lengthUnit));
 
-        for (int m = 0; (m < natoms()); m++)
+        for (size_t m = 0; (m < natoms()); m++)
         {
             fprintf(fp, "%5d%12.6f%12.6f%12.6f%12.6f\n",
                     atomnumber_[m], q_[m],
@@ -206,7 +206,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                     {
                         rmin = 1000;
                         /* Add point to histogram! */
-                        for (auto i = 0; i < nAtom_; ++i)
+                        for (size_t i = 0; i < nAtom_; ++i)
                         {
                             gmx::RVec dx;
                             rvec_sub(x_[i], ep_[m].esp(), dx);
@@ -386,9 +386,8 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     }
     if (!bOK)
     {
-        gmx_fatal(FARGS, "Error reading %s. Found %d potential values, %d coordinates and %d atoms",
-                  fn.c_str(), static_cast<int>(pot.size()), static_cast<int>(ep_.size()),
-                  nAtom_);
+        gmx_fatal(FARGS, "Error reading %s. Found %lu potential values, %lu coordinates and %lu atoms",
+                  fn.c_str(), pot.size(), ep_.size(), nAtom_);
     }
 }
 
@@ -409,7 +408,7 @@ void QgenResp::makeGrid(real                          spacing,
     rvec xmin = {  100,  100,  100 };
     rvec xmax = { -100, -100, -100 };
     x_ = x;
-    for (int i = 0; (i < nAtom_); i++)
+    for (size_t i = 0; (i < nAtom_); i++)
     {
         for(int m = 0; m < DIM; m++)
         {
@@ -458,7 +457,7 @@ void QgenResp::calcRho()
     for (size_t i = 0; (i < nEsp()); i++)
     {
         double V = 0;
-        for (int j = 0; j < nAtom_; j++)
+        for (size_t j = 0; j < nAtom_; j++)
         {
             double               vv = 0;
             gmx::RVec            dx;

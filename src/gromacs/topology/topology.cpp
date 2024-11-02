@@ -422,24 +422,23 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
 static void cmp_ilist(FILE *fp, int ftype, const t_ilist *il1, const t_ilist *il2)
 {
     int  i;
-    char buf[256];
 
     fprintf(fp, "comparing ilist %s\n", interaction_function[ftype].name);
-    sprintf(buf, "%s->nr", interaction_function[ftype].name);
-    cmp_int(fp, buf, -1, il1->nr, il2->nr);
-    sprintf(buf, "%s->iatoms", interaction_function[ftype].name);
+    auto buf = gmx::formatString("%s->nr", interaction_function[ftype].name);
+    cmp_int(fp, buf.c_str(), -1, il1->nr, il2->nr);
+    buf = gmx::formatString("%s->iatoms", interaction_function[ftype].name);
     if (((il1->nr > 0) && (!il1->iatoms)) ||
         ((il2->nr > 0) && (!il2->iatoms)) ||
         ((il1->nr != il2->nr)))
     {
         fprintf(fp, "Comparing radically different topologies - %s is different\n",
-                buf);
+                buf.c_str());
     }
     else
     {
         for (i = 0; (i < il1->nr); i++)
         {
-            cmp_int(fp, buf, i, il1->iatoms[i], il2->iatoms[i]);
+            cmp_int(fp, buf.c_str(), i, il1->iatoms[i], il2->iatoms[i]);
         }
     }
 }
@@ -529,7 +528,6 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
 static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, real abstol)
 {
     int  i;
-    char buf1[64], buf2[64];
 
     fprintf(fp, "comparing idef\n");
     if (id2)
@@ -538,10 +536,10 @@ static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, 
         cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
         for (i = 0; (i < std::min(id1->ntypes, id2->ntypes)); i++)
         {
-            sprintf(buf1, "idef->functype[%d]", i);
-            sprintf(buf2, "idef->iparam[%d]", i);
-            cmp_int(fp, buf1, i, static_cast<int>(id1->functype[i]), static_cast<int>(id2->functype[i]));
-            cmp_iparm(fp, buf2, id1->functype[i],
+            auto buf1 = gmx::formatString("idef->functype[%d]", i);
+            auto buf2 = gmx::formatString("idef->iparam[%d]", i);
+            cmp_int(fp, buf1.c_str(), i, static_cast<int>(id1->functype[i]), static_cast<int>(id2->functype[i]));
+            cmp_iparm(fp, buf2.c_str(), id1->functype[i],
                       id1->iparams[i], id2->iparams[i], ftol, abstol);
         }
         cmp_real(fp, "fudgeQQ", -1, id1->fudgeQQ, id2->fudgeQQ, ftol, abstol);
@@ -562,22 +560,18 @@ static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, 
 
 static void cmp_block(FILE *fp, const t_block *b1, const t_block *b2, const char *s)
 {
-    char buf[32];
-
     fprintf(fp, "comparing block %s\n", s);
-    sprintf(buf, "%s.nr", s);
-    cmp_int(fp, buf, -1, b1->nr, b2->nr);
+    auto buf = gmx::formatString("%s.nr", s);
+    cmp_int(fp, buf.c_str(), -1, b1->nr, b2->nr);
 }
 
 static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const char *s)
 {
-    char buf[32];
-
     fprintf(fp, "comparing blocka %s\n", s);
-    sprintf(buf, "%s.nr", s);
-    cmp_int(fp, buf, -1, b1->nr, b2->nr);
-    sprintf(buf, "%s.nra", s);
-    cmp_int(fp, buf, -1, b1->nra, b2->nra);
+    auto buf = gmx::formatString("%s.nr", s);
+    cmp_int(fp, buf.c_str(), -1, b1->nr, b2->nr);
+    buf = gmx::formatString("%s.nra", s);
+    cmp_int(fp, buf.c_str(), -1, b1->nra, b2->nra);
 }
 
 void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)

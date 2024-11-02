@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/secondvirial.h"
+#include "act/alexandria/b2data.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

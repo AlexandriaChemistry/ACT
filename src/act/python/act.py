@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-        
+
 import os, shutil, sys
 from enum import Enum
 from .get_csv_rows import *
@@ -8,7 +8,7 @@ class Alg(Enum):
     GA     = 1
     MCMC   = 2
     HYBRID = 3
-    
+
 class Target(Enum):
     ACM    = 1
     Epot   = 2
@@ -21,7 +21,7 @@ class ACT:
     def __init__(self,
                  MolPropFile: str,
                  ChargesFile: str,
-                 SelectionFile: str, 
+                 SelectionFile: str,
                  verbose: bool=False):
         try:
             self.actdata = os.environ["ACTDATA"]
@@ -42,7 +42,7 @@ class ACT:
         self.pop_size = self.node_count
         self.set_algorithm(Alg.HYBRID, self.pop_size)
         self.debug = False
-    
+
     def set_debug(self, debug:bool):
         self.debug = debug
 
@@ -67,7 +67,7 @@ class ACT:
             elif row[1] == "Test":
                 self.ntest += 1
         if self.verbose:
-            print("There are %d Train and %d Test compounds." % 
+            print("There are %d Train and %d Test compounds." %
                   ( self.ntrain, self.ntest ) )
 
     def set_algorithm(self, algorithm:Alg, popsize:int):
@@ -120,14 +120,14 @@ class ACT:
             if not self.debug:
                 os.system(cmd)
             return os.path.exists(xmlout)
-        
+
         return False
-        
+
     def geometry_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                     LogFile:str, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
-        cmd = ( "alexandria geometry_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
+        cmd = ( "alexandria geometry_ff -ff %s -o %s -mp %s -sel %s -g %s" %
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
@@ -136,20 +136,23 @@ class ACT:
             print(cmd)
         if not self.debug:
             os.system(cmd)
-        
+
     def train_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                  LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
 
-        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -charges %s -sel %s -g %s" % 
+        cmd = ( "alexandria train_ff -ff %s -o %s -mp %s -sel %s -g %s" %
                 ( ForceFieldFileIn, ForceFieldFileOut,
-                  self.molpropfile, self.chargesfile,
+                  self.molpropfile,
                   self.selectionfile, LogFile ) )
-        for opt, val in options.items():
-            cmd += ( " %s %s " % ( opt, val ))
-            if opt == "-pop_size":
-                self.popsize = val
+        if len(self.chargesfile) > 0:
+            if Target.ACM == target:
+                print("Ignoring charges file when optimizing charge properties")
+            else:
+                cmd += " -charges " + self.chargesfile
+        for opt in options:
+            cmd += ( " %s %s " % ( opt, options[opt] ))
         ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta", "kphi", "phi0", "c1", "c2", "c3", "bondenergy" ]
         if OptimizeGeometry:
             ener_params.append("bondlength")
@@ -160,9 +163,9 @@ class ACT:
             fit_params += " " + e
         fit_params += "'"
         if target == Target.ACM:
-            myopts = { "-fc_esp":          "1", 
-                       "-fc_charge":       "400", 
-                       "-fc_unphysical":   "100", 
+            myopts = { "-fc_esp":          "1",
+                       "-fc_charge":       "400",
+                       "-fc_unphysical":   "100",
                        "-fc_polar":        "10",
                        "-zetadiff":        "5",
                        "-fit":             "'alpha zeta charge eta chi delta_eta delta_chi'" }
@@ -188,11 +191,11 @@ class ACT:
                 cmd += ( " %s %s " % ( opt, myopts[opt] ))
                 if opt == "-pop_size":
                     self.popsize = myopts[opt]
-                    
+
         for opt in self.algopts:
             if not opt in options:
                 cmd += ( " %s %s " % ( opt, self.algopts[opt] ))
-      
+
         cmd = self.runpar() + " " + cmd
         if self.verbose or self.debug:
             print(cmd)
@@ -208,7 +211,7 @@ def sample_act():
     MolPropFile       = "molprop.xml"
     SelectionFile     = "sel.dat"
     act = ACT(MolPropFile, SelectionFile, True)
-    
+
     ForceFieldFileIn  = "ACS-pg.xml"
     ACT.geometry_ff(ForceFieldFileIn, ForceFieldFileIn, "geometry.log", {})
     for target in Target:
@@ -221,4 +224,3 @@ def sample_act():
 
 if __name__ == '__main__':
     sample_act()
-    

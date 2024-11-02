@@ -448,7 +448,6 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
     if (nullptr != fc_types)
     {
         std::vector<std::string> qm = split(fc_types, ':');
-        int n = 0;
         for (auto pqm = qm.begin(); (pqm < qm.end()); ++pqm)
         {
             if (pqm->length() > 0)
@@ -471,7 +470,6 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
                     }
                 }
             }
-            n++;
         }
     }
 

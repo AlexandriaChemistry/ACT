@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,11 +91,12 @@ protected:
         int         nsymm    = 0;
 
         //Read input file for molprop
-        auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
-        double qtot = 0;
+        auto dataName   = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+        bool   userqtot = false;
+        double qtot     = 0;
         matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, &qtot, false, box));
+                              maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true));
                     
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;
@@ -124,8 +125,8 @@ protected:
         
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
-        auto qt = pd->findForcesConst(InteractionType::COULOMB);
-        auto ct = name2ChargeType(qt.optionValue("chargetype"));
+        auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+        auto ct = potentialToChargeType(qt.potential());
         
         EXPECT_FALSE(ChargeType::Slater  == ct);
 
@@ -136,19 +137,22 @@ protected:
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::POTENTIAL, iqmType::QM }
         };
-        mp.getExpProps(pd, iqm, 0, 0, 100);
+        mp.getExpProps(pd, iqm, 0, 100);
 
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
         mp.GenerateCharges(pd, forceComp, ChargeGenerationAlgorithm::ESP,
-                           qType::ESP, qcustom, &coords, &forces);
+                           qType::ESP, qcustom, &coords, &forces, true);
         
         std::vector<double> qtotValues;
         auto atoms = mp.atomsConst();
+        double qtotal = 0;
         for (size_t atom = 0; atom < atoms.size(); atom++)
         {
             qtotValues.push_back(atoms[atom].charge());
+            qtotal += atoms[atom].charge();
         }
+        EXPECT_TRUE(std::abs(qtotal) < 1e-3);
         char buf[256];
         snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
                  chargeTypeName(ct).c_str());

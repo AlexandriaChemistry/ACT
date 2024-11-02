@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -336,7 +337,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
 {
     static std::set<InteractionType> bonds = {
         InteractionType::VDW,
-        InteractionType::COULOMB,
+        InteractionType::ELECTROSTATICS,
         InteractionType::BONDS,
         InteractionType::ANGLES,
         InteractionType::LINEAR_ANGLES,
@@ -344,12 +345,18 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
         InteractionType::IMPROPER_DIHEDRALS };
     static std::set<InteractionType> other = {
         InteractionType::CONSTR,
+        InteractionType::VSITE1,
         InteractionType::VSITE2,
+        InteractionType::VSITE2FD,
+        InteractionType::VSITE3,
+        InteractionType::VSITE3S,
+        InteractionType::VSITE3FD,
         InteractionType::VSITE3FAD,
-        InteractionType::VSITE3OUT };
+        InteractionType::VSITE3OUT,
+        InteractionType::VSITE3OUTS };
     static std::set<InteractionType> eem = {
         InteractionType::POLARIZATION,
-        InteractionType::COULOMB,
+        InteractionType::ELECTROSTATICS,
         InteractionType::BONDCORRECTIONS,
         InteractionType::ELECTRONEGATIVITYEQUALIZATION };
     static std::map<const std::string, std::set<InteractionType> > mymap = {
@@ -368,25 +375,13 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
     }
 }
 
-static void analyzeForceField(ForceField           *pd,
-                           const std::string &analyze)
+static void analyzeForceField(ForceField *pd)
 {
-    bool found;
-    
-    auto myset = findInteractionMap(analyze, &found);
-    if (!found)
-    {
-        return;
-    }
     int    mindata   = 1;
     double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {
         auto itype = fc.first;
-        if (myset.find(itype) == myset.end())
-        {
-            continue;
-        }
         for(auto &fm : fc.second.parametersConst())
         {
             auto myid = fm.first;
@@ -416,10 +411,10 @@ static void analyzeForceField(ForceField           *pd,
     }
 }
 
-static void dumpForceField(ForceField           *pd,
-                        const std::string &analyze,
-                        const std::string &particle,
-                        const std::string &filenm)
+static void dumpForceField(ForceField        *pd,
+                           const std::string &analyze,
+                           const std::string &particle,
+                           const std::string &filenm)
 {
     bool found;
     
@@ -474,8 +469,8 @@ static void plotInteractions(ForceField           *pd,
     }
 }
 
-static void copy_missing(const ForceField     *pdref,
-                         ForceField           *pdout,
+static void copy_missing(const ForceField  *pdref,
+                         ForceField        *pdout,
                          const std::string &analyze,
                          bool               replace)
 {
@@ -534,9 +529,12 @@ static void copy_missing(const ForceField     *pdref,
     }
 }
 
-static void implant_values(const ForceField     *pdref,
-                           ForceField           *pdout,
-                           const std::string &analyze)
+static void implant_values(const ForceField  *pdref,
+                           ForceField        *pdout,
+                           const std::string &analyze,
+                           const std::string &particle,
+                           const std::string &parameter,
+                           bool               verbose)
 {
     bool found;
     auto myset = findInteractionMap(analyze, &found);
@@ -544,9 +542,6 @@ static void implant_values(const ForceField     *pdref,
     {
         return;
     }
-    printf("Implanting optimized values for %s interactions from %s to %s\n",
-           analyze.c_str(),
-           pdref->filename().c_str(), pdout->filename().c_str());
     
     for(auto &fc : pdref->forcesConst())
     {
@@ -557,28 +552,48 @@ static void implant_values(const ForceField     *pdref,
         }
         if (!pdout->interactionPresent(itype))
         {
-            printf("Cannot find interaction %s in %s, giving up\n",
-                   interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
-            return;
+            if (verbose)
+            {
+                printf("Cannot find interaction %s in %s\n",
+                       interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
+            }
+            continue;
+        }
+        if (verbose)
+        {
+            printf("Will try to implant values for %s interactions from %s to %s\n",
+                   interactionTypeToString(itype).c_str(),
+                   pdref->filename().c_str(), pdout->filename().c_str());
         }
         auto fcout = pdout->findForces(itype);
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            auto myid    = fm.first;
+            auto myatoms = myid.atoms();
+            // If we have a specified atom, it should be in the identifier, if not skip this one
+            if (!particle.empty() && std::find(myatoms.begin(), myatoms.end(), particle) == myatoms.end())
+            {
+                continue;
+            }
             if (fcout->parameterExists(myid))
             {
                 for(auto &fmp : fm.second)
                 {
                     auto pout = fcout->findParameterType(myid, fmp.first);
-                
-                    if (fmp.second.ntrain() > pout->ntrain())
+                    // If we have a specified parameter, it should be that one, if not skip it
+                    if (!parameter.empty() && fmp.first != parameter)
                     {
-                        printf("Parameter %s , interaction %s will be replaced in %s\n",
-                               myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
-                               pdout->filename().c_str());
+                        continue;
+                    }
+
+                    if (fmp.second.ntrain() > 0)
+                    {
+                        printf("Parameter %s for particle %s will be replaced in %s\n",
+                               fmp.first.c_str(), myid.id().c_str(),
+                               interactionTypeToDescription(itype).c_str());
                         pout->copy(fmp.second);
                     }
-                    else
+                    else if (verbose)
                     {
                         printf("Parameter %s , interaction %s will not be replaced in %s, old one has ntrain %d new %d\n",
                                myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
@@ -641,7 +656,7 @@ static void compare_pd(ForceField *pd1,
 static void copyDeToD0(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->gromacsType() != F_MORSE)
+    if (fs->potential() != Potential::MORSE_BONDS)
     {
         printf("Not using Morse in force field file %s\n", pd->filename().c_str());
         return;
@@ -662,7 +677,7 @@ static void copyDeToD0(ForceField *pd)
 static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->gromacsType() != F_BONDS)
+    if (fs->potential() != Potential::HARMONIC_BONDS)
     {
         printf("Not using Bonds in force field file %s\n",
                pd->filename().c_str());
@@ -700,7 +715,7 @@ int edit_ff(int argc, char*argv[])
         "input and output files and what parameters to change.",
         "If the value, the minimum",
         "or the maximum is to be changed, the actual value may be set to the",
-        "new minmum or maximum if it falls outside the new bounds.",
+        "new minimum or maximum if it falls outside the new bounds."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -727,6 +742,8 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
+    gmx_bool     bounds     = false;
+    gmx_bool     verbose    = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -755,12 +772,14 @@ int edit_ff(int argc, char*argv[])
           "Reset the limits for a parameter (class) to the current value of the parameter times this number (between 0 and 1) and one over the value. If you set e.g. -limits 0.8 the parameter min and max will be set to 0.8 respectively 1.25 times the present value." },
         { "-ana", FALSE, etSTR, {&analyze},
           "Analyze either the EEM, the BONDS or OTHER parameters in a simple manner" },
+        { "-bounds", FALSE, etBOOL, {&bounds},
+          "Check whether any parameter is hitting the wall, i.e. is at one of the boundaries." },
         { "-copy_missing", FALSE, etSTR, {&missing},
           "Copy either the EEM, the BONDS or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
         { "-replace", FALSE, etSTR, {&replace},
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
-          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
         { "-de2d0", FALSE, etBOOL, {&De2D0},
           "This is a hack to copy -De to D0 in the Morse potential" },
         { "-bondenergy", FALSE, etBOOL, {&bondenergy},
@@ -769,6 +788,8 @@ int edit_ff(int argc, char*argv[])
           "Plot many interactions as a function of distance or angle" },
         { "-bcast",   FALSE, etBOOL, {&bcast},
           "Use broadcast rather than send/receive to communicate force field" },
+        { "-v", FALSE, etBOOL, {&verbose},
+          "Print more stuff during processing" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
@@ -810,12 +831,16 @@ int edit_ff(int argc, char*argv[])
             }
             else if (strlen(implant) > 0)
             {
-                implant_values(&pd2, &pd, implant);
+                implant_values(&pd2, &pd, implant, particle, parameter, verbose);
             }
             else
             {
                 compare_pd(&pd, &pd2, parameter);
             }
+        }
+        else if (bounds)
+        {
+            analyzeForceField(&pd);
         }
         else if (strlen(analyze) > 0)
         {
@@ -827,10 +852,6 @@ int edit_ff(int argc, char*argv[])
             else if (plot)
             {
                 plotInteractions(&pd, analyze);
-            }
-            else
-            {
-                analyzeForceField(&pd, analyze);
             }
         }
         else if (De2D0)
@@ -864,23 +885,37 @@ int edit_ff(int argc, char*argv[])
         }
     }
     // Fetch new combination rules if necessary
-    auto vdw = InteractionType::VDW;
-    int nRuleChanged = 0;
-    if (pd.interactionPresent(vdw))
+    std::map<InteractionType, ForceFieldParameterList *> its =
+        {
+            { InteractionType::VDW,                  nullptr },
+            { InteractionType::VDWCORRECTION ,       nullptr },
+            { InteractionType::INDUCTIONCORRECTION , nullptr }
+        };
+
+    for(auto &fst : its)
     {
-        auto fsvdw   = pd.findForces(vdw);
-        nRuleChanged = crule.extract(fsvdw);
-        if (nRuleChanged > 0)
+        if (pd.interactionPresent(fst.first))
         {
-            printf("Inserted %d new style combination rules from command line.\n", nRuleChanged);
-            fsvdw->removeOption("combination_rule");
+            fst.second = pd.findForces(fst.first);
         }
-        else
-        {
-            nRuleChanged = crule.convert(fsvdw);
-            printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
-            fsvdw->removeOption("combination_rule");
-        }
+    }
+    int nRuleChanged = crule.extract(pa,
+                                     its[InteractionType::VDW],
+                                     its[InteractionType::VDWCORRECTION],
+                                     its[InteractionType::INDUCTIONCORRECTION]);
+    if (nRuleChanged > 0)
+    {
+        printf("Inserted %d new style combination rules from command line.\n",
+               nRuleChanged);
+    }
+    else
+    {
+        nRuleChanged = crule.convert(its[InteractionType::VDW]);
+        printf("Converted old style comb rule to %d new style combination rules.\n", nRuleChanged);
+    }
+    if (its[InteractionType::VDW])
+    {
+        its[InteractionType::VDW]->removeOption("combination_rule");
     }
     if (opt2bSet("-o", NFILE, fnm))
     {
@@ -903,7 +938,7 @@ int edit_ff(int argc, char*argv[])
                     for(int dest = 1; dest < cr.size(); dest++)
                     {
                         cs = pd.Send(&cr, dest);
-                        cr.send_str(dest, &outfile);
+                        cr.send(dest, outfile);
                     }
                 }
             }
@@ -918,9 +953,9 @@ int edit_ff(int argc, char*argv[])
                 else
                 {
                     cs = pd.Receive(&cr, 0);
-                    cr.recv_str(0, &outfile);
+                    cr.recv(0, &outfile);
                 }
-                if (CommunicationStatus::OK == cs && cr.rank() == 2)
+                if (CommunicationStatus::OK == cs && cr.rank() == 1)
                 {
                     alexandria::writeForceField(outfile, &pd, 0);
                 }

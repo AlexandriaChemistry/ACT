@@ -773,79 +773,6 @@ static void ilistcat(int                    ftype,
     }
 }
 
-static void set_posres_params(t_idef *idef, const gmx_molblock_t *molb,
-                              int i0, int a_offset)
-{
-    t_ilist   *il;
-    int        i1, i, a_molb;
-    t_iparams *ip;
-
-    il = &idef->il[F_POSRES];
-    i1 = il->nr/2;
-    idef->iparams_posres_nalloc = i1;
-    srenew(idef->iparams_posres, idef->iparams_posres_nalloc);
-    for (i = i0; i < i1; i++)
-    {
-        ip = &idef->iparams_posres[i];
-        /* Copy the force constants */
-        *ip    = idef->iparams[il->iatoms[i*2]];
-        a_molb = il->iatoms[i*2+1] - a_offset;
-        if (molb->posres_xA.empty())
-        {
-            gmx_incons("Position restraint coordinates are missing");
-        }
-        ip->posres.pos0A[XX] = molb->posres_xA[a_molb][XX];
-        ip->posres.pos0A[YY] = molb->posres_xA[a_molb][YY];
-        ip->posres.pos0A[ZZ] = molb->posres_xA[a_molb][ZZ];
-        if (!molb->posres_xB.empty())
-        {
-            ip->posres.pos0B[XX] = molb->posres_xB[a_molb][XX];
-            ip->posres.pos0B[YY] = molb->posres_xB[a_molb][YY];
-            ip->posres.pos0B[ZZ] = molb->posres_xB[a_molb][ZZ];
-        }
-        else
-        {
-            ip->posres.pos0B[XX] = ip->posres.pos0A[XX];
-            ip->posres.pos0B[YY] = ip->posres.pos0A[YY];
-            ip->posres.pos0B[ZZ] = ip->posres.pos0A[ZZ];
-        }
-        /* Set the parameter index for idef->iparams_posre */
-        il->iatoms[i*2] = i;
-    }
-}
-
-static void set_fbposres_params(t_idef *idef, const gmx_molblock_t *molb,
-                                int i0, int a_offset)
-{
-    t_ilist   *il;
-    int        i1, i, a_molb;
-    t_iparams *ip;
-
-    il = &idef->il[F_FBPOSRES];
-    i1 = il->nr/2;
-    idef->iparams_fbposres_nalloc = i1;
-    srenew(idef->iparams_fbposres, idef->iparams_fbposres_nalloc);
-    for (i = i0; i < i1; i++)
-    {
-        ip = &idef->iparams_fbposres[i];
-        /* Copy the force constants */
-        *ip    = idef->iparams[il->iatoms[i*2]];
-        a_molb = il->iatoms[i*2+1] - a_offset;
-        if (molb->posres_xA.empty())
-        {
-            gmx_incons("Position restraint coordinates are missing");
-        }
-        /* Take flat-bottom posres reference from normal position restraints */
-        ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
-        ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
-        ip->fbposres.pos0[ZZ] = molb->posres_xA[a_molb][ZZ];
-        /* Note: no B-type for flat-bottom posres */
-
-        /* Set the parameter index for idef->iparams_posre */
-        il->iatoms[i*2] = i;
-    }
-}
-
 /*! \brief Copy idef structure from mtop.
  *
  * Makes a deep copy of an idef data structure from a gmx_mtop_t.
@@ -912,8 +839,6 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
         int                  srcnr  = molt.atoms.nr;
         int                  destnr = natoms;
 
-        int                  nposre_old   = idef->il[F_POSRES].nr;
-        int                  nfbposre_old = idef->il[F_FBPOSRES].nr;
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
             if (mergeConstr &&
@@ -935,16 +860,6 @@ static void copyIdefFromMtop(const gmx_mtop_t &mtop,
                 ilistcat(ftype, &idef->il[ftype], molt.ilist[ftype],
                          molb.nmol, destnr, srcnr);
             }
-        }
-        if (idef->il[F_POSRES].nr > nposre_old)
-        {
-            /* Executing this line line stops gmxdump -sys working
-             * correctly. I'm not aware there's an elegant fix. */
-            set_posres_params(idef, &molb, nposre_old/2, natoms);
-        }
-        if (idef->il[F_FBPOSRES].nr > nfbposre_old)
-        {
-            set_fbposres_params(idef, &molb, nfbposre_old/2, natoms);
         }
 
         natoms += molb.nmol*srcnr;

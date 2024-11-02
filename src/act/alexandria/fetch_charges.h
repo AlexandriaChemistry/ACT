@@ -45,6 +45,9 @@
 
 namespace alexandria
 {
+
+typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > chargeMap;
+
 /*! \brief Generate charges for all compounds in a molprop file.
  *
  * Will create a map containing the charges on all atoms in "molecules" containing a single fragment.
@@ -54,28 +57,32 @@ namespace alexandria
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] charge_fn The name of a molprop file
+ * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map.
  */
-std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField *pd,
-                                                           ForceComputer    *forceComp,
-                                                           const char       *charge_fn);
+chargeMap fetchChargeMap(ForceField    *pd,
+                         ForceComputer *forceComp,
+                         const char    *charge_fn,
+                         qType          qt = qType::ACM);
 
 /*! \brief Generate charges for all compounds in a molprop file.
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] mps       Vector of molprops
+ * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map, see above.
  */
-std::map<std::string, std::vector<double> > fetchChargeMap(const ForceField           *pd,
-                                                           ForceComputer              *forceComp,
-                                                           const std::vector<MolProp> &mps);
+chargeMap fetchChargeMap(ForceField                 *pd,
+                         ForceComputer              *forceComp,
+                         const std::vector<MolProp> &mps,
+                         qType                       qt = qType::ACM);
 
 /*! \brief Broadcast a charge map to processors
  * \param[in]    cr   The communication data structure
  * \param[inout] qmap The charge map
  */
-void broadcastChargeMap(const CommunicationRecord                   *cr,
-                        std::map<std::string, std::vector<double> > *qmap);
+void broadcastChargeMap(const CommunicationRecord *cr,
+                        chargeMap                 *qmap);
 
 } // namespace alexandria
 

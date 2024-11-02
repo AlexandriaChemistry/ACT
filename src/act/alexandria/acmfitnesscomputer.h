@@ -33,7 +33,6 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
@@ -140,6 +139,8 @@ public:
     double calcDeviation(CalcDev    task,
                          iMolSelect ims);
 
+    //! \return the number of devComputers
+    size_t numDevComputers() const { return devComputers_.size(); }
 };
 
 

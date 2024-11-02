@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "act/alexandria/optimizationindex.h"
 #include "act/ga/genome.h"
 #include "act/utility/communicationrecord.h"
 #include "act/basics/mutability.h"
@@ -48,90 +49,6 @@
 
 namespace alexandria
 {
-/*! \brief Convenience storage of parameters to optimize
- */
-class OptimizationIndex
-{
- private:
-    //! The particle type. If empty, an interaction type is used.
-    std::string     particleType_;
-    //! The interaction type
-    InteractionType iType_ = InteractionType::CHARGE;
-    //! The name of the parameter matching forcefield
-    Identifier      parameterId_;
-    //! The type of parameter, eg. sigma, epsilon
-    std::string     parameterType_;
- public:
-    //! Default constructor
-    OptimizationIndex() {}
-
-    /*! \brief Constructor
-     * \param[in] iType         The interaction type
-     * \param[in] parameterId   The identifier
-     * \param[in] parameterType The type
-     */
-    OptimizationIndex(InteractionType    iType,
-                      Identifier         parameterId,
-                      const std::string &parameterType) :
-        iType_(iType), parameterId_(parameterId), parameterType_(parameterType) {}
-    
-    /*! \brief Constructor
-     * \param[in] pType         The particle type
-     * \param[in] parameterType The type
-     */
-    OptimizationIndex(const std::string  pType,
-                      const std::string &parameterType) :
-        particleType_(pType), parameterType_(parameterType) {}
-    
-    //! Return the interaction type
-    InteractionType iType() const { return iType_; }
-    
-    //! Return the id
-    Identifier id() const { return parameterId_; }
-    
-    //! Return particle type
-    const std::string &particleType() const { return particleType_; }
-    
-    //! Return the type
-    const std::string &parameterType() const { return parameterType_; }
-
-    //! Return a compound string representing the index
-    std::string name() const
-    {
-        if (InteractionType::CHARGE == iType_)
-        {
-            return gmx::formatString("%s-%s",
-                                     particleType_.c_str(),
-                                     parameterType_.c_str());
-        }
-        else
-        {
-            return gmx::formatString("%s-%s",
-                                     parameterId_.id().c_str(),
-                                     parameterType_.c_str());
-        }
-    }
-    
-    //! Return a compound string representing the atomindex
-    std::string parameterName() const
-    {
-        return parameterId_.id().c_str();
-    }
-    
-    /*! \brief Send an OptimizationIndex
-     * \param[in] cr   The communication information
-     * \param[in] dest The destination processor
-     */
-    CommunicationStatus send(const CommunicationRecord *cr,
-                             int                        dest);
-    
-    /*! \brief Send an OptimizationIndex
-     * \param[in] cr   The communication information
-     * \param[in] dest The destination processor
-     */
-    CommunicationStatus receive(const CommunicationRecord *cr,
-                                int                        src);
-};
 
 /*!
  * \brief Contains all information that is shared among ACMIndividual objects and other classes that manage them
@@ -181,9 +98,6 @@ private:
     //! Output file prefix
     std::string                                          prefix_;
 
-    //! \brief Fills the fitting targets data structure
-    void fillFittingTargets();
-
 public:
 
     /*!
@@ -191,6 +105,12 @@ public:
      * \param[in] cr The communication record
      */
     StaticIndividualInfo(CommunicationRecord *cr);
+
+    /*! \brief Fills the fitting targets data structure
+     * This needs to know what compounds are present in the input
+     * \param[in] ims Selection to add
+     */
+    void fillFittingTargets(iMolSelect ims);
 
     /*! \brief Fill the \p id_ and \p prefix_ fields
      * (to be called after the communication record structure has been initialized)
@@ -300,7 +220,14 @@ public:
             return &tt->second;
         }
     }
-
+    /*! \brief Check whether a dataset is present
+     * \param[in] ims The data set
+     * \return whether it is present
+     */
+    bool haveFittingTargetSelection(iMolSelect ims)
+    {
+        return (targets_.find(ims) != targets_.end());
+    }
     /*!
      * \brief Return the fitting targets for a given dataset as constant
      * \param[in] ims The selection dataset to return

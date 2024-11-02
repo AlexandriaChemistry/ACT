@@ -135,9 +135,10 @@ private:
     
 public:
     /*! \brief Constructor that computes everything at once
-     * \param[in] actmol        Molecule info
+     * \param[in] actmol       Molecule info
      * \param[in] coords       The coordinates
      * \param[in] frequencies  The vibrational frequencies in 1/ps
+     * \param[in] epot         The potential energy for the molecule
      * \param[in] temperature  Temperature (K)
      * \param[in] pressure     Pressure (bar) at which to compute
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
@@ -146,6 +147,7 @@ public:
                     const std::vector<gmx::RVec> &coords,
                     const AtomizationEnergy      &atomenergy,
                     const std::vector<double>    &frequencies,
+                    double                        epot,
                     double                        temperature,
                     double                        pressure,
                     double                        scale_factor);

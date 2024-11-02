@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -48,6 +48,13 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     auto cr = sii_->commRec();
 
+    // Tell the middleman no genepool was read.
+    // TODO: Implement genepool reading in MCMC
+    int read = 0;
+    for(auto &ii : cr->middlemen())
+    {
+        cr->send(ii, read);
+    }
     // Dataset(s)
     const auto imstr = iMolSelect::Train;
     const auto imste = iMolSelect::Test;
@@ -101,11 +108,11 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // Tell the middle man to continue
             cr->send_data(dest);
             // Send the data set
-            cr->send_iMolSelect(dest, imstr);
+            cr->send(dest, imstr);
             // Now resend the bases
-            cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
+            cr->send(dest, pool.genomePtr(i)->bases());
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
             i += 1;
         }
     }
@@ -120,9 +127,10 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         int src      = cr->middlemen()[i-1];
         // Receiving the mutated parameters
-        cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());
+        cr->recv(src, pool.genomePtr(i)->basesPtr());
         // Receiving the new training fitness
-        auto fitness = cr->recv_double(src);
+        double fitness;
+        cr->recv(src, &fitness);
         pool.genomePtr(i)->setFitness(imstr, fitness);
     }
 
@@ -168,17 +176,11 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         fprintf(logFile_, "\nStarting GA/HYBRID evolution\n");
         fflush(logFile_);
     }
-    // Open surveillance files for fitness
-    openFitnessFiles(fitnessFile_);
-    
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0.0, 1.0);
     gen.seed(seed_);
-    
-    // Indices for parents
-    size_t parent1, parent2;
     
     // Datasets
     const auto imstr = iMolSelect::Train;
@@ -201,6 +203,52 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // Check whether we need to read a gene pool
+    int read = 0;
+    if (gpin_)
+    {
+        pool[pold]->read(gpin_);
+        if (pool[pold]->popSize() - gach_->popSize() != 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Read a gene pool with %zu individuals but that does not match the population size of %d", pool[pold]->popSize(), gach_->popSize()).c_str()));
+        }
+        for(int ii = 0; ii < gach_->popSize(); ++ii)
+        {
+            if (pool[pold]->genome(ii).nBase() != sii_->nParam())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Genome %d in genepool read from '%s' has %zu elements, but I expected %zu", ii, gpin_, pool[pold]->genome(ii).nBase(), sii_->nParam()).c_str()));
+            }
+        }
+        *pool[pnew] = *pool[pold];
+        if (logFile_)
+        {
+            fprintf(logFile_, "\nRead gene pool with %zu individuals and %zu bases from file %s\n\n", 
+                    pool[pold]->popSize(), pool[pold]->genome(0).nBase(), gpin_);
+            fflush(logFile_);
+        }
+        ind->copyGenome(pool[pold]->genome(0));
+        read = 1;
+        if (debug)
+        {
+            fprintf(debug, "Will send genomes to %zu middlemen\n", cr->middlemen().size());
+        }
+    }
+    for(auto &ii : cr->middlemen())
+    {
+        cr->send(ii, read);
+        if (read == 1)
+        {
+            // Genome index is not the same thing as middleman index...
+            // https://github.com/dspoel/ACT/issues/560
+            int genome_index = ii/(1+cr->nhelper_per_middleman());
+            cr->send(ii, pool[pold]->genomePtr(genome_index)->bases());
+            if (debug)
+            {
+                fprintf(debug, "Sent genome to middleman %d\n", ii);
+            }
+        }
+    }
+
     // Compute its fitness
     if (logFile_)
     {
@@ -212,38 +260,53 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     if (logFile_)
     {
         fprintf(logFile_, "\n");
+        fflush(logFile_);
     }
-
-    pool[pold]->addGenome(ind->genome());
-    pool[pnew]->addGenome(ind->genome());
-    // I. Match numbers to corresponding ones in actmiddleman.cpp
-    // Load the initial genomes from the middlemen. 
-    // This is needed since they have read their own parameters
-    // from the ForceField structures.
-    for(auto &src : cr->middlemen())
+    if (read == 0)
     {
-        ga::Genome genome;
-        genome.Receive(cr, src);
-        pool[pold]->addGenome(genome);
-        pool[pnew]->addGenome(genome);
+        pool[pold]->addGenome(ind->genome());
+        pool[pnew]->addGenome(ind->genome());
+    
+        // I. Match numbers to corresponding ones in actmiddleman.cpp
+        // Load the initial genomes from the middlemen. 
+        // This is needed since they have read their own parameters
+        // from the ForceField structures.
+        for(auto &src : cr->middlemen())
+        {
+            ga::Genome genome;
+            genome.Receive(cr, src);
+            pool[pold]->addGenome(genome);
+            pool[pnew]->addGenome(genome);
+        }
     }
-    // Now we have filled the gene pool and initial fitness values
-    pool[pold]->print(logFile_);
-    // Print fitness to surveillance files
-    fprintFitness(*(pool[pold]));
-
-    // TODO: Check whether we need to update this at all here
+    if (logFile_)
+    {
+        // Now we have filled the gene pool and initial fitness values
+        pool[pold]->print(logFile_);
+        fflush(logFile_);
+    }
+    // Initialize bestGenome
     (*bestGenome)[imstr] = pool[pold]->getBest(imstr);
     if (gach_->evaluateTestset())
     {
         (*bestGenome)[imste] = pool[pold]->getBest(imstr);
     }
-    
+    // Open surveillance files for fitness, after initialization of bestGenome
+    for(const auto &bg : *bestGenome)
+    {
+        openFitnessFiles(fitnessFile_, bg.first);
+    }
+    // Print original fitness to surveillance files
+    fprintFitness(*(pool[pold]));
+
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
-    
-    fprintf(logFile_, "\nStarting %d generations of force field training.\n",
-            gach_->maxGenerations());
+    if (logFile_)
+    {
+        fprintf(logFile_, "\nStarting %d generations of force field training.\n",
+                gach_->maxGenerations());
+        fflush(logFile_);
+    }
     // Iterate and create new generation
     do
     {
@@ -270,20 +333,25 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 // Signify the middlemen to continue
                 cr->send_data(dest);
                 // Send the data set FIXME: is this necessary? It will always be train?
-                cr->send_iMolSelect(dest, imstr);
+                cr->send(dest, imstr);
                 // Now send the new bases
-                cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
+                cr->send(dest, pool[pold]->genomePtr(i)->bases());
                 // III.
                 // Tell the middleman to carry the MUTATION mode
-                cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
+                cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
             }
             // Recompute my fitness
-            fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, true);
+            {
+                auto genome0 = pool[pold]->genomePtr(0);
+                genome0->unsetFitness(imstr);
+                fitnessComputer()->compute(genome0, imstr, true);
+            }
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
                 int src = cr->middlemen()[i-1];
-                auto fitness = cr->recv_double(src);  // Receiving the new training fitness
+                double fitness;
+                cr->recv(src, &fitness);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
             }
             // Sort again if needed
@@ -301,7 +369,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
         // Increase generation counter
         generation++;
-        
+
         // Normalize the fitness into a probability
         if (debug)
         {
@@ -313,7 +381,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         {
             pool[pold]->print(debug);
         }
-        if (gach_->nElites() > 0)  // FIXME: can we remove the > 0?
+        if (gach_->nElites() > 0)
         {
             // Move the "nElites" best individuals (unchanged) into the new population 
             // (assuming population is sorted)
@@ -335,11 +403,26 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 2)
         {
             // Select parents
-            parent1 = selector()->select(gp);
-            parent2 = selector()->select(gp);
+            auto parent1 = selector()->select(gp);
+            // We do not want the same two parents for a child.
+            // https://github.com/dspoel/ACT/issues/549
+            auto parent2 = parent1;
+            int  mytry   = 0;
+            int  maxtry  = 5000;
+            while (parent1 == parent2 && mytry < maxtry)
+            {
+                parent2 = selector()->select(gp);
+                mytry++;
+            }
+            if (mytry == maxtry)
+            {
+                parent2 = (parent1 + 1) % pool[pold]->popSize();
+            }
+            auto child1  = i;
+            auto child2  = i+1;
             if (debug)
             {
-                fprintf(debug, "parent1: %zu; parent2: %zu\n", parent1, parent2);
+                fprintf(debug, "parent1: %d parent2: %d child1: %zu child2: %zu\n", parent1, parent2, child1, child2);
             }
             
             // If crossover is to be performed
@@ -358,8 +441,8 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 }
                 crossover()->offspring(pool[pold]->genomePtr(parent1),
                                        pool[pold]->genomePtr(parent2),
-                                       pool[pnew]->genomePtr(i),
-                                       pool[pnew]->genomePtr(i+1));
+                                       pool[pnew]->genomePtr(child1),
+                                       pool[pnew]->genomePtr(child2));
             }
             else
             {
@@ -367,20 +450,20 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 {
                     fprintf(debug, "Omitting crossover...\n");
                 }
-                pool[pnew]->replaceGenome(i,   pool[pold]->genome(parent1));
-                pool[pnew]->replaceGenome(i+1, pool[pold]->genome(parent2));
+                pool[pnew]->replaceGenome(child1, pool[pold]->genome(parent1));
+                pool[pnew]->replaceGenome(child2, pool[pold]->genome(parent2));
             }
-            pool[pnew]->genomePtr(i)->unsetFitness(imstr);
-            pool[pnew]->genomePtr(i+1)->unsetFitness(imstr);
+            pool[pnew]->genomePtr(child1)->unsetFitness(imstr);
+            pool[pnew]->genomePtr(child2)->unsetFitness(imstr);
             if (gach_->evaluateTestset())
             {
-                pool[pnew]->genomePtr(i)->unsetFitness(imste);
-                pool[pnew]->genomePtr(i+1)->unsetFitness(imste);
+                pool[pnew]->genomePtr(child1)->unsetFitness(imste);
+                pool[pnew]->genomePtr(child2)->unsetFitness(imste);
             }
             if (debug)
             {
-                pool[pnew]->genome(i).print("Child 1:", debug);
-                pool[pnew]->genome(i+1).print("Child 2:", debug);
+                pool[pnew]->genome(child1).print("Child 1:", debug);
+                pool[pnew]->genome(child2).print("Child 2:", debug);
             }
         }
         if (debug)
@@ -394,37 +477,42 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             // Signify the middlemen to continue
             cr->send_data(dest);
             // Send the data set FIXME: is this necessary? It will always be train?
-            cr->send_iMolSelect(dest, imstr);
+            cr->send(dest, imstr);
             // Now send the new bases
-            cr->send_double_vector(dest, pool[pnew]->genomePtr(i)->basesPtr());
+            cr->send(dest, pool[pnew]->genomePtr(i)->bases());
             // III.
             // Tell the middleman to carry the MUTATION mode
-            cr->send_ff_middleman_mode(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
         }
         // Mutate the MASTER's genome if no elitism
-        if (gach_->nElites() == 0)  // FIXME: can we just negate instead of comparing?
+        if (gach_->nElites() == 0)
         {
             if (debug)
             {
                 fprintf(debug, "Mutating the MASTER's genome...\n");
             }
-            mutator()->mutate(pool[pnew]->genomePtr(0), ind->bestGenomePtr(), gach_->prMut());
-            // Store master's best genome in the pool at position 0
-            pool[pnew]->replaceGenome(0, ind->bestGenome());
+            auto g0ptr = pool[pnew]->genomePtr(0);
+            mutator()->mutate(g0ptr, ind->bestGenomePtr(), gach_->prMut());
+            if (mutator()->foundMinimum())
+            {
+                // Store master's best genome in the pool at position 0
+                pool[pnew]->replaceGenome(0, ind->bestGenome());
+            }
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
-                fitnessComputer()->compute(pool[pnew]->genomePtr(0), imstr);
+                // For HYBRID the fitness is already computed by the mutator
+                fitnessComputer()->compute(g0ptr, imstr);
             }
             if (gach_->evaluateTestset())
             {
-                fitnessComputer()->compute(pool[pnew]->genomePtr(0), imste);
+                fitnessComputer()->compute(g0ptr, imste);
             }
         }
         if (debug)
         {
             fprintf(debug, "Fetching mutated children and fitness from new generation...\n");
         }
-        // Receive the new children (parameters + fitness) from the middle men for the 
+        // Receive the new children (parameters + fitness) from the middle men for the
         // non elitist.
         // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
@@ -432,14 +520,16 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             int src      = cr->middlemen()[i-1];
             // IV.
             // Receive the mutated parameters
-            cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());
+            cr->recv(src, pool[pnew]->genomePtr(i)->basesPtr());
             // V.
             // and the fitness.
-            auto fitness = cr->recv_double(src);
+            double fitness;
+            cr->recv(src, &fitness);
             pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
             if (gach_->evaluateTestset())
             {
-                auto fitnessTest = cr->recv_double(src);  // Receiving the new test fitness
+                double fitnessTest;
+                cr->recv(src, &fitnessTest);  // Receiving the new test fitness
                 pool[pnew]->genomePtr(i)->setFitness(imste, fitnessTest);
             }
         }
@@ -459,26 +549,36 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
-        
+
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = (*bestGenome)[imstr];
+        time_t my_t;
+        time(&my_t);
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            auto mess = gmx::formatString("Generation %d/%d. New best individual for train",
-                                          generation, gach_->maxGenerations());
+            auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for train",
+                                          generation,
+                                          gach_->maxGenerations(),
+                                          ctime(&my_t));
             tmpGenome.print(mess.c_str(), logFile_);
             (*bestGenome)[imstr] = tmpGenome;
             bMinimum = true;
             fflush(logFile_);
+            if (gpout_)
+            {
+                pool[pold]->write(gpout_);
+            }
         }
         if (gach_->evaluateTestset())
         {
             const auto tmpBestTest = (*bestGenome)[imste];
             if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
-            { 
-                auto mess = gmx::formatString("Generation %d/%d. New best individual for test",
-                                              generation, gach_->maxGenerations());
+            {
+                auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for test",
+                                              generation,
+                                              gach_->maxGenerations(),
+                                              ctime(&my_t));
                 (*bestGenome)[imste] = tmpGenome;
                 tmpGenome.print(mess.c_str(), logFile_);
                 fflush(logFile_);
@@ -489,7 +589,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 
     // Close surveillance files for fitness
     closeFitnessFiles();
-    
+
     if (logFile_)
     {
         fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");

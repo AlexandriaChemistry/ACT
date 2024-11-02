@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,6 +34,7 @@
 
 #include "train_utility.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -53,6 +54,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/coolstuff.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
@@ -168,7 +170,7 @@ static void xvgr_symbolize(FILE                           *xvgf,
     for (size_t i = 0; (i < leg.size()); i++)
     {
         xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
-        fprintf(xvgf, "@ s%d symbol %d\n", static_cast<int>(i), static_cast<int>(i+1));
+        fprintf(xvgf, "@ s%zu symbol %zu\n", i, i+1);
     }
 }
 
@@ -187,8 +189,9 @@ static void print_one_alpha(FILE *fp, const std::string &label,
  }
 
 static void print_polarizability(FILE              *fp,
-                                 const ACTMol       *mol,
-                                 const std::string &calc_name,
+                                 const std::string &molname,
+                                 const QtypeProps  *qelec,
+                                 const QtypeProps  *qcalc,
                                  real               alpha_toler,
                                  real               isopol_toler)
 {
@@ -198,69 +201,85 @@ static void print_polarizability(FILE              *fp,
     real   daniso_pol = 0;
 
     double fac = convertFromGromacs(1.0, "Angstrom3");
-    if (!calc_name.empty())
+    auto acalc = qcalc->polarizabilityTensor();
+    if (!qelec->hasPolarizability())
     {
-        auto qprops = mol->qPropsConst();
-        for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
-        {
-            auto qcalc = qp->qPactConst();
-            auto acalc = qcalc.polarizabilityTensor();
-            auto qelec = qp->qPqmConst();
-            if (!qelec.hasPolarizability())
-            {
-                print_one_alpha(fp, calc_name, acalc);
-                continue;
-            }
-            tensor aelec;
-            copy_mat(qelec.polarizabilityTensor(), aelec);
-            print_one_alpha(fp, "Electronic", aelec);
+        print_one_alpha(fp, "Alexandria", acalc);
+    }
+    else
+    {
+        tensor aelec;
+        copy_mat(qelec->polarizabilityTensor(), aelec);
+        print_one_alpha(fp, "Electronic", aelec);
         
-            m_sub(aelec, acalc, dalpha);
-            delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+
-                             gmx::square(dalpha[XX][ZZ])+
-                             gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
-            diso_pol   = fac*std::abs(qcalc.isotropicPolarizability()-
-                                      qelec.isotropicPolarizability());
-            daniso_pol = fac*std::abs(qcalc.anisotropicPolarizability()-
-                                      qelec.anisotropicPolarizability());
-            fprintf(fp,
-                    "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name.c_str(),
-                    fac*acalc[XX][XX], fac*acalc[XX][YY], fac*acalc[XX][ZZ],
-                    fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
-                    "", fac*acalc[YY][YY], fac*acalc[YY][ZZ],
-                    "", fac*dalpha[YY][YY], fac*dalpha[YY][ZZ],
-                    "", "", fac*acalc[ZZ][ZZ],
-                    "", "", fac*dalpha[ZZ][ZZ]);
-            fprintf(fp,
-                    "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
-                    mol->getMolname().c_str(), 
-                    fac*qelec.isotropicPolarizability(),
-                    fac*qcalc.isotropicPolarizability(), 
-                    diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
-            fprintf(fp,
-                    "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
-                    mol->getMolname().c_str(), 
-                    fac*qelec.anisotropicPolarizability(),
-                    fac*qcalc.anisotropicPolarizability(), 
-                    daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
-        }
+        m_sub(aelec, acalc, dalpha);
+        delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+
+                         gmx::square(dalpha[XX][ZZ])+
+                         gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
+        diso_pol   = fac*std::abs(qcalc->isotropicPolarizability()-
+                                  qelec->isotropicPolarizability());
+        daniso_pol = fac*std::abs(qcalc->anisotropicPolarizability()-
+                                  qelec->anisotropicPolarizability());
+        fprintf(fp,
+                "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
+                "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
+                "Alexandria",
+                fac*acalc[XX][XX], fac*acalc[XX][YY], fac*acalc[XX][ZZ],
+                fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
+                "", fac*acalc[YY][YY], fac*acalc[YY][ZZ],
+                "", fac*dalpha[YY][YY], fac*dalpha[YY][ZZ],
+                "", "", fac*acalc[ZZ][ZZ],
+                "", "", fac*dalpha[ZZ][ZZ]);
+        fprintf(fp,
+                "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
+                molname.c_str(),
+                fac*qelec->isotropicPolarizability(),
+                fac*qcalc->isotropicPolarizability(),
+                diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
+        fprintf(fp,
+                "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
+                molname.c_str(),
+                fac*qelec->anisotropicPolarizability(),
+                fac*qcalc->anisotropicPolarizability(),
+                daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
     }
 }
 
-static void analyse_multipoles(FILE                                                        *fp,
-                               const std::vector<alexandria::ACTMol>::iterator             &mol,
-                               std::map<MolPropObservable, double>                          toler,
-                               std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
+TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
+    terms_ = { InteractionType::EPOT,
+               InteractionType::ELECTROSTATICS,
+               InteractionType::INDUCTION, 
+               InteractionType::INDUCTIONCORRECTION,
+               InteractionType::DISPERSION,
+               InteractionType::EXCHANGE,
+               InteractionType::EXCHIND,
+               InteractionType::ALLELEC };
+}
+
+void TrainForceFieldPrinter::analyse_multipoles(FILE                                            *fp,
+                                                const std::vector<alexandria::ACTMol>::iterator &mol,
+                                                std::map<MolPropObservable, double>              toler,
+                                                const ForceField                                *pd,
+                                                const ForceComputer                             *forceComputer)
+{
+    auto topology = mol->topology();
+    bool doForce  = pd->polarizable() || topology->hasVsites();
     auto qprops = mol->qPropsConst();
     for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
     {
         auto qelec = qp->qPqmConst();
         auto qcalc = qp->qPact();
         qcalc->initializeMoments();
+        if (doForce)
+        {
+            std::vector<gmx::RVec>            forces(topology->nAtoms());
+            std::map<InteractionType, double> energies;
+            auto                              myx = qcalc->x();
+            forceComputer->compute(pd, topology, &myx, &forces, &energies);
+            qcalc->setX(myx);
+        }
         qcalc->calcMoments();
 
         for(auto &mpo : mpoMultiPoles)
@@ -290,7 +309,7 @@ static void analyse_multipoles(FILE                                             
                     auto te = Telec[i];
                     diff.push_back(tc-te);
                         delta += gmx::square(tc-te);
-                        (*lsq)[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
+                        lsq_multi[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
                 }
                 double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
@@ -326,7 +345,7 @@ static void print_corr(const char                    *outfile,
                 int N = i.second.get_npoints();
                 if (N > 0)
                 {
-                    eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
+                    eprnm.push_back(gmx::formatString("%s", ims.second));
                     lsq.push_back(i.second);
                     haveData = true;
                 }
@@ -335,7 +354,7 @@ static void print_corr(const char                    *outfile,
     }
     if (haveData && outfile)
     {
-        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        FILE *muc = xvgropen(outfile, title ? title : "", xaxis, yaxis, oenv);
         xvgr_symbolize(muc, eprnm, oenv);
         for(size_t i = 0; i < lsq.size(); i++)
         {
@@ -371,7 +390,7 @@ static void print_corr(const char                      *outfile,
     }
     if (haveData && outfile)
     {
-        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        FILE *muc = xvgropen(outfile, title ? title : "", xaxis, yaxis, oenv);
         xvgr_symbolize(muc, eprnm, oenv);
         for(size_t i = 0; i < lsq.size(); i++)
         {
@@ -507,32 +526,30 @@ void TrainForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 void TrainForceFieldPrinter::analysePolarisability(FILE                *fp,
                                                    const ForceField    *pd,
                                                    alexandria::ACTMol  *mol,
-                                                   const ForceComputer *forceComp,
-                                                   qtStats             *lsq_isoPol,
-                                                   qtStats             *lsq_anisoPol,
-                                                   qtStats             *lsq_alpha)
+                                                   iMolSelect           ims,
+                                                   const ForceComputer *forceComp)
 {
+    fprintf(fp, "Polarizability:\n");
     for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
     {
         auto qcalc = qp->qPact();
+        auto qelec = qp->qPqmConst();
         qcalc->calcPolarizability(pd, mol->topology(), forceComp);
         auto acalc = qcalc->polarizabilityTensor();
     
-        fprintf(fp, "Polarizability:\n");
-        print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
-        auto qelec = qp->qPqmConst();
+        print_polarizability(fp, mol->getMolname(), &qelec, qcalc, alpha_toler_, isopol_toler_);
         if (qelec.hasPolarizability())
         {
             auto aelec = qelec.polarizabilityTensor();
-            (*lsq_isoPol)[qType::Calc].add_point(qelec.isotropicPolarizability(),
-                                                 qcalc->isotropicPolarizability(),
+            lsq_isoPol_[ims][qType::Calc].add_point(qelec.isotropicPolarizability(),
+                                               qcalc->isotropicPolarizability(),
+                                               0, 0);
+            lsq_anisoPol_[ims][qType::Calc].add_point(qelec.anisotropicPolarizability(),
+                                                 qcalc->anisotropicPolarizability(),
                                                  0, 0);
-            (*lsq_anisoPol)[qType::Calc].add_point(qelec.anisotropicPolarizability(),
-                                                   qcalc->anisotropicPolarizability(),
-                                                   0, 0);
             for (int mm = 0; mm < DIM; mm++)
             {
-                (*lsq_alpha)[qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
+                lsq_alpha_[ims][qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
             }
         }
     }
@@ -544,8 +561,9 @@ void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
                                         const std::vector<gmx::RVec> &forces)
 {
     std::map<qType, const std::vector<double> > qQM;
-    std::vector<qType>                    typeQM = { 
-        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken
+    std::vector<qType>                          typeQM = { 
+        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken,
+        qType::RESP, qType::BCC
     };
     for(auto &qt : typeQM)
     {
@@ -573,8 +591,7 @@ void TrainForceFieldPrinter::printAtoms(FILE                         *fp,
     auto    &myatoms = mol->atomsConst();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
-        if (myatoms[j].pType() == eptAtom ||
-            myatoms[j].pType() == eptNucleus)
+        if (myatoms[j].pType() == ActParticle::Atom)
         {
             real qCalc = myatoms[j].charge();
             fprintf(fp, "%-2d%3lu  %-5s  %12g",
@@ -741,30 +758,32 @@ static void plot_spectrum(const char                *filenm,
 }
 
 static void addThermo(JsonTree                  *jtree, 
-                      alexandria::ACTMol         *mol,
+                      alexandria::ACTMol        *mol,
                       std::vector<gmx::RVec>    *coords,
+                      double                     epot,
                       const AtomizationEnergy   &atomenergy,
                       const std::vector<double> &freq)
 {
     real scale_factor = 1;
     real roomTemp     = 298.15;
+    std::string eunit("kJ/mol");
+    std::string sunit("J/mol K");
+    jtree->addValueUnit("Epot", gmx_ftoa(epot), eunit);
     JsonTree jtc0("T=0");
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
-    ThermoChemistry tc0(mol, *coords, atomenergy, freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, roomTemp, 1, scale_factor);
+    ThermoChemistry tc0(mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
     {
-        std::string unit("kJ/mol");
-        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), unit);
-        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), unit);
+        jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
+        jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), eunit);
     }
     {
         JsonTree jtS0("Standard entropy");
         JsonTree jtSRT("Standard entropy");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("J/mol K");
-            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), unit);
-            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), unit);
+            jtS0.addValueUnit(tcc.second, gmx_ftoa(tc0.S0(tcc.first)), sunit);
+            jtSRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.S0(tcc.first)), sunit);
         }
         jtc0.addObject(jtS0);
         jtcRT.addObject(jtSRT);
@@ -774,9 +793,8 @@ static void addThermo(JsonTree                  *jtree,
         JsonTree jtcvRT("Heat capacity cV");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("J/mol K");
-            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), unit);
-            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), unit);
+            jtcv0.addValueUnit(tcc.second, gmx_ftoa(tc0.cv(tcc.first)), sunit);
+            jtcvRT.addValueUnit(tcc.second, gmx_ftoa(tcRT.cv(tcc.first)), sunit);
         }
         jtc0.addObject(jtcv0);
         jtcRT.addObject(jtcvRT);
@@ -786,17 +804,15 @@ static void addThermo(JsonTree                  *jtree,
         JsonTree jtcERT("Internal energy");
         for(const auto &tcc : tccmap())
         {
-            std::string unit("kJ/mol");
-            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), unit);
-            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), unit);
+            jtcE0.addValueUnit(tcc.second, gmx_ftoa(tc0.Einternal(tcc.first)), eunit);
+            jtcERT.addValueUnit(tcc.second, gmx_ftoa(tcRT.Einternal(tcc.first)), eunit);
         }
         jtc0.addObject(jtcE0);
         jtcRT.addObject(jtcERT);
     }
     {
-        std::string unit("kJ/mol");
-        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), unit);
-        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), unit);
+        jtc0.addValueUnit("Delta H formation", gmx_ftoa(tc0.DHform()), eunit);
+        jtcRT.addValueUnit("Delta H formation", gmx_ftoa(tcRT.DHform()), eunit);
     }
     jtree->addObject(jtc0);
     jtree->addObject(jtcRT);
@@ -813,13 +829,12 @@ void doFrequencyAnalysis(const ForceField         *pd,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      useLapack,
                          bool                      debugNMA)
 {
     std::vector<double> alex_freq, intensities;
     std::vector<std::string> output;
     molhandler.nma(pd, mol, forceComp, coords, &alex_freq, &intensities,
-                   &output, useLapack, debugNMA);
+                   &output, debugNMA);
     auto unit      = mpo_unit2(MolPropObservable::FREQUENCY);
     auto uniti     = mpo_unit2(MolPropObservable::INTENSITY);
     auto ref_freq  = mol->referenceFrequencies();
@@ -893,16 +908,20 @@ void doFrequencyAnalysis(const ForceField         *pd,
     }
     jtree->addObject(ftree);
     jtree->addObject(itree);
-    
+    // Energies
+    std::map<InteractionType, double> energies;
+    std::vector<gmx::RVec>    forces(coords->size());
+    (void) forceComp->compute(pd, mol->topology(), coords, &forces, &energies);
     // Now time for thermochemistry output
     JsonTree tctree("Thermochemistry");
     JsonTree ajtc("Alexandria");
-    addThermo(&ajtc, mol, coords, atomenergy, alex_freq);
+    auto     epot = energies[InteractionType::EPOT];
+    addThermo(&ajtc, mol, coords, epot, atomenergy, alex_freq);
     tctree.addObject(ajtc);
     if (!ref_freq.empty())
     {
         JsonTree rjtc("Reference");
-        addThermo(&rjtc, mol, coords, atomenergy, ref_freq);
+        addThermo(&rjtc, mol, coords, epot, atomenergy, ref_freq);
         tctree.addObject(rjtc);
     }
     jtree->addObject(tctree);
@@ -910,7 +929,8 @@ void doFrequencyAnalysis(const ForceField         *pd,
 
 static void low_print_stats(std::vector<std::string> *tcout,
                             gmx_stats                *stats,
-                            const char               *label)
+                            const char               *label,
+                            const char               *compound)
 {
     real mse, mae, rmsd, R = 0;
     stats->get_mse_mae(&mse, &mae);
@@ -919,8 +939,8 @@ static void low_print_stats(std::vector<std::string> *tcout,
     {
         stats->get_corr_coeff(&R);
     }
-    tcout->push_back(gmx::formatString("%s RMSD %8.2f MSE %8.2f (kJ/mol) R %4.1f%% #points = %zu",
-                                       label, rmsd, mse, 100*R, stats->get_npoints()));
+    tcout->push_back(gmx::formatString("%18s RMSD %8.2f MSE %8.2f (kJ/mol) R %5.1f%% #points = %5zu %s",
+                                       label, rmsd, mse, 100*R, stats->get_npoints(), compound));
 }
 
 static void print_diatomics(const alexandria::ACTMol                                                  *mol,
@@ -941,7 +961,7 @@ static void print_diatomics(const alexandria::ACTMol                            
     for (const auto &ecm : energyComponentMap)
     {
         double eee = ecm.first;
-        for(const auto itype : { InteractionType::COULOMB, InteractionType::POLARIZATION })
+        for(const auto itype : { InteractionType::ELECTROSTATICS, InteractionType::INDUCTION })
         {
             auto esm = ecm.second.find(itype);
             if (ecm.second.end() != esm)
@@ -957,23 +977,25 @@ static void print_diatomics(const alexandria::ACTMol                            
     }    
     xvgrclose(fp);
 }
-                                                
-double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                                 const ForceField         *pd,
-                                                 const ForceComputer      *forceComp,
-                                                 const AtomizationEnergy  &atomenergy,
-                                                 alexandria::ACTMol       *mol,
-                                                 gmx_stats                *lsq_rmsf,
-                                                 qtStats                  *lsq_epot,
-                                                 qtStats                  *lsq_eInter,
-                                                 gmx_stats                *lsq_freq,
-                                                 const gmx_output_env_t   *oenv)
+
+void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>            *tcout,
+                                               const ForceField                    *pd,
+                                               const ForceComputer                 *forceComp,
+                                               const std::map<eRMS, FittingTarget> &targets,
+                                               const AtomizationEnergy             &atomenergy,
+                                               alexandria::ACTMol                  *mol,
+                                               iMolSelect                           ims,
+                                               const gmx_output_env_t              *oenv,
+                                               bool                                 printAll)
 {
-    std::vector<ACTEnergy>                                  energyMap;
-    std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap, interactionEnergyMap;
+    std::vector<ACTEnergy>                                              energyMap;
+    std::vector<std::vector<std::pair<double, double> > >               forceMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
+    ACTEnergyMapVector                                                  interactionEnergyMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
                          &energyComponentMap);
+    molEnergyMap_.insert({mol->getMolname(), energyMap});
+    molInteractionEnergyMap_.insert({mol->getMolname(), interactionEnergyMap});
     if (diatomic_ && mol->nRealAtoms() == 2)
     {
         print_diatomics(mol, energyComponentMap, oenv);
@@ -987,17 +1009,48 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
         }
     }
     gmx_stats myepot;
-    for(const auto &ff : energyMap)
+    if (targets.find(eRMS::EPOT) != targets.end())
     {
-        (*lsq_epot)[qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
-        myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+        for(const auto &ff : energyMap)
+        {
+            if (ff.haveQM() && ff.haveACT())
+            {
+                lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
+                myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
+            }
+        }
     }
-    gmx_stats myinter;
-    for(const auto &ff : interactionEnergyMap)
+    std::map<InteractionType, gmx_stats> myeinter;
+    std::map<eRMS, InteractionType> interE = {
+        { eRMS::Interaction,    InteractionType::EPOT                },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION          },
+        { eRMS::Exchange,       InteractionType::EXCHANGE            },
+        { eRMS::Induction,      InteractionType::INDUCTION           },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
+        { eRMS::ExchInd,        InteractionType::EXCHIND             },
+        { eRMS::AllElec,        InteractionType::ALLELEC             }
+    };
+    for(const auto &iem : interactionEnergyMap)
     {
-        auto eact = ff.second.find(InteractionType::EPOT)->second;
-        (*lsq_eInter)[qType::Calc].add_point(ff.first, eact, 0, 0);
-        myinter.add_point(ff.first, eact);
+        for(const auto &ie: iem)
+        {
+            auto val    = ie.first;
+            auto result = std::find_if(interE.begin(), interE.end(),
+                                       [val](const auto& mo) {return mo.second == val; });
+
+            auto tt = targets.find(result->first);
+            if (interE.end() != result && (printAll || ( tt != targets.end() && tt->second.weight() > 0)))
+            {
+                if (ie.second.haveQM() && ie.second.haveACT())
+                {
+                    auto eqm  = ie.second.eqm();
+                    auto eact = ie.second.eact();
+                    lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
+                    myeinter[ie.first].add_point(eqm, eact, 0, 0);
+                }
+            }
+        }
     }
     if (printSP_)
     {
@@ -1008,35 +1061,74 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
             auto enerexp = eam->first;
             std::string ttt = gmx::formatString("%s Reference: %g ACT:", dataFileNames[ccc].c_str(),
                                                 enerexp);
-            for(const auto &terms : eam->second)
+            for(const auto &term : eam->second)
             {
-                ttt += gmx::formatString(" %s: %g", interactionTypeToString(terms.first).c_str(), 
-                                         terms.second);
+                ttt += gmx::formatString(" %s: %g", interactionTypeToString(term.first).c_str(), 
+                                         term.second);
             }
             ttt += gmx::formatString(" Diff: %g", eam->second[InteractionType::EPOT]-enerexp);
             tcout->push_back(ttt);
             ccc++;
         }
-        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end());
-        for(auto iem = interactionEnergyMap.begin(); iem < interactionEnergyMap.end(); ++iem)
+        std::string myheader;
+        std::string mysub;
+        for(const auto &t : terms_)
         {
-            auto eact = iem->second.find(InteractionType::EPOT)->second;
-            std::string ttt = gmx::formatString("Reference Einteraction %g ACT %g Diff %g",
-                                                iem->first, eact, eact-iem->first);
-            std::map<InteractionType, const char *> terms = { 
-                { InteractionType::COULOMB, "Coul." },
-                { InteractionType::POLARIZATION, "Pol." },
-                { InteractionType::DISPERSION, "Disp." },
-                { InteractionType::REPULSION, "Rep." } };
-            for(auto &term : terms)
+            myheader += gmx::formatString("%15s     ", interactionTypeToString(t).c_str());
+            mysub    += gmx::formatString(" %9s %9s", "QM", "ACT");
+        }
+        tcout->push_back(myheader);
+        tcout->push_back(mysub);
+        
+        std::sort(interactionEnergyMap.begin(), interactionEnergyMap.end(),
+                  [](const ACTEnergyMap &a, const ACTEnergyMap &b)
+        { 
+            auto &aa = a.find(InteractionType::EPOT)->second;
+            auto &bb = b.find(InteractionType::EPOT)->second;
+            if (aa.haveQM() && bb.haveQM())
             {
-                auto tptr = iem->second.find(term.first);
-                if (iem->second.end() != tptr)
+                return (aa.eqm() < bb.eqm());
+            }
+            else
+            {
+                return false;
+            }
+        });
+        auto expers = mol->experimentConst();
+        for(const auto &iem : interactionEnergyMap)
+        {
+            std::string myline;
+            for(const auto &t : terms_)
+            {
+                auto ttt = iem.find(t);
+                
+                if (iem.end() != ttt && ttt->second.haveQM())
                 {
-                    ttt += gmx::formatString(" %s %g", term.second, tptr->second);
+                    myline += gmx::formatString(" %9.2f", ttt->second.eqm());
+                }
+                else
+                {
+                    myline += ("         x");
+                }
+                if (iem.end() != ttt && ttt->second.haveACT())
+                {
+                    myline += gmx::formatString(" %9.2f", ttt->second.eact());
+                }
+                else
+                {
+                    myline += ("         x");
                 }
             }
-            tcout->push_back(ttt);
+            auto ttt   = iem.find(InteractionType::EPOT);
+            auto exper = std::find_if(expers.begin(), expers.end(), 
+                                      [&ttt](const Experiment& x)
+                                      { return x.id() == ttt->second.id(); });
+            if (expers.end() != exper)
+            {
+                myline += " " + exper->getDatafile();
+            }
+            
+            tcout->push_back(myline);
         }
         std::sort(forceMap.begin(), forceMap.end());
         for(auto ff = forceMap.begin(); ff < forceMap.end(); ++ff)
@@ -1054,11 +1146,16 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
     // RMS energy
     if (energyMap.size() > 0)
     {
-        low_print_stats(tcout, &myepot, "Energy");
+        low_print_stats(tcout, &myepot, "Energy", mol->getMolname().c_str());
     }
-    if (interactionEnergyMap.size() > 0)
+    for(const auto &tt : terms_)
     {
-        low_print_stats(tcout, &myinter, "Einteraction");
+        auto mystat = &myeinter[tt];
+        if (mystat->get_npoints() > 0)
+        {
+            low_print_stats(tcout, mystat, interactionTypeToString(tt).c_str(),
+                            mol->getMolname().c_str());
+        }
     }
     if (!forceMap.empty())
     {
@@ -1069,84 +1166,84 @@ double TrainForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout
             {
                 if (ff.first != 0 || ff.second != 0)
                 {
-                    lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+                    lsq_rmsf_[ims].add_point(ff.first, ff.second, 0, 0);
                     myforce.add_point(ff.first, ff.second, 0, 0);
                 }
             }
         }
-        low_print_stats(tcout, &myforce, "Force");
+        low_print_stats(tcout, &myforce, "Force", mol->getMolname().c_str());
     }
-
-    // Energy
-    tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
-    std::map<InteractionType, double> eBefore;
-    std::vector<gmx::RVec> coords = mol->xOriginal();
-    std::vector<gmx::RVec> forces(coords.size());
-    (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
 
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
-        //deltaE0 += mol->atomizationEnergy();
+        // Energy
+        tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
+        std::map<InteractionType, double> eBefore;
+        std::vector<gmx::RVec> coords = mol->xOriginal();
+        std::vector<gmx::RVec> forces(coords.size());
+        (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
+
         tcout->push_back(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
                                            "Reference EPOT", deltaE0, 
                                            eBefore[InteractionType::EPOT]-deltaE0));
-    }
-    if (mol->jobType() == JobType::OPT && calcFrequencies_)
-    {
-        // Now get the minimized structure RMSD and Energy
-        SimulationConfigHandler simConfig;
-        std::vector<gmx::RVec>  xmin   = coords;
-        std::map<InteractionType, double> eAfter;
-        molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
-                                        &xmin, &eAfter, nullptr, {});
-        double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
-        
-        if (rmsd > 0.1) // nm
+
+        if (mol->jobType() == JobType::OPT && calcFrequencies_)
         {
-            auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
-            auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
-            writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
-        }
-        tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
+            // Now get the minimized structure RMSD and Energy
+            SimulationConfigHandler simConfig;
+            std::vector<gmx::RVec>  xmin   = coords;
+            std::map<InteractionType, double> eAfter;
+            molHandler_.minimizeCoordinates(pd, mol, forceComp, simConfig, 
+                                            &xmin, &eAfter, nullptr, {});
+            double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
+
+            if (rmsd > 0.1) // nm
+            {
+                auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
+                auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
+                writeCoordinates(mol->atomsConst(), pdb, title, coords, xmin);
+            }
+            tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
                                            "Term", "Before", "After", "Difference"));
-        for(auto &ep : eBefore)
-        {
-            auto eb = ep.second;
-            auto ea = eAfter[ep.first];
-            tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
-                                               interactionTypeToString(ep.first).c_str(),
-                                               eb, ea, ea-eb));
+            for(auto &ep : eBefore)
+            {
+                auto eb = ep.second;
+                auto ea = eAfter[ep.first];
+                tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
+                                                   interactionTypeToString(ep.first).c_str(),
+                                                   eb, ea, ea-eb));
+            }
+            tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
+
+            // Do normal-mode analysis etc.
+            JsonTree jtree("FrequencyAnalysis");
+            doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
+                                atomenergy, &lsq_freq_, &jtree,
+                                nullptr, 24, nullptr, false);
+            int indent = 0;
+            tcout->push_back(jtree.writeString(false, &indent));
         }
-        tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
-        
-        // Do normal-mode analysis etc.
-        JsonTree jtree("FrequencyAnalysis");
-        doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
-                            atomenergy, lsq_freq, &jtree,
-                            nullptr, 24, nullptr, false, false);
-        int indent = 0;
-        tcout->push_back(jtree.writeString(false, &indent));
-    }
-    else
-    {
-        for(auto &ep : eBefore)
+        else
         {
-            tcout->push_back(gmx::formatString("   %-20s  %10.3f",
-                                               interactionTypeToString(ep.first).c_str(),
-                                               ep.second));
+            for(auto &ep : eBefore)
+            {
+                tcout->push_back(gmx::formatString("   %-20s  %10.3f",
+                                                   interactionTypeToString(ep.first).c_str(),
+                                                   ep.second));
+            }
         }
     }
-    return eBefore[InteractionType::EPOT];
 }
 
-static void dump_xyz(const ACTMol    *mol,
-                     const ACTEnergy &actener)
+static void dump_xyz(const std::string &label,
+                     const ACTMol      *mol,
+                     const ACTEnergy   &actener)
 {
     auto expconst = mol->experimentConst();
     if (static_cast<size_t>(actener.id()) < expconst.size())
     {
-        auto filename = gmx::formatString("%s-%d.xyz", mol->getMolname().c_str(), actener.id());
+        auto filename = gmx::formatString("%s-%d.xyz", label.c_str(), actener.id());
         auto actatoms = mol->topology()->atoms();
         auto coords   = expconst[actener.id()].getCoordinates();
         FILE *fp = gmx_ffopen(filename.c_str(), "w");
@@ -1164,73 +1261,118 @@ static void dump_xyz(const ACTMol    *mol,
         }
         gmx_ffclose(fp);
     }
+    else
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find experiment id %d for %s (there are %zu only)",
+                                                       actener.id(),
+                                                       mol->getMolname().c_str(),
+                                                       expconst.size()).c_str()));
+    }
 }
 
-static void printOutliers(FILE              *fp, 
-                          iMolSelect         ims,
-                          double             sigma,
-                          const std::string &label,
-                          real               dumpFactor,
-                          const std::vector<alexandria::ACTMol>                *actmol,
-                          const std::map<std::string, std::vector<ACTEnergy> > &allEpot)
+static int printLow(FILE              *fp,
+                    const ACTMol      *mol,
+                    const ACTEnergy   &ener,
+                    const std::string &label,
+                    double             sigma,
+                    double             dumpOutliers)
+{
+    int    noutlier = 0;
+    double epotMax  = 1.5*sigma;
+    if (ener.haveQM() && ener.haveACT() && mol)
+    {
+        double deltaE = std::abs(ener.eqm()-ener.eact());
+        if (deltaE > epotMax)
+        {
+            fprintf(fp, "%-40s  %12g  %12g  %12g\n", mol->getMolname().c_str(),
+                    ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
+            noutlier++;
+        }
+        if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
+        {
+            std::string myfnm = gmx::formatString("%s-%s.xyz", 
+                                                  mol->getMolname().c_str(),
+                                                  label.c_str());
+            dump_xyz(myfnm, mol, ener);
+        }
+    }
+    return noutlier;
+}
+
+void TrainForceFieldPrinter::printOutliers(FILE                                  *fp,
+                                           iMolSelect                             ims,
+                                           double                                 sigma,
+                                           bool                                   bIntermolecular,
+                                           InteractionType                        itype,
+                                           const std::vector<alexandria::ACTMol> *actmol)
 {
     double epotMax = 1.5*sigma;
-    if (allEpot.size() > 0)
+    auto   label   = gmx::formatString("%s-%s",
+                                       interactionTypeToString(itype).c_str(), iMolSelectName(ims));
+    fprintf(fp, "\nOverview of %s outliers for %s (Diff > %.3f)\n",
+            label.c_str(), qTypeName(qType::Calc).c_str(), epotMax);
+    fprintf(fp, "----------------------------------\n");
+    fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
+            "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
+    int noutlier = 0;
+    if (bIntermolecular)
     {
-        fprintf(fp, "\nOverview of %s %s outliers for %s (Diff > %.3f)\n",
-                iMolSelectName(ims), label.c_str(),
-                qTypeName(qType::Calc).c_str(), epotMax);
-        fprintf(fp, "----------------------------------\n");
-        fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name",
-                "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
-        int noutlier = 0;
-        for (auto emm : allEpot)
+        for (const auto &miem : molInteractionEnergyMap_)
         {
-            std::string toFind(emm.first);
+            std::string toFind(miem.first);
             auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
                                           [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
             if (actmolptr->datasetType() == ims)
             {
-                for (auto ener : emm.second)
+                for(const auto &emm : miem.second)
                 {
-                    double deltaE = std::abs(ener.eqm()-ener.eact());
-                    if (deltaE > epotMax)
+                    auto emmptr = emm.find(itype);
+                    if (emm.end() == emmptr)
                     {
-                        fprintf(fp, "%-40s  %12g  %12g  %12g\n", emm.first.c_str(),
-                                ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
-                        noutlier++;
+                        continue;
                     }
-                    if (dumpFactor >= 0 && deltaE >= dumpFactor*sigma)
-                    {
-                        if (actmol->end() != actmolptr)
-                        {
-                            dump_xyz(&(*actmolptr), ener);
-                        }
-                    }
+                    noutlier += printLow(fp, &(*actmolptr), emmptr->second, label, sigma, dumpOutliers_);
                 }
             }
         }
-        if (noutlier)
+    }
+    else
+    {
+        for (const auto &miem : molEnergyMap_)
         {
-            printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
-                   label.c_str(), iMolSelectName(ims));
+            std::string toFind(miem.first);
+            auto actmolptr = std::find_if(actmol->begin(), actmol->end(),
+                                          [&toFind](const ACTMol &x) { return x.getMolname() == toFind;});
+            if (actmolptr->datasetType() == ims)
+            {
+                for(const auto &emm : miem.second)
+                {
+                    noutlier += printLow(fp, &(*actmolptr), emm, label, sigma, dumpOutliers_);
+                }
+            }
         }
-        else
-        {
-            printf("No %s outliers! Well done.\n", label.c_str());
-        }
+    }
+    if (noutlier)
+    {
+        printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
+               label.c_str(), iMolSelectName(ims));
+    }
+    else
+    {
+        printf("No %s outliers! Well done.\n", label.c_str());
     }
 }
 
-void TrainForceFieldPrinter::print(FILE                            *fp,
-                                   std::vector<alexandria::ACTMol> *actmol,
-                                   const ForceField                *pd,
-                                   const gmx_output_env_t           *oenv,
-                                   const std::vector<t_filenm>      &filenm)
+void TrainForceFieldPrinter::print(FILE                        *fp,
+                                   StaticIndividualInfo        *sii,
+                                   std::vector<ACTMol>         *actmol,
+                                   const gmx_output_env_t      *oenv,
+                                   const std::vector<t_filenm> &filenm,
+                                   bool                         printAll)
 {
-    int  n = 0;
-    std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
-        lsq_anisoPol, lsq_charge, lsq_epot, lsq_eInter;
+    const auto pd = sii->forcefield();
+    int        n  = 0;
+    std::map<iMolSelect, qtStats>                               lsq_charge, lsq_esp;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::map<std::string, gmx_stats> >     lsqt;
     std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
@@ -1257,7 +1399,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             gmx_stats freq;
             lsq_freq.insert({ ims.first, std::move(freq) });
         }
-        qtStats qesp, qepot, qinter;
+        qtStats qesp, qepot;
         for (auto &i : qTypes())
         {
             //TODO Add checks for existence
@@ -1265,19 +1407,16 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             qesp.insert({ i.first, std::move(gesp) });
             gmx_stats gepot;
             qepot.insert({ i.first, std::move(gepot) });
-            gmx_stats ginter;
-            qinter.insert({ i.first, std::move(ginter) });
         }
         lsq_esp.insert({ ims.first, std::move(qesp) });
-        lsq_epot.insert({ ims.first, std::move(qepot) });
-        lsq_eInter.insert({ ims.first, std::move(qinter) });
+        lsq_epot_.insert({ ims.first, std::move(qepot) });
         
         gmx_stats galpha;
-        lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
+        lsq_alpha_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
         gmx_stats giso;
-        lsq_isoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, giso }}));
+        lsq_isoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, giso }}));
         gmx_stats ganiso;
-        lsq_anisoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, ganiso }}));
+        lsq_anisoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, ganiso }}));
         gmx_stats gcharge;
         lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gcharge }}));
     
@@ -1297,7 +1436,19 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
             }
         }
     }
-    
+    for(const auto &tt : terms_)
+    {
+        std::map<iMolSelect, qtStats> qinter;
+        for(auto &ims : iMolSelectNames())
+        {
+            for (auto &i : qTypes())
+            {
+                gmx_stats ginter;
+                qinter[ims.first].insert({ i.first, std::move(ginter) });
+            }
+        }
+        lsq_einter_[tt] = std::move(qinter);
+    }
     bool bPolar = pd->polarizable();
     std::map<MolPropObservable, double> multi_toler = {
         { MolPropObservable::DIPOLE,       dip_toler_  },
@@ -1308,13 +1459,10 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
     
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
-    std::map<std::string, double> molEpot;
-    auto alg   = pd->chargeGenerationAlgorithm();
-    auto qtype = qType::Calc;
-    std::map<std::string, std::vector<ACTEnergy > > allEpot; 
-    std::map<std::string, std::vector<ACTEnergy > > allEinter; 
+
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
+        auto topology = mol->topology();
         if (mol->support() != eSupport::No)
         {
             auto ims = mol->datasetType();
@@ -1326,12 +1474,9 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                     mol->symmetryNumber(),
                     iMolSelectName(ims));
 
-            // Recalculate the atomic charges using the optimized parameters.
-            std::vector<double>    dummy;
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
-            std::vector<gmx::RVec> coords = mol->xOriginal();
-            mol->GenerateCharges(pd, forceComp, alg, qtype, dummy, &coords, &forces);
+
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             for (auto &i : qTypes())
@@ -1339,7 +1484,6 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
                 {
                     // For multipoles, further down.
-                    qp->qPact()->setQandX(mol->topology()->atoms(), coords);
                     auto qi    = i.first;
                     auto qresp = qp->qgenResp();
                     if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
@@ -1348,7 +1492,7 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
-                        (void) forceComp->compute(pd, mol->topology(), &myx,
+                        (void) forceComp->compute(pd, topology, &myx,
                                                   &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(mol->atomsConst());
@@ -1374,18 +1518,18 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 }
             }
             // Charges
-            auto atoms = mol->topology()->atoms();
+            auto atoms = topology->atoms();
             auto lll   = lsqt.find(ims);
             for(size_t ai = 0; ai < atoms.size(); ai++)
             {
-                if (atoms[ai].pType() == eptAtom)
+                if (atoms[ai].pType() == ActParticle::Atom)
                 {
                     auto llF = lll->second.find(atoms[ai].ffType());
                     if (lll->second.end() != llF)
                     {
                         auto qa = atoms[ai].charge();
                         if (ai < atoms.size() -1 && 
-                            atoms[ai+1].pType() == eptShell)
+                            atoms[ai+1].pType() == ActParticle::Shell)
                         {
                             qa += atoms[ai+1].charge();
                         }
@@ -1394,58 +1538,34 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 }
             }
             // Multipoles
-            analyse_multipoles(fp, mol, multi_toler, &lsq_multi);
+            analyse_multipoles(fp, mol, multi_toler, pd, forceComp);
             
             // Polarizability
             if (bPolar)
             {
-                analysePolarisability(fp, pd, &(*mol), forceComp, &(lsq_isoPol[ims]),
-                                      &(lsq_anisoPol[ims]), &(lsq_alpha[ims]));
+                analysePolarisability(fp, pd, &(*mol), ims, forceComp);
             }
 
             // Atomic charges
+            std::vector<gmx::RVec> coords = mol->xOriginal();
+            {
+                std::map<InteractionType, double> energies;
+                (void) forceComp->compute(pd, topology, &coords,
+                                          &forces, &energies);
+            }
             printAtoms(fp, &(*mol), coords, forces);
             // Energies
-            std::vector<std::string> tcout;
-            auto nepot   = lsq_epot[ims][qType::Calc].get_npoints();
-            auto neInter = lsq_eInter[ims][qType::Calc].get_npoints();
-            auto epot    = printEnergyForces(&tcout, pd, forceComp, atomenergy, &(*mol),
-                                             &lsq_rmsf[ims], &lsq_epot[ims],
-                                             &lsq_eInter[ims], &lsq_freq[ims], oenv);
+            if (sii->haveFittingTargetSelection(ims))
             {
-                // Copy the epot pairs
-                auto x = lsq_epot[ims][qType::Calc].getX();
-                auto y = lsq_epot[ims][qType::Calc].getY();
-                if (x.size() > nepot)
+                std::vector<std::string> tcout;
+                printEnergyForces(&tcout, pd, forceComp, sii->fittingTargetsConst(ims),
+                                  atomenergy, &(*mol), ims, oenv, printAll);
+                for(const auto &tout : tcout)
                 {
-                    std::vector<ACTEnergy> myEpot;
-                    for(size_t kk = nepot; kk < x.size(); kk++)
-                    {
-                        myEpot.push_back(ACTEnergy(kk-nepot, x[kk], y[kk]));
-                    }
-                    allEpot.insert({mol->getMolname(), myEpot});
+                    fprintf(fp, "%s\n", tout.c_str());
                 }
+                fprintf(fp, "\n");
             }
-            {
-                // Copy the eInter pairs
-                auto x = lsq_eInter[ims][qType::Calc].getX();
-                auto y = lsq_eInter[ims][qType::Calc].getY();
-                if (x.size() > neInter)
-                {
-                    std::vector<ACTEnergy> myEinter;
-                    for(size_t kk = neInter; kk < x.size(); kk++)
-                    {
-                        myEinter.push_back(ACTEnergy(kk-neInter, x[kk], y[kk]));
-                    }
-                    allEinter.insert({ mol->getMolname(), myEinter });
-                }
-            }
-            molEpot.insert({mol->getMolname(), epot});
-            for(const auto &tout : tcout)
-            {
-                fprintf(fp, "%s\n", tout.c_str());
-            }
-            fprintf(fp, "\n");
             n++;
         }
     }
@@ -1463,28 +1583,36 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 continue;
             }
             const char *name = qTypeName(qt).c_str();
-            if (lsq_epot[ims.first][qt].get_npoints() > 0)
+            if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
-                print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "QM/DFT", name, useOffset_);
+                print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
+                            header, "QM/DFT", name, useOffset_);
                 header = false;
             }
-            if (lsq_eInter[ims.first][qt].get_npoints() > 0)
+            for(const auto &tt : terms_)
             {
-                print_stats(fp, "Interaction energy", "kJ/mol", 1.0, &lsq_eInter[ims.first][qt],  header, "QM/DFT", name, useOffset_);
+                if (lsq_einter_[tt][ims.first][qt].get_npoints() > 0)
+                {
+                    print_stats(fp, interactionTypeToString(tt).c_str(),
+                                "kJ/mol", 1.0, &lsq_einter_[tt][ims.first][qt],
+                                header, "SAPT", name, useOffset_);
+                    header = false;
+                }
+            }
+            if (lsq_rmsf_[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            {
+                print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf_[ims.first],
+                            header, "QM/DFT", name, useOffset_);
                 header = false;
             }
-            if (lsq_rmsf[ims.first].get_npoints() > 0 && qt == qType::Calc)
-            {
-                print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf[ims.first], header, "QM/DFT", name, useOffset_);
-                header = false;
-            }
-            if (lsq_freq[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            if (lsq_freq_.get_npoints() > 0 && qt == qType::Calc)
             {
                 print_stats(fp, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
-                            1.0, &lsq_freq[ims.first], header, "QM/DFT", name, useOffset_);
+                            1.0, &lsq_freq_, header, "QM/DFT", name, useOffset_);
                 header = false;
             }
-            print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
+            print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],
+                        header, "Electronic", name, useOffset_);
             header = false;
             for(auto &mpo : mpoMultiPoles)
             {
@@ -1496,11 +1624,11 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                 std::string polunit("Angstrom3");
                 auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(fp, "Polariz. components", polunit.c_str(), polfactor,
-                            &lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
+                            &lsq_alpha_[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
                 print_stats(fp, "Isotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_isoPol[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
+                            &lsq_isoPol_[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
                 print_stats(fp, "Anisotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
+                            &lsq_anisoPol_[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
             }
         }
     }
@@ -1509,41 +1637,44 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
                   &(lsq_charge[iMolSelect::Train]), useOffset_);
 
     const char *alex  = "Alexandria";
-    const char *qmref = "QM Reference";
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
         std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
-                   title.c_str(), qmref, alex, lsq_multi[mpo], oenv);
+                   nullptr, title.c_str(), alex, lsq_multi[mpo], oenv);
     }
     print_corr(opt2fn_null("-epotcorr", filenm.size(), filenm.data()),
-               "Potential energy (kJ/mol)", qmref, alex,
-               lsq_epot, oenv);
-    print_corr(opt2fn_null("-eintercorr", filenm.size(), filenm.data()),
-               "Interaction energy (kJ/mol)", qmref, alex,
-               lsq_eInter, oenv);
+               nullptr, "Potential energy (kJ/mol)", alex,
+               lsq_epot_, oenv);
+    for(const auto &tt : terms_)
+    {
+        std::string fnm   = gmx::formatString("%s.xvg", interactionTypeToString(tt).c_str());
+        std::string title = gmx::formatString("%s (kJ/mol)", interactionTypeToString(tt).c_str());
+        print_corr(fnm.c_str(), nullptr, title.c_str(), alex, lsq_einter_[tt], oenv);
+    }
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
-               "Forces (kJ/mol nm)", qmref, alex,
+               nullptr, "Forces (kJ/mol nm)", alex,
                lsq_rmsf, oenv);
     print_corr(opt2fn_null("-freqcorr", filenm.size(), filenm.data()),
-               "Frequencies (cm^-1)", qmref, alex,
+               nullptr, "Frequencies (cm^-1)", alex,
                lsq_freq, oenv);
     print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
-               "Electrostatic Potential (Hartree/e)", qmref, alex,
+               nullptr, "Electrostatic Potential (kJ/mol e)", alex,
                lsq_esp, oenv);
     print_corr(opt2fn_null("-qcorr", filenm.size(), filenm.data()),
-               "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
+               nullptr, "Atomic Partial Charge (e)", "a.u.",
+               lsq_charge, oenv);
     
     if (bPolar)
     {
         print_corr(opt2fn_null("-alphacorr", filenm.size(), filenm.data()),
-                   "Pricipal Components of Polarizability Tensor (A\\S3\\N)", qmref, alex, lsq_alpha, oenv);
+                   nullptr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", alex, lsq_alpha_, oenv);
         print_corr(opt2fn_null("-isopol", filenm.size(), filenm.data()),
-                   "Isotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_isoPol, oenv);
+                   nullptr, "Isotropic Polarizability (A\\S3\\N)", alex, lsq_isoPol_, oenv);
         print_corr(opt2fn_null("-anisopol", filenm.size(), filenm.data()),
-                   "Anisotropic Polarizability (A\\S3\\N)", qmref, alex, lsq_anisoPol, oenv);
+                   nullptr, "Anisotropic Polarizability (A\\S3\\N)", alex, lsq_anisoPol_, oenv);
     }
     // List outliers based on the deviation in the Electrostatic Potential
     real espAver;
@@ -1581,28 +1712,30 @@ void TrainForceFieldPrinter::print(FILE                            *fp,
         }
     }
     real epotRmsd = 0;
-    if (eStats::OK == lsq_epot[iMolSelect::Train][qType::Calc].get_rmsd(&epotRmsd))
+    if (
+        eStats::OK == lsq_epot_[iMolSelect::Train][qType::Calc].get_rmsd(&epotRmsd))
     {
         for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
         {
-            if (lsq_epot[ims][qType::Calc].get_npoints() > 0)
+            if (lsq_epot_[ims][qType::Calc].get_npoints() > 0)
             {
                 // List outliers based on the deviation in the Potential energy ...
-                printOutliers(fp, ims, epotRmsd, "Epot", dumpOutliers_,
-                              actmol, allEpot);
+                printOutliers(fp, ims, epotRmsd, false, InteractionType::EPOT, actmol);
             }
         }
     }
-    real einterRmsd = 0;
-    if (eStats::OK == lsq_eInter[iMolSelect::Train][qType::Calc].get_rmsd(&einterRmsd))
+    for(const auto &tt : terms_)
     {
-        for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
+        real einterRmsd = 0;
+        if (eStats::OK == lsq_einter_[tt][iMolSelect::Train][qType::Calc].get_rmsd(&einterRmsd))
         {
-            if (lsq_eInter[ims][qType::Calc].get_npoints() > 0)
+            for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
             {
-                // ... and the interaction energies.
-                printOutliers(fp, ims, einterRmsd, "Einter", dumpOutliers_, 
-                              actmol, allEinter);
+                if (lsq_einter_[tt][ims][qType::Calc].get_npoints() > 0)
+                {
+                    // ... and the interaction energies.
+                    printOutliers(fp, ims, einterRmsd, true, tt, actmol);
+                }
             }
         }
     }
@@ -1663,7 +1796,7 @@ void print_header(FILE                        *fp,
             break;
         case etTIME:
         case etNR:
-        default:
+        default: // Output only, non-training related code.
             value.assign("help");
         }
         {
@@ -1691,6 +1824,10 @@ void print_header(FILE                        *fp,
     };
     for(const auto &f : filenms)
     {
+        if ((f.flag & ffOPT) == ffOPT && (f.flag & ffSET) == 0)
+        {
+            continue;
+        }
         std::string flag;
         for(auto fm : fmap)
         {

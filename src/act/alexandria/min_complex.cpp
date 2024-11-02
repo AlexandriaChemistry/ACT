@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -83,7 +83,8 @@ int min_complex(int argc, char *argv[])
           "Tolerance for shell force optimization (mean square force)" }
     };
     SimulationConfigHandler  sch;
-    sch.add_pargs(&pa, true);
+    sch.add_options(&pa, &fnm);
+    sch.add_MD_options(&pa);
 
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 

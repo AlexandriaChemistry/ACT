@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,6 +35,7 @@
 #include "interactiontype.h"
 
 #include <map>
+#include <set>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -55,14 +56,26 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::IMPROPER_DIHEDRALS, { "IMPROPER_DIHEDRALS", "improper dihedrals" } },
     { InteractionType::VDW,                { "VANDERWAALS", "Van der Waals interactions" } },
     { InteractionType::DISPERSION,         { "DISPERSION", "London dispersion" } },
-    { InteractionType::REPULSION,          { "REPULSION", "Repulsion due to Pauli principle" } },
+    { InteractionType::EXCHANGE,           { "EXCHANGE", "Exchange repulsion due to Pauli principle" } },
+    { InteractionType::VDWCORRECTION,      { "VDWCORRECTION", "Correction to van der Waals due to anisotropy" } },
+    { InteractionType::CHARGETRANSFER,     { "CHARGETRANSFER", "Charge transfer energy correction" } },
+    { InteractionType::EXCHIND,            { "EXCHIND", "Sum over EXCHANGE, INDUCTION and INDUCTIONCORRECTION" } },
+    { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
+    { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
+    { InteractionType::INDUCTIONCORRECTION,{ "INDUCTIONCORRECTION", "induction correction" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
+    { InteractionType::VSITE1,             { "VSITE1", "virtual sites with one constructing atom" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
-    { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with 3FAD" } },
+    { InteractionType::VSITE2FD,           { "VSITE2FD", "virtual sites with two constructing atoms with fixed distance to atom" } },
+    { InteractionType::VSITE3,             { "VSITE3", "virtual sites with three constructing atoms" } },
+    { InteractionType::VSITE3S,            { "VSITE3S", "virtual sites with three constructing atoms, symmetric on bisector" } },
+    { InteractionType::VSITE3FD,           { "VSITE3FD", "virtual site with three constructing atoms and fixed distance" } },
+    { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
-    { InteractionType::COULOMB,            { "COULOMB", "Coulomb interactions" } },
+    { InteractionType::VSITE3OUTS,         { "VSITE3OUTS", "virtual sites with three contructing atoms, out of plane, symmetric with respect to the plane" } },
+    { InteractionType::ELECTROSTATICS,            { "COULOMB", "Coulomb interactions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
     { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } },
     { InteractionType::CHARGE, { "CHARGE", "charge" } }
@@ -110,20 +123,32 @@ int interactionTypeToNatoms(InteractionType iType)
     {
     case InteractionType::PROPER_DIHEDRALS:
     case InteractionType::IMPROPER_DIHEDRALS:
+    case InteractionType::VSITE3FD:
     case InteractionType::VSITE3FAD:
     case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
+    case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
         return 4;
     case InteractionType::ANGLES:
     case InteractionType::LINEAR_ANGLES:
     case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
         return 3;
     case InteractionType::VDW:
     case InteractionType::DISPERSION:
-    case InteractionType::REPULSION:
+    case InteractionType::EXCHANGE:
+    case InteractionType::VDWCORRECTION:
+    case InteractionType::INDUCTIONCORRECTION:
+    case InteractionType::CHARGETRANSFER:
     case InteractionType::POLARIZATION:
-    case InteractionType::COULOMB:
+    case InteractionType::INDUCTION:
+    case InteractionType::ELECTROSTATICS:
+    case InteractionType::ALLELEC:
+    case InteractionType::EXCHIND:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
+    case InteractionType::VSITE1:
     case InteractionType::BONDS:
     case InteractionType::CONSTR:
     case InteractionType::BONDCORRECTIONS:
@@ -131,8 +156,20 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::CHARGE:
     case InteractionType::EPOT:
         return 0;
+    default: // throws
+        GMX_THROW(gmx::InternalError(gmx::formatString("Missing support for interaction type %s",
+                                                       interactionTypeToString(iType).c_str()).c_str()));
     }
     return 0;
+}
+
+bool isVsite(InteractionType iType)
+{
+    std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
+                      InteractionType::VSITE3, InteractionType::VSITE3S,
+                      InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
+                      InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS };
+    return (myvs.end() != myvs.find(iType));
 }
 
 } // namespace alexandria

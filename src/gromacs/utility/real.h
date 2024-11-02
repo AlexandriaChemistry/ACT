@@ -161,6 +161,6 @@ typedef float           real;
  *
  * See https://en.cppreference.com/w/cpp/language/user_literal for details on this lanuage feature.
  */
-constexpr real operator"" _real(long double x) { return real(x); }
+constexpr real operator""_real(long double x) { return real(x); }
 
 #endif

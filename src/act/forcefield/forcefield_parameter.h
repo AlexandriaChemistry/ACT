@@ -66,6 +66,8 @@ class ForceFieldParameter
     
     /*! \brief Constructor initiating all parameters.
      *
+     * If min and max are equal, mutability will be set to Fixed
+     * automatically.
      * TODO: Check unit
      * \param[in] unit        Physical unit of parameter, e.g. nm or fs
      * \param[in] value       Actual value of the parameter
@@ -124,6 +126,10 @@ class ForceFieldParameter
                       gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]",
                       value_, unit_.c_str(), minimum_, maximum_).c_str()));
         }
+        else if (minimum_ == maximum_ && mutability_ == Mutability::Bounded)
+        {
+            mutability_ = Mutability::Fixed;
+        }
         calculateInternalValue();
     }
         
@@ -154,7 +160,10 @@ class ForceFieldParameter
      * is out of range, or the variable is alltogher fixed,
      */
     void setValue(double value);
-    
+    /*! \brief Set the value ignoring mutability and bounds
+     * \param[in] value The new value
+     */    
+    void forceSetValue(double value);
     //! \brief Return the current uncertainty in this value
     double uncertainty() const { return uncertainty_; }
     
@@ -226,18 +235,26 @@ class ForceFieldParameter
     
     //! \brief Set maximum allowed value irrespective of mutability
     void setMaximum(double maximum) { maximum_ = maximum; }
-    
+
+    //! \return whether the parameter was recently updated
+    bool updated() const { return updated_; }
+
+    /*! \brief Change the updated state
+     * \param[in] updated The new value
+     */
+    void setUpdated(bool updated) { updated_ = updated; }
+
     //! \brief Return how this parameter may be changed
     Mutability mutability() const { return mutability_; }
-    
+
     //! \brief Change the mutability of this parameter
     void setMutability(Mutability m) { mutability_ = m; }
-    
+
     //! \brief Return whether this parameter is mutable at all
     bool isMutable() const
     { 
         return (mutability_ != Mutability::Fixed && 
-                mutability_ != Mutability::ACM &&
+                mutability_ != Mutability::ACM && 
                 mutability_ != Mutability::Dependent); 
     }
     
@@ -303,6 +320,8 @@ class ForceFieldParameter
     bool        nonNegative_         = false;
     //! Externally determined index
     size_t      index_               = 0;
+    //! Whether or not the parameter has been recently updated
+    bool        updated_             = false;
 };
 
 //! Mapping from string to force field parameters

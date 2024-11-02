@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -32,8 +32,8 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-#ifndef ALEXANDRIA_TRAIN_EEM_H
-#define ALEXANDRIA_TRAIN_EEM_H
+#ifndef ALEXANDRIA_TRAIN_FF_H
+#define ALEXANDRIA_TRAIN_FF_H
 
 #include <cstdio>
 
@@ -134,22 +134,24 @@ public:
 
     /*! \brief Add my options to the command line
      * \param[inout] pargs   Flags
+     * \param[inout] fnms  File names
      */
-    virtual void add_pargs(std::vector<t_pargs>  *pargs);
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
     
     /*! \brief Evaluate arguments after parsing.
      */
     void check_pargs();
 
     /*! \brief Routine to be called after processing options
-     * \param[in] outputFile The force field target file
+     * \param[in] filenames The file names
      */
-    void optionsFinished(const std::string &outputFile);
+    void optionsFinished(const std::vector<t_filenm> &filenames);
 
     /*! \brief Routine that opens a log file
-     * \param[in] logfileName The log file name to open
+     * \param[in] filenms The file names
      */
-    void openLogFile(const char *logfileName);
+    void openLogFile(const std::vector<t_filenm> &filenms);
 
     //! \return a file pointer to the open logfile
     FILE *logFile();
@@ -173,9 +175,10 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
-     * \param[in] fitnessFile Name of the genetic algorithm files
+     * \param[in] fnm Names of files selected by user
+     * \return 1 of all is well, 0 otherwise
      */
-    void initMaster(const char *fitnessFile);
+    int initMaster(const std::vector<t_filenm> &fnm);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

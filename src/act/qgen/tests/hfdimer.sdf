@@ -1,0 +1,15 @@
+/Users/spoel/Alexandria/Psi4_ACT/xyz/dimers/hydrogen-fluoride#hydrogen-fluoride.pdb
+ OpenBabel04072413573D
+
+  4  2  0  0  0  0  0  0  0  0999 V2000
+   -0.0180   -0.4770   -1.3040 F   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0060   -0.0190   -0.4950 H   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0200    0.4900    1.2340 F   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.0460   -0.2370    1.8030 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  3  4  1  0  0  0  0
+M  END
+>  <REMARK>
+ Energy = -200.99451233
+
+$$$$

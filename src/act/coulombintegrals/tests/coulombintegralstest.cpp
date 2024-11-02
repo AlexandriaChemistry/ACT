@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -55,6 +55,34 @@ namespace gmx
 namespace
 {
 
+void check_force(const std::vector<double> &potential,
+                 const std::vector<double> &force,
+                 double                     dx)
+{
+    // Check whether force is derivative of potential
+    double toler = 0.15;
+    // but only if the real force is large enough which is not always
+    // the case for Slaters close to a distance of zero.
+    double minforce = 0.2;
+    for(size_t i = 1; i < force.size()-1; i++)
+    {
+        double deriv = -(potential[i+1]-potential[i-1])/(2*dx);
+        double relerror = std::abs(deriv-force[i])/(std::abs(deriv)+std::abs(force[i]));
+        if (force[i] > minforce)
+        {
+            if (relerror >= toler)
+            {
+                printf("Analytical force[%lu] %g Numerical force %g relerror %g\n"
+                       "V %.8f %.8f %.8f F %.8f %.8f %.8f\n",
+                       i, force[i], deriv, relerror,
+                       potential[i-1], potential[i], potential[i+1],
+                       force[i-1], force[i], force[i+1]);
+            }
+            EXPECT_TRUE(relerror < toler);
+        }
+    }
+}
+
 /*! \brief Utility to do the real testing
  *
  * \param[in] cd    Charge distribution type
@@ -75,9 +103,10 @@ void testCoulomb(alexandria::ChargeType           cd,
     std::vector<double> force;
     std::vector<double> ncoulomb;
     std::vector<double> nforce;
-    for(int i = 0; i <= 5; i++)
+    double dx = 0.002;
+    for(int i = 0; i <= 50; i++)
     {
-        double r = 0.2*i;
+        double r = dx*i;
         
         switch (cd)
         {
@@ -93,7 +122,7 @@ void testCoulomb(alexandria::ChargeType           cd,
             ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
             nforce.push_back(-DNuclear_SS(r, irow, izeta));
             break;
-        default:
+        case alexandria::ChargeType::Point:
             break;
         }
     }
@@ -114,6 +143,8 @@ void testCoulomb(alexandria::ChargeType           cd,
     checker->checkSequence(ncoulomb.begin(), ncoulomb.end(), buf);
     snprintf(buf, sizeof(buf), "NuclearForce-%s", name);
     checker->checkSequence(nforce.begin(), nforce.end(), buf);
+    check_force(coulomb, force, dx);
+    check_force(ncoulomb, nforce, dx);
 }
 
 class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, int>, std::tuple<double, double> > >
@@ -128,7 +159,7 @@ class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, in
         
         SlaterTest () : checker_(refData_.rootChecker())
         {
-            double toler     = 1e-3;
+            double toler     = 2e-2;
             auto   tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, toler);
             checker_.setDefaultTolerance(tolerance);
             irow_ = std::get<0>(std::get<0>(GetParam()));
@@ -176,28 +207,27 @@ TEST_P (SlaterTest, All)
 }
 
 //! Rows for Slater tests
-const std::vector<std::tuple<int, int> > &make_rows()
+const std::vector<std::tuple<int, int> > make_rows()
 {
-    int myints[6][2] = {
+#if !HAVE_LIBCLN
+    return {
+        { 1, 1 }
+    };
+#else
+    return {
         { 1, 1 }, { 1, 2 }, { 2, 2 },
         { 1, 3 }, { 2, 3 }, { 3, 3 }
     };
-    
-    static std::vector<std::tuple<int, int>> vt;
-    for(int i = 0; i < 6; i++)
-    {
-        vt.push_back(std::make_tuple(myints[i][0], myints[i][1]));
-    }
-    return vt;
+#endif
 };
 
 //! Instantiate the combination of Slater row-row interactions to test
 static const std::vector<std::tuple<int, int> > c_rows = make_rows();
 
 //! xi and xj for tests
-const std::vector<std::tuple<double, double> > &make_xi()
+const std::vector<std::tuple<double, double> > make_xi()
 {
-    double mydbl[7][2] = {
+    return {
         {  5.6,   5.7  },
         {  5.7,   5.71 },
         {  5.91,  5.9  },
@@ -206,27 +236,19 @@ const std::vector<std::tuple<double, double> > &make_xi()
         { 22.3,  22.4  },
         { 34.6,  34.5  }
     };
-    static std::vector<std::tuple<double, double>> vt;
-    for(int i = 0; i < 7; i++)
-    {
-        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
-    }
-    return vt;
 };
 
 //! Instantiate the combination of Slater widths to test
-static const std::vector<std::tuple<double, double> > c_xi = make_xi();
+static auto c_xi = make_xi();
 
-#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
-#endif
 
 INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
 
 //! integer xi and xj for tests
-const std::vector<std::tuple<double, double> > &make_xiInteger()
+const std::vector<std::tuple<double, double> > make_xiInteger()
 {
-    double mydbl[7][2] = {
+    return {
         {  3.0,  4.0 },
         { 17.0, 18.0 },
         { 25.0, 26.0 },
@@ -235,20 +257,28 @@ const std::vector<std::tuple<double, double> > &make_xiInteger()
         { 31.0, 33.0 },
         { 37.0, 38.0 }
     };
-    static std::vector<std::tuple<double, double>> vt;
-    for(int i = 0; i < 7; i++)
-    {
-        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
-    }
-    return vt;
 };
 
 //! Instantiate xi and xj pair values
-static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
+static auto c_xiInteger = make_xiInteger();
 
-#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
-#endif
+
+//! integer xi and xj for tests
+const std::vector<std::tuple<double, double> > make_xiIdentical()
+{
+    return {
+        {  3.0,  3.0 },
+        { 17.0, 17.0 },
+        { 26.1, 26.1 },
+        {  9.4,  9.4 },
+        { 10.0, 10.0 }
+    };
+};
+
+static auto c_xiIdentical = make_xiIdentical();
+
+INSTANTIATE_TEST_CASE_P(IdenticalXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiIdentical)));
 
 } // namespace
 

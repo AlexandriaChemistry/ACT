@@ -44,6 +44,7 @@
 #include "act/alexandria/actmol_low.h"
 #include "act/alexandria/princ.h"
 #include "act/utility/units.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
@@ -186,7 +187,7 @@ static void calcTheta(const ACTMol                 *actmol,
     std::vector<gmx::RVec> xx;
     for(size_t i = 0; i < atoms.size(); i++)
     {
-        if (atoms[i].pType() == eptAtom)
+        if (atoms[i].pType() == ActParticle::Atom)
         {
             index.push_back(i);
         }
@@ -241,6 +242,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
                                  const std::vector<gmx::RVec> &coords,
                                  const AtomizationEnergy      &atomenergy,
                                  const std::vector<double>    &frequencies,
+                                 double                        epot,
                                  double                        temperature,
                                  double                        pressure,
                                  double                        scale_factor)
@@ -274,7 +276,6 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
     }
     // Using the equations from Ochterski2000a
     double sumAtomicEps0 = 0;
-    double epot          = 0;
     double D0M           = sumAtomicEps0 - epot - zpe_;
     double sumAtomicH0   = computeAtomizationEnergy(actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;

@@ -166,9 +166,10 @@ void printCopyright(gmx::TextWriter *writer)
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
             const int width = 18;
-            char      buf[30];
+#define MYBUFLEN 30
+            char      buf[MYBUFLEN];
             const int offset = centeringOffset(width, strlen(Contributors[i]));
-            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < MYBUFLEN,
                                "Formatting buffer is not long enough");
             std::fill(buf, buf+width, ' ');
             std::strcpy(buf+offset, Contributors[i]);
@@ -200,26 +201,7 @@ void printCopyright(gmx::TextWriter *writer)
 // Construct a string that describes the library that provides FFT support to this build
 const char *getFftDescriptionString()
 {
-// Define the FFT description string
-#if GMX_FFT_FFTW3
-#  if GMX_NATIVE_WINDOWS
-    // Don't buy trouble
-    return "fftw3";
-#  else
-    // Use the version string provided by libfftw3
-#    if GMX_DOUBLE
-    return fftw_version;
-#    else
-    return fftwf_version;
-#    endif
-#  endif
-#endif
-#if GMX_FFT_MKL
-    return "Intel MKL";
-#endif
-#if GMX_FFT_FFTPACK
-    return "fftpack (built-in)";
-#endif
+    return "None";
 };
 
 void gmx_print_version_info(gmx::TextWriter *writer)

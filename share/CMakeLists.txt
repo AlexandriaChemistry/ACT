@@ -43,7 +43,6 @@ install(FILES
          atomtypes_nonpol.csv
          atomtypes_same_zeta.csv
          bondvsites.csv
-         elements.csv
          excluded_molecules.csv
          ffnames.csv
          residuetypes.dat 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -303,7 +303,7 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
  *           LOW LEVEL ROUTINES                  *
  *************************************************/
 
-void CommunicationRecord::send(int dest, const void *buf, int bufsize) const
+void CommunicationRecord::send_low(int dest, const void *buf, int bufsize) const
 {
     int         tag = 0;
     MPI_Status  status;
@@ -316,7 +316,7 @@ void CommunicationRecord::send(int dest, const void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-void CommunicationRecord::recv( int src, void *buf, int bufsize) const
+void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
 {
     int         tag = 0;
     MPI_Status  status;
@@ -329,7 +329,7 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-void CommunicationRecord::bcast(std::string *str, MPI_Comm comm, int root) const
+template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_Comm comm, int root) const
 {
     check_init_done();
     int ssize = str->size();
@@ -341,29 +341,35 @@ void CommunicationRecord::bcast(std::string *str, MPI_Comm comm, int root) const
     check_return("MPI_Bcast", MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm));
 }
     
-void CommunicationRecord::bcast(int *i, MPI_Comm comm, int root) const
+template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
 }
-    
-void CommunicationRecord::bcast(bool *b, MPI_Comm comm, int root) const
+
+template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int root) const
 {
     check_init_done();
     int d = *b ? 1 : 0;
     check_return("MPI_Bcast", MPI_Bcast((void *)&d, 1, MPI_INT, root, comm));
     *b = d;
 }
-    
-void CommunicationRecord::bcast(double *d, MPI_Comm comm, int root) const
+
+template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
 }
-   
-void CommunicationRecord::bcast(std::vector<double> *d,
-                                MPI_Comm             comm,
-                                int                  root) const
+
+template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
+{
+    check_init_done();
+    check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_UNSIGNED_LONG, root, comm));
+}
+
+template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<double> *d,
+                                                                 MPI_Comm             comm,
+                                                                 int                  root) const
 {
     check_init_done();
     int ssize = d->size(); 
@@ -376,28 +382,28 @@ void CommunicationRecord::bcast(std::vector<double> *d,
     check_return("MPI_Bcast", MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm));
 }
 
-void CommunicationRecord::send_str(int dest, const std::string *str) const
+template <> void CommunicationRecord::send<std::string>(int dest, const std::string &str) const
 {
     check_init_done();
-    int len = str->size();
+    int len = str.size();
 
     if (nullptr != debug)
     {
-        fprintf(debug, "Sending string '%s' to %d\n", str->c_str(), dest);
+        fprintf(debug, "Sending string '%s' to %d\n", str.c_str(), dest);
     }
-    send(dest, &len, sizeof(len));
-    if (!str->empty())
+    send_low(dest, &len, sizeof(len));
+    if (!str.empty())
     {
-        send(dest, (void *)str->data(), len);
+        send_low(dest, (void *)str.data(), len);
     }
 }
 
-void CommunicationRecord::recv_str(int src, std::string *str) const
+template <> void CommunicationRecord::recv<std::string>(int src, std::string *str) const
 {
     check_init_done();
     int   len;
 
-    recv(src, &len, sizeof(len));
+    recv_low(src, &len, sizeof(len));
     if (len == 0)
     {
         str->clear();
@@ -405,7 +411,7 @@ void CommunicationRecord::recv_str(int src, std::string *str) const
     else
     {
         str->resize(len);
-        recv(src, (void*)str->data(), len);
+        recv_low(src, (void*)str->data(), len);
     }
     if (nullptr != debug)
     {
@@ -413,41 +419,48 @@ void CommunicationRecord::recv_str(int src, std::string *str) const
     }
 }
 
-void CommunicationRecord::send_double(int dest, double d) const
+template <> void CommunicationRecord::send<double>(int dest, const double &d) const
 {
     check_init_done();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending double '%g' to %d\n", d, dest);
     }
-    send(dest, &d, sizeof(d));
+    send_low(dest, &d, sizeof(d));
 }
 
-double CommunicationRecord::recv_double(int src) const
+template <> void CommunicationRecord::recv<double>(int src, double *dd) const
 {
     check_init_done();
-    double d;
 
-    recv(src, &d, sizeof(d));
+    recv_low(src, dd, sizeof(*dd));
     if (nullptr != debug)
     {
-        fprintf(debug, "Received double '%g' from %d\n", d, src);
+        fprintf(debug, "Received double '%g' from %d\n", *dd, src);
     }
-
-    return d;
 }
 
-void CommunicationRecord::send_int(int dest, int d) const
+template <> void CommunicationRecord::send<int>(int dest, const int &d) const
 {
     check_init_done();
     if (nullptr != debug)
     {
         fprintf(debug, "Sending int '%d' to %d\n", d, dest);
     }
-    send(dest, &d, sizeof(d));
+    send_low(dest, &d, sizeof(d));
 }
 
-void CommunicationRecord::send_bool(int dest, bool b) const
+template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) const
+{
+    check_init_done();
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Sending size_t '%zu' to %d\n", d, dest);
+    }
+    send_low(dest, &d, sizeof(d));
+}
+
+template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
 {
     check_init_done();
     if (nullptr != debug)
@@ -455,48 +468,54 @@ void CommunicationRecord::send_bool(int dest, bool b) const
         fprintf(debug, "Sending bool '%s' to %d\n", boolName[b], dest);
     }
     int d = b ? 1 : 0;
-    send(dest, &d, sizeof(d));
+    send_low(dest, &d, sizeof(d));
 }
 
-int CommunicationRecord::recv_int(int src) const
+template <> void CommunicationRecord::recv<int>(int src, int *t) const
+{
+    check_init_done();
+    recv_low(src, t, sizeof(*t));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received int '%d' from %d\n", *t, src);
+    }
+}
+
+template <> void CommunicationRecord::recv<size_t>(int src, size_t *t) const
+{
+    check_init_done();
+    recv_low(src, t, sizeof(*t));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received size_t '%zu' from %d\n", *t, src);
+    }
+}
+
+template <> void CommunicationRecord::recv<bool>(int src, bool *b) const
 {
     check_init_done();
     int d;
 
-    recv(src, &d, sizeof(d));
+    recv_low(src, &d, sizeof(d));
+    *b = d;
     if (nullptr != debug)
     {
-        fprintf(debug, "Received int '%d' from %d\n", d, src);
+        fprintf(debug, "Received bool '%s' from %d\n", boolName[*b], src);
     }
-
-    return d;
 }
 
-bool CommunicationRecord::recv_bool(int src) const
+template <> void CommunicationRecord::send<TrainFFMiddlemanMode>(int dest, const TrainFFMiddlemanMode &mode) const
 {
     check_init_done();
-    int d;
-
-    recv(src, &d, sizeof(d));
-    bool b = d;
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Received bool '%s' from %d\n", boolName[b], src);
-    }
-
-    return b;
+    send(dest, static_cast<int>(mode));
 }
 
-void CommunicationRecord::send_ff_middleman_mode(int dest, TrainFFMiddlemanMode mode) const
+template <> void CommunicationRecord::recv<TrainFFMiddlemanMode>(int src, TrainFFMiddlemanMode *t) const
 {
     check_init_done();
-    send_int(dest, static_cast<int>(mode));
-}
-
-TrainFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
-{
-    check_init_done();
-    return static_cast<TrainFFMiddlemanMode>( recv_int(src) );
+    int i;
+    recv(src, &i);
+    *t = static_cast<TrainFFMiddlemanMode>(i);
 }
 
 std::map<iMolSelect, int> imsInt = 
@@ -506,7 +525,7 @@ std::map<iMolSelect, int> imsInt =
         { iMolSelect::Ignore, 13 }
     };
     
-void CommunicationRecord::send_iMolSelect(int dest, iMolSelect ims) const
+template <> void CommunicationRecord::send<iMolSelect>(int dest, const iMolSelect &ims) const
 {
     if (nullptr != debug)
     {
@@ -514,14 +533,15 @@ void CommunicationRecord::send_iMolSelect(int dest, iMolSelect ims) const
                 iMolSelectName(ims), dest);
     }
     int d = imsInt[ims];
-    send(dest, &d, sizeof(d));
+    send_low(dest, &d, sizeof(d));
 }   
 
-iMolSelect CommunicationRecord::recv_iMolSelect(int src) const
+template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) const
 {
     int d;
 
-    recv(src, &d, sizeof(d));
+    *t = iMolSelect::Ignore;
+    recv_low(src, &d, sizeof(d));
     for(auto &ims : imsInt)
     {
         if (ims.second == d)
@@ -531,32 +551,79 @@ iMolSelect CommunicationRecord::recv_iMolSelect(int src) const
                 fprintf(debug, "Received iMolSelect '%s' from %d\n",
                         iMolSelectName(ims.first), src);
             }
-            return ims.first;
+            *t = ims.first;
+            return;
         }
     }
     GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown iMolSelect, int code %d", d).c_str()));
-    return iMolSelect::Ignore;
 }
 
-void CommunicationRecord::send_double_vector(int dest,
-                                             const std::vector<double> *d) const
+template <> void CommunicationRecord::send<std::vector<double>>(int dest,
+                                                                const std::vector<double> &d) const
 {
-    send_int(dest, d->size());
-    if (d->size() > 0)
+    send(dest, static_cast<int>(d.size()));
+    if (!d.empty())
     {
-        send(dest, static_cast<const void *>(d->data()),
-             d->size()*sizeof(double));
+        send_low(dest, static_cast<const void *>(d.data()),
+                 d.size()*sizeof(double));
     }
 }
 
-void CommunicationRecord::recv_double_vector(int src,
-                                             std::vector<double> *d) const
+template <> void CommunicationRecord::recv<std::vector<double>>(int src,
+                                                                std::vector<double> *d) const
 {
-    int len = recv_int(src);
+    int len;
+    recv(src, &len);
     d->resize(len);
     if (len > 0)
     {
-        recv(src, static_cast<void *>(d->data()), len*sizeof(double));
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof(double));
+    }
+}
+
+template <> void CommunicationRecord::send<std::vector<gmx::RVec>>(int dest,
+                                                                   const std::vector<gmx::RVec> &d) const
+{
+    send(dest, static_cast<int>(d.size()));
+    if (!d.empty())
+    {
+        send_low(dest, static_cast<const void *>(d.data()),
+                 d.size()*sizeof(gmx::RVec));
+    }
+}
+
+template <> void CommunicationRecord::recv<std::vector<gmx::RVec>>(int src,
+                                                                   std::vector<gmx::RVec> *d) const
+{
+    int len;
+    recv(src, &len);
+    d->resize(len);
+    if (len > 0)
+    {
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof(gmx::RVec));
+    }
+}
+
+template <> void CommunicationRecord::send<std::vector<int>>(int dest,
+                                                             const std::vector<int> &d) const
+{
+    send(dest, static_cast<int>(d.size()));
+    if (!d.empty())
+    {
+        send_low(dest, static_cast<const void *>(d.data()),
+                 d.size()*sizeof(int));
+    }
+}
+
+template <> void CommunicationRecord::recv<std::vector<int>>(int src,
+                                                             std::vector<int> *d) const
+{
+    int len;
+    recv(src, &len);
+    d->resize(len);
+    if (len > 0)
+    {
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof(int));
     }
 }
 
@@ -611,14 +678,14 @@ CommunicationStatus CommunicationRecord::bcast_data(MPI_Comm comm, int root) con
 
 CommunicationStatus CommunicationRecord::send_data(int dest) const
 {
-    send_int(dest, ACT_SEND_DATA);
+    send(dest, ACT_SEND_DATA);
 
     return CommunicationStatus::SEND_DATA;
 }
 
 CommunicationStatus CommunicationRecord::send_done(int dest) const
 {
-    send_int(dest, ACT_SEND_DONE);
+    send(dest, ACT_SEND_DONE);
 
     return CommunicationStatus::OK;
 }
@@ -640,7 +707,8 @@ CommunicationStatus CommunicationRecord::bcast_done(MPI_Comm comm, int root) con
 
 CommunicationStatus CommunicationRecord::recv_data(int src) const
 {
-    int kk = recv_int(src);
+    int kk;
+    recv(src, &kk);
 
     switch (kk)
     {
@@ -648,8 +716,8 @@ CommunicationStatus CommunicationRecord::recv_data(int src) const
         return CommunicationStatus::RECV_DATA;
     case ACT_SEND_DONE:
         return CommunicationStatus::DONE;
-    default:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in gmx_recv_data. Was expecting either %d or %d\n.", kk, src, (int)ACT_SEND_DATA, (int)ACT_SEND_DONE).c_str()));
+    default: // throws
+        GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in recv_data. Was expecting either %d or %d\n.", kk, src, (int)ACT_SEND_DATA, (int)ACT_SEND_DONE).c_str()));
     }
     return CommunicationStatus::ERROR;
 }

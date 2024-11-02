@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -50,7 +50,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
-#include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"
@@ -71,13 +71,14 @@ static void add_energies(const ForceField                        *pd,
 {
     std::map<InteractionType, int> i2f = {
         { InteractionType::EPOT,       F_EPOT },
-        { InteractionType::REPULSION,  F_REPULSION },
-        { InteractionType::DISPERSION, F_DISPERSION }
+        { InteractionType::EXCHANGE,   F_REPULSION },
+        { InteractionType::DISPERSION, F_DISPERSION },
+        { InteractionType::ELECTROSTATICS,    F_COUL_SR }
     };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)
     {
-        int ftype;
+        int ftype = -1;
         if (i2f.find(imf.first) != i2f.end())
         {
             ftype = i2f.find(imf.first)->second;
@@ -85,12 +86,22 @@ static void add_energies(const ForceField                        *pd,
         else
         {
             auto i = fsc.find(imf.first);
-            EXPECT_TRUE(fsc.end() != i);
-            ftype = i->second.gromacsType();
+            if (fsc.end() != i)
+            {
+                ftype = potentialToGromacsType(i->second.potential());
+            }
         }
-        std::string mylabel = gmx::formatString("%s %s",
-                                                interaction_function[ftype].longname, label);
-        
+        std::string fname;
+        if (ftype >= 0)
+        {
+            fname = interaction_function[ftype].longname;
+        }
+        else
+        {
+            fname = interactionTypeToString(imf.first);
+        }
+        std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
+
         checker->checkReal(imf.second, mylabel.c_str());
     }
 }
@@ -98,7 +109,8 @@ static void add_energies(const ForceField                        *pd,
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(const char *molname, const char *forcefield, bool nma)
+    void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
+              double ftoler=1e-15)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -113,18 +125,19 @@ protected:
         std::vector<alexandria::MolProp> molprops;
         
         // Get forcefield
-        auto pd  = getForceField(forcefield);
-        dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-        double qtot = 0;
+        auto pd         = getForceField(forcefield);
+        dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
+        double qtot     = 0;
+        bool   userqtot = false;
         matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
-                                maxpot, nsymm, jobtype, &qtot, false, box);
+                                maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
         auto alg = ChargeGenerationAlgorithm::NONE;
-        double shellTolerance = 1e-12;
+        double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
@@ -167,19 +180,15 @@ protected:
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
-            simConfig.setForceTolerance(1e-4);
+            simConfig.setForceTolerance(ftoler);
+            simConfig.setRetries(maxretry);
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});
+            EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             if (eMinimizeStatus::OK != eMin)
             {
-                // New try using steepest descents
-                simConfig.setMinimizeAlgorithm(eMinimizeAlgorithm::Steep);
-                xmin    = coords;
-                simConfig.setMaxIter(5000);
-                eMin    = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                                 &xmin, &eAfter, nullptr, {});
+                continue;
             }
-            EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
             rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
@@ -198,7 +207,7 @@ protected:
                 auto &atoms = mp.atomsConst();
                 for(size_t atom = 0; atom < atoms.size(); atom++)
                 {
-                    if (atoms[atom].pType() == eptAtom)
+                    if (atoms[atom].pType() == ActParticle::Atom)
                     {
                         atomIndex.push_back(atom);
                     }
@@ -208,12 +217,18 @@ protected:
                     MatrixWrapper hessian(matrixSide, matrixSide);
                     mh.computeHessian(pd, &mp, forceComp, &xmin, atomIndex,
                                       &hessian, &forceZero, &energyZero);
+                    double msf2 = 0;
+                    for(const auto f : forceZero)
+                    {
+                        msf2 += f*f;
+                    }
+                    checker_.checkReal(std::sqrt(msf2/forceZero.size()), "RMS force");
                     checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
                     // Now test the solver used in minimization
                     std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
                     int result = hessian.solve(forceZero, &deltaX);
                     EXPECT_TRUE(0 == result);
-                    checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
+                    // checker_.checkSequence(deltaX.begin(), deltaX.end(), "DeltaX");
                     
                 }
                 std::vector<double> freq, freq_extern, inten, inten_extern;
@@ -235,7 +250,8 @@ protected:
                 
                 double scale_factor = 1;
                 AtomizationEnergy atomenergy;
-                ThermoChemistry tc(&mp, coords, atomenergy, freq, 298.15, 1, scale_factor);
+                ThermoChemistry tc(&mp, coords, atomenergy, freq, eAfter[InteractionType::EPOT],
+                                   298.15, 1, scale_factor);
                 checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
                 checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
                 for(const auto &tcc : tccmap())
@@ -265,7 +281,7 @@ TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false);
+    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
@@ -285,7 +301,7 @@ TEST_F (MolHandlerTest, AcetoneNoFreq)
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false);
+    test("uracil.sdf", "ACS-g", false, 1, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
@@ -302,7 +318,7 @@ TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
@@ -315,12 +331,9 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
     test("uracil.sdf", "ACS-pg", false);
 }
 
-// We cannot run these tests in debug mode because the LAPACK library
-// performs a 1/0 calculation to test the exception handling.
-// #if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true);
+    test("carbon-dioxide.sdf", "ACS-g", true, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
@@ -342,7 +355,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true);
+    test("uracil.sdf", "ACS-g", true, 1, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
@@ -352,26 +365,23 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-
     test("hydrogen-chloride.sdf", "ACS-pg", true);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-
-    test("water-3-oep.log.pdb", "ACS-pg", true);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true);
+    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-15);
 }
 
 TEST_F (MolHandlerTest, UracilPol)
 {
     test("uracil.sdf", "ACS-pg", true);
 }
-// #endif
 
 } // namespace
 

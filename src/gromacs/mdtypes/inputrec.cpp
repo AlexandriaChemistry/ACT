@@ -726,7 +726,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
 static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, real ftol, real abstol)
 {
     int  i, j;
-    char buf1[256], buf2[256];
 
     cmp_int(fp, "inputrec->grpopts.ngtc", -1,  opt1->ngtc, opt2->ngtc);
     cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
@@ -742,12 +741,12 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
                 opt1->anneal_npoints[i], opt2->anneal_npoints[i]);
         if (opt1->anneal_npoints[i] == opt2->anneal_npoints[i])
         {
-            sprintf(buf1, "inputrec->grpopts.anneal_time[%d]", i);
-            sprintf(buf2, "inputrec->grpopts.anneal_temp[%d]", i);
+            auto buf1 = gmx::formatString("inputrec->grpopts.anneal_time[%d]", i);
+            auto buf2 = gmx::formatString("inputrec->grpopts.anneal_temp[%d]", i);
             for (j = 0; j < opt1->anneal_npoints[i]; j++)
             {
-                cmp_real(fp, buf1, j, opt1->anneal_time[i][j], opt2->anneal_time[i][j], ftol, abstol);
-                cmp_real(fp, buf2, j, opt1->anneal_temp[i][j], opt2->anneal_temp[i][j], ftol, abstol);
+                cmp_real(fp, buf1.c_str(), j, opt1->anneal_time[i][j], opt2->anneal_time[i][j], ftol, abstol);
+                cmp_real(fp, buf2.c_str(), j, opt1->anneal_temp[i][j], opt2->anneal_temp[i][j], ftol, abstol);
             }
         }
     }
@@ -757,8 +756,8 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
         {
             for (j = i; j < opt1->ngener; j++)
             {
-                sprintf(buf1, "inputrec->grpopts.egp_flags[%d]", i);
-                cmp_int(fp, buf1, j,
+                auto buf1 = gmx::formatString("inputrec->grpopts.egp_flags[%d]", i);
+                cmp_int(fp, buf1.c_str(), j,
                         opt1->egp_flags[opt1->ngener*i+j],
                         opt2->egp_flags[opt1->ngener*i+j]);
             }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -105,9 +105,10 @@ const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt)
 * BEGIN: BayesConfigHandler                *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
+void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
+                                     gmx_unused std::vector<t_filenm> *fnms)
 {
-    t_pargs pa[] = {
+    std::vector<t_pargs> pa = {
         { "-max_iter", FALSE, etINT, {&maxiter_},
           "Max number of iterations for MCMC optimization. Also applies for the mutation step in the HYBRID optimization algoroithm." },
         { "-temp",    FALSE, etREAL, {&temperature_},
@@ -123,9 +124,13 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 	{ "-checkpoint", FALSE, etBOOL, {&checkPoint_},
 		 "Turn on regular checkpointing, i.e. write out intermediate force field files. Expensive." },
         { "-mcmc_evaltest", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the parameters on the test set during MCMC." }
+          "Evaluate the parameters on the test set during MCMC." },
+        { "-shellTolerance", FALSE, etREAL, {&shellToler_},
+          "Tolerance (RMS force) for minimizing shell positions" },
+        { "-shellMaxIter", FALSE, etINT, {&shellMaxIter_},
+          "Max number of iterations for minimizing shell positions" }
     };
-    for (int i = 0; i < asize(pa); i++)
+    for (size_t i = 0; i < pa.size(); i++)
     {
         pargs->push_back(pa[i]);
     }
@@ -206,7 +211,8 @@ bool BayesConfigHandler::anneal(int iter) const
 static const char *optimizerStr[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 static const char *probStr[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
 
-void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
+void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
+                                  gmx_unused std::vector<t_filenm> *fnms)
 {
 
     t_pargs pa[] = {
@@ -376,7 +382,36 @@ eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
     return eMinA;
 }
 
-void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs, bool MDoptions)
+void SimulationConfigHandler::add_options(std::vector<t_pargs>             *pargs,
+                                          gmx_unused std::vector<t_filenm> *fnms)
+{
+    std::vector<t_pargs> extra = {
+        { "-minimize", FALSE, etBOOL, {&minimize_},
+          "Minimize the energy with respect to input coordinates." },
+        { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
+          "Algorithm to use for minimization." },
+        { "-maxiter",FALSE, etINT,  {&maxIter_},
+          "Maximum number of iterations for the energy minimizer, 0 is until convergence (see next option)." },
+        { "-maxretries", FALSE, etINT, {&minimizeRetries_},
+          "Number of retries for minimizing (LBFGS only)" },
+        { "-maxdisplacement", FALSE, etREAL, {&minimizeDisplacement_},
+          "Max random displacement (nm) before re-trying to minize a structure (LBFGS only)" },
+        { "-forcereminimize", FALSE, etBOOL, {&forceReminimize_},
+          "Force using displacement and reminimize even if converged in an attempt to overcome local minima (LBFGS only)" },
+        { "-toler",  FALSE, etREAL, {&forceToler_},
+          "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
+        { "-oneH", FALSE, etBOOL, {&oneH_},
+          "Map all different hydrogen atom types back to H, mainly for debugging." },
+        { "-overrelax", FALSE, etREAL, {&overRelax_},
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
+    };
+    for(auto &i : extra)
+    {
+        pargs->push_back(i);
+    }
+}
+
+void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 {
     std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
@@ -396,28 +431,7 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs, bool MDopti
         { "-nstener", FALSE, etINT, {&nstener_},
           "Number of steps between writing energies." }
     };
-    std::vector<t_pargs> extra = {
-        { "-minimize", FALSE, etBOOL, {&minimize_},
-          "Minimize the energy with respect to input coordinates." },
-        { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
-          "Algorithm to use for minimization." },
-        { "-maxiter",FALSE, etINT,  {&maxIter_},
-          "Maximum number of iterations for the energy minimizer, 0 is until convergence (see next option)." },
-        { "-toler",  FALSE, etREAL, {&forceToler_},
-          "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
-        { "-overrelax", FALSE, etREAL, {&overRelax_},
-          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
-        { "-lapack", FALSE, etBOOL, {&lapack_},
-          "Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis." }
-    };
-    if (MDoptions)
-    {
-        for(auto &i : MDextra)
-        {
-            pargs->push_back(i);
-        }
-    }
-    for(auto &i : extra)
+    for(auto &i : MDextra)
     {
         pargs->push_back(i);
     }

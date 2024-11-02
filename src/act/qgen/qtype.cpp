@@ -50,14 +50,16 @@ namespace alexandria
 {
 
 static std::map<qType, std::string> qTypeNames = {
-    { qType::ESP,       "ESP"        },
-    { qType::Mulliken,  "Mulliken"   },
-    { qType::Hirshfeld, "Hirshfeld"  },
-    { qType::CM5,       "CM5"        },
-    { qType::Calc,      "Alexandria" },
-    { qType::Gasteiger, "Gasteiger"  },
-    { qType::Elec,      "Electronic" },
-    { qType::ACM,       "ACM"        }
+    { qType::ESP,       "qESP"        },
+    { qType::RESP,      "qRESP"       },
+    { qType::BCC,       "qBCC"        },
+    { qType::Mulliken,  "qMulliken"   },
+    { qType::Hirshfeld, "qHirshfeld"  },
+    { qType::CM5,       "qCM5"        },
+    { qType::Calc,      "Alexandria"  },
+    { qType::Gasteiger, "Gasteiger"   },
+    { qType::Elec,      "Electronic"  },
+    { qType::ACM,       "qACM"        }
 };
 
 const std::string &qTypeName(qType qt)
@@ -103,7 +105,7 @@ void QtypeProps::computeCoC()
 {
     if (atomNumber_.size() != x_.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu x %zu elements.",
+        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu coords %zu elements.",
                                                        atomNumber_.size(), x_.size()).c_str()));
     }
     int atntot = 0;
@@ -220,7 +222,7 @@ bool QtypeProps::hasMultipole(MolPropObservable mpo) const
     return (multipoles_.find(mpo) != multipoles_.end());
 }
 
-const std::vector<double> &QtypeProps::getMultipole(MolPropObservable mpo) const
+const std::vector<double> QtypeProps::getMultipole(MolPropObservable mpo) const
 {
     auto mf = multipoles_.find(mpo);
     if (mf == multipoles_.end())
@@ -257,6 +259,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     
     forceComp->compute(pd, top, &coords, &forces, &energies, field);
     setQ(top->atoms());
+    setX(coords);
     calcMoments();
     auto mpo = MolPropObservable::DIPOLE;
     if (!hasMultipole(mpo))

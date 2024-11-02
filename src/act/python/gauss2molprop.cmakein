@@ -37,7 +37,8 @@ def parseArguments():
 
 if __name__ == '__main__':
     args  = parseArguments()
-
+    if not args.basisset:
+        sys.exit("Please add the -basis flag")
     rbt   = read_basis_table(args.basisset_table)
     mp = read_gaussian_log(args.infile, args.molname, args.basisset, rbt,
                            args.verbose, args.coordinate_set)

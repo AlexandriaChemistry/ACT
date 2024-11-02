@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,15 +43,15 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/arraysize.h"
 
 namespace alexandria
 {
@@ -70,6 +70,13 @@ std::map<eRMS, const char *> ermsNames = {
     { eRMS::ESP,        "ESP"        },
     { eRMS::EPOT,       "EPOT"       },
     { eRMS::Interaction,"Interaction"},
+    { eRMS::Electrostatics, "Electrostatics" },
+    { eRMS::Exchange,   "Exchange"   },
+    { eRMS::Dispersion, "Dispersion" },
+    { eRMS::Induction,  "Induction"  },
+    { eRMS::AllElec,    "AllElec"    },
+    { eRMS::ExchInd,    "ExchInd"    },
+    { eRMS::DeltaHF,    "DeltaHF"    },
     { eRMS::Force2,     "Force2"     },
     { eRMS::Polar,      "Polar"      },
     { eRMS::TOT,        "TOT"        }
@@ -89,7 +96,7 @@ void FittingTarget::print(FILE *fp) const
 {
   if (fp != nullptr && chiSquared_ > 0 && totalWeight_ > 0)
     {
-      fprintf(fp, "%-10s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
+      fprintf(fp, "%-15s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
               rmsName(erms_), chiSquared_, totalWeight_,
               weight_, chiSquaredWeighted(),
               iMolSelectName(ims_));
@@ -110,7 +117,7 @@ void MolGen::addFilenames(std::vector<t_filenm> *filenms)
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
                         std::map<eRMS, FittingTarget> *targets)
 {
-    t_pargs pa_general[] =
+    std::vector<t_pargs> pa_general =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
@@ -130,6 +137,20 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_inter",    FALSE, etREAL, {targets->find(eRMS::Interaction)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of interaction energies of multimers from the reference." },
+        { "-fc_elec",    FALSE, etREAL, {targets->find(eRMS::Electrostatics)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the electrostatic component of the interaction energies of multimers from the reference." },
+        { "-fc_allelec",    FALSE, etREAL, {targets->find(eRMS::AllElec)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the sum of all energy components involving electrostatics, that is Coulomb, Induction, InductionCorrection, of the sum of SAPT energy terms Electrostatics and Induction for multimers from the reference." },
+        { "-fc_exchind",   FALSE, etREAL, {targets->find(eRMS::ExchInd)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the sum of the exchange energy and the components involving induction, that is Exchange, Induction and InductionCorrection, of the sum of SAPT energy terms Electrostatics and Induction for multimers from the reference." },
+        { "-fc_disp",    FALSE, etREAL, {targets->find(eRMS::Dispersion)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the dispersion component of the interaction energies of multimers from the reference." },
+        { "-fc_exch",    FALSE, etREAL, {targets->find(eRMS::Exchange)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the exchange component of the interaction energies of multimers from the reference." },
+        { "-fc_induc",    FALSE, etREAL, {targets->find(eRMS::Induction)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the induction component of the interaction energies of multimers from the reference." },
+        { "-fc_deltahf",  FALSE, etREAL, {targets->find(eRMS::DeltaHF)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the DeltaHF term that is part of the SAPT induction energy from the reference. If this option is not present, but the DeltaHF term from SAPT is present in the data, this will be added to the second order induction, which means force field parameters related to induction will be trained on the total induction." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." },
         { "-fc_freq",  FALSE, etREAL, {targets->find(eRMS::FREQUENCY)->second.weightPtr()},
@@ -153,9 +174,52 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
-          "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " }
+          "Apply Boltzmann weighting of energies when using either the [TT]-fc_epot[tt] or [TT]-fc_einter[tt] flags. The weight will be determined from the difference in reference energy at the given data point and in the minimum. " },
+        { "-maxpot", FALSE, etINT, { &maxpot_},
+          "Fraction of ESP points to use when training on it. Number given in percent." },
+        { "-watoms", FALSE, etREAL, { &watoms_},
+          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." },
+        { "-qtype", FALSE, etSTR, {&qTypeString_},
+          "Charge type to use" }
     };
-    doAddOptions(pargs, asize(pa_general), pa_general);
+    doAddOptions(pargs, pa_general.size(), pa_general.data());
+}
+
+bool MolGen::checkOptions(FILE                        *logFile,
+                          const std::vector<t_filenm> &filenames,
+                          ForceField                  *pd)
+{
+    std::set iTypeElec  = { InteractionType::ELECTROSTATICS, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+                            InteractionType::BONDCORRECTIONS, InteractionType::POLARIZATION };
+    bool Electrostatics = false;
+
+    for(auto toFit = fit_.begin(); toFit != fit_.end(); )
+    {
+        InteractionType itype;
+        if (pd->typeToInteractionType(toFit->first, &itype))
+        {
+            Electrostatics = Electrostatics || isVsite(itype) || (iTypeElec.end() != iTypeElec.find(itype));
+            toFit++;
+        }
+        else
+        {
+            if (debug)
+            {
+                fprintf(debug, "Ignoring unknown training parameter '%s'\n",
+                        toFit->first.c_str());
+            }
+            toFit = fit_.erase(toFit);
+        }
+    }
+    auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
+    if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
+    {
+        std::string w("ERROR: supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
+        fprintf(logFile, "\n%s\n", w.c_str());
+        fprintf(stderr, "\n%s\n\n", w.c_str());
+        return false;
+    }
+    return true;
 }
 
 void MolGen::optionsFinished()
@@ -177,7 +241,9 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the filled structure is used for the optimize() method
+void MolGen::fillIopt(ForceField *pd,
+                      FILE       *fp)
+// This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
@@ -190,9 +256,10 @@ void MolGen::fillIopt(ForceField *pd) // This is called in the read method, the 
                 fprintf(debug, "Adding parameter %s to fitting\n", fit.first.c_str());
             }
         }
-        else
+        else if (fp)
         {
-            printf("Cannot find parameter '%s' in force field\n", fit.first.c_str()); 
+            fprintf(fp, "Cannot find parameter '%s' in force field\n",
+                    fit.first.c_str()); 
         }
     }
 }
@@ -211,8 +278,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         nmol = targetSize_.find(iMolSelect::Train)->second;
         if (fp)
         {
-            fprintf(fp, "Will check data sufficiency for %d training compounds.\n",
-                    static_cast<int>(nmol));
+            fprintf(fp, "Will check data sufficiency for %zu training compounds.\n",
+                    nmol);
         }
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
@@ -261,21 +328,27 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         
         std::vector<InteractionType> atomicItypes = {
             InteractionType::POLARIZATION,
-            InteractionType::COULOMB,
+            InteractionType::ELECTROSTATICS,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE
         };
-        // If we use a combination rule for Van der Waals, it should be
+        // If we use a combination rule for Van der Waals or QT, it should be
         // treated as an atomic type. If not, it should be a "bond"
         // potential.
-        auto itype_vdw  = InteractionType::VDW;
-        auto forces_vdw = pd->findForces(itype_vdw);
-        auto comb_rule  = getCombinationRule(*forces_vdw);
-        if (!comb_rule.empty())
+        for(const auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                                 InteractionType::INDUCTIONCORRECTION })
         {
-            atomicItypes.push_back(InteractionType::VDW);
+            if (!pd->interactionPresent(itype))
+            {
+                continue;
+            }
+            auto forces    = pd->findForces(itype);
+            auto comb_rule = getCombinationRule(*forces);
+            if (!comb_rule.empty())
+            {
+                atomicItypes.push_back(itype);
+            }
         }
-        
         // Now loop over molecules and add interactions
         for(auto &mol : actmol_)
         {
@@ -325,23 +398,36 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                         }
                     }
                 }
-                if (comb_rule.empty() && optimize(itype_vdw))
+                for(const auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                                         InteractionType::INDUCTIONCORRECTION })
                 {
-                    // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
-                    for(size_t j = i+1; j < myatoms.size(); j++)
+                    if (!pd->interactionPresent(itype))
                     {
-                        auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype_vdw).id();
-                        auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype_vdw).id();
-                        auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces_vdw->canSwap());
-                        if (!forces_vdw->parameterExists(vdwId))
+                        continue;
+                    }
+                    auto forces    = pd->findForces(itype);
+                    auto comb_rule = getCombinationRule(*forces);
+                    if (!comb_rule.empty() && optimize(itype))
+                    {
+                        // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.
+                        for(size_t j = i+1; j < myatoms.size(); j++)
                         {
-                            GMX_THROW(gmx::InternalError("Unknown Van der Waals pair"));
-                        }
-                        for(auto &ff : *(forces_vdw->findParameters(vdwId)))
-                        {
-                            if (ff.second.isMutable())
+                            auto iPType = pd->findParticleType(myatoms[i].ffType())->interactionTypeToIdentifier(itype).id();
+                            auto jPType = pd->findParticleType(myatoms[j].ffType())->interactionTypeToIdentifier(itype).id();
+                            auto vdwId  = Identifier({iPType, jPType}, { 1 }, forces->canSwap());
+                            if (!forces->parameterExists(vdwId))
                             {
-                                ff.second.incrementNtrain();
+                                GMX_THROW(gmx::InternalError(gmx::formatString("Unknown pair %s-%s for %s",
+                                                                               myatoms[i].ffType().c_str(),
+                                                                               myatoms[j].ffType().c_str(),
+                                                                               interactionTypeToString(itype).c_str()).c_str()));
+                            }
+                            for(auto &ff : *(forces->findParameters(vdwId)))
+                            {
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
+                                }
                             }
                         }
                     }
@@ -403,7 +489,15 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                 InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
                 InteractionType::PROPER_DIHEDRALS,
                 InteractionType::IMPROPER_DIHEDRALS,
-                InteractionType::VSITE2
+                InteractionType::VSITE1,
+                InteractionType::VSITE2,
+                InteractionType::VSITE2FD,
+                InteractionType::VSITE3,
+                InteractionType::VSITE3S,
+                InteractionType::VSITE3FD,
+                InteractionType::VSITE3FAD,
+                InteractionType::VSITE3OUT,
+                InteractionType::VSITE3OUTS
             };
             for (const auto &atype : atypes)
             {
@@ -415,11 +509,31 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                         for (const auto &topentry : top->entry(atype))
                         {
                             // TODO check multiple ids
+                            if (!angles->parameterExists(topentry->id()))
+                            {
+                                if (fp)
+                                {
+                                    std::string swapped;
+                                    if (topentry->id().haveSwapped())
+                                    {
+                                        swapped = topentry->id().swapped();
+                                    }
+                                    fprintf(fp, "Cannot find parameter '%s' CanSwap %s swapped '%s' in parameter list %s CanSwap %s\n",
+                                            topentry->id().id().c_str(),
+                                            canSwapToString(topentry->id().canSwap()).c_str(),
+                                            swapped.c_str(),
+                                            interactionTypeToString(atype).c_str(),
+                                            canSwapToString(angles->canSwap()).c_str());
+                                }
+                                continue;
+                            }
                             for (auto &ff : *(angles->findParameters(topentry->id())))
                             {
-                                if (fp && InteractionType::VSITE2 == atype)
+                                if (debug && isVsite(atype))
                                 {
-                                    fprintf(fp, "Found vsite2 %s\n", topentry->id().id().c_str());
+                                    fprintf(debug, "Found %s %s\n",
+                                            interactionTypeToString(atype).c_str(),
+                                            topentry->id().id().c_str());
                                 }
                                 if (ff.second.isMutable())
                                 {
@@ -512,8 +626,8 @@ void MolGen::checkDataSufficiency(FILE        *fp,
         }
         if (fp && removeMol.size() > 0)
         {
-            fprintf(fp, "Found %d molecules without sufficient support, will remove them.\n",
-                    static_cast<int>(removeMol.size()));
+            fprintf(fp, "Found %zu molecules without sufficient support, will remove them.\n",
+                    removeMol.size());
         }
         for(auto &rmol : removeMol)
         {
@@ -603,6 +717,13 @@ static double computeCost(const ACTMol                         *actmol,
                 w += gmx::square(myexp.NAtom());
                 break;
             case eRMS::Interaction:
+            case eRMS::Electrostatics:
+            case eRMS::Dispersion:
+            case eRMS::Induction:
+            case eRMS::DeltaHF:
+            case eRMS::Exchange:
+            case eRMS::AllElec:
+            case eRMS::ExchInd:
                 // All versus all interactions for dimer and monomers separately
                 w += 2*gmx::square(myexp.NAtom());
                 break;
@@ -644,12 +765,12 @@ size_t MolGen::Read(FILE                                *fp,
     std::map<immStatus, int>         imm_count;
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
-    std::map<std::string, std::vector<double> > qmap;
+    chargeMap                        qmap;
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
     //  Now  we have read the forcefield and spread it to processors
-    fillIopt(pd);
+    fillIopt(pd, cr_->isMaster() ? fp : nullptr);
     /* Reading Molecules from allmols.dat */
     if (cr_->isMaster())
     {
@@ -658,14 +779,19 @@ size_t MolGen::Read(FILE                                *fp,
         auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
         if (qmapfn && strlen(qmapfn) > 0)
         {
-            qmap = fetchChargeMap(pd, forceComp, qmapfn);
+            auto qt = qType::ACM;
+            if (nullptr != qTypeString_)
+            {
+                qt = stringToQtype(qTypeString_);
+            }
+            qmap = fetchChargeMap(pd, forceComp, qmapfn, qt);
         }
         // Even if we did not read a file, we have to tell the other processors
         // about it.
         broadcastChargeMap(cr_, &qmap);
         if (fp)
         {
-            fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), molfn);
+            fprintf(fp, "Read %zu compounds from %s\n", mp.size(), molfn);
             if (qmap.size() > 0)
             {
                 fprintf(fp, "Read chargemap containing %lu entries from %s\n", qmap.size(), qmapfn);
@@ -700,16 +826,15 @@ size_t MolGen::Read(FILE                                *fp,
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
-    std::map<iMolSelect, int> nLocal;
-    for(const auto &ims : iMolSelectNames())
-    {
-        nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
-    }
     std::map<MolPropObservable, iqmType> iqmMap = 
         {
             { MolPropObservable::DELTAE0,           iqmType::QM },
             { MolPropObservable::POTENTIAL,         iqmType::QM },
             { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+            { MolPropObservable::ELECTROSTATICS,    iqmType::QM },
+            { MolPropObservable::INDUCTION,         iqmType::QM },
+            { MolPropObservable::EXCHANGE,          iqmType::QM },
+            { MolPropObservable::DISPERSION,        iqmType::QM },
             { MolPropObservable::DIPOLE,            iqmType::QM },
             { MolPropObservable::QUADRUPOLE,        iqmType::QM },
             { MolPropObservable::OCTUPOLE,          iqmType::QM },
@@ -724,8 +849,8 @@ size_t MolGen::Read(FILE                                *fp,
     {
         if (fp)
         {
-            fprintf(fp, "Trying to generate topologies for %d molecules!\n",
-                    static_cast<int>(mp.size()));
+            fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
+                    gms.nMol(), mp.size());
         }
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
@@ -733,7 +858,7 @@ size_t MolGen::Read(FILE                                *fp,
             if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::ACTMol actmol;
-                if (fp && debug)
+                if (debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
@@ -751,22 +876,28 @@ size_t MolGen::Read(FILE                                *fp,
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                imm = actmol.getExpProps(pd, iqmMap, 0.0, 0.0, 100);
+                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
-                    if (!fragments->setCharges(qmap))
+                    if (!qmap.empty())
                     {
-                        if (fp)
+                        if (fragments->setCharges(qmap))
                         {
-                            fprintf(fp, "WARNING: Could not find charges for %s in charge map, will generate them using %s.\n",
-                                    actmol.getMolname().c_str(),
-                                    chargeGenerationAlgorithmName(alg).c_str());
+                            // Copy charges to the high-level topology as well
+                            fragments->fetchCharges(actmol.atoms());
                         }
+                        else
+                        {
+                            imm = immStatus::NoMolpropCharges;
+                        }
+                    }
+                    else
+                    {
                         std::vector<double> dummy;
                         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                         imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                     qtype, dummy, &coords, &forces);
+                                                     qtype, dummy, &coords, &forces, true);
                     }
                 }
                 if (immStatus::OK != imm)
@@ -821,6 +952,20 @@ size_t MolGen::Read(FILE                                *fp,
         int  actmolIndex = 0;
         auto cs         = CommunicationStatus::OK;
         int  bcint      = 1;
+        if (actmol_.size() < static_cast<size_t>(1+cr_->nhelper_per_middleman()))
+        {
+            if (cr_->size() > 1)
+            {
+                // Send a 0 to signify more is coming
+                bcint = 0;
+                cr_->bcast(&bcint, mycomms[0]);
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than number of helpers per middle man (%d). Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError("No molecules to train on"));
+            }
+        }
         std::set<int> comm_used;
         std::vector<double> totalCost;
         totalCost.resize(1+cr_->nhelper_per_middleman(), 0);
@@ -936,17 +1081,22 @@ size_t MolGen::Read(FILE                                *fp,
             std::vector<gmx::RVec> coords = actmol.xOriginal();
             if (immStatus::OK == imm)
             {
-                imm = actmol.getExpProps(pd, iqmMap, 0);
+                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
             }
             if (immStatus::OK == imm)
             {
                 auto fragments = actmol.fragmentHandler();
-                if (!fragments->setCharges(qmap))
+                if (fragments->setCharges(qmap))
+                {
+                    // Copy charges to the high-level topology as well
+                    fragments->fetchCharges(actmol.atoms());
+                }
+                else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                     std::vector<double> dummy;
                     imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                 qtype, dummy, &coords, &forces);
+                                                 qtype, dummy, &coords, &forces, true);
                 }
             }
             if (cr_->isMiddleMan())
@@ -965,10 +1115,6 @@ size_t MolGen::Read(FILE                                *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                if (actmol.support() == eSupport::Local)
-                {
-                    nLocal.find(actmol.datasetType())->second += 1;
-                }
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
@@ -1039,10 +1185,10 @@ size_t MolGen::Read(FILE                                *fp,
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
-        fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                static_cast<int>(nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
-                                 nTargetSize(iMolSelect::Ignore)),
-                static_cast<int>(mp.size()));
+        fprintf(fp, "Made topologies for %zu out of %zu molecules.\n",
+                nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
+                nTargetSize(iMolSelect::Ignore),
+                mp.size());
 
         for (const auto &imm : imm_count)
         {

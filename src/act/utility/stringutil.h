@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -46,7 +46,9 @@
 int get_option(const char **opts);
 
 /*! \brief
- * Split a string into substrings separated by a delimiter character
+ * Split a string into substrings separated by a delimiter character.
+ * If the delimiter is a space, multiple delimiters in a row will be
+ * squashed into one delimiter.
  * \param[in] s The string to be split
  * \param[in] delim The delimiting character
  * \param[in] elems A vector of substring elements

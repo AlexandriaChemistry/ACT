@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,7 +38,6 @@
 #include <map>
 
 #include "act/alexandria/fragmenthandler.h"
-#include "act/alexandria/gentop_vsite.h"
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/actmol_low.h"
 #include "act/forces/forcecomputer.h"
@@ -82,28 +81,74 @@ class ACTEnergy
 {
 private:
     //! Id of the experiment
-    int    experiment_;
+    int    experiment_ = 0;
     //! QM energy
-    double eqm_;
+    double eqm_        = 0;
     //! ACT energy
-    double eact_;
+    double eact_       = 0;
+    //! QM present
+    bool haveQM_       = false;
+    //! ACT present
+    bool haveACT_      = false;
 public:
     /*! \brief Constructor
      * \param[in] experiment The id
      * \param[in] eqm        The QM energy
      * \param[in] eact       The ACT energy
      */
-    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment), eqm_(eqm), eact_(eact) {}
-    
+    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment)
+    {
+        setQM(eqm);
+        setACT(eact);
+    }
+    /*! \brief Constructor
+     * \param[in] experiment The id
+     */
+    ACTEnergy(int experiment) : experiment_(experiment) {}
+
     //! \return The experiment ID
     int id() const { return experiment_; }
 
+    //! Is there a QM energy
+    bool haveQM() const { return haveQM_; }
+
     //! \return The QM energy    
-    double eqm() const { return eqm_; }
+    double eqm() const
+    {
+        if (!haveQM_)
+        {
+            GMX_THROW(gmx::InvalidInputError("Trying to extract a QM energy when there is none"));
+        }
+        return eqm_;
+    }
+
+    //! set QM value
+    void setQM(double eqm)
+    {
+        eqm_ = eqm;
+        haveQM_ = true;
+    }
+
+    //! Is there an ACT energy
+    bool haveACT() const { return haveACT_; }
 
     //! \return The ACT energy
-    double eact() const { return eact_; }
+    double eact() const
+    {
+        GMX_RELEASE_ASSERT(haveACT_, "Trying to extract an ACT energy when there is none");
+        return eact_;
+    }
+
+    //! set ACT value
+    void setACT(double eact)
+    {
+        eact_ = eact;
+        haveACT_ = true;
+    }
 };
+
+typedef std::map<InteractionType, ACTEnergy> ACTEnergyMap;
+typedef std::vector<ACTEnergyMap>            ACTEnergyMapVector;
 
 /*! \brief Class to hold corresponding QM (reference) adn ACT props
  */
@@ -220,16 +265,6 @@ private:
     immStatus checkAtoms(const ForceField *pd);
     
     /*! \brief
-     * Return true if atom type needs to have virtual site.
-     *
-     * \param[in] atype  Atom type
-     * \param[in] pd     Data structure containing atomic properties
-     * \return true if vsite is needed
-     */
-    bool IsVsiteNeeded(std::string        atype,
-                       const ForceField     *pd) const;
-    
-    /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
      *
      * \param[in]  ca     The index of the central atom
@@ -253,7 +288,7 @@ private:
     //! Energy terms for this compounds
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
-    Topology                      *topology_;
+    Topology                      *topology_      = nullptr;
     //! All the atoms, but not shells or vsites
     std::vector<int>               realAtoms_; 
     // Reference data for devcomputer
@@ -268,7 +303,8 @@ private:
     //! Structure to manage charge generation
     FragmentHandler               *fraghandler_   = nullptr;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
-
+    //! Internal storage for original coords
+    std::vector<gmx::RVec>         xOriginal_;
 public:
 
     //! \return a GROMACS style array with energy terms
@@ -276,7 +312,7 @@ public:
     
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
-     * with Jobtype Opt or Topology. The array includes shells and/or vsites.
+     * with Jobtype Opt or Topology or SP. The array includes shells and/or vsites.
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
@@ -352,12 +388,12 @@ public:
      * \param[out] interactionEnergyMap The interaction energies
      * \param[out] energyComponentsMap  The energy components
      */
-    void forceEnergyMaps(const ForceField                                                    *pd,
-                         const ForceComputer                                                 *forceComp,
-                         std::vector<std::vector<std::pair<double, double> > >               *forceMap,
-                         std::vector<ACTEnergy>                                              *energyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double> > > *interactionEnergyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double> > > *energyComponentMap) const;
+    void forceEnergyMaps(const ForceField                                                  *pd,
+                         const ForceComputer                                               *forceComp,
+                         std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                         std::vector<ACTEnergy>                                            *energyMap,
+                         ACTEnergyMapVector                                                *interactionEnergyMap,
+                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
@@ -366,7 +402,7 @@ public:
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
 
     //! Return accumulated list of errors.    
-    const std::vector<std::string> &errors() const {return error_messages_;}
+    const std::vector<std::string> errors() const {return error_messages_;}
     
     /*! \brief
      * \return atoms data for editing
@@ -409,7 +445,7 @@ public:
      * \return status
      */
     immStatus GenerateTopology(FILE              *fp,
-                               const ForceField  *pd,
+                               ForceField        *pd,
                                missingParameters  missing);
     
     //! Return the ACT topology structure
@@ -430,6 +466,7 @@ public:
      * \param[in]  qcustom   Custom (user-provided) charges
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
+     * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
     immStatus GenerateCharges(const ForceField          *pd,
                               const ForceComputer       *forceComp,
@@ -437,7 +474,8 @@ public:
                               qType                      qtype,
                               const std::vector<double> &qcustom,
                               std::vector<gmx::RVec>    *coords,
-                              std::vector<gmx::RVec>    *forces);
+                              std::vector<gmx::RVec>    *forces,
+                              bool                       updateQprops = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
@@ -458,14 +496,12 @@ public:
      *
      * \param[in] pd   The force field   
      * \param[in] iqm  Determine whether to allow exp or QM results or both for each property
-     * \param[in] T    The temperature to use. -1 allows any T.
      * \param[in]  watoms  Weight for the potential on the atoms in 
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
     immStatus getExpProps(const ForceField                           *pd,
                           const std::map<MolPropObservable, iqmType> &iqm,
-                          double                                      T,
                           real                                        watoms = 0,
                           int                                         maxESP = 100);
     

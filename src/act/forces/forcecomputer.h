@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -27,12 +27,14 @@
  */
 #ifndef ACT_FORCECOMPUTER_H
 #define ACT_FORCECOMPUTER_H
-    
+
+#include <set>
 #include <vector>
 
 #include "act/alexandria/topology.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
@@ -79,7 +81,10 @@ private:
      */
     ForceComputer(double   msForce = 1e-6,
                   int      maxiter = 25);
-    
+
+    //! \brief Destructor
+    ~ForceComputer();
+
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
      * \param[in]  pd          Pointer to force field structure
@@ -90,6 +95,8 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
+     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
+     * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
      * \return The mean square force on the shells, or zero if not present.
      */
     double compute(const ForceField                  *pd,
@@ -97,17 +104,19 @@ private:
                    std::vector<gmx::RVec>            *coordinates,
                    std::vector<gmx::RVec>            *forces,
                    std::map<InteractionType, double> *energies,
-                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 }) const;
+                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                   bool                               resetShells = true,
+                   std::set<int>                      relax = {}) const;
                  
-    /*! \brief Return the gromacs type used
+    /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
      * used within the force computer.
      * \param[in] pd      Pointer to force field structure
      * \param[in] itype The interaction type
-     * \return the force type
+     * \return the potential type
      */
-    int ftype(const ForceField  *pd,
-              InteractionType itype) const;
+    Potential ftype(const ForceField *pd,
+                    InteractionType   itype) const;
     
     //! \return the force tolerance
     double forceTolerance() const { return msForceToler_; }
@@ -126,6 +135,15 @@ private:
     void plot(const ForceField   *pd,
               InteractionType  itype) const;
 
+    /*! \brief Generate vsites
+     * \param[in] top         Topology
+     * \param[in] coordinates The coordinates to update
+     */
+    void generateVsites(const Topology         *top,
+                        std::vector<gmx::RVec> *coordinates)
+    {
+        vsiteHandler_->constructPositions(top, coordinates, box_);
+    }
 };
 
 } // namespace alexandria

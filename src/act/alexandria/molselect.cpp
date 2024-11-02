@@ -62,6 +62,13 @@
 namespace alexandria
 {
 
+void MolSelect::addOne(const std::string &iupac,
+                       int                index,
+                       iMolSelect         ims)
+{
+    ims_.push_back(IMolSelect(iupac, ims, index));
+}
+
 void MolSelect::read(const char *fn)
 {
     gmx::TextReader tr(fn);
@@ -81,7 +88,7 @@ void MolSelect::read(const char *fn)
             iMolSelect status;
             if (name2molselect(ptr[1], &status))
             {
-                ims_.push_back(IMolSelect(ptr[0], status, index++));
+                addOne(ptr[0], index++, status);
             }
             else
             {
@@ -97,15 +104,39 @@ void MolSelect::read(const char *fn)
     }
 }
 
-bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
+const IMolSelect *MolSelect::findIupac(const std::string &iupac) const
 {
-    auto imi = std::find_if(ims_.begin(), ims_.end(),
-                            [iupac](IMolSelect const &i)
-                            {
-                                return i.iupac().compare(iupac) == 0;
-                            });
-
+    std::string newiupac;
+    auto ii = split(iupac, '#');
+    if (ii.size() == 2)
+    {
+        newiupac.assign(ii[1] + "#" + ii[0]);
+    }
+    auto imi = ims_.begin();
+    for( ; imi < ims_.end(); ++imi)
+    {
+        if (imi->iupac() == iupac ||
+            (!newiupac.empty() &&
+             imi->iupac() == newiupac))
+        {
+            break;
+        }
+    }
     if (imi == ims_.end())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &(*imi);
+    }
+}
+
+bool MolSelect::status(const std::string iupac, iMolSelect *ims) const
+{
+    auto imi = findIupac(iupac);
+
+    if (!imi)
     {
         return false;
     }
@@ -115,12 +146,9 @@ bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
 
 bool MolSelect::index(const std::string &iupac, int *index) const
 {
-    auto imi = std::find_if(ims_.begin(), ims_.end(),
-                            [iupac](IMolSelect const &i)
-                            {
-                                return i.iupac().compare(iupac) == 0;
-                            });
-    if (imi == ims_.end())
+    auto imi = findIupac(iupac);
+
+    if (!imi)
     {
         return false;
     }
@@ -128,5 +156,48 @@ bool MolSelect::index(const std::string &iupac, int *index) const
     return true;
 }
 
+void MolSelect::bcast(const CommunicationRecord *cr)
+{
+    std::map<iMolSelect, int> mmm = {
+        { iMolSelect::Train,  13 },
+        { iMolSelect::Test,   23 },
+        { iMolSelect::Ignore, 37 }
+    };
+    std::map<int, iMolSelect> rmm;
+    for(const auto &m : mmm)
+    {
+        rmm[m.second] = m.first;
+    }
+
+    if (cr->isMaster())
+    {
+        int isize = ims_.size();
+        cr->bcast(&isize, cr->comm_world());
+        for(int i = 0; i < isize; i++)
+        {
+            std::string iupac = ims_[i].iupac();
+            cr->bcast(&iupac, cr->comm_world());
+            int index = ims_[i].index();
+            cr->bcast(&index, cr->comm_world());
+            int ims = mmm[ims_[i].status()];
+            cr->bcast(&ims, cr->comm_world());
+        }
+    }
+    else
+    {
+        int isize;
+        cr->bcast(&isize, cr->comm_world());
+        for(int i = 0; i < isize; i++)
+        {
+            std::string iupac;
+            cr->bcast(&iupac, cr->comm_world());
+            int         ims, index;
+            cr->bcast(&index, cr->comm_world());
+            cr->bcast(&ims, cr->comm_world());
+            iMolSelect  status = rmm[ims];
+            addOne(iupac, index, status);
+        }
+    }
 }
 
+}

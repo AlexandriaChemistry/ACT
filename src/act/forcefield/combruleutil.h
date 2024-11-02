@@ -46,9 +46,6 @@ namespace alexandria
     private:
         // Storage for the command line options
         std::vector<const char *> cr_flag_;
-        // Description of options
-        std::vector<std::string>  desc_;
-
     public:
         /*! \brief Utility to make command line information about combrules
          * \param[inout] crinfo Array of strings to be edited
@@ -61,10 +58,16 @@ namespace alexandria
         void addPargs(std::vector<t_pargs> *pa);
 
         /*! \brief Utility to convert strings to combination rules in the FF
-         * \param[inout] vdw     The parameter list
+         * \param[inout] pa        Command line arguments after processing  
+         * \param[inout] vdw       The parameter list for Van der Waals (may be nullptr)
+         * \param[inout] vdwcorr   The parameter list for VdW correction (may be nullptr)
+         * \param[inout] induccorr The parameter list for Induction correction (may be nullptr)
          * \return the number of rules that were changed.
          */
-        int extract(ForceFieldParameterList *vdw);
+        int extract(const std::vector<t_pargs> &pa,
+                    ForceFieldParameterList    *vdw,
+                    ForceFieldParameterList    *vdwcorr,
+                    ForceFieldParameterList    *iccorr);
 
         /*! \brief Utility to convert old-style combination rule to new
          * \param[inout] vdw     The parameter list

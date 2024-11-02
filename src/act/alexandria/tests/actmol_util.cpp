@@ -11,7 +11,7 @@ namespace alexandria
 {
 
 void initACTMol(const char          *molname, 
-                const ForceField    *pd,
+                ForceField          *pd,
                 ForceComputer       *fcomp,
                 std::vector<ACTMol> *mps)
     {
@@ -27,10 +27,12 @@ void initACTMol(const char          *molname,
         // Charge gen params
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
+        bool userqtot = false;
         matrix box;
         bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
                                 conf, &method, &basis,
-                                maxpot, nsymm, jobtype, &qtot, false, box);
+                                maxpot, nsymm, jobtype, userqtot,
+                                &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         if (readOK)
         {
@@ -56,7 +58,7 @@ void initACTMol(const char          *molname,
                 imm = mm.getExpProps(pd, iqmMap, 0);
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
                 mps->push_back(mm);
             }
         }

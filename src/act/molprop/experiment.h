@@ -68,7 +68,7 @@ JobType string2jobType(const std::string &str);
  * Enum describing the source of the data
  */
 enum DataSource {
-    dsExperiment, dsTheory
+    dsExperiment = 0, dsTheory = 1
 };
 
 /*! \brief

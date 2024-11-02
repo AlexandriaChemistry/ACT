@@ -115,7 +115,11 @@ public:
             GMX_RELEASE_ASSERT(!terminators_->empty(), "There are no terminators!");
         }
     }
-
+    /*! \brief Update the genepool 
+     * \param gpin New gene pool
+     * \throws if the dimensions do not match to lastPop_ if lastPop_ not empty
+     */
+    void updateGenePool(const GenePool &gpin);
  
     /*! \brief Evolve the initial population
      * \param[out] bestGenome The best genome(s) found during the evolution (for different datasets, if applicable).
@@ -139,8 +143,10 @@ public:
 
     /*! Open fitness output
      * \param[in] filename Name for output files (data set will be inserted in file name)
+     * \param[in] ims      Selection category
      */
-    void openFitnessFiles(const std::string &filename);
+    void openFitnessFiles(const std::string &filename,
+                          iMolSelect         ims);
 
     //! And close them when the time is due
     void closeFitnessFiles();

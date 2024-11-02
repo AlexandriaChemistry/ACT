@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -45,10 +45,11 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            bool                  flush,
                            gmx_output_env_t     *oenv,
                            bool                  openConvFiles)
-: gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
+: gach_(gach), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
-    int seed = sii->commRec()->recv_int(sii->commRec()->superior());
+    int seed;
+    sii->commRec()->recv(sii->commRec()->superior(), &seed);
     // Standard mersenne_twister_engine seeded with what we received
     std::mt19937 gen(seed);
     // Default constructor to cover all available (positive) range
@@ -60,7 +61,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Create force computer
-    forceComp_ = new ForceComputer();
+    forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
     fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,
@@ -90,6 +91,14 @@ void ACTMiddleMan::run()
 {
     auto cr = ind_->sii()->commRec();
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
+    // Check whether we need to accept a genome from the master
+    int read;
+    int master = cr->superior();
+    cr->recv(master, &read);
+    if (read == 1)
+    {
+        cr->recv(master, ind_->genomePtr()->basesPtr());
+    }
     // Start by computing my own fitness
     fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
@@ -97,9 +106,11 @@ void ACTMiddleMan::run()
         fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
     }
     // I.
-    // Send my initial genome and fitness to the master
-    int master = cr->superior();
-    ind_->genome().Send(cr, master);
+    // Send my initial genome and fitness to the master if needed
+    if (read == 0)
+    {
+        ind_->genome().Send(cr, master);
+    }
     auto cont = CommunicationStatus::OK;
 
     // II.
@@ -109,14 +120,16 @@ void ACTMiddleMan::run()
     {
         // Get the dataset
         // FIXME: is this really necessary?
-        iMolSelect ims = cr->recv_iMolSelect(master);
+        iMolSelect ims;
+        cr->recv(master, &ims);
         
         // Now get the new bases.
-        cr->recv_double_vector(master, ind_->genomePtr()->basesPtr());
+        cr->recv(master, ind_->genomePtr()->basesPtr());
         
         // III.
         // Receive assignment from master.  
-        TrainFFMiddlemanMode mode = cr->recv_ff_middleman_mode(master);
+        TrainFFMiddlemanMode mode;
+        cr->recv(master, &mode);
         if (mode == TrainFFMiddlemanMode::MUTATION)
         {
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
@@ -126,15 +139,15 @@ void ACTMiddleMan::run()
                 fitComp_->compute(ind_->genomePtr(), ims);
                 // IV.
                 // Send the mutated vector
-                cr->send_double_vector(master, ind_->genomePtr()->basesPtr());
+                cr->send(master, *ind_->genomePtr()->basesPtr());
 
                 // V.
                 // Send the new train fitness
-                cr->send_double(master, ind_->genome().fitness(ims));
+                cr->send(master, ind_->genome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
                     fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
-                    cr->send_double(master, ind_->genome().fitness(iMolSelect::Test));
+                    cr->send(master, ind_->genome().fitness(iMolSelect::Test));
                 }
             }
             else
@@ -142,30 +155,28 @@ void ACTMiddleMan::run()
                 // IV.
                 // If we are working with Hybrid or MCMC, send 
                 // the best genome found to the MASTER.
-                cr->send_double_vector(master, ind_->bestGenomePtr()->basesPtr());
+                cr->send(master, *ind_->bestGenomePtr()->basesPtr());
                 //ind_->bestGenome().Send(cr, master);
                 // V.
                 // Send the new train fitness
-                cr->send_double(master, ind_->bestGenome().fitness(ims));
+                cr->send(master, ind_->bestGenome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
                     fitComp_->compute(ind_->bestGenomePtr(), iMolSelect::Test);
-                    cr->send_double(master, ind_->bestGenome().fitness(iMolSelect::Test));
+                    cr->send(master, ind_->bestGenome().fitness(iMolSelect::Test));
                 }
             }
         }
         else if (mode == TrainFFMiddlemanMode::FITNESS)
         {
             fitComp_->compute(ind_->genomePtr(), ims);
-            cr->send_double(master, ind_->genome().fitness(ims));
+            cr->send(master, ind_->genome().fitness(ims));
         }
         cont = cr->recv_data(master);
     }
     
     // Stop my helpers too.
     stopHelpers();
-    // Save the last genome
-    // sii_->saveState(true, sii_->outputFileLast());
 }
 
 void ACTMiddleMan::printStatistics(FILE *logFile)

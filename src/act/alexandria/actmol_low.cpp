@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -72,8 +72,10 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::BondOrder,                "Determining bond order" },
     { immStatus::RespInit,                 "RESP Initialization" },
     { immStatus::ChargeGeneration,         "Charge generation" },
+    { immStatus::MissingChargeGenerationParameters, "Parameters for charge generation missing" },
     { immStatus::ShellMinimization,        "Shell minimization" },
     { immStatus::Topology,                 "No input to generate a topology" },
+    { immStatus::FragmentHandler,          "Fragment Handler could not make topologies" },
     { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
     { immStatus::Test,                     "Compound not in training set" },
     { immStatus::NoData,                   "No experimental data" },
@@ -220,8 +222,7 @@ double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
     std::string DHf("DHf(T)");
     for (auto &a : atoms)
     {
-        if (a.pType() == eptAtom ||
-            a.pType() == eptNucleus)
+        if (a.pType() == ActParticle::Atom)
         {
             std::string h0unit;
             double h0_hT = atomenergy.term(a.element(), 0, "exp",
@@ -231,12 +232,17 @@ double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
                                            DHf, temperature, &dhFunit, nullptr);
             if (debug)
             {
-                fprintf(debug, "Found atomization energy terms %s = %g (%s) %s = %g (%s)\n",
+                fprintf(debug, "Found atomization energy terms for %2s at T = %g K. %s: %g (%s) %s: %g (%s)\n",
+                        a.element().c_str(), temperature,
                         H0.c_str(), h0_hT, h0unit.c_str(),
                         DHf.c_str(), dhF, dhFunit.c_str());
             }
             atomizationEnergy += convertToGromacs(h0_hT, h0unit) + convertToGromacs(dhF, dhFunit);
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "Total atomization energy %g\n", atomizationEnergy);
     }
     return atomizationEnergy;
 }

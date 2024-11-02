@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -88,6 +88,7 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&formula_, comm);
         cr->bcast(&texform_, comm);
         cr->bcast(&id_, comm);
+        cr->bcast(&iupac_, comm);
         int natom     = atoms_.size();
         cr->bcast(&natom, comm);
         if (cr->rank() != root)
@@ -109,19 +110,15 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
 CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
-    mass_         = cr->recv_double(src);
-    charge_       = cr->recv_int(src);
-    multiplicity_ = cr->recv_int(src);
-    symmetryNumber_ = cr->recv_int(src);
-    cr->recv_str(src, &formula_);
-    cr->recv_str(src, &texform_);
-    cr->recv_str(src, &id_);
-    int natom     = cr->recv_int(src);
-    atoms_.clear();
-    for(int i = 0; i < natom; i++)
-    {
-        atoms_.push_back(cr->recv_int(src));
-    }
+    cr->recv(src, &mass_);
+    cr->recv(src, &charge_);
+    cr->recv(src, &multiplicity_);
+    cr->recv(src, &symmetryNumber_);
+    cr->recv(src, &formula_);
+    cr->recv(src, &texform_);
+    cr->recv(src, &id_);
+    cr->recv(src, &iupac_);
+    cr->recv(src, &atoms_);
     makeAtomString();
     return cs;
 }
@@ -129,18 +126,15 @@ CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
 CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs = CommunicationStatus::OK;
-    cr->send_double(dest, mass_);
-    cr->send_int(dest, charge_);
-    cr->send_int(dest, multiplicity_);
-    cr->send_int(dest, symmetryNumber_);
-    cr->send_str(dest, &formula_);
-    cr->send_str(dest, &texform_);
-    cr->send_str(dest, &id_);
-    cr->send_int(dest, atoms_.size());
-    for(auto &a : atoms_)
-    {
-        cr->send_int(dest, a);
-    }
+    cr->send(dest, mass_);
+    cr->send(dest, charge_);
+    cr->send(dest, multiplicity_);
+    cr->send(dest, symmetryNumber_);
+    cr->send(dest, formula_);
+    cr->send(dest, texform_);
+    cr->send(dest, id_);
+    cr->send(dest, iupac_);
+    cr->send(dest, atoms_);
     return cs;
 }
 

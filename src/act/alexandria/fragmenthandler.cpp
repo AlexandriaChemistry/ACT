@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -37,7 +37,7 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const ForceField             *pd,
+FragmentHandler::FragmentHandler(ForceField                   *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
@@ -53,15 +53,18 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
     std::vector<bool> atomFound(coordinates.size(), false);
     // Total number of atoms
     natoms_ = 0;
+    bool allWell = true;
     size_t  ff = 0;
     // Copy the coordinates
     std::vector<gmx::RVec> x = coordinates;
-    for(auto f = fragments->begin(); f < fragments->end(); ++f)
+    for(auto f = fragments->begin(); allWell && f < fragments->end(); ++f)
     {
         // First reality check
         if (f->atoms().size() == 0)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No atoms in fragment %zu with formula %s", ff, f->formula().c_str()).c_str()));
+            fprintf(stderr, "No atoms in fragment %zu with formula %s", ff, f->formula().c_str());
+            allWell = false;
+            break;
         }
         // Determine start of each molecule
         int offset = x.size()+1;
@@ -70,9 +73,15 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
             offset = std::min(offset, i);
             if (atomFound[i])
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str()).c_str()));
+                fprintf(stderr, "Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str());
+                allWell = false;
+                break;
             }
             atomFound[i] = true;
+        }
+        if (!allWell)
+        {
+            break;
         }
         // Split bonds
         for(const auto &b : bonds)
@@ -111,7 +120,7 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         // ID
         ids_.push_back(f->id());
         // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), f->charge()));
+        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
         // Total number of atoms
         natoms_ += top->atoms().size();
         // Extend topologies_ array
@@ -119,18 +128,27 @@ FragmentHandler::FragmentHandler(const ForceField             *pd,
         // Increase counter
         ff += 1;
     }
-    // Finaly determine molecule boundaries
-    atomStart_.resize(fragments->size(), 0);
-    for(size_t ff = 0; ff < topologies_.size(); ff++)
+    if (allWell)
     {
-        if (0 == ff)
+        // Finaly determine molecule boundaries
+        atomStart_.resize(fragments->size(), 0);
+        for(size_t ff = 0; ff < topologies_.size(); ff++)
         {
-            atomStart_[ff] = 0;
+            if (0 == ff)
+            {
+                atomStart_[ff] = 0;
+            }
+            else
+            {
+                atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
+            }
         }
-        else
-        {
-            atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1]->atoms().size();
-        }
+    }
+    else
+    {
+        topologies_.clear();
+        ids_.clear();
+        qtotal_.clear();
     }
 }
 
@@ -161,7 +179,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
             case ChargeGenerationAlgorithm::Read:
                 (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
                 break;
-            default:
+            default: // throws
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                                    chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
                 break;
@@ -197,6 +215,8 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                                      xx, bonds_[ff]);
                 if (eQgen::OK != eqgen)
                 {
+                    fprintf(stderr, "Failed to generate charges for %s: '%s'\n",
+                            molname.c_str(), QgenAcm_[ff].status());
                     break;
                 }
                 for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
@@ -208,14 +228,32 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
         break;
     case ChargeGenerationAlgorithm::Read:
         break;
-    default:
+    default: // throws
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                            chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
     }
     return eqgen;
 }
 
-bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double> >&qmap)
+bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
+{
+    if (atoms->size() != natoms_)
+    {
+        return false;
+    }
+    size_t k = 0;
+    for(size_t i = 0; i < topologies_.size(); i++)
+    {
+        auto ats = topologies_[i]->atoms();
+        for(size_t j = 0; j < ats.size(); j++)
+        {
+            (*atoms)[k++].setCharge(ats[j].charge());
+        }
+    }
+    return true;
+}
+
+bool FragmentHandler::setCharges(const chargeMap &qmap)
 {
     bool success = true;
     for(size_t i = 0; i < ids_.size() && success; i++)
@@ -226,9 +264,21 @@ bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double>
             auto aptr = topologies_[i]->atomsPtr();
             if (aptr->size() == qptr->second.size())
             {
-                for(size_t a = 0; a < aptr->size(); a++)
+                for(size_t a = 0; success && a < aptr->size(); a++)
                 {
-                    (*aptr)[a].setCharge(qptr->second[a]);
+                    if (!((*aptr)[a].id() == qptr->second[a].first))
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
+                                                                           ids_[i].c_str(), (*aptr)[a].id().id().c_str(), qptr->second[a].first.id().c_str()).c_str()));
+                        // Program will throw before this, but success there was not.
+                        success = false;
+                    }
+                    (*aptr)[a].setCharge(qptr->second[a].second);
+                    if (debug)
+                    {
+                        fprintf(debug, "qmap Charge %zu = %g\n", a,
+                                (*aptr)[a].charge());
+                    }
                 }
             }
             else
@@ -240,6 +290,16 @@ bool FragmentHandler::setCharges(const std::map<std::string, std::vector<double>
         {
             success = false;
         }
+    }
+    fixedQ_ = success;
+    // Set algorithm to reading charges for the future
+    if (debug)
+    {
+        fprintf(debug, "Copied charges from chargemap to fragments\n");
+    }
+    if (success)
+    {
+        algorithm_ = ChargeGenerationAlgorithm::Read;
     }
     return success;
 }

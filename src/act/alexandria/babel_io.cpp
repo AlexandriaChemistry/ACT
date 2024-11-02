@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -73,6 +73,13 @@
 #define KOKO HAVE_SYS_TIME_H
 #undef HAVE_SYS_TIME_H
 #endif
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
 #include <openbabel/bond.h>
@@ -88,6 +95,8 @@
 #include <openbabel/residue.h>
 #include <openbabel/typer.h>
 #include <openbabel/math/vector3.h>
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
@@ -243,7 +252,8 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
             int idx = atom->GetIdx();
             if (std::find(fatoms.begin(), fatoms.end(), idx-1) != fatoms.end())
             {
-                OpenBabel::OBAtom newatom(*atom);
+                OpenBabel::OBAtom    newatom;
+                newatom.Duplicate(&(*atom));
                 // Make a copy of the residue information
                 OpenBabel::OBResidue residue = *(atom->GetResidue());
                 residue.SetNum(fff+1);
@@ -279,7 +289,8 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
         auto amol  = amols.find(inchi);
         if (nullptr != amol)
         {
-            fptr->setId(amol->iupac);
+            fptr->setId(inchi);
+            fptr->setIupac(amol->iupac);
             fptr->setCharge(amol->charge);
             fptr->setMass(amol->mass);
             fptr->setFormula(amol->formula);
@@ -305,6 +316,7 @@ static bool babel2ACT(const ForceField                         *pd,
                       int                                       maxPotential,
                       int                                       nsymm,
                       const char                               *jobType,
+                      bool                                      userqtot,
                       double                                   *qtot,
                       bool                                      addHydrogen,
                       const char                               *g09,
@@ -403,18 +415,18 @@ static bool babel2ACT(const ForceField                         *pd,
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.
-    if (*qtot != 0)
+    if (userqtot)
     {
         double qtest = mol->GetTotalCharge();
         if (qtest != *qtot)
         {
-            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, user specified %g. File %s.\n",
-                    qtest, *qtot, g09);
+            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g for compounds in '%s', will use %g as specified by user.\n",
+                    qtest, g09, *qtot);
         }
-        mol->SetTotalCharge(*qtot);
     }
     else
     {
+        mol->SetTotalCharge(*qtot);
         *qtot = mol->GetTotalCharge();
     }
     mpt->AddExperiment(exp);
@@ -656,7 +668,7 @@ static bool babel2ACT(const ForceField                         *pd,
         }
     }
     // Fragment information will be generated
-    mpt->generateFragments(pd, *qtot);
+    mpt->generateFragments(pd);
     addInchiToFragments(amols, conv, mol, mpt->fragmentPtr());
     
     // Dipole
@@ -894,9 +906,11 @@ bool readBabel(const ForceField                 *pd,
                int                               maxPotential,
                int                               nsymm,
                const char                      *jobType,
+               bool                             userqtot,
                double                          *qtot,
                bool                             addHydrogen,
                matrix                           box,
+               bool                             oneH,
                bool                             renameAtoms)
 {
     std::vector<OpenBabel::OBMol *> mols;
@@ -910,7 +924,7 @@ bool readBabel(const ForceField                 *pd,
     std::map<std::string, std::string> g2a;
     if (renameAtoms)
     {
-        gaffToAlexandria("", &g2a);
+        gaffToAlexandria("", &g2a, oneH);
     }
     AlexandriaMols amols;
     
@@ -918,7 +932,7 @@ bool readBabel(const ForceField                 *pd,
     {
         alexandria::MolProp mp;
         if (babel2ACT(pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
-                      maxPotential, nsymm, jobType, qtot, addHydrogen, g09,
+                      maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, g09,
                       inputformat))
         {
             mpt->push_back(mp);

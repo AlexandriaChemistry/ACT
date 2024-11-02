@@ -83,6 +83,12 @@ protected:
         gs->get_rmsd(&rmsd);
         myCheck.checkDouble(R, "R");
         myCheck.checkDouble(rmsd, "rmsd");
+        myCheck.checkInt64(static_cast<int>(gs->get_npoints()), "npoints");
+        real aver, sigma, error;
+        gs->get_ase(&aver, &sigma, &error);
+        myCheck.checkDouble(aver, "average");
+        myCheck.checkDouble(sigma, "standard deviation");
+        myCheck.checkDouble(error, "standard error");
         real mse, mae;
         gs->get_mse_mae(&mse, &mae);
         myCheck.checkDouble(mae, "mean absolute error");

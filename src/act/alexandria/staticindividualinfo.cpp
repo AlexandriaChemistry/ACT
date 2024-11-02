@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -36,6 +36,7 @@
 #include "staticindividualinfo.h"
 
 #include <algorithm>
+#include <filesystem>
 
 #include "act/forces/combinationrules.h"
 #include "act/ga/genome.h"
@@ -52,7 +53,7 @@ namespace alexandria
 
 StaticIndividualInfo::StaticIndividualInfo(CommunicationRecord *cr) : cr_(cr)
 {
-    fillFittingTargets();
+    fillFittingTargets(iMolSelect::Train);
 }
 
 void StaticIndividualInfo::fillIdAndPrefix()
@@ -140,24 +141,22 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     }
     for(int n : mychanged)
     {
-        auto                 iType = optIndex_[n].iType();
-        ForceFieldParameter *p     = nullptr;
-        if (iType != InteractionType::CHARGE)
+        auto p = optIndex_[n].forceFieldParameter();
+        if (!p)
         {
-            p = pd_.findForces(iType)->findParameterType(optIndex_[n].id(), optIndex_[n].parameterType());
+            optIndex_[n].findForceFieldParameter(&pd_);
         }
-        else if (pd_.hasParticleType(optIndex_[n].particleType()))
-        {
-            p = pd_.findParticleType(optIndex_[n].particleType())->parameter(optIndex_[n].parameterType());
-        }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex_[n].id().id().c_str()).c_str());
+        p = optIndex_[n].forceFieldParameter();
         if (p)
         {
-            if (debug && InteractionType::VSITE2 == iType)
+            auto iType = optIndex_[n].iType();
+            if (debug)
             {
-                fprintf(debug, "Updating vsite parameter to %g\n", bases[n]);
+                fprintf(debug, "Updating %s parameter %d (set size %lu) to %g\n",
+                        interactionTypeToString(iType).c_str(), n, mychanged.size(), bases[n]);
             }
             p->setValue(bases[n]);
+            p->setUpdated(true);
             // TODO fix the uncertainty
             // p->setUncertainty(psigma_[n]);
         }
@@ -166,6 +165,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     // It would be more efficient to only generate the atom type pair parameters for
     // which one of the atomic Van der Waals or Coulomb parameters changed.
     generateDependentParameter(&pd_);
+    for(int n : mychanged)
+    {
+        optIndex_[n].forceFieldParameter()->setUpdated(false);
+    }
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
@@ -232,7 +235,9 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
     if (myft != targets_.end())
     {
         auto etot = myft->second.find(eRMS::TOT);
-        GMX_RELEASE_ASSERT(etot != myft->second.end(), "Cannot find etot");
+        GMX_RELEASE_ASSERT(etot != myft->second.end(),
+                           gmx::formatString("Cannot find etot for %s",
+                                             iMolSelectName(ims)).c_str());
         etot->second.reset();
         auto tc = targets_.find(ims);
         if (tc != targets_.end())
@@ -267,21 +272,18 @@ void StaticIndividualInfo::resetChiSquared(iMolSelect ims)
     }
 }
 
-void StaticIndividualInfo::fillFittingTargets()
+void StaticIndividualInfo::fillFittingTargets(iMolSelect ims)
 {
-    for (const auto &ims : iMolSelectNames()) 
+    std::map<eRMS, FittingTarget> ft;
+    for ( auto &rms : geteRMSNames() )
     {
-        std::map<eRMS, FittingTarget> ft;
-        for ( auto &rms : geteRMSNames() )
-        {
-            FittingTarget    fft(rms.first, ims.first);
-            ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
-        }
-        targets_.insert(std::pair<iMolSelect, std::map<eRMS, FittingTarget>>(ims.first, std::move(ft)));
-        auto etot = target(ims.first, eRMS::TOT);
-        GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
-        etot->setWeight(1);
+        FittingTarget    fft(rms.first, ims);
+        ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
     }
+    targets_.insert(std::pair<iMolSelect, std::map<eRMS, FittingTarget>>(ims, std::move(ft)));
+    auto etot = target(ims, eRMS::TOT);
+    GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
+    etot->setWeight(1);
 }
 
 void StaticIndividualInfo::propagateWeightFittingTargets()
@@ -331,36 +333,6 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * END: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: OptimizationIndex stuff           *
-* * * * * * * * * * * * * * * * * * * * * */
-
-CommunicationStatus OptimizationIndex::send(const CommunicationRecord *cr,
-                                            int                        dest)
-{
-    cr->send_str(dest, &particleType_);
-    std::string itype = interactionTypeToString(iType_);
-    cr->send_str(dest, &itype);
-    parameterId_.Send(cr, dest);
-    cr->send_str(dest, &parameterType_);
-    
-    return CommunicationStatus::OK;
-}
-
-CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
-                                               int                        src)
-{
-    cr->recv_str(src, &particleType_);
-    std::string itype;
-    cr->recv_str(src, &itype);
-    iType_ = stringToInteractionType(itype);
-    parameterId_.Receive(cr, src);
-    cr->recv_str(src, &parameterType_);
-
-    return CommunicationStatus::OK;
-}
-
-
 void StaticIndividualInfo::generateOptimizationIndex(FILE                      *fp,
                                                      const MolGen              *mg,
                                                      const CommunicationRecord *cr)
@@ -381,6 +353,11 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                             }
+                            else if (debug)
+                            {
+                                fprintf(debug, "WARNING: Not enough data to train %s-%s\n",
+                                        fpl.first.id().c_str(), param.first.c_str());
+                            }
                         }
                     }
                 }
@@ -398,16 +375,52 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         }
         if (fp)
         {
-            fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+            fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
+            fprintf(fp, "Identifier        Parameter     Minimum     Maximum\n");
+            auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
-                fprintf(fp, "Will optimize %s\n", i.name().c_str());
+                auto ff = fcs.find(i.iType());
+                if (fcs.end() != ff)
+                {
+                    auto pp = ff->second.parametersConst();
+                    auto gg = pp.find(i.id());
+                    if (pp.end() != gg)
+                    {
+                        const auto &fs = gg->second.find(i.parameterType());
+                        if (gg->second.end() != fs)
+                        {
+                            fprintf(fp, "%-15s %11s  %10g  %10g\n",
+                                    i.id().id().c_str(), i.parameterType().c_str(),
+                                    fs->second.minimum(), fs->second.maximum());
+                        }
+                    }
+                }
+                else if (InteractionType::CHARGE == i.iType())
+                {
+                    auto pt = pd_.findParticleType(i.particleType());
+                    if (!pt->hasParameter(i.parameterType()))
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such parameter type '%s' for particle '%s'", i.parameterType().c_str(), i.particleType().c_str()).c_str()));
+                    }
+                    else
+                    {
+                        auto &pp = pt->parameterConst(i.parameterType());
+                        fprintf(fp, "%-15s %11s  %10g  %10g\n",
+                                i.particleType().c_str(), i.parameterType().c_str(),
+                                pp.minimum(), pp.maximum());
+                    }
+                }
+                else
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Incomprehensible parameter '%s' to train", i.name().c_str()).c_str()));
+                }
             }
         }
         // Now send the data over to my helpers
         for(const int dst : cr->helpers())
         {
-            cr->send_int(dst, optIndex_.size());
+            cr->send(dst, static_cast<int>(optIndex_.size()));
             for(size_t i = 0; i < optIndex_.size(); i++)
             {
                 optIndex_[i].send(cr, dst);
@@ -419,9 +432,10 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
         // Receive the data from my superior
         int src = cr->superior();
         GMX_RELEASE_ASSERT(src >= 0, "No superior");
-        int nOpt = cr->recv_int(src);
-        optIndex_.resize(nOpt);
-        for(int i = 0; i < nOpt; i++)
+        int nopt;
+        cr->recv(src, &nopt);
+        optIndex_.resize(nopt);
+        for(int i = 0; i < nopt; i++)
         {
             optIndex_[i].receive(cr, src);
         }
@@ -470,36 +484,39 @@ void StaticIndividualInfo::fillVectors(const int mindata)
         }
         for(int dest : cr_->helpers())
         {
-            cr_->send_double_vector(dest, &defaultParam_);
-            cr_->send_double_vector(dest, &lowerBound_);
-            cr_->send_double_vector(dest, &upperBound_);
-            cr_->send_int(dest, paramNames_.size());
+            cr_->send(dest, defaultParam_);
+            cr_->send(dest, lowerBound_);
+            cr_->send(dest, upperBound_);
+            cr_->send(dest, static_cast<int>(paramNames_.size()));
             for(size_t i = 0; i < paramNames_.size(); i++)
             {
-                cr_->send_str(dest, &paramNames_[i]);
-                cr_->send_str(dest, &paramNamesWOClass_[i]);
-                cr_->send_int(dest, ntrain_[i]);
+                cr_->send(dest, paramNames_[i]);
+                cr_->send(dest, paramNamesWOClass_[i]);
+                cr_->send(dest, ntrain_[i]);
                 std::string mutab = mutabilityName(mutability_[i]);
-                cr_->send_str(dest, &mutab);
+                cr_->send(dest, mutab);
             }
         }
     }
     else
     {
         int src = cr_->superior();
-        cr_->recv_double_vector(src, &defaultParam_);
-        cr_->recv_double_vector(src, &lowerBound_);
-        cr_->recv_double_vector(src, &upperBound_);
-        int nparam = cr_->recv_int(src);
+        cr_->recv(src, &defaultParam_);
+        cr_->recv(src, &lowerBound_);
+        cr_->recv(src, &upperBound_);
+        int nparam;
+        cr_->recv(src, &nparam);
         for(int i = 0; i < nparam; i++)
         {
             std::string paramName, paramNameWOClass, mutab;
-            cr_->recv_str(src, &paramName);
-            cr_->recv_str(src, &paramNameWOClass);
+            cr_->recv(src, &paramName);
+            cr_->recv(src, &paramNameWOClass);
             paramNames_.push_back(paramName);
             paramNamesWOClass_.push_back(paramNameWOClass);
-            ntrain_.push_back(cr_->recv_int(src));
-            cr_->recv_str(src, &mutab);
+            int nt;
+            cr_->recv(src, &nt);
+            ntrain_.push_back(nt);
+            cr_->recv(src, &mutab);
             Mutability mmm;
             if (nameToMutability(mutab, &mmm))
             {
@@ -577,8 +594,7 @@ void StaticIndividualInfo::makeIndividualDir()
 {
     if (!prefix_.empty())
     {
-        std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
-        system(command.c_str());
+        (void) std::filesystem::create_directory(prefix_);
     }
 }
 

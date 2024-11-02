@@ -55,6 +55,26 @@ Terminator *GeneticAlgorithm::terminator(const int index)
     return terminators_->at(index);
 }
 
+void GeneticAlgorithm::updateGenePool(const GenePool &gpin)
+{
+    if (gpin.genomeSize() == 0)
+    {
+        GMX_THROW(gmx::InvalidInputError("Trying to update the gene pool with an empty gene pool"));
+    }
+    if (0 == lastPop_.genomeSize())
+    {
+        if (lastPop_.genomeSize() != gpin.genomeSize())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Existing gene pool has different size (%zu genes) than input gene pool (%zu genes)", lastPop_.genomeSize(), gpin.genomeSize()).c_str()));
+        }
+        if (lastPop_.genome(0).nBase() != gpin.genome(0).nBase())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Existing gene pool has different number of bases (%zu) than input gene pool (%zu)", lastPop_.genome(0).nBase(), gpin.genome(0).nBase()).c_str()));
+        } 
+    }
+    lastPop_ = gpin;
+}
+
 bool GeneticAlgorithm::terminate(const GenePool *pool,
                                  const int       generationNumber)
 {
@@ -93,23 +113,22 @@ bool GeneticAlgorithm::penalize(      GenePool *pool,
     return penalized;
 }
 
-void GeneticAlgorithm::openFitnessFiles(const std::string &filename)
+void GeneticAlgorithm::openFitnessFiles(const std::string &filename,
+                                        iMolSelect         ims)
 {
-    for(const auto &im : iMolSelectNames())
+    std::string defname("ga_fitness");
+    if (!filename.empty())
     {
-        std::string defname("ga_fitness");
-        if (!filename.empty())
+        auto rpos = filename.rfind(".");
+        if (std::string::npos != rpos)
         {
-            auto rpos = filename.rfind(".");
-            if (std::string::npos != rpos)
-            {
-                defname = filename.substr(0, rpos);
-            }
+            defname = filename.substr(0, rpos);
         }
-        std::string fn = defname + gmx::formatString("_%s.dat", im.second);
-        fileFitness_.insert({im.first, gmx_fio_fopen(fn.c_str(), "w")});
-        GMX_RELEASE_ASSERT(fileFitness_[im.first] != NULL, "Could not open file");
     }
+    auto imsNames = iMolSelectNames();
+    std::string fn = defname + gmx::formatString("_%s.dat", imsNames[ims]);
+    fileFitness_.insert({ims, gmx_fio_fopen(fn.c_str(), "w")});
+    GMX_RELEASE_ASSERT(fileFitness_[ims] != NULL, "Could not open file");
 }
 
 void GeneticAlgorithm::closeFitnessFiles()

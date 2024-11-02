@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,18 +36,12 @@
 
 #include <map>
 
-#include "gromacs/gmxpreprocess/fflibutil.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/exclusionblocks.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/path.h"
-
+#include "act/alexandria/topology.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "topology.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
 {
@@ -108,47 +102,53 @@ static void print_bondeds(FILE                      *out,
                     params[morseBETA],
                     entry->id().id().c_str());
             break;
-        default:
-            for (const double &j : entry->params())
-            {
-                fprintf(out, "  %10g", j);
-            }
-            fprintf(out, "; %s\n", entry->id().id().c_str());
+        case F_ANGLES:
+            fprintf(out, "  %10g  %10g ; %s\n",
+                    params[angleKT],
+                    params[angleANGLE],
+                    entry->id().id().c_str());
+            break;
+        case F_IDIHS:
+            fprintf(out, "  0.0 %10g ; %s\n",
+                    params[idihKPHI],
+                    entry->id().id().c_str());
+            break;
+        default: // throws
+            GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported function type %s",
+                                                           interaction_function[ftype].name).c_str()));
         }
     }
     fprintf(out, "\n");
 }
 
-static void print_excl(FILE *out, int natoms, t_excls excls[])
+static void print_excl(FILE *out, const Topology *top)
 {
-    int         i;
-    bool        have_excl;
-    int         j;
-
-    have_excl = FALSE;
-    for (i = 0; i < natoms && !have_excl; i++)
+    // For GROMACS type output files we only look at VANDERWAALS
+    auto itype = InteractionType::VDW;
+    if (!top->hasExclusions(itype))
     {
-        have_excl = (excls[i].nr > 0);
+        return;
     }
-
-    if (have_excl)
+    auto excls = top->exclusions(itype);
+    if (excls.empty())
     {
-        fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
-        fprintf (out, "; %4s    %s\n", "i", "excluded from i");
-        for (i = 0; i < natoms; i++)
+        return;
+    }
+    fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
+    fprintf (out, "; %4s    %s\n", "i", "excluded from i");
+    for (size_t i = 0; i < excls.size(); i++)
+    {
+        if (!excls[i].empty())
         {
-            if (excls[i].nr > 0)
+            fprintf (out, "%6lu", i+1);
+            for (size_t j = 0; j < excls[i].size(); j++)
             {
-                fprintf (out, "%6d ", i+1);
-                for (j = 0; j < excls[i].nr; j++)
-                {
-                    fprintf (out, " %5d", excls[i].e[j]+1);
-                }
-                fprintf (out, "\n");
+                fprintf (out, " %5d", excls[i][j]+1);
             }
+            fprintf (out, "\n");
         }
-        fprintf (out, "\n");
     }
+    fprintf (out, "\n");
 }
 
 static void print_top_system(FILE *out, const char *title)
@@ -158,54 +158,9 @@ static void print_top_system(FILE *out, const char *title)
     fprintf(out, "%s\n\n", title[0] ? title : "Protein");
 }
 
-static void print_top_water(FILE *out, const char *ffdir, const char *water)
+void print_top_mols(FILE *out, const char *title,
+                    int nmol, t_mols *mols)
 {
-    const char *p;
- 
-    fprintf(out, "; Include water topology\n");
-
-    p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
-    fprintf(out, "#include \"%s/%s.itp\"\n", p, water);
-
-    fprintf(out, "\n");
-    fprintf(out, "#ifdef POSRES_WATER\n");
-    fprintf(out, "; Position restraint for each water oxygen\n");
-    fprintf(out, "[ position_restraints ]\n");
-    fprintf(out, ";%3s %5s %9s %10s %10s\n", "i", "funct", "fcx", "fcy", "fcz");
-    fprintf(out, "%4d %4d %10g %10g %10g\n", 1, 1, 1000.0, 1000.0, 1000.0);
-    fprintf(out, "#endif\n");
-    fprintf(out, "\n");
-
-    std::string buf = gmx::formatString("%s/ions.itp", p);
-
-    if (fflib_fexist(buf.c_str()))
-    {
-        fprintf(out, "; Include topology for ions\n");
-        fprintf(out, "#include \"%s\"\n", buf.c_str());
-        fprintf(out, "\n");
-    }
-}
-
-void print_top_mols(FILE *out,
-                    const char *title, const char *ffdir, const char *water,
-                    int nincl, char **incls, int nmol, t_mols *mols)
-{
-
-    if (nincl > 0)
-    {
-        fprintf(out, "; Include chain topologies\n");
-        for (int i = 0; i < nincl; i++)
-        {
-            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incls[i]).c_str());
-        }
-        fprintf(out, "\n");
-    }
-
-    if (water)
-    {
-        print_top_water(out, ffdir, water);
-    }
     print_top_system(out, title);
 
     if (nmol)
@@ -264,19 +219,14 @@ static void print_atoms(FILE                           *out,
     fprintf(out, "\n");
 }
 
-
-void write_top(FILE            *out,
+void write_top(FILE             *out,
                char             *molname,
                const Topology   *topology,
                const ForceField *pd)
 {
     std::map<int, directive> toPrint = {
-        { F_CONSTR,       d_constraints },
-        { F_CONSTRNC,     d_constraints },
-        { F_LJ14,         d_pairs },
-        { F_CMAP,         d_cmap },
         { F_POLARIZATION, d_polarization },
-        { F_THOLE_POL,    d_thole_polarization },
+        { F_VSITEN,       d_vsitesn },
         { F_VSITE2,       d_vsites2 },
         { F_VSITE3,       d_vsites3 },
         { F_VSITE3FD,     d_vsites3 },
@@ -309,7 +259,7 @@ void write_top(FILE            *out,
             {
                 continue;
             }
-            auto fType = fs.second.gromacsType();
+            auto fType = potentialToGromacsType(fs.second.potential());
             if (InteractionType::BONDS == fs.first)
             {
                 print_bondeds(out, d_bonds, fType, topology->entry(iType));
@@ -327,6 +277,7 @@ void write_top(FILE            *out,
                 print_bondeds(out, toPrint.find(fType)->second, fType, topology->entry(iType));
             }
         }
+        print_excl(out, topology);
     }
 }
 
@@ -337,8 +288,8 @@ void print_top_header(FILE                    *fp,
                       bool                     bItp)
 {
     std::string   gt_old, gt_type;
-    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
-    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
+    auto qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+    auto iChargeType = potentialToChargeType(qt.potential());
 
     fprintf(fp, ";\n");
     fprintf(fp, "; Topology generated by alexandria gentop.\n");
@@ -353,9 +304,9 @@ void print_top_header(FILE                    *fp,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        auto ftype = pd->findForcesConst(InteractionType::VDW).gromacsType();
+        auto ftype = pd->findForcesConst(InteractionType::VDW).potential();
         std::string ff("BHAM");
-        if (ftype == F_LJ)
+        if (ftype == Potential::LJ12_6)
         {
             ff.assign("LJ");
         }
@@ -403,7 +354,7 @@ void print_top_header(FILE                    *fp,
                         !bType.empty() ? bType.c_str() : gt_type.c_str(), 
                         aType.second.atomnumber(), 
                         aType.second.mass(), 0.0,
-                        ptype_str[aType.second.gmxParticleType()],
+                        actParticleToString(aType.second.apType()).c_str(),
                         sigma, epsilon, gamma);
                 if (false && bPol)
                 {
@@ -430,11 +381,11 @@ void print_top_header(FILE                    *fp,
         bool printZeta = false;
         if (iChargeType != ChargeType::Point && printZeta)
         {
-            auto eem = pd->findForcesConst(InteractionType::COULOMB);
+            auto eem = pd->findForcesConst(InteractionType::ELECTROSTATICS);
             fprintf(fp, "[ distributed_charges ]\n");
             for (const auto &atype : pd->particleTypesConst())
             {
-                auto ztype     = atype.second.interactionTypeToIdentifier(InteractionType::COULOMB);
+                auto ztype     = atype.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
                 auto eep       = eem.findParametersConst(ztype);
                 if (ChargeType::Slater == iChargeType)
                 {
@@ -450,39 +401,6 @@ void print_top_header(FILE                    *fp,
             fprintf(fp, "\n");
         }
     }
-}
-
-void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
-{
-    int i, j, k, nra;
-
-    if (blocka->nr < natom)
-    {
-        srenew(blocka->index, natom+1);
-        for (int i = blocka->nr; i < natom+1; i++)
-        {
-            blocka->index[i] = 0;
-        }
-    }
-    nra = 0;
-    for (i = 0; (i < natom); i++)
-    {
-        nra += excls_[i].nr;
-    }
-    snew(blocka->a, nra+1);
-    nra = 0;
-    for (i = j = 0; (i < natom); i++)
-    {
-        blocka->index[i] = nra;
-        for (k = 0; (k < excls_[i].nr); k++)
-        {
-            blocka->a[j++] = excls_[i].e[k];
-        }
-        nra += excls_[i].nr;
-    }
-    blocka->index[natom] = nra;
-    blocka->nr           = natom;
-    blocka->nra          = nra;
 }
 
 } // namespace alexandria

@@ -186,7 +186,7 @@ protected:
                             break;
                         case MolPropObservable::POTENTIAL:
                             break;
-                        default:
+                        default: // Does something reasonable
                             {
                                 myCheck.checkDouble(gp->getValue()*fac,
                                                     gmx::formatString("%s %s %s %s %d value",

@@ -42,7 +42,6 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/utility/latex_util.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
@@ -973,7 +972,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                                     case 1:
                                         snprintf(mylbuf, sizeof(mylbuf), "& {\\bf %s} ", vbuf);
                                         break;
-                                    default:
+                                    default: // probably ok
                                         snprintf(mylbuf, sizeof(mylbuf), "& %s ", vbuf);
                                 }
                             }

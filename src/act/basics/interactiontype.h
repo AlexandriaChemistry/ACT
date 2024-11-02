@@ -1,13 +1,13 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2024
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -53,24 +53,48 @@ enum class InteractionType
     IMPROPER_DIHEDRALS,
     //! Van der Waals interaction between atoms
     VDW,
-    //! Dispersion interaction 
+    //! Dispersion interaction
     DISPERSION,
     //! Repulsive interaction due to Pauli principle
-    REPULSION,
-    //! Charge interactions
-    COULOMB,
+    EXCHANGE,
+    //! Correction to van der Waals due to anisotropy
+    VDWCORRECTION,
+    //! Electrostatic interactions
+    ELECTROSTATICS,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Induction energy
+    INDUCTION,
+    //! Correction to induction
+    INDUCTIONCORRECTION,
+    //! Charge transfer correction energy
+    CHARGETRANSFER,
+    //! Sum of electrostatic terms
+    ALLELEC,
+    //! Sum of exchange and induction
+    EXCHIND,
     //! Potential energy, sum over the above
     EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.
     CONSTR,
+    //! Virtual interaction sites on top of atoms.
+    VSITE1,
     //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
+    //! Virtual interaction sites along the bond between two atoms at a fixed distance
+    VSITE2FD,
     //! Virtual interaction sites determined by three atoms in a plane
+    VSITE3,
+    //! Virtual interaction sites determined by three atoms in a plane, symmetric on the bisector
+    VSITE3S,
+    //! Virtual interaction sites determined by three atoms in a plane with fixed distance
+    VSITE3FD,
+    //! Virtual interaction sites determined by three atoms in a plane with fixed angle and distance
     VSITE3FAD,
     //! Virtual interaction sites determined by three atoms out of the plane
     VSITE3OUT,
+    //! Virtual interaction sites determined by three atoms out of the plane, in a symmetric fashion
+    VSITE3OUTS,
     //! Bond hardness and electronegativity needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
     //! Correction to the electronegativity difference between two atoms connected by a bond
@@ -87,7 +111,7 @@ enum class InteractionType
 const std::string &interactionTypeToString(InteractionType iType);
 
 /*! \brief
- * Convert interaction type to descriptive string rather than 
+ * Convert interaction type to descriptive string rather than
  * what is force field files.
  * \param[in] iType The interaction type
  * \return The corresponding string
@@ -108,6 +132,12 @@ InteractionType stringToInteractionType(const std::string &name);
  * \return number of atoms typically 1-4.
  */
 int interactionTypeToNatoms(InteractionType iType);
+
+/*! Determine whether an interaction is a virtual site
+ * \param[in] iType The InteractionType to check
+ * \return true or false
+ */
+bool isVsite(InteractionType iType);
 
 } // namespace
 

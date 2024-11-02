@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,7 +38,7 @@
 #include "train_utility.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/units.h"
-    
+
 static void round_numbers(real *av, real *sig, int power10)
 {
     *av  = ((int)(*av*power10))/(1.0*power10);
@@ -52,7 +52,7 @@ void OneBonded::addPoint(double x)
 {
     auto N  = lsq_.get_npoints();
     auto ok = lsq_.add_point(N, x, 0, 0);
-    
+
     if (eStats::OK != ok)
     {
         fprintf(stderr, "Problem adding a point %s\n", gmx_stats_message(ok));
@@ -76,7 +76,7 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
         return;
     }
     auto Nsample = lsq_.get_npoints();
-    
+
     std::string  title = gmx::formatString("%s N = %d", id_.id().c_str(),
                                            static_cast<int>(Nsample));
     std::string  fn    = gmx::formatString("%s_%s.xvg", fn_prefix, id_.id().c_str());
@@ -88,7 +88,7 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
     }
     xvgrclose(fp);
 }
-    
+
 eStats OneBonded::getAverageSigmaN(real   *average,
                                    real   *sigma,
                                    size_t *N)
@@ -107,12 +107,12 @@ eStats OneBonded::getAverageSigmaN(real   *average,
 
 void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
 {
-    t_pargs mypargs[] = 
+    t_pargs mypargs[] =
         {
             { "-De",    FALSE, etREAL, {&De_},
               "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
             { "-beta",    FALSE, etREAL, {&beta_},
-              "Steepness of the Morse potential (1/nm)" },
+              "Steepness of the Morse or Hua potential (1/nm)" },
             { "-kt",    FALSE, etREAL, {&kt_},
               "Angle force constant (kJ/mol/rad^2)" },
             { "-klin",  FALSE, etREAL, {&klin_},
@@ -141,7 +141,7 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
 }
 
-void AllBondeds::addBonded(FILE                           *fplog, 
+void AllBondeds::addBonded(FILE                           *fplog,
                            InteractionType                 iType,
                            const ACTMol                    &mmi,
                            const Identifier               &bondId,
@@ -180,7 +180,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
             t_pbc pbc;
             matrix box = {{ 0 }};
             set_pbc(&pbc, epbcNONE, box);
-            refValue = RAD2DEG*dih_angle(x[atomid[0]], 
+            refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
@@ -199,7 +199,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
             t_pbc pbc;
             matrix box = {{ 0 }};
             set_pbc(&pbc, epbcNONE, box);
-            refValue = RAD2DEG*dih_angle(x[atomid[0]], 
+            refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
@@ -218,14 +218,25 @@ void AllBondeds::addBonded(FILE                           *fplog,
             }
         }
         break;
-    case InteractionType::COULOMB:
+    case InteractionType::ELECTROSTATICS:
     case InteractionType::VDW:
+    case InteractionType::VDWCORRECTION:
+    case InteractionType::INDUCTIONCORRECTION:
+    case InteractionType::CHARGETRANSFER:
+    case InteractionType::VSITE1:
     case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
+    case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
+    case InteractionType::VSITE3FD:
+    case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
         // Nothing to be done for non-bonded interactions.
         return;
-    default:
+    default: // gmx_fatal called
         {
-            gmx_fatal(FARGS, "Help!");
+            gmx_fatal(FARGS, "Help interactiontypes==%s!", interactionTypeToString(iType).c_str());
         }
     }
     // Look up the interaction type
@@ -243,7 +254,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
         ob = bondeds_[iType].end()-1;
     }
     ob->addPoint(refValue);
-    
+
     if (nullptr != fplog)
     {
         fprintf(fplog, "%s %s-%s %g\n",
@@ -278,7 +289,7 @@ void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
         }
     }
 }
-    
+
 static real calc_r13(const ForceField    *pd,
                      const Identifier &bondId,
                      const real        angle)
@@ -345,7 +356,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
     fs->eraseParameter();
-    auto fType = fs->gromacsType();
+    auto fType = fs->potential();
     for(auto &i : bondeds_[bType])
     {
         size_t N = 0;
@@ -357,7 +368,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         round_numbers(&av, &sig, 10);
         switch (fType)
         {
-        case F_MORSE:
+        case Potential::MORSE_BONDS:
             {
                 fs->addParameter(bondId, morse_name[morseLENGTH],
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
@@ -374,7 +385,23 @@ void AllBondeds::updateForceField(FILE    *fp,
                                                      Mutability::Bounded, false, false));
             }
             break;
-        case F_BONDS:
+        case Potential::HUA_BONDS:
+            {
+                fs->addParameter(bondId, hua_name[huaLENGTH],
+                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaDE],
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaB],
+                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, hua_name[huaC],
+                                 ForceFieldParameter("", 0, 0, 1, -1, 1,
+                                                     Mutability::Bounded, false, false));
+            }
+            break;
+        case Potential::HARMONIC_BONDS:
             {
                 fs->addParameter(bondId, bond_name[bondLENGTH],
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
@@ -385,7 +412,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
             }
             break;
-        case F_CUBICBONDS:
+        case Potential::CUBIC_BONDS:
             {
                 // Compute the numbers such that they make sense
                 fs->addParameter(bondId, cubic_name[cubicLENGTH],
@@ -399,10 +426,10 @@ void AllBondeds::updateForceField(FILE    *fp,
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
             }
             break;
-        default:
-            gmx_fatal(FARGS, "Don't know what to do for ftype %s", interaction_function[fType].name);
+        default: // gmx_fatal called
+            gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
         }
-                    
+
         fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
                 i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
     }
@@ -411,10 +438,10 @@ void AllBondeds::updateForceField(FILE    *fp,
     {
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
-        fType      = fs->gromacsType();
+        fType      = fs->potential();
         if (iType != bType &&
             iType != InteractionType::VDW &&
-            iType != InteractionType::COULOMB)
+            iType != InteractionType::ELECTROSTATICS)
         {
             fs->eraseParameter();
         }
@@ -433,20 +460,20 @@ void AllBondeds::updateForceField(FILE    *fp,
                 {
                     round_numbers(&av, &sig, 10);
                     fs->addParameter(bondId, angle_name[angleANGLE],
-                                     ForceFieldParameter("degree", av, sig, N, av*factor_, 
+                                     ForceFieldParameter("degree", av, sig, N, av*factor_,
                                                          std::min(180.0, av/factor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, angle_name[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
-                    if (fType == F_UREY_BRADLEY)
+                    if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
                         std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
-                        fs->addParameter(bondId, ub_name[ubR13], 
+                        fs->addParameter(bondId, ub_name[ubR13],
                                          ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
                                                              Mutability::Bounded, false, true));
-                        fs->addParameter(bondId, ub_name[ubKUB], 
+                        fs->addParameter(bondId, ub_name[ubKUB],
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, true));
                     }
                 }
@@ -454,22 +481,22 @@ void AllBondeds::updateForceField(FILE    *fp,
             case InteractionType::LINEAR_ANGLES:
                 {
                     double alin, sigmalin, myfactor = 0.99;
-                    
+
                     calc_linear_angle_a(pd, bondId, &alin, &sigmalin);
                     fs->addParameter(bondId, linang_name[linangA],
                                      ForceFieldParameter("", alin, sigmalin, N, alin*myfactor, alin/myfactor, Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, linang_name[linangKLIN], 
+                    fs->addParameter(bondId, linang_name[linangKLIN],
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
-                    
+
                     fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
-                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");                
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     switch (fType)
                     {
-                    case F_FOURDIHS:
+                    case Potential::FOURIER_DIHEDRALS:
                         {
                             double val = 1.0;
                             for(int i = 0; i < fdihNR; i++)
@@ -479,7 +506,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                             }
                         }
                         break;
-                    case F_PDIHS:
+                    case Potential::PROPER_DIHEDRALS:
                         {
                             round_numbers(&av, &sig, 10);
                             // Since the potential is (1+cos(mult*phi-phi0)) it will be at
@@ -495,9 +522,9 @@ void AllBondeds::updateForceField(FILE    *fp,
                                              ForceFieldParameter("", mult, 0, 1, mult, mult, Mutability::Fixed, true, true));
                         }
                         break;
-                    default:
+                    default: // throws
                         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported dihedral type %s",
-                                                                       interaction_function[fType].name).c_str()));
+                                                                       potentialToString(fType).c_str()).c_str()));
                     }
                     fprintf(fp, "dihedral-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
@@ -512,15 +539,15 @@ void AllBondeds::updateForceField(FILE    *fp,
                         fprintf(stderr, "Warning: large improper dihedral %g for %s\n",
                                 av, bondId.id().c_str());
                     }
-                    fs->addParameter(bondId, idih_name[idihKPHI], 
+                    fs->addParameter(bondId, idih_name[idihKPHI],
                                      ForceFieldParameter("kJ/mol", kimp_, 0, 1, kimp_*factor_, kimp_/factor_, Mutability::Bounded, false, true));
-                    
+
                     fprintf(fp, "improper-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
                 }
                 break;
-            default:
-                break;
+            default: // throws
+                GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported InteractionType %s", interactionTypeToString(iType).c_str()).c_str()));
             }
         }
     }
@@ -529,13 +556,13 @@ void AllBondeds::updateForceField(FILE    *fp,
 void AllBondeds::extractGeometries(FILE                       *fp,
                                    const std::vector<MolProp> &mp,
                                    std::vector<ACTMol>        *actmols,
-                                   const ForceField           &pd,
+                                   ForceField                 *pd,
                                    const MolSelect            &gms)
 {
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         iMolSelect imol;
-        if (gms.status(mpi->getIupac(), &imol) && 
+        if (gms.status(mpi->getIupac(), &imol) &&
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::ACTMol mmi;
@@ -546,8 +573,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         mmi.formula().c_str());
                 continue;
             }
-            auto imm = mmi.GenerateTopology(fp, &pd,
-                                            missingParameters::Generate);
+            auto imm = mmi.GenerateTopology(fp, pd, missingParameters::Generate);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
@@ -564,12 +590,12 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 for (i = 0; i < myatoms.size(); i++)
                 {
                     std::string btpi;
-                    if (!pd.atypeToBtype(myatoms[i].ffType(), &btpi))
+                    if (!pd->atypeToBtype(myatoms[i].ffType(), &btpi))
                     {
                         if (nullptr != debug)
                         {
                             fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                    myatoms[i].ffType().c_str(), 
+                                    myatoms[i].ffType().c_str(),
                                     mmi.getMolname().c_str());
                         }
                         break;
@@ -597,7 +623,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
         }
     }
 }
-    
+
 void AllBondeds::writeSummary(FILE *fp)
 {
     for(auto &bb : bondeds_)
@@ -608,4 +634,3 @@ void AllBondeds::writeSummary(FILE *fp)
 }
 
 } // namespace alexandria
-

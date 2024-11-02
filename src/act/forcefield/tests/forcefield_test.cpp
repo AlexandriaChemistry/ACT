@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_low.h"
+#include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 
@@ -88,7 +88,7 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
             std::string          elem("U");
             std::string          desc("temporary test atom");
             Identifier   atpId("U");
-            ParticleType atp(atpId, desc, eptAtom);
+            ParticleType atp(atpId, desc, ActParticle::Atom);
             atp.setOption("poltype", "p_U");
             atp.setOption("zetatype", "z_U");
             atp.setOption("bondtype", "b_U");
@@ -217,8 +217,8 @@ TEST_F (ForceFieldTest, zeta)
         {
             auto pd  = getForceField(model);
             auto fa  = pd->findParticleType(atom);
-            auto ztp = fa->interactionTypeToIdentifier(InteractionType::COULOMB);
-            auto eep = pd->findForcesConst(InteractionType::COULOMB);
+            auto ztp = fa->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
+            auto eep = pd->findForcesConst(InteractionType::ELECTROSTATICS);
             auto p   = eep.findParameterTypeConst(ztp, "zeta");
             zetas.push_back(p.value());
         }

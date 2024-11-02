@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,13 +41,13 @@
 
 namespace alexandria
 {
-    
+
 void TopologyEntry::check(size_t nAtom) const
 {
     if (indices_.size() != nAtom)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Expected %d atom indices, found %d",
-                                                       static_cast<int>(nAtom), static_cast<int>(indices_.size())).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Expected %lu atom indices, found %lu",
+                                                       nAtom, indices_.size()).c_str()));
     }
 }
 
@@ -125,16 +125,8 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, indices_.size());
-        for(auto &ai : indices_)
-        {
-            cr->send_int(dest, ai);
-        }
-        cr->send_int(dest, bondOrder_.size());
-        for(auto &bo : bondOrder_)
-        {
-            cr->send_double(dest, bo);
-        }
+        cr->send(dest, indices_);
+        cr->send(dest, bondOrder_);
     }
     else if (nullptr != debug)
     {
@@ -191,15 +183,17 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        int nai = cr->recv_int(src);
-        for (int i=0; i < nai; i++)
+        std::vector<int> atomIndices;
+        cr->recv(src, &atomIndices);
+        for (auto a : atomIndices)
         {
-            addAtom(cr->recv_int(src));
+            addAtom(a);
         }
-        int nbo = cr->recv_int(src);
-        for (int i=0; i < nbo; i++)
+        std::vector<double> bondOrders;
+        cr->recv(src, &bondOrders);
+        for (auto b : bondOrders)
         {
-            addBondOrder(cr->recv_double(src));
+            addBondOrder(b);
         }
     }
     else if (nullptr != debug)
@@ -244,6 +238,13 @@ void Bond::get(int *ai, int *aj, double *bondorder) const
     *bondorder = bondOrders()[0];
 }
 
+void Vsite1::get(int *ai, int *vs) const
+{
+    check(2);
+    *ai = atomIndex(0);
+    *vs = atomIndex(1);
+}
+
 void Vsite2::get(int *ai, int *aj, int *vs) const
 {
     check(3);
@@ -260,6 +261,20 @@ void Vsite3::get(int *ai, int *aj, int *ak, int *vs) const
     *ak = atomIndex(2);
     *vs = atomIndex(3);
 }
+
+
+void Vsite3OUT::get(int *ai, int *aj, int *ak, int *vs, int *sign) const
+{
+    check(4);
+    *ai = atomIndex(0);
+    *aj = atomIndex(1);
+    *ak = atomIndex(2);
+    *vs = atomIndex(3);
+    *sign = sign_;
+
+}
+
+
 
 Angle::Angle(const Bond bij, const Bond bjk)
 {

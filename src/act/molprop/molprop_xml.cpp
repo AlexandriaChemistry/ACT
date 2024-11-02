@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include <libxml/parser.h>
@@ -150,7 +151,13 @@ enum class MolPropXml {
     qXX, qYY, qZZ, qXY, qXZ, qYZ,
     oXXX, oXXY, oXXZ, oXYY, oXYZ, oXZZ, oYYY, oYYZ, oYZZ, oZZZ,
     hXXXX, hXXXY, hXXXZ, hXXYY, hXXYZ, hXXZZ, hXYYY, hXYYZ, hXYZZ, hXZZZ, hYYYY, hYYYZ, hYYZZ, hYZZZ, hZZZZ,
-    aQ
+    qESP,
+    qCM5,
+    qHirshfeld,
+    qMulliken,
+    qRESP,
+    qBCC,
+    qACM
 };
 
 const std::map<MolPropXml, MolPropObservable> xoMap = {
@@ -162,6 +169,11 @@ const std::map<MolPropXml, MolPropObservable> xoMap = {
     { MolPropXml::QUADRUPOLE,     MolPropObservable::QUADRUPOLE   },
     { MolPropXml::OCTUPOLE,       MolPropObservable::OCTUPOLE     },
     { MolPropXml::HEXADECAPOLE,   MolPropObservable::HEXADECAPOLE }
+};
+
+const std::set<MolPropXml> allCharges = {
+    MolPropXml::qESP, MolPropXml::qCM5, MolPropXml::qMulliken,
+    MolPropXml::qHirshfeld, MolPropXml::qACM, MolPropXml::qBCC, MolPropXml::qRESP
 };
 
 std::map<const std::string, MolPropXml> xmlxxx =
@@ -227,7 +239,13 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "potential_unit",   MolPropXml::V_UNIT         },
     { "espid",            MolPropXml::ESPID          },
     { "V",                MolPropXml::dV             },
-    { "q",                MolPropXml::aQ             },
+    { "qESP",             MolPropXml::qESP           },
+    { "qRESP",            MolPropXml::qRESP          },
+    { "qBCC",             MolPropXml::qBCC           },
+    { "qCM5",             MolPropXml::qCM5           },
+    { "qHirshfeld",       MolPropXml::qHirshfeld     },
+    { "qMulliken",        MolPropXml::qMulliken      },
+    { "qACM",             MolPropXml::qACM           },
     { "fx",               MolPropXml::fX             },
     { "fy",               MolPropXml::fY             },
     { "fz",               MolPropXml::fZ             }
@@ -723,9 +741,9 @@ static void mp_process_tree(FILE                              *fp,
                                                                xbuf_atof(xbuf, MolPropXml::ERROR, false));
                                 last->addProperty(mpo, me);
                             }
-                            else
+                            else if (debug)
                             {
-                                fprintf(stderr, "Ignoring unknown property %s\n",
+                                fprintf(debug, "Ignoring unknown property %s\n",
                                         (*xbuf)[MolPropXml::TYPE].c_str());
                             }
                             clean_xbuf(xbuf, clean1);
@@ -771,22 +789,20 @@ static void mp_process_tree(FILE                              *fp,
                                              xbuf_atof(xbuf, MolPropXml::fZ, true));
                                 clean_xbuf(xbuf, clean3);
                             }
-                            std::vector<MolPropXml> clean2 = {
-                                MolPropXml::aQ, MolPropXml::TYPE
-                            };
-                            if (xmlFound(xbuf, clean2))
+                            for(const auto &aq : allCharges)
                             {
-                                ca.AddCharge(stringToQtype((*xbuf)[MolPropXml::TYPE]),
-                                             xbuf_atof(xbuf, MolPropXml::aQ, true));
-                                clean_xbuf(xbuf, clean2);
+                                if (xmlFound(xbuf, { aq }))
+                                {
+                                    ca.AddCharge(stringToQtype(rmap[aq]),
+                                                 xbuf_atof(xbuf, aq, true));
+                                    clean_xbuf(xbuf, { aq });
+                                }
                             }
-                            /* Now finally add the atom */
                             last->AddAtom(ca);
                         }
                     }
                     clean_xbuf(xbuf, { elem });
                     break;
-                    
                 case MolPropXml::EXPERIMENT:
                     if (NN(xbuf, MolPropXml::DATASOURCE))
                     {
@@ -845,7 +861,7 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     std::string   mpfile;
 
     fillMaps();
-    xmlDoValidityCheckingDefaultValue = 0;
+    //xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
     if (debug)
     {
@@ -894,6 +910,13 @@ static void add_properties(xmlNodePtr        exp,
             case MolPropObservable::HF:
             case MolPropObservable::DELTAE0:
             case MolPropObservable::INTERACTIONENERGY:
+            case MolPropObservable::ELECTROSTATICS:
+            case MolPropObservable::EXCHANGE:
+            case MolPropObservable::VDWCORRECTION:
+            case MolPropObservable::DISPERSION:
+            case MolPropObservable::INDUCTION:
+            case MolPropObservable::INDUCTIONCORRECTION:
+            case MolPropObservable::CHARGETRANSFER:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:
             case MolPropObservable::DSFORM:
@@ -1094,8 +1117,9 @@ static void add_xml_molprop(xmlNodePtr     parent,
 
             for (auto &q : ca.chargesConst())
             {
-                xmlNodePtr atomptr = add_xml_child_val(grandchild, rmap[MolPropXml::aQ], gmx::formatString("%g", q.second).c_str());
-                add_xml_string(atomptr, rmap[MolPropXml::TYPE], qTypeName(q.first));
+                (void) add_xml_child_val(grandchild, qTypeName(q.first),
+                                         gmx::formatString("%g", q.second).c_str());
+                //add_xml_string(atomptr, rmap[MolPropXml::TYPE], qTypeName(q.first));
             }
         }
     }

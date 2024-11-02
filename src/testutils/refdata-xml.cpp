@@ -168,7 +168,7 @@ void readChildEntries(XMLNodePtr parentElement, ReferenceDataEntry *entry)
     {
         ReferenceDataEntry::EntryPointer child(createEntry(childElement));
         readEntry(childElement, child.get());
-        entry->addChild(move(child));
+        entry->addChild(std::move(child));
         childElement = childElement->NextSiblingElement();
     }
 }

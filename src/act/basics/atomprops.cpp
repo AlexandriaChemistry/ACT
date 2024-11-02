@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -56,11 +56,13 @@ std::map<std::string, AtomProp> readAtomProps()
         if (tmp.find("#") == std::string::npos)
         {
             auto ptr = split(tmp, ',');
-            if (ptr.size() == 4)
+            if (ptr.size() == 7)
             {
-                AtomProp ap(ptr[1], 
-                            my_atoi(ptr[2].c_str(), "atomnumber"),
-                            my_atof(ptr[3].c_str(), "mass"));
+                AtomProp ap(ptr[1], ptr[2], 
+                            my_atoi(ptr[3].c_str(), "atomnumber"),
+                            my_atof(ptr[4].c_str(), "mass"),
+                            my_atoi(ptr[5].c_str(), "charge"),
+                            my_atoi(ptr[6].c_str(), "mult"));
                 table.insert({ ptr[0], ap });
             }
         }

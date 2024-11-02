@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,7 +52,9 @@ namespace alexandria
         //! Special case for linear angles
         Linear,
         //! Special case for vsite2
-        Vsite2
+        Vsite2,
+        //
+        Vsite3,
     };
 
 /*! \brief Convert string to CanSwap
@@ -109,6 +111,9 @@ class Identifier
      */
     const std::string &id() const;
 
+    //! \return whether a swapped id exists
+    bool haveSwapped() const { return ids_.size() > 1; }
+
     /*! \brief Return swapped identifier string
      * \throws if there are no ids
      */
@@ -130,6 +135,38 @@ class Identifier
     friend bool operator<(const Identifier &a, const Identifier &b)
     {
         // TODO check implementation
+        if (a.canSwap() < b.canSwap())
+        {
+            return true;
+        }
+        else if (a.canSwap() > b.canSwap())
+        {
+            return false;
+        }
+        else if (a.atoms_.size() < b.atoms_.size())
+        {
+            return true;
+        }
+        else if (a.atoms_.size() > b.atoms_.size())
+        {
+            return false;
+        }
+        else if (a.ids_[0] == b.ids_[0])
+        {
+            // Identical!
+            return false;
+        }
+        else if (a.canSwap() != CanSwap::No)
+        {
+            for(auto &id : a.ids_)
+            {
+                if (id == b.id())
+                {
+                    // Identical as well
+                    return false;
+                }
+            }
+        }
         return a.ids_[0] < b.ids_[0];
     }
 
@@ -142,10 +179,7 @@ class Identifier
      */
     friend bool operator==(const Identifier &a, const Identifier &b)
     {
-        // TODO check implementation
-        return ((a.ids_[0] == b.ids_[0]) ||
-                (a.ids_.size() == 2 && a.ids_[1] == b.id()) ||
-                (b.ids_.size() == 2 && a.id() == b.ids_[1]));
+        return !(a < b) && !(b < a);
     }
 
     //! \brief Return the atoms, or rather the components of the id

@@ -264,35 +264,6 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                 bt->il_thread_division[ftype*(bt->nthreads + 1) + t] = 0;
             }
         }
-        else if (bt->nthreads <= bt->max_nthread_uniform || ftype == F_DISRES)
-        {
-            /* On up to 4 threads, load balancing the bonded work
-             * is more important than minimizing the reduction cost.
-             */
-
-            const int stride = 1 + NRAL(ftype);
-
-            for (int t = 0; t <= bt->nthreads; t++)
-            {
-                /* Divide equally over the threads */
-                int nr_t = (((nrToAssignToCpuThreads/stride)*t)/bt->nthreads)*stride;
-
-                if (ftype == F_DISRES)
-                {
-                    /* Ensure that distance restraint pairs with the same label
-                     * end up on the same thread.
-                     */
-                    while (nr_t > 0 && nr_t < nrToAssignToCpuThreads &&
-                           idef.iparams[il.iatoms[nr_t]].disres.label ==
-                           idef.iparams[il.iatoms[nr_t - stride]].disres.label)
-                    {
-                        nr_t += stride;
-                    }
-                }
-
-                bt->il_thread_division[ftype*(bt->nthreads + 1) + t] = nr_t;
-            }
-        }
         else
         {
             /* Add this ftype to the list to be distributed */

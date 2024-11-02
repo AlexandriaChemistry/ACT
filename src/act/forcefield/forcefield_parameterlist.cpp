@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,6 +35,7 @@
 
 #include <map>
 
+#include "act/basics/chargemodel.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -44,27 +45,27 @@ namespace alexandria
 {
 
 ForceFieldParameterList::ForceFieldParameterList(const std::string &function,
-                                                 CanSwap            canSwap) : function_(function), canSwap_(canSwap)
+                                                 CanSwap            canSwap) : canSwap_(canSwap)
 {
-    if (function.empty())
+    if (!stringToPotential(function, &pot_))
     {
-        fType_ = F_NRE;
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Potential function '%s' unknown to ACT", function.c_str()).c_str()));
+    }
+}
+
+void ForceFieldParameterList::addOption(const std::string &option, const std::string &value)
+{
+    if ((Potential::COULOMB_GAUSSIAN == pot_ ||
+         Potential::COULOMB_POINT    == pot_ ||
+         Potential::COULOMB_SLATER   == pot_ ) &&
+        option.compare("chargetype") == 0)
+    {
+        auto qdist = name2ChargeType(value);
+        pot_ =  chargeTypeToPotential(qdist);
     }
     else
     {
-        size_t funcType;
-        for (funcType = 0; funcType < F_NRE; funcType++)
-        {
-            if (strcasecmp(interaction_function[funcType].name, function_.c_str()) == 0)
-            {
-                break;
-            }
-        }
-        if (funcType == F_NRE)
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force function '%s' does not exist in gromacs", function_.c_str()).c_str()));
-        }
-        fType_ = funcType;
+        options_.insert({option, value});
     }
 }
 
@@ -106,7 +107,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter %s for %s",
                                                        identifier.id().c_str(), 
-                                                       interaction_function[gromacsType()].name).c_str()));
+                                                       potentialToString(pot_).c_str()).c_str()));
     }
     auto ffp = p->second.find("unit");
     if (ffp != p->second.end())
@@ -117,7 +118,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Empty parameter list for %s in %s",
                                                        identifier.id().c_str(), 
-                                                       interaction_function[gromacsType()].name).c_str()));
+                                                       potentialToString(pot_).c_str()).c_str()));
     }
 }
 
@@ -139,10 +140,10 @@ const ForceFieldParameterMap &ForceFieldParameterList::findParametersConst(const
     auto iter = parameters_.find(identifier);
     if (parameters_.end() == iter)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %d entries for function '%s'",
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %zu entries for function '%s'",
                                                            identifier.id().c_str(),
-                                                           static_cast<int>(parameters_.size()),
-                                                           function_.c_str()).c_str()));
+                                                           parameters_.size(),
+                                                           potentialToString(pot_).c_str()).c_str()));
     }
     
     return iter->second;
@@ -155,12 +156,12 @@ const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("2. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("2. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), potentialToString(pot_).c_str(), type.c_str()).c_str()));
     }
     auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type '%s' in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type '%s' in parameter list for %s", type.c_str(), potentialToString(pot_).c_str()).c_str()));
     }
     return ffparam->second;
 }
@@ -172,12 +173,12 @@ ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("3. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("3. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), potentialToString(pot_).c_str(), type.c_str()).c_str()));
     }
     auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), potentialToString(pot_).c_str()).c_str()));
     }
     return &ffparam->second;
 }
@@ -188,7 +189,7 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), potentialToString(pot_).c_str()).c_str()));
     }
     
     return &params->second;
@@ -205,9 +206,8 @@ void ForceFieldParameterList::dump(FILE *fp) const
     {
         return;
     }
-    fprintf(fp, "Function: %s\n", function_.c_str());
+    fprintf(fp, "Function: %s\n", potentialToString(pot_).c_str());
     fprintf(fp, "CanSwap: %s\n", canSwapToString(canSwap_).c_str());
-    fprintf(fp, "Ftype: %d\n", fType_);
     for(const auto &opt : options_)
     {
         fprintf(fp, "Option: type='%s' value='%s'\n", opt.first.c_str(),
@@ -230,36 +230,36 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &function_);
+        std::string ppp = potentialToString(pot_);
+        cr->send(dest, ppp);
         std::string canSwapString = canSwapToString(canSwap_);
         if (canSwapString.empty())
         {
             GMX_THROW(gmx::InternalError("Empty canSwapString"));
         }
-        cr->send_str(dest, &canSwapString);
-        cr->send_int(dest, fType_);
-        cr->send_int(dest, options_.size());
+        cr->send(dest, canSwapString);
+        cr->send(dest, options_.size());
         for(auto const &x : options_)
         {
-            cr->send_str(dest, &x.first);
-            cr->send_str(dest, &x.second);
+            cr->send(dest, x.first);
+            cr->send(dest, x.second);
         }
-        cr->send_int(dest, combrules_.size());
+        cr->send(dest, combrules_.size());
         for(auto const &x : combrules_)
         {
-            cr->send_str(dest, &x.first);
-            cr->send_str(dest, &x.second);
+            cr->send(dest, x.first);
+            cr->send(dest, x.second);
         }
-        cr->send_int(dest, parameters_.size());
+        cr->send(dest, parameters_.size());
         for(auto const &x : parameters_)
         {
             cs = x.first.Send(cr, dest);
             if (CommunicationStatus::OK == cs)
             {
-                cr->send_int(dest, x.second.size());
+                cr->send(dest, x.second.size());
                 for(auto const &p : x.second)
                 {
-                    cr->send_str(dest, &p.first);
+                    cr->send(dest, p.first);
                     cs = p.second.Send(cr, dest);
                     if (CommunicationStatus::OK != cs)
                     {
@@ -272,7 +272,7 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
                 break;
             }
         }
-        cr->send_int(dest, counter_);
+        cr->send(dest, counter_);
     }
     return cs;
 }
@@ -284,7 +284,12 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
     CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
     {
-        cr->bcast(&function_, comm);
+        std::string ppp = potentialToString(pot_);
+        cr->bcast(&ppp, comm);
+        if (!stringToPotential(ppp, &pot_))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Invalid potential function '%s'", ppp.c_str()).c_str()));
+        }
         std::string canSwapString;
         if (cr->rank() == root)
         {
@@ -292,12 +297,9 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         }
         cr->bcast(&canSwapString, comm);
         canSwap_ = stringToCanSwap(canSwapString);
-        int ftype = fType_;
-        cr->bcast(&ftype, comm);
-        fType_ = ftype;
-        int noptions = options_.size();
+        size_t noptions = options_.size();
         cr->bcast(&noptions, comm);
-        int ncrule = combrules_.size();
+        size_t ncrule = combrules_.size();
         cr->bcast(&ncrule, comm);
         if (cr->rank() == root)
         {
@@ -319,7 +321,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         else
         {
             options_.clear();
-            for(int i = 0; i < noptions; i++)
+            for(size_t i = 0; i < noptions; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -327,7 +329,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 options_.insert({key, value});
             }
             combrules_.clear();
-            for(int i = 0; i < ncrule; i++)
+            for(size_t i = 0; i < ncrule; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -340,7 +342,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam = parameters_.size();
+        size_t nparam = parameters_.size();
         cr->bcast(&nparam, comm);
         if (cr->rank() == root)
         {
@@ -348,7 +350,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
             {
                 Identifier pp = p.first;
                 pp.BroadCast(cr, root, comm);
-                int ntype = p.second.size();
+                size_t ntype = p.second.size();
                 cr->bcast(&ntype, comm);
                 for(auto &q : p.second)
                 {
@@ -361,7 +363,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         else
         {
             parameters_.clear();
-            for(int i = 0; i < nparam; i++)
+            for(size_t i = 0; i < nparam; i++)
             {
                 Identifier key;
                 cs = key.BroadCast(cr, root, comm);
@@ -372,9 +374,9 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 }
                 if (CommunicationStatus::OK == cs)
                 {
-                    int ntype;
+                    size_t ntype;
                     cr->bcast(&ntype, comm);
-                    for(int j = 0; j < ntype; j++)
+                    for(size_t j = 0; j < ntype; j++)
                     {
                         std::string type;
                         cr->bcast(&type, comm);
@@ -397,12 +399,12 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fprintf(debug, "Done receiving %zu parameters\n", nparam);
                     fflush(debug);
                 }
             }
         }
-        int ctr = counter_;
+        size_t ctr = counter_;
         cr->bcast(&ctr, comm);
         counter_ = ctr;
     }
@@ -414,27 +416,33 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &function_);
+        std::string ppp = potentialToString(pot_);
+        cr->recv(src, &ppp);
+        if (!stringToPotential(ppp, &pot_))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Invalid potential function '%s'", ppp.c_str()).c_str()));
+        }
         std::string canSwapString;
-        cr->recv_str(src, &canSwapString);
+        cr->recv(src, &canSwapString);
         canSwap_     = stringToCanSwap(canSwapString);
-        fType_       = cr->recv_int(src);
-        int noptions = cr->recv_int(src);
+        size_t noptions;
+        cr->recv(src, &noptions);
         options_.clear();
-        int ncrule = cr->recv_int(src);
-        combrules_.clear();
-        for(int i = 0; i < noptions; i++)
+        size_t ncrule;
+        for(size_t i = 0; i < noptions; i++)
         {
             std::string key, value;
-            cr->recv_str(src, &key);
-            cr->recv_str(src, &value);
+            cr->recv(src, &key);
+            cr->recv(src, &value);
             options_.insert({key, value});
         }
-        for(int i = 0; i < ncrule; i++)
+        cr->recv(src, &ncrule);
+        combrules_.clear();
+        for(size_t i = 0; i < ncrule; i++)
         {
             std::string key, value;
-            cr->recv_str(src, &key);
-            cr->recv_str(src, &value);
+            cr->recv(src, &key);
+            cr->recv(src, &value);
             combrules_.insert({key, value});
         }
         if (debug)
@@ -442,9 +450,10 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam =  cr->recv_int(src);
+        size_t nparam;
+        cr->recv(src, &nparam);
         parameters_.clear();
-        for(int i = 0; i < nparam; i++)
+        for(size_t i = 0; i < nparam; i++)
         {
             Identifier key;
             cs = key.Receive(cr, src);
@@ -455,16 +464,17 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             }
             if (CommunicationStatus::OK == cs)
             {
-                int ntype = cr->recv_int(src);
+                size_t ntype;
+                cr->recv(src, &ntype);
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving ntype = %d\n", ntype);
+                    fprintf(debug, "Done receiving ntype = %zu\n", ntype);
                     fflush(debug);
                 }
-                for(int j = 0; j < ntype; j++)
+                for(size_t j = 0; j < ntype; j++)
                 {
                     std::string type;
-                    cr->recv_str(src, &type);
+                    cr->recv(src, &type);
                     ForceFieldParameter p;
                     cs = p.Receive(cr, src);
                     if (CommunicationStatus::OK == cs)
@@ -483,7 +493,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fprintf(debug, "Done receiving %zu parameters\n", nparam);
                     fflush(debug);
                 }
             }
@@ -492,7 +502,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 break;
             }
         }
-        counter_ = cr->recv_int(src);
+        cr->recv(src, &counter_);
     }
     return cs;
 }

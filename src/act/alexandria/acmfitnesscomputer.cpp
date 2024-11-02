@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -37,6 +37,7 @@
 
 #include "act/basics/dataset.h"
 #include "act/ga/genome.h"
+#include "act/utility/communicationrecord.h"
 
 namespace alexandria
 {
@@ -53,7 +54,7 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     {
         GMX_THROW(gmx::InternalError("Empty genome"));
     }
-    // First send around parameters
+    // First send around parameters. This code is run on master only.
     distributeTasks(CalcDev::Parameters);
     std::set<int> changed;
     distributeParameters(genome->basesPtr(), changed);
@@ -68,13 +69,22 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     }
     if (verbose && logfile_)
     {
-        auto fts = sii_->targets().find(trgtFit)->second;
-        if (!fts.empty())
+        const auto &targets = sii_->targets();
+        if (targets.empty())
         {
-            fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
-            for (const auto &ft : fts)
+            GMX_THROW(gmx::InternalError("No targets whatsoever!"));
+        }
+        auto ttt = targets.find(trgtFit);
+        if (targets.end() != ttt)
+        {
+            auto fts = ttt->second;
+            if (!fts.empty())
             {
-                ft.second.print(logfile_);
+                fprintf(logfile_, "Components of training function for %s set\n", iMolSelectName(trgtFit));
+                for (const auto &ft : fts)
+                {
+                    ft.second.print(logfile_);
+                }
             }
         }
     }
@@ -87,15 +97,16 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
     if (cr->isHelper())
     {
         // Now who is my middleman?
-        int src = cr->superior();
-        return static_cast<CalcDev>(cr->recv_int(src));
+        int cd;
+        cr->recv(cr->superior(), &cd);
+        return static_cast<CalcDev>(cd);
     }
     else 
     {
         // Send only to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_int(dest, static_cast<int>(task));
+            cr->send(dest, static_cast<int>(task));
         }
         return task;
     }
@@ -104,6 +115,10 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
 void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
+    if (debug)
+    {
+        fprintf(debug, "Starting to distribute parameters\n");
+    }
     auto cr = sii_->commRec();
     // Send / receive parameters
     if (cr->isHelper())
@@ -112,12 +127,15 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         // Find out who to talk to
         int src = cr->superior();
         std::vector<double> myparams;
-        cr->recv_double_vector(src, &myparams);
+        cr->recv(src, &myparams);
         std::set<int>       mychanged;
-        int nchanged = cr->recv_int(src);
+        int nchanged;
+        cr->recv(src, &nchanged);
         for(int i = 0; i < nchanged; i++)
         {
-            mychanged.insert(cr->recv_int(src));
+            int mc;
+            cr->recv(src, &mc);
+            mychanged.insert(mc);
         }
         sii_->updateForceField(mychanged, myparams);
     }
@@ -126,41 +144,60 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
         // Send only to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_double_vector(dest, params);
-            cr->send_int(dest, changed.size());
+            cr->send(dest, *params);
+            cr->send(dest, static_cast<int>(changed.size()));
             for(int iset : changed)
             {
-                cr->send_int(dest, iset);
+                cr->send(dest, iset);
             }
         }
         sii_->updateForceField(changed, *params);
+    }
+    if (debug)
+    {
+        fprintf(debug, "Finished distributing parameters\n");
     }
 }
 
 double ACMFitnessComputer::calcDeviation(CalcDev    task,
                                          iMolSelect ims)
 {
+    if (debug)
+    {
+        fprintf(debug, "CalcDev starting\n");
+    }
     auto cr = sii_->commRec();
-    // Send / receive parameters
+    // Send / receive molselect group.ks
     if (cr->isHelper())
     {
         // Now who is my middleman?
-        int src  = cr->superior();
-        ims      = static_cast<iMolSelect>(cr->recv_int(src));
+        cr->recv(cr->superior(), &ims);
     }
     else if (CalcDev::ComputeAll != task)
     {
         // Send ims to my helpers
         for (auto &dest : cr->helpers())
         {
-            cr->send_int(dest, static_cast<int>(ims));
+            cr->send(dest, ims);
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "CalcDev Going to compute dataset %s\n",
+                iMolSelectName(ims));
+    }
+    // Gather fitting targets
+    std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
+    if (nullptr == targets)
+    {
+        if (debug)
+        {
+            fprintf(debug, "Cannot find targets for %s\n", iMolSelectName(ims));
+        }
+        return 0;
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
-
-    // Gather fitting targets
-    std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
 
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
@@ -174,6 +211,13 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
     auto mymols = molgen_->actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
+        if (debug)
+        {
+            fprintf(debug, "CalcDev: mol %s dataset %s\n",
+                    actmol->getMolname().c_str(),
+                    iMolSelectName(actmol->datasetType()));
+            fflush(debug);
+        }
         if (ims != actmol->datasetType())
         {
             continue;
@@ -182,7 +226,6 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
-            nlocal++;
             std::vector<InteractionType> itUpdate;
             for(auto &io : molgen_->iopt())
             {
@@ -193,6 +236,12 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             // Now update the topology
             actmol->topologyPtr()->fillParameters(sii_->forcefield());
+            // Fill the fragments too if there are any
+            for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+            {
+                ft->fillParameters(sii_->forcefield());
+            }
+
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();
@@ -217,26 +266,49 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             }
             if (debug)
             {
-                fprintf(debug, "rank %d mol %s #energies %zu tw %g\n",
+                fprintf(debug, "CalcDev: rank %d mol %s #energies %zu tw %g\n",
                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                         targets->find(eRMS::EPOT)->second.totalWeight());
+                fflush(debug);
             }
+            nlocal++;
         }
     }
-    double chi2epot = targets->find(eRMS::EPOT)->second.chiSquared();
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
     sii_->sumChiSquared(task == CalcDev::Compute, ims);
-
-    numberCalcDevCalled_ += 1;
-    auto &etot = targets->find(eRMS::TOT)->second;
-    if (etot.chiSquared() == 0 && ntrain > 0)
+    auto erms = eRMS::TOT;
+    auto etot = targets->find(erms);
+    if (targets->end() == etot)
     {
-        printf("Zero total chi squared for %s, for epot it is %g before summation. This cannot be correct, there are %d compounds. Task = %s. Nlocal = %d. %zu devComputers\n",
-               iMolSelectName(ims), chi2epot, ntrain, calcDevName(task), nlocal, devComputers_.size());
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in targets.",
+                                                       rmsName(erms)).c_str()));
+    }
+    numberCalcDevCalled_ += 1;
+    if (etot->second.chiSquared() == 0 && ntrain > 0)
+    {
+        std::string msg = gmx::formatString("Zero %s chi squared for %s - this cannot be correct.\n", 
+                                            iMolSelectName(ims), rmsName(erms));
+        msg += gmx::formatString("There are %d compounds. Task = %s. Nlocal = %d, ntrain = %d.\n",
+                                 ntrain, calcDevName(task), nlocal, ntrain);
+        msg += "devComputers: ";
+        for(auto &d : devComputers_)
+        {
+            msg += ' ' + d->name();
+        }
+        msg += "\n";
+        for(const auto &ttt: *targets)
+        {
+            if (ttt.second.weight() > 0)
+            {
+                msg += gmx::formatString("Weight for %s is %g\n", rmsName(ttt.second.erms()),
+                                         ttt.second.weight());
+            }
+        }
+        GMX_THROW(gmx::InvalidInputError(msg.c_str()));
     }
     
-    return etot.chiSquared();
+    return etot->second.chiSquared();
 }
 
 void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,
@@ -307,6 +379,12 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
     }
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Interaction)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::Electrostatics)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::Exchange)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::Dispersion)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::Induction)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::AllElec)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::ExchInd)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
     {
         auto T = molgen_->enerBoltzTemp();

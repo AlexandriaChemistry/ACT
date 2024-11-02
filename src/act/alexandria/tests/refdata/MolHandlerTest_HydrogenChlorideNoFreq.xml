@@ -2,10 +2,14 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">0.0014452799999988793</Real>
+  <Real Name="ALLELEC before">0</Real>
+  <Real Name="EXCHIND before">0</Real>
   <Real Name="Potential before">0.0014452799999988793</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
-  <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">6.8783781079664335e-05</Real>
-  <Real Name="Bond after">2.4699848195542027e-19</Real>
-  <Real Name="Potential after">2.4699848195542027e-19</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">6.8783780180472332e-05</Real>
+  <Real Name="Bond after">0</Real>
+  <Real Name="ALLELEC after">0</Real>
+  <Real Name="EXCHIND after">0</Real>
+  <Real Name="Potential after">0</Real>
 </ReferenceData>

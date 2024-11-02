@@ -1,13 +1,13 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -47,15 +47,16 @@
 namespace alexandria
 {
 
-std::map<CanSwap, std::string> cs2string = 
+std::map<CanSwap, std::string> cs2string =
     {
         { CanSwap::No,       "false"    },
         { CanSwap::Yes,      "true"     },
         { CanSwap::Idih,     "idih"     },
         { CanSwap::Linear,   "linear"   },
-        { CanSwap::Vsite2,   "vsite2"   }
+        { CanSwap::Vsite2,   "vsite2"   },
+        { CanSwap::Vsite3,   "vsite3"   }
     };
-    
+
 CanSwap stringToCanSwap(const std::string &str)
 {
     for(auto &cs : cs2string)
@@ -160,19 +161,7 @@ void Identifier::orderAtoms()
     else if (canSwap_ == CanSwap::Vsite2 && atoms_.size() == 3)
     {
         std::string swapped = atoms_[1] + BondOrderDelimeter[bondOrders_[0]] + atoms_[0] + BondOrderDelimeter[bondOrders_[1]] + atoms_[2];
-        //if (swapped >= ids_[0])
-        //{
         ids_.push_back(swapped);
-        //}
-        //else
-        //{
-            // Reverse the order on things, i.e. swap the atoms but not the vsite
-        //  auto tmpid = ids_[0];
-        //  ids_[0] = swapped;
-        //  ids_.push_back(tmpid);
-        //  auto tmpat = atoms_;
-        //  atoms_ = { tmpat[1], tmpat[0], tmpat[2] };
-        //}
     }
     else if (canSwap_ == CanSwap::Idih && atoms_.size() == 4)
     {
@@ -228,7 +217,7 @@ Identifier::Identifier(const std::string &atom)
 {
     atoms_.push_back(atom);
     ids_.push_back(atom);
-    canSwap_ = CanSwap::No;
+    canSwap_ = CanSwap::Yes;
     update();
 }
 
@@ -258,7 +247,10 @@ Identifier::Identifier(InteractionType    iType,
     {
         atoms_.push_back(id.substr(c0, id.size()-c0));
     }
-    if (InteractionType::VDW != iType && InteractionType::COULOMB != iType)
+    if (InteractionType::VDW != iType && InteractionType::VDWCORRECTION != iType &&
+        InteractionType::INDUCTIONCORRECTION != iType &&
+        InteractionType::ELECTROSTATICS != iType &&
+        InteractionType::VSITE3OUT != iType && InteractionType::VSITE3OUTS != iType)
     {
         // Those InteractionTypes that have a fixed number of atom types
         // are tested here. (VDW and COULOMB both store single atoms and
@@ -310,7 +302,7 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 {
     if (bondOrders.size()+1 != atoms.size())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %zu bond orders for %zu atoms, but got %zu", atoms.size()-1, atoms.size(), bondOrders.size()).c_str()));
     }
     atoms_      = atoms;
     bondOrders_ = bondOrders;
@@ -320,22 +312,22 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 
 CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) const
 {
-    cr->send_int(dest, ids_.size());
+    cr->send(dest, ids_.size());
     for(const auto &ii : ids_)
     {
-        cr->send_str(dest, &ii);
+        cr->send(dest, ii);
     }
     auto tmp = canSwapToString(canSwap_);
-    cr->send_str(dest, &tmp);
-    cr->send_int(dest, static_cast<int>(atoms_.size()));
+    cr->send(dest, tmp);
+    cr->send(dest, atoms_.size());
     for(auto &a : atoms_)
     {
-        cr->send_str(dest, &a);
+        cr->send(dest, a);
     }
-    cr->send_int(dest, static_cast<int>(bondOrders_.size()));
+    cr->send(dest, bondOrders_.size());
     for(auto &b : bondOrders_)
     {
-        cr->send_double(dest, b);
+        cr->send(dest, b);
     }
     return CommunicationStatus::OK;
 }
@@ -359,7 +351,7 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
             ids_.push_back(tmp);
         }
     }
-    
+
     if (cr->rank() == root)
     {
         tmp.assign(canSwapToString(canSwap_));
@@ -402,29 +394,34 @@ CommunicationStatus Identifier::BroadCast(const CommunicationRecord *cr,
 
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
-    int nids = cr->recv_int(src);
+    size_t nids;
+    cr->recv(src, &nids);
     std::string tmp;
-    for(int i = 0; i < nids; i++)
+    for(size_t i = 0; i < nids; i++)
     {
-        cr->recv_str(src, &tmp);
+        cr->recv(src, &tmp);
         ids_.push_back(tmp);
     }
-    
-    cr->recv_str(src, &tmp);
+
+    cr->recv(src, &tmp);
     canSwap_ = stringToCanSwap(tmp);
-    int natoms = cr->recv_int(src);
+    size_t natoms;
+    cr->recv(src, &natoms);
     atoms_.clear();
-    for(int i = 0; i < natoms; i++)
+    for(size_t i = 0; i < natoms; i++)
     {
         std::string a;
-        cr->recv_str(src, &a);
+        cr->recv(src, &a);
         atoms_.push_back(a);
     }
-    int nbo = cr->recv_int(src);
+    size_t nbo;
+    cr->recv(src, &nbo);
     bondOrders_.clear();
-    for(int i = 0; i < nbo; i++)
+    for(size_t i = 0; i < nbo; i++)
     {
-        bondOrders_.push_back(cr->recv_double(src));
+        double d;
+        cr->recv(src, &d);
+        bondOrders_.push_back(d);
     }
     return CommunicationStatus::OK;
 }

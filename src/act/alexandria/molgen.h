@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -76,6 +76,20 @@ enum class eRMS {
     EPOT,
     //! Interaction energy deviation
     Interaction,
+    //! SAPT component deviation Electrostatics
+    Electrostatics,
+    //! SAPT component deviation Exchange
+    Exchange,
+    //! SAPT component deviation Dispersion
+    Dispersion,
+    //! SAPT component deviation Induction
+    Induction,
+    //! Sum of electrostatic terms
+    AllElec,
+    //! Sum of exchange and induction terms
+    ExchInd,
+    //! Rest term for SAPT
+    DeltaHF,
     //! Mean square force on the atoms
     Force2,
     //! Deviation of polarizability components
@@ -253,6 +267,8 @@ private:
     bool                            qsymm_      = false;
     //! String for command line to harvest the options to fit
     char                           *fitString_ = nullptr;
+    //! Charge type to use
+    char                           *qTypeString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! The molecules used in the optimization
@@ -263,6 +279,10 @@ private:
     double                          zetaDiff_ = 2;    
     //! Boltzmann weighting temperature of energies, if larger than zero
     double                          ener_boltz_temp_ = 0;
+    //! Fraction of ESP points to read (in percent)
+    int                             maxpot_ = 100;
+    //! Weight for the potential on the atoms in training on ESP. Should be 0 in most cases.
+    double                          watoms_ = 0;
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
@@ -309,6 +329,16 @@ public:
      */
     void addFilenames(std::vector<t_filenm> *filenms);
 
+    /*! \brief Check whether options make sense.
+     * \params[in] logFile   To print warnings to
+     * \params[in] filenames List of filenames
+     * \params[in] pd        ForceField for information
+     * \return true if options are consistent, false otherwise.
+     */
+    bool checkOptions(FILE                        *logFile,
+                      const std::vector<t_filenm> &filenames,
+                      ForceField                  *pd);
+
     /*! \brief Process options after parsing
      */
     void optionsFinished();
@@ -320,8 +350,10 @@ public:
 
     /*! \brief Fill the  iOpt_ map
      * \param[in] pd Pointer to forcefield
+     * \param[in] fp File for information, may be nullptr
      */
-    void fillIopt(ForceField *pd);
+    void fillIopt(ForceField *pd,
+                  FILE       *fp);
     
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }

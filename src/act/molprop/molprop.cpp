@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -266,8 +266,7 @@ bool MolProp::renumberResidues()
     return true;
 }
 
-void MolProp::generateFragments(const ForceField *pd,
-                                double            qtotal)
+void MolProp::generateFragments(const ForceField *pd)
 {
     auto catom = LastExperiment()->calcAtomConst();
     int  natom = catom.size();
@@ -347,8 +346,8 @@ void MolProp::generateFragments(const ForceField *pd,
     int  fi    = 0;
     for(auto &fm : fragMols)
     {
-        std::vector<int> atomIndices;
-        double           mass = 0;
+        std::vector<int>           atomIndices;
+        double                     mass = 0;
         std::map<std::string, int> comp;
         for(auto &i : fm.second)
         {
@@ -358,7 +357,7 @@ void MolProp::generateFragments(const ForceField *pd,
             if (pd->hasParticleType(atype))
             {
                 auto ptype = pd->findParticleType(atype);
-                mass += ptype->mass();
+                mass      += ptype->mass();
                 auto elem  = ptype->element();
                 if (comp.find(elem) == comp.end())
                 {
@@ -374,11 +373,10 @@ void MolProp::generateFragments(const ForceField *pd,
         }
         auto formula  = comp2formula(comp);
         auto fragName = gmx::formatString("%d", fi++);
-        int  spin     = 1;
-        addFragment(Fragment(fragName, mass, qtotal, spin,1, formula, atomIndices));
-        // TODO we need proper charges for each fragment
-        // Now setting this to zero for subsequent fragments.
-        qtotal        = 0;
+        // Set charge to 0 and spin to 1 now, fix it later.
+        int qtot = 0;
+        int spin = 1;
+        addFragment(Fragment(fragName, mass, qtot, spin, 1, formula, atomIndices));
     }
     std::sort(fragment_.begin(), fragment_.end(), fragCompare);
     
@@ -454,8 +452,9 @@ int MolProp::Merge(const MolProp *src)
     {
         for (auto &bi : src->bondsConst())
         {
-            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
-            if (!BondExists(bb))
+            alexandria::Bond bb1(bi.aI(), bi.aJ(), bi.bondOrder());
+            alexandria::Bond bb2(bi.aJ(), bi.aI(), bi.bondOrder());
+            if (!BondExists(bb1) && !BondExists(bb2))
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s.\n",
                         bi.aI(), bi.aJ(), getMolname().c_str());
@@ -627,16 +626,16 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, index_);
-        cr->send_str(dest, &molname_);
-        cr->send_str(dest, &iupac_);
-        cr->send_str(dest, &cas_);
-        cr->send_str(dest, &cid_);
-        cr->send_str(dest, &inchi_);
-        cr->send_int(dest, bond_.size());
-        cr->send_int(dest, category_.size());
-        cr->send_int(dest, exper_.size());
-        cr->send_int(dest, fragment_.size());
+        cr->send(dest, index_);
+        cr->send(dest, molname_);
+        cr->send(dest, iupac_);
+        cr->send(dest, cas_);
+        cr->send(dest, cid_);
+        cr->send(dest, inchi_);
+        cr->send(dest, bond_.size());
+        cr->send(dest, category_.size());
+        cr->send(dest, exper_.size());
+        cr->send(dest, fragment_.size());
         
         /* Send Bonds */
         for (auto &bi : bondsConst())
@@ -655,8 +654,8 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
             {
                 if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
-                    std::string sii = si.c_str();
-                    cr->send_str(dest, &sii);
+                    std::string sii(si);
+                    cr->send(dest, sii);
                     if (nullptr != debug)
                     {
                         fprintf(debug, "Sent category %s\n", si.c_str());
@@ -717,7 +716,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&cas_, comm);
         cr->bcast(&cid_, comm);
         cr->bcast(&inchi_, comm);
-        int Nbond = bond_.size();
+        size_t Nbond = bond_.size();
         cr->bcast(&Nbond, comm);
         if (cr->rank() == root)
         {
@@ -730,7 +729,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         {
             //! Receive Bonds
             cs = CommunicationStatus::OK;
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
             {
                 Bond b;
                 cs = b.BroadCast(cr, root, comm);
@@ -741,10 +740,10 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Ncategory = category_.size();
+        size_t Ncategory = category_.size();
         cr->bcast(&Ncategory, comm);
         //! Receive Categories
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
             if (CommunicationStatus::OK == cr->bcast_data(comm))
             {
@@ -766,7 +765,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Nfrag     = fragment_.size();
+        size_t Nfrag     = fragment_.size();
         cr->bcast(&Nfrag, comm);
         if (cr->rank() == root)
         {
@@ -778,7 +777,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         else
         {
             //! Receive Fragments
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
             {
                 Fragment f;
                 cs = f.BroadCast(cr, root, comm);
@@ -789,12 +788,12 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             }
         }
 
-        int Nexper    = exper_.size();
+        size_t Nexper    = exper_.size();
         cr->bcast(&Nexper, comm);
         //! Receive Experiments
         if (cr->rank() == root)
         {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 exper_[n].BroadCast(cr, root, comm);
             }
@@ -807,7 +806,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
         }
         else
         {
-            for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
             {
                 Experiment ex;
                 cs = ex.BroadCast(cr, root, comm);
@@ -835,16 +834,17 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         //! Receive index and more
-        index_        = cr->recv_int(src);
-        cr->recv_str(src, &molname_);
-        cr->recv_str(src, &iupac_);
-        cr->recv_str(src, &cas_);
-        cr->recv_str(src, &cid_);
-        cr->recv_str(src, &inchi_);
-        int Nbond     = cr->recv_int(src);
-        int Ncategory = cr->recv_int(src);
-        int Nexper    = cr->recv_int(src);
-        int Nfrag     = cr->recv_int(src);
+        cr->recv(src, &index_);
+        cr->recv(src, &molname_);
+        cr->recv(src, &iupac_);
+        cr->recv(src, &cas_);
+        cr->recv(src, &cid_);
+        cr->recv(src, &inchi_);
+        size_t Nbond, Ncategory, Nexper, Nfrag;
+        cr->recv(src, &Nbond);
+        cr->recv(src, &Ncategory);
+        cr->recv(src, &Nexper);
+        cr->recv(src, &Nfrag);
 
         if (nullptr != debug)
         {
@@ -852,7 +852,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
         //! Receive Bonds
         cs = CommunicationStatus::OK;
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
         {
             Bond b;
             cs = b.Receive(cr, src);
@@ -863,12 +863,12 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Categories
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
             if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
                 std::string str;
-                cr->recv_str(src, &str);
+                cr->recv(src, &str);
                 if (!str.empty())
                 {
                     AddCategory(str);
@@ -886,7 +886,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Fragments
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
         {
             Fragment f;
             cs = f.Receive(cr, src);
@@ -897,7 +897,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Experiments
-        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
         {
             Experiment ex;
             cs = ex.Receive(cr, src);

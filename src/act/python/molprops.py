@@ -319,8 +319,8 @@ class Molprops:
                 qmap = "qmap"
                 if qmap in atom:
                     for q in atom[qmap].keys():
-                        myq = ET.SubElement(myatm, "q")
-                        myq.set("type", q)
+                        # This is a hack to create the name for a charge.
+                        myq = ET.SubElement(myatm, "q"+q)
                         myq.text = atom[qmap][q]
                         
             for pol in ep.polarisability:

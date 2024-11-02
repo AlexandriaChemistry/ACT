@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2020-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -43,6 +43,7 @@
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/topology/atoms.h"
 
 namespace alexandria
 {
@@ -82,7 +83,6 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
     if (targets->end() != mytarget)
     {
         double bound = 0;
-        size_t n     = 0;
         for (auto &optIndex : *optIndex_)
         {
             InteractionType iType = optIndex.iType();
@@ -106,8 +106,6 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
                             optIndex.name().c_str(), p.value(), p.minimum(), p.maximum());
                 }
             }
-
-            n++;
         }
         mytarget->second.increase(1, bound);
     }
@@ -116,7 +114,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
     {
         double bound = 0;
         // Check whether shell zeta > core zeta. Only for polarizable models.
-        auto   itype = InteractionType::COULOMB;
+        auto   itype = InteractionType::ELECTROSTATICS;
         if (forcefield->polarizable() && forcefield->interactionPresent(itype))
         {
             auto &fs             = forcefield->findForcesConst(itype);
@@ -146,7 +144,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
         if (forcefield->interactionPresent(itype))
         {
             auto &fs = forcefield->findForcesConst(itype);
-            if (fs.gromacsType() == F_CUBICBONDS)
+            if (fs.potential() == Potential::CUBIC_BONDS)
             {
                 for(const auto &ffp : fs.parametersConst())
                 {
@@ -174,10 +172,10 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
 * * * * * * * * * * * * * * * * * * * * * */
 
 void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         ACTMol                                *actmol,
+                                         ACTMol                               *actmol,
                                          gmx_unused std::vector<gmx::RVec>    *coords,
                                          std::map<eRMS, FittingTarget>        *targets,
-                                         const ForceField                        *forcefield)
+                                         const ForceField                     *forcefield)
 {
     double qtot = 0;
     int i = 0;
@@ -202,7 +200,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
     // Iterate over the atoms
     for (size_t j = 0; j < myatoms.size(); j++)
     {
-        if (myatoms[j].pType() == eptShell)
+        if (myatoms[j].pType() == ActParticle::Shell)
         {
             continue;
         }
@@ -232,13 +230,13 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
                 {
                     if (qparm.maximum() > qparm.minimum())
                     {
-                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(),
-                                                                                         qparm.maximum()));
+                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(), qparm.maximum()));
                     }
                 }
             }
             break;
-        default:
+        case Mutability::Dependent:
+        case Mutability::Free:
             break;
         }
         if (!qcm5.empty() &&
@@ -273,7 +271,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
     auto topology = actmol->topology();
     std::vector<gmx::RVec> forces(topology->atoms().size());
     std::map<InteractionType, double> energies;
-    bool doForce = forcefield->polarizable() || topology->hasEntry(InteractionType::VSITE2);
+    bool doForce = forcefield->polarizable() || topology->hasVsites();
     // Loop over zero or more ESP data sets.
     for(auto qc = qProps->begin(); qc < qProps->end(); qc++)
     {
@@ -296,7 +294,7 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
         }
         dumpQX(logfile_, actmol, coords, "ESP");
         double epsilonr;
-        if (!ffOption(*forcefield, InteractionType::COULOMB, "epsilonr", &epsilonr))
+        if (!ffOption(*forcefield, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
         {
             epsilonr = 1;
         }
@@ -356,7 +354,7 @@ void EspDevComputer::dumpQX(FILE                         *fp,
 
 PolarDevComputer::PolarDevComputer(    FILE  *logfile,
                                    const bool verbose)
-    : DevComputer(logfile, verbose)
+    : DevComputer(logfile, verbose, mpo_name(MolPropObservable::POLARIZABILITY))
 {
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
@@ -409,9 +407,11 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
                                          std::map<eRMS, FittingTarget>      *targets,
                                          gmx_unused const ForceField        *forcefield)
 {
-    auto   qProps = actmol->qProps();
-    int    ndiff  = 0;
-    double delta  = 0;
+    auto   qProps   = actmol->qProps();
+    int    ndiff    = 0;
+    double delta    = 0;
+    auto   topology = actmol->topology();
+    bool doForce    = forcefield->polarizable() || topology->hasVsites();
     for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
     {
         auto qqm  = qp->qPqmConst();
@@ -419,6 +419,17 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
         if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
         {
             auto qelec = qqm.getMultipole(mpo_);
+            // TODO: Compute this only once if both dipole and quadrupole are used in fitting
+            qact.setQ(*actmol->atoms());
+            if (doForce)
+            {
+                std::vector<gmx::RVec>            forces;
+                std::map<InteractionType, double> energies;
+                auto                              myx = qact.x();
+                forceComputer->compute(forcefield, topology, &myx, &forces, &energies);
+                qact.setX(myx);
+            }
+            qact.calcMoments();
             auto qcalc = qact.getMultipole(mpo_);
             for (size_t mm = 0; mm < qelec.size(); mm++)
             {
@@ -442,7 +453,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
     case MolPropObservable::HEXADECAPOLE:
         rms = eRMS::HEXADEC;
         break;
-    default:
+    default: // throws
         GMX_THROW(gmx::InternalError(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str()));
     }
     
@@ -460,7 +471,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
 HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
                                            const bool               verbose,
                                                  MolPropObservable  mpo)
-    : DevComputer(logfile, verbose), mpo_(mpo) 
+    : DevComputer(logfile, verbose, mpo_name(mpo)), mpo_(mpo) 
 {
 }
 
@@ -527,9 +538,8 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
             }
         }
         break;
-    default:
-        fprintf(stderr, "Don't know how to handle %s in this devcomputer\n",
-                mpo_name(mpo_));
+    default: // throws
+        GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s in this devcomputer\n", mpo_name(mpo_)).c_str()));
     }
 }
 
@@ -545,7 +555,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
 ForceEnergyDevComputer::ForceEnergyDevComputer(      FILE                   *logfile,
                                                const bool                    verbose,
                                                      std::map<eRMS, double>  boltzmannTemperature)
-    : DevComputer(logfile, verbose)
+    : DevComputer(logfile, verbose, "ForceEnergy")
 {
     boltzmannTemperature_ = boltzmannTemperature;
     if (verbose && logfile)
@@ -577,84 +587,174 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
                                            std::map<eRMS, FittingTarget>     *targets,
                                            const ForceField                  *forcefield)
 {
-    std::vector<ACTEnergy>                                  energyMap;
-    std::vector<std::vector<std::pair<double, double> > >   forceMap;
-    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap, interactionEnergyMap;
-    actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
-                            &interactionEnergyMap, &enerComponentMap);
-
-    auto tf = targets->find(eRMS::Force2);
-    if (tf != targets->end() && !forceMap.empty())
+    std::vector<ACTEnergy>                                              energyMap;
+    std::vector<std::vector<std::pair<double, double> > >               forceMap;
+    std::vector<std::pair<double, std::map<InteractionType, double> > > enerComponentMap;
+    ACTEnergyMapVector                                                  interactionEnergyMap;
+    // Check what we need to do first!
+    auto ermse    = eRMS::EPOT;
+    auto te       = targets->find(ermse);
+    bool doEpot   = (te != targets->end() && te->second.weight() > 0);
+    auto tf       = targets->find(eRMS::Force2);
+    bool doForce2 = (tf != targets->end() && tf->second.weight() > 0);
+    bool                            doInter = false;
+    std::map<eRMS, InteractionType> rmsE    = {
+        { eRMS::Interaction,    InteractionType::EPOT         },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION   },
+        { eRMS::Exchange,       InteractionType::EXCHANGE     },
+        { eRMS::Induction,      InteractionType::INDUCTION    },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
+        { eRMS::ExchInd,        InteractionType::EXCHIND      },
+        { eRMS::AllElec,        InteractionType::ALLELEC      }
+    };
+    for (auto &rms : rmsE)
     {
-        for(const auto &fstruct : forceMap)
+        auto ttt = targets->find(rms.first);
+        if (ttt != targets->end() && ttt->second.weight() > 0)
         {
-            for(const auto &ff : fstruct)
-            {
-                if (std::isnan(ff.second))
-                {
-                    printf("Force for %s is NaN\n", actmol->getMolname().c_str());
-                }
-                tf->second.increase(1, gmx::square(ff.first-ff.second));
-            }
+            doInter = true;
         }
     }
-    auto ermse = eRMS::EPOT;
-    auto te = targets->find(ermse);
-    if (te != targets->end() && !energyMap.empty())
+    if (doForce2 || doEpot || doInter)
     {
-        auto beta = computeBeta(ermse);
-        double eqmMin = 1e8;
-        if (beta > 0)
+        actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
+                                &interactionEnergyMap, &enerComponentMap);
+        if (doForce2 && !forceMap.empty())
         {
-            for(const auto &ff : energyMap)
+            for(const auto &fstruct : forceMap)
             {
-                eqmMin = std::min(eqmMin, ff.eqm());
+                for(const auto &ff : fstruct)
+                {
+                    if (std::isnan(ff.second))
+                    {
+                        printf("Force for %s is NaN\n", actmol->getMolname().c_str());
+                    }
+                    tf->second.increase(1, gmx::square(ff.first-ff.second));
+                }
             }
         }
-        for(const auto &ff : energyMap)
+        if (doEpot && !energyMap.empty())
         {
-            if (std::isnan(ff.eact()))
+            auto beta = computeBeta(ermse);
+            double eqmMin = 1e8;
+            if (beta > 0)
             {
-                printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
+                for(const auto &ff : energyMap)
+                {
+                    if (ff.haveQM())
+                    {
+                        eqmMin = std::min(eqmMin, ff.eqm());
+                    }
+                }
             }
-            else
+            for(const auto &ff : energyMap)
             {
-                // TODO Double check if the atomizationEnergy is needed.
-                // auto enerexp = actmol->atomizationEnergy() + ff.first;
-                double eqm    = ff.eqm();
-                double mydev2 = gmx::square(eqm-ff.eact());
+                if (std::isnan(ff.eact()))
+                {
+                    printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
+                }
+                else
+                {
+                    if (ff.haveQM() && ff.haveACT())
+                    {
+                        double eqm    = ff.eqm();
+                        double mydev2 = gmx::square(eqm-ff.eact());
+                        double weight = 1;
+                        if (beta > 0)
+                        {
+                            weight = exp(-beta*(eqm-eqmMin));
+                        }
+                        te->second.increase(weight, mydev2);
+                    }
+                }
+            }
+        }
+        if (doInter)
+        {
+            // We can only use weighting on the total interaction energy not on
+            // components.
+            auto   rms    = eRMS::Interaction;
+            double beta   = computeBeta(rms);
+            double eqmMin = 1e8;
+            if (beta > 0)
+            {
+                for(auto &iem : interactionEnergyMap)
+                {
+                    auto ff = iem.find(InteractionType::EPOT);
+                    if (iem.end() != ff && ff->second.haveQM())
+                    {
+                        eqmMin = std::min(eqmMin, ff->second.eqm());
+                    }
+                }
+            }
+            // Check whether we should sum the induction terms
+            bool sumInductionTerms = false;
+            if (targets->find(eRMS::DeltaHF) == targets->end())
+            {
+                // No -fc_deltahf option was passed
+                if (targets->find(eRMS::Induction) != targets->end())
+                {
+                    sumInductionTerms = true;
+                }
+            }
+            for(auto &iem : interactionEnergyMap)
+            {
                 double weight = 1;
                 if (beta > 0)
                 {
-                    weight = exp(-beta*(eqm-eqmMin));
+                    auto ff = iem.find(InteractionType::EPOT);
+                    if (iem.end() != ff && ff->second.haveQM())
+                    {
+                        auto eqm =  ff->second.eqm();
+                        weight = exp(-beta*(eqm-eqmMin));
+                    }
                 }
-                te->second.increase(weight, mydev2);
+                for(const auto &rms: rmsE)
+                {
+                    auto ti = targets->find(rms.first);
+                    if (ti == targets->end() || ti->second.weight() == 0)
+                    {
+                        continue;
+                    }
+                    if (iem.find(rms.second) == iem.end())
+                    {
+                        continue;
+                    }
+                    if (sumInductionTerms &&
+                        (eRMS::DeltaHF == rms.first || eRMS::Induction == rms.first))
+                    {
+                        if (eRMS::Induction == rms.first)
+                        {
+                            auto &find = iem.find(InteractionType::INDUCTION)->second;
+                            auto &fic  = iem.find(InteractionType::INDUCTIONCORRECTION)->second;
+                            if (find.haveQM() && find.haveACT())
+                            {
+                                // Difficult to make this fool-proof. If the data is not consistent
+                                // with the command-line options used, things may break.
+                                auto eqm  = find.eqm();
+                                auto eact = find.eact();
+                                if (fic.haveQM() && fic.haveACT())
+                                {
+                                    eqm  += fic.eqm();
+                                    eact += fic.eact();
+                                }
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        auto &ff  = iem.find(rms.second)->second;
+                        if (ff.haveQM() && ff.haveACT())
+                        {
+                            auto eqm  = ff.eqm();
+                            auto eact = ff.eact();
+                            ti->second.increase(weight, gmx::square(eqm-eact));
+                        }
+                    }
+                }
             }
-        }
-    }
-    auto ermsi = eRMS::Interaction;
-    auto ti = targets->find(ermsi);
-    if (ti != targets->end() && !interactionEnergyMap.empty())
-    {
-        auto beta = computeBeta(ermsi);
-        double eqmMin = 1e8;
-        if (beta > 0)
-        {
-            for(const auto &ff : interactionEnergyMap)
-            {
-                eqmMin = std::min(eqmMin, ff.first);
-            }
-        }
-        for(const auto &ff : interactionEnergyMap)
-        {
-            auto eqm  = ff.first;
-            auto eact = ff.second.find(InteractionType::EPOT)->second;
-            double weight = 1;
-            if (beta > 0)
-            {
-                weight = exp(-beta*(eqm-eqmMin));
-            }
-            ti->second.increase(weight, gmx::square(eqm-eact));
         }
     }
 }

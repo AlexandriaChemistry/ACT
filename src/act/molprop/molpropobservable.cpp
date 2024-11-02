@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -60,7 +60,14 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::POLARIZABILITY, "polarizability" }, 
     { MolPropObservable::HF, "HF" }, 
     { MolPropObservable::DELTAE0, "DeltaE0" }, 
-    { MolPropObservable::INTERACTIONENERGY, "InteractionEnergy" }, 
+    { MolPropObservable::INTERACTIONENERGY, "InteractionEnergy" },
+    { MolPropObservable::ELECTROSTATICS, "Electrostatics" },
+    { MolPropObservable::INDUCTION, "Induction" },
+    { MolPropObservable::EXCHANGE, "Exchange" },
+    { MolPropObservable::VDWCORRECTION, "VdWcorrection" },
+    { MolPropObservable::INDUCTIONCORRECTION, "InductionCorrection" },
+    { MolPropObservable::DISPERSION, "Dispersion" },
+    { MolPropObservable::CHARGETRANSFER, "Charge transfer" },
     { MolPropObservable::DHFORM, "DeltaHform" }, 
     { MolPropObservable::DGFORM, "DeltaGform" },
     { MolPropObservable::DSFORM, "DeltaSform" },
@@ -86,7 +93,14 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
     { MolPropObservable::POLARIZABILITY,    "Angstrom3" }, 
     { MolPropObservable::HF,                "kJ/mol" }, 
     { MolPropObservable::DELTAE0,           "kJ/mol" }, 
-    { MolPropObservable::INTERACTIONENERGY, "kJ/mol" }, 
+    { MolPropObservable::INTERACTIONENERGY, "kJ/mol" },
+    { MolPropObservable::ELECTROSTATICS,    "kJ/mol" },
+    { MolPropObservable::INDUCTION,         "kJ/mol" },
+    { MolPropObservable::EXCHANGE,          "kJ/mol" },
+    { MolPropObservable::VDWCORRECTION,     "kJ/mol" },
+    { MolPropObservable::INDUCTIONCORRECTION, "kJ/mol" },
+    { MolPropObservable::DISPERSION,        "kJ/mol" },
+    { MolPropObservable::CHARGETRANSFER,    "kJ/mol" },
     { MolPropObservable::DHFORM,            "kJ/mol" }, 
     { MolPropObservable::DGFORM,            "kJ/mol" }, 
     { MolPropObservable::DSFORM,            "J/mol K" }, 
@@ -156,12 +170,12 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         std::string mpo_type(mpo_name(mpo_));
-        cr->send_str(dest, &mpo_type);
-        cr->send_str(dest, &type_);
-        cr->send_str(dest, &inputUnit_);
-        cr->send_str(dest, &unit_);
-        cr->send_double(dest, T_);
-        cr->send_int(dest, (int) eP_);
+        cr->send(dest, mpo_type);
+        cr->send(dest, type_);
+        cr->send(dest, inputUnit_);
+        cr->send(dest, unit_);
+        cr->send(dest, T_);
+        cr->send(dest, (int) eP_);
     }
     else if (nullptr != debug)
     {
@@ -190,9 +204,13 @@ CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&inputUnit_, comm);
         cr->bcast(&unit_, comm);
         cr->bcast(&T_, comm);
-        int ep = static_cast<int>(eP_);
-        cr->bcast(&ep, comm);
-        eP_ = static_cast<ePhase>(ep);
+        std::string phase;
+        if (cr->rank() == root)
+        {
+            phase = phase2string(eP_);
+        }
+        cr->bcast(&phase, comm);
+        eP_ = string2phase(phase);
         
     }
     else if (nullptr != debug)
@@ -210,16 +228,18 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         std::string mpo_type;
-        cr->recv_str(src, &mpo_type);
+        cr->recv(src, &mpo_type);
         if (!stringToMolPropObservable(mpo_type, &mpo_))
         {
             gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
         }
-        cr->recv_str(src, &type_);
-        cr->recv_str(src, &inputUnit_);
-        cr->recv_str(src, &unit_);
-        T_   = cr->recv_double(src);
-        eP_  = (ePhase) cr->recv_int(src);
+        cr->recv(src, &type_);
+        cr->recv(src, &inputUnit_);
+        cr->recv(src, &unit_);
+        cr->recv(src, &T_);
+        int ep;
+        cr->recv(src, &ep);
+        eP_  = static_cast<ePhase>(ep);
     }
     else if (nullptr != debug)
     {
@@ -293,13 +313,9 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, values_.size());
-        for(auto &m : values_)
-        {
-            cr->send_double(dest, m);
-        }
-        cr->send_double(dest, average_);
-        cr->send_double(dest, error_);
+        cr->send(dest, values_);
+        cr->send(dest, average_);
+        cr->send(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -343,15 +359,9 @@ CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, i
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        values_.clear();
-        size_t N = cr->recv_int(src);
-        for(size_t m = 0; m < N; m++)
-        {
-            double x = cr->recv_double(src);
-            values_.push_back(x);
-        }
-        average_ = cr->recv_double(src);
-        error_ = cr->recv_double(src);
+        cr->recv(src, &values_);
+        cr->recv(src, &average_);
+        cr->recv(src, &error_);
     }
     else if (nullptr != debug)
     {
@@ -398,11 +408,7 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, values_.size());
-        for(auto &m : values_)
-        {
-            cr->send_double(dest, m);
-        }
+        cr->send(dest, values_);
     }
     else if (nullptr != debug)
     {
@@ -444,13 +450,7 @@ CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        values_.clear();
-        size_t N = cr->recv_int(src);
-        for(size_t m = 0; m < N; m++)
-        {
-            double x = cr->recv_double(src);
-            values_.push_back(x);
-        }
+        cr->recv(src, &values_);
     }
     else if (nullptr != debug)
     {
@@ -531,15 +531,15 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
         {
             for(int n = 0; n < DIM; n++)
             {
-                cr->send_double(dest, alpha_[m][n]);
+                cr->send(dest, alpha_[m][n]);
             }
         }
     }
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_double(dest, average_);
-        cr->send_double(dest, error_);
+        cr->send(dest, average_);
+        cr->send(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -587,15 +587,15 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
         {
             for(int n = 0; n < DIM; n++)
             {
-                alpha_[m][n] = cr->recv_double(src);
+                cr->recv(src, &alpha_[m][n]);
             }
         }
     }
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        average_ = cr->recv_double(src);
-        error_   = cr->recv_double(src);
+        cr->recv(src, &average_);
+        cr->recv(src, &error_);
     }
     else if (nullptr != debug)
     {
@@ -655,8 +655,8 @@ CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int 
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        average_ = cr->recv_double(src);
-        error_   = cr->recv_double(src);
+        cr->recv(src, &average_);
+        cr->recv(src, &error_);
     }
     else if (nullptr != debug)
     {
@@ -674,8 +674,8 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_double(dest, average_);
-        cr->send_double(dest, error_);
+        cr->send(dest, average_);
+        cr->send(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -730,23 +730,13 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        cr->recv_str(src, &xyzInputUnit_);
-        cr->recv_str(src, &vInputUnit_);
-        cr->recv_str(src, &xyzUnit_);
-        cr->recv_str(src, &vUnit_);
-        int nesp = cr->recv_int(src);
-        espID_.clear();
-        xyz_.clear();
-        V_.clear();
-        for(int i = 0; i < nesp; i++)
-        {
-            espID_.push_back(cr->recv_int(src));
-            std::vector<double> xyz;
-            cr->recv_double_vector(src, &xyz);
-            gmx::RVec xxx = { xyz[XX], xyz[YY], xyz[ZZ] };
-            xyz_.push_back(xxx);
-            V_.push_back(cr->recv_double(src));
-        }
+        cr->recv(src, &xyzInputUnit_);
+        cr->recv(src, &vInputUnit_);
+        cr->recv(src, &xyzUnit_);
+        cr->recv(src, &vUnit_);
+        cr->recv(src, &V_);
+        cr->recv(src, &xyz_);
+        cr->recv(src, &espID_);
     }
     else if (nullptr != debug)
     {
@@ -800,18 +790,13 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_str(dest, &xyzInputUnit_);
-        cr->send_str(dest, &vInputUnit_);
-        cr->send_str(dest, &xyzUnit_);
-        cr->send_str(dest, &vUnit_);
-        cr->send_int(dest, espID_.size());
-        for(size_t i = 0; i < espID_.size(); i++)
-        {
-            cr->send_int(dest, espID_[i]);
-            std::vector<double> xyz = { xyz_[i][XX], xyz_[i][YY], xyz_[i][ZZ] };
-            cr->send_double_vector(dest, &xyz);
-            cr->send_double(dest, V_[i]);
-        }
+        cr->send(dest, xyzInputUnit_);
+        cr->send(dest, vInputUnit_);
+        cr->send(dest, xyzUnit_);
+        cr->send(dest, vUnit_);
+        cr->send(dest, espID_);
+        cr->send(dest, xyz_);
+        cr->send(dest, V_);
     }
     else if (nullptr != debug)
     {

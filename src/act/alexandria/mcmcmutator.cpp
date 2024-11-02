@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,6 +41,7 @@
 
 #include "bayes.h"
 #include "act/utility/memory_check.h"
+#include "gromacs/fileio/xvgr.h"
 
 namespace alexandria
 {
@@ -86,7 +87,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     }
     if (genome->nBase() == 0)
     {
-        fprintf(stderr, "No parameters to optimize.\n");
+        fprintf(stderr, "No parameters to train. Did you run alexandria geometry_ff?\n");
         return;
     }
 
@@ -459,8 +460,8 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
     if (logfile_)
     {
-        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
-                chi2_0, static_cast<int>(param->size()));
+        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
+                chi2_0, param->size());
         fflush(logfile_);
     }
     for (size_t i = 0; i < param->size(); ++i)

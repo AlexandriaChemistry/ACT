@@ -5,7 +5,7 @@
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">9</Int>
     <Real>-0.30432725929156479</Real>
-    <Real>0.19457282486245669</Real>
+    <Real>0.19457282486245672</Real>
     <Real>-0.29718737611564083</Real>
     <Real>0.13564727018158299</Real>
     <Real>0.13564727018158299</Real>
@@ -18,7 +18,7 @@
   <Real Name="Molecule 2 charge">0</Real>
   <Real Name="InteractionEnergy">-0.84618448814239855</Real>
   <Real Name="Coulomb">-7.7033113112292995</Real>
-  <Real Name="Polarization">0</Real>
-  <Real Name="Dispersion">-3.2051297045727578</Real>
-  <Real Name="Repulsion">10.06225652765977</Real>
+  <Real Name="Induction">0</Real>
+  <Real Name="Dispersion">-3.2051297045727551</Real>
+  <Real Name="Repulsion">10.062256527660098</Real>
 </ReferenceData>

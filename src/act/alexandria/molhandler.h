@@ -108,7 +108,6 @@ public:
      * \param[out] frequencies  The normal mode frequencies (in cm^-1)
      * \param[out] intensities  The normal mode intensities
      * \param[out] output       Vector of string to write information such as frequencies to, may be nullptr (default)
-     * \param[in]  useLapack    Whether or not to use the Lapack library iso Eigen
      * \param[in]  debugNMA     Will provide excessive printing statements
      */
     void nma(const ForceField         *pd,
@@ -118,7 +117,6 @@ public:
              std::vector<double>      *frequencies,
              std::vector<double>      *intensities,
              std::vector<std::string> *output = nullptr,
-             bool                      useLapack = false,
              bool                      debugNMA = false) const;
 
     /*! \brief

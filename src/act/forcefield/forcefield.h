@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -46,8 +46,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/particletype.h"
-#include "act/forcefield/forcefield_low.h"
-#include "act/forcefield/vsite.h"
+#include "act/forcefield/symcharges.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
 
@@ -60,6 +59,11 @@ class ForceField
 
         //! Default constructor
         ForceField() {};
+
+        /*! Print information about the force field
+         * \param[in] fp File pointer
+         */
+        void print(FILE *fp) const;
 
         /*! \brief
          * Set the file name gentop.dat
@@ -118,53 +122,12 @@ class ForceField
          * \param[in] timeStamp the new value
          */
         void setTimeStamp(const std::string &timeStamp) { timeStamp_ = timeStamp; }
-        //! Return whether or not the original Rappe & Goddard is used
-        bool rappe() const;
-        
-        //! Return whether Yang & Sharp is used
-        bool yang() const;
-        
+
         /*! \brief Add an atom type
          * \param[in] ptp The new particle type
          * \throw if this particle type exists already
          */
         void  addParticleType(const ParticleType &ptp);
-        /*! \brief
-         *  Add a virtual site type
-         *
-         * \param[in] atype           The name specifying the vsite type
-         * \param[in] type            Unknown
-         * \param[in] number
-         * \param[in] distance
-         * \param[in] angle
-         * \param[in] ncontrolatoms
-         */
-        void  addVsite(const std::string &atype,
-                       const std::string &type,
-                       int                number,
-                       double             distance,
-                       double             angle,
-                       int                ncontrolatoms);
-
-        /*! \brief
-         * Set the vsite angle unit.
-         */
-        void setVsite_angle_unit(const std::string &angle_unit)
-        {
-            vsite_angle_unit_ = angle_unit;
-        }
-
-        /*! \brief
-         * Set the vsite angle unit.
-         */
-        void setVsite_length_unit(const std::string &length_unit)
-        {
-            vsite_length_unit_ = length_unit;
-        }
-
-        std::vector<Vsite> &getVsite() { return vsite_; }
-
-        const std::vector<Vsite> &getVsiteConst() const { return vsite_; }
 
         size_t getNatypes() const { return alexandria_.size(); }
 
@@ -262,32 +225,6 @@ class ForceField
      */
     const std::map<Identifier, ParticleType> &particleTypesConst() const { return alexandria_; }
     
-    VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
-    
-    VsiteConstIterator getVsiteBegin()  const { return vsite_.begin(); }
-    
-    VsiteIterator getVsiteEnd() { return vsite_.end(); }
-    
-    VsiteConstIterator getVsiteEnd() const { return vsite_.end(); }
-    
-    VsiteIterator findVsite(std::string  atype)
-    {
-        return std::find_if(vsite_.begin(), vsite_.end(),
-                            [atype](const Vsite &vs)
-                            {
-                                return (atype == vs.atype());
-                            });
-    }
-    
-    VsiteConstIterator findVsite(std::string atype) const
-    {
-        return std::find_if(vsite_.begin(), vsite_.end(),
-                            [atype](const Vsite &vs)
-                            {
-                                return (atype == vs.atype());
-                            });
-    }
-    
     /*! \brief
      * Return the poltype corresponding to atype and true if successful
      *
@@ -320,10 +257,10 @@ class ForceField
      * Add a new force list. The routine checks for duplicate itypes
      * and will not add a second block of a certain type is one is
      * present already.
-     * \param[in] interaction The type of interaction being modeled
-     * \param[in] forces      The data structure
+     * \param[in] iType  The type of interaction being modeled
+     * \param[in] forces The data structure
      */
-    void addForces(const std::string             &interaction,
+    void addForces(InteractionType                iType,
                    const ForceFieldParameterList &forces);
     
     size_t nforces() const { return forces_.size(); }
@@ -348,9 +285,9 @@ class ForceField
         auto force = forces_.find(iType);
         if (force == forces_.end())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %zu interaction types)",
                                                            interactionTypeToString(iType).c_str(), 
-                                                           static_cast<int>(forces_.size())).c_str()));
+                                                           forces_.size()).c_str()));
         }
         return &force->second;
     }
@@ -360,9 +297,9 @@ class ForceField
         const auto &force = forces_.find(iType);
         if (force == forces_.end())
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+            GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %zu interaction types)",
                                                            interactionTypeToString(iType).c_str(),
-                                                           static_cast<int>(forces_.size())).c_str()));
+                                                           forces_.size()).c_str()));
         }
         return force->second;
     }
@@ -374,10 +311,6 @@ class ForceField
      * \return whether or not the type was found.
      */
     bool typeToInteractionType(const std::string &type, InteractionType *itype);
-    
-    const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
-    
-    const std::string &getVsite_length_unit() const { return vsite_length_unit_; }
     
     void addSymcharges(const std::string &central,
                        const std::string &attached,
@@ -463,9 +396,6 @@ private:
     std::map<std::string, InteractionType> type2Itype_;
     std::string                           filename_;
     std::map<Identifier, ParticleType>    alexandria_;
-    std::vector<Vsite>                    vsite_;
-    std::string                           vsite_angle_unit_;
-    std::string                           vsite_length_unit_;
     std::map<InteractionType, ForceFieldParameterList> forces_;
     std::vector<Symcharges>               symcharges_;
     bool                                  polarizable_ = false;

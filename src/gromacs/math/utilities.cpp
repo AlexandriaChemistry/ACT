@@ -49,7 +49,9 @@
 #include <cfenv>
 
 //! Floating point exception set that we use and care about
+#if HAVE_FEDISABLEEXCEPT || ((defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__))
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
+#endif
 
 bool
 gmx_within_tol(double   f1,

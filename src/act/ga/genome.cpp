@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -100,27 +100,30 @@ double Genome::base(size_t index) const
 
 void Genome::setBase(size_t index, double value)
 {
-    GMX_RELEASE_ASSERT(index < genome_.size(), "Index out of range");
+    if (index >= genome_.size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Index (%zu) out of range (should be < %zu)", index, genome_.size()).c_str()));
+    }
     genome_[index] = value;
 }
     
 void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 {
-    cr->send_double_vector(dest, &genome_);
-    cr->send_int(dest, fitness_.size());
+    cr->send(dest, genome_);
+    cr->send(dest, fitness_.size());
     for(auto &f : fitness_)
     {
         std::string imsName(iMolSelectName(f.first));
-        cr->send_str(dest, &imsName);
-        cr->send_double(dest, f.second);
+        cr->send(dest, imsName);
+        cr->send(dest, f.second);
     }
-    cr->send_double(dest, probability_);
+    cr->send(dest, probability_);
 }
     
 void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_Comm comm)
 {
     cr->bcast(&genome_, comm);
-    int nfmap = fitness_.size();
+    size_t nfmap = fitness_.size();
     cr->bcast(&nfmap, comm);
     if (cr->rank() == root)
     {
@@ -134,7 +137,7 @@ void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_
     else
     {
         fitness_.clear();
-        for (int i = 0; i < nfmap; i++)
+        for (size_t i = 0; i < nfmap; i++)
         {
             std::string imsName;
             cr->bcast(&imsName, comm);
@@ -154,23 +157,25 @@ void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_
 
 void Genome::Receive(const alexandria::CommunicationRecord *cr, int src)
 {
-    cr->recv_double_vector(src, &genome_);
-    int nfmap = cr->recv_int(src);
+    cr->recv(src, &genome_);
+    size_t nfmap;
+    cr->recv(src, &nfmap);
     fitness_.clear();
-    for (int i = 0; i < nfmap; i++)
+    for (size_t i = 0; i < nfmap; i++)
     {
         std::string imsName;
-        cr->recv_str(src, &imsName);
+        cr->recv(src, &imsName);
         iMolSelect ims;
         if (!name2molselect(imsName, &ims))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid iMolSelect name %s",
                                                            imsName.c_str()).c_str()));
         }
-        double fitness = cr->recv_double(src);
+        double fitness;
+        cr->recv(src, &fitness);
         fitness_.insert({ims, fitness});
     }
-    probability_ = cr->recv_double(src);
+    cr->recv(src, &probability_);
 }
 
 } // namespace ga

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -90,7 +90,8 @@ protected:
                  const std::string               &molname, 
                  std::vector<double>              qtotal,
                  const std::vector<double>       &qcustom,
-                 bool                             useHF)
+                 bool                             useHF,
+                 bool                             oneH = true)
     {
         int                   maxpot    = 100;
         int                   nsymm     = 0;
@@ -142,13 +143,13 @@ protected:
         }
         // Get forcefield
         auto pd = getForceField(model);
-
+        bool   userqtot   = !qcustom.empty();
         double qtot_babel = myqtot;
         matrix box;
         EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
-                              jobtype, &qtot_babel, false, box));
+                              jobtype, userqtot, &qtot_babel, false, box, oneH));
 
         if (trustObCharge)
         {
@@ -227,10 +228,10 @@ protected:
                 std::map<InteractionType, double> einter;
                 mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
                 checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
-                checker_.checkReal(einter[InteractionType::COULOMB], "Coulomb");
-                checker_.checkReal(einter[InteractionType::POLARIZATION], "Polarization");
+                checker_.checkReal(einter[InteractionType::ELECTROSTATICS], "Coulomb");
+                checker_.checkReal(einter[InteractionType::INDUCTION], "Induction");
                 checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
-                checker_.checkReal(einter[InteractionType::REPULSION], "Repulsion");
+                checker_.checkReal(einter[InteractionType::EXCHANGE], "Repulsion");
             }
         }
     }
@@ -287,6 +288,12 @@ TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
     testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom, true);
+}
+
+TEST_F (InteractionEnergyTest, HydrogenFluorideDimerACSps)
+{
+    std::vector<double> qcustom;
+    testAcm("ACS-ps", inputFormat::SDF, "hfdimer", {0,0}, qcustom, true, false);
 }
 
 }

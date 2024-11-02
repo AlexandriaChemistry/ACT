@@ -53,15 +53,17 @@ configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
 ####
 set(IGNORED_CLANG_ALL_WARNINGS
+    "-Werror"
     "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
     "-Wno-source-uses-openmp" #Don't warn for no-omp build
-    #    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
     "-Wno-documentation-unknown-command" #Custom commands are used
     "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
     "-Wno-switch-enum" # default statement for enum is OK
 
     #Following ones are undecided/TODO
     "-Wno-disabled-macro-expansion"
+    "-Wno-deprecated-declarations"
+    "-Wno-deprecated-copy-with-dtor"
     "-Wno-cast-align"
     "-Wno-reserved-id-macro"
     "-Wno-global-constructors"
@@ -104,10 +106,15 @@ if (BUILD_TESTING)
     include(testutils/TestMacros.cmake)
     add_subdirectory(testutils)
 endif()
-
 add_subdirectory(gromacs)
 
 # The ACT library file
 add_library(actLib "")
 # And the source code
 add_subdirectory(act)
+
+# External code that is included in the ACT library
+add_subdirectory(external/quasirandom_sequences)
+add_subdirectory(external/stlbfgs)
+
+

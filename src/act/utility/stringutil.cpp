@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -83,7 +83,10 @@ std::vector<std::string> split(const std::string        &s,
     std::string       item;
     while (std::getline(ss, item, delim))
     {
-        elems.push_back(item);
+        if (!item.empty() or !isspace(delim))
+        {
+            elems.push_back(item);
+        }
     }
     return elems;
 }
@@ -98,26 +101,19 @@ std::vector<std::string> split(const std::string &s,
 
 std::string gmx_ftoa(double f)
 {
-    char buf[32];
-
-    if (fabs(f) < 100)
+    if (fabs(f) < 100 && fabs(f) > 1)
     {
-        sprintf(buf, "%.3f", f);
+        return gmx::formatString("%.3f", f);
     }
     else
     {
-        sprintf(buf, "%g", f);
+        return gmx::formatString("%g", f);
     }
-    return std::string(buf);
 }
 
 std::string gmx_itoa(int f)
 {
-    char a[32];
-
-    sprintf(a, "%d", f);
-
-    return std::string(a);
+    return gmx::formatString("%d", f);
 }
 
 double my_atof(const std::string &str, const std::string &description)

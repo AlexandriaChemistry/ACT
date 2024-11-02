@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -53,7 +53,7 @@ private:
      * \param[in] box The box edges.
      * \param[in] dt  The integration time step 
      */
-    VsiteHandler(matrix box, real dt);
+    VsiteHandler(matrix &box, real dt);
 
     /*! Construct vsite positions
      * \param[in]  top         The molecular topology
@@ -63,7 +63,7 @@ private:
      */
     void constructPositions(const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
-                            const matrix            box);
+                            const matrix           &box);
                  
     /*! \brief Distribute the forces back to atoms
      * \param[in]  top         The molecular topology
@@ -74,7 +74,7 @@ private:
     void distributeForces(const Topology               *top,
                           const std::vector<gmx::RVec> &coords,
                           std::vector<gmx::RVec>       *forces,
-                          const matrix                  box);
+                          const matrix                 &box);
    
 };
 

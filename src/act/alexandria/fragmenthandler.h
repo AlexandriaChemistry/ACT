@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2022-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -25,9 +25,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
+#ifndef ACT_ALEXANDRIA_FRAGMENTHANDLER_H
+#define ACT_ALEXANDRIA_FRAGMENTHANDLER_H
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
+#include "act/alexandria/fetch_charges.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 
@@ -49,12 +52,14 @@ namespace alexandria
         std::vector<Topology *>            topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
-        //! Fragment identifiers
+        //! Fragment InChi identifiers
         std::vector<std::string>           ids_;
         //! Array denoting where the atoms start in the global system
         std::vector<size_t>                atomStart_;
         //! Pointer to copy of the fragments
         std::vector<double>                qtotal_;
+        //! Whether charges are fixed or not. They are when set from a charge map.
+        bool                               fixedQ_ = false;
         //! Total number of atoms
         size_t                             natoms_ = 0;
     public:
@@ -66,7 +71,7 @@ namespace alexandria
          * \param[in] fragments     The fragmentation information
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(const ForceField             *pd,
+        FragmentHandler(ForceField                   *pd,
                         const std::vector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>   &atoms,
                         const std::vector<Bond>      &bonds,
@@ -80,12 +85,15 @@ namespace alexandria
         
         //! Return the fragment ids
         const std::vector<std::string> &ids() const { return ids_; }
-        
+
         //! \return the atomStart_ vector, containing one extra index more than the number of fragments.
         const std::vector<size_t> atomStart() const { return atomStart_; }
 
-        //! \return the vector of Topology structures        
+        //! \return the vector of Topology structures
         const std::vector<Topology *> topologies() const { return topologies_; }
+
+        //! \return the vector of Topology structures
+        std::vector<Topology *> &topologiesPtr() { return topologies_; }
 
         /*! \brief Generate charges for all fragments
          * \param[in]  fp      Debug file pointer, may be nullptr
@@ -105,16 +113,23 @@ namespace alexandria
          * \param[in] atoms The atoms from the complete topology for all fragments
          */
         void setCharges(const std::vector<ActAtom> &atoms);
-        
+        /*! \brief Copy charges from fragments back to atoms
+         * \param[inout] atoms The atoms to copy to.
+         * \return whether atoms->size() equals the sum of the number of atoms in the fragments.
+         */
+        bool fetchCharges(std::vector<ActAtom> *atoms);
         /*! \brief Copy charges from a charge map
          * \param[in] qmap The charge map
          * \return true if charges for all fragments were found
          */
-        bool setCharges(const std::map<std::string, std::vector<double> >&qmap);
-        
+        bool setCharges(const chargeMap &qmap);
+        //! \return whether charges are fixed or not
+        bool fixedCharges() const { return fixedQ_; }
         /*! \brief Set the charge generation algorithm to use
          * \param[in] alg The algorithm to use. Only Read or EEM/SQE are supported.
          */
         void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm alg) { algorithm_ = alg; }
     };
 } // namespace alexandria
+
+#endif

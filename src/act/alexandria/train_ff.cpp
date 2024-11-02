@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -82,9 +82,10 @@ void my_fclose(FILE *fp)
     }
 }
 
-void OptACM::add_pargs(std::vector<t_pargs>  *pargs)
+void OptACM::add_options(std::vector<t_pargs>  *pargs,
+                         std::vector<t_filenm> *fnms)
 {
-    t_pargs pa[] =
+    std::vector<t_pargs> pa =
     {
         { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
           "Remove a molecule from training set if shell minimization does not converge."},
@@ -93,12 +94,24 @@ void OptACM::add_pargs(std::vector<t_pargs>  *pargs)
         { "-v",              FALSE, etBOOL, {&verbose_},
           "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
     };
-    for (int i = 0; i < asize(pa); i++) {
+    for (size_t i = 0; i < pa.size(); i++) {
         pargs->push_back(pa[i]);
     }
+    std::vector<t_filenm> filenames = {
+        { efXML, "-o",     "train_ff", ffWRITE },
+        { efLOG, "-g",     "train_ff", ffWRITE },
+        { efCSV, "-gpin",  "genepool", ffOPTRD },
+        { efCSV, "-gpout", "genepool", ffWRITE }
+    };
+    for (size_t i = 0; i < filenames.size(); ++i)
+    {
+        fnms->push_back(filenames[i]);
+    }
     mg_.addOptions(pargs, sii_->fittingTargets(iMolSelect::Train));
-    bch_.add_pargs(pargs);
-    gach_.add_pargs(pargs);
+    mg_.addFilenames(fnms);
+
+    bch_.add_options(pargs, fnms);
+    gach_.add_options(pargs, fnms);
 }
 
 void OptACM::check_pargs()
@@ -107,7 +120,7 @@ void OptACM::check_pargs()
     gach_.check_pargs();
 }
 
-void OptACM::optionsFinished(const std::string &outputFile)
+void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
@@ -121,15 +134,21 @@ void OptACM::optionsFinished(const std::string &outputFile)
     // Set prefix and id in sii_
     sii_->fillIdAndPrefix();
     // Set output file for FF parameters
-    baseOutputFileName_ = outputFile;
-    sii_->setOutputFile(outputFile);
+    if (commRec_.isMaster())
+    {
+        baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
+        sii_->setOutputFile(baseOutputFileName_);
+    }
 }
 
-void OptACM::openLogFile(const char *logfileName) {
+void OptACM::openLogFile(const std::vector<t_filenm> &filenms)
+{
+    auto logfileName = opt2fn("-g", filenms.size(), filenms.data());
     fplog_.reset(gmx_ffopen(logfileName, "w"));
 }
 
-FILE *OptACM::logFile() {
+FILE *OptACM::logFile()
+{
     if (fplog_)
     {
         return fplog_.get();
@@ -156,7 +175,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster(const char *fitnessFile)
+int OptACM::initMaster(const std::vector<t_filenm> &fnm)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -187,11 +206,16 @@ void OptACM::initMaster(const char *fitnessFile)
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
     // Force computer
-    forceComp_ = new ForceComputer;
+    forceComp_ = new ForceComputer();
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
-
+    // Check whether we have to do anything
+    if (fitComp_->numDevComputers() == 0)
+    {
+        fprintf(stderr, "Nothing to train! Check your input and your code.\n");
+        return 0;
+    }
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
     if (0 == seed)
@@ -210,7 +234,7 @@ void OptACM::initMaster(const char *fitnessFile)
     {
         // Generate new seed for each of the middlemen
         // and send it over.
-        sii_->commRec()->send_int(mman, dis(gen));
+        sii_->commRec()->send(mman, dis(gen));
     }
 
     // Initializer
@@ -226,7 +250,7 @@ void OptACM::initMaster(const char *fitnessFile)
         // TODO Only open these files when we are optimizing in verbose mode.
         if (verbose_)
         {
-            printf("Will open param conv fle on the master!\n");
+            fprintf(logFile(), "Will open param conv file on the master!\n");
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
@@ -299,7 +323,8 @@ void OptACM::initMaster(const char *fitnessFile)
         );
     }
     terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
-    if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
+    // If maxTestGenerations is enabled and there is something to test as well
+    if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
     {
         if (logFile())
         {
@@ -322,7 +347,10 @@ void OptACM::initMaster(const char *fitnessFile)
         ga_ = new ga::HybridGAMC(
             logFile(), initializer, fitComp_, probComputer, selector, crossover,
             mutator_, terminators, penalizers, sii_, &gach_, 
-            fitnessFile, dis(gen)
+            opt2fn("-fitness", fnm.size(), fnm.data()),
+            opt2fn_null("-gpin", fnm.size(), fnm.data()),
+            opt2fn("-gpout", fnm.size(), fnm.data()),
+            dis(gen)
         );
     }
     if (logFile())
@@ -330,6 +358,7 @@ void OptACM::initMaster(const char *fitnessFile)
         fprintf(logFile(), "Done initializing master node\n");
         fflush(logFile());
     }
+    return 1;
 }
 
 void OptACM::printNumCalcDevEstimate()
@@ -553,12 +582,10 @@ bool OptACM::runMaster(bool        optimize,
             {
                 it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
-                for (const auto &ims : iMolSelectNames())
-                {
-                    fitComp_->compute(&(it->second), ims.first, true);
-                    double chi2 = it->second.fitness(ims.first);
-                    fprintf(logFile(), "Minimum chi2 for %s %g\n", ims.second, chi2);
-                }
+                fitComp_->compute(&(it->second), it->first, true);
+                double chi2 = it->second.fitness(it->first);
+                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                        iMolSelectName(it->first), chi2);
             }
         }
         // Save force field of best individual(s)
@@ -697,17 +724,14 @@ int train_ff(int argc, char *argv[])
     std::vector<t_filenm>       filenms =
     {
         { efXML, "-ff",   "aff",         ffRDMULT },
-        { efXML, "-o",    "train_ff",    ffWRITE  },
         { efDAT, "-sel",  "molselect",   ffREAD   },
-        { efLOG, "-g",    "train_ff",    ffWRITE  },
         { efXVG, "-conv", "param_conv" , ffWRITE  },
         { efXVG, "-chi2", "chi_squared", ffWRITE  },
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
     alexandria::OptACM opt;
-    opt.add_pargs(&pargs);
-    opt.mg()->addFilenames(&filenms);
+    opt.add_options(&pargs, &filenms);
     printer.addOptions(&pargs);
     printer.addFileOptions(&filenms);
 
@@ -737,14 +761,11 @@ int train_ff(int argc, char *argv[])
     // Initializes commRec_ in opt
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
-    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
-
-    // Propagate weights from training set to other sets
-    opt.sii()->propagateWeightFittingTargets();
+    opt.optionsFinished(filenms);
 
     if (opt.commRec()->isMaster())
     {
-        opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
+        opt.openLogFile(filenms);
         print_memory_usage(debug);
         print_header(opt.logFile(), pargs, filenms);
 
@@ -754,6 +775,22 @@ int train_ff(int argc, char *argv[])
                 opt2fn("-sel", filenms.size(), filenms.data()));
         print_memory_usage(debug);
     }
+    gms.bcast(opt.commRec());
+    if (gms.count(iMolSelect::Test) > 0)
+    {
+        opt.sii()->fillFittingTargets(iMolSelect::Test);
+    }
+    else
+    {
+        opt.gach()->setEvaluateTestset(false);
+        opt.bch()->setEvaluateTestset(false);
+        if (opt.commRec()->isMaster())
+        {
+            fprintf(opt.logFile(), "Turning off the evaluate of test set since it is empty.\n");
+        }
+    }
+    // Propagate weights from training set to other sets
+    opt.sii()->propagateWeightFittingTargets();
 
     // Figure out a logfile to pass down :)
     FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
@@ -777,6 +814,21 @@ int train_ff(int argc, char *argv[])
                     opt.sii()->forcefield()->nParticleTypes());
         }
     }
+    if (opt.sii()->commRec()->isMaster())
+    {
+        opt.sii()->forcefield()->print(fp);
+    }
+    // Check inputs
+    bool optionsOk = true;
+    if (opt.commRec()->isMaster())
+    {
+        optionsOk = opt.mg()->checkOptions(fp, filenms, opt.sii()->forcefield());
+    }
+    opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
+    if (!optionsOk)
+    {
+        return 0;
+    }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(fp, filenms, opt.sii()->forcefield(), gms,
@@ -788,9 +840,12 @@ int train_ff(int argc, char *argv[])
 
 
     // StaticIndividualInfo things
-    opt.sii()->generateOptimizationIndex(fp, opt.mg(), opt.commRec());
-    opt.sii()->fillVectors(opt.mg()->mindata());
-    opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
+    {
+        FILE *myfp = opt.verbose() ? debug : fp;
+        opt.sii()->generateOptimizationIndex(myfp, opt.mg(), opt.commRec());
+        opt.sii()->fillVectors(opt.mg()->mindata());
+        opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
+    }
     // Set the output file names, has to be done before
     // creating a mutator.
     if (bOptimize)
@@ -799,7 +854,7 @@ int train_ff(int argc, char *argv[])
         {
             if (opt.sii()->commRec()->isMaster())
             {
-                fprintf(stderr, "Nothing to optimize. Check your input.\n");
+                fprintf(stderr, "No parameters to train. Did you run alexandria geometry_ff?\n");
             }
             return 0;
         }
@@ -825,14 +880,21 @@ int train_ff(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    int initOK   = 0;
     if (opt.commRec()->isMaster())
     {
-        bool bMinimum = false;
         if (opt.sii()->nParam() > 0)
         {
-            opt.initMaster(opt2fn("-fitness", filenms.size(), filenms.data()));
-
-            // Master only
+            initOK = opt.initMaster(filenms);
+        }
+        // Let the other nodes know whether all is well.
+        if (opt.commRec()->isParallel())
+        {
+            opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        }
+        bool bMinimum = false;
+        if (initOK)
+        {
             bMinimum = opt.runMaster(bOptimize, bSensitivity);
             if (bOptimize)
             {
@@ -847,9 +909,7 @@ int train_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), tmpMg->actmolsPtr(),
-                          opt.sii()->forcefield(),
-                          oenv, filenms);
+            printer.print(opt.logFile(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
             print_memory_usage(debug);
         }
         else if (!bMinimum)
@@ -857,23 +917,33 @@ int train_ff(int argc, char *argv[])
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
     }
-    else if (opt.commRec()->isMiddleMan())
+    else
     {
-        if (opt.sii()->nParam() > 0)
+        // Verify that all is well with the master.
+        opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
+        if (initOK > 0)
         {
-            // Master and Individuals (middle-men) need to initialize more,
-            // so let's go.
-            ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                   opt.verbose(), opt.oenv(), opt.verbose());
-            middleman.run();
-        }
-    }
-    else if (bOptimize || bSensitivity)
-    {
-        if (opt.sii()->nParam() > 0)
-        {
-            ACTHelper helper(opt.sii(), opt.mg());
-            helper.run();
+            if (opt.commRec()->isMiddleMan())
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    // Master and Individuals (middle-men) need to initialize more,
+                    // so let's go.
+                    ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+                                           opt.verbose(), opt.oenv(), opt.verbose());
+                    middleman.run();
+                }
+            }
+            else if (bOptimize || bSensitivity)
+            {
+                if (opt.sii()->nParam() > 0)
+                {
+                    ACTHelper helper(opt.sii(), opt.mg(),
+                                     opt.bch()->shellToler(),
+                                     opt.bch()->shellMaxIter());
+                    helper.run();
+                }
+            }
         }
     }
     return 0;

@@ -202,7 +202,7 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
         *nthreads_omp = nt_omp;
 
         /* Output the results */
-        sprintf(buffer,
+        snprintf(buffer, STRLEN-1,
                 "\nThe number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n\n",
                 nt_omp,
                 bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");

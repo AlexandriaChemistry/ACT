@@ -65,6 +65,8 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
         { "kJ/mol nm",   { "kJ/mol nm", 1 } },
         { "kJ/mol nm2",  { "kJ/mol nm2", 1 } },
         { "kJ/mol nm3",  { "kJ/mol nm3", 1 } },
+        { "kJ/mol nm4",  { "kJ/mol nm4", 1 } },
+        { "kJ/mol nm6",  { "kJ/mol nm6", 1 } },
         { "Angstrom3",   { "nm3", A2NM*A2NM*A2NM } },
         { "A^3",         { "nm3", A2NM*A2NM*A2NM } },
         { "Coulomb",     { "e", 1.0/E_CHARGE } },

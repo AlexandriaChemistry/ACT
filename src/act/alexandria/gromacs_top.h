@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,9 +49,8 @@ namespace alexandria
 class ForceField;
 class Topology;
 
-void print_top_mols(FILE *out,
-                    const char *title, const char *ffdir, const char *water,
-                    int nincl, char **incls, int nmol, t_mols *mols);
+void print_top_mols(FILE *out, const char *title,
+                    int nmol, t_mols *mols);
 
 void print_top_header(FILE                           *fp,
                       const ForceField               *pd,
@@ -63,8 +62,6 @@ void write_top(FILE                *out,
                char                *molname,
                const Topology      *topology,
                const ForceField    *pd);
-
-void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
 } // namespace alexandria
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,11 +49,14 @@ namespace alexandria
 //! Map to convert a std::string to an InteractionType
 static std::map<std::string, InteractionType> stringToItype =
     {
-        { "acmtype",  InteractionType::ELECTRONEGATIVITYEQUALIZATION },
-        { "zetatype", InteractionType::COULOMB },
-        { "poltype",  InteractionType::POLARIZATION },
-        { "bondtype", InteractionType::BONDS },
-        { "vdwtype",  InteractionType::VDW }
+        { "acmtype",     InteractionType::ELECTRONEGATIVITYEQUALIZATION },
+        { "zetatype",    InteractionType::ELECTROSTATICS },
+        { "poltype",     InteractionType::POLARIZATION },
+        { "bondtype",    InteractionType::BONDS },
+        { "vdwtype",     InteractionType::VDW },
+        { "vdwcorrtype", InteractionType::VDWCORRECTION },
+        { "induccorrtype", InteractionType::INDUCTIONCORRECTION },
+        { "qttype",      InteractionType::CHARGETRANSFER }
     };
     
 //! List of potential options for a particle
@@ -224,18 +227,18 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     id_.Send(cr, dest);
-    cr->send_str(dest, &desc_);
-    cr->send_int(dest, gmxParticleType_);
-    cr->send_int(dest, option_.size());
+    cr->send(dest, desc_);
+    cr->send(dest, actParticleToString(apType_));
+    cr->send(dest, option_.size());
     for(const auto &opt : option_)
     {
-        cr->send_str(dest, &opt.first);
-        cr->send_str(dest, &opt.second);
+        cr->send(dest, opt.first);
+        cr->send(dest, opt.second);
     }
-    cr->send_int(dest, parameterMap_.size());
+    cr->send(dest, parameterMap_.size());
     for(const auto &param : parameterMap_)
     {
-        cr->send_str(dest, &param.first);
+        cr->send(dest, param.first);
         cs = param.second.Send(cr, dest);
     }
     return cs;
@@ -250,8 +253,17 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     {
         cs = id_.BroadCast(cr, root, comm);
         cr->bcast(&desc_, comm);
-        cr->bcast(&gmxParticleType_, comm);
-        int nopt = option_.size();
+        std::string aptype;
+        if (cr->isMasterOrMiddleMan())
+        {
+            aptype = actParticleToString(apType_);
+        }
+        cr->bcast(&aptype, comm);
+        if (!stringToActParticle(aptype, &apType_))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Communicating ActParticle. Received '%s'", aptype.c_str()).c_str()));
+        }
+        size_t nopt = option_.size();
         cr->bcast(&nopt, comm);
         if (cr->rank() == root)
         {
@@ -265,7 +277,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
         else
         {
             option_.clear();
-            for(int i = 0; i < nopt; i++)
+            for(size_t i = 0; i < nopt; i++)
             {
                 std::string key, value;
                 cr->bcast(&key, comm);
@@ -274,7 +286,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
             }
         }
     }
-    int nparm = parameterMap_.size();
+    size_t nparm = parameterMap_.size();
     cr->bcast(&nparm, comm);
     if (cr->rank() == root)
     {
@@ -288,7 +300,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     else
     {
         parameterMap_.clear();
-        for(int i = 0; i < nparm; i++)
+        for(size_t i = 0; i < nparm; i++)
         {
             std::string type;
             cr->bcast(&type, comm);
@@ -304,23 +316,30 @@ CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     cs = id_.Receive(cr, src);
-    cr->recv_str(src, &desc_);
-    gmxParticleType_ = cr->recv_int(src);
-    int nopt = cr->recv_int(src);
+    cr->recv(src, &desc_);
+    std::string aptype;
+    cr->recv(src, &aptype);
+    if (!stringToActParticle(aptype, &apType_))
+    {
+        GMX_THROW(gmx::InternalError("Problem receiving ActParticle"));
+    }
+    size_t nopt;
+    cr->recv(src, &nopt);
     option_.clear();
-    for(int i = 0; i < nopt; i++)
+    for(size_t i = 0; i < nopt; i++)
     {
         std::string key, value;
-        cr->recv_str(src, &key);
-        cr->recv_str(src, &value);
+        cr->recv(src, &key);
+        cr->recv(src, &value);
         setOption(key, value);
     }
-    int nparm = cr->recv_int(src);
+    size_t nparm;
+    cr->recv(src, &nparm);
     parameterMap_.clear();
-    for(int i = 0; i < nparm; i++)
+    for(size_t i = 0; i < nparm; i++)
     {
         std::string type;
-        cr->recv_str(src, &type);
+        cr->recv(src, &type);
         ForceFieldParameter ff;
         ff.Receive(cr, src);
         parameterMap_.insert({type, ff});

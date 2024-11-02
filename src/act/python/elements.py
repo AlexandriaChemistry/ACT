@@ -6,43 +6,40 @@ import os, sys
 from .actutils     import *
 from .get_csv_rows import *
 
-numberToName = {}
-nameToNumber = {}
-def readElementsData():
-    edata = act_library_filename("elements.csv")
-    for words in get_csv_rows(edata, 2):
-        if len(words) >= 2:
-            try:
-                atomicnumber = int(words[1])
-            except ValueError:
-                sys.exit("Incorrect words '%s|%s' in %s" % ( words[0], words[1], edata ))
-            nameToNumber[words[0]] = atomicnumber
-            nameToNumber[words[0].upper()] = atomicnumber
-            # There are the short and the long name in the file, only store the short one
-            if not atomicnumber in numberToName:
-                numberToName[atomicnumber] = words[0]
+atomprops = {}
+def get_atomprops():
+    adata = act_library_filename("atomprops.csv")
+    for row in get_csv_rows(adata, 7, delim=","):
+        try:
+            atomprops[row[0]] = { "symbol": row[1], "name": row[2], "atomicnumber": int(row[3]), "mass": float(row[4]),
+                                  "charge": int(row[5]), "mult": int(row[6]) }
+        except ValueError:
+            print("Could not understand line {}".format(row))
 
 def AtomNumberToAtomName(atomnumber:int) -> str:
-    if len(numberToName) == 0:
-        readElementsData()
-    if atomnumber in numberToName:
-        return numberToName[atomnumber]
+    if len(atomprops) == 0:
+        get_atomprops()
+    for k in atomprops.keys():
+        if atomprops[k]["atomicnumber"] == atomnumber and atomprops[k]["charge"] == 0:
+            return k
     sys.exit("Invalid atomnumber %d" % atomnumber)
 
 def AtomNameToAtomNumber(atomname:str) -> int:
-    if len(nameToNumber) == 0:
-        readElementsData()
-    if atomname in nameToNumber:
-        return nameToNumber[atomname]
+    if len(atomprops) == 0:
+        get_atomprops()
+    for k in atomprops.keys():
+        if atomname.upper() == k.upper():
+            return atomprops[k]["atomicnumber"]
     sys.exit("Invalid atomname %s" % atomname)
-    
+
 def ElementName(atomname:str) -> str:
-    if len(nameToNumber) == 0:
-        readElementsData()
-    if atomname in nameToNumber:
-        return numberToName[nameToNumber[atomname]]
+    if len(atomprops) == 0:
+        get_atomprops()
+    for k in atomprops.keys():
+        if atomname.upper() == k.upper():
+            return numberToName[nameToNumber[atomname]]
     sys.exit("Invalid element %s" % atomname)
-    
+
 def StringIsElement(atomname:str) -> bool:
-    return atomname in nameToNumber
-    
+    return atomname in atomprops
+

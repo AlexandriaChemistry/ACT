@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,17 +36,16 @@
 #define TRAIN_UTILITY_H
 
 #include <cstdio>
-
 #include <vector>
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/statistics/statistics.h"
-
-#include "actmol.h"
-#include "molhandler.h"
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/molhandler.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/utility/jsontree.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/statistics/statistics.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments
@@ -92,16 +91,36 @@ private:
     bool diatomic_            = false;
     //! Dump outliers to xyz files if larger or equal to zero
     real dumpOutliers_        = -1;
+    //! Data structures for storing energies per molecule
+    std::map<std::string, std::vector<ACTEnergy> > molEnergyMap_;
+    //! Data structures for storing energy terms per dimer
+    std::map<std::string, ACTEnergyMapVector>      molInteractionEnergyMap_;
+
+    //! Data structures for storing results of interaction energies
+    std::map<InteractionType, std::map<iMolSelect, qtStats>> lsq_einter_;
+    //! Comparison of epot, isoPol, anisoPol and alpha
+    std::map<iMolSelect, qtStats>      lsq_epot_, lsq_isoPol_, lsq_anisoPol_, lsq_alpha_;
+    //! Statistics for RMSF and frequencies.
+    std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
+    gmx_stats                          lsq_freq_;
+    //! Statistics for multipoles
+    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
+    //! Interaction energy terms
+    std::vector<InteractionType> terms_;
 
     //! \brief Analyse polarizability, add to statistics and print
     void analysePolarisability(FILE                *fp,
                                const ForceField    *pd,
                                alexandria::ACTMol  *mol,
-                               const ForceComputer *forceComp,
-                               qtStats             *lsq_isoPol,
-                               qtStats             *lsq_anisoPol,
-                               qtStats             *lsq_alpha);
+                               iMolSelect           ims,
+                               const ForceComputer *forceComp);
     
+    //! \brief Analyses dipoles, quadrupoles, etc.
+    void analyse_multipoles(FILE                                            *fp,
+                            const std::vector<alexandria::ACTMol>::iterator &mol,
+                            std::map<MolPropObservable, double>              toler,
+                            const ForceField                                *pd,
+                            const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
     void printAtoms(FILE                         *fp,
                     alexandria::ACTMol            *mol,
@@ -109,20 +128,26 @@ private:
                     const std::vector<gmx::RVec> &forces);
     
     /*! \brief do part of the printing, add to statistics
-     * \return the potential energy before minimization
      */
-    double printEnergyForces(std::vector<std::string> *tcout,
-                             const ForceField         *pd,
-                             const ForceComputer      *forceComp,
-                             const AtomizationEnergy  &atomenergy,
-                             alexandria::ACTMol        *mol,
-                             gmx_stats                *lsq_rmsf,
-                             qtStats                  *lsq_epot,
-                             qtStats                  *lsq_eInter,
-                             gmx_stats                *lsq_freq,
-                             const gmx_output_env_t   *oenv);
+    void printEnergyForces(std::vector<std::string>            *tcout,
+                           const ForceField                    *pd,
+                           const ForceComputer                 *forceComp,
+                           const std::map<eRMS, FittingTarget> &targets,
+                           const AtomizationEnergy             &atomenergy,
+                           alexandria::ACTMol                  *mol,
+                           iMolSelect                          ims,
+                           const gmx_output_env_t              *oenv,
+                           bool                                 printAll);
+    /*! \brief Print data on outliers.
+     */
+    void printOutliers(FILE                                  *fp,
+                       iMolSelect                             ims,
+                       double                                 sigma,
+                       bool                                   bIntermolecular,
+                       InteractionType                        itype,
+                       const std::vector<alexandria::ACTMol> *actmol);
 public:
-    TrainForceFieldPrinter() {}
+    TrainForceFieldPrinter();
     
     /*! \brief Add my options to the list of command line arguments
      * \param[out] pargs The vector to add to
@@ -133,12 +158,23 @@ public:
      * \param[out] pargs The vector to add to
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
-    
-    void print(FILE                            *fp,
-               std::vector<alexandria::ACTMol> *actmol,
-               const ForceField                *pd,
-               const gmx_output_env_t          *oenv,
-               const std::vector<t_filenm>     &filenm);
+
+    /*! \brief Do the force field info printing to the log file.
+     * By default only the interactions/energies/observables that are
+     * used in optimization will be printed.
+     * \param[in] fp       File to print to
+     * \param[in] sii      Information on the training
+     * \param[in] actmol   The compounds/dimers
+     * \param[in] oenv     For printing xvg files
+     * \param[in] filenm   Filenames for additional output files
+     * \param[in] printAll Tell the printer to print all observables.
+     */
+    void print(FILE                        *fp,
+               StaticIndividualInfo        *sii,
+               std::vector<ACTMol>         *actmol,
+               const gmx_output_env_t      *oenv,
+               const std::vector<t_filenm> &filenm,
+               bool                         printAll);
 };
 
 /*! \brief Print header and command line arguments
@@ -164,7 +200,6 @@ void print_header(FILE                        *fp,
  * \paran[in]    spcetrumFileName If not nullptr, a simulated IR spectrum will be written to this file
  * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
  * \param[in]    oenv         Structure to print xvg files
- * \param[in]    useLapack    Whether or not to use the LAPACK library rather than Eigen
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
 void doFrequencyAnalysis(const ForceField         *pd,
@@ -178,7 +213,6 @@ void doFrequencyAnalysis(const ForceField         *pd,
                          const char               *spectrumFileName,
                          double                    lineWidth,
                          gmx_output_env_t         *oenv,
-                         bool                      useLapack,
                          bool                      debugNMA);
                             
 } // namespace alexandria

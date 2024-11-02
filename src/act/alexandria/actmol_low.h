@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -98,12 +98,16 @@ enum class immStatus {
     NoMolpropCharges,
     //! Problem generating charges
     ChargeGeneration,
+    //! Missing charge generation parameters
+    MissingChargeGenerationParameters,
     //! Shell minimization did not converge
     ShellMinimization,
     //! QM Inconsistency (ESP dipole does not match Electronic)
     QMInconsistency,
     //! No input to generate topology
     Topology,
+    //! Something in FragmentHandler
+    FragmentHandler,
     //! Compound not in training set
     Test,
     //! No experimental data

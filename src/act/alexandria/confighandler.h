@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -55,8 +55,10 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to vector of filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs) = 0;
+    virtual void add_options(std::vector<t_pargs> *pargs,
+                             std::vector<t_filenm> *fnms) = 0;
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -155,8 +157,10 @@ public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -239,6 +243,11 @@ public:
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return evaluateTestset_; }
 
+    /*! \brief Turn test set evaluation on or off
+     * \param[in] bOnOff On or Off
+     */
+    void setEvaluateTestset(bool bOnOff) {  evaluateTestset_ = bOnOff; }
+
     //! \return true whether the volume will be computed in log scale, false otherwise
     bool logVolume() const { return logVolume_; }
 
@@ -283,12 +292,19 @@ private:
     bool  evaluate_testset_  = false;
     //! Checkpointing on or not?
     bool checkPoint_         = false;
+    //! Tolerance for shell
+    double shellToler_       = 1e-4;
+    //! Maxiter for shell optimization
+    int shellMaxIter_        = 10;
 public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs);
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
+
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -361,7 +377,17 @@ public:
 
     //! \return whether test set should be evaluated during the MCMC run
     bool evaluateTestset() const { return evaluate_testset_; }
-    
+
+    /*! \brief Turn test set evaluation on or off
+     * \param[in] bOnOff On or Off
+     */
+    void setEvaluateTestset(bool bOnOff) {  evaluate_testset_ = bOnOff; }
+
+    //!\return shell tolerance
+    double shellToler() const { return shellToler_; }
+
+    //! \return shell iterations
+    int shellMaxIter() const { return shellMaxIter_; }
 };
 
 enum class eMinimizeAlgorithm {
@@ -376,46 +402,54 @@ class SimulationConfigHandler : ConfigHandler
 {
 private:
     //! Number of integration steps
-    int                nsteps_      = 0;
+    int                nsteps_               = 0;
     //! The integration time step
-    double             deltat_      = 0.0002;
+    double             deltat_               = 0.0002;
     //! Initial simulation temperature
-    double             temperature_ = 0;
+    double             temperature_          = 0;
     //! Random number seed for generating velocities
-    int                seed_        = 0;
+    int                seed_                 = 0;
     //! How often to write coordinates
-    int                nstxout_     = 1;
+    int                nstxout_              = 1;
     //! How often to write velocities
-    int                nstvout_     = 0;
+    int                nstvout_              = 0;
     //! How often to write energies
-    int                nstener_     = 1;
+    int                nstener_              = 1;
     //! Write shells to trajectory and coordinates
-    bool               writeShells_ = false;
+    bool               writeShells_          = false;
+    //! Map back hydrogen atoms to one type
+    bool               oneH_                 = false;
     //! Minmize (before MD)
-    bool               minimize_    = false;
+    bool               minimize_             = false;
     //! Minimization algorithm
-    eMinimizeAlgorithm minAlg_      = eMinimizeAlgorithm::Newton;
+    eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
-    double             forceToler_  = 1e-4;
+    double             forceToler_           = 1e-6;
+    //! Number of retries for minimizing
+    int                minimizeRetries_      = 3;
+    //! Max random displacement (nm) before re-trying to minize a structure
+    double             minimizeDisplacement_ = 0.002;
+    //! Whether to force using displacement and reminimize even if converged
+    bool               forceReminimize_      = false;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
-    double             overRelax_   = 1.0;
+    double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
-    int                maxIter_     = 100;
-    //! Whether or not to use the LAPACK library rather than the default Eigen package to solve the eigenvector problem in the normal mode analysis.
-    bool               lapack_      = false;
+    int                maxIter_              = 100;
 public:
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
-     * @param MDoptions Whether or not to add MD specific options
      */
-    void add_pargs(std::vector<t_pargs> *pargs, bool MDoptions);
+    void add_MD_options(std::vector<t_pargs> *pargs);
 
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector
+     * @param fnms      pointer to filenames
      */
-    virtual void add_pargs(std::vector<t_pargs> *pargs) { add_pargs(pargs, false); }
+    virtual void add_options(std::vector<t_pargs>  *pargs,
+                             std::vector<t_filenm> *fnms);
+
 
     /*!
      * \brief Check the validity of the provided arguments
@@ -441,6 +475,9 @@ public:
     //! \return user provided random number seed
     int seed() const { return seed_; }
 
+    //! \return whether there is one H only
+    bool oneH() const { return oneH_; }
+
     //! \return whether or not to write shells to trajectory
     bool writeShells() const { return writeShells_; }
     
@@ -452,13 +489,24 @@ public:
 
     //! \return the minimization algorithm
     eMinimizeAlgorithm minAlg() const { return minAlg_; }
-    
+
+    //! \return maximum number of retries for minimization
+    int minimizeRetries() const { return minimizeRetries_; }
+
+    /*! \brief Set number of retries
+     * \param[in] maxretries The number number
+     */
+    void setRetries(int maxretries) { minimizeRetries_ = maxretries; }
+
+    //! \return max displacement when retrying to minimize
+    double minimizeDisplacement() const { return minimizeDisplacement_; }
+
+    //! \return whether to force multiple minimizations
+    bool forceReminimize() const { return forceReminimize_; }
+
     //! \brief Set the minimization algorithm
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
     
-    //! \return whether or not to use Lapack iso Eigen.
-    bool lapack() const { return lapack_; }
-
     //! \return the convergence tolerance (RMS force) for the minimizer
     double forceTolerance() const { return forceToler_; }
 

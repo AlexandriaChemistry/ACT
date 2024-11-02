@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -55,12 +55,16 @@ enum class eQgen {
     NOSUPPORT,
     //! Problem solving the matrix equation
     MATRIXSOLVER,
+    //! Incorrect molecule
+    INCORRECTMOL,
     //! Unknown error
     ERROR
 };
 
 namespace alexandria
 {
+
+class ForceFieldParameter;
 
 /*! \brief Class governing charge generation
  *
@@ -80,10 +84,12 @@ public:
      * 
      * \param[in] pd     Force field information
      * \param[in] atoms  Atoms data
+     * \param[in] bonds  Bond data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const ForceField              *pd,
+    QgenAcm(ForceField                 *pd,
             const std::vector<ActAtom> &atoms,
+            const std::vector<Bond>    &bonds,
             int                         qtotal);
     
     /*! \brief Routine that computes the charges
@@ -115,19 +121,19 @@ public:
      * \param[in] atom index of the atom in the compound
      * \return the charge
      */
-    double getQ(int atom);
+    double getQ(size_t atom);
     
     /*! \brief Return the charge distribution width of the atom
      * \param[in] atom index of the atom in the compound
      * \return the charge distribution width
      */
-    double getZeta(int atom);
+    double getZeta(size_t atom);
     
     /*! \brief Return the row corresponding to the atom
      * \param[in] atom index of the atom in the compound
      * \return the corresponding row in the periodic table
      */
-    int getRow(int atom);
+    int getRow(size_t atom);
     
     
 private:
@@ -138,15 +144,8 @@ private:
     void dump(FILE                       *fp, 
               const std::vector<ActAtom> *atoms) const;
     
-    /*! \brief Check whether the compound has support in the force field
-     * \param[in] pd The force field data structure
-     */
-    void checkSupport(const ForceField *pd);
-    
     //! Status of the algorithm
     eQgen                            eQGEN_       = eQgen::OK;
-    //! Whether or not a warning has been issued
-    gmx_bool                         bWarned_     = false;
     //! Total charge
     int                              qtotal_      = 0;
     //! Whether or not shells are present
@@ -154,7 +153,7 @@ private:
     //! The charge type used in the force field
     ChargeType                       ChargeType_  = ChargeType::Point;
     //! Number of particles in the compound
-    int                              natom_       = 0;
+    size_t                           natom_       = 0;
     //! Epsilon R
     double                           epsilonr_    = 1;
     //! Atomic number for each of the atoms
@@ -167,18 +166,20 @@ private:
     std::vector<double>              rhs_;
     //! Atomic coordinates
     std::vector<gmx::RVec>           x_;
-    // Store ids locally, first for chargedistristribution
-    std::vector<Identifier>          qdist_id_;
-    // Store ids locally, second for EEM and bond charge corrections
-    std::vector<Identifier>          acm_id_;
+    //! Store ids locally, first for charge distristribution
+    std::vector<ForceFieldParameter *> qdist_id_;
+    //! Store parameters locally, first for charges
+    std::vector<ForceFieldParameter *> charge_;
+    //! Store ids locally, second for EEM and bond charge corrections
+    std::vector<ForceFieldParameterMap *> acm_id_;
+    //! Store bcc paramas
+    std::vector<ForceFieldParameterMap *> bcc_;
+    //! Factor to multiply delta chi by ( 1 or -1 )
+    std::vector<double>                   dchi_factor_;
     //! The atoms/shells to optimize charges for
     std::vector<int>                 nonFixed_;
     //! The atoms/shells not to optimize charges for
     std::vector<int>                 fixed_;
-    //! Reverse mapping of the charges
-    std::map<int, int>               nfToGromacs_;
-    //! Mapping from nonFixed particles to shells
-    std::map<int, int>               myShell_;
     //! The row number for each of the atoms
     std::vector<int>                 row_;
     //! The atomic charges
@@ -194,11 +195,8 @@ private:
      * This includes, chi, eta, zeta. In case a split charge
      * equilibration algorithm is used also the bond charge
      * correction parameters will be updated.
-     * \param[in] pd    Force field database
-     * \param[in] atoms Atoms data structure
      */
-    void updateParameters(const ForceField              *pd,
-                          const std::vector<ActAtom> &atoms);
+    void updateParameters();
     
     /*! \brief Compute Coulomb interaction
      * \param[in] xI       Coordinates for atom I
@@ -218,22 +216,6 @@ private:
                  int    rowJ,
                  double epsilonr);
     
-    /*! \brief Return delta_chi and delta_eta for atom pair
-     *
-     * \param[in]  pd  ForceField structure
-     * \param[in]  ai  Atom id i
-     * \param[in]  aj  Atom id j
-     * \param[in]  bondorder The bond order for this bond
-     * \param[out] delta_chi the electronegativity correction
-     * \param[out] delta_eta the bond hardness
-     */
-    void getBccParams(const ForceField *pd,
-                      int            ai,
-                      int            aj,
-                      double         bondorder,
-                      double        *delta_chi,
-                      double        *delta_eta);
-    
     /*! \brief Store the atoms in their destination structure
      * \param[inout] atoms The array with atom properties
      */
@@ -249,21 +231,19 @@ private:
      * the total electrostatic potetential is correct nevertheless.
      * The diagonal is filled with the atomic hardness values.
      * \param[in] epsilonr Relative  dielectric constant
-     * \param[in] bYang    Whether or not the Yang and Sharp model is used
-     * \param[in] bRappe   Whether or not the Rappe and Goddard model is used
      */
-    void calcJcc(double epsilonr,
-                 bool   bYang,
-                 bool   bRappe);
+    void calcJcc(double epsilonr);
     
     /*! \brief Compute shell potential at atom position
      * This takes into account all the shells in the molecule.
      * \param[in] top_ndx  Atom number
+     * \param[in] atoms    Atom information
      * \param[in] epsilonr Relative  dielectric constant
      * \return The potential
      */
-    double calcJcs(int      top_ndx,
-                   double   epsilonr);
+    double calcJcs(int                         top_ndx,
+                   const std::vector<ActAtom> &atoms,
+                   double                      epsilonr);
     
     /*! \brief Solve the matrix equation to determine charges
      * \param[in] fp File pointer for optional outptu
@@ -274,12 +254,10 @@ private:
     /*! \brief Perform the split charge equilibration algorithm
      *
      * \param[in] fp    File for logging
-     * \param[in] pd    Force field information
      * \param[in] bonds List of bonds in the compound
      * If something goes wrong, eQGEN_ will be set.
      */
     void solveSQE(FILE                    *fp,
-                  const ForceField        *pd,
                   const std::vector<Bond> &bonds);
     
     /*! \brief update the positions
@@ -287,17 +265,12 @@ private:
      */        
     void updatePositions(const std::vector<gmx::RVec> &x);
     
-    /*! \brief Compute shielding factor for some EEM algorithms
-     * \param[in] i Atom index
-     * \param[in] j Atom index
-     * \return Shielding factor
-     */
-    double calcSij(int i, int j);
-    
     /*! \brief Compute the right/hand side of the matrix equation
+     * \param[in] atoms    Atom information
      * \param[in] epsilonr The relative dielectric constant
      */
-    void calcRhs(double epsilonr);
+    void calcRhs(const std::vector<ActAtom> &atoms,
+                 double                      epsilonr);
 };
 }
 #endif

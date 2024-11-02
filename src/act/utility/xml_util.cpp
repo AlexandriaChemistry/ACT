@@ -37,13 +37,12 @@
 #include <string.h>
 
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 {
-    xmlChar buf[32];
-
-    sprintf((char *)buf, "%d", val);
-    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), buf) == 0)
+    auto buf = gmx::formatString("%d", val);
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == 0)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %d", name.c_str(), val);
     }
@@ -51,10 +50,8 @@ void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 
 void add_xml_double(xmlNodePtr ptr, const std::string &name, double val)
 {
-    xmlChar buf[32];
-
-    sprintf((char *)buf, "%g", val);
-    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), buf) == 0)
+    auto buf = gmx::formatString("%g", val);
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == 0)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %g", name.c_str(), val);
     }

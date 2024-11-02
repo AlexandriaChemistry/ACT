@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include <cstring>
+#include <cstdint>
 
 #if GMX_INTEGER_BIG_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 1
@@ -209,7 +210,8 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
              * On little-endian machines, we can process properly aligned
              * data without copying it.
              */
-            if (!((data - reinterpret_cast<const md5_byte_t *>(0)) & 3))
+            // Replaced statement by corresponding statement from GROMACS 2022
+            if ((reinterpret_cast<std::uintptr_t>(data) % std::alignment_of_v<md5_word_t>) == 0)
             {
                 /* data are properly aligned */
                 X = reinterpret_cast<const md5_word_t *>(data);

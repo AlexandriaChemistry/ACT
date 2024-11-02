@@ -21,8 +21,13 @@ s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|B
 cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.102|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|chlorine|
 br|Br|0|0|ACM|br_b||br_z|br_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.12|4||||4|20|Bounded|6|24|Bounded|4|9|Bounded|bromine|
 i|I|0|0|ACM|i_b||i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.139|5||||4|20|Bounded|6|24|Bounded|4|9|Bounded|iodine|
-# Virtual site particle| can be turned on or off independently||||v2|||||||||||||||||||||||||||||||
-v2|VS|-1|1|Bounded|||v2_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0||||2|10|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+# Virtual site particle| can be turned on or off independently|||||||||||||||||||||||||||||||||||
+v2f|VS|0.2|0.8|Bounded|v2f||v2f_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+v2cl|VS|0.2|0.8|Bounded|v2cl||v2cl_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+v2br|VS|0.2|0.8|Bounded|v2br||v2br_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+v2i|VS|0.2|0.8|Bounded|v2i||v2i_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+v3hoh|VS|0.2|0.8|Bounded|v3hoh||v3hoh_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
+v3ohoh|VS|0.2|0.8|Bounded|v3ohoh||v3ohoh_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
 # Ions| that can not use any ACM algorithm for charges|||||||||||||||||||||||||||||||||||
 Be2+|Be|2|2|Fixed|||Be2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.059|2||||6|20|Bounded|||||||beryllium ion|
 Ca2+|Ca|2|2|Fixed|||Ca2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.114|4||||6|20|Bounded|||||||calcium ion|

@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     combinationRuleTest.cpp
     forcecomputerutilsTest.cpp
+    vsiteTest.cpp
     # pseudo-library for code for alexandria
     )
 target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

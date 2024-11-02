@@ -1,21 +1,27 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.18122894212805943</Real>
-  <Real Name="Angle before">1.6749064998308829</Real>
-  <Real Name="Proper Dih. before">15.062394391986754</Real>
+  <Real Name="Bond before">0.183411256265161</Real>
+  <Real Name="Angle before">1.6753661569600597</Real>
+  <Real Name="Proper Dih. before">15.062397777542806</Real>
   <Real Name="Improper Dih. before">0</Real>
-  <Real Name="LJ12_6 (SR) before">-1.7472008376964434e-05</Real>
-  <Real Name="Coulomb (SR) before">-34.189294492696483</Real>
-  <Real Name="Potential before">-17.270782130759162</Real>
-  <Real Name="Coordinate RMSD before minimizing">4.6861827737476298e-17</Real>
-  <String Name="algorithm">Newton</String>
-  <Real Name="Coordinate RMSD after minimizing">0.013771483068416381</Real>
-  <Real Name="Bond after">0.025715902759672081</Real>
-  <Real Name="Angle after">0.37494644571782887</Real>
-  <Real Name="Proper Dih. after">8.0390624484355921</Real>
-  <Real Name="Improper Dih. after">8.0901440902471401e-15</Real>
-  <Real Name="LJ12_6 (SR) after">-1.7787580894401528e-05</Real>
-  <Real Name="Coulomb (SR) after">-34.52472358518019</Real>
-  <Real Name="Potential after">-26.08501657584798</Real>
+  <Real Name="Dispersion before">-1.7472050946736563e-05</Real>
+  <Real Name="Repulsion before">4.2569772129151275e-11</Real>
+  <Real Name="Coulomb (SR) before">-34.113162904831434</Real>
+  <Real Name="ALLELEC before">-34.113162904831434</Real>
+  <Real Name="EXCHIND before">4.2569772129151275e-11</Real>
+  <Real Name="Potential before">-17.192005186071786</Real>
+  <Real Name="Coordinate RMSD before minimizing">2.9834425524378666e-19</Real>
+  <String Name="algorithm">LBFGS</String>
+  <Real Name="Coordinate RMSD after minimizing">0.013772954543597551</Real>
+  <Real Name="Bond after">0.025544341246381861</Real>
+  <Real Name="Angle after">0.37466211943504074</Real>
+  <Real Name="Proper Dih. after">8.0390868453722533</Real>
+  <Real Name="Improper Dih. after">5.9210441401771591e-16</Real>
+  <Real Name="Dispersion after">-1.7785344676180589e-05</Real>
+  <Real Name="Repulsion after">4.2311925313834981e-11</Real>
+  <Real Name="Coulomb (SR) after">-34.45123115291176</Real>
+  <Real Name="ALLELEC after">-34.45123115291176</Real>
+  <Real Name="EXCHIND after">4.2311925313834981e-11</Real>
+  <Real Name="Potential after">-26.011955632160451</Real>
 </ReferenceData>

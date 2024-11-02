@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -50,7 +50,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "forcefield.h"
-#include "forcefield_low.h"
+#include "symcharges.h"
 #include "act/utility/xml_util.h"
 
 namespace alexandria
@@ -84,6 +84,7 @@ const char *xmltypes[] = {
 //! The different entries to excpect in force field file
 enum class xmlEntry {
     GENTOP,
+    ACT,
     TIMESTAMP,
     CHECKSUM,
     REFERENCE,
@@ -94,7 +95,6 @@ enum class xmlEntry {
     DESC,
     GEOMETRY,
     NUMBONDS,
-    VANDERWAALS,
     INTERACTION,
     IDENTIFIER,
     CANSWAP,
@@ -121,8 +121,6 @@ enum class xmlEntry {
     REFVALUE,
     UNIT,
     NTRAIN,
-    GT_VSITES,
-    GT_VSITE,
     SYMMETRIC_CHARGES,
     SYM_CHARGE,
     CENTRAL,
@@ -145,6 +143,7 @@ enum class xmlEntry {
 std::map<const std::string, xmlEntry> xml_pd =
 {
     { "gentop",                    xmlEntry::GENTOP           },
+    { "alexandria_chemistry",      xmlEntry::ACT              },
     { "timestamp",                 xmlEntry::TIMESTAMP        },
     { "checksum",                  xmlEntry::CHECKSUM         },
     { "reference",                 xmlEntry::REFERENCE        },
@@ -157,7 +156,6 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "description",               xmlEntry::DESC             },
     { "geometry",                  xmlEntry::GEOMETRY         },
     { "numbonds",                  xmlEntry::NUMBONDS         },
-    { "vanderwaals",               xmlEntry::VANDERWAALS      },
     { "interaction",               xmlEntry::INTERACTION      },
     { "identifier",                xmlEntry::IDENTIFIER       },
     { "canswap",                   xmlEntry::CANSWAP          },
@@ -178,8 +176,6 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "refValue",                  xmlEntry::REFVALUE         },
     { "unit",                      xmlEntry::UNIT             },
     { "ntrain",                    xmlEntry::NTRAIN           },
-    { "gt_vsites",                 xmlEntry::GT_VSITES        },
-    { "gt_vsite",                  xmlEntry::GT_VSITE         },
     { "symmetric_charges",         xmlEntry::SYMMETRIC_CHARGES},
     { "sym_charge",                xmlEntry::SYM_CHARGE       },
     { "central",                   xmlEntry::CENTRAL          },
@@ -215,8 +211,8 @@ static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
 {
     if (xbuf->find(xml) == xbuf->end())
     {
-        std::string buf = gmx::formatString("Missing%s variable %d (%s)", obligatory ? " required" : "",
-                                            static_cast<int>(xml), exml_names(xml));
+        std::string buf = gmx::formatString("Missing%s variable %s", obligatory ? " required" : "",
+                                            exml_names(xml));
         if (obligatory)
         {
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
@@ -333,12 +329,31 @@ static void processAttr(FILE       *fp,
             std::string function = xbufString(xmlEntry::FUNCTION);
             std::string inter    = xbufString(xmlEntry::TYPE);
             currentItype = stringToInteractionType(inter.c_str());
-            if (function.empty() && currentItype == InteractionType::COULOMB)
+            // TODO This is a hack to be able to read "old" force field files.
+            std::map<InteractionType, CanSwap> csUpdate = {
+                { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
+                { InteractionType::POLARIZATION, CanSwap::Yes },
+                { InteractionType::ELECTROSTATICS, CanSwap::Yes },
+                { InteractionType::VSITE2, CanSwap::Vsite2 }
+            };
+            auto doUpdate = csUpdate.find(currentItype);
+            if (doUpdate != csUpdate.end())
+            {
+                canSwap = doUpdate->second;
+                if (debug)
+                {
+                    fprintf(debug, "WARNING: Changing CanSwap to %s for %s\n",
+                            canSwapToString(doUpdate->second).c_str(),
+                            interactionTypeToString(currentItype).c_str());
+                }
+            }
+
+            if (function.empty() && currentItype == InteractionType::ELECTROSTATICS)
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
             }
             ForceFieldParameterList newparam(function, canSwap);
-            pd->addForces(inter, newparam);
+            pd->addForces(currentItype, newparam);
             parentEntry = elem;
         }
         break;
@@ -430,27 +445,13 @@ static void processAttr(FILE       *fp,
             }
         }
         break;
-    case xmlEntry::GT_VSITES:
-        if (NN(xbuf, xmlEntry::ANGLE_UNIT) && NN(xbuf, xmlEntry::LENGTH_UNIT))
-        {
-            pd->setVsite_angle_unit(xbufString(xmlEntry::ANGLE_UNIT));
-            pd->setVsite_length_unit(xbufString(xmlEntry::LENGTH_UNIT));
-        }
-        break;
     case xmlEntry::PARTICLETYPE:
         if (NN(xbuf, xmlEntry::TYPE) &&
             NN(xbuf, xmlEntry::IDENTIFIER) &&
             NN(xbuf, xmlEntry::DESC))
         {
-            int ept;
-            for(ept = 0; ept < eptNR; ept++)
-            {
-                if (xbufString(xmlEntry::TYPE).compare(ptype_str[ept]) == 0)
-                {
-                    break;
-                }
-            }
-            if (ept == eptNR)
+            ActParticle ept;
+            if (!stringToActParticle(xbufString(xmlEntry::TYPE), &ept))
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such particle type %s", xbufString(xmlEntry::TYPE).c_str()).c_str()));
             }
@@ -459,19 +460,6 @@ static void processAttr(FILE       *fp,
                                              xbufString(xmlEntry::DESC), ept));
             parentEntry = elem;
         }
-        break;
-    case xmlEntry::GT_VSITE:
-        if (NN(xbuf, xmlEntry::ATYPE)  && NN(xbuf, xmlEntry::VTYPE)    &&
-            NN(xbuf, xmlEntry::NUMBER) && NN(xbuf, xmlEntry::DISTANCE) &&
-            NN(xbuf, xmlEntry::ANGLE)  && NN(xbuf, xmlEntry::NCONTROLATOMS))
-            {
-                pd->addVsite(xbufString(xmlEntry::ATYPE),
-                             xbufString(xmlEntry::VTYPE),
-                             atoi(xbufString(xmlEntry::NUMBER).c_str()),
-                             atof(xbufString(xmlEntry::DISTANCE).c_str()),
-                             atof(xbufString(xmlEntry::ANGLE).c_str()),
-                             atoi(xbufString(xmlEntry::NCONTROLATOMS).c_str()));
-            }
         break;
     case xmlEntry::SYM_CHARGE:
         if (NN(xbuf, xmlEntry::CENTRAL) && NN(xbuf, xmlEntry::ATTACHED) &&
@@ -580,7 +568,7 @@ void readForceField(const std::string &fileName,
     {
         fprintf(debug, "Opening library file %s\n", fn2.c_str());
     }
-    xmlDoValidityCheckingDefaultValue = 0;
+    //xmlDoValidityCheckingDefaultValue = 0;
     doc = xmlParseFile(fn2.c_str());
     if (doc == nullptr)
     {
@@ -600,7 +588,7 @@ void readForceField(const std::string &fileName,
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(debug);
-    generateDependentParameter(pd);
+    generateDependentParameter(pd, true);
     if (nullptr != debug)
     {
         writeForceField("pdout.dat", pd, false);
@@ -665,7 +653,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     {
         auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
         add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.second.id().id().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), ptype_str[aType.second.gmxParticleType()]);
+        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), actParticleToString(aType.second.apType()).c_str());
         add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.second.description().c_str());
         for(const auto &opt: aType.second.optionsConst())
         {
@@ -676,32 +664,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
             addParameter(grandchild, param.first, param.second);
         }
     }
-    tmp   = pd->getVsite_angle_unit();
-    if (0 != tmp.size())
-    {
-        child = add_xml_child(parent, exml_names(xmlEntry::GT_VSITES));
-        add_xml_char(child, exml_names(xmlEntry::ANGLE_UNIT), tmp.c_str());
-    }
-    tmp   = pd->getVsite_length_unit();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(xmlEntry::LENGTH_UNIT), tmp.c_str());
-    }
-    for (auto vsite = pd->getVsiteBegin(); vsite != pd->getVsiteEnd(); vsite++)
-    {
-        auto grandchild = add_xml_child(child, exml_names(xmlEntry::GT_VSITE));
-        add_xml_char(grandchild, exml_names(xmlEntry::ATYPE), vsite->atype().c_str());
-        add_xml_char(grandchild, exml_names(xmlEntry::VTYPE), vsiteType2string(vsite->type()));
-        add_xml_int(grandchild, exml_names(xmlEntry::NUMBER), vsite->nvsite());
-        add_xml_double(grandchild, exml_names(xmlEntry::DISTANCE), vsite->distance());
-        add_xml_double(grandchild, exml_names(xmlEntry::ANGLE), vsite->angle());
-        add_xml_int(grandchild, exml_names(xmlEntry::NCONTROLATOMS), vsite->ncontrolatoms());
-    }
     for (auto &fs : pd->forcesConst())
     {
         auto child = add_xml_child(parent,  exml_names(xmlEntry::INTERACTION));
         add_xml_char(child, exml_names(xmlEntry::TYPE), interactionTypeToString(fs.first).c_str());
-        add_xml_char(child, exml_names(xmlEntry::FUNCTION), fs.second.function().c_str());
+        add_xml_char(child, exml_names(xmlEntry::FUNCTION), potentialToString(fs.second.potential()).c_str());
         add_xml_char(child, exml_names(xmlEntry::CANSWAP), 
                      canSwapToString(fs.second.canSwap()).c_str());
         for (auto &option : fs.second.option())
@@ -755,8 +722,8 @@ void writeForceField(const std::string &fileName,
     xmlChar    *libdtdname, *dtdname, *gmx;
 
     rmap_pd.clear();
-    gmx        = (xmlChar *) "gentop";
-    dtdname    = (xmlChar *) "gentop.dtd";
+    gmx        = (xmlChar *) "alexandria_chemistry";
+    dtdname    = (xmlChar *) "alexandria_chemistry.dtd";
     libdtdname = dtdname;
 
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)

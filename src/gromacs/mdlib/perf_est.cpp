@@ -226,10 +226,6 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                  */
                 switch (ftype)
                 {
-                    case F_POSRES:
-                    case F_FBPOSRES:
-                        nd_c    = 1;
-                        break;
                     case F_CONNBONDS:
                         break;
                     /* These bonded potentially use SIMD */

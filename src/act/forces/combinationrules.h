@@ -1,5 +1,4 @@
-
-    /*
+/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
  * Copyright (C) 2022,2023
@@ -36,6 +35,7 @@
 #include <map>
 
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/potential.h"
 
 namespace alexandria
 {
@@ -46,7 +46,7 @@ namespace alexandria
         Geometric, Arithmetic, Volumetric, InverseSquare, 
             HogervorstEpsilon, HogervorstSigma, Yang,
             WaldmanSigma, WaldmanEpsilon, HalgrenEpsilon,
-            QiSigma, QiEpsilon, MasonGamma
+            QiSigma, QiEpsilon, MasonGamma, Kronecker
             };
 
     //! Map combination rules to strings            
@@ -105,7 +105,7 @@ namespace alexandria
      * \return the map
      */
     std::map<const std::string, CombRule> oldCombinationRule(const std::string &vdw_comb,
-                                                             int                ftype);
+                                                             Potential          ftype);
     /*! \brief Extract a map of combination rules for each parameter
      * \param[in] vdw Van der Waals list of ff params
      * \return the map
@@ -113,22 +113,26 @@ namespace alexandria
     std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw);
     
     /*! \brief Generate combined force field parameter map
-     * \param[in] ftype    The force function GROMACS style
+     * \param[in] ftype    The force function ACT style
      * \param[in] combrule Map of combination rules per parameter
      * \param[in] ivdw     Parameters for particle i
      * \param[in] jvdw     Parameters for particle j
-     * \return a Force Field Parameter Map with pair entries
+     * \param[in] same     Should be true if i and j are the same particle
+     * \param[out] pmap    Force Field Parameter Map with pair entries
      */
-    ForceFieldParameterMap evalCombinationRule(int                                          ftype,
-                                               const std::map<const std::string, CombRule> &combrule,
-                                               const ForceFieldParameterMap                &ivdw,
-                                               const ForceFieldParameterMap                &jvdw);
+    void evalCombinationRule(Potential                                    ftype,
+                             const std::map<const std::string, CombRule> &combrule,
+                             const ForceFieldParameterMap                &ivdw,
+                             const ForceFieldParameterMap                &jvdw,
+                             bool                                         same,
+                             ForceFieldParameterMap                      *pmap);
 
     /*! \brief Generate nonbonded parameters for pairs of atoms
      * as well as force constants force shells.
      * \param[inout] pd The force field structure
+     * \param[in]    force Update all parameters in the matrices
      */
-    void generateDependentParameter(ForceField *pd);
+    void generateDependentParameter(ForceField *pd, bool force = false);
 
 } // namespace alexandria
 

@@ -54,10 +54,8 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/listed-forces/manage-threading.h"
-#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -183,10 +181,8 @@ void print_start(FILE *fplog, const t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
                  const char *name)
 {
-    char buf[STRLEN];
-
-    sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf,
+    auto buf = gmx::formatString("Started %s", name);
+    print_date_and_time(fplog, cr->nodeid, buf.c_str(),
                         walltime_accounting_get_start_time_stamp(walltime_accounting));
 }
 

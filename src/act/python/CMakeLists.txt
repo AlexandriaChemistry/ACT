@@ -7,7 +7,6 @@ set(ACT_PYTHON_LIB_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_PYTHON_LIBDIR}/a
 
 # Configure 'sys.path' in the executable scripts, so they may find the library.
 configure_file(gauss2molprop.cmakein gauss2molprop @ONLY)
-configure_file(generate_ff.cmakein generate_ff @ONLY)
 configure_file(generate_mp.cmakein generate_mp @ONLY)
 configure_file(mol_csv_api.py.cmakein mol_csv_api.py @ONLY)
 configure_file(molselect.cmakein molselect @ONLY)
@@ -35,11 +34,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mol_csv_api.py DESTINATION ${ACT_PYTHO
 
 # Executable scripts
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/gauss2molprop DESTINATION bin)
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/generate_ff DESTINATION bin)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/generate_mp DESTINATION bin)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/molselect DESTINATION bin)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/reshuffle_selection DESTINATION bin)
 install(PROGRAMS install_act DESTINATION bin)
+install(PROGRAMS plot_convergence DESTINATION bin)
 install(PROGRAMS viewxvg DESTINATION bin)
 install(PROGRAMS view_fitness DESTINATION bin)
 install(PROGRAMS donchev2molprop DESTINATION bin)
