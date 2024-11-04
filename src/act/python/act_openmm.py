@@ -1126,14 +1126,18 @@ class ActOpenMMSim:
         if not self.useOpenMMForce:
             if self.qdist == qDist.Point:
                 myexpression =  ( "(%s*charge1*charge2/r)" % ( ONE_4PI_EPS0 ) )
+            elif self.qdist == qDist.Gaussian:
+                myexpression  = ( "(%s*charge1*charge2*Gaussian/r);" % ( ONE_4PI_EPS0 ) )
+                myexpression += ( "Gaussian = %s;" % self.comb.gaussianString())
             else:
-                myexpression =  ( "(%s*charge1*charge2*Gaussian/r)" % ( ONE_4PI_EPS0 ) )
+                sys.exit("No support for charge distribution type %s" % dictQdist[self.qdist])
             qq_excl_corr = openmm.CustomBondForce(myexpression)
             qq_excl_corr.setName("CoulombExclusionCorrection")
             qq_excl_corr.addPerBondParameter("charge1")
             qq_excl_corr.addPerBondParameter("charge2")
             if self.qdist != qDist.Point:
-                qq_excl_corr.addPerBondParameter("zeta")
+                qq_excl_corr.addPerBondParameter("zeta1")
+                qq_excl_corr.addPerBondParameter("zeta2")
             self.txt.write("Made qq_excl_corr\n")
 
         nexclvdw = self.sim_params.getInt("nexclvdw")
@@ -1157,7 +1161,6 @@ class ActOpenMMSim:
                 *iparameters, = self.nonbondedforce.getParticleParameters(iatom)
                 *jparameters, = self.nonbondedforce.getParticleParameters(jatom)
             elif (self.vdw == VdW.LJ12_6 and self.qdist == qDist.Gaussian) or self.vdw in {VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7}:
-                print("Other potentials")
                 # or get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
@@ -1183,15 +1186,10 @@ class ActOpenMMSim:
                                    ( iatom, jatom, allParam["charge"][0], allParam["charge"][1] ))
             # Now check wheter our exclusions are fewer than OpenMM
             if qq_excl_corr and not self.real_exclusion(nexclqq, iatom, jatom):
-                if not "zeta" in allParam or (0 == allParam["zeta"][0] * allParam["zeta"][1]):
-                    zeta = 0
-                else:
-                    zeta = ((allParam["zeta"][0] * allParam["zeta"][1])/
-                            (math.sqrt(allParam["zeta"][0]**2 + allParam["zeta"][1]**2)))
                 if self.qdist == qDist.Point:
                     qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1]])
                 else:
-                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], zeta])
+                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], allParam["zeta"][0], allParam["zeta"][1]])
                 if self.debug:
                     self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g\n" %
                                    ( iatom, jatom, allParam["charge"][0], allParam["charge"][1], zeta))
@@ -1328,6 +1326,8 @@ class ActOpenMMSim:
                                                          str(force.usesPeriodicBoundaryConditions())))
             if hasattr(force, 'getEnergyFunction'):
                 self.txt.write('Expression {0}\n'.format(force.getEnergyFunction()))
+            if hasattr(force, 'getNumPerBondParameters') and hasattr(force, 'getPerBondParameterName'):
+                self.txt.write('Parameters {0}\n'.format(', '.join([force.getPerBondParameterName(i) for i in range(force.getNumPerBondParameters())])))
             if hasattr(force, 'getNumPerParticleParameters'):
                 self.txt.write("Parameter")
                 for i in range(force.getNumPerParticleParameters()):
