@@ -6,13 +6,13 @@
     <Int Name="Length">8</Int>
     <Real>0.80320125431789124</Real>
     <Real>-1.2</Real>
-    <Real>0.99839937284105429</Real>
+    <Real>0.99839937350721308</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99839937284105429</Real>
+    <Real>0.99839937217489538</Real>
     <Real>-0.80000000000000004</Real>
     <Real>7.6130000000000004</Real>
     <Real>-8.6129999999999995</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">-2.2204460492503131e-16</Real>
+  <Real Name="Molecule 1 charge">-3.3306690738754696e-16</Real>
   <Real Name="Molecule 2 charge">-0.99999999999999911</Real>
 </ReferenceData>

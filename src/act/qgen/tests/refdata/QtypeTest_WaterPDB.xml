@@ -3,14 +3,14 @@
 <ReferenceData>
   <Sequence Name="Charge">
     <Int Name="Length">3</Int>
-    <Real>0.25254503607712897</Real>
+    <Real>0.25254503607712891</Real>
     <Real>-0.50509007215425794</Real>
-    <Real>0.25254503607712897</Real>
+    <Real>0.25254503607712903</Real>
   </Sequence>
   <Sequence Name="dipole">
     <Int Name="Length">3</Int>
     <Real>0</Real>
-    <Real>0</Real>
+    <Real>-3.3382920711380381e-16</Real>
     <Real>-1.419239782562046</Real>
   </Sequence>
   <Sequence Name="quadrupole">
@@ -19,7 +19,7 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0.77799975355686291</Real>
-    <Real>0</Real>
+    <Real>2.0388930268614344e-16</Real>
     <Real>-0.1399232949387923</Real>
   </Sequence>
   <Sequence Name="octupole">
@@ -30,9 +30,9 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0</Real>
+    <Real>-2.4544337420266321e-16</Real>
     <Real>-0.6627236672978688</Real>
-    <Real>0</Real>
+    <Real>-8.0243436956106902e-17</Real>
     <Real>-0.25256365398539404</Real>
   </Sequence>
   <Sequence Name="hexadecapole">
@@ -48,9 +48,9 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0.82655802074165985</Real>
-    <Real>0</Real>
+    <Real>1.0782672849075524e-16</Real>
     <Real>0.31015467629540261</Real>
-    <Real>0</Real>
+    <Real>3.5446198645526179e-17</Real>
     <Real>0.11592671717929588</Real>
   </Sequence>
 </ReferenceData>

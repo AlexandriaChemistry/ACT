@@ -101,13 +101,15 @@ namespace alexandria
          * \param[in]  x       Atomic coordinates
          * \param[in]  pd      Force field file
          * \param[out] atoms   Atoms to store the charges in
+         * \param[in]  symmetric_charges Information on which charges should be symmetrized according to FF
          * \return Error code or OK if all is fine.
          */
         eQgen generateCharges(FILE                         *fp,
                               const std::string            &molname,
                               const std::vector<gmx::RVec> &x,
                               const ForceField             *pd,
-                              std::vector<ActAtom>         *atoms);
+                              std::vector<ActAtom>         *atoms,
+                              const std::vector<int>       &symmetric_charges);
 
         /*! \brief Copy charges from the atoms to the fragments
          * \param[in] atoms The atoms from the complete topology for all fragments
@@ -118,6 +120,10 @@ namespace alexandria
          * \return whether atoms->size() equals the sum of the number of atoms in the fragments.
          */
         bool fetchCharges(std::vector<ActAtom> *atoms);
+        /*! \brief Copy charges from a charge map
+         * \param[in] q The charges
+         */
+        void setCharges(const std::vector<double> &q);
         /*! \brief Copy charges from a charge map
          * \param[in] qmap The charge map
          * \return true if charges for all fragments were found
