@@ -14,16 +14,16 @@
   <Real Name="Potential before">-4818.6193638570358</Real>
   <Real Name="Coordinate RMSD before minimizing">6.5552500280652755e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.065588221228945726</Real>
-  <Real Name="Morse after">-4772.4712304788964</Real>
-  <Real Name="Angle after">5.5995797997240864</Real>
-  <Real Name="Improper Dih. after">0.22187810934147453</Real>
-  <Real Name="Dispersion after">-9.9530267952987472</Real>
-  <Real Name="Repulsion after">80.473099736996559</Real>
-  <Real Name="Coulomb (SR) after">-219.72035231995631</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.065588271979389212</Real>
+  <Real Name="Morse after">-4772.4712343413157</Real>
+  <Real Name="Angle after">5.5995890748881507</Real>
+  <Real Name="Improper Dih. after">0.22187834011281193</Real>
+  <Real Name="Dispersion after">-9.9530270356627479</Real>
+  <Real Name="Repulsion after">80.473104117340966</Real>
+  <Real Name="Coulomb (SR) after">-219.72036521533141</Real>
   <Real Name="Polarization after">0</Real>
-  <Real Name="INDUCTION after">-7.8276319150486584</Real>
-  <Real Name="ALLELEC after">-227.54798423500498</Real>
-  <Real Name="EXCHIND after">72.645467821947904</Real>
-  <Real Name="Potential after">-4923.6776838631386</Real>
+  <Real Name="INDUCTION after">-7.8276288030951457</Real>
+  <Real Name="ALLELEC after">-227.54799401842655</Real>
+  <Real Name="EXCHIND after">72.645475314245815</Real>
+  <Real Name="Potential after">-4923.6776838630622</Real>
 </ReferenceData>

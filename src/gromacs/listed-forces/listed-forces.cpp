@@ -87,6 +87,7 @@ static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
     BondedInteractions {bonds, eNR_BONDS },                       // F_BONDS
     BondedInteractions {g96bonds, eNR_BONDS },                    // F_G96BONDS
     BondedInteractions {morse_bonds, eNR_MORSE },                 // F_MORSE
+    BondedInteractions {unimplemented, -1 },                      // F_HUA
     BondedInteractions {cubic_bonds, eNR_CUBICBONDS },            // F_CUBICBONDS
     BondedInteractions {unimplemented, -1 },                      // F_CONNBONDS
     BondedInteractions {bonds, eNR_BONDS },                       // F_HARMONIC

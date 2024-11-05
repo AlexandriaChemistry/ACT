@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/alexandria/symmetrize_charges.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 #include "act/utility/stringutil.h"
@@ -192,7 +193,8 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
                                        const ForceField             *pd,
-                                       std::vector<ActAtom>         *atoms)
+                                       std::vector<ActAtom>         *atoms,
+                                       const std::vector<int>       &symmetric_charges)
 {
     auto   eqgen = eQgen::OK;
     switch (algorithm_)
@@ -219,6 +221,11 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                             molname.c_str(), QgenAcm_[ff].status());
                     break;
                 }
+                // Fetch charges to one vector, then symmetrize them
+                std::vector<double> qnew;
+                fetchCharges(&qnew);
+                apply_symmetrized_charges(&qnew, symmetric_charges);
+                setCharges(qnew);
                 for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
                     (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff]->atoms()[a].charge());
@@ -312,6 +319,20 @@ void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
         for(size_t a = 0; a < aptr->size(); a++)
         {
             (*aptr)[a].setCharge(atoms[atomStart_[ff]+a].charge());
+        }
+    }
+}
+
+void FragmentHandler::setCharges(const std::vector<double> &q)
+{
+    int j = 0;
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto aptr = topologies_[ff]->atomsPtr();
+        for(size_t a = 0; a < aptr->size(); a++)
+        {
+            (*aptr)[a].setCharge(q[j]);
+            j += 1;
         }
     }
 }

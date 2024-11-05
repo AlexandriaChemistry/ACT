@@ -4,9 +4,9 @@
   <Int Name="qtotSize">4</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">4</Int>
-    <Real>-0.50598769119203135</Real>
-    <Real>0.25299384559601568</Real>
-    <Real>0.25299384559601568</Real>
+    <Real>-0.50598769119203146</Real>
+    <Real>0.25299390232454222</Real>
+    <Real>0.25299378886748924</Real>
     <Real>-1</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">0</Real>

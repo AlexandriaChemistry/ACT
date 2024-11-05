@@ -23,12 +23,12 @@
       <Atom name="C_2" type="c2_1" charge="-0.0916527"/>
       <Atom name="C_3" type="c3_1" charge="-0.193205"/>
       <Atom name="C_4" type="c3_2" charge="-0.198185"/>
-      <Atom name="H_5" type="h_1" charge="0.0933683"/>
-      <Atom name="H_6" type="h_2" charge="0.0868769"/>
-      <Atom name="H_7" type="h_3" charge="0.0895003"/>
-      <Atom name="H_8" type="h_4" charge="0.0994146"/>
-      <Atom name="H_9" type="h_5" charge="0.0899749"/>
-      <Atom name="H_10" type="h_6" charge="0.0875093"/>
+      <Atom name="H_5" type="h_1" charge="0.0899152"/>
+      <Atom name="H_6" type="h_2" charge="0.0899152"/>
+      <Atom name="H_7" type="h_3" charge="0.0899152"/>
+      <Atom name="H_8" type="h_4" charge="0.0922996"/>
+      <Atom name="H_9" type="h_5" charge="0.0922996"/>
+      <Atom name="H_10" type="h_6" charge="0.0922996"/>
       <Bond atomName1="C_2" atomName2="O_1"/>
       <Bond atomName1="C_3" atomName2="H_5"/>
       <Bond atomName1="C_3" atomName2="C_2"/>

@@ -789,13 +789,13 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     {
         EemRms = 0;
         auto eqgen = fraghandler_->generateCharges(debug, getMolname(),
-                                                   *coords, pd, atoms());
+                                                   *coords, pd, atoms(),
+                                                   symmetric_charges_);
         if (eQgen::OK == eqgen)
         {
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
-            apply_symmetrized_charges(&qnew, symmetric_charges_);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
             for (size_t i = 0; i < qnew.size(); i++)
             {

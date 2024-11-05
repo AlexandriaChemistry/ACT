@@ -5,16 +5,16 @@
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">6</Int>
     <Real>-0.50559232407200072</Real>
-    <Real>0.25279616203600036</Real>
-    <Real>0.25279616203600036</Real>
+    <Real>0.25398775970623427</Real>
+    <Real>0.25160456436576645</Real>
     <Real>-0.50831442941729699</Real>
     <Real>0.25415721470864849</Real>
-    <Real>0.25415721470864849</Real>
+    <Real>0.25415721470864844</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">0</Real>
-  <Real Name="Molecule 2 charge">0</Real>
-  <Real Name="InteractionEnergy">-8.3777521779791186</Real>
-  <Real Name="Coulomb">-9.9019118710614862</Real>
+  <Real Name="Molecule 2 charge">-5.5511151231257827e-17</Real>
+  <Real Name="InteractionEnergy">-8.336493153325705</Real>
+  <Real Name="Coulomb">-9.8606528464081293</Real>
   <Real Name="Induction">0</Real>
   <Real Name="Dispersion">-2.1944513792800686</Real>
   <Real Name="Repulsion">3.7186110723623882</Real>

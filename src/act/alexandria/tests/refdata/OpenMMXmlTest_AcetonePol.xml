@@ -37,17 +37,17 @@
       <Atom name="c3_s_3" type="c3_s_1" charge="-1.2"/>
       <Atom name="C_4" type="c3_2" charge="0.856345"/>
       <Atom name="c3_s_4" type="c3_s_2" charge="-1.2"/>
-      <Atom name="H_5" type="h_1" charge="1.01896"/>
+      <Atom name="H_5" type="h_1" charge="1.01693"/>
       <Atom name="h_s_5" type="h_s_1" charge="-0.8"/>
-      <Atom name="H_6" type="h_2" charge="1.01563"/>
+      <Atom name="H_6" type="h_2" charge="1.01693"/>
       <Atom name="h_s_6" type="h_s_2" charge="-0.8"/>
-      <Atom name="H_7" type="h_3" charge="1.0162"/>
+      <Atom name="H_7" type="h_3" charge="1.01693"/>
       <Atom name="h_s_7" type="h_s_3" charge="-0.8"/>
-      <Atom name="H_8" type="h_4" charge="1.01994"/>
+      <Atom name="H_8" type="h_4" charge="1.01723"/>
       <Atom name="h_s_8" type="h_s_4" charge="-0.8"/>
-      <Atom name="H_9" type="h_5" charge="1.01617"/>
+      <Atom name="H_9" type="h_5" charge="1.01723"/>
       <Atom name="h_s_9" type="h_s_5" charge="-0.8"/>
-      <Atom name="H_10" type="h_6" charge="1.0156"/>
+      <Atom name="H_10" type="h_6" charge="1.01723"/>
       <Atom name="h_s_10" type="h_s_6" charge="-0.8"/>
       <Bond atomName1="C_2" atomName2="O_1"/>
       <Bond atomName1="C_3" atomName2="H_5"/>
