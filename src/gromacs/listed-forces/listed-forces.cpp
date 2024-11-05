@@ -730,7 +730,10 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 int                         *global_atom_index,
                 int                          flags)
 {
-    t_pbc pbc_full; /* Full PBC is needed for position restraints */
+    /* Full PBC is needed for position restraints */
+    // However the code is wrong!
+    // t_pbc pbc_full;
+    t_pbc pbc_full = *pbc;
 
     if (!(flags & GMX_FORCE_LISTED))
     {

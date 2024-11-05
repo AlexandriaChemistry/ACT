@@ -276,7 +276,7 @@ protected:
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
-    test("methanethiol.sdf", "ACS-g", false);
+    test("methanethiol.sdf", "ACS-g", false, 1, 1e-13);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
