@@ -39,6 +39,12 @@ namespace STLBFGS {
     // minimizer of the quadratic function that interpolates f'(a), f'(b) within the given interval
     // N.B. the function itself is undetermined since we miss information like f(a) or f(b); however the minimizer is well-defined
     double find_quadratic_minimizer(double a, double ga, double b, double gb) {
+        // The code below will crash when ga == gb
+        //return b + ((b - a)*gb)/(ga - gb);
+        if (ga == gb)
+        {
+            return b;
+        }
         return b + ((b - a)*gb)/(ga - gb);
     }
 

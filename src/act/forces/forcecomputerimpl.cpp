@@ -1154,13 +1154,13 @@ static void computePolarization(const TopologyEntryVector             &bonds,
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2  = iprod(dx, dx);
-        auto dr   = dr2 * gmx::invsqrt(dr2);             /*  10		*/
         
         if (dr2 == 0.0)
         {
             continue;
         }
 
+        auto dr         = dr2 * gmx::invsqrt(dr2);             /*  10		*/
         auto fbond      = -ksh;
         ebond          += half*ksh*dr2;
         
