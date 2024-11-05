@@ -435,8 +435,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto fs     = pd->findForcesConst(InteractionType::VDW);
     auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     std::string nnn("nexcl");
-    //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
-    //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
+
     xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
     if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
@@ -514,11 +513,16 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                 type1 = nameIndex(type1, i);
             }
             xmlNodePtr nbParamPtr = nullptr;
-            if (nullptr != customNBPtr)
+            if (nullptr == customNBPtr)
+            {
+                nbParamPtr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+            }
+            else
             {
                 nbParamPtr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
             }
+            add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
+
             double scaleSigma = std::pow(2.0, -1.0/6.0);
             double sigma = 0, epsilon = 0;
             switch (fs.potential())
