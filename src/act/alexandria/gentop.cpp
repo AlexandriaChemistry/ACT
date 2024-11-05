@@ -390,8 +390,7 @@ int gentop(int argc, char *argv[])
                 }
                 else
                 {
-                    fprintf(stderr, "Skipping %s since there are no charges available, please provide a charge database or use the -generateCharges flag.\n", actmol->getMolname().c_str());
-                    imm = immStatus::ChargeGeneration;
+                    fprintf(stderr, "WARNING: for molecule '%s' charges from the topology were used - please check your output. If it is not correct, please provide a charge database or use the -generateCharges flag.\n", actmol->getMolname().c_str());
                 }
             }
         }
