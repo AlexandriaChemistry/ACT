@@ -1005,7 +1005,7 @@ class ActOpenMMSim:
                 myparams = self.customnb.getParticleParameters(index)
             if VdW.LJ12_6 == self.vdw and qDist.Point == self.qdist:
                 charge = myparams[0]._value
-            elif len(myparams) == len(VdWdict[dictVdW[self.vdw]]["params"])+2:
+            elif len(myparams) >=4:
                 charge = myparams[-2]
                 zeta   = myparams[-1]
             else:
