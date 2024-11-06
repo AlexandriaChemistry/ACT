@@ -709,10 +709,13 @@ class ActOpenMMSim:
         for force in self.system.getForces():
             fname = force.getName()
             for interaction in ['Particle', 'Bond', 'Angle', 'Torsion']: # more could be added if necessary
-                if hasattr(force, f'getPer{interaction}ParameterName') and hasattr(force, f'getNumPer{interaction}Parameters'):
-                    self.parameter_indices[fname] = {eval(f'force.getPer{interaction}ParameterName(index)'): index for index in range(eval(f'force.getNumPer{interaction}Parameters()'))}
+                get_param_name = getattr(force, f'getPer{interaction}ParameterName', None)
+                get_num_params = getattr(force, f'getNumPer{interaction}Parameters', None)
+                if get_param_name and get_num_params:
+                    self.parameter_indices[fname] = {get_param_name(index): index for index in range(get_num_params())}
                 elif hasattr(force, f'set{interaction}Parameters'):
-                    self.parameter_indices[fname] = {pname: p for p, pname in enumerate([p.name for p in inspect.signature(eval(f'force.set{interaction}Parameters')).parameters.values() if p.name != 'index'])}
+                    param_names = [p.name for p in inspect.signature(getattr(force, f'set{interaction}Parameters')).parameters.values() if p.name != 'index']
+                    self.parameter_indices[fname] = {pname: p for p, pname in enumerate(param_names)}
 
     def make_system(self):
         # TOPOLOGY
