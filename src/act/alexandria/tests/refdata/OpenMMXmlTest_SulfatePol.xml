@@ -49,7 +49,7 @@
   <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="0" bondCutoff="3">
-    <GlobalParameter name="PotentialFunction" defaultValue="WANG_BUCKINGHAM"/>
+    <GlobalParameter name="WANG_BUCKINGHAM" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>

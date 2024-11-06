@@ -81,7 +81,7 @@
     <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
   </PeriodicTorsionForce>
   <CustomNonbondedForce energy="0" bondCutoff="3">
-    <GlobalParameter name="PotentialFunction" defaultValue="WANG_BUCKINGHAM"/>
+    <GlobalParameter name="WANG_BUCKINGHAM" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
