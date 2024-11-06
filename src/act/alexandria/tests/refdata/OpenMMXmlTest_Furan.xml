@@ -66,7 +66,7 @@
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
   <CustomNonbondedForce energy="0" bondCutoff="3">
-    <GlobalParameter Potential="LJ12_6" defaultValue="1"/>
+    <GlobalParameter name="PotentialFunction" defaultValue="LJ12_6"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>

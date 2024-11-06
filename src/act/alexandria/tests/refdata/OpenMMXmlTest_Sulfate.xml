@@ -35,7 +35,7 @@
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="0" bondCutoff="3">
-    <GlobalParameter Potential="LJ12_6" defaultValue="1"/>
+    <GlobalParameter name="PotentialFunction" defaultValue="LJ12_6"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>

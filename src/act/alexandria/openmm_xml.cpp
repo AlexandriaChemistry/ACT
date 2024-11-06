@@ -454,8 +454,8 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         auto fs      = pd->findForcesConst(itype);
         auto specPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         auto gp      = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
-        add_xml_char(gp, "Potential", potentialToString(fs.potential()).c_str());
-        add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), 1);
+        add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), "PotentialFunction");
+        add_xml_char(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), potentialToString(fs.potential()).c_str());
         add_xml_int(specPtr, "bondCutoff", 3);
         if (itype == itVC)
         {
@@ -532,8 +532,9 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     {
         customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         auto gp = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
-        add_xml_char(gp, "Potential", potentialToString(fs.potential()).c_str());
-        add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), 1);
+        add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), "PotentialFunction");
+        add_xml_char(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), potentialToString(fs.potential()).c_str());
+
         add_xml_double(customNBPtr, "energy", 0.0);
         add_xml_int(customNBPtr, "bondCutoff", 3);
         auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
