@@ -430,15 +430,14 @@ class ActForce:
         self.fgnumber = fgnumber
 
 class ActOpenMMSim:
-    def __init__(self, pdbfile: str,                  datfile: str,                  actfile: str=None,
-                       xmlfile: str=None,             enefile: str='energy.csv',     txtfile: str='output.txt',
-                       chkfile: str=None,
-                       pdbtraj: str='trajectory.pdb', dcdtraj: str='trajectory.dcd',
-                       emonomer: float=None,          debug:   bool=False,           verbose: bool=False):
+    def __init__(self, pdbfile: str,         datfile: str,                  actfile: str=None,
+                       xmlfile: str=None,    enefile: str='energy.csv',     txtfile: str='output.txt',
+                       chkfile: str=None,    pdbtraj: str='trajectory.pdb', xtctraj: str='trajectory.xtc',
+                       emonomer: float=None, debug:   bool=False,           verbose: bool=False):
         self.chkfile     = chkfile
         self.enefile     = enefile
         self.txtfile     = txtfile
-        self.dcdtraj     = dcdtraj
+        self.xtctraj     = xtctraj
         self.pdbtraj     = pdbtraj
         self.emonomer    = emonomer
         self.txt         = None
@@ -509,8 +508,8 @@ class ActOpenMMSim:
                 print("Please check output in %s" % self.txtfile )
                 self.txt.close()
             print("Energies are in %s" % self.enefile )
-            if None != self.dcdtraj:
-                print("DCD trajectory is in %s" % self.dcdtraj )
+            if None != self.xtctraj:
+                print("XTC trajectory is in %s" % self.xtctraj )
             if None != self.pdbtraj:
                 print("PDB trajectory in %s" % self.pdbtraj )
 
@@ -710,42 +709,61 @@ class ActOpenMMSim:
         self.txt.write("Integration time step %g ps\n" % self.dt)
 
     def start_output(self):
-        # OUTPUT
-        ################################################
-        # Do not open files unnecessarily
-        save = self.sim_params.getInt('saveDcd')
-        self.dcdReporter = None
+
+         # Do not initialize energy file, unless necessary
+        save = self.sim_params.getInt('saveEnergy')
+        self.dataReporter = None
         if save > 0 and self.steps >= save:
-            self.dcdReporter  = DCDReporter(self.dcdtraj, save)
+            self.txt.write(f"Simulation data will be stored in CSV every {save} steps in {self.enefile}.\n")
+            self.dataReporter = StateDataReporter(self.enefile, save,
+                                                  totalSteps      = self.steps,
+                                                  step            = self.sim_params.getBool('outStep'),
+                                                  time            = self.sim_params.getBool('outTime'),
+                                                  speed           = self.sim_params.getBool('outSpeed', False),
+                                                  progress        = self.sim_params.getBool('outProgress', False),
+                                                  potentialEnergy = self.sim_params.getBool('outPotentialEnergy'),
+                                                  kineticEnergy   = self.sim_params.getBool('outKineticEnergy'),
+                                                  temperature     = self.sim_params.getBool('outTemperature'),
+                                                  volume          = self.sim_params.getBool('outVolume', False),
+                                                  density         = self.sim_params.getBool('outDensity'),
+                                                  separator       = self.sim_params.getStr('outSeparator'))
         else:
-            self.dcd_file = None
-        self.dataReporter = StateDataReporter(self.enefile, self.sim_params.getInt('saveEnergy'),
-                                              totalSteps=self.steps,
-                                              step=self.sim_params.getBool('outStep'),
-                                              time=self.sim_params.getBool('outTime'),
-                                              speed=self.sim_params.getBool('outSpeed', False),
-                                              progress=self.sim_params.getBool('outProgress', False),
-                                              potentialEnergy=self.sim_params.getBool('outPotentialEnergy'),
-                                              kineticEnergy=self.sim_params.getBool('outKineticEnergy'),
-                                              temperature=self.sim_params.getBool('outTemperature'),
-                                              volume=self.sim_params.getBool('outVolume', False),
-                                              density=self.sim_params.getBool('outDensity'),
-                                              separator=self.sim_params.getStr('outSeparator'))
-        # Do not open files unnecessarily
-        save = self.sim_params.getInt('checkPoint')
-        self.chkReporter = None
-        if save > 0 and self.steps >= save:
-            if self.chkfile:
-                self.chkReporter = CheckpointReporter(self.chkfile, save)
-            else:
-                self.txt.write("Not checkpointing since no checkpoint file name was provided.\n")
-        # Do not open files unnecessarily
+            self.txt.write("Simulation data will not be stored in CSV (save set to 0 or exceeding number of steps).\n")
+            self.enefile = None
+
+        # Do not initialize PDB file, unless necessary
         save = self.sim_params.getInt('savePdb')
         self.pdbReporter = None
         if save > 0 and self.steps >= save:
+            self.txt.write(f"Coordinates will be stored in PDB every {save} steps in {self.pdbtraj}.\n")
             self.pdbReporter = PDBReporter(self.pdbtraj, save)
         else:
+            self.txt.write(f"Coordinates will not be stored in PDB (save set to 0 or exceeding number of steps).\n")
             self.pdbtraj = None
+
+        # Do not initialize XTC file, unless necessary
+        save = self.sim_params.getInt('saveXtc')
+        self.xtcReporter = None
+        if save > 0 and self.steps >= save:
+            self.txt.write(f"Coordinates will be stored in XTC every {save} steps in {self.xtctraj}.\n")
+            self.xtcReporter = XTCReporter(self.xtctraj, save)
+        else:
+            self.txt.write(f"Coordinates will not be stored in XTC (save set to 0 or exceeding number of steps).\n")
+            self.xtctraj = None
+
+        # Do not initialize CHK file, unless necessary
+        save = self.sim_params.getInt('saveChk')
+        self.chkReporter = None
+        if save > 0 and self.steps >= save:
+            if self.chkfile is not None:
+                self.txt.write(f"Checkpoints will be stored in CHK every {save} steps in {self.chkfile}.\n")
+                self.chkReporter = CheckpointReporter(self.chkfile, save)
+            else:
+                self.txt.write("Checkpoints will not be stored in CHK (no file provided).\n")
+                #self.chkfile = None # <- already None
+        else:
+            self.txt.write("Checkpoints will not be stored in CHK (save set to 0 or exceeding number of steps).\n")
+            self.chkfile = None
 
     def make_system(self):
         # TOPOLOGY
@@ -1582,12 +1600,12 @@ class ActOpenMMSim:
     def production(self):
         simtime = self.sim_params.getFloat('dt')*self.sim_params.getInt('steps')
         self.txt.write('\nSimulating %g ps at %g K...\n' % (simtime, self.temperature_c ))
-        if None != self.dcdReporter:
-            self.simulation.reporters.append(self.dcdReporter)
         if None != self.dataReporter:
             self.simulation.reporters.append(self.dataReporter)
         if None != self.pdbReporter:
             self.simulation.reporters.append(self.pdbReporter)
+        if None != self.xtcReporter:
+            self.simulation.reporters.append(self.xtcReporter)
         if None != self.chkReporter:
             self.simulation.reporters.append(self.chkReporter)
         self.simulation.currentStep = 0
