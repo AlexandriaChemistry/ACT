@@ -19,7 +19,7 @@ from openmm.app import *
 from simtk.unit import *
 from simtk import openmm, unit
 import numpy as np
-import argparse, math, sys, shutil
+import argparse, inspect, math, sys, shutil
 from enum import Enum
 
 ONE_4PI_EPS0 = 138.93544561
@@ -76,50 +76,6 @@ constrmethod = {
     'HAngles':  HAngles,
     'None':     None
     }
-
-# indices (XML files have to follow this order)
-parameter_indices = {
-    VdW.WBHAM: {
-        'sigma':   0,
-        'epsilon': 1,
-        'gamma':   2,
-        'charge':  3,
-        'zeta':    4
-        },
-    VdW.GBHAM: {
-        'rmin':    0,
-        'epsilon': 1,
-        'gamma':   2,
-        'delta':   3,
-        'charge':  4,
-        'zeta':    5
-        },
-    VdW.LJ14_7: {
-        'sigma':   0,
-        'epsilon': 1,
-        'gamma':   2,
-        'delta':   3,
-        'charge':  4,
-        'zeta':    5
-        },
-    VdW.LJ12_6: {
-        qDist.Point: {
-            'charge': 0,
-            'sigma': 1,
-            'epsilon': 2
-        },
-        qDist.Gaussian: {
-            'sigma':  0,
-            'epsilon': 1,
-            'charge':  2,
-            'zeta':    3
-        }
-    }
-    }
-
-
-
-
 
 def select(x, y, z):
     return y if x else z
@@ -764,6 +720,19 @@ class ActOpenMMSim:
         else:
             self.txt.write("Checkpoints will not be stored in CHK (save set to 0 or exceeding number of steps).\n")
             self.chkfile = None
+    def get_parameter_indices(self):
+        # read parameter order from OpenMM XML file
+        self.parameter_indices = {}
+        for force in self.system.getForces():
+            fname = force.getName()
+            for interaction in ['Particle', 'Bond', 'Angle', 'Torsion']: # more could be added if necessary
+                get_param_name = getattr(force, f'getPer{interaction}ParameterName', None)
+                get_num_params = getattr(force, f'getNumPer{interaction}Parameters', None)
+                if get_param_name and get_num_params:
+                    self.parameter_indices[fname] = {get_param_name(index): index for index in range(get_num_params())}
+                elif hasattr(force, f'set{interaction}Parameters'):
+                    param_names = [p.name for p in inspect.signature(getattr(force, f'set{interaction}Parameters')).parameters.values() if p.name != 'index']
+                    self.parameter_indices[fname] = {pname: p for p, pname in enumerate(param_names)}
 
     def make_system(self):
         # TOPOLOGY
@@ -806,7 +775,7 @@ class ActOpenMMSim:
                                                        rigidWater=self.rigidWater)
             if self.verbose:
                 self.txt.write("The force field is NOT polarizable.\n")
-
+        self.get_parameter_indices()
         self.count_forces("Initial")
 
     def find_shells_cores(self, drudeforce):
@@ -1017,22 +986,18 @@ class ActOpenMMSim:
 
         self.charges = []
         for index in range(self.nonbondedforce.getNumParticles()):
-            if self.useOpenMMForce or not self.customnb:
-                myparams = self.nonbondedforce.getParticleParameters(index)
-            else:
-                myparams = self.customnb.getParticleParameters(index)
-            if VdW.LJ12_6 == self.vdw and qDist.Point == self.qdist:
-                charge = myparams[0]._value
-            elif len(myparams) == len(VdWdict[dictVdW[self.vdw]]["params"])+2:
-                charge = myparams[-2]
-                zeta   = myparams[-1]
-            else:
-                sys.exit("Not implemented how to extract charge (and zeta)")
-            self.charges.append(charge)
-            if qDist.Point == self.qdist:
+            if self.useOpenMMForce or qDist.Point == self.qdist or not self.customnb:
+                *myparams, = self.nonbondedforce.getParticleParameters(index)
+                allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
+                charge     = allParam["charge"]
                 self.custom_coulomb.addParticle([charge])
             else:
+                *myparams, = self.customnb.getParticleParameters(index)
+                allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
+                charge     = allParam["charge"]
+                zeta       = allParam["zeta"]
                 self.custom_coulomb.addParticle([charge, zeta])
+            self.charges.append(charge)
             self.txt.write("Adding %s charge %g to particle %d\n" % ( dictQdist[self.qdist], charge, index ))
 
         # Van der Waals, is our custom potential minus the default LJ.
@@ -1174,26 +1139,21 @@ class ActOpenMMSim:
                 self.txt.write("iatom %d jatom %d\n" % ( iatom, jatom ))
 
             if self.vdw == VdW.LJ12_6 and self.qdist == qDist.Point:
-                print("LJ12_6 & point")
                 # Get the parameters from the standard NB force
                 *iparameters, = self.nonbondedforce.getParticleParameters(iatom)
                 *jparameters, = self.nonbondedforce.getParticleParameters(jatom)
+                allParam      = {parameter: [iparameters[idx], jparameters[idx]] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
+                if self.debug:
+                    self.txt.write(f" default nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
+                    self.txt.write(f" default nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
             elif (self.vdw == VdW.LJ12_6 and self.qdist == qDist.Gaussian) or self.vdw in {VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7}:
                 # or get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
+                allParam      = {parameter: [iparameters[idx], jparameters[idx]] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
                 if self.debug:
                     self.txt.write(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
                     self.txt.write(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
-            allParam = {}
-            if self.vdw == VdW.LJ12_6:
-                param_indices = parameter_indices[self.vdw][self.qdist]
-            else:
-                param_indices = parameter_indices[self.vdw]
-
-            # populate allParam dic with values from iparameters and jparameters
-            for parameter, idx in param_indices.items():
-                allParam[parameter] = [iparameters[idx], jparameters[idx]]
 
             # Coulomb part
             # When using PME, add the PME exclusion, independent of our own exclusion settings
@@ -1209,9 +1169,12 @@ class ActOpenMMSim:
                 else:
                     qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], allParam["zeta"][0], allParam["zeta"][1]])
                 if self.debug:
-                    self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta %g\n" %
-                                   ( iatom, jatom, allParam["charge"][0], allParam["charge"][1], zeta))
+                    self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta1 %g zeta2 %g\n" %
+                                   ( iatom, jatom, allParam["charge"][0], allParam["charge"][1], allParam["zeta"][0], allParam["zeta"][1]))
 
+            # Van der Waals part
+            # Always add the PME exclusion, independent of our own exclusion settings
+            # And get the parameters from the Custom NB force
             # Van der Waals part
             # Always add the PME exclusion, independent of our own exclusion settings
             # And get the parameters from the Custom NB force
@@ -1233,7 +1196,7 @@ class ActOpenMMSim:
                     allParam["epsilon"][1] > 0):
 
                     allXXX = self.comb.combFloats(allParam)
-                    vdW_parameters      = []
+                    vdW_parameters	= []
                     for parameter in VdWdict[dictkey]["params"]:
                         myvdw = allXXX[parameter]
                         if self.debug:
