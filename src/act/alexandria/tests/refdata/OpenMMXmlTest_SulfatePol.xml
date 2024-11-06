@@ -50,6 +50,13 @@
   <PeriodicTorsionForce energy="0"/>
   <CustomNonbondedForce energy="0" bondCutoff="3">
     <GlobalParameter name="WANG_BUCKINGHAM" defaultValue="1"/>
+    <GlobalParameter name="COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="nexclvdw" defaultValue="0"/>
+    <GlobalParameter name="nexclqq" defaultValue="0"/>
+    <GlobalParameter name="epsilonr" defaultValue="1"/>
+    <GlobalParameter name="cr_epsilon_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr_gamma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr_sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
@@ -68,6 +75,14 @@
     <Atom type="s3_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
+    <GlobalParameter name="WANG_BUCKINGHAM" defaultValue="1"/>
+    <GlobalParameter name="COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="nexclvdw" defaultValue="0"/>
+    <GlobalParameter name="nexclqq" defaultValue="0"/>
+    <GlobalParameter name="epsilonr" defaultValue="1"/>
+    <GlobalParameter name="cr_epsilon_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr_gamma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr_sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <Atom type="o2_1" sigma="0.106908" epsilon="0.75"/>
     <Atom type="o2_2" sigma="0.106908" epsilon="0.75"/>
