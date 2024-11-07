@@ -485,9 +485,9 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         add_global(specPtr, potentialToString(fs.potential()), 1);
         add_combrules(specPtr, fs);
         add_xml_int(specPtr, "bondCutoff", 3);
+        add_xml_char(specPtr, "energy", "0");
         if (itype == itVC)
         {
-            add_xml_char(specPtr, "energy", "-aexp exp(-bexp r)");
             for(int i = 0; i < expA_IJ; i++)
             {
                 auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -496,7 +496,6 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         }
         else if (itype == itIC)
         {
-            add_xml_char(specPtr, "energy", "-(a1dexp - a2dexp) * exp(-bdexp r)");
             for(int i = 0; i < dexpA1_IJ; i++)
             {
                 auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
