@@ -714,6 +714,7 @@ class ActOpenMMSim:
         else:
             self.txt.write("Checkpoints will not be stored in CHK (save set to 0 or exceeding number of steps).\n")
             self.chkfile = None
+
     def get_parameter_indices(self):
         # read parameter order from OpenMM XML file
         self.parameter_indices = {}
@@ -1125,16 +1126,16 @@ class ActOpenMMSim:
                 *jparameters, = self.nonbondedforce.getParticleParameters(jatom)
                 allParam      = {parameter: [iparameters[idx]._value, jparameters[idx]._value] for parameter, idx in self.parameter_indices["NonbondedForce"].items()} # NonbondedForce also stores unit
                 if self.debug:
-                    self.txt.write(f" default nonbonded force i {self.nonbondedforce.getParticleParameters(iatom)}\n")
-                    self.txt.write(f" default nonbonded force j {self.nonbondedforce.getParticleParameters(jatom)}\n")
+                    self.txt.write(f" default nonbonded force i {', '.join([f'{parameter}={iparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
+                    self.txt.write(f" default nonbonded force j {', '.join([f'{parameter}={jparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
             elif (VdWDict[self.vdw]["func"] == VdW.LJ12_6 and qdistDict[self.qdist] == qDist.Gaussian) or VdWDict[self.vdw]["func"] in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
                 # or get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
                 allParam      = {parameter: [iparameters[idx], jparameters[idx]] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
                 if self.debug:
-                    self.txt.write(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
-                    self.txt.write(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
+                    self.txt.write(f" custom nonbonded force i {', '.join([f'{parameter}={iparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
+                    self.txt.write(f" custom nonbonded force j {', '.join([f'{parameter}={jparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
 
             # Van der Waals part
             # Always add the PME exclusion, independent of our own exclusion settings
