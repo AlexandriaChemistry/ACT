@@ -638,26 +638,6 @@ class ActOpenMMSim:
         self.rigidWater             = self.sim_params.getBool('rigidWater')
         self.constraintTolerance    = self.sim_params.getFloat('constraintTolerance')
 
-        # COMPUTING PLATFORM
-        ################################################
-        plform = self.sim_params.getStr('usePlatform')
-        self.platform = Platform.getPlatformByName(plform)
-        if 'CUDA' == plform or 'OpenCL' == plform:
-            self.usePrecision = self.sim_params.getStr('usePrecision')
-        elif not "Reference" == plform:
-            if self.platform.supportsDoublePrecision():
-                self.txt.write("Setting precision to double\n")
-                self.usePrecision = "double"
-            else:
-                self.txt.write("Setting precision to single\n")
-                self.usePrecision = "single"
-        else:
-            self.txt.write("Setting precision to single\n")
-            self.usePrecision = "single"
-        self.txt.write("Using OpenMM version %s on platform %s\n" %
-                       ( self.platform.getOpenMMVersion(), self.platform.getName() ))
-        self.txt.write("Integration time step %g ps\n" % self.dt)
-
     def start_output(self):
 
          # Do not initialize energy file, unless necessary
@@ -1314,6 +1294,41 @@ class ActOpenMMSim:
                 self.txt.write("Number of angles %d\n" % ( force.getNumAngles()))
         self.txt.write("----------------------------\n")
 
+    def set_platform(self):
+        # platform
+        platform            = self.sim_params.getStr("usePlatform")
+        available_platforms = [Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())]
+        if platform in available_platforms:
+            self.txt.write(f"Requested platform {platform} found.\n")
+        else:
+            self.txt.write(f"Requested platform {platform} not found. Looking through available alternatives...\n")
+            for alternative_platform in ["CUDA", "OpenCL", "CPU", "Reference"]:
+                alternative_found = False
+                if alternative_platform in available_platforms:
+                    platform = alternative_platform
+                    self.txt.write(f"Alternative platform {platform} found.\n")
+                    alternative_found = True
+                    break
+            if not alternative_found:
+                sys.exit("Found no suitable platform to carry out computations. Exiting...\n")
+        self.platform = Platform.getPlatformByName(platform)
+        self.txt.write(f"Using OpenMM version {self.platform.getOpenMMVersion()} on platform {self.platform.getName()}.\n")
+        # platform precison
+        available_properties = self.platform.getPropertyNames()
+        for property, alternative_values in [('Precision', ['double', 'single', 'mixed'])]:
+            if f"use{property}" in self.sim_params.params:
+                if property in available_properties:
+                    value = self.sim_params.getStr(f"use{property}")
+                    self.platform.setPropertyDefaultValue(property, value)
+                    self.txt.write(f"Requested platform property {property} set to default value {value}.\n")
+                else:
+                    self.txt.write(f"Property {property} does not exist for platform {self.platform.getName()}.\n")
+        # summary of properties
+        if self.debug:
+            for property in available_properties:
+                value = self.platform.getPropertyDefaultValue(property)
+                self.txt.write("Property %s value %s\n" % ( property, str(value) ))
+
     def set_algorithms(self):
         #### ethermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
@@ -1369,7 +1384,7 @@ class ActOpenMMSim:
             self.txt.write("Core Temperature %g\n" % self.temperature_c)
             if self.polarizable:
                 self.txt.write("Drude Temperature %g\n" % self.integrator.getDrudeTemperature()._value)
-            self.txt.write("Step size %g\n" % self.integrator.getStepSize()._value)
+            self.txt.write("Integration time step %g\n" % self.integrator.getStepSize()._value)
 
     def compute_dipole(self)->list:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
@@ -1386,17 +1401,6 @@ class ActOpenMMSim:
         #### Simulation setup ####
         self.simulation = Simulation(self.topology, self.system, self.integrator, self.platform)
         self.simulation.context.setPositions(self.positions)
-        # Check whether the use platform can change the precision at all.
-        prec = "Precision"
-        havePrecision = False
-        for p in self.platform.getPropertyNames():
-            v = self.platform.getPropertyValue(self.simulation.context, p)
-            if self.debug:
-                self.txt.write("Property %s value %s\n" % ( p, str(v) ))
-            if prec == p:
-                havePrecesion = True
-        if havePrecision:
-            self.platform.setPropertyValue(self.simulation.context, prec, self.usePrecision)
 
     def update_positions(self):
         #### Set positions of shell system to almost zero) ####
@@ -1555,6 +1559,7 @@ class ActOpenMMSim:
         self.start_output()
         self.make_system()
         self.set_algorithms()
+        self.set_platform()
         self.init_forces()
         self.make_forces()
         self.add_excl_correction()
