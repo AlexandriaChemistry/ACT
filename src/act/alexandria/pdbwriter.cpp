@@ -139,7 +139,7 @@ void pdbWriter(FILE                           *out,
 {
     gmx_conect_t     *gc = static_cast<gmx_conect_t *>(conect);
     int               i;
-    int               resind, resnr;
+    int               resind, resnr = -1;
     enum PDB_record   type;
     //unsigned char     ch;
     char              altloc;
@@ -186,6 +186,7 @@ void pdbWriter(FILE                           *out,
         }
         minres = std::min(minres, atoms[i].residueNumber());
     }
+    int elemNum = 0;
     for (size_t ii = 0; ii < natoms; ii++)
     {
         size_t i = ii;
@@ -194,6 +195,13 @@ void pdbWriter(FILE                           *out,
             i = index[ii];
         }
         resind        = atoms[i].residueNumber();
+        // Check whether we have a new residue
+        if (resnr > 0 && 
+            ( (minres == 0 && resnr != resind+1) ||
+              (minres != 0 && resnr == resind) ))
+        {
+            elemNum = 0;
+        }
         resnr         = resind;
         if (minres == 0)
         {
@@ -202,7 +210,7 @@ void pdbWriter(FILE                           *out,
 
         if (resnr >= 10000)
         {
-            resnr = resnr % 10000;
+            resnr = 1 + resnr % 10000;
         }
         t_pdbinfo pdbinfo;
         gmx_pdbinfo_init_default(&pdbinfo);
@@ -221,10 +229,15 @@ void pdbWriter(FILE                           *out,
         {
             atomnr = ii+1;
         }
+        // This might break if the atom has a full name already
+        // Not sure how to handle atomnames that are longer than 4
+        // bytes.
+        auto aname = gmx::formatString("%s%d", atoms[i].name().c_str(),
+                                       ++elemNum);
         gmx_fprintf_pdb_atomline(out,
                                  type,
                                  atomnr,
-                                 atoms[i].name().c_str(),
+                                 aname.c_str(),
                                  altloc,
                                  residueNames[resind].c_str(),
                                  chain,
