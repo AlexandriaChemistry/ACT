@@ -1209,9 +1209,8 @@ void OpenMMWriter::writeDat(const std::string &fileName,
                             const ForceField  *pd)
 {
     std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
-        { InteractionType::ELECTROSTATICS, 
-          { { "chargetype", "chargeDistribution" },
-            { "epsilonr", "dielectricConstant" },
+        { InteractionType::ELECTROSTATICS,
+          { { "epsilonr", "dielectricConstant" },
             { "nexcl", "nexclqq" } } },
         { InteractionType::VDW,
           { {  "nexcl", "nexclvdw" } } }
@@ -1232,6 +1231,10 @@ void OpenMMWriter::writeDat(const std::string &fileName,
                     fprintf(fp, "%s = %s\n", opt.second.c_str(),
                             fs.optionValue(opt.first).c_str());
                 }
+                else
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Option %s missing from InteractionType %s in file %s", opt.first.c_str(), interactionTypeToString(a2o.first).c_str(), pd->filename().c_str())));     
+                }
             }
             if (InteractionType::VDW == a2o.first)
             {
@@ -1239,6 +1242,15 @@ void OpenMMWriter::writeDat(const std::string &fileName,
                         potentialToString(fs.potential()).c_str());
                 writeCombinationRules(fp, getCombinationRule(fs));
             }
+            if (InteractionType::ELECTROSTATICS == a2o.first)
+            {
+                fprintf(fp, "chargeDistribution = %s\n",
+                        chargeTypeName(potentialToChargeType(fs.potential())).c_str());
+            }
+        }
+        else
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("InteractionType %s missing from %s", interactionTypeToString(a2o.first).c_str(), pd->filename().c_str())));
         }
     }
     
