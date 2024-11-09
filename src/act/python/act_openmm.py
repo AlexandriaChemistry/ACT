@@ -40,9 +40,9 @@ VdWDict = {
                 "expression": "4*epsilon*((sigma/r)^12 - (sigma/r)^6)" },
     'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ],
                 "expression": ( 'select(epsilon,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0)') },
-    'WBHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
+    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
                 "expression": ('select(epsilon,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)') },
-    'GBHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
+    'GENERALIZED_BUCKINGHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
                 "expression": ('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0)') }
 }
 
@@ -115,7 +115,7 @@ def write_sdf(outf, topology, positions, ffcharge, bonds, my_shell):
                 if my_shell and i in my_shell:
                     qqq += ffcharge[my_shell[i]]
                 # Have to prevent rounding of numbers in the wrong direction
-                qqq = int(round(qqq))
+                qqq = int(round(qqq._value))
                 if 0 != qqq:
                     bonded = False
                     for n in bonds:
@@ -432,7 +432,8 @@ class ActOpenMMSim:
         self.txt = open(self.txtfile, "w")
         self.sim_params.setText(self.txt)
         # Check options
-        self.vdw = self.sim_params.getStr('vanderwaals')
+        vdwopt = 'vanderwaals'
+        self.vdw = self.sim_params.getStr(vdwopt)
         if self.vdw not in VdWDict:
             sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.datfile ))
         self.qdist = self.sim_params.getStr("chargeDistribution")
