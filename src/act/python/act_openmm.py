@@ -33,23 +33,23 @@ class VdW(Enum):
     GBHAM  = 5
 
 # Map strings to VdW entries.
-VdWdict = {
+VdWDict = {
     'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ],
                 "expression": "epsilon*(3*(sigma/r)^8 - 4*(sigma/r)^6)" },
     'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ],
                 "expression": "4*epsilon*((sigma/r)^12 - (sigma/r)^6)" },
     'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ],
                 "expression": ( 'select(epsilon,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0)') },
-    'WBHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
+    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
                 "expression": ('select(epsilon,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)') },
-    'GBHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
+    'GENERALIZED_BUCKINGHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
                 "expression": ('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0)') }
 }
 
 # Make reverse map as well.
 dictVdW = {}
-for key in VdWdict:
-    dictVdW[VdWdict[key]["func"]] = key
+for key in VdWDict:
+    dictVdW[VdWDict[key]["func"]] = key
 
 class qDist(Enum):
     Point = 1
@@ -219,18 +219,17 @@ class SimParams:
             return default
 
 class CombinationRules:
-    def __init__(self, qdist:qDist, comb:str, vdw:VdW):
+    def __init__(self, qdist:str, vdw:str, comb:str):
         self.qdist = qdist
         self.vdw   = vdw
-        vdwstr     = dictVdW[self.vdw]
         self.comb  = {}
         www = comb.split()
-        if 2*len(VdWdict[vdwstr]["params"]) != len(www):
-            sys.exit("Expected separate combination rules for %d parameters but found '%s'" % ( len(VdWdict[vdwstr]["params"]), comb ) )
+        if 2*len(VdWDict[self.vdw]["params"]) != len(www):
+            sys.exit("Expected separate combination rules for %d parameters but found '%s'" % ( len(VdWDict[self.vdw]["params"]), comb ) )
         for i in range(int(len(www)/2)):
             param = www[2*i]
             self.comb[param] = www[2*i+1]
-        for np in VdWdict[vdwstr]["params"]:
+        for np in VdWDict[self.vdw]["params"]:
             if not np in self.comb:
                 sys.exit("No combination rule provided for %s on '%s'" % ( np, comb) )
 
@@ -307,12 +306,12 @@ class CombinationRules:
                 gamma2 = allParam["gamma"][1]
             if hvs == self.comb[param].lower():
                 e12 = self.combineTwoFloat(hve, epsilon1, epsilon2)
-                if self.vdw == VdW.WBHAM and "sigma" == param:
+                if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == "sigma":
                     mydict["sigma"]  = math.sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
-                elif self.vdw == VdW.GBHAM and "rmin" == param:
+                elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == "rmin":
                     mydict["rmin"]   = math.sqrt(((epsilon1*gamma1*rmin1**6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
                 else:
-                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
+                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     if "sigma" in allParam:
@@ -346,12 +345,12 @@ class CombinationRules:
             mng = "masongamma"
             if hvs == self.comb[param].lower():
                 e12 = self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2")
-                if self.vdw == VdW.WBHAM and "sigma" == param:
+                if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == "sigma":
                     mydict["sigma"]  = ("(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
-                elif self.vdw == VdW.GBHAM and "rmin" == param:
+                elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == 'rmin':
                     mydict["rmin"] = ("(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
                 else:
-                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, dictVdW[self.vdw] ))
+                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     if "sigma" in self.comb.keys():
@@ -373,12 +372,12 @@ class CombinationRules:
         return mydict
 
     def gaussianString(self)->str:
-        if self.qdist == qDist.Gaussian:
+        if qdistDict[self.qdist] == qDist.Gaussian:
             return "select(zeta1*zeta2, erf((zeta1*zeta2*r)/sqrt((zeta1^2)+(zeta2^2))), select(zeta1+zeta2, select(zeta1, erf(zeta1*r), erf(zeta2*r)), 1))"
-        elif qDist.Point == self.qdist:
+        elif qdistDict[self.qdist] == qDist.Point:
             return "1"
         else:
-            sys.exit("No support for charge distribution type %s" % dictQdist[self.qdist])
+            sys.exit("No support for charge distribution type %s" % self.qdist)
 
 class ActForce:
     def __init__(self, fcname:str, fgnumber:int):
@@ -433,27 +432,23 @@ class ActOpenMMSim:
         self.txt = open(self.txtfile, "w")
         self.sim_params.setText(self.txt)
         # Check options
-        vdwopt           = 'vanderwaals'
-        vdw              = self.sim_params.getStr(vdwopt)
-        if not vdw in VdWdict:
+        vdwopt = 'vanderwaals'
+        self.vdw = self.sim_params.getStr(vdwopt)
+        if self.vdw not in VdWDict:
             sys.exit("Unknown value for option %s in %s" % ( vdwopt, self.datfile ))
-        self.vdw         = VdWdict[vdw]["func"]
-        self.qdist       = self.sim_params.getStr("chargeDistribution")
-        if not self.qdist in qdistDict:
+        self.qdist = self.sim_params.getStr("chargeDistribution")
+        if self.qdist not in qdistDict:
             sys.exit("Don't know how to handle charge distribution '%s'" % self.qdist)
-        self.qdist       = qdistDict[self.qdist]
-        self.comb        = CombinationRules(self.qdist,
-                                            self.sim_params.getStr("combinationRule"),
-                                            self.vdw)
+        self.comb = CombinationRules(self.qdist, self.vdw, self.sim_params.getStr("combinationRule"))
         # Check which code path to choose
         self.useOpenMMForce = False
         if self.sim_params.getBool("useOpenMMForce", False):
-            if (qDist.Point == self.qdist and VdW.LJ12_6 == self.vdw and
+            if (qdistDict[self.qdist] == qDist.Point and VdWDict[self.vdw]["func"] == VdW.LJ12_6 and
                 self.comb.rule("epsilon").lower() == "geometric" and
                 self.comb.rule("sigma").lower() == "arithmetic"):
                 self.useOpenMMForce = True
             else:
-                sys.exit("OpenMMForce routines are supported only with LJ12_6 (%s), Point charges (%s) and geometric combination rule for epsilon (%s) and arithmetic for sigma (%s)" % ( vdw, self.qdist, self.comb.rule("epsilon"), self.comb.rule("sigma") ))
+                sys.exit("OpenMMForce routines are supported only with 'LJ12_6' (%s), 'Point' charges (%s) and 'geometric' combination rule for epsilon (%s) and 'arithmetic' for sigma (%s)" % ( vdw, self.qdist, self.comb.rule("epsilon").lower(), self.comb.rule("sigma").lower() ))
         self.force_group = None
         self.txt_header()
         self.gen_ff()
@@ -473,7 +468,7 @@ class ActOpenMMSim:
         self.txt.write("Starting OpenMM calculation using the ActOpenMMSim interface.\n")
         self.txt.write("input pdbfile:         %s\n" % self.pdbfile)
         self.txt.write("simulation parameters: %s\n" % self.datfile)
-        self.txt.write("vanderwaals:           %s\n" % dictVdW[self.vdw])
+        self.txt.write("vanderwaals:           %s\n" % self.vdw)
         self.txt.write("charge distribution:   %s\n" % self.comb.qdist)
         if self.useOpenMMForce:
             self.txt.write("Will use native OpenMM force routines.\n")
@@ -644,26 +639,6 @@ class ActOpenMMSim:
         self.rigidWater             = self.sim_params.getBool('rigidWater')
         self.constraintTolerance    = self.sim_params.getFloat('constraintTolerance')
 
-        # COMPUTING PLATFORM
-        ################################################
-        plform = self.sim_params.getStr('usePlatform')
-        self.platform = Platform.getPlatformByName(plform)
-        if 'CUDA' == plform or 'OpenCL' == plform:
-            self.usePrecision = self.sim_params.getStr('usePrecision')
-        elif not "Reference" == plform:
-            if self.platform.supportsDoublePrecision():
-                self.txt.write("Setting precision to double\n")
-                self.usePrecision = "double"
-            else:
-                self.txt.write("Setting precision to single\n")
-                self.usePrecision = "single"
-        else:
-            self.txt.write("Setting precision to single\n")
-            self.usePrecision = "single"
-        self.txt.write("Using OpenMM version %s on platform %s\n" %
-                       ( self.platform.getOpenMMVersion(), self.platform.getName() ))
-        self.txt.write("Integration time step %g ps\n" % self.dt)
-
     def start_output(self):
 
          # Do not initialize energy file, unless necessary
@@ -720,6 +695,7 @@ class ActOpenMMSim:
         else:
             self.txt.write("Checkpoints will not be stored in CHK (save set to 0 or exceeding number of steps).\n")
             self.chkfile = None
+
     def get_parameter_indices(self):
         # read parameter order from OpenMM XML file
         self.parameter_indices = {}
@@ -854,36 +830,39 @@ class ActOpenMMSim:
         self.count_forces("Direct space 3")
 
     def makeVdWFunc(self):
-        dictkey              = dictVdW[self.vdw]
-        vdwParamNames        = VdWdict[dictkey]["params"]
-        expression           = ( "%s" % VdWdict[dictkey]["expression"] )
+        vdwParamNames                 = VdWDict[self.vdw]["params"]
+        self.vdw_excl_corr_expression = ( "%s" % VdWDict[self.vdw]["expression"] )
+        if self.debug:
+            self.txt.write("DBG: vdw_ecxl_corr_expression '%s'\n" % self.vdw_excl_corr_expression)
+        self.vdw_expression = self.vdw_excl_corr_expression
         # Not a whole lot of documentation around, but this seems OK.
         # Have to verify that it is the same in OpenMM though.
         # https://manual.gromacs.org/documentation/2019/reference-manual/functions/long-range-vdw.html
-        self.vdw_pme_corr_expression = None
+        self.vdw_pme_excl_corr_expression = None
         if self.nonbondedMethod == LJPME:
-            self.vdw_pme_corr_expression = ( "((1 - exp(-(%s*r)^2)*(1 + (%s*r)^2 + 0.5*(%s*r)^4))*c6/r^6)" %
-                                             ( self.alphaPME, self.alphaPME, self.alphaPME) )
+            self.vdw_pme_excl_corr_expression = ( "-((1-exp(-(%s*r)^2)*(1+(%s*r)^2+0.5*(%s*r)^4))*c6/r^6)" % # NB! the minus sign
+                                                 ( self.alphaPME, self.alphaPME, self.alphaPME) )
             if self.debug:
-                self.txt.write("DBG: vdw_pme_corr_expression '%s'\n" % self.vdw_pme_corr_expression)
-            expression += " - "+self.vdw_pme_corr_expression
-        expression += ";"
-        self.vdw_expression  = expression
-        if self.debug:
-            self.txt.write("DBG: vdw_expression '%s'\n" % self.vdw_expression)
+                self.txt.write("DBG: vdw_pme_excl_corr_expression '%s'\n" % self.vdw_pme_excl_corr_expression)
+            self.vdw_expression += self.vdw_pme_excl_corr_expression
+            self.vdw_pme_excl_corr_expression += ";"
         if self.useOpenMMForce:
             return
 
-        combdict             = self.comb.combStrings()
+        # close energy expressions
+        self.vdw_expression           += ";"
+        self.vdw_excl_corr_expression += ";"
+
         # The statements have to be in this order! They are evaluated in the reverse order apparently.
-        if VdW.WBHAM == self.vdw:
-            expression += ( 'gamma3   = (gamma/(3+gamma));')
+        combdict = self.comb.combStrings()
         for pp in vdwParamNames:
-            expression += ( '%s    = %s;' % ( pp, combdict[pp] ))
+            self.vdw_expression += ('%s = %s;' % ( pp, combdict[pp] ))
         if self.nonbondedMethod == LJPME:
-            expression += ( 'c6 = sqrt(c61*c62);' )
-        self.custom_vdw = openmm.CustomNonbondedForce(expression)
-        self.custom_vdw.setName("VanderWaals"+dictVdW[self.vdw])
+            self.vdw_expression += ('c6 = sqrt(c61*c62);')
+
+        # custom van der Waals
+        self.custom_vdw = openmm.CustomNonbondedForce(self.vdw_expression)
+        self.custom_vdw.setName("VanderWaals"+ self.vdw)
         for pp in vdwParamNames:
             self.custom_vdw.addPerParticleParameter(pp)
         if self.nonbondedMethod == LJPME:
@@ -966,39 +945,39 @@ class ActOpenMMSim:
             elec_string = ("(1/r-%g)" % ( 1.0/self.nonbondedCutoff ))
         else:
             elec_string = ("(1/r)")
-        if qDist.Gaussian == self.qdist:
+        if qdistDict[self.qdist] == qDist.Gaussian:
             # Electrostatics is our screened Coulomb minus the point charge based potential
-            expression          = ( "(%s*charge1*charge2*Gaussian*%s);" %
+            self.qq_expression  = ( "(%s*charge1*charge2*Gaussian*%s);" %
                                     ( ONE_4PI_EPS0, elec_string ) )
-            expression         += ( "Gaussian = %s;" % self.comb.gaussianString())
-        elif qDist.Point == self.qdist:
+            self.qq_expression += ( "Gaussian = %s;" % self.comb.gaussianString())
+        elif qdistDict[self.qdist] == qDist.Point:
             # Or a simple point charge
-            expression = ( '(%s*charge1*charge2*%s);' % ( ONE_4PI_EPS0, elec_string  ) )
-        self.qq_expression  = expression
+            self.qq_expression = ( '(%s*charge1*charge2*%s);' % ( ONE_4PI_EPS0, elec_string  ) )
 
-        self.custom_coulomb = openmm.CustomNonbondedForce(expression)
-        self.custom_coulomb.setName("Coulomb"+dictQdist[self.qdist])
+        self.custom_coulomb = openmm.CustomNonbondedForce(self.qq_expression)
+        self.custom_coulomb.setName("Coulomb"+self.qdist)
         if self.debug:
-            self.txt.write("Created function %s '%s'\n" % ( self.custom_coulomb.getName(), expression))
+            self.txt.write("Created function %s '%s'\n" % ( self.custom_coulomb.getName(), self.qq_expression))
         self.custom_coulomb.addPerParticleParameter("charge")
-        if qDist.Point != self.qdist:
+        if qdistDict[self.qdist] != qDist.Point:
             self.custom_coulomb.addPerParticleParameter("zeta")
 
         self.charges = []
         for index in range(self.nonbondedforce.getNumParticles()):
-            if self.useOpenMMForce or qDist.Point == self.qdist or not self.customnb:
+            if self.useOpenMMForce or qdistDict[self.qdist] == qDist.Point or not self.customnb:
                 *myparams, = self.nonbondedforce.getParticleParameters(index)
                 allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
                 charge     = allParam["charge"]
                 self.custom_coulomb.addParticle([charge])
+                self.txt.write(f"Adding {self.qdist} charge {charge} to particle {index}\n")
             else:
                 *myparams, = self.customnb.getParticleParameters(index)
                 allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
                 charge     = allParam["charge"]
                 zeta       = allParam["zeta"]
-                self.custom_coulomb.addParticle([charge, zeta])
+                self.custom_coulomb.addParticle([charge, zeta]) # should these be turned into quantities as well?
+                self.txt.write(f"Adding {self.qdist} charge {charge} and zeta {zeta} to particle {index}\n")
             self.charges.append(charge)
-            self.txt.write("Adding %s charge %g to particle %d\n" % ( dictQdist[self.qdist], charge, index ))
 
         # Van der Waals, is our custom potential minus the default LJ.
         self.makeVdWFunc()
@@ -1053,11 +1032,10 @@ class ActOpenMMSim:
         # nonbonded interactions in OpenMM and it likely less in ACT.
         # These interactions are added using two CustomBondForce entries.
         vdw_excl_corr = None
-        dictkey       = dictVdW[self.vdw]
         if not self.useOpenMMForce:
-            vdw_excl_corr = openmm.CustomBondForce(self.vdw_expression)
+            vdw_excl_corr = openmm.CustomBondForce(self.vdw_excl_corr_expression)
             vdw_excl_corr.setName("VanderWaalsExclusionCorrection")
-            for pp in VdWdict[dictkey]["params"]:
+            for pp in VdWDict[self.vdw]["params"]:
                 vdw_excl_corr.addPerBondParameter(pp)
 
         # Information on how to use PME with custom Coulomb
@@ -1065,60 +1043,45 @@ class ActOpenMMSim:
         # PME uses full charges, so subtract those.
         # TODO fetch this number from system.context
         # Now corrections for PME, dispersion only. TODO: This needs the erf function!
-        vdw_pme_corr = None
-        if self.nonbondedMethod == LJPME and not self.useOpenMMForce and self.vdw_pme_corr_expression:
-            vdw_pme_corr = openmm.CustomBondForce("%s" % self.vdw_pme_corr_expression)
-            vdw_pme_corr.setName("VanderWaalsPMEExclusionCorrection")
-            vdw_pme_corr.addPerBondParameter("c6")
+        vdw_pme_excl_corr = None
+        if self.nonbondedMethod == LJPME and not self.useOpenMMForce and self.vdw_pme_excl_corr_expression:
+            vdw_pme_excl_corr = openmm.CustomBondForce("%s" % self.vdw_pme_excl_corr_expression)
+            vdw_pme_excl_corr.setName("VanderWaalsPMEExclusionCorrection")
+            vdw_pme_excl_corr.addPerBondParameter("c6")
 
-        if False:
-            if self.nonbondedMethod == LJPME:
-                param = self.nonbondedforce.getLJPMEParametersInContext(self.simulation.context)
-                if self.debug:
-                    self.txt.write("DBG: LJPME parameters {}\n".format(param))
-                self.alphaPME = param[0]
-            elif self.nonbondedMethod == PME:
-                param = self.nonbondedforce.getPMEParametersInContext(self.simulation.context)
-                if self.debug:
-                    self.txt.write("DBG: PME parameters {}\n".format(param))
-                self.alphaPME = param[0]
-        self.txt.write("Found PME spreading alpha = %g\n" % self.alphaPME)
-
-        qq_pme_corr = None
-        qq_pme_self = None
+        qq_pme_excl_corr      = None
+        qq_pme_excl_corr_self = None
         if self.nonbondedMethod in [ PME, LJPME ] and not self.useOpenMMForce:
             # Essmann1995, eqn. 2.5
             # The factor 1/2 is taken into acount by including the exclusions
             # in one direction only.
-            qq_recip_corr = ( "-(%s*charge1*charge2*erf(%s*r)/r)" % ( ONE_4PI_EPS0, self.alphaPME ) )
+            qq_pme_excl_corr_expression = ( "-(%s*qiqj*erf(%s*r)/r)" % ( ONE_4PI_EPS0, self.alphaPME ) )
             if self.verbose:
-                self.txt.write("qq_recip_corr '%s'\n" % qq_recip_corr)
-            qq_pme_corr  = openmm.CustomBondForce(qq_recip_corr)
-            qq_pme_corr.setName("CoulombPMEExclusionCorrection")
-            qq_pme_corr.addPerBondParameter("charge1")
-            qq_pme_corr.addPerBondParameter("charge2")
+                self.txt.write("qq_recip_corr '%s'\n" % qq_pme_excl_corr_expression)
+            qq_pme_excl_corr  = openmm.CustomBondForce(qq_pme_excl_corr_expression)
+            qq_pme_excl_corr.setName("CoulombPMEExclusionCorrection")
+            qq_pme_excl_corr.addPerBondParameter("qiqj")
             # OpenMM uses point charges for PME. No need to correct for this though.
             # Eqn. 2.5 in Essmann1995a
             if False:
-                self_str = ("-%g*charge^2;" % ( 2*self.alphaPME*ONE_4PI_EPS0/math.sqrt(math.pi) ) )
-                qq_pme_self = openmm.CustomCompoundBondForce(1, self_str)
-                qq_pme_self.addPerBondParameter("charge")
-                qq_pme_self.setName("CoulombPMESelfEnergy")
+                qq_pme_excl_corr_self_expression = ("-%g*charge^2;" % ( 2*self.alphaPME*ONE_4PI_EPS0/math.sqrt(math.pi) ) )
+                qq_pme_excl_corr_self = openmm.CustomCompoundBondForce(1, qq_pme_excl_corr_self_expression)
+                qq_pme_excl_corr_self.addPerBondParameter("charge")
+                qq_pme_excl_corr_self.setName("CoulombPMESelfEnergy")
 
         qq_excl_corr = None
         if not self.useOpenMMForce:
-            if self.qdist == qDist.Point:
-                myexpression =  ( "(%s*charge1*charge2/r)" % ( ONE_4PI_EPS0 ) )
-            elif self.qdist == qDist.Gaussian:
-                myexpression  = ( "(%s*charge1*charge2*Gaussian/r);" % ( ONE_4PI_EPS0 ) )
-                myexpression += ( "Gaussian = %s;" % self.comb.gaussianString())
+            if qdistDict[self.qdist] == qDist.Point:
+                qq_excl_corr_expression =  ( "(%s*qiqj/r)" % ( ONE_4PI_EPS0 ) )
+            elif qdistDict[self.qdist] == qDist.Gaussian:
+                qq_excl_corr_expression  = ( "(%s*qiqj*Gaussian/r);" % ( ONE_4PI_EPS0 ) )
+                qq_excl_corr_expression += ( "Gaussian = %s;" % self.comb.gaussianString())
             else:
-                sys.exit("No support for charge distribution type %s" % dictQdist[self.qdist])
-            qq_excl_corr = openmm.CustomBondForce(myexpression)
+                sys.exit("No support for charge distribution type %s" % self.qdist)
+            qq_excl_corr = openmm.CustomBondForce(qq_excl_corr_expression)
             qq_excl_corr.setName("CoulombExclusionCorrection")
-            qq_excl_corr.addPerBondParameter("charge1")
-            qq_excl_corr.addPerBondParameter("charge2")
-            if self.qdist != qDist.Point:
+            qq_excl_corr.addPerBondParameter("qiqj")
+            if qdistDict[self.qdist] != qDist.Point:
                 qq_excl_corr.addPerBondParameter("zeta1")
                 qq_excl_corr.addPerBondParameter("zeta2")
             self.txt.write("Made qq_excl_corr\n")
@@ -1129,7 +1092,7 @@ class ActOpenMMSim:
 
         if self.debug:
             for param in combdict:
-                self.txt.write("%s   = %s\n" % ( param, combdict[param] ))
+                self.txt.write("%s = %s\n" % ( param, combdict[param] ))
 
         for index in range(self.nonbondedforce.getNumExceptions()):
 
@@ -1138,39 +1101,22 @@ class ActOpenMMSim:
             if self.debug:
                 self.txt.write("iatom %d jatom %d\n" % ( iatom, jatom ))
 
-            if self.vdw == VdW.LJ12_6 and self.qdist == qDist.Point:
+            if VdWDict[self.vdw]["func"] == VdW.LJ12_6 and qdistDict[self.qdist] == qDist.Point:
                 # Get the parameters from the standard NB force
                 *iparameters, = self.nonbondedforce.getParticleParameters(iatom)
                 *jparameters, = self.nonbondedforce.getParticleParameters(jatom)
-                allParam      = {parameter: [iparameters[idx], jparameters[idx]] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
+                allParam      = {parameter: [iparameters[idx]._value, jparameters[idx]._value] for parameter, idx in self.parameter_indices["NonbondedForce"].items()} # NonbondedForce also stores unit
                 if self.debug:
-                    self.txt.write(f" default nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
-                    self.txt.write(f" default nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
-            elif (self.vdw == VdW.LJ12_6 and self.qdist == qDist.Gaussian) or self.vdw in {VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7}:
+                    self.txt.write(f" default nonbonded force i {', '.join([f'{parameter}={iparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
+                    self.txt.write(f" default nonbonded force j {', '.join([f'{parameter}={jparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
+            elif (VdWDict[self.vdw]["func"] == VdW.LJ12_6 and qdistDict[self.qdist] == qDist.Gaussian) or VdWDict[self.vdw]["func"] in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
                 # or get the parameters from the Custom NB force
                 *iparameters, = self.customnb.getParticleParameters(iatom)
                 *jparameters, = self.customnb.getParticleParameters(jatom)
                 allParam      = {parameter: [iparameters[idx], jparameters[idx]] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
                 if self.debug:
-                    self.txt.write(f" custom nonbonded force i {self.customnb.getParticleParameters(iatom)}\n")
-                    self.txt.write(f" custom nonbonded force j {self.customnb.getParticleParameters(jatom)}\n")
-
-            # Coulomb part
-            # When using PME, add the PME exclusion, independent of our own exclusion settings
-            if qq_pme_corr:
-                qq_pme_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1]])
-                if self.debug:
-                    self.txt.write("Adding Coul PME corr i %d j %d q1 %g q2 %g\n" %
-                                   ( iatom, jatom, allParam["charge"][0], allParam["charge"][1] ))
-            # Now check wheter our exclusions are fewer than OpenMM
-            if qq_excl_corr and not self.real_exclusion(nexclqq, iatom, jatom):
-                if self.qdist == qDist.Point:
-                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1]])
-                else:
-                    qq_excl_corr.addBond(iatom, jatom, [allParam["charge"][0], allParam["charge"][1], allParam["zeta"][0], allParam["zeta"][1]])
-                if self.debug:
-                    self.txt.write("Adding Coul excl corr i %d j %d q1 %g q2 %g zeta1 %g zeta2 %g\n" %
-                                   ( iatom, jatom, allParam["charge"][0], allParam["charge"][1], allParam["zeta"][0], allParam["zeta"][1]))
+                    self.txt.write(f" custom nonbonded force i {', '.join([f'{parameter}={iparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
+                    self.txt.write(f" custom nonbonded force j {', '.join([f'{parameter}={jparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
 
             # Van der Waals part
             # Always add the PME exclusion, independent of our own exclusion settings
@@ -1178,53 +1124,64 @@ class ActOpenMMSim:
             # Van der Waals part
             # Always add the PME exclusion, independent of our own exclusion settings
             # And get the parameters from the Custom NB force
-            if self.vdw == VdW.LJ12_6 and self.qdist == qDist.Point:
-                if vdw_pme_corr:
-                    iLJ12_6 = self.nonbondedforce.getParticleParameters(iatom)
-                    jLJ12_6 = self.nonbondedforce.getParticleParameters(jatom)
-                    # Use geometric combination rule
-                    sigma   = math.sqrt(iLJ12_6[1]._value*jLJ12_6[1]._value)
-                    epsilon = math.sqrt(iLJ12_6[2]._value*jLJ12_6[2]._value)
-                    c6 = 4*epsilon*sigma**6
-                    vdw_pme_corr.addBond(iatom, jatom, [ c6 ])
-                    if self.debug:
-                        self.txt.write("Adding vdw_pme_corr iatom %d jatom %d sigma %g epsilon %g c6 %g\n" % ( iatom, jatom, sigma, epsilon, c6 ))
-            elif vdw_excl_corr and (self.vdw in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7] or (self.vdw == VdW.LJ12_6 and self.qdist == qDist.Gaussian)):
-
-                if (not self.real_exclusion(nexclvdw, iatom, jatom) and
-                    allParam["epsilon"][0] > 0 and
-                    allParam["epsilon"][1] > 0):
-
+            if vdw_pme_excl_corr:
+                iLJ12_6 = self.nonbondedforce.getParticleParameters(iatom)
+                jLJ12_6 = self.nonbondedforce.getParticleParameters(jatom)
+                # Use geometric combination rule
+                sigma   = math.sqrt(iLJ12_6[1]._value*jLJ12_6[1]._value)
+                epsilon = math.sqrt(iLJ12_6[2]._value*jLJ12_6[2]._value)
+                c6      = 4*epsilon*sigma**6
+                vdw_pme_excl_corr.addBond(iatom, jatom, [ c6 ])
+                if self.debug:
+                    self.txt.write("Adding vdw_pme_excl_corr iatom %d jatom %d sigma %g epsilon %g c6 %g\n" % ( iatom, jatom, sigma, epsilon, c6 ))
+            if vdw_excl_corr and not self.real_exclusion(nexclvdw, iatom, jatom):
+                if (not self.real_exclusion(nexclvdw, iatom, jatom) and allParam["epsilon"][0] > 0 and allParam["epsilon"][1] > 0):
                     allXXX = self.comb.combFloats(allParam)
-                    vdW_parameters	= []
-                    for parameter in VdWdict[dictkey]["params"]:
+                    vdW_parameters = []
+                    for parameter in VdWDict[self.vdw]["params"]:
                         myvdw = allXXX[parameter]
                         if self.debug:
                             self.txt.write("DBG: param %s myvdw %s\n" % ( parameter, myvdw ))
                         vdW_parameters.append(myvdw)
-                    if self.nonbondedMethod == LJPME:
-                        vdW_parameters.append(0)
                     vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
                     if self.debug:
                         msg = "Adding VDW excl i %d j %d" % (iatom, jatom)
                         k   = 0
-                        for parameter in VdWdict[dictkey]["params"]:
+                        for parameter in VdWDict[self.vdw]["params"]:
                             msg += " %s %g" % (parameter, vdW_parameters[k])
                             k   += 1
                         self.txt.write("%s\n" % msg)
 
+            # Coulomb part
+            # When using PME, add the PME exclusion, independent of our own exclusion settings
+            if qq_pme_excl_corr:
+                qiqj = allParam['charge'][0]*allParam['charge'][1]
+                qq_pme_excl_corr.addBond(iatom, jatom, [qiqj])
+                if self.debug:
+                    self.txt.write(f"Adding Coul PME corr i {iatom} j {jatom} qi*qj {qiqj}\n")
+            # Now check wheter our exclusions are fewer than OpenMM
+            if qq_excl_corr and not self.real_exclusion(nexclqq, iatom, jatom):
+                qiqj = allParam['charge'][0]*allParam['charge'][1]
+                if qdistDict[self.qdist] == qDist.Point:
+                    qq_excl_corr.addBond(iatom, jatom, [qiqj])
+                    if self.debug:
+                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj}\n")
+                else:
+                    qq_excl_corr.addBond(iatom, jatom, [qiqj, allParam['zeta'][0], allParam['zeta'][1]])
+                    if self.debug:
+                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} zeta1 {allParam['zeta'][0]} zeta2 {allParam['zeta'][1]}\n")
+
         # Finally single particle self interaction
         # This is not needed. Throw away?
-        if qq_pme_self:
+        if qq_pme_excl_corr_self:
             for index in range(self.nonbondedforce.getNumParticles()):
                 [ charge, _, _ ] = self.nonbondedforce.getParticleParameters(index)
                 # Since the addBond routine cannot know how many atoms are
                 # part of this, atoms have to be specified as a list.
-                qq_pme_self.addBond([ index ], [ charge ])
+                qq_pme_excl_corr_self.addBond([ index ], [ charge ])
 
         # Finish off. Did we add any exclusion or PME corrections?
-        for myforce in [ qq_excl_corr, qq_pme_corr, qq_pme_self,
-                         vdw_excl_corr, vdw_pme_corr ]:
+        for myforce in [ vdw_excl_corr, vdw_pme_excl_corr, qq_excl_corr, qq_pme_excl_corr, qq_pme_excl_corr_self ]:
             if myforce and 0 < myforce.getNumBonds():
                 self.add_force_group(myforce, False, True)
                 self.system.addForce(myforce)
@@ -1338,6 +1295,41 @@ class ActOpenMMSim:
                 self.txt.write("Number of angles %d\n" % ( force.getNumAngles()))
         self.txt.write("----------------------------\n")
 
+    def set_platform(self):
+        # platform
+        platform            = self.sim_params.getStr("usePlatform")
+        available_platforms = [Platform.getPlatform(i).getName() for i in range(Platform.getNumPlatforms())]
+        if platform in available_platforms:
+            self.txt.write(f"Requested platform {platform} found.\n")
+        else:
+            self.txt.write(f"Requested platform {platform} not found. Looking through available alternatives...\n")
+            for alternative_platform in ["CUDA", "OpenCL", "CPU", "Reference"]:
+                alternative_found = False
+                if alternative_platform in available_platforms:
+                    platform = alternative_platform
+                    self.txt.write(f"Alternative platform {platform} found.\n")
+                    alternative_found = True
+                    break
+            if not alternative_found:
+                sys.exit("Found no suitable platform to carry out computations. Exiting...\n")
+        self.platform = Platform.getPlatformByName(platform)
+        self.txt.write(f"Using OpenMM version {self.platform.getOpenMMVersion()} on platform {self.platform.getName()}.\n")
+        # platform precison
+        available_properties = self.platform.getPropertyNames()
+        for property, alternative_values in [('Precision', ['double', 'single', 'mixed'])]:
+            if f"use{property}" in self.sim_params.params:
+                if property in available_properties:
+                    value = self.sim_params.getStr(f"use{property}")
+                    self.platform.setPropertyDefaultValue(property, value)
+                    self.txt.write(f"Requested platform property {property} set to default value {value}.\n")
+                else:
+                    self.txt.write(f"Property {property} does not exist for platform {self.platform.getName()}.\n")
+        # summary of properties
+        if self.debug:
+            for property in available_properties:
+                value = self.platform.getPropertyDefaultValue(property)
+                self.txt.write("Property %s value %s\n" % ( property, str(value) ))
+
     def set_algorithms(self):
         #### ethermostat / Barostat ####
         if self.nonbondedMethod != NoCutoff:
@@ -1393,7 +1385,7 @@ class ActOpenMMSim:
             self.txt.write("Core Temperature %g\n" % self.temperature_c)
             if self.polarizable:
                 self.txt.write("Drude Temperature %g\n" % self.integrator.getDrudeTemperature()._value)
-            self.txt.write("Step size %g\n" % self.integrator.getStepSize()._value)
+            self.txt.write("Integration time step %g\n" % self.integrator.getStepSize()._value)
 
     def compute_dipole(self)->list:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
@@ -1410,17 +1402,6 @@ class ActOpenMMSim:
         #### Simulation setup ####
         self.simulation = Simulation(self.topology, self.system, self.integrator, self.platform)
         self.simulation.context.setPositions(self.positions)
-        # Check whether the use platform can change the precision at all.
-        prec = "Precision"
-        havePrecision = False
-        for p in self.platform.getPropertyNames():
-            v = self.platform.getPropertyValue(self.simulation.context, p)
-            if self.debug:
-                self.txt.write("Property %s value %s\n" % ( p, str(v) ))
-            if prec == p:
-                havePrecesion = True
-        if havePrecision:
-            self.platform.setPropertyValue(self.simulation.context, prec, self.usePrecision)
 
     def update_positions(self):
         #### Set positions of shell system to almost zero) ####
@@ -1579,6 +1560,7 @@ class ActOpenMMSim:
         self.start_output()
         self.make_system()
         self.set_algorithms()
+        self.set_platform()
         self.init_forces()
         self.make_forces()
         self.add_excl_correction()
