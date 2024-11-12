@@ -8,13 +8,13 @@
     <Real>0.20060832355674973</Real>
     <Real>-0.42231047435440172</Real>
     <Real>-0.42231047435440161</Real>
-    <Real>0.033062025055253602</Real>
-    <Real>0.029488057842546211</Real>
-    <Real>0.03306202505525363</Real>
+    <Real>0.031870702651017817</Real>
+    <Real>0.031870702651017817</Real>
+    <Real>0.031870702651017817</Real>
     <Real>0.22785727916422766</Real>
     <Real>-0.45571455832845531</Real>
     <Real>0.22785727916422766</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">-1</Real>
+  <Real Name="Molecule 1 charge">-0.99999999999999989</Real>
   <Real Name="Molecule 2 charge">0</Real>
 </ReferenceData>

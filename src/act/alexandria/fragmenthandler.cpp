@@ -158,32 +158,18 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        for (size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
+        auto myatoms = topologies_[ff]->atoms();
+        for (size_t a = 0; a < myatoms.size(); a++)
         {
             // TODO: Check whether this works for polarizable models
-            switch (algorithm_)
+            size_t index = atomStart_[ff] + a;
+            GMX_RELEASE_ASSERT(index < natoms_, 
+                               gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
+            (*qq)[index] = myatoms[a].charge();
+            if (debug)
             {
-            case ChargeGenerationAlgorithm::EEM:
-            case ChargeGenerationAlgorithm::SQE:
-                {
-                    size_t index = atomStart_[ff] + a;
-                    GMX_RELEASE_ASSERT(index < natoms_, 
-                                       gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
-                    (*qq)[index] = QgenAcm_[ff].getQ(a);
-                    if (debug)
-                    {
-                        fprintf(debug, "Charge %ld = %g\n", index,
-                                (*qq)[index]);
-                    }
-                }
-                break;
-            case ChargeGenerationAlgorithm::Read:
-                (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
-                break;
-            default: // throws
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
-                                                                   chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
-                break;
+                fprintf(debug, "Charge %ld = %g\n", index,
+                        (*qq)[index]);
             }
         }
     }

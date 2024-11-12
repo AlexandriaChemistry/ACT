@@ -10,24 +10,24 @@
     <Real>-0.80000000000000004</Real>
     <Real>0.82923570551470649</Real>
     <Real>-1.2</Real>
-    <Real>0.98417119834254141</Real>
+    <Real>0.98472826433962057</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.9841721141582408</Real>
+    <Real>0.98472826433962057</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.98584148051807974</Real>
+    <Real>0.98472826433962057</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99835051360055727</Real>
+    <Real>0.99835316659093265</Real>
     <Real>-0.80000000000000004</Real>
     <Real>0.8032936668181343</Real>
     <Real>-1.2</Real>
-    <Real>0.99835581958130803</Real>
+    <Real>0.99835316659093265</Real>
     <Real>-0.80000000000000004</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">-5.5511151231257827e-16</Real>
+  <Real Name="Molecule 1 charge">-7.7715611723760958e-16</Real>
   <Real Name="Molecule 2 charge">-4.4408920985006262e-16</Real>
-  <Real Name="InteractionEnergy">48.882036867823331</Real>
-  <Real Name="Coulomb">0.94197485482474974</Real>
-  <Real Name="Induction">-0.20939695850990692</Real>
+  <Real Name="InteractionEnergy">48.889898776462701</Real>
+  <Real Name="Coulomb">0.94744684249751288</Real>
+  <Real Name="Induction">-0.20698472783533362</Real>
   <Real Name="Dispersion">-5.0375504048393243</Real>
   <Real Name="Repulsion">53.182866988368922</Real>
 </ReferenceData>
