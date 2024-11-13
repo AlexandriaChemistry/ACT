@@ -841,6 +841,14 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
     }
 }
 
+static void add_xml_weight(xmlNodePtr  parent,
+                           const char *wname,
+                           double      w)
+{
+    auto w1 = gmx::formatString("%.8f", w);
+    add_xml_char(parent, wname, w1.c_str());
+}
+
 void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     const ForceField          *pd,
                                     const std::vector<ACTMol> &actmols)
@@ -1090,45 +1098,45 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     case InteractionType::VSITE2:
                                         {
                                             auto p = ee->params()[0];
-                                            add_xml_double(baby, "weight1", 1-p);
-                                            add_xml_double(baby, "weight2", p);
+                                            add_xml_weight(baby, "weight1", 1-p);
+                                            add_xml_weight(baby, "weight2", p);
                                         }
                                         break;
                                     case InteractionType::VSITE3S:
                                         {
                                             auto p = ee->params()[0];
-                                            add_xml_double(baby, "weight1", p);
-                                            add_xml_double(baby, "weight2", 1-2*p);
-                                            add_xml_double(baby, "weight3", p);
+                                            add_xml_weight(baby, "weight1", p);
+                                            add_xml_weight(baby, "weight2", 1-2*p);
+                                            add_xml_weight(baby, "weight3", p);
                                         }
                                         break;
                                     case InteractionType::VSITE3:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", 1-p[0]-p[1]);
-                                            add_xml_double(baby, "weight3", p[1]);
+                                            add_xml_weight(baby, "weight1", p[0]);
+                                            add_xml_weight(baby, "weight2", 1-p[0]-p[1]);
+                                            add_xml_weight(baby, "weight3", p[1]);
                                         }
                                         break;
                                     case InteractionType::VSITE3OUT:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", p[1]);
+                                            add_xml_weight(baby, "weight1", p[0]);
+                                            add_xml_weight(baby, "weight2", p[1]);
                                             // To make the two vsites different, we assume they are next to each other
                                             // in the row of atoms. In which order the vsites have +/- does not matter.
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_double(baby, "weight3", sign*p[2]);
+                                            add_xml_weight(baby, "weight3", sign*p[2]);
                                         }
                                         break;
                                     case InteractionType::VSITE3OUTS:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", p[0]);
+                                            add_xml_weight(baby, "weight1", p[0]);
+                                            add_xml_weight(baby, "weight2", p[0]);
                                             // See above
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_double(baby, "weight3", sign*p[1]);
+                                            add_xml_weight(baby, "weight3", sign*p[1]);
                                         }
                                         break;
                                     default:
