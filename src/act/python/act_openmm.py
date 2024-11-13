@@ -967,7 +967,7 @@ class ActOpenMMSim:
             if self.useOpenMMForce or qdistDict[self.qdist] == qDist.Point or not self.customnb:
                 *myparams, = self.nonbondedforce.getParticleParameters(index)
                 allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
-                if type(allParam["charge"]) == Qtype:
+                if hasattr(allParam["charge"], "_value"):
                     charge     = allParam["charge"]._value
                 else:
                     charge     = allParam["charge"]
