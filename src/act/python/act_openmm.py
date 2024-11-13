@@ -967,7 +967,10 @@ class ActOpenMMSim:
             if self.useOpenMMForce or qdistDict[self.qdist] == qDist.Point or not self.customnb:
                 *myparams, = self.nonbondedforce.getParticleParameters(index)
                 allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["NonbondedForce"].items()}
-                charge     = allParam["charge"]._value
+                if type(allParam["charge"]) == Qtype:
+                    charge     = allParam["charge"]._value
+                else:
+                    charge     = allParam["charge"]
                 self.custom_coulomb.addParticle([charge])
                 self.txt.write(f"Adding {self.qdist} charge {charge} to particle {index}\n")
             else:
