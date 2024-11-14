@@ -233,10 +233,17 @@ int simulate(int argc, char *argv[])
     if (immStatus::OK == imm && status == 0)
     {
         auto fragments  = actmol.fragmentHandler();
-        if (fragments->setCharges(qmap))
+        if (!qmap.empty())
         {
-            // Copy charges to the high-level topology as well
-            fragments->fetchCharges(actmol.atoms());
+            if (fragments->setCharges(qmap))
+            {
+                // Copy charges to the high-level topology as well
+                fragments->fetchCharges(actmol.atoms());
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Not all compounds present in the charge map %s", qfn).c_str()));
+            }
         }
         else
         {
