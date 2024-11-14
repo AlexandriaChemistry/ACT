@@ -277,10 +277,14 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
             else
             {
                 success = false;
+                fprintf(stderr, "Compound '%s' from the input does not match the same compound in the charge map.\n",
+                        ids_[i].c_str());
             }
         }
         else
         {
+            fprintf(stderr, "Cannot find compound '%s' in the charge map\n",
+                    ids_[i].c_str());
             success = false;
         }
     }

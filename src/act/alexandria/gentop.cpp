@@ -359,10 +359,17 @@ int gentop(int argc, char *argv[])
             actmol->getExpProps(&pd, iqm, 0.0, maxpot);
             auto fragments  = actmol->fragmentHandler();
             auto topologies = fragments->topologies();
-            if (fragments->setCharges(qmap))
+            if (!qmap.empty())
             {
-                // Copy charges to the high-level topology as well
-                fragments->fetchCharges(actmol->atoms());
+                if (fragments->setCharges(qmap))
+                {
+                    // Copy charges to the high-level topology as well
+                    fragments->fetchCharges(actmol->atoms());
+                }
+                else
+                {
+                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Not all compounds present in the charge map %s", molpropDatabase).c_str()));
+                }
             }
             else
             {
