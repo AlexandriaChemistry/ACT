@@ -1086,10 +1086,17 @@ size_t MolGen::Read(FILE                                *fp,
             if (immStatus::OK == imm)
             {
                 auto fragments = actmol.fragmentHandler();
-                if (fragments->setCharges(qmap))
+                if (!qmap.empty())
                 {
-                    // Copy charges to the high-level topology as well
-                    fragments->fetchCharges(actmol.atoms());
+                    if (fragments->setCharges(qmap))
+                    {
+                        // Copy charges to the high-level topology as well
+                        fragments->fetchCharges(actmol.atoms());
+                    }
+                    else
+                    {
+                        imm = immStatus::NoMolpropCharges;
+                    }
                 }
                 else
                 {
