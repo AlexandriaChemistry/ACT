@@ -3810,6 +3810,7 @@
   <interaction type="VANDERWAALS" function="LJ12_6" canswap="true">
     <combinationrule parameter="epsilon" rule="Geometric"/>
     <combinationrule parameter="sigma" rule="Geometric"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Ar">
       <parameter type="epsilon" unit="kJ/mol" value="0.515" uncertainty="0" minimum="0.03" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.15" maximum="0.4" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -4117,6 +4118,7 @@
   </interaction>
   <interaction type="COULOMB" function="COULOMB_GAUSSIAN" canswap="true">
     <option key="reference" value="Ghahremanpour2018b"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Be2+_s_z">
       <parameter type="zeta" unit="1/nm" value="7" uncertainty="0" minimum="2" maximum="12" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
