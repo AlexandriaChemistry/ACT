@@ -339,9 +339,9 @@ int gen_ff(int argc, char*argv[])
     std::vector<t_pargs> pa =
     {
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
-          "Number of exclusions for Coulomb interactions, zero recommend for polarizable force fields." },
+          "Number of exclusions for Coulomb and InductionCorrection interactions." },
         { "-nexclvdw", FALSE, etINT,  {&nexclvdw},
-          "Number of exclusions for Van der Waals interactions." },
+          "Number of exclusions for Van der Waals interactions and Van der Waals corrections." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-qsymm", FALSE, etBOOL, {&qsymm},
@@ -387,6 +387,7 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
     ForceFieldParameterList induccorr(potentialToString(Potential::DOUBLEEXPONENTIAL), CanSwap::Yes);
+    induccorr.addOption("nexcl", gmx_itoa(nexclqq));
     // Combination rules
     crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
