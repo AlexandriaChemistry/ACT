@@ -470,7 +470,7 @@ void Topology::makePairs(const ForceField *pd,
         int nexcl;
         if (!ffOption(*pd, itype, "nexcl", &nexcl))
         {
-            nexcl = 0;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(itype).c_str(), pd->filename().c_str())));
         }
         //! Non bonded exclusions, array is length of number of atoms
         auto exclusions = generateExclusions(&pairs, nexcl);
