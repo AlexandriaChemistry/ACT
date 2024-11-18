@@ -432,6 +432,35 @@ void OpenMMWriter::addXmlBond(xmlNodePtr                      parent,
     }
 }
 
+static void add_global(xmlNodePtr ptr,
+                       const std::string &name,
+                       int value)
+{
+    auto gp = add_xml_child(ptr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
+    add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), name.c_str());
+    add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
+}
+
+static void add_global(xmlNodePtr ptr,
+                       const std::string &name,
+                       double value)
+{
+    auto gp = add_xml_child(ptr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
+    add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), name.c_str());
+    add_xml_double(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
+}
+
+static void add_combrules(xmlNodePtr                     parent,
+                          const ForceFieldParameterList &fs)
+{
+    const auto crules = fs.combinationRules();
+    for(const auto &cr : crules)
+    {
+        std::string name = "cr_" + cr.first + "_" + cr.second;
+        add_global(parent, name, 1);
+    }
+}
+
 void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
                                  const ForceField                *pd,
                                  const std::map<std::string, int> &ffTypeMap)
@@ -451,11 +480,14 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         {
             continue;
         }
+        auto fs      = pd->findForcesConst(itype);
         auto specPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
+        add_global(specPtr, potentialToString(fs.potential()), 1);
+        add_combrules(specPtr, fs);
         add_xml_int(specPtr, "bondCutoff", 3);
+        add_xml_char(specPtr, "energy", "0");
         if (itype == itVC)
         {
-            add_xml_char(specPtr, "energy", "-aexp exp(-bexp r)");
             for(int i = 0; i < expA_IJ; i++)
             {
                 auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -464,14 +496,12 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         }
         else if (itype == itIC)
         {
-            add_xml_char(specPtr, "energy", "(a1dexp - a2dexp) * exp(-bdexp r)");
             for(int i = 0; i < dexpA1_IJ; i++)
             {
                 auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
                 add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), dexp_name[i]);
             }
         }
-        auto fs = pd->findForcesConst(itype);
         for(const auto &fft: ffTypeMap)
         {
             auto aType = pd->findParticleType(fft.first);
@@ -519,10 +549,27 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
                                    const ForceField                *pd,
                                    const std::map<std::string, int> &ffTypeMap)
 {
+    // Fetch number of exclusions. 3 is the default in OpenMM.
     auto fs     = pd->findForcesConst(InteractionType::VDW);
-    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+    int nexclvdw = 3;
     std::string nnn("nexcl");
-
+    if (fs.optionExists(nnn))
+    {
+        nexclvdw = std::stoi(fs.optionValue(nnn));
+    }
+    // Now for Coulomb.
+    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+    int nexclqq = 3;
+    if (fsCoul.optionExists(nnn))
+    {
+        nexclqq = std::stoi(fsCoul.optionValue(nnn));
+    }
+    double epsilonr = 1;
+    std::string epsr("epsilonr");
+    if (fsCoul.optionExists(epsr))
+    {
+        epsilonr = std::stod(fsCoul.optionValue(epsr));
+    }
     xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
     if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
@@ -530,6 +577,14 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_xml_double(customNBPtr, "energy", 0.0);
         add_xml_int(customNBPtr, "bondCutoff", 3);
+
+        add_global(customNBPtr, potentialToString(fs.potential()), 1);
+        add_global(customNBPtr, potentialToString(fsCoul.potential()), 1);
+        add_global(customNBPtr, "nexclvdw", nexclvdw);
+        add_global(customNBPtr, "nexclqq", nexclqq);
+        add_global(customNBPtr, epsr, epsilonr);
+        add_combrules(customNBPtr, fs);
+
         auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
@@ -576,6 +631,13 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     add_xml_double(ljPtr, "lj14scale", 1.0); 
     add_xml_double(ljPtr, "energy", 0.0);
     add_xml_int(ljPtr, "bondCutoff", 3);
+
+    add_global(ljPtr, potentialToString(fs.potential()), 1);
+    add_global(ljPtr, potentialToString(fsCoul.potential()), 1);
+    add_global(ljPtr, "nexclvdw", nexclvdw);
+    add_global(ljPtr, "nexclqq", nexclqq);
+    add_global(ljPtr, epsr, epsilonr);
+    add_combrules(ljPtr, fs);
     auto uafr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
     add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
     
@@ -1292,71 +1354,7 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
     xmlFreeDoc(doc);
 }
 
-static void writeCombinationRules(FILE *fp,
-                                  const std::map<const std::string, CombRule> cmap)
-{
-    fprintf(fp, "combinationRule =");
-    for(const auto &cm : cmap)
-    {
-        fprintf(fp, " %s %s", cm.first.c_str(), combinationRuleName(cm.second).c_str());
-    }
-    fprintf(fp, "\n");
-}
-
-void OpenMMWriter::writeDat(const std::string &fileName,
-                            const ForceField  *pd)
-{
-    std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
-        { InteractionType::ELECTROSTATICS,
-          { { "epsilonr", "dielectricConstant" },
-            { "nexcl", "nexclqq" } } },
-        { InteractionType::VDW,
-          { {  "nexcl", "nexclvdw" } } }
-    };
-
-    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
-    fprintf(fp, "rigidWater  = False\n");
-    fprintf(fp, "constraints = None\n");
-    for(const auto &a2o : act2omm)
-    {
-        if (pd->interactionPresent(a2o.first))
-        {
-            auto fs = pd->findForcesConst(a2o.first);
-            for(const auto &opt : a2o.second)
-            {
-                if (fs.optionExists(opt.first))
-                {
-                    fprintf(fp, "%s = %s\n", opt.second.c_str(),
-                            fs.optionValue(opt.first).c_str());
-                }
-                else
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Option %s missing from InteractionType %s in file %s", opt.first.c_str(), interactionTypeToString(a2o.first).c_str(), pd->filename().c_str())));     
-                }
-            }
-            if (InteractionType::VDW == a2o.first)
-            {
-                fprintf(fp, "vanderwaals = %s\n", 
-                        potentialToString(fs.potential()).c_str());
-                writeCombinationRules(fp, getCombinationRule(fs));
-            }
-            if (InteractionType::ELECTROSTATICS == a2o.first)
-            {
-                fprintf(fp, "chargeDistribution = %s\n",
-                        chargeTypeName(potentialToChargeType(fs.potential())).c_str());
-            }
-        }
-        else
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("InteractionType %s missing from %s", interactionTypeToString(a2o.first).c_str(), pd->filename().c_str())));
-        }
-    }
-    
-    gmx_ffclose(fp);
-}
-
 void writeOpenMM(const std::string         &fileName,
-                 const std::string         &simParams,
                  const ForceField          *pd,
                  const std::vector<ACTMol> &actmols,
                  double                     mDrude,
@@ -1366,7 +1364,6 @@ void writeOpenMM(const std::string         &fileName,
     
     OpenMMWriter writer(mDrude, addNumbersToAtoms);
     writer.writeXml(fileName, pd, actmols);
-    writer.writeDat(simParams, pd);
 }
 
 } // namespace alexandria
