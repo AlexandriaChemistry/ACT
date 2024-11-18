@@ -76,8 +76,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         initACTMol(fileName.c_str(), ff, fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
-        auto tmpDat   = tfm.getTemporaryFilePath("dat");
-        writeOpenMM(tmpFile, tmpDat, ff, mps, mDrude, numberAtypes);
+        writeOpenMM(tmpFile, ff, mps, mDrude, numberAtypes);
         ifm->checkFile(tmpFile, &checker);
     }
 };
