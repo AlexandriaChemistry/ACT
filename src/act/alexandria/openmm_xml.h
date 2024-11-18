@@ -43,7 +43,6 @@ namespace alexandria
     /*! \brief Store the ForceField force field to an OpenMM XML file
      *
      * \param[in] fileName  The filename to save the force field to
-     * \param[in] simParams The filename to save the simulation params to
      * \param[in] pd        Pointer to a ForceField class instance
      * \param[in] actmols   The ACT molecule structures
      * \param[in] mDrude    Mass to use for the drude particle if any
@@ -51,7 +50,6 @@ namespace alexandria
      * \param[in] addNumbersToAtoms Will add integer index to all atom types
      */
     void writeOpenMM(const std::string         &fileName,
-                     const std::string         &simParams,
                      const ForceField          *pd,
                      const std::vector<ACTMol> &actmols,
                      double                     mDrude,

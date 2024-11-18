@@ -80,9 +80,7 @@ int gentop(int argc, char *argv[])
         "uses polarizable or non-polarizable charges or virtual sites.[PAR]",
         "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
         "that can be used to run a simulation of the system using the OpenMM",
-        "software. In addition, a selection of parameters for the OpenMM simulation",
-        "will be written to a [TT].dat[tt] file the name of which can be specified",
-        "with the [TT]-openmm_sim[tt] flag."
+        "software."
     };
     gmx_output_env_t *oenv;
     gmx_atomprop_t    aps;
@@ -91,7 +89,6 @@ int gentop(int argc, char *argv[])
         { efXML, "-ff",         "aff",       ffREAD  },
         { efTOP, "-p",          "out",       ffOPTWR },
         { efXML, "-openmm",     "out",       ffOPTWR },
-        { efDAT, "-openmm_sim", "sim",       ffOPTWR },
         { efITP, "-oi",         "out",       ffOPTWR },
         { efPDB, "-c",          "out",       ffWRITE },
         { efNDX, "-n",          "renum",     ffOPTWR },
@@ -268,10 +265,10 @@ int gentop(int argc, char *argv[])
     }
     if (!actmols.empty())
     {
-        if (opt2bSet("-openmm", fnm.size(), fnm.data()) || opt2bSet("-openmm_sim", fnm.size(), fnm.data()))
+        if (opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
             writeOpenMM(opt2fn("-openmm", fnm.size(), fnm.data()),
-                        opt2fn("-openmm_sim", fnm.size(), fnm.data()), &pd, actmols, mDrude, addNumbersToAtoms);
+                        &pd, actmols, mDrude, addNumbersToAtoms);
         }
     }
     if (!errors.empty())
