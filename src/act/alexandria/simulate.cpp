@@ -385,7 +385,7 @@ int simulate(int argc, char *argv[])
                                     oenv);
             }
             auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-            if (confout)
+            if (confout && eMinimizeStatus::OK == eMin)
             {
                 actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
             }
