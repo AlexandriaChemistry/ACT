@@ -245,7 +245,7 @@ static int tellme_RealAtom(int                         index,
 
 	for (size_t i = 0; i < myatoms.size(); i++)
     {
-		if (myatoms[i].pType() == ActParticle::Atom) 
+		if (myatoms[i].pType() == ActParticle::Atom || myatoms[i].pType() == ActParticle::Vsite)
 		{
 			realAtoms = realAtoms + 1;
 		}
