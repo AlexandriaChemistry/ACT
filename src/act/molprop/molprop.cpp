@@ -425,11 +425,17 @@ int MolProp::Merge(const MolProp *src)
     std::string stmp;
     int         nwarn = 0;
 
-    if (!sameCompound(src))
+    if (!getMolname().empty() && !sameCompound(src))
     {
         return 1;
     }
-
+    if (fragment_.empty())
+    {
+        for(const auto &f : src->fragments())
+        {
+            fragment_.push_back(f);
+        }
+    }
     for (auto &si : src->categoryConst())
     {
         AddCategory(si);
