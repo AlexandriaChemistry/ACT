@@ -14,11 +14,11 @@
   </AtomTypes>
   <Residues>
     <Residue name="sulfate">
-      <Atom name="S_1" type="s3_1" charge="-0.252747"/>
-      <Atom name="O_2" type="o2_1" charge="-0.436811"/>
-      <Atom name="O_3" type="o2_2" charge="-0.436808"/>
-      <Atom name="O_4" type="o2_3" charge="-0.43682"/>
-      <Atom name="O_5" type="o2_4" charge="-0.436814"/>
+      <Atom name="S_1" type="s3_1" charge="-0.25274662341175"/>
+      <Atom name="O_2" type="o2_1" charge="-0.43681071007313"/>
+      <Atom name="O_3" type="o2_2" charge="-0.43680835613517"/>
+      <Atom name="O_4" type="o2_3" charge="-0.43682033498666"/>
+      <Atom name="O_5" type="o2_4" charge="-0.43681397539329"/>
       <Bond atomName1="S_1" atomName2="O_4"/>
       <Bond atomName1="S_1" atomName2="O_3"/>
       <Bond atomName1="O_2" atomName2="S_1"/>
@@ -29,7 +29,7 @@
     <Bond class1="o2_b" class2="s3_b" k="300000" length="0.1399"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0">
-    <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.99491"/>
+    <Angle class1="o2_b" class2="s3_b" class3="o2_b" k="300" angle="1.9949113350295"/>
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
