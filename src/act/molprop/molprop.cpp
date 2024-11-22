@@ -383,37 +383,58 @@ void MolProp::generateFragments(const ForceField *pd)
     renumberResidues();
 }
 
+bool MolProp::sameCompound(const MolProp *other)
+{
+    if (other->getMolname() != getMolname() ||
+        other->fragments().size() != fragment_.size())
+    {
+        return false;
+    }
+    for(size_t ff = 0; ff < fragment_.size(); ++ff)
+    {
+        auto &src_f = fragment_[ff];
+        auto &dst_f = other->fragments()[ff];
+
+        if (src_f.atoms() != dst_f.atoms())
+        {
+            return false;
+        }
+        if (src_f.formula() != dst_f.formula() ||
+            src_f.multiplicity() != dst_f.multiplicity() ||
+            src_f.symmetryNumber() != dst_f.symmetryNumber() ||
+            src_f.charge() != dst_f.charge())
+        {
+            if (debug)
+            {
+                fprintf(debug, "Similar but not identical compounds '%s' encountered.\n", getMolname().c_str());
+                fprintf(debug, "                  %30s  %30s\n", "Me", "Other");
+                fprintf(debug, "ID:               %30s  %30s\n", dst_f.id().c_str(), src_f.id().c_str());
+                fprintf(debug, "Formula:          %30s  %30s\n", dst_f.formula().c_str(), src_f.formula().c_str());
+                fprintf(debug, "Multiplicity:     %30d  %30d\n", dst_f.multiplicity(), src_f.multiplicity());
+                fprintf(debug, "Symmetry number:  %30d  %30d\n", dst_f.symmetryNumber(), src_f.symmetryNumber());
+                fprintf(debug, "Charge:           %30d  %30d\n", dst_f.charge(), src_f.charge());
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 int MolProp::Merge(const MolProp *src)
 {
     std::string stmp;
     int         nwarn = 0;
+
+    if (!sameCompound(src))
+    {
+        return 1;
+    }
 
     for (auto &si : src->categoryConst())
     {
         AddCategory(si);
     }
     setIndex(src->getIndex());
-    for(auto &src_f : src->fragments())
-    {
-        bool found = false;
-        for (auto &dst_f : fragment_)
-        {
-            // TODO Make this check more rigorous, check for overlaps etc.
-            if (//src_f.id() == dst_f.id() &&
-                src_f.atoms() == dst_f.atoms() &&
-                src_f.multiplicity() == dst_f.multiplicity() &&
-                src_f.symmetryNumber() == dst_f.symmetryNumber() &&
-                src_f.formula() == dst_f.formula() &&
-                src_f.charge() == dst_f.charge())
-            {
-                found = true;
-            }
-        }
-        if (!found)
-        {
-            fragment_.push_back(src_f);
-        }
-    }
 
     stmp = src->getMolname();
     if ((getMolname().size() == 0) && (stmp.size() != 0))
