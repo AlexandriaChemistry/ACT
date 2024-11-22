@@ -102,7 +102,14 @@ public:
     
     //! Return the index number for sorting
     int getIndex() const { return index_; }
-    
+
+    /*! \brief Evaluate whether two compounds are the same.
+     * The routine will write to the debug file if open.
+     * \param[in] other The MolProp to compare to
+     * \return true if they are the same
+     */
+    bool sameCompound(const MolProp *other);
+
     /*! \brief
      * Merge the content of another MolProp into this one
      *
