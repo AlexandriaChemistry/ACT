@@ -74,7 +74,7 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             offset = std::min(offset, i);
             if (atomFound[i])
             {
-                fprintf(stderr, "Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str());
+                fprintf(stderr, "Atom %d (%s) occurs multiple times, most recently in fragment %s\n", i, atoms[i].name().c_str(), f->formula().c_str());
                 allWell = false;
                 break;
             }
