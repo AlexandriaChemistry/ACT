@@ -227,11 +227,15 @@ protected:
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
                 std::map<InteractionType, double> einter;
                 mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
-                checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
-                checker_.checkReal(einter[InteractionType::ELECTROSTATICS], "Coulomb");
-                checker_.checkReal(einter[InteractionType::INDUCTION], "Induction");
-                checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
-                checker_.checkReal(einter[InteractionType::EXCHANGE], "Repulsion");
+                for(const auto &e : einter)
+                {
+                    checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
+                }
+                double esum = (einter[InteractionType::ELECTROSTATICS] + einter[InteractionType::INDUCTION] +
+                               einter[InteractionType::INDUCTIONCORRECTION] +
+                               einter[InteractionType::DISPERSION] + einter[InteractionType::EXCHANGE]);
+                double toler = 1e-3;
+                EXPECT_TRUE(std::abs(esum - einter[InteractionType::EPOT]) <= toler);
             }
         }
     }
