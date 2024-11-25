@@ -256,7 +256,7 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
         exper = findExperimentConst(JobType::SP);
         if (nullptr == exper)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No structure at all for %s", getMolname().c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No structure at all for '%s'", getMolname().c_str()).c_str()));
         }
     }
 
