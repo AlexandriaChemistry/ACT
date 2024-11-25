@@ -596,6 +596,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     std::map<InteractionType, double> e_monomer[2];
     auto &astart = fraghandler_->atomStart();
     auto itInduc = InteractionType::INDUCTION;
+    auto itICorr = InteractionType::INDUCTIONCORRECTION;
     auto itElec  = InteractionType::ELECTROSTATICS;
     auto itPolar = InteractionType::POLARIZATION;
     for(size_t ff = 0; ff < tops.size(); ff++)
@@ -663,7 +664,9 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         checkEnergies("Total", e_total);
     }
-    // Now time to compute mutual induction for the dimer
+    // Now time to compute mutual induction for the dimer.
+    // This means, that the shells of one molecule are allowed
+    // to relax, but not the other.
     std::map<InteractionType, double> e_dimer[2];
     for(size_t ff = 0; ff < tops.size(); ff++)
     { 
@@ -677,18 +680,11 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 myshells.insert(i);
             }
         }
-        // Make a copy of the content
+        // Make a fresh copy of the coordinates
         std::vector<gmx::RVec> mycoords = *coords;
         // Eqn 6
         (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_dimer[ff],
                                       fzero, false, myshells);
-        // Move remaining polarisation energy to the electrostatics
-        if (e_dimer[ff].end() != e_dimer[ff].find(itPolar) &&
-            e_dimer[ff].end() != e_dimer[ff].find(itElec))
-        {
-            e_dimer[ff].find(itElec)->second += e_dimer[ff].find(itPolar)->second;
-            e_dimer[ff].find(itPolar)->second = 0;
-        }
         if (debug)
         {
             fprintf(debug, "%s dimer[%lu]:", getMolname().c_str(), ff);
@@ -732,20 +728,24 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 }
             }
         }
-        einter->insert_or_assign(itInduc, delta_einduc2);
-
         // Finally, compute the remaining (garbage bin) terms, Eqn. 7
-        auto eic = einter->find(InteractionType::INDUCTIONCORRECTION);
+        // by moving induction energy from the induction term to the
+        // induction correction term.
+        auto eit = einter->find(itInduc);
+        auto eic = einter->find(itICorr);
+        if (einter->end() == eit)
+        {
+            einter->insert({ itInduc, 0 });
+            eit = einter->find(itInduc);
+        }
+        eit->second -= delta_einduc2;
+
         if (einter->end() == eic)
         {
-            einter->insert({ InteractionType::INDUCTIONCORRECTION, 0 });
+            einter->insert({ itICorr, 0 });
+            eic = einter->find(itICorr);
         }
-        eic = einter->find(InteractionType::INDUCTIONCORRECTION);
-        eic->second = -delta_einduc2;
-        if (e_total.end() != e_total.find(itInduc))
-        {
-            eic->second += e_total[itInduc];
-        }
+        eic->second += delta_einduc2;
     }
     checkEnergies("Inter 1", *einter);
     {
