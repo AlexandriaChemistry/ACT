@@ -358,13 +358,13 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     }
                 }
                 // TODO Store the interaction forces
+                ACTEnergy my_all(exper.id());
+                my_all.setACT(ener.second);
                 if (foundQM == mpos.size())
                 {
-                    ACTEnergy my_all(exper.id());
-                    my_all.setACT(ener.second);
                     my_all.setQM(my_qm);
-                    aemap.insert({ener.first, my_all});
                 }
+                aemap.insert({ener.first, my_all});
             }
             if (aemap.size() > 0)
             {
