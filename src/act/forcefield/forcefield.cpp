@@ -86,11 +86,16 @@ void ForceField::print(FILE *fp) const
     fprintf(fp, "Interactions:\n");
     for(const auto &fs : forces_)
     {
-        fprintf(fp, "  %s function %s\n", interactionTypeToString(fs.first).c_str(),
-                potentialToString(fs.second.potential()).c_str());
+        fprintf(fp, "  %s function %s #entries %zu\n", interactionTypeToString(fs.first).c_str(),
+                potentialToString(fs.second.potential()).c_str(),
+                fs.second.parametersConst().size());
         for(const auto &opt : fs.second.option())
         {
             fprintf(fp, "    option %s value %s\n", opt.first.c_str(), opt.second.c_str());
+        }
+        for(const auto &cr : fs.second.combinationRules())
+        {
+            fprintf(fp, "    parameter %s combination rule %s\n", cr.first.c_str(), cr.second.c_str());
         }
     }
     fprintf(fp, "-----------------------------------------------\n");
