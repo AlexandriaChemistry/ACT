@@ -566,7 +566,12 @@ static void checkEnergies(const char                              *info,
     }
     double toler = 1e-3;
     double epot  = einter.find(InteractionType::EPOT)->second;
-    if (std::abs(esum - epot) >= toler)
+    double diff  = std::abs(esum - epot);
+    double denom = std::abs(esum + epot);
+    // Try relative tolerance if the denominator not equal to zero,
+    // otherwise try absolute tolerance.
+    if ((denom != 0 && (diff >= toler*denom)) ||
+        (denom == 0 && diff >= toler))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("%s: found einter %g but sum of terms is %g",
                                                        info, epot, esum).c_str()));
