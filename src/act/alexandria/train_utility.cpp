@@ -94,7 +94,7 @@ static void print_stats(FILE        *fp,
         {
             fprintf(fp, "Fitting data to y = ax + b, where x = %s\n", xaxis);
             fprintf(fp, "%-32s %6s %13s %13s %7s %8s %8s %8s %10s\n",
-                    "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
+                    "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Dataset");
             fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
         eStats ok = lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
@@ -1584,11 +1584,11 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
             {
                 continue;
             }
-            const char *name = qTypeName(qt).c_str();
+            std::string name = gmx::formatString("%s-%s", qTypeName(qt).c_str(), ims.second);
             if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
-                            header, "QM/DFT", name, useOffset_);
+                            header, "QM/DFT", name.c_str(), useOffset_);
                 header = false;
             }
             for(const auto &tt : terms_)
@@ -1597,40 +1597,40 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                 {
                     print_stats(fp, interactionTypeToString(tt).c_str(),
                                 "kJ/mol", 1.0, &lsq_einter_[tt][ims.first][qt],
-                                header, "SAPT", name, useOffset_);
+                                header, "SAPT", name.c_str(), useOffset_);
                     header = false;
                 }
             }
             if (lsq_rmsf_[ims.first].get_npoints() > 0 && qt == qType::Calc)
             {
                 print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf_[ims.first],
-                            header, "QM/DFT", name, useOffset_);
+                            header, "QM/DFT", name.c_str(), useOffset_);
                 header = false;
             }
             if (lsq_freq_.get_npoints() > 0 && qt == qType::Calc)
             {
                 print_stats(fp, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
-                            1.0, &lsq_freq_, header, "QM/DFT", name, useOffset_);
+                            1.0, &lsq_freq_, header, "QM/DFT", name.c_str(), useOffset_);
                 header = false;
             }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],
-                        header, "Electronic", name, useOffset_);
+                        header, "Electronic", name.c_str(), useOffset_);
             header = false;
             for(auto &mpo : mpoMultiPoles)
             {
-                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), 1.0, //convertFromGromacs(1.0, mpo_unit2(mpo)),
-                            &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name, useOffset_);
+                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), 1.0,
+                            &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_);
             }
             if (bPolar && qt == qType::Calc)
             {
                 std::string polunit("Angstrom3");
                 auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(fp, "Polariz. components", polunit.c_str(), polfactor,
-                            &lsq_alpha_[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
+                            &lsq_alpha_[ims.first][qType::Calc],    header, "Electronic", name.c_str(), useOffset_);
                 print_stats(fp, "Isotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_isoPol_[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
+                            &lsq_isoPol_[ims.first][qType::Calc],   header, "Electronic", name.c_str(), useOffset_);
                 print_stats(fp, "Anisotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_anisoPol_[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
+                            &lsq_anisoPol_[ims.first][qType::Calc], header, "Electronic", name.c_str(), useOffset_);
             }
         }
     }
