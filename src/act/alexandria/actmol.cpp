@@ -555,6 +555,11 @@ static void printEmap(FILE *fp, const std::map<InteractionType, double> *e)
 static void checkEnergies(const char                              *info,
                           const std::map<InteractionType, double> &einter)
 {
+    // Do this kind of check in debug mode only.
+    if (nullptr == debug)
+    {
+        return;
+    }
     std::set<InteractionType> ignore = { InteractionType::ALLELEC, InteractionType::EXCHIND, InteractionType::EPOT };
     double esum = 0;
     for(const auto &e : einter)
@@ -568,10 +573,10 @@ static void checkEnergies(const char                              *info,
     double epot  = einter.find(InteractionType::EPOT)->second;
     double diff  = std::abs(esum - epot);
     double denom = std::abs(esum + epot);
-    // Try relative tolerance if the denominator not equal to zero,
+    // Try relative tolerance if the denominator not small,
     // otherwise try absolute tolerance.
-    if ((denom != 0 && (diff >= toler*denom)) ||
-        (denom == 0 && diff >= toler))
+    if ((denom > toler && (diff >= toler*denom)) ||
+        (denom <= toler && diff >= toler))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("%s: found einter %g but sum of terms is %g",
                                                        info, epot, esum).c_str()));
