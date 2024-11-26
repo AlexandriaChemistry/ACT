@@ -348,6 +348,12 @@ public:
      */
     void addFitOption(const std::string &opt) { fit_.insert({ opt, true }); }
 
+    /*! Whether data is present
+     * \param[in] mpo The observable to look for
+     * \return true if any data of the type is present
+     */
+    bool hasMolPropObservable(MolPropObservable mpo) const;
+
     /*! \brief Fill the  iOpt_ map
      * \param[in] pd Pointer to forcefield
      * \param[in] fp File for information, may be nullptr

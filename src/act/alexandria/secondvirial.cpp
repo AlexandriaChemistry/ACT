@@ -336,7 +336,8 @@ void ReRunner::rerun(FILE                        *logFile,
         if (eInter_)
         {
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
+            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
+
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
@@ -497,7 +498,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
+            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
+
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };

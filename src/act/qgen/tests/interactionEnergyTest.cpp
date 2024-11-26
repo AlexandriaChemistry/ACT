@@ -226,7 +226,7 @@ protected:
                 std::vector<gmx::RVec> forces;
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
                 std::map<InteractionType, double> einter;
-                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
+                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords, true);
                 for(const auto &e : einter)
                 {
                     checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());

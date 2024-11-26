@@ -244,6 +244,16 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
     return coords;
 }
 
+bool ACTMol::hasMolPropObservable(MolPropObservable mpo) const
+{
+    bool hasMPO = false;
+    for(const auto &exper : experimentConst())
+    {
+        hasMPO = hasMPO || exper.hasProperty(mpo);
+    }
+    return hasMPO;
+}
+
 std::vector<gmx::RVec> ACTMol::xOriginal() const
 {
     auto exper = findExperimentConst(JobType::OPT);
@@ -263,12 +273,13 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return experCoords(exper->getCoordinates(), topology_);
 }
 
-void ACTMol::forceEnergyMaps(const ForceField                                      *pd,
-                             const ForceComputer                                   *forceComp,
-                             std::vector<std::vector<std::pair<double, double> > > *forceMap,
-                             std::vector<ACTEnergy>                                *energyMap,
-                             ACTEnergyMapVector                                    *interactionEnergyMap,
-                             std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const
+void ACTMol::forceEnergyMaps(const ForceField                                                  *pd,
+                             const ForceComputer                                               *forceComp,
+                             std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                             std::vector<ACTEnergy>                                            *energyMap,
+                             ACTEnergyMapVector                                                *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                             bool                                                               separateInductionCorrection) const
 {
     auto       myatoms = topology_->atoms();
     forceMap->clear();
@@ -314,7 +325,8 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
-            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
+            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords,
+                                       separateInductionCorrection);
             ACTEnergyMap aemap;
             for (auto &ener : einter)
             {
@@ -360,7 +372,8 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                 // TODO Store the interaction forces
                 ACTEnergy my_all(exper.id());
                 my_all.setACT(ener.second);
-                if (foundQM == mpos.size())
+                if (foundQM == mpos.size() ||
+                    (foundQM == mpos.size()-1 && !separateInductionCorrection))
                 {
                     my_all.setQM(my_qm);
                 }
@@ -577,7 +590,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                                         const ForceComputer               *forceComputer,
                                         std::map<InteractionType, double> *einter,
                                         std::vector<gmx::RVec>            *interactionForces,
-                                        std::vector<gmx::RVec>            *coords) const
+                                        std::vector<gmx::RVec>            *coords,
+                                        bool                               separateInductionCorrection) const
 {
     auto &tops = fraghandler_->topologies();
     einter->clear();
@@ -732,7 +746,6 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         // by moving induction energy from the induction term to the
         // induction correction term.
         auto eit = einter->find(itInduc);
-        auto eic = einter->find(itICorr);
         if (einter->end() == eit)
         {
             einter->insert({ itInduc, 0 });
@@ -740,12 +753,19 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         }
         eit->second -= delta_einduc2;
 
+        auto eic = einter->find(itICorr);
         if (einter->end() == eic)
         {
             einter->insert({ itICorr, 0 });
             eic = einter->find(itICorr);
         }
         eic->second += delta_einduc2;
+        // Final check, to see whether induction needs to be summed or not.
+        if (!separateInductionCorrection)
+        {
+            eit->second += eic->second;
+            eic->second  = 0;
+        }
     }
     checkEnergies("Inter 1", *einter);
     {
@@ -754,7 +774,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         eall->second = 0;
         if (einter->end() != eall)
         {
-            for(auto itype : { itElec, itInduc, InteractionType::INDUCTIONCORRECTION })
+            for(auto itype : { itElec, itInduc, itICorr })
             {
                 auto ee = einter->find(itype);
                 if (einter->end() != ee)
@@ -771,7 +791,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         eall->second = 0;
         if (einter->end() != eall)
         {
-            for(auto itype : { InteractionType::EXCHANGE, itInduc, InteractionType::INDUCTIONCORRECTION })
+            for(auto itype : { InteractionType::EXCHANGE, itInduc, itICorr })
             {
                 auto ee = einter->find(itype);
                 if (einter->end() != ee)

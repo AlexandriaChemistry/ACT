@@ -185,6 +185,16 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
     doAddOptions(pargs, pa_general.size(), pa_general.data());
 }
 
+bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
+{
+    bool hasMPO = false;
+    for(const auto &am : actmol_)
+    {
+        hasMPO = hasMPO || am.hasMolPropObservable(mpo);
+    }
+    return hasMPO;
+}
+
 bool MolGen::checkOptions(FILE                        *logFile,
                           const std::vector<t_filenm> &filenames,
                           ForceField                  *pd)
