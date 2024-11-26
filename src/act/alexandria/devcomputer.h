@@ -60,9 +60,9 @@ class DevComputer
 protected:
 
     //! Pointer to log file
-    FILE       *logfile_ = nullptr;
+    FILE       *logfile_                     = nullptr;
     //! Whether to print stuff in the logfile
-    bool        verbose_;
+    bool        verbose_                     = false;
     //! My name
     std::string name_;
     /*! \brief Create a new DevComputer
@@ -302,12 +302,23 @@ private:
     //! Whether or not to use Boltzmann weighting of energies and forces
     std::map<eRMS, double> boltzmannTemperature_;
 
+    //! Whether to split off induction correction from induction
+    bool        separateInductionCorrection_ = true;
+
     /*! \brief Compute Boltzmann weighting factor for this eRMS
      * \param[in] ermsi Which energy or force
      * \return The corresponding beta or zero if no temperature was given
      */
     double computeBeta(eRMS ermsi);
 public:
+
+    /*! \brief Set internal variable
+     * \param[in] sepIndCorr The new value
+     */
+    void setSeparateInductionCorrection(bool sepIndCorr) { separateInductionCorrection_ = sepIndCorr; }
+
+    //! \return Internal variable
+    bool separateInductionCorrection() const { return separateInductionCorrection_; }
 
     /*! \brief Create a new ForceEnergyDevComputer
      * \param[in] logfile              pointer to log file

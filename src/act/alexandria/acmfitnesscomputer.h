@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -82,9 +82,13 @@ private:
 
     /*!
      * \brief Fill the devComputers vector according to the needs of the user
-     * \param[in] verbose whether the DevComputers write stuff to the logfile or not
+     * \param[in] verbose                     Whether the DevComputers write stuff to the logfile or not
+     * \param[in] zetadiff                    Allowed difference in zeta between cores and shells (if both have distributed charges)
+     * \param[in] haveInductionCorrectionData Whether or not this energy term is present in the input data
      */
-    void fillDevComputers(const bool verbose, double zetaDiff);
+    void fillDevComputers(bool   verbose,
+                          double zetaDiff,
+                          bool   haveInductionCorrectionData);
 
 public:
 
@@ -104,7 +108,8 @@ public:
                              ForceComputer         *forceComp)
         : logfile_(logfile), sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
     {
-        fillDevComputers(verbose, molgen->zetaDiff());
+        fillDevComputers(verbose, molgen->zetaDiff(),
+                         molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }
 
     /*! \brief Do the actual computation

@@ -993,7 +993,8 @@ void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>         
     std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
     ACTEnergyMapVector                                                  interactionEnergyMap;
     mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
-                         &energyComponentMap);
+                         &energyComponentMap,
+                         mol->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     molEnergyMap_.insert({mol->getMolname(), energyMap});
     molInteractionEnergyMap_.insert({mol->getMolname(), interactionEnergyMap});
     if (diatomic_ && mol->nRealAtoms() == 2)
@@ -1560,6 +1561,7 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                 std::vector<std::string> tcout;
                 printEnergyForces(&tcout, pd, forceComp, sii->fittingTargetsConst(ims),
                                   atomenergy, &(*mol), ims, oenv, printAll);
+
                 for(const auto &tout : tcout)
                 {
                     fprintf(fp, "%s\n", tout.c_str());

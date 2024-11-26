@@ -619,7 +619,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
     if (doForce2 || doEpot || doInter)
     {
         actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
-                                &interactionEnergyMap, &enerComponentMap);
+                                &interactionEnergyMap, &enerComponentMap, separateInductionCorrection_);
         if (doForce2 && !forceMap.empty())
         {
             for(const auto &fstruct : forceMap)

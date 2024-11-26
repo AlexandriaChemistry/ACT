@@ -156,7 +156,8 @@ int min_complex(int argc, char *argv[])
             {
                 std::vector<gmx::RVec> interactionForces;
                 std::map<InteractionType, double> einter;
-                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin);
+                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin, true);
+
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                 fprintf(logFile, "%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
                         actmol.getMolname().c_str(),

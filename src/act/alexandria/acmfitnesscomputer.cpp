@@ -329,7 +329,9 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
     }
 }
 
-void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
+void ACMFitnessComputer::fillDevComputers(bool   verbose,
+                                          double zetaDiff,
+                                          bool   haveInductionCorrectionData)
 {
     if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
@@ -383,6 +385,7 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
         sii_->target(iMolSelect::Train, eRMS::Exchange)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Dispersion)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Induction)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::AllElec)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::ExchInd)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
@@ -392,7 +395,19 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose, double zetaDiff)
             { eRMS::EPOT, T },
             { eRMS::Interaction, T }
         };
-        devComputers_.push_back(new ForceEnergyDevComputer(logfile_, verbose, boltzmann));
+        // Not a nice place to check stuff and throw but we have to pass the information
+        // needed to the devComputer.
+        double dhfWeight = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
+        if (!((dhfWeight >  0 && haveInductionCorrectionData) ||
+              (dhfWeight == 0 && !haveInductionCorrectionData)))
+        {
+            std::string msg = gmx::formatString("Inconstent input. Induction correction energies%s present but -fc_deltaHF is %g",
+                                                haveInductionCorrectionData ? "" : " not", dhfWeight);
+            GMX_THROW(gmx::InvalidInputError(msg.c_str()));
+        }
+        auto devcomp     = new ForceEnergyDevComputer(logfile_, verbose, boltzmann);
+        devcomp->setSeparateInductionCorrection(dhfWeight >  0 && haveInductionCorrectionData);
+        devComputers_.push_back(std::move(devcomp));
     }
     if (sii_->target(iMolSelect::Train, eRMS::FREQUENCY)->weight() > 0)
     {

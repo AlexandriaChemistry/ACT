@@ -381,19 +381,21 @@ public:
      * reference energies paired with a map of ACT energy components. The 
      * InteractionType index points to the energy type in the
      * energyComponentsMap.
-     * \param[in]  pd                   The force field structure
-     * \param[in]  forceComp            The force computer utility
-     * \param[out] forceMap             The forces
-     * \param[out] energyMap            The energy components for a single structure
-     * \param[out] interactionEnergyMap The interaction energies
-     * \param[out] energyComponentsMap  The energy components
+     * \param[in]  pd                         The force field structure
+     * \param[in]  forceComp                  The force computer utility
+     * \param[out] forceMap                   The forces
+     * \param[out] energyMap                  The energy components for a single structure
+     * \param[out] interactionEnergyMap       The interaction energies
+     * \param[out] energyComponentsMap        The energy components
+     * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
     void forceEnergyMaps(const ForceField                                                  *pd,
                          const ForceComputer                                               *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >             *forceMap,
                          std::vector<ACTEnergy>                                            *energyMap,
                          ACTEnergyMapVector                                                *interactionEnergyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const;
+                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                         bool                                                               separateInductionCorrection) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
@@ -419,6 +421,12 @@ public:
 
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
+
+    /*! Whether data is present
+     * \param[in] mpo The observable to look for
+     * \return true if any data of the type is present 
+     */
+    bool hasMolPropObservable(MolPropObservable mpo) const;
 
     /*! \brief Return the fragment handler
      */
@@ -551,19 +559,22 @@ public:
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute
      * Epot(system) - Sum_f Epot(f) 
-     * where f are the fragments.
+     * where f are the fragments. Importantly the individual components
+     * of the energy are stored.
      * For a polarizable model the shell positions are minimized.
-     * \param[in] pd                 The force field
-     * \param[in] forceComputer      The code to run the calculations.
-     * \param[out] einter            The interaction energy components
-     * \param[out] interactionForces The forces on the atoms due to the interacting components
-     * \param[inout] coords          Atomic coordinates (shell positions can be updated)
+     * \param[in] pd                          The force field
+     * \param[in] forceComputer               The code to run the calculations.
+     * \param[out] einter                     The interaction energy components
+     * \param[out] interactionForces          The forces on the atoms due to the interacting components
+     * \param[inout] coords                   Atomic coordinates (shell positions can be updated)
+     * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
     void calculateInteractionEnergy(const ForceField                  *pd,
                                     const ForceComputer               *forceComputer,
                                     std::map<InteractionType, double> *einter,
                                     std::vector<gmx::RVec>            *interactionForces,
-                                    std::vector<gmx::RVec>            *coords) const;
+                                    std::vector<gmx::RVec>            *coords,
+                                    bool                               separateInductionCorrection) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd
