@@ -802,12 +802,12 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                     break;
                     
                 case Potential::FOURIER_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::RBTORSIONFORCE,
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, fdih_name, entry->params());
                     break;
                     
                 case Potential::PROPER_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PERIODICTORSIONFORCE,
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, pdih_name, entry->params());
                     break;
                     
