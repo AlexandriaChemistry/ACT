@@ -52,13 +52,13 @@
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0">
-    <PeriodicTorsionForce class1="h_b" class2="c2_b" class3="c2_b" class4="h_b" phi0="3.1415926535898" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" phi0="0" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" phi0="3.1415926535898" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="h_b" class2="c2_b" class3="c2_b" class4="o2_b" phi0="3.1415926535898" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" phi0="3.1415926535898" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" phi0="3.1415926535898" kp="5" mult="3"/>
-    <PeriodicTorsionForce class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="h_b" class2="c2_b" class3="c2_b" class4="h_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="h_b" phi0="0" kp="5" mult="3"/>
+    <Proper class1="c2_b" class2="o2_b" class3="c2_b" class4="h_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="h_b" class2="c2_b" class3="c2_b" class4="o2_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="o2_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="c2_b" class2="c2_b" class3="o2_b" class4="c2_b" phi0="3.1415926535898" kp="5" mult="3"/>
+    <Proper class1="c2_b" class2="c2_b" class3="c2_b" class4="c2_b" phi0="3.1415926535898" kp="5" mult="3"/>
   </PeriodicTorsionForce>
   <PeriodicTorsionForce energy="0">
     <Improper class1="c2_b" class2="h_b" class3="c2_b" class4="o2_b" kimp="1"/>
