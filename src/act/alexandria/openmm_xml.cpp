@@ -1121,22 +1121,22 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     case InteractionType::VSITE3OUT:
                                         {
                                             auto p = ee->params();
-                                            add_xml_weight(baby, "weight1", p[0]);
-                                            add_xml_weight(baby, "weight2", p[1]);
+                                            add_xml_weight(baby, "weight12", p[0]);
+                                            add_xml_weight(baby, "weight13", p[1]);
                                             // To make the two vsites different, we assume they are next to each other
                                             // in the row of atoms. In which order the vsites have +/- does not matter.
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_weight(baby, "weight3", sign*p[2]);
+                                            add_xml_weight(baby, "weightCross", sign*p[2]);
                                         }
                                         break;
                                     case InteractionType::VSITE3OUTS:
                                         {
                                             auto p = ee->params();
-                                            add_xml_weight(baby, "weight1", p[0]);
-                                            add_xml_weight(baby, "weight2", p[0]);
+                                            add_xml_weight(baby, "weight12", p[0]);
+                                            add_xml_weight(baby, "weight13", p[0]);
                                             // See above
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_weight(baby, "weight3", sign*p[1]);
+                                            add_xml_weight(baby, "weightCross", sign*p[1]);
                                         }
                                         break;
                                     default:
