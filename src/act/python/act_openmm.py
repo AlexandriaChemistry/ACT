@@ -1001,10 +1001,10 @@ class ActOpenMMSim:
 
 
     def real_exclusion(self, nexcl:int, iatom:int, jatom:int)->bool:
-        #return False
-        #return iatom == jatom
+        # Is this correct?
         if self.system.isVirtualSite(iatom) or self.system.isVirtualSite(jatom):
             return True
+        # Should there be a check for whether we have a core-shell pair here?
         if nexcl == 0:
             return False
         else:
@@ -1030,6 +1030,8 @@ class ActOpenMMSim:
                     if (a[0] == icore and a[2] == jcore) or (a[2] == icore and a[0] == jcore):
                         excl = True
                 return excl
+            elif nexcl > 2:
+                sys.exit("Cannot handle %d exclusions" % nexcl)
 
         return False
 
@@ -1152,7 +1154,7 @@ class ActOpenMMSim:
                         vdW_parameters.append(myvdw)
                     vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
                     if self.debug:
-                        msg = "Adding VDW excl i %d j %d" % (iatom, jatom)
+                        msg = "Adding VDW excl i %d j %d nexclvdw {nexclvdw}" % (iatom, jatom)
                         k   = 0
                         for parameter in VdWDict[self.vdw]["params"]:
                             msg += " %s %g" % (parameter, vdW_parameters[k])
@@ -1172,11 +1174,11 @@ class ActOpenMMSim:
                 if qdistDict[self.qdist] == qDist.Point:
                     qq_excl_corr.addBond(iatom, jatom, [qiqj])
                     if self.debug:
-                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj}\n")
+                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} nexclqq {nexclqq}\n")
                 else:
                     qq_excl_corr.addBond(iatom, jatom, [qiqj, allParam['zeta'][0], allParam['zeta'][1]])
                     if self.debug:
-                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} zeta1 {allParam['zeta'][0]} zeta2 {allParam['zeta'][1]}\n")
+                        self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} zeta1 {allParam['zeta'][0]} zeta2 {allParam['zeta'][1]} nexclqq {nexclqq}\n")
 
         # Finally single particle self interaction
         # This is not needed. Throw away?
