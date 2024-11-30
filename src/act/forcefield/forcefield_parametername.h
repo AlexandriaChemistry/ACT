@@ -118,7 +118,7 @@ namespace alexandria
 
     extern const char *idih_name[idihNR];
 
-    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihC6 = 6, fdihNR = 7 };
+    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihNR = 6 };
 
     extern const char *fdih_name[fdihNR];
 
