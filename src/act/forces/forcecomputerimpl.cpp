@@ -1269,10 +1269,6 @@ static void computeFourDihs(const TopologyEntryVector             &propers,
 
         real cos_phi = std::cos(phi);
         
-        /* Calculate cosine powers */
-        /* Calculate the energy */
-        /* Calculate the derivative */
-
         // Energy is
         // \sum_{j=0}^{nparam} params[j] cos^j(phi)
         // Force then becomes
