@@ -1264,8 +1264,8 @@ static void computeFourDihs(const TopologyEntryVector             &propers,
         auto al       = indices[3];
 
         rvec r_ij, r_kj, r_kl, m, n;
-        auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
-                             r_ij, r_kj, r_kl, m, n);
+        auto phi = M_PI + dih_angle(x[ai], x[aj], x[ak], x[al],
+                                    r_ij, r_kj, r_kl, m, n);
 
         real cos_phi = std::cos(phi);
         

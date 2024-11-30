@@ -72,7 +72,7 @@ const char *linang_name[linangNR] = { "a", "klin" };
 
 const char *idih_name[idihNR] = { "kimp" };
 
-const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3", "c4", "c5", "c6" };
+const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3", "c4", "c5" };
 
 const char *pdih_name[pdihNR] = { "phi0", "kp", "mult" };
 
