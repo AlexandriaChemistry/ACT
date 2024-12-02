@@ -86,7 +86,6 @@ int gentop(int argc, char *argv[])
     };
     gmx_output_env_t *oenv;
     gmx_atomprop_t    aps;
-    immStatus         imm;
 
     std::vector<t_filenm> fnm = {
         { efXML, "-ff",         "aff",       ffREAD  },
@@ -217,22 +216,19 @@ int gentop(int argc, char *argv[])
         std::vector<gmx::RVec> coords = actmol->xOriginal();
         forceComp->generateVsites(actmol->topology(), &coords);
 
-        if (immStatus::OK == imm)
-        {
-            actmol->GenerateCube(&pd, coords, forceComp,
-                                 spacing, border,
-                                 opt2fn_null("-ref",      fnm.size(), fnm.data()),
-                                 opt2fn_null("-pc",       fnm.size(), fnm.data()),
-                                 opt2fn_null("-pdbdiff",  fnm.size(), fnm.data()),
-                                 opt2fn_null("-pot",      fnm.size(), fnm.data()),
-                                 opt2fn_null("-rho",      fnm.size(), fnm.data()),
-                                 opt2fn_null("-his",      fnm.size(), fnm.data()),
-                                 opt2fn_null("-diff",     fnm.size(), fnm.data()),
-                                 opt2fn_null("-diffhist", fnm.size(), fnm.data()),
-                                 oenv);
-        }
+        actmol->GenerateCube(&pd, coords, forceComp,
+                             spacing, border,
+                             opt2fn_null("-ref",      fnm.size(), fnm.data()),
+                             opt2fn_null("-pc",       fnm.size(), fnm.data()),
+                             opt2fn_null("-pdbdiff",  fnm.size(), fnm.data()),
+                             opt2fn_null("-pot",      fnm.size(), fnm.data()),
+                             opt2fn_null("-rho",      fnm.size(), fnm.data()),
+                             opt2fn_null("-his",      fnm.size(), fnm.data()),
+                             opt2fn_null("-diff",     fnm.size(), fnm.data()),
+                             opt2fn_null("-diffhist", fnm.size(), fnm.data()),
+                             oenv);
 
-        if (immStatus::OK == imm && actmol->errors().size() == 0)
+        if (actmol->errors().size() == 0)
         {
             std::string index;
             if (actmols.size() > 1)
@@ -264,7 +260,8 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            errors.insert({ actmol->getMolname(), { imm, actmol->errors() } });
+            errors.insert({ actmol->getMolname(),
+                            { immStatus::Topology, actmol->errors() } });
             actmol = actmols.erase(actmol);
         }
         mp_index++;
