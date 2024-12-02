@@ -39,8 +39,8 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/b2data.h"
+#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
@@ -231,16 +231,10 @@ void ReRunner::plotB2temp(const char *b2file)
 void ReRunner::rerun(FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
-                     bool                         userqtot,
-                     double                       qtot,
-                     bool                         verbose,
-                     bool                         oneH)
+                     bool                         verbose)
 {
     std::vector<std::vector<gmx::RVec> > dimers;
     std::string          method, basis;
-    int                  maxpot = 100;
-    int                  nsymm  = 1;
-    const char          *molnm  = "";
     if (verbose && debug)
     {
         print_memory_usage(debug);
@@ -261,14 +255,20 @@ void ReRunner::rerun(FILE                        *logFile,
     else
     {
         // Read compounds if we have a trajectory file
-        matrix box;
-        if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
-        {
-            fprintf(stderr, "Could not read compounds from %s\n", trajname_);
-            return;
-        }
+        //      matrix box;
+        //if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
+        //&basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
+        //{
+        fprintf(stderr, "Could not read compounds from %s\n", trajname_);
+        return;
+        //      }
     }
+    if (mps.size() != 1)
+    {
+        fprintf(stderr, "Expected exactly one compound in the input trajectory\n");
+        return;
+    }
+
     for(size_t i = 0; i < mps.size(); i++)
     {
         auto exper = mps[i].experimentConst();
@@ -278,6 +278,7 @@ void ReRunner::rerun(FILE                        *logFile,
             for(const auto &epx: ep.getCoordinates())
             {
                 xx.push_back(epx);
+                // TODO do not assume each particle has a shell.
                 if (pd->polarizable())
                 {
                     xx.push_back(epx);
@@ -752,6 +753,8 @@ int b2(int argc, char *argv[])
     gendimers.addOptions(&pa, &fnm);
     ReRunner            rerun(true);
     rerun.addOptions(&pa, &fnm);
+    CompoundReader      compR;
+    compR.addOptions(&pa, &fnm, &desc);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -761,7 +764,10 @@ int b2(int argc, char *argv[])
         return status;
     }
     gendimers.finishOptions();
-    
+    if (!compR.optionsOK(fnm))
+    {
+        return 1;
+    }
     ForceField        pd;
     try
     {
@@ -777,6 +783,7 @@ int b2(int argc, char *argv[])
         logFile = gmx_ffopen(logFileName, "w");
         print_header(logFile, pa, fnm);
     }
+    compR.setLogfile(logFile);
     auto  forceComp = new ForceComputer(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
@@ -785,80 +792,11 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    ACTMol    actmol;
-    chargeMap qmap;
-    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
-    if (qfn)
-    {
-        qmap = fetchChargeMap(&pd, forceComp, qfn);
-        if (logFile)
-        {
-            fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
-        }
-    }
-    if (strlen(molnm) == 0)
-    {
-        molnm = (char *)"MOL";
-    }
-    {
-        std::vector<MolProp>  mps;
-        double qtot_babel = qtot;
-        int maxpot = 100;
-        int nsymm  = 1;
-        std::string method, basis;
-        const char *conf = "";
-        const char *jobtype = (char *)"Opt";
-        matrix box;
-        bool   userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-        if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box, oneH))
-        {
-            if (mps.size() > 1)
-            {
-                fprintf(stderr, "Warning: will only use the first dimer in %s\n", filename);
-            }
-            actmol.Merge(&mps[0]);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "No input file has been specified.");
-        }
-    }
-    
+    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    auto &actmol = actmols[0];
     immStatus imm = immStatus::OK;
-    if (status == 0)
-    {
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
-    }
     std::vector<gmx::RVec> coords = actmol.xOriginal();
-    if (immStatus::OK == imm && status == 0)
-    {
-        auto fragments  = actmol.fragmentHandler();
-        if (fragments->setCharges(qmap))
-        {
-            // Copy charges to the high-level topology as well
-            fragments->fetchCharges(actmol.atoms());
-        }
-        else
-        {
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
-            std::vector<double> myq;
-            auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            if (strlen(qqm) > 0)
-            {
-                alg   = ChargeGenerationAlgorithm::Read;
-                qtype = stringToQtype(qqm);
-            }
-            if (logFile)
-            {
-                fprintf(logFile, "WARNING: No information in charge map. Will generate charges using %s algorithm\n",
-                        chargeGenerationAlgorithmName(alg).c_str());
-            }
-            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
-        }
-    }
     if (immStatus::OK == imm && status == 0)
     {
         if (debug)
@@ -868,8 +806,8 @@ int b2(int argc, char *argv[])
         rerun.setFunctions(forceComp, &gendimers, oenv);
         if (rerun.doRerun())
         {
-            bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, oneH);
+            //bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
+            rerun.rerun(logFile, &pd, &actmol, verbose);//userqtot, qtot, verbose, oneH);
         }
         else
         {

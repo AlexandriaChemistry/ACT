@@ -36,7 +36,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/secondvirial.h"
@@ -106,15 +106,20 @@ int nma(int argc, char *argv[])
     SimulationConfigHandler  sch;
     sch.setMinimize(true);
     sch.add_options(&pa, &fnm);
+    CompoundReader compR;
+    compR.addOptions(&pa, &fnm, &desc);
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
-        status = 1;
-        return status;
+        return 1;
     }
     sch.check_pargs();
+    if (!compR.optionsOK(fnm))
+    {
+        return 1;
+    }
 
     ForceField        pd;
     try
@@ -133,6 +138,7 @@ int nma(int argc, char *argv[])
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
     print_header(logFile, pa, fnm);
+    compR.setLogfile(logFile);
     
     JsonTree jtree("simulate");
     if (verbose)
@@ -140,146 +146,79 @@ int nma(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    ACTMol                actmol;
+    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    if (actmols.empty())
     {
-        std::vector<MolProp> mps;
-        double               qtot_babel = qtot;
-        bool                 userqtot   = opt2parg_bSet("-qtot", pa.size(), pa.data());
-        std::string          method, basis;
-        int                  maxpot = 100;
-        int                  nsymm  = 1;
-        matrix               box;
-        if (!readBabel(&pd, filename, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot_babel,
-                       false, box, sch.oneH()))
-        {
-            fprintf(logFile, "Reading %s failed.\n", filename);
-            status = 1;
-        }
-            
-        if (status == 0)
-        {
-            if (mps.size() > 1)
-            {
-                fprintf(stderr, "Warning: will only use the first compound (out of %zu) in %s\n", mps.size(), filename);
-            }
-            actmol.Merge(&mps[0]);
-        }
+        return 1;
     }
-    immStatus imm = immStatus::OK;
-    if (status == 0)
-    {
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
-    }
+    auto &actmol = actmols[0];
     std::vector<gmx::RVec> coords = actmol.xOriginal();
-    chargeMap              qmap;
-    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
-    if (qfn)
+
+    if (debug)
     {
-        qmap = fetchChargeMap(&pd, forceComp, qfn);
-        fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
+        actmol.topology()->dump(debug);
     }
-    if (immStatus::OK == imm && status == 0)
+    auto eMin = eMinimizeStatus::OK;
+    /* Generate output file for debugging if requested */
+    if (actmol.errors().empty())
     {
-        auto fragments  = actmol.fragmentHandler();
-        if (fragments->setCharges(qmap))
+        MolHandler molhandler;
+        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        std::vector<gmx::RVec> xmin   = coords;
+        if (sch.minimize())
         {
-            // Copy charges to the high-level topology as well
-            fragments->fetchCharges(actmol.atoms());
+            std::map<InteractionType, double> energies;
+            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
+                                                  &xmin, &energies, logFile, {});
+            if (eMinimizeStatus::OK == eMin)
+            {
+                auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
+                fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
+                        energies[InteractionType::EPOT], rmsd);
+                JsonTree jtener("Energies");
+                std::string unit("kJ/mol");
+                for (const auto &ener : energies)
+                {
+                    jtener.addValueUnit(interactionTypeToString(ener.first),
+                                        gmx_ftoa(ener.second), unit);
+                }
+                jtree.addObject(jtener);
+
+                auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
+                if (confout)
+                {
+                    matrix box;
+                    clear_mat(box);
+                    // TODO This will crash
+                    write_sto_conf(confout, actmol.getMolname().c_str(),
+                                   nullptr,
+                                   as_rvec_array(xmin.data()), nullptr,
+                                   epbcNONE, box);
+                }
+            }
         }
         else
         {
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-
-            std::vector<double> myq;
-            auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            if (strlen(qqm) > 0)
-            {
-                alg   = ChargeGenerationAlgorithm::Read;
-                qtype = stringToQtype(qqm);
-            }
-            fprintf(logFile, "WARNING: No information in charge map. Will generate charges using %s algorithm\n", chargeGenerationAlgorithmName(alg).c_str());
-            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+            fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
         }
-    }
-    if (immStatus::OK == imm && status == 0)
-    {
-        if (debug)
+        if (eMinimizeStatus::OK == eMin)
         {
-            actmol.topology()->dump(debug);
-        }
-        auto eMin = eMinimizeStatus::OK;
-        /* Generate output file for debugging if requested */
-        if (actmol.errors().empty())
-        {
-            MolHandler molhandler;
-            std::vector<gmx::RVec> coords = actmol.xOriginal();
-            std::vector<gmx::RVec> xmin   = coords;
-            if (sch.minimize())
-            {
-                std::map<InteractionType, double> energies;
-                eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                      &xmin, &energies, logFile, {});
-                if (eMinimizeStatus::OK == eMin)
-                {
-                    auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                    fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
-                            energies[InteractionType::EPOT], rmsd);
-                    JsonTree jtener("Energies");
-                    std::string unit("kJ/mol");
-                    for (const auto &ener : energies)
-                    {
-                        jtener.addValueUnit(interactionTypeToString(ener.first),
-                                            gmx_ftoa(ener.second), unit);
-                    }
-                    jtree.addObject(jtener);
-                    
-                    auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-                    if (confout)
-                    {
-                        matrix box;
-                        clear_mat(box);
-                        // TODO This will crash
-                        write_sto_conf(confout, actmol.getMolname().c_str(),
-                                       nullptr,
-                                       as_rvec_array(xmin.data()), nullptr,
-                                       epbcNONE, box);
-                    }
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
-            }
-            if (eMinimizeStatus::OK == eMin)
-            {
-                AtomizationEnergy        atomenergy;
-                doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
-                                    atomenergy, nullptr, &jtree,
-                                    opt2fn_null("-ir", fnm.size(), fnm.data()),
+            AtomizationEnergy        atomenergy;
+            doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
+                                atomenergy, nullptr, &jtree,
+                                opt2fn_null("-ir", fnm.size(), fnm.data()),
                                     linewidth, oenv, verbose);
-            }
-        }
-        
-        if (eMinimizeStatus::OK != eMin)
-        {
-            fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                    eMinimizeStatusToString(eMin).c_str(),
-                    logFileName);
-            status = 1;
         }
     }
-    else if (immStatus::OK != imm)
+
+    if (eMinimizeStatus::OK != eMin)
     {
-        fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
-        fprintf(logFile, "%s\n", immsg(imm));
-        for(const auto &err: actmol.errors())
-        {
-            fprintf(logFile, "%s\n", err.c_str());
-        }
-            status = 1;
+        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
+                eMinimizeStatusToString(eMin).c_str(),
+                logFileName);
+        status = 1;
     }
+
     if (json)
     {
         jtree.write("nma.json", json);

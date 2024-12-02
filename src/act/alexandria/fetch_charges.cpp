@@ -28,7 +28,6 @@
 
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
     
@@ -41,19 +40,23 @@ namespace alexandria
 {
 
 chargeMap fetchChargeMap(ForceField                 *pd,
-                         ForceComputer              *forceComp,
+                         const ForceComputer        *forceComp,
                          const std::vector<MolProp> &mps,
+                         const std::set<std::string> &lookup,
                          qType                       qt)
 {
     auto alg = pd->chargeGenerationAlgorithm();
     if (qType::ACM != qt)
     {
         alg = ChargeGenerationAlgorithm::Read;
-        
     }
     chargeMap qmap;
     for(auto mp = mps.begin(); mp < mps.end(); mp++)
     {
+        if (!lookup.empty() && lookup.find(mp->getMolname()) == lookup.end())
+        {
+            continue;
+        }
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
         auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
@@ -88,14 +91,15 @@ chargeMap fetchChargeMap(ForceField                 *pd,
     return qmap;
 }
 
-chargeMap fetchChargeMap(ForceField    *pd,
-                         ForceComputer *forceComp,
-                         const char    *charge_fn,
-                         qType          qt)
+chargeMap fetchChargeMap(ForceField                  *pd,
+                         const ForceComputer         *forceComp,
+                         const char                  *charge_fn,
+                         const std::set<std::string> &lookup,
+                         qType                        qt)
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
-    return fetchChargeMap(pd, forceComp, mps, qt);
+    return fetchChargeMap(pd, forceComp, mps, lookup, qt);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,

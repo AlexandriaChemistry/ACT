@@ -162,10 +162,11 @@ public:
     void rerun(FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
-               bool                         userqtot,
-               double                       qtot,
-               bool                         verbose,
-               bool                         oneH);
+               //bool                         userqtot,
+               //double                       qtot,
+               bool                         verbose
+               //,bool                         oneH
+               );
 
     /*! \brief Compute second virial coefficient including QM corrections
      * \param[in] cr       Communication Record for parallel calcs
