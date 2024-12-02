@@ -794,7 +794,12 @@ size_t MolGen::Read(FILE                                *fp,
             {
                 qt = stringToQtype(qTypeString_);
             }
-            qmap = fetchChargeMap(pd, forceComp, qmapfn, qt);
+            std::set<std::string> lookup;
+            for(const auto &ims : gms.imolSelect())
+            {
+                lookup.insert(ims.iupac());
+            }
+            qmap = fetchChargeMap(pd, forceComp, qmapfn, lookup, qt);
         }
         // Even if we did not read a file, we have to tell the other processors
         // about it.
