@@ -917,7 +917,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            auto amol  = amols.find(fragIds[fff]);
+            auto amol  = amols.findInChi(fragIds[fff]);
             if (nullptr != amol)
             {
                 add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), amol->iupac.c_str());
