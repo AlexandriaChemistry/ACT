@@ -83,7 +83,7 @@ chargeMap fetchChargeMap(ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,
                          const std::set<std::string> &lookup,
-                         qType                       qt = qType::ACM);
+                         qType                        qt = qType::ACM);
 
 /*! \brief Broadcast a charge map to processors
  * \param[in]    cr   The communication data structure

@@ -155,8 +155,9 @@ bool CompoundReader::setCharges(ForceField          &pd,
                 mol->totalCharge(), qtot_);
     }
     
-    immStatus imm = mol->GenerateTopology(logFile_, &pd, missingParameters::Error);
-    
+    immStatus imm = mol->GenerateTopology(logFile_, &pd,
+                                          missingParameters::Error);
+
     std::vector<gmx::RVec> coords = mol->xOriginal();
     if (immStatus::OK == imm)
     {
@@ -172,7 +173,7 @@ bool CompoundReader::setCharges(ForceField          &pd,
             {
                 if (logFile_)
                 {
-                    fprintf(logFile_, "Not all compounds present in the charge map %s", qmapfn_.c_str());
+                    fprintf(logFile_, "Not all compounds present in the charge map %s\n", qmapfn_.c_str());
                 }
                 return false;
             }
@@ -268,8 +269,19 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
         ACTMol mol;
         if (readFile(pd, &mol))
         {
+            auto fp = mol.fragmentPtr();
+            if (fp)
+            {
+                for(auto ic = fp->begin(); ic < fp->end(); ++ic)
+                {
+                    lookup.insert(ic->iupac());
+                }
+            }
+            else
+            {
+                lookup.insert(mol.getMolname());
+            }
             mols.push_back(mol);
-            lookup.insert(mol.getMolname());
         }
     }
     else if (strlen(dbname_) > 0)
@@ -280,8 +292,16 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
             lookup.insert(mymol);
         }
     }
+    if (logFile_)
+    {
+        fprintf(logFile_, "Found the following compounds:");
+        for(const auto &lu : lookup)
+        {
+            fprintf(logFile_, " '%s'", lu.c_str());
+        }
+        fprintf(logFile_, "\n");
+    }
     chargeMap qmap;
-
     if (!qmapfn_.empty())
     {
         std::vector<MolProp> mps;
@@ -325,7 +345,11 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     {
         for(auto &mol : mols)
         {
-            setCharges(pd, &mol, qmap, forceComp);
+            if (!setCharges(pd, &mol, qmap, forceComp))
+            {
+                // Prevent false positives, return empty vector
+                return {};
+            }
         }
     }
 
