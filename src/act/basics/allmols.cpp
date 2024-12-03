@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -31,6 +31,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "allmols.h"
+
+#include <algorithm>
 
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
