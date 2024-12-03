@@ -408,7 +408,7 @@ bool MolProp::sameCompound(const MolProp *other)
             {
                 fprintf(debug, "Similar but not identical compounds '%s' encountered.\n", getMolname().c_str());
                 fprintf(debug, "                  %30s  %30s\n", "Me", "Other");
-                fprintf(debug, "ID:               %30s  %30s\n", dst_f.id().c_str(), src_f.id().c_str());
+                fprintf(debug, "InChi:            %30s  %30s\n", dst_f.inchi().c_str(), src_f.inchi().c_str());
                 fprintf(debug, "Formula:          %30s  %30s\n", dst_f.formula().c_str(), src_f.formula().c_str());
                 fprintf(debug, "Multiplicity:     %30d  %30d\n", dst_f.multiplicity(), src_f.multiplicity());
                 fprintf(debug, "Symmetry number:  %30d  %30d\n", dst_f.symmetryNumber(), src_f.symmetryNumber());

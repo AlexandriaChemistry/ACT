@@ -70,7 +70,7 @@ void Fragment::dump(FILE *fp) const
         return;
     }
     fprintf(fp, "Fragment %s mass %g formula %s charge %d multiplicity %d atoms %s\n",
-            id_.c_str(), mass_, formula_.c_str(), charge_, multiplicity_,
+            inchi_.c_str(), mass_, formula_.c_str(), charge_, multiplicity_,
             atomString_.c_str());
 }
     
@@ -87,7 +87,7 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&symmetryNumber_, comm);
         cr->bcast(&formula_, comm);
         cr->bcast(&texform_, comm);
-        cr->bcast(&id_, comm);
+        cr->bcast(&inchi_, comm);
         cr->bcast(&iupac_, comm);
         int natom     = atoms_.size();
         cr->bcast(&natom, comm);
@@ -116,7 +116,7 @@ CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
     cr->recv(src, &symmetryNumber_);
     cr->recv(src, &formula_);
     cr->recv(src, &texform_);
-    cr->recv(src, &id_);
+    cr->recv(src, &inchi_);
     cr->recv(src, &iupac_);
     cr->recv(src, &atoms_);
     makeAtomString();
@@ -132,7 +132,7 @@ CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) cons
     cr->send(dest, symmetryNumber_);
     cr->send(dest, formula_);
     cr->send(dest, texform_);
-    cr->send(dest, id_);
+    cr->send(dest, inchi_);
     cr->send(dest, iupac_);
     cr->send(dest, atoms_);
     return cs;

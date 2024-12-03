@@ -35,6 +35,7 @@
 #define ACT_ALLMOLS_H
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -64,9 +65,9 @@ namespace alexandria
         //! InChiKey
         std::string inchikey;
         //! Class identifiers
-        std::vector<std::string> classid;
+        std::set<std::string> classid;
         //! Synonyms
-        std::vector<std::string> synonyms;
+        std::set<std::string> synonyms;
 
         /*! \brief Constructor
          * \param[in] line Read from csv file and interpreted.

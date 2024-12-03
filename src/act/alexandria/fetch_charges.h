@@ -47,7 +47,7 @@ namespace alexandria
 {
 
 /*! \brief chargeMap definition.
- * First string is the molecule identifier.
+ * First string is the molecule identifier, which should be the InChi.
  * Vector contains pairs of identifier and charge.
  */
 typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > chargeMap;

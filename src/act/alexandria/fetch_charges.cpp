@@ -34,6 +34,7 @@
 #include "fetch_charges.h"    
 
 #include "act/alexandria/actmol.h"
+#include "act/basics/allmols.h"
 #include "act/molprop/molprop_xml.h"
 
 namespace alexandria
@@ -45,17 +46,41 @@ chargeMap fetchChargeMap(ForceField                  *pd,
                          const std::set<std::string> &lookup,
                          qType                        qt)
 {
+    AlexandriaMols amols;
     auto alg = pd->chargeGenerationAlgorithm();
     if (qType::ACM != qt)
     {
         alg = ChargeGenerationAlgorithm::Read;
     }
     chargeMap qmap;
-    for(auto mp = mps.begin(); mp < mps.end(); mp++)
+    for(auto mp = mps.begin(); mp < mps.end(); ++mp)
     {
-        if (!lookup.empty() && lookup.find(mp->getMolname()) == lookup.end())
+        auto &frags = mp->fragments();
+        // Only do monomers
+        if (frags.size() != 1)
         {
             continue;
+        }
+        // Check lookup table of compounds
+        if (!lookup.empty())
+        {
+            bool addThisMol = lookup.find(mp->getIupac()) != lookup.end();
+            if (!addThisMol)
+            {
+                // Look for synonyms
+                auto amol = amols.findMol(mp->getMolname());
+                if (amol)
+                {
+                    for(const auto &syn : amol->synonyms)
+                    {
+                        addThisMol = addThisMol || (lookup.find(syn) != lookup.end());
+                    }
+                }
+            }
+            if (!addThisMol)
+            {
+                continue;
+            }
         }
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
@@ -69,23 +94,20 @@ chargeMap fetchChargeMap(ForceField                  *pd,
             { MolPropObservable::CHARGE, iqmType::QM }
         };
         actmol.getExpProps(pd, iqm, 0.0, 100);
-        auto fhandler = actmol.fragmentHandler();
-        if (fhandler->topologies().size() == 1)
+
+        std::vector<double> dummy;
+        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+        imm = actmol.GenerateCharges(pd, forceComp, alg,
+                                     qt, dummy, &coords, &forces);
+        if (immStatus::OK == imm)
         {
-            std::vector<double> dummy;
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                         qt, dummy, &coords, &forces);
-            if (immStatus::OK == imm)
+            // Add ACM charges
+            std::vector<std::pair<Identifier, double>> newq;
+            for(auto atom: actmol.atomsConst())
             {
-                // Add ACM charges
-                std::vector<std::pair<Identifier, double>> newq;
-                for(auto atom: actmol.atomsConst())
-                {
-                    newq.push_back({atom.id(), atom.charge()});
-                }
-                qmap.insert({fhandler->ids()[0], newq});
+                newq.push_back({atom.id(), atom.charge()});
             }
+            qmap.insert( { frags[0].inchi(), newq } );
         }
     }
     return qmap;

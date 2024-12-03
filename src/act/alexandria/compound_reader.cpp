@@ -147,9 +147,10 @@ bool CompoundReader::optionsOK(const std::vector<t_filenm> &filenm)
 bool CompoundReader::setCharges(ForceField          &pd,
                                 ACTMol              *mol,
                                 const chargeMap     &qmap,
-                                const ForceComputer *forceComp)
+                                const ForceComputer *forceComp,
+                                bool                 warnQtot)
 {
-    if (mol->totalCharge() != qtot_ && logFile_)
+    if (mol->totalCharge() != qtot_ && warnQtot && logFile_)
     {
         fprintf(logFile_, "WARNING: detected total charge %d, command line says %g.\n",
                 mol->totalCharge(), qtot_);
@@ -173,7 +174,7 @@ bool CompoundReader::setCharges(ForceField          &pd,
             {
                 if (logFile_)
                 {
-                    fprintf(logFile_, "Not all compounds present in the charge map %s\n", qmapfn_.c_str());
+                    fprintf(logFile_, "CompoundReader: not all compounds present in the charge map %s\n", qmapfn_.c_str());
                 }
                 return false;
             }
@@ -294,7 +295,7 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     }
     if (logFile_)
     {
-        fprintf(logFile_, "Found the following compounds:");
+        fprintf(logFile_, "CompoundReader found the following compounds:");
         for(const auto &lu : lookup)
         {
             fprintf(logFile_, " '%s'", lu.c_str());
@@ -309,7 +310,8 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
         qmap = fetchChargeMap(&pd, forceComp, mps, lookup);
         if (logFile_)
         {
-            fprintf(logFile_, "\nRead %lu entries into charge map from %s\n", qmap.size(), qmapfn_.c_str());
+            fprintf(logFile_, "CompoundReader read %lu entries into charge map from %s\n",
+                    qmap.size(), qmapfn_.c_str());
         }
         // Throw away those compounds that are not in the selection
         if (!lookup.empty())
@@ -343,12 +345,21 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     }
     else
     {
-        for(auto &mol : mols)
+        for(auto mol = mols.begin(); mol < mols.end(); )
         {
-            if (!setCharges(pd, &mol, qmap, forceComp))
+            if (!setCharges(pd, &(*mol), qmap, forceComp, mols.size() == 1))
             {
-                // Prevent false positives, return empty vector
-                return {};
+                if (logFile_)
+                {
+                    fprintf(logFile_, "CompoundReader could not determine charges for '%s'\n",
+                            mol->getMolname().c_str());
+                }
+                // Prevent false positives, delete compound
+                mol = mols.erase(mol);
+            }
+            else
+            {
+                mol++;
             }
         }
     }

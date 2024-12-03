@@ -55,8 +55,25 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
         pubid    = my_atoi(line[9].c_str(), "pubchem");
         inchi    = line[10];
         inchikey = line[11];
-        classid  = split(line[12], ';');
-        synonyms = split(line[13], ';');
+        for(auto ss : split(line[12], ';'))
+        {
+            classid.insert(ss);
+            std::replace(ss.begin(), ss.end(), ' ', '-');
+            classid.insert(ss);
+        }
+        // Synonyms must include the iupac as well in case we are
+        // looking that one up later.
+        synonyms.insert(iupac);
+        for(auto ss : split(line[13], ';'))
+        {
+            if (ss.empty())
+            {
+                continue;
+            }
+            synonyms.insert(ss);
+            std::replace(ss.begin(), ss.end(), ' ', '-');
+            synonyms.insert(ss);
+        }
     }
 }
 
@@ -83,18 +100,9 @@ AlexandriaMols::AlexandriaMols()
             if (!am.inchi.empty())
             {
                 mols_.insert( { am.inchi, am } );
-                nameToInChi_.insert( { am.iupac, am.inchi } );
                 for(const auto &syn : am.synonyms)
                 {
-                    auto n2i = nameToInChi_.find(syn);
-                    if (!syn.empty() && syn != am.iupac)
-                    {
-                        if (n2i != nameToInChi_.end())
-                        {
-                            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Synonym %s is used for at least two compounds: %s and %s", syn.c_str(), am.iupac.c_str(), n2i->first.c_str()).c_str()));
-                        }
-                        nameToInChi_.insert( { syn, am.inchi } );
-                    }
+                    nameToInChi_.insert( { syn, am.inchi } );
                 }
             }
         }
