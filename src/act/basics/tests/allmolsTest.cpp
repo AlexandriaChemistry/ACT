@@ -61,12 +61,8 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
     {
     }
     
-    void runTest(const std::string &inchi)
+    void checkMol(const AlexandriaMol *amol)
     {
-        AlexandriaMols amols;
-
-        auto *amol = amols.find(inchi);
-        EXPECT_FALSE(nullptr == amol);
         if (amol)
         {
             checker_.checkString(amol->iupac, "IUPAC");
@@ -79,6 +75,32 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
             checker_.checkInteger(amol->pubid, "PubChemID");
             checker_.checkString(amol->inchikey, "InChiKey");
         }
+    }
+
+    void runTest(const std::string &inchi)
+    {
+        AlexandriaMols amols;
+
+        auto *amol = amols.findInChi(inchi);
+        EXPECT_FALSE(nullptr == amol);
+        checkMol(amol);
+    }
+
+    void runMol(const std::string &mol)
+    {
+        AlexandriaMols amols;
+
+        auto *amol = amols.findMol(mol);
+        EXPECT_FALSE(nullptr == amol);
+        checkMol(amol);
+    }
+
+    void runUnknown(const std::string &mol)
+    {
+        AlexandriaMols amols;
+
+        auto *amol = amols.findMol(mol);
+        EXPECT_TRUE(nullptr == amol);
     }
 };
 
@@ -95,6 +117,36 @@ TEST_F(AllmolsTest, Ammonium)
 TEST_F(AllmolsTest, HydrogenSulfate) 
 {
     runTest("InChI=1S/HO4S/c1-5(2,3)4/h(H,1,2,3)");
+}
+
+TEST_F(AllmolsTest, WaterMol) 
+{
+    runMol("water");
+}
+
+TEST_F(AllmolsTest, OxidaneMol) 
+{
+    runMol("oxidane");
+}
+
+TEST_F(AllmolsTest, AmmoniumMol) 
+{
+    runMol("ammonium");
+}
+
+TEST_F(AllmolsTest, HydrogenSulfateMol) 
+{
+    runMol("hydrogen sulfate");
+}
+
+TEST_F(AllmolsTest, Yoghurt) 
+{
+    runUnknown("yoghurt");
+}
+
+TEST_F(AllmolsTest, Marsipulami) 
+{
+    runUnknown("Marsipulami");
 }
 
 } // namespace
