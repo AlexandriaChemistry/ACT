@@ -79,12 +79,14 @@ namespace alexandria
          * \param[out] mol       The molecule
          * \param[in]  qmap      A charge map
          * \param[in]  forceComp A force computer
+         * \param[in]  warnQtot  Print a warning when qtot does not match the input
          * \return true if successful
          */
         bool setCharges(ForceField          &pd,
                         ACTMol              *mol,
                         const chargeMap     &qmap,
-                        const ForceComputer *forceComp);
+                        const ForceComputer *forceComp,
+                        bool                 warnQtot);
     public:
         // Constructor
         CompoundReader() {}

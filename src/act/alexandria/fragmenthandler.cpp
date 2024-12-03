@@ -118,8 +118,8 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
         top->build(pd, &xfrag, 175.0, 5.0, missing);
         // Array of total charges
         qtotal_.push_back(f->charge());
-        // ID
-        ids_.push_back(f->id());
+        // ID copied from Fragment ID.
+        ids_.push_back(f->inchi());
         // Structure for charge generation
         QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
         // Total number of atoms

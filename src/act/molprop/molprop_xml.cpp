@@ -1050,7 +1050,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
     for(const auto &f : mp.fragments())
     {
         xmlNodePtr grandChild = add_xml_child_val(child, rmap[MolPropXml::FRAGMENT], f.atomString().c_str());
-        add_xml_string(grandChild, rmap[MolPropXml::IDENTIFIER], f.id());
+        add_xml_string(grandChild, rmap[MolPropXml::IDENTIFIER], f.inchi());
         add_xml_double(grandChild, rmap[MolPropXml::MASS], f.mass());
         add_xml_double(grandChild, rmap[MolPropXml::CHARGE], f.charge());
         add_xml_double(grandChild, rmap[MolPropXml::MULTIPLICITY], f.multiplicity());

@@ -41,6 +41,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/allmols.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
@@ -411,6 +412,31 @@ static void gen_ehist(FILE                       *mylog,
     }
 }
 
+static void updateMolInfo(FILE                 *mylog,
+                          std::vector<MolProp> *mpt)
+{
+    AlexandriaMols amols;
+    for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
+    {
+        auto frags = mp->fragments();
+        if (frags.size() == 1)
+        {
+            auto amol = amols.findInChi(frags[0].inchi());
+            if (amol)
+            {
+                if (mylog)
+                {
+                    fprintf(mylog, "Updating %s\n", mp->getMolname().c_str());
+                }
+                mp->SetIupac(amol->iupac);
+                mp->SetCas(amol->cas);
+                mp->SetCid(std::to_string(amol->csid));
+                mp->SetInchi(amol->inchi);
+            }
+        }
+    }
+}
+
 int edit_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
@@ -433,11 +459,12 @@ int edit_mp(int argc, char *argv[])
         { efLOG, "-g",   "check",   ffOPTWR     },
         { efDAT, "-db",  "sqlite",  ffOPTRD     }
     };
-    int      compress    = 1;
+    bool     compress    = false;
     real     temperature = 298.15;
     bool     forceMerge  = false;
-    gmx_bool bcast       = false;
+    bool     bcast       = false;
     bool     energyHisto = false;
+    bool     molinfo     = true;
     int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
@@ -454,6 +481,8 @@ int edit_mp(int argc, char *argv[])
           "Force merging compounds with the same name even if not the formula matches" },
         { "-bcast", FALSE, etBOOL, {&bcast},
           "Use broadcast instead of send/receive when running in parallel" },
+        { "-molinfo", FALSE, etBOOL, {&molinfo},
+          "Update iupac, cas etc. using the Alexandria Molecule Database" },
         { "-wn", FALSE, etINT, {&writeNode},
           "Processor ID to write from if in parallel." },
         { "-ehisto", FALSE, etBOOL, {&energyHisto},
@@ -548,6 +577,10 @@ int edit_mp(int argc, char *argv[])
     if (logname || energyHisto)
     {
         mylog = gmx_ffopen(logname, "w");
+    }
+    if (molinfo)
+    {
+        updateMolInfo(mylog, &mpt);
     }
     auto molpropout = opt2fn("-o", fnm.size(), fnm.data());
     if (ffname)
