@@ -39,11 +39,11 @@
 namespace alexandria
 {
 
-chargeMap fetchChargeMap(ForceField                 *pd,
-                         const ForceComputer        *forceComp,
-                         const std::vector<MolProp> &mps,
+chargeMap fetchChargeMap(ForceField                  *pd,
+                         const ForceComputer         *forceComp,
+                         const std::vector<MolProp>  &mps,
                          const std::set<std::string> &lookup,
-                         qType                       qt)
+                         qType                        qt)
 {
     auto alg = pd->chargeGenerationAlgorithm();
     if (qType::ACM != qt)
