@@ -43,35 +43,44 @@ namespace alexandria
     class AlexandriaMol
     {
     public:
-        // IUPAC name
+        //! IUPAC name
         std::string iupac;
-        // Formula
+        //! Formula
         std::string formula;
-        // Charge
+        //! Charge
         int         charge;
-        // Multiplicity
+        //! Multiplicity
         int         mult;
-        // Mass
+        //! Mass
         double      mass;
-        // CAS number
+        //! CAS number
         std::string cas;
-        // ChemSpider ID
+        //! ChemSpider ID
         int         csid;
-        // PubChem ID
+        //! PubChem ID
         int         pubid;
-        // InChi
+        //! InChi
         std::string inchi;
-        // InChiKey
+        //! InChiKey
         std::string inchikey;
-        
+        //! Class identifiers
+        std::vector<std::string> classid;
+        //! Synonyms
+        std::vector<std::string> synonyms;
+
+        /*! \brief Constructor
+         * \param[in] line Read from csv file and interpreted.
+         */
         AlexandriaMol(const std::vector<std::string> &line);
     };
     
     class AlexandriaMols
     {
     private:
+        //! The actual data
         std::map<std::string, AlexandriaMol> mols_;
-        
+        //! Translation map from synonym to InChi
+        std::map<std::string, std::string>   nameToInChi_;
     public:
         //! Constructor, reads input file and stores it
         AlexandriaMols();
@@ -80,7 +89,13 @@ namespace alexandria
          * \param[in] inchi The Standard InChi of the compound
          * \return pointer to AlexandriaMol or nullptr if not found
          */
-        const AlexandriaMol *find(const std::string &inchi) const;
+        const AlexandriaMol *findInChi(const std::string &inchi) const;
+
+        /*! \brief Look up an AlexandriaMol
+         * \param[in] name A molecule name
+         * \return pointer to AlexandriaMol or nullptr if not found
+         */
+        const AlexandriaMol *findMol(const std::string &name) const;
     };
 
 } // namespace

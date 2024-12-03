@@ -286,7 +286,7 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
             }
         }
         auto inchi = conv->WriteString(&fmol, true);
-        auto amol  = amols.find(inchi);
+        auto amol  = amols.findInChi(inchi);
         if (nullptr != amol)
         {
             fptr->setId(inchi);
