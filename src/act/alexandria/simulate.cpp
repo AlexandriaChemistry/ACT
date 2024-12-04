@@ -71,7 +71,8 @@ int simulate(int argc, char *argv[])
         "a trajectory file and a log file are generated.[PAR]",
         "During minimization a user select group of atoms can be frozen.",
         "To do so, supply an index file with atom numbers (first atom is 1)",
-        "and numbering should disregard shells if present."
+        "and numbering should disregard shells and virtual sites if present",
+        "in the model."
     };
 
     std::vector<t_filenm>     fnm = {

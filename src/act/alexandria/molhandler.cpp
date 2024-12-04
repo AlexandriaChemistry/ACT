@@ -665,12 +665,33 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     }
     // List of atoms (not shells) and weighting factors
     auto              myatoms = mol->atomsConst();
+    // Copy and sort the freeze array
+    std::vector<int>  myFreeze = freeze;
+    std::sort(myFreeze.begin(), myFreeze.end());
+    // Renumber the myFreeze atoms
+    for(size_t i = 0; i < myFreeze.size(); i++)
+    {
+        int count  = 0;
+        bool found = false;
+        for(size_t j = 0; !found && j < myatoms.size(); j++)
+        {
+            if (myatoms[j].pType() == ActParticle::Atom)
+            {
+                if (myFreeze[i] == count)
+                {
+                    myFreeze[i] = j;
+                    found = true;
+                }
+                count += 1;
+            }
+        }
+    }
     std::vector<int>  theAtoms;
     for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
         // Store the atom numbers for the frozen atoms in the counting incl. shells
         if ((myatoms[atom].pType() == ActParticle::Atom || myatoms[atom].pType() == ActParticle::Shell) &&
-            freeze.end() == std::find(freeze.begin(), freeze.end(), atom))
+            myFreeze.end() == std::find(myFreeze.begin(), myFreeze.end(), atom))
         {
             theAtoms.push_back(atom);
         }
