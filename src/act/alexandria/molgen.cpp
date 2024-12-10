@@ -867,11 +867,24 @@ size_t MolGen::Read(FILE                                *fp,
             fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
                     gms.nMol(), mp.size());
         }
-        for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
+        enum selStat { ssNotFound, ssOK, ssNoTopology };
+        // TODO: A double loop is not nice, alternative would be to make a map first
+        // or to sort the molprop vector and then use a search algorithm,
+        for (auto &sel : gms.imolSelect())
         {
-            iMolSelect ims;
-            if (gms.status(mpi->getIupac(), &ims))
+            auto ss = ssNotFound;
+            for (auto mpi = mp.begin(); ssNotFound == ss && mpi < mp.end(); ++mpi)
             {
+                if (mpi->getIupac() == sel.iupac() ||
+                    mpi->getMolname() == sel.iupac())
+                {
+                    ss = ssOK;
+                }
+                else
+                {
+                    continue;
+                }
+                // If we got here, we found the correct molprop
                 alexandria::ACTMol actmol;
                 if (debug)
                 {
@@ -884,14 +897,25 @@ size_t MolGen::Read(FILE                                *fp,
                 {
                     if (verbose && fp)
                     {
-                        fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
+                        fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
                                 actmol.getMolname().c_str(), immsg(imm));
                     }
-                    continue;
+                    ss = ssNoTopology;
+                    break;
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
                 imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
+                                actmol.getMolname().c_str(), immsg(imm));
+                    }
+                    ss = ssNoTopology;
+                    break;
+                }
                 if (immStatus::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
@@ -922,30 +946,23 @@ size_t MolGen::Read(FILE                                *fp,
                         fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
                                 actmol.getMolname().c_str(), immsg(imm));
                     }
-                    continue;
-                }
-                if (immStatus::OK != imm)
-                {
-                    if (verbose && fp)
-                    {
-                        fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), immsg(imm));
-                    }
+                    ss = ssNoTopology;
+                    break;
                 }
                 else
                 {
                     // Only include the compound if we have all data.
-                    actmol.set_datasetType(ims);
+                    actmol.set_datasetType(sel.status());
 
                     // actmol_ contains all molecules
                     actmol_.push_back(std::move(actmol));
                 }
                 incrementImmCount(&imm_count, imm);
             }
-            else if (verbose && fp)
+            if (ssOK != ss && verbose && fp)
             {
-                fprintf(fp, "Could not find %s in selection.\n",
-                        mpi->getIupac().c_str());
+                fprintf(fp, "Could not find %s in molprop file.\n",
+                        sel.iupac().c_str());
             }
         }
         print_memory_usage(debug);
