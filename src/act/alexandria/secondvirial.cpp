@@ -714,28 +714,18 @@ int b2(int argc, char *argv[])
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff",      "aff",     ffREAD  },
-        { efXML, "-charges", "charges", ffOPTRD },
         { efLOG, "-g",       "b2",      ffWRITE } 
     };
     gmx_output_env_t         *oenv;
     static char              *molnm      = (char *)"";
-    static char              *qqm        = (char *)"";
-    static char              *filename   = (char *)"";
-    double                    qtot       = 0;
     double                    shellToler = 1e-6;
     int                       maxdimers  = 1024;
     bool                      verbose    = false;
     bool                      oneH       = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
-        { "-f",      FALSE, etSTR,  {&filename},
-           "Input file name. Please supply a correct pdb file containing two compounds." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
-        { "-qtot",   FALSE, etREAL, {&qtot},
-          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
-        { "-qqm",    FALSE, etSTR,  {&qqm},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-v", FALSE, etBOOL, {&verbose},
           "Print more information to the log file." },
         { "-oneH", FALSE, etBOOL, {&oneH},
