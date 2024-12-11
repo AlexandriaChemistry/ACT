@@ -100,7 +100,7 @@ int simulate(int argc, char *argv[])
     sch.add_MD_options(&pa);
     DimerGenerator           gendimers;
 
-    gendimers.addOptions(&pa, &fnm);
+    gendimers.addOptions(&pa, &fnm, &desc);
     ReRunner                 rerun(false);
     rerun.addOptions(&pa, &fnm);
     CompoundReader compR;
@@ -117,6 +117,7 @@ int simulate(int argc, char *argv[])
     {
         return 1;
     }
+    gendimers.finishOptions(fnm);
 
     const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
     FILE *logFile   = gmx_ffopen(logFileName, "w");
@@ -178,7 +179,7 @@ int simulate(int argc, char *argv[])
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */
-    if (strlen(rerun.trajectoryFileName()) > 0)
+    if (gendimers.hasTrajectory())
     {
         rerun.setFunctions(forceComp, &gendimers, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);

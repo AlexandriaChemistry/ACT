@@ -146,22 +146,18 @@ public:
      * \param[in] logFile        File pointer to print info
      * \param[in] pd             Force field structure
      * \param[in] actmol         Structure with molecule info
-     * \param[in] userqtot       Whether the user has explicitly set the qtot value below
-     * \param[in] qtot           The total charge for when reading from a trajectory
      * \param[in] verbose        Whether or not to print a lot
      */
-    void rerun(FILE                        *logFile,
-               const ForceField            *pd,
-               const ACTMol                *actmol,
-               bool                         verbose);
+    void rerun(FILE             *logFile,
+               const ForceField *pd,
+               const ACTMol     *actmol,
+               bool              verbose);
 
     /*! \brief Compute second virial coefficient including QM corrections
      * \param[in] cr       Communication Record for parallel calcs
      * \param[in] logFile  File pointer to print info (may be nullptr)
      * \param[in] pd       Force field structure
      * \param[in] actmol   Structure with molecule info
-     * \param[in] userqtot Whether the user has explicitly set the qtot value below
-     * \param[in] qtot     The total charge for when reading from a trajectory
      * \param[in] maxdimer Number of dimers to generate (if any)
      * \param[in] verbose  Whether or not to print a lot
      * \param[in] fnm      The filenames
@@ -170,8 +166,6 @@ public:
                FILE                        *logFile,
                const ForceField            *pd,
                const ACTMol                *actmol,
-               bool                         userqtot,
-               double                       qtot,
                int                          maxdimer,
                bool                         verbose,
                const std::vector<t_filenm> &fnm);

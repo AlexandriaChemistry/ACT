@@ -226,80 +226,13 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
-<<<<<<< HEAD
-void ReRunner::rerun(FILE                        *logFile,
-                     const ForceField            *pd,
-                     const ACTMol                *actmol,
-                     bool                         verbose)
-{
-    std::vector<std::vector<gmx::RVec> > dimers;
-    std::string          method, basis;
-    if (verbose && debug)
-    {
-        print_memory_usage(debug);
-    }
-    if (!trajname_ || strlen(trajname_) == 0)
-    {
-        printf("No trajectory passed. Not doing any rerun.\n");
-        return;
-    }
-
-    std::vector<MolProp> mps;
-    std::string tname(trajname);
-    auto pos = tname.find(".xml");
-    if (pos != std::string::npos && tname.size() == pos+4)
-    {
-        // Assume this is a molprop file
-        MolPropRead(trajname, &mps);
-    }
-    else
-    {
-        fprintf(stderr, "Could not read compounds from %s\n", trajname_);
-        return;
-    }
-    if (mps.size() != 1)
-    {
-        fprintf(stderr, "Expected exactly one compound in the input trajectory\n");
-        return;
-    }
-
-    for(size_t i = 0; i < mps.size(); i++)
-    {
-        auto exper = mps[i].experimentConst();
-        for(const auto &ep : exper)
-        {
-            std::vector<gmx::RVec> xx;
-            for(const auto &epx: ep.getCoordinates())
-            {
-                xx.push_back(epx);
-                // TODO do not assume each particle has a shell.
-                if (pd->polarizable())
-                {
-                    xx.push_back(epx);
-                }
-            }
-            dimers.push_back(xx);
-        }
-    }
-    return dimers;
-}
-
-=======
->>>>>>> b62f17adb (Implemented reading trajectory in b2 calculations.)
 void ReRunner::rerun(FILE             *logFile,
                      const ForceField *pd,
                      const ACTMol     *actmol,
-                     bool              userqtot,
-                     double            qtot,
                      bool              verbose)
 {
-    if (!gendimers_->hasTrajectory())
-    {
-        printf("No trajectory passed. Not doing any rerun.\n");
-        return;
-    }
     std::vector<std::vector<gmx::RVec>> dimers;
-    gendimers_->read(pd, userqtot, &qtot, &dimers);
+    gendimers_->read(&dimers);
     if (logFile)
     {
         fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
@@ -413,8 +346,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                      FILE                        *logFile,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
-                     bool                         userqtot,
-                     double                       qtot,
                      int                          maxdimer,
                      bool                         verbose,
                      const std::vector<t_filenm> &fnm)
@@ -431,30 +362,60 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     {
         if (cr->isMaster())
         {
-            gendimers_->read(pd,  userqtot, &qtot, &dimers);
+            gendimers_->read(&dimers);
         }
         maxdimer = dimers.size();
         ndimer   = 1;
     }
     else
     {
-        // Make sure that different nodes have different random number generator seed.
-        gendimers_->setSeed(gendimers_->seed() + 2*cr->rank());
         // Do this in parallel and with little memory
         ndimer = maxdimer / cr->size();
         nrest  = maxdimer % cr->size();
-    }
-    if (cr->isMaster() && nrest != 0)
-    {
-        if (logFile)
+
+        // Make sure that different nodes have different random number generator seed.
+        // For each dimer, 2 x 3 = 6 random numbers are needed. That means, each node
+        // uses ndimer x 6. However (see below), if nrest != 0, the master will get that
+        // number. 
+        if (cr->isMaster())
         {
-            fprintf(logFile, "Will generate or read %d dimers on helpers and %d on master.\n", ndimer, nrest);
+            gendimers_->generateRandomNumbers(maxdimer);
+            auto allRand = gendimers_->allRandom();
+            int ioffset = 0;
+            if (nrest > 0)
+            {
+                ioffset = 1;
+            }
+            for(int dst = 1; dst < cr->size(); dst++)
+            {
+                cr->send(dst, ndimer);
+                int nn = nrest + (dst-ioffset)*ndimer;
+                for(int j = 0; j < ndimer; j++)
+                {
+                    cr->send(dst, allRand[nn + j]);
+                }
+            }
+            if (nrest > 0)
+            {
+                ndimer = nrest;
+            }
+            gendimers_->resetAllRandom(ndimer);
+            if (logFile)
+            {
+                fprintf(logFile, "Will generate or read %d dimers on helpers and %d on master.\n", ndimer, nrest);
+            }
         }
-        ndimer = nrest;
-    }
-    else if (logFile)
-    {
-        fprintf(logFile, "Will generate %d dimers on each node.\n", ndimer);
+        else
+        {
+            int src = cr->superior();
+            cr->recv(src, &ndimer);
+            for(int i = 0; i < ndimer; i++)
+            {
+                std::vector<double> q;
+                cr->recv(src, &q);
+                gendimers_->addRandomNumbers(q);
+            }
+        }
     }
     if (logFile)
     {
@@ -462,7 +423,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     }
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
-    //Standard mersenne_twister_engine seeded with rd()
+    // Standard mersenne_twister_engine seeded with rd()
     std::mt19937                       bsGen(bsRand());
     std::uniform_int_distribution<int> bsDistr(0, gendimers_->ndist());
 
@@ -487,7 +448,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         // Generate a new set of dimers for all distances
         if (!gendimers_->hasTrajectory())
         {
-            dimers = gendimers_->generateDimers(actmol);
+            dimers = gendimers_->generateDimers(debug, actmol);
         }
         // Structures to store energies, forces and torques
         gmx_stats                           edist;
@@ -614,7 +575,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (verbose)
+            if (verbose && logFile)
             {
                 fprintf(logFile, " r %g", rcom);
                 for (auto &EE: einter)
@@ -631,7 +592,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
-        if (verbose)
+        if (verbose && logFile)
         {
             fprintf(logFile, "\n");
         }
@@ -774,7 +735,7 @@ int b2(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     DimerGenerator      gendimers;
-    gendimers.addOptions(&pa, &fnm);
+    gendimers.addOptions(&pa, &fnm, &desc);
     ReRunner            rerun(true);
     rerun.addOptions(&pa, &fnm);
     CompoundReader      compR;
@@ -787,7 +748,7 @@ int b2(int argc, char *argv[])
         status = 1;
         return status;
     }
-    gendimers.finishOptions();
+    gendimers.finishOptions(fnm);
     if (!compR.optionsOK(fnm))
     {
         return 1;
@@ -828,15 +789,7 @@ int b2(int argc, char *argv[])
             actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        if (rerun.doRerun())
-        {
-            //bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-            rerun.rerun(logFile, &pd, &actmol, verbose);//userqtot, qtot, verbose, oneH);
-        }
-        else
-        {
-            rerun.runB2(&cr, logFile, &pd, &actmol, maxdimers, verbose, fnm);
-        }
+        rerun.runB2(&cr, logFile, &pd, &actmol, maxdimers, verbose, fnm);
     }
     if (json && cr.isMaster())
     {
