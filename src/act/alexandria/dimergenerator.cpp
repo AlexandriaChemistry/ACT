@@ -36,7 +36,6 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "act/alexandria/babel_io.h"
 #include "act/alexandria/rotator.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
@@ -44,14 +43,21 @@
 #include "external/quasirandom_sequences/sobol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 
 namespace alexandria
 {
 
-void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
-                                std::vector<t_filenm> *fnm)
+static std::vector<const char *> dg_desc = {
+    "If a trajectory or a series of structures of the same compound is passed (in GROMACS format), ",
+    "the energies will be computed for those structures and no simulation will be performed.[PAR]"
+};
+
+void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
+                                std::vector<t_filenm>     *fnm,
+                                std::vector<const char *> *desc)
 {
     std::vector<t_pargs> mypa = {
         { "-ndist", FALSE, etINT, {&ndist_},
@@ -61,24 +67,27 @@ void DimerGenerator::addOptions(std::vector<t_pargs>  *pa,
         { "-maxdist", FALSE, etREAL, {&maxdist_},
           "Maximum com-com distance to generate dimers for." },
         { "-dimerseed", FALSE, etINT, {&dimerseed_},
-          "Random number seed to generate monomer orientations, applied if dimerseed is larger than 0. If not, the built-in default will be used. For the Sobol quasi-random sequence it is advised to leave the dimerseed at 0." },
+          "Random number seed to generate monomer orientations for Cartesian and Polar rotation algorithms. If dimerseed is 0, a seed will be generated." },
         { "-rotalg", FALSE, etSTR, {&rotalg_},
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
-          "Low-level debugging of routines. Gives complete information only when run on a single processor." },
-        { "-traj",   FALSE, etSTR,  {&trajname_},
-          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." }
+          "Low-level debugging of routines. Gives complete information only when run on a single processor." }
     };
     for(auto &pp : mypa)
     {
         pa->push_back(pp);
     }
     std::vector<t_filenm>  myfnm = {
-        { efSTX, "-ox", "dimers",     ffOPTWR  }
+        { efSTX, "-ox",   "dimers",  ffOPTWR },
+        { efTRX, "-traj", "dimers",  ffOPTRD }
     };
     for(auto &ff : myfnm)
     {
         fnm->push_back(ff);
+    }
+    for (const auto &dg: dg_desc)
+    {
+        desc->push_back(dg);
     }
 }
 
@@ -98,16 +107,14 @@ DimerGenerator::~DimerGenerator()
 void DimerGenerator::setSeed(int seed)
 {
     dimerseed_ = seed;
-    sobolSeed_ = seed;
 }
 
-void DimerGenerator::finishOptions()
+void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
 {
     if (dimerseed_ > 0)
     {
         gen_.seed(dimerseed_);
     }
-    sobolSeed_ = dimerseed_;
     rot_ = new Rotator(rotalg_, debugGD_);
     if (0 == ndist_)
     {
@@ -117,6 +124,7 @@ void DimerGenerator::finishOptions()
     {
         binWidth_ = (maxdist_-mindist_)/(ndist_);
     }
+    trajname_ = opt2fn_null("-traj", fnm.size(), fnm.data());
 }
 
 static void dump_coords(const char                                *outcoords,
@@ -163,7 +171,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     // Loop over the dimers
     for(int ndim = 0; ndim < maxdimer; ndim++)
     {
-        for(auto &newx : generateDimers(actmol))
+        for(auto &newx : generateDimers(logFile, actmol))
         {
             coords->push_back(newx);
         }
@@ -175,55 +183,62 @@ void DimerGenerator::generate(FILE                                *logFile,
 
 }
 
-void DimerGenerator::read(const ForceField                    *pd,
-                          bool                                 userqtot,
-                          double                              *qtot,
-                          std::vector<std::vector<gmx::RVec>> *coords)
+void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
 {
-    std::vector<MolProp> mps;
-    std::string tname(trajname_);
-    auto pos = tname.find(".xml");
-    if (pos != std::string::npos && tname.size() == pos+4)
+    if (!trajname_)
     {
-        // Assume this is a molprop file
-        MolPropRead(trajname_, &mps);
+        fprintf(stderr, "No trajectory file name passed\n");
+        return;
     }
-    else
+    gmx_output_env_t *oenv   = nullptr;
+    t_trxstatus      *status = nullptr;
+    real              t;
+    rvec             *x;
+    matrix            box;
+    int               natoms = read_first_x(oenv, &status, trajname_, &t, &x, box);
+    if (natoms == 0)
     {
-        // Read compounds if we have a trajectory file
-        matrix      box = {{ 0 }};
-        std::string method, basis;
-        int         maxpot = 100;
-        int         nsymm  = 1;
-        const char *molnm  = "MOL";
-        if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, qtot, false, box, false))
+        fprintf(stderr, "Could not read trajectory file %s\n", trajname_);
+        return;
+    }
+    do
+    {
+        std::vector<gmx::RVec> xx(natoms);
+        for(int i = 0; i < natoms; i++)
         {
-            printf("Could not read compounds from %s\n", trajname_);
-            return;
+            copy_rvec(x[i], xx[i]);
         }
+        coords->push_back(xx);
     }
-    for(size_t i = 0; i < mps.size(); i++)
+    while (read_next_x(oenv, status, &t, x, box));
+}
+
+void DimerGenerator::generateRandomNumbers(int ndimers)
+{
+    long long int sobolSeed = 0;
+    allRandom_.clear();
+    for(int i = 0; i < ndimers; i++)
     {
-        auto exper = mps[i].experimentConst();
-        for(const auto &ep : exper)
+        std::vector<double> q(2*DIM, 0.0);
+        if (RotationAlgorithm::Sobol == rot_->rotalg())
         {
-            std::vector<gmx::RVec> xx;
-            for(const auto &epx: ep.getCoordinates())
+            // Quasi random numbers
+            i8_sobol(2*DIM, &sobolSeed, q.data());
+        }
+        else
+        {
+            for(size_t j = 0; j < 2*DIM; j++)
             {
-                xx.push_back(epx);
-                if (pd->polarizable())
-                {
-                    xx.push_back(epx);
-                }
+                // "True" random numbers
+                q[j] = dis_(gen_);
             }
-            coords->push_back(xx);
         }
+        allRandom_.push_back(q);
     }
 }
 
-
-std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol *actmol)
+std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         *logFile,
+                                                                   const ACTMol *actmol)
 {
     auto fragptr = actmol->fragmentHandler();
     if (fragptr->topologies().size() != 2)
@@ -285,27 +300,35 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(const ACTMol 
     {
         xrand[m] = xmOrig[m];
     }
-    std::vector<double> q(2*DIM, 0.0);
-    if (RotationAlgorithm::Sobol == rot_->rotalg())
-    {
-        // Quasi random numbers
-        i8_sobol(2*DIM, &sobolSeed_, q.data());
-    }
-    else
-    {
-        for(size_t j = 0; j < 2*DIM; j++)
-        {
-            // "True" random numbers
-            q[j] = dis_(gen_);
-        }
-    }
     // Rotate the coordinates
     for(int m = 0; m < 2; m++)
     {
         // Random rotation, using the pre-calculated random numbers
         size_t j0 = m*DIM;
-        xrand[m] = rot_->random(q[j0], q[j0+1], q[j0+2], xrand[m]);
+        xrand[m] = rot_->random(allRandom_[randIndex_][j0],
+                                allRandom_[randIndex_][j0+1],
+                                allRandom_[randIndex_][j0+2], xrand[m]);
     }
+    if (logFile)
+    {
+        fprintf(logFile, "randIndex_ %zu q", randIndex_);
+        for(int m = 0; m < 2*DIM; m++)
+        {
+            fprintf(logFile, " %g", allRandom_[randIndex_][m]);
+        }
+        for(int m = 0; m < 2; m++)
+        {
+            fprintf(logFile, " x[%d]", m);
+            auto   atoms   = tops[m]->atoms();
+            for(size_t j = 0; j < atoms.size(); j++)
+            {
+                fprintf(logFile, " %g %g %g", xrand[m][j][XX],
+                        xrand[m][j][YY], xrand[m][j][ZZ]);
+            }
+        }
+        fprintf(logFile, "\n");
+    }
+    randIndex_ += 1;
     // Loop over distances from mindist to maxdist
     for(int idist = 0; idist < ndist_; idist++)
     {
