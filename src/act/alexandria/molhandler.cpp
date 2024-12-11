@@ -603,6 +603,46 @@ public:
     double energy(InteractionType itype) { return energies_[itype]; }
 
     const std::vector<int> &theAtoms() const { return theAtoms_; }
+
+    void printFrozenForce(FILE *logFile, const std::vector<int> &myFreeze)
+    {
+        if (logFile && myFreeze.size() == 2)
+        {
+            rvec dx;
+            // If minimization with constraints worked well, the resulting
+            // force should be along the vector between the two frozen atoms.
+            // Compute this vector first:
+            rvec_sub(coords_[myFreeze[0]], coords_[myFreeze[1]], dx);
+            copy_rvec(forces_[myFreeze[0]], dx);
+            // Now determine the rotation of the force vector to the Z axis
+            rvec frot;
+            // If there is a component away from the Z-axis, rotate around
+            // Z first, and then Y
+            double xy     = std::sqrt(dx[XX]*dx[XX] + dx[YY]*dx[YY]);
+            if (xy > 0)
+            {
+                double sinphi = dx[YY]/xy;
+                double cosphi = dx[XX]/xy;
+                // Rotation matrix around Z in negative phi direction
+                matrix m1 = { { cosphi, sinphi, 0 }, { -sinphi, cosphi, 0 }, { 0, 0, 1 } };
+                double xnorm  = norm(dx);
+                double costh  = dx[ZZ]/xnorm;
+                double sinth  = std::sqrt(1 - costh*costh);
+                // Rotation matrix around Y in negative theta direction
+                matrix m2 = { { costh, 0, sinth }, { 0, 1, 0 }, { -sinth, 0, costh } };
+                matrix m12;
+                mmul(m1, m2, m12);
+                mvmul(m12, forces_[myFreeze[0]], frot);
+            }
+            else
+            {
+                // Otherwise just copy the force on the first atom
+                copy_rvec(forces_[myFreeze[0]], frot);
+            }
+            fprintf(logFile, "Force on frozen atom %d = %12f %12f %12f\n",
+                    myFreeze[0], frot[XX], frot[YY], frot[ZZ]);
+        }
+    }
 };
 
 // The return of the son of global variables. Easy but ugly.
@@ -776,6 +816,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             }
             retry += 1;
         }
+        // If applicable, print the force between the frozen two atoms
+        lbfgs->printFrozenForce(logFile, myFreeze);
+
         delete lbfgs;
     }
     else
