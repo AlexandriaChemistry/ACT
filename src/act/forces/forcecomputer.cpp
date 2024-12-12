@@ -392,7 +392,12 @@ void ForceComputer::plot(const ForceField  *pd,
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
-                    size_t jatom = top.nAtoms()/2;
+                    // First atom is zero, second must be the other particle
+                    size_t jatom = 1+top.atoms()[0].shells().size();
+                    if (jatom == 0)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
+                    }
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.001;
@@ -429,21 +434,18 @@ void ForceComputer::plot(const ForceField  *pd,
                         ff.push_back(forces[0][0]);
                     }
                     // Check whether force is derivative of energy
-                    if (debug)
+                    for(size_t i = 1; i < vv.size()-1; i++)
                     {
-                        for(size_t i = 1; i < vv.size()-1; i++)
+                        if (std::abs(ff[i]) > 1e-6)
                         {
-                            if (std::abs(ff[i]) > 1e-6)
+                            double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
+                            double relerror = (fnumeric-ff[i])/ff[i];
+                            if (std::abs(relerror) > 1e-1)
                             {
-                                double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
-                                double relerror = (fnumeric-ff[i])/ff[i];
-                                if (std::abs(relerror) > 1e-1)
-                                {
-                                    fprintf(debug, "%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
-                                            filename.c_str(),
-                                            ff[i], fnumeric, relerror, rr[i],
-                                            vv[i+1], vv[i-1], 2*delta);
-                                }
+                                printf("%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
+                                       filename.c_str(),
+                                       ff[i], fnumeric, relerror, rr[i],
+                                       vv[i+1], vv[i-1], 2*delta);
                             }
                         }
                     }
