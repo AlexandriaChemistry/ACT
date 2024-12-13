@@ -51,9 +51,9 @@
 # VERSION_OUT is configured from the input VERSION_CMAKEIN
 # using the variables listed below.
 #
-# GMX_VERSION_STRING_FULL       - version string
-# GMX_VERSION_FULL_HASH         - git hash of current local HEAD
-# GMX_VERSION_CENTRAL_BASE_HASH - git hash of the first ancestor commit from the
+# ACT_VERSION_STRING_FULL       - version string
+# ACT_VERSION_FULL_HASH         - git hash of current local HEAD
+# ACT_VERSION_CENTRAL_BASE_HASH - git hash of the first ancestor commit from the
 #                                 main Gromacs repository
 #
 # Szilard Pall (pszilard@cbr.su.se)
@@ -92,7 +92,7 @@ execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
     ERROR_VARIABLE EXEC_ERR
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(GMX_VERSION_FULL_HASH ${HEAD_HASH})
+set(ACT_VERSION_FULL_HASH ${HEAD_HASH})
 
 # extract the shortened hash (7 char)
 execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
@@ -111,7 +111,7 @@ execute_process(COMMAND ${GIT_EXECUTABLE} diff-index --name-only HEAD
 )
 if(NOT "${SRC_LOCAL_CHANGES}" STREQUAL "")
     set(DIRTY_STR "-dirty")
-    set(GMX_VERSION_FULL_HASH "${GMX_VERSION_FULL_HASH} (dirty)")
+    set(ACT_VERSION_FULL_HASH "${ACT_VERSION_FULL_HASH} (dirty)")
 endif()
 
 # get the date of the HEAD commit
@@ -145,7 +145,7 @@ if("${GMX_REMOTES}" STREQUAL "")
     if (NOT DEFINED VERSION_NO_REMOTE_HASH)
         set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
     endif()
-    set(GMX_VERSION_CENTRAL_BASE_HASH "unknown")
+    set(ACT_VERSION_CENTRAL_BASE_HASH "unknown")
 else()
     string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
     # construct a command pipeline that produces a reverse-time-ordered
@@ -169,7 +169,7 @@ else()
     string(REGEX REPLACE "\n" ";" ANCESTOR_LIST "${ANCESTOR_LIST}")
 
     set(AHEAD 0)
-    set(GMX_VERSION_CENTRAL_BASE_HASH "")
+    set(ACT_VERSION_CENTRAL_BASE_HASH "")
     foreach(ANCESTOR ${ANCESTOR_LIST})
         string(REPLACE "\n" "" HASH_AND_REVNAMES "${ANCESTOR}")
         string(REPLACE " " ";" HASH_AND_REVNAMES "${HASH_AND_REVNAMES}")
@@ -177,26 +177,26 @@ else()
         # stop and set the hash if we have a hit, otherwise loop and count
         # how far ahead is the local repo
         if(COUNT GREATER 1)
-            LIST(GET HASH_AND_REVNAMES 0 GMX_VERSION_CENTRAL_BASE_HASH)
+            LIST(GET HASH_AND_REVNAMES 0 ACT_VERSION_CENTRAL_BASE_HASH)
             break()
         endif()
         math(EXPR AHEAD ${AHEAD}+1)
     endforeach(ANCESTOR)
     # mark the build "local" if didn't find any commits that are from
     # remotes/${GMX_REMOTE}/*
-    if("${GMX_VERSION_CENTRAL_BASE_HASH}" STREQUAL "")
-        set(GMX_VERSION_CENTRAL_BASE_HASH "unknown")
+    if("${ACT_VERSION_CENTRAL_BASE_HASH}" STREQUAL "")
+        set(ACT_VERSION_CENTRAL_BASE_HASH "unknown")
         set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-local")
     # don't print the remote hash if there are no local commits
-    elseif("${GMX_VERSION_CENTRAL_BASE_HASH}" STREQUAL "${HEAD_HASH}")
-        set(GMX_VERSION_CENTRAL_BASE_HASH "")
+    elseif("${ACT_VERSION_CENTRAL_BASE_HASH}" STREQUAL "${HEAD_HASH}")
+        set(ACT_VERSION_CENTRAL_BASE_HASH "")
     else()
-        set(GMX_VERSION_CENTRAL_BASE_HASH "${GMX_VERSION_CENTRAL_BASE_HASH} (${AHEAD} newer local commits)")
+        set(ACT_VERSION_CENTRAL_BASE_HASH "${ACT_VERSION_CENTRAL_BASE_HASH} (${AHEAD} newer local commits)")
     endif()
 endif()
 
 # Compile final version string.
-set(GMX_VERSION_STRING_FULL "${PROJECT_VERSION}-${VERSION_STR_SUFFIX}")
+set(ACT_VERSION_STRING_FULL "${PROJECT_VERSION}-${VERSION_STR_SUFFIX}")
 
 # Generate the output file.
 configure_file(${VERSION_CMAKEIN} ${VERSION_OUT})

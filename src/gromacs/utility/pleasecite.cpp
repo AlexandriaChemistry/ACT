@@ -428,13 +428,13 @@ writeSourceDoi(FILE *fp)
      * TODO The check should properly target something else than
      * the string being empty
      */
-    if (strlen(gmxDOI()) == 0)
+    if (strlen(actDOI()) == 0)
     {
         /* Not a release build, return without printing anything */
         return;
     }
 
-    const char *doiString = wrap_lines(gmxDOI(), LINE_WIDTH, 0, FALSE);
+    const char *doiString = wrap_lines(actDOI(), LINE_WIDTH, 0, FALSE);
 
     if (fp == nullptr)
     {

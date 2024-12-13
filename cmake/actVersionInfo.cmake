@@ -37,10 +37,10 @@
 #
 # This script provides the following basic version variables that need to be
 # maintained manually:
-#   GMX_VERSION_MAJOR      Major version number.
-#   GMX_VERSION_PATCH      Patch version number.
+#   ACT_VERSION_MAJOR      Major version number.
+#   ACT_VERSION_PATCH      Patch version number.
 #       Should always be defined: zero for, e.g., 2016.
-#   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
+#   ACT_VERSION_SUFFIX     String suffix to add to numeric version string.
 #       "-dev" is automatically added when not building from a source package,
 #       and does not need to be kept here. This mechanism is not quite enough
 #       for building a tarball, but setting the CMake cache variable
@@ -77,22 +77,22 @@
 #   REGRESSIONTEST_MD5SUM
 #       The MD5 checksum of the regressiontest tarball. Only used when building
 #       from a source package.
-#   GMX_SOURCE_DOI_ID
+#   ACT_SOURCE_DOI_ID
 #       ID collected from Zenodo connected to the doi for a released version
 #       used to identify the source when building an official released version.
 #       This ID is used for the source code tarball.
-#   GMX_MANUAL_DOI_ID
+#   ACT_MANUAL_DOI_ID
 #       Same as above, but for the reference manual.
 # Setting and retrieving of those variables is handled in gmxCheckReleaseDOI.cmake
 # They are collected into a single section below.
 # The following variables are set based on these:
-#   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
+#   ACT_VERSION            String composed from ACT_VERSION_* numeric variables
 #       above. Example: 4.6.1, 5.0, 2016
-#   GMX_VERSION_STRING     String with GMX_VERSION suffixed with the given
+#   ACT_VERSION_STRING     String with ACT_VERSION suffixed with the given
 #       suffix and possibly "-dev" for builds not from a source package.
-#   GMX_VERSION_NUMERIC    Numeric version number (e.g., 40601 for 4.6.1, 20160001 for 2016.1).
+#   ACT_VERSION_NUMERIC    Numeric version number (e.g., 40601 for 4.6.1, 20160001 for 2016.1).
 #   GMX_API_VERSION        Numeric API version.
-#       This is currently set automatically to GMX_VERSION_NUMERIC, but may
+#       This is currently set automatically to ACT_VERSION_NUMERIC, but may
 #       become manually maintained in the future if there will be releases
 #       where the API does not change, but programs/libraries do.
 #       In such a case, this should be the first version where the current API
@@ -107,7 +107,7 @@
 # This script also declares machinery to generate and obtain version
 # information from a git repository.  This is enabled by default if the source
 # tree is a git, but can be disabled with
-#   GMX_GIT_VERSION_INFO           Advanced CMake variable to disable git
+#   ACT_GIT_VERSION_INFO           Advanced CMake variable to disable git
 #                                  version info generation.
 # If the version generation is disabled, then the source and manual doi
 # will be based on the stored values for the ID.
@@ -120,10 +120,10 @@
 #   <input>      Specify the input and output files as for configure_file().
 #   <output>     The configuration is done with configure_file(... @ONLY) with
 #                the following variables defined (as well as all the
-#                GMX_VERSION* variables from above):
-#                  GMX_VERSION_STRING_FULL
-#                  GMX_VERSION_FULL_HASH
-#                  GMX_VERSION_CENTRAL_BASE_HASH
+#                ACT_VERSION* variables from above):
+#                  ACT_VERSION_STRING_FULL
+#                  ACT_VERSION_FULL_HASH
+#                  ACT_VERSION_CENTRAL_BASE_HASH
 #                The output file is created during build time, so any dependent
 #                targets should specify it as a dependency.
 #   REMOTE_HASH  Currently, this has no effect, but it signifies that the
@@ -145,7 +145,7 @@
 # build-time tasks):
 #   VERSION_INFO_CMAKE_SCRIPT
 #       Absolute path to a CMake script that can be included using include()
-#       to declare the GMX_VERSION_* variables documented for
+#       to declare the ACT_VERSION_* variables documented for
 #       gmx_configure_version_file().
 #   VERSION_INFO_DEPS
 #       If a custom command depends on VERSION_INFO_CMAKE_SCRIPT, then it
@@ -188,21 +188,22 @@
 #                relatively rare.
 #
 # Other variables set here are not intended for use outside this file.
-# The scripts gmxGenerateVersionInfo.cmake and gmxConfigureVersionInfo.cmake
+# The scripts actGenerateVersionInfo.cmake and actConfigureVersionInfo.cmake
 # are used internally by this machinery, as well as VersionInfo.cmake.cmakein.
 
 #####################################################################
 # Manually maintained version info
 
-# The GROMACS convention is that these are the version number of the next
+# Hacked for ACT.
+# The ACT convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2020)
-set(GMX_VERSION_PATCH 0)
+set(ACT_VERSION_MAJOR 2025)
+set(ACT_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "")
+set(ACT_VERSION_SUFFIX "beta")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -220,22 +221,22 @@ set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 #####################################################################
 # General version management based on manually set numbers
 
-if (GMX_VERSION_PATCH)
-    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_PATCH}")
+if (ACT_VERSION_PATCH)
+    set(ACT_VERSION "${ACT_VERSION_MAJOR}.${ACT_VERSION_PATCH}")
 else()
-    set(GMX_VERSION "${GMX_VERSION_MAJOR}")
+    set(ACT_VERSION "${ACT_VERSION_MAJOR}")
 endif()
-set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+set(ACT_VERSION_STRING "${ACT_VERSION}${ACT_VERSION_SUFFIX}")
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
 mark_as_advanced(GMX_BUILD_TARBALL)
 # If run with cmake -P, the -dev suffix is managed elsewhere.
 if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
     NOT GMX_BUILD_TARBALL AND
     NOT CMAKE_SCRIPT_MODE_FILE)
-    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
+    set(ACT_VERSION_STRING "${ACT_VERSION_STRING}-dev")
 endif()
 
-set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+set(REGRESSIONTEST_VERSION "${ACT_VERSION_STRING}")
 set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # Run the regressiontests packaging job with the correct pakage
 # version string, and the release box checked, in order to have it
@@ -244,14 +245,14 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # release workflow will report a failure.
 set(REGRESSIONTEST_MD5SUM "3d06d41e07f523d70ae575b9ad75c670" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
-math(EXPR GMX_VERSION_NUMERIC
-     "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
-set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
+math(EXPR ACT_VERSION_NUMERIC
+     "${ACT_VERSION_MAJOR}*10000 + ${ACT_VERSION_PATCH}")
+set(GMX_API_VERSION ${ACT_VERSION_NUMERIC})
 
 # If run with cmake -P from releng scripts, print out necessary version info
 # as JSON.
 if (CMAKE_SCRIPT_MODE_FILE)
-    message("{ \"version\": \"${GMX_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
+    message("{ \"version\": \"${ACT_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
     return()
 endif()
 
@@ -259,8 +260,8 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+set(ACT_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(ACT_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management
@@ -275,21 +276,21 @@ if (SOURCE_IS_GIT_REPOSITORY)
         set(_git_info_default ON)
     endif()
 endif()
-option(GMX_GIT_VERSION_INFO "Generate git version information" ${_git_info_default})
-mark_as_advanced(GMX_GIT_VERSION_INFO)
+option(ACT_GIT_VERSION_INFO "Generate git version information" ${_git_info_default})
+mark_as_advanced(ACT_GIT_VERSION_INFO)
 # Detect preconditions for version info generation if it is requested.
-if (GMX_GIT_VERSION_INFO)
+if (ACT_GIT_VERSION_INFO)
     if (NOT SOURCE_IS_GIT_REPOSITORY)
         message(FATAL_ERROR
             "Cannot generate git version information from source tree not under git. "
-            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+            "Set ACT_GIT_VERSION_INFO=OFF to proceed.")
     endif()
     # We need at least git v1.5.3 be able to parse git's date output.
     if (NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
         message(FATAL_ERROR
             "No compatible git version found (>= 1.5.3 required). "
             "Won't be able to generate development version information. "
-            "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
+            "Set ACT_GIT_VERSION_INFO=OFF to proceed.")
     endif()
 endif()
 
@@ -302,7 +303,7 @@ set(VERSION_INFO_DEPS         ${VERSION_INFO_CMAKE_FILE})
 # Capture the location of the necessary files in internal variables for use in
 # the function below.
 set(VERSION_INFO_CMAKEIN_FILE     ${CMAKE_CURRENT_LIST_DIR}/VersionInfo.cmake.cmakein)
-set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionInfo.cmake)
+set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/actConfigureVersionInfo.cmake)
 
 # Rules to create the VersionInfo.cmake file.
 # For git info, the sequence is:
@@ -330,15 +331,15 @@ set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionI
 #        - These are again custom commands that depend on the output from
 #          step 1, so they get regenerated only when the static version info
 #          changes.
-if (GMX_GIT_VERSION_INFO)
+if (ACT_GIT_VERSION_INFO)
     # Configure information known at this time into a partially filled
     # version info file.
     set(VERSION_INFO_CMAKEIN_FILE_PARTIAL
         ${PROJECT_BINARY_DIR}/VersionInfo-partial.cmake.cmakein)
     # Leave these to be substituted by the custom target below.
-    set(GMX_VERSION_STRING_FULL       "\@GMX_VERSION_STRING_FULL\@")
-    set(GMX_VERSION_FULL_HASH         "\@GMX_VERSION_FULL_HASH\@")
-    set(GMX_VERSION_CENTRAL_BASE_HASH "\@GMX_VERSION_CENTRAL_BASE_HASH\@")
+    set(ACT_VERSION_STRING_FULL       "\@ACT_VERSION_STRING_FULL\@")
+    set(ACT_VERSION_FULL_HASH         "\@ACT_VERSION_FULL_HASH\@")
+    set(ACT_VERSION_CENTRAL_BASE_HASH "\@ACT_VERSION_CENTRAL_BASE_HASH\@")
     configure_file(${VERSION_INFO_CMAKEIN_FILE}
                    ${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
                    @ONLY)
@@ -353,25 +354,25 @@ if (GMX_GIT_VERSION_INFO)
         OUTPUT ${VERSION_INFO_CMAKE_FILE}
         COMMAND ${CMAKE_COMMAND}
             -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
-            -D PROJECT_VERSION=${GMX_VERSION_STRING}
+            -D PROJECT_VERSION=${ACT_VERSION_STRING}
             -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
             -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
             -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
-            -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
+            -P ${CMAKE_CURRENT_LIST_DIR}/actGenerateVersionInfo.cmake
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating git version information")
     list(APPEND VERSION_INFO_DEPS git-version-info)
 else()
     # If the version info is static, just generate the CMake script with the
     # version variables during the CMake run.
-    set(GMX_VERSION_STRING_FULL       ${GMX_VERSION_STRING})
-    set(GMX_VERSION_FULL_HASH         "")
-    set(GMX_VERSION_CENTRAL_BASE_HASH "")
+    set(ACT_VERSION_STRING_FULL       ${ACT_VERSION_STRING})
+    set(ACT_VERSION_FULL_HASH         "")
+    set(ACT_VERSION_CENTRAL_BASE_HASH "")
     configure_file(${VERSION_INFO_CMAKEIN_FILE} ${VERSION_INFO_CMAKE_FILE})
 endif()
-unset(GMX_VERSION_STRING_FULL)
-unset(GMX_VERSION_FULL_HASH)
-unset(GMX_VERSION_CENTRAL_BASE_HASH)
+unset(ACT_VERSION_STRING_FULL)
+unset(ACT_VERSION_FULL_HASH)
+unset(ACT_VERSION_CENTRAL_BASE_HASH)
 
 # The main user-visible interface to the machinery.
 # See documentation at the top of the script.

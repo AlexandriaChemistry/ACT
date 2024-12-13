@@ -80,15 +80,15 @@
  *
  * \inpublicapi
  */
-#ifndef GMX_VERSION_H
-#define GMX_VERSION_H
+#ifndef ACT_VERSION_H
+#define ACT_VERSION_H
 
 /*! \brief
  * API version of this set of \Gromacs headers.
  *
  * If there are multiple versions of \Gromacs that work with the same set of
  * headers, then this version is not updated between the versions, even though
- * ::GMX_VERSION is.
+ * ::ACT_VERSION is.
  * For 4.6 and 5.0 (and likely for some time in the future as well), this
  * tracks the exact \Gromacs version.
  */
@@ -100,6 +100,6 @@
  * This specifies the version number of the actual \Gromacs library that
  * installed these headers.
  */
-#define GMX_VERSION @GMX_VERSION_NUMERIC@
+#define ACT_VERSION @ACT_VERSION_NUMERIC@
 
 #endif

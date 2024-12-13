@@ -40,24 +40,24 @@
 
 #include "baseversion-gen.h"
 
-const char *gmx_version()
+const char *act_version()
 {
-    return _gmx_ver_string;
+    return _act_ver_string;
 }
 
-const char *gmx_version_git_full_hash()
+const char *act_version_git_full_hash()
 {
-    return _gmx_full_git_hash;
+    return _act_full_git_hash;
 }
 
-const char *gmx_version_git_central_base_hash()
+const char *act_version_git_central_base_hash()
 {
-    return _gmx_central_base_hash;
+    return _act_central_base_hash;
 }
 
-const char *gmxDOI()
+const char *actDOI()
 {
-    return gmxSourceDoiString;
+    return actSourceDoiString;
 }
 
 #if GMX_DOUBLE
