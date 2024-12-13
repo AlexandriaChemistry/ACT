@@ -32,11 +32,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(GMX_VERSION                   "@GMX_VERSION@")
-set(GMX_VERSION_MAJOR             "@GMX_VERSION_MAJOR@")
-set(GMX_VERSION_PATCH             "@GMX_VERSION_PATCH@")
-set(GMX_VERSION_STRING            "@GMX_VERSION_STRING@")
+# Hacked for use with ACT
+set(ACT_VERSION                   "@ACT_VERSION@")
+set(ACT_VERSION_MAJOR             "@ACT_VERSION_MAJOR@")
+set(ACT_VERSION_PATCH             "@ACT_VERSION_PATCH@")
+set(ACT_VERSION_STRING            "@ACT_VERSION_STRING@")
 
-set(GMX_VERSION_STRING_FULL       "@GMX_VERSION_STRING_FULL@")
-set(GMX_VERSION_FULL_HASH         "@GMX_VERSION_FULL_HASH@")
-set(GMX_VERSION_CENTRAL_BASE_HASH "@GMX_VERSION_CENTRAL_BASE_HASH@")
+set(ACT_VERSION_STRING_FULL       "@ACT_VERSION_STRING_FULL@")
+set(ACT_VERSION_FULL_HASH         "@ACT_VERSION_FULL_HASH@")
+set(ACT_VERSION_CENTRAL_BASE_HASH "@ACT_VERSION_CENTRAL_BASE_HASH@")

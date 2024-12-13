@@ -101,9 +101,9 @@ function (gmx_cpack_write_config)
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
         "GROMACS - a toolkit for high-performance molecular simulation")
     # Set version info.
-    set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
-    set(CPACK_PACKAGE_VERSION_PATCH ${GMX_VERSION_PATCH})
-    set(CPACK_PACKAGE_VERSION       ${GMX_VERSION_STRING})
+    set(CPACK_PACKAGE_VERSION_MAJOR ${ACT_VERSION_MAJOR})
+    set(CPACK_PACKAGE_VERSION_PATCH ${ACT_VERSION_PATCH})
+    set(CPACK_PACKAGE_VERSION       ${ACT_VERSION_STRING})
     # Add various text resources for some installers.
     set(CPACK_RESOURCE_FILE_WELCOME "${PROJECT_SOURCE_DIR}/admin/InstallWelcome.txt")
     # Its GPL/LGPL, so they do not have to agree to a license for mere usage,

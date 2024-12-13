@@ -206,13 +206,13 @@ const char *getFftDescriptionString()
 
 void gmx_print_version_info(gmx::TextWriter *writer)
 {
-    writer->writeLine(formatString("GROMACS version:    %s", gmx_version()));
-    const char *const git_hash = gmx_version_git_full_hash();
+    writer->writeLine(formatString("GROMACS version:    %s", act_version()));
+    const char *const git_hash = act_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
         writer->writeLine(formatString("GIT SHA1 hash:      %s", git_hash));
     }
-    const char *const base_hash = gmx_version_git_central_base_hash();
+    const char *const base_hash = act_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
         writer->writeLine(formatString("Branched from:      %s", base_hash));
@@ -331,7 +331,7 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine(formatString("%sCreated by:%s", prefix, suffix));
     }
     std::string title
-        = formatString(":-) ACT - %s, %s%s (-:", name, gmx_version(), precisionString);
+        = formatString(":-) ACT - %s, %s%s (-:", name, act_version(), precisionString);
     const int   indent
         = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     writer->writeLine(formatString("%s%*c%s%s", prefix, indent, ' ', title.c_str(), suffix));
@@ -347,8 +347,8 @@ void printBinaryInformation(TextWriter                      *writer,
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        writer->writeLine(formatString("%sGROMACS:      %s, version %s%s%s", prefix, name,
-                                       gmx_version(), precisionString, suffix));
+        writer->writeLine(formatString("%sACT:      %s, version %s%s%s", prefix, name,
+                                       act_version(), precisionString, suffix));
     }
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
