@@ -271,6 +271,12 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
+        real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
+        if (aexp == 0)
+        {
+            continue;
+        }
+        real bexp       = params[dexpB_IJ];
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -279,8 +285,6 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
-        real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
-        real bexp       = params[dexpB_IJ];
         auto eeexp      = -aexp*std::exp(-bexp*dr2*rinv);
         if (debug)
         {
@@ -1004,7 +1008,10 @@ static void computeAngles(const TopologyEntryVector             &angles,
 
         real vA, fangle;
         harmonic(ka, theta0, theta, &vA, &fangle);
-        
+        if (debug)
+        {
+            fprintf(debug, "Angle %g refangle %g, energy %g\n", theta, theta0, vA);
+        }
         energy += vA;
         
         auto costh2 = gmx::square(costh);
@@ -1136,21 +1143,21 @@ static void computePolarization(const TopologyEntryVector             &bonds,
     const  real half = 0.5;
     for (const auto &b : bonds)
     {
-        // Get the atom indices
-        auto &indices  = b->atomIndices();
         // Get the parameters. We have to know their names to do this.
         auto &params   = b->params();
-        // Get shell charge
-        auto q         = atoms[indices[1]].charge();
         // Get polarizability
-        double ksh     = 0;
         auto alpha     = params[polALPHA];
+        if (alpha == 0)
+        {
+            continue;
+        }
         auto rhyper    = params[polRHYPER];
         auto fchyper   = params[polFCHYPER];
-        if (alpha > 0)
-        {
-            ksh       = ONE_4PI_EPS0*q*q/alpha;
-        }
+        // Get the atom indices
+        auto &indices  = b->atomIndices();
+        // Get shell charge
+        auto q         = atoms[indices[1]].charge();
+        double ksh     = ONE_4PI_EPS0*q*q/alpha;
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2  = iprod(dx, dx);
@@ -1160,19 +1167,26 @@ static void computePolarization(const TopologyEntryVector             &bonds,
             continue;
         }
 
-        auto dr         = dr2 * gmx::invsqrt(dr2);             /*  10		*/
+        auto dr         = dr2 * gmx::invsqrt(dr2);
         auto fbond      = -ksh;
         ebond          += half*ksh*dr2;
-        
+        if (debug)
+        {
+            fprintf(debug, "vpol %g ai %d aj %d alpha %g ksh %g dist %g\n", half*ksh*dr2, indices[0],
+                    indices[1], alpha, ksh, dr);
+        }
         if (dr > rhyper && fchyper > 0)
         {
             auto ddr  = dr - rhyper;
-            auto ddr3 = ddr * ddr * ddr;
-            ebond += fchyper * ddr * ddr3;
-            fbond -= 4 * fchyper * ddr3;
+            auto ddr2 = ddr * ddr;
+            ebond += fchyper * ddr2 * ddr2;
+            // We will multiply by the distance vector components below
+            fbond -= 4 * fchyper * ddr2;
             if (debug)
             {
-                fprintf(debug, "Adding hyperpolarization energy correction %g kJ/mol.\n", fchyper * ddr * ddr3);
+                fprintf(debug, "Adding hyperpolarization energy correction %g kJ/mol core pos %g %g %g ddr = %g.\n",
+                        fchyper * ddr2 * ddr2, x[indices[0]][XX],
+                        x[indices[0]][YY],x[indices[0]][ZZ], ddr);
             }
         }
         for (int m = 0; m < DIM; m++)
