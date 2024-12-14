@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+
+import argparse
+import glob
+import os
+import sys
+import shutil
+import math
+import time
+from os.path import abspath
+from multiprocessing import Pool, cpu_count
+import csv
+from typing import List
+
+Debug = False
+final_distance = []
+
+def read_pdb(pdb_file: str) -> (list, list, list, str, str):
+    atoms = []
+    conect_records = []
+    header_lines = []
+    master_line = None
+    end_line = None
+
+    with open(pdb_file, "r") as pdb:
+        for line in pdb:
+            if line.startswith("REMARK") or line.startswith("COMPND") or line.startswith("AUTHOR"):
+                header_lines.append(line)
+            elif line.startswith("ATOM") or line.startswith("HETATM"):
+                atomdata = {
+                    'serial': int(line[6:11].strip()),
+                    'atom': line[12:16].strip(),
+                    'residue': line[17:20].strip(),
+                    'chain_id': line[21].strip(),
+                    'residue_seq': int(line[22:26].strip()),
+                    'x': float(line[30:38].strip()),
+                    'y': float(line[38:46].strip()),
+                    'z': float(line[46:54].strip()),
+                    'element': line[76:78].strip(),
+                }
+                atoms.append(atomdata)
+            elif line.startswith("CONECT"):
+                conect_records.append(line)
+            elif line.startswith("MASTER"):
+                master_line = line
+            elif line.startswith("END"):
+                end_line = line
+
+    return atoms, conect_records, header_lines, master_line, end_line
+
+
+
+
+
+def translate_monomer(monomer, translationvector):
+    for atom in monomer:
+        atom['x'] += translationvector[0]
+        atom['y'] += translationvector[1]
+        atom['z'] += translationvector[2]
+
+
+def adjust_distance_between_atoms(atom1, atom2, desired_dist):
+    dx = atom2['x'] - atom1['x']
+    dy = atom2['y'] - atom1['y']
+    dz = atom2['z'] - atom1['z']
+
+    current_dist = math.sqrt(dx**2 + dy**2 + dz**2)
+
+    if current_dist == 0:
+        raise ValueError("Atoms are at the same position, can't translate monomer2.")
+
+    unitvector = (dx / current_dist, dy / current_dist, dz / current_dist)
+    translationvector = [(desired_dist - current_dist) * u for u in unitvector]
+
+    return translationvector
+
+
+def calculate_distance(atom1, atom2):
+    dx = atom2['x'] - atom1['x']
+    dy = atom2['y'] - atom1['y']
+    dz = atom2['z'] - atom1['z']
+    return math.sqrt(dx**2 + dy**2 + dz**2)
+
+
+def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2_s: int, pdb_path: str) -> str:
+    dimer_directory = pdb_path
+    pdb_file_path = os.path.join(dimer_directory, f"{dimername}.pdb")
+    output_pdb = f"{dimername}-modified-{dist:.2f}.pdb"
+
+    atoms, conect_records, header_lines, master_line, end_line = read_pdb(pdb_file_path)
+
+    monomer1 = [atom for atom in atoms if atom['residue_seq'] == 1]
+    monomer2 = [atom for atom in atoms if atom['residue_seq'] != 1]
+
+    if not monomer1:
+          raise ValueError(f"No atoms found in monomer1; residue sequence starting from 1 may be missing in {dimername}.pdb.")
+
+    atom1 = next((atom for atom in monomer1 if atom['serial'] == atom1_s), None)
+    atom2 = next((atom for atom in monomer2 if atom['serial'] == atom2_s), None)
+
+    if not atom1:
+        raise ValueError(f"Atom with serial {atom1_s} not found in monomer1.")
+    if not atom2:
+        raise ValueError(f"Atom with serial {atom2_s} not found in monomer2.")
+
+    current_dist = calculate_distance(atom1, atom2)
+    translationvector = adjust_distance_between_atoms(atom1, atom2, dist)
+    translate_monomer(monomer2, translationvector)
+
+    with open(output_pdb, "w") as outf:
+        outf.writelines(header_lines)
+        for atom in monomer1:
+            outf.write(f"ATOM{atom['serial']:7d}  {atom['atom']:3s} UNK  {atom['residue_seq']:4d}    "
+                       f"{atom['x']:8.3f}{atom['y']:8.3f}{atom['z']:8.3f}  1.00  0.00           {atom['element']:2s}\n")
+
+        for atom in monomer2:
+            outf.write(f"ATOM{atom['serial']:7d}  {atom['atom']:3s} UNK  {atom['residue_seq']:4d}    "
+                       f"{atom['x']:8.3f}{atom['y']:8.3f}{atom['z']:8.3f}  1.00  0.00           {atom['element']:2s}\n")
+        for conect in conect_records:
+            outf.write(conect)
+        if master_line:
+            outf.write(master_line)
+        if end_line:
+            outf.write(end_line)
+
+    calculated_dist = calculate_distance(atom1, atom2)
+    if calculated_dist not in final_distance:
+        final_distance.append(calculated_dist)
+    return output_pdb
+
+
+def get_final_energy(mylog: str) -> float:
+    epot = None
+    with open(mylog, "r") as inf:
+        for line in inf:
+            if "EPOT:" in line and "value" in line:
+                try:
+                    words = line.split()
+                    epot = float(words[2][:-1])
+                except ValueError:
+                    print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
+    return epot
+
+
+def make_freeze(indices: list) -> str:
+    fndx = os.path.join(os.getcwd(), "freeze.ndx")
+    with open(fndx, "w") as outf:
+        outf.write("[ freeze ]\n")
+        outf.write(" ".join(map(str, indices)) + "\n")
+    return fndx
+
+
+
+
+def get_dists(rmin: float, rmax: float, nstep: float) -> list:
+    dists = []
+    start = 1 * rmin
+    end = rmax
+
+    current_dist = start
+    while current_dist <= end:
+        dists.append(current_dist)
+        current_dist += nstep
+
+    if Debug:
+        print(f"Distances: {dists}")
+    return dists
+
+
+
+
+def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
+              force: bool, pol: bool, nvsite1: int, rmin: float, atom1_s: int,
+              atom2_s: int, end_dist: float, pdb_path: str, nstep: float, molprop:str):
+    label = f"{c1}#{c2}"
+    dists = get_dists(rmin, end_dist, nstep)
+    freeze_ind = [atom1_s, atom2_s]
+    fndx = make_freeze(freeze_ind)
+
+    for dd, dfl in enumerate(dists):
+        dstr = ("%04d" % dd)
+        os.makedirs(dstr, exist_ok=True)
+        os.chdir(dstr)
+        try:
+            pdb= gen_pdb_system(system, dfl, True, atom1_s, atom2_s, pdb_path)
+            if not os.path.exists(pdb):
+                raise FileNotFoundError(f"PDB file {pdb} was not created")
+
+            mylog = "simulation.log"
+            outpdb = "final.pdb"
+            command = f"alexandria simulate -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
+            if molprop and len(molprop) > 0:
+                command += f" -charges {molprop} "
+            command += " > sim.txt 2>&1 "
+            os.system(command)
+
+        except Exception as e:
+            print(f"Error generating PDB file or running simulation: {e}")
+        os.chdir("..")
+
+def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: list):
+    label = f"{c1}#{c2}"
+    efn = f"{c1}#{c2}.xvg"
+    ener = None
+    if not isinstance(distances, list):
+        print(distances)
+        raise TypeError("Distances must be a list of floats.")
+
+    if Debug:
+        print(f"distances in fetch_energy:{distances}")
+    for dd, dstr in enumerate(map(str, range(len(distances)))):
+        ddstr = ("%04d" % dd)
+        mylog = os.path.join(ddstr, "simulation.log")
+        if os.path.exists(mylog):
+            edimer = get_final_energy(mylog)
+            if edimer is not None:
+                if ener is None:
+                    ener = open(efn, "w")
+                    ener.write("@ yaxis legend \"Energy (kJ/mol)\"\n")
+                    ener.write("@ xaxis legend \"Distance (nm)\"\n")
+                ener.write(f"{0.1 * distances[dd]:10g}  {edimer:10g}\n")
+    if ener:
+        ener.close()
+
+
+def analyze_ff(ff: str) -> (bool, bool):
+    vs = False
+    pol = False
+    with open(ff, "r") as inf:
+        for line in inf:
+            if "VSITE2" in line:
+                vs = True
+            elif "alpha" in line:
+                pol = True
+    return pol, vs
+
+def run_one(vdw: str, xml: str, system: str, rmin: float,
+            atom1_s: int, atom2_s: int, end_dist: float,
+            pdb_path: str, nstep: float, molprop:str):
+    global final_distance
+    if not os.path.exists(xml):
+        print(f"No such force field file '{xml}'")
+        return
+    pol, vs = analyze_ff(xml)
+    force = True
+    root = os.getcwd()
+    myvdw = os.path.basename(vdw)
+
+    if os.path.isdir(myvdw):
+        shutil.rmtree(myvdw)
+    os.makedirs(myvdw, exist_ok=False)
+    os.chdir(myvdw)
+
+    cmps = system.split('/')[-1].split('#')
+
+    if len(cmps) != 2:
+        print(f"Invalid dimer format '{system}'. Expected format: 'compound1#compound2'.")
+        os.chdir("..")
+        return
+
+    c1, c2 = cmps
+
+    mydir = f"{c1}#{c2}"
+    os.makedirs(mydir, exist_ok=True)
+    os.chdir(mydir)
+
+    run_dimer(system, root, c1, c2, xml, force, pol, vs, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, molprop)
+
+    print(final_distance)
+    fetch_energy(c1, c2, pol, vs, rmin, final_distance)
+    os.chdir("../..")
+
+def plot_curves(xmls: dict):
+    plots = {}
+    for xml in xmls.keys():
+        vdw = os.path.basename(xml)
+        if not os.path.isdir(vdw):
+            print("Data for FF %s not present in %s" % (vdw, os.getcwd()))
+            continue
+        os.chdir(vdw)
+        for dimer in glob.glob("*"):
+            if not os.path.isdir(dimer):
+                continue
+            os.chdir(dimer)
+            xvg = os.path.join(os.getcwd(), f"{dimer}.xvg")
+            if os.path.exists(xvg):
+                print(f"Found {xvg}")
+                if dimer not in plots:
+                    plots[dimer] = []
+                plots[dimer].append({"xvg": xvg, "legend": vdw})
+                if vdw not in plots:
+                    plots[vdw] = []
+                plots[vdw].append({"xvg": xvg, "legend": dimer})
+
+                data = []
+                with open(xvg, 'r') as f:
+                    for line in f:
+                        if not line.startswith(("#", "@")):
+                            parts = line.strip().split()
+                            if len(parts) == 2:
+                                x, y = float(parts[0]), float(parts[1])
+                                data.append([x, y])
+
+
+                csvf = f"{dimer}.csv"
+                csvp = os.path.join(os.getcwd(), csvf)
+                with open(csvp, 'w', newline='') as csvfile:
+                    csv_writer = csv.writer(csvfile)
+                    csv_writer.writerow(['Distance', 'Energy'])
+                    csv_writer.writerows(data)
+                print(f"Saved data to {csvp}")
+            os.chdir("..")
+        os.chdir("..")
+
+    for dimer, plots_list in plots.items():
+        cmd = f"viewxvg -mk -pdf {dimer} -title {dimer} -ymax 10 -noshow -legend_x 0.7 -legend_y 0.95 -alfs 14 -lfs 14 -tickfs 14 -f "
+        cmd += " ".join(p["xvg"] for p in plots_list)
+        cmd += " -label " + " ".join(p["legend"] for p in plots_list)
+        os.system(cmd)
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="""
+    This script computes dimer potentials for dimers.
+    Structures must be provided with filenames mol1#mol2.pdb and one
+    atom in each molecule must be designated to determine the
+    reaction coordinate.
+    """)
+
+    parser.add_argument("-ff", "--ff", help="Use this/these force field file(s)", nargs="+", default=[])
+    parser.add_argument("-plot", "--plot", help="Just plot, do not calculate", action="store_true")
+    parser.add_argument("-pdb", "--pdb", help=f"Dimer path", type=str, default=None)
+    parser.add_argument("-rmin", "--rmin", help="Minimum energy distance for distance range", type=float, default=2.2)
+    parser.add_argument("-dr", "--nstep", help="Distance between data points", type=float, default=0.1)
+    parser.add_argument("-rmax", "--rmax", help="End of the distance range", type=float, default=6)
+    parser.add_argument("-mp",   "--molprop", help="Use this molprop file to geberate charges from (optional)", type=str)
+    parser.add_argument("-atom1", "--atom1", help="Atom1 in the first monomer is used for distance calculation (e.g. 1)", type=int, default=None)
+    parser.add_argument("-atom2", "--atom2", help="Atom2 in the second monomer for distance calc (e.g. 11)", type=int, default=None)
+    parser.add_argument("-dbg", "--debug", help="Write more debugging output", action="store_true")
+    args = parser.parse_args()
+    if args.debug:
+        Debug = True
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    required_args = {
+    "ff": "Force field files are required to calculate the dimer potentials.",
+    "pdb": "Path to the PDB file is required to define the dimer structure.",
+    "atom1": "Serial number of Atom1 in the first monomer is required for distance calculation.",
+    "atom2": "Serial number of Atom2 in the second monomer is required for distance calculation."
+    }
+
+
+    for arg, error_message in required_args.items():
+        if getattr(args, arg) is None:
+            print(f"Error: Missing required argument '--{arg}'.\n{error_message}")
+            print()
+            parser = argparse.ArgumentParser()
+            parser.print_help()
+            sys.exit(1)
+
+    fullxml = {xml[:-4]: os.path.abspath(xml) for xml in args.ff}
+
+    pdb_dir = os.path.abspath(args.pdb)
+    if not os.path.isfile(pdb_dir):
+        print(f"Error: The specified PDB file '{args.pdb}' does not exist.")
+        sys.exit(1)
+
+    results  = "results"
+    system   =  args.pdb[:-4]
+    pdb_path = os.path.dirname(pdb_dir)
+
+    os.makedirs(results, exist_ok=True)
+    os.chdir(results)
+
+    if not args.plot:
+        for vdw in fullxml.keys():
+            run_one(vdw, fullxml[vdw], system,  args.rmin, args.atom1, args.atom2,
+                    args.rmax, pdb_path, args.nstep, args.molprop)
+        #run_all(system, fullxml, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, args.molprop)
+    plot_curves(fullxml)
+    print(f"Checkout output files in {results}")
+    os.chdir("..")
