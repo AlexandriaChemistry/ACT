@@ -238,12 +238,16 @@ int geometry_ff(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-mp", NFILE, fnm), &mp, nullptr, nullptr, nullptr, false);
+    auto warnings = merge_xml(opt2fns("-mp", NFILE, fnm), &mp);
     print_memory_usage(debug);
 
-    if (nwarn > maxwarn)
+    if (warnings.size() > static_cast<size_t>(maxwarn))
     {
-        printf("Too many warnings (%d). Terminating.\n", nwarn);
+        fprintf(stderr, "Too many warnings. Terminating.\n");
+        for (const auto &w : warnings)
+        {
+            fprintf(stderr, "%s\n", w.c_str());
+        }
         return 0;
     }
     std::vector<ACTMol> actmols;

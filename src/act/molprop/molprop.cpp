@@ -379,56 +379,65 @@ void MolProp::generateFragments(const ForceField *pd)
         addFragment(Fragment(fragName, mass, qtot, spin, 1, formula, atomIndices));
     }
     std::sort(fragment_.begin(), fragment_.end(), fragCompare);
-    
+
     renumberResidues();
 }
 
-bool MolProp::sameCompound(const MolProp *other)
+std::vector<std::string> MolProp::sameCompound(const MolProp *other)
 {
-    if (other->getMolname() != getMolname() ||
-        other->fragments().size() != fragment_.size())
+    std::vector<std::string> warnings;
+    if (other->getMolname() != getMolname())
     {
-        return false;
+        warnings.push_back(gmx::formatString("Molnames differ. %s vs %s", getMolname().c_str(),
+                                             other->getMolname().c_str()));
     }
-    for(size_t ff = 0; ff < fragment_.size(); ++ff)
+    else if (other->fragments().size() != fragment_.size())
+    {
+        warnings.push_back(gmx::formatString("Fragments size %zu vs %zu", fragment_.size(),
+                                             other->fragments().size()));
+    }
+
+    for(size_t ff = 0; warnings.empty() && ff < fragment_.size(); ++ff)
     {
         auto &src_f = fragment_[ff];
         auto &dst_f = other->fragments()[ff];
 
         if (src_f.atoms() != dst_f.atoms())
         {
-            return false;
+            warnings.push_back(gmx::formatString("Atoms differ for %s", getMolname().c_str()));
         }
-        if (src_f.formula() != dst_f.formula() ||
-            src_f.multiplicity() != dst_f.multiplicity() ||
-            src_f.symmetryNumber() != dst_f.symmetryNumber() ||
-            src_f.charge() != dst_f.charge())
+        else if (src_f.formula() != dst_f.formula())
         {
-            if (debug)
-            {
-                fprintf(debug, "Similar but not identical compounds '%s' encountered.\n", getMolname().c_str());
-                fprintf(debug, "                  %30s  %30s\n", "Me", "Other");
-                fprintf(debug, "InChi:            %30s  %30s\n", dst_f.inchi().c_str(), src_f.inchi().c_str());
-                fprintf(debug, "Formula:          %30s  %30s\n", dst_f.formula().c_str(), src_f.formula().c_str());
-                fprintf(debug, "Multiplicity:     %30d  %30d\n", dst_f.multiplicity(), src_f.multiplicity());
-                fprintf(debug, "Symmetry number:  %30d  %30d\n", dst_f.symmetryNumber(), src_f.symmetryNumber());
-                fprintf(debug, "Charge:           %30d  %30d\n", dst_f.charge(), src_f.charge());
-            }
-            return false;
+            warnings.push_back(gmx::formatString("Formula: %s vs %s for %s",
+                                                 dst_f.formula().c_str(), src_f.formula().c_str(),
+                                                 getMolname().c_str()));
+        }
+        else if (src_f.multiplicity() != dst_f.multiplicity())
+        {
+            warnings.push_back(gmx::formatString("Multiplicity: %d vs %d for %s",
+                                                 dst_f.multiplicity(), src_f.multiplicity(),
+                                                 getMolname().c_str()));
+        }
+        else if (src_f.symmetryNumber() != dst_f.symmetryNumber())
+        {
+            warnings.push_back(gmx::formatString("Symmetry number: %d vs %d for %s",
+                                                 dst_f.symmetryNumber(), src_f.symmetryNumber(),
+                                                 getMolname().c_str()));
+        }
+        else if (src_f.charge() != dst_f.charge())
+        {
+            warnings.push_back(gmx::formatString("Charge: %d vs %d for %s", dst_f.charge(), src_f.charge(),
+                                                 getMolname().c_str()));
         }
     }
-    return true;
+    return warnings;
 }
 
-int MolProp::Merge(const MolProp *src)
+std::vector<std::string> MolProp::Merge(const MolProp *src)
 {
-    std::string stmp;
-    int         nwarn = 0;
+    std::vector<std::string> warnings;
+    std::string              stmp;
 
-    if (!getMolname().empty() && !sameCompound(src))
-    {
-        return 1;
-    }
     if (fragment_.empty())
     {
         for(const auto &f : src->fragments())
@@ -483,19 +492,16 @@ int MolProp::Merge(const MolProp *src)
             alexandria::Bond bb2(bi.aJ(), bi.aI(), bi.bondOrder());
             if (!BondExists(bb1) && !BondExists(bb2))
             {
-                fprintf(stderr, "WARNING bond %d-%d not present in %s.\n",
-                        bi.aI(), bi.aJ(), getMolname().c_str());
+                warnings.push_back(gmx::formatString("WARNING bond %d-%d not present in %s.",
+                                                     bi.aI(), bi.aJ(), getMolname().c_str()));
                 for(auto &k : src->bondsConst())
                 {
-                    fprintf(stderr, "src bond %d %d\n",
-                            k.aI(), k.aJ());
+                    warnings.push_back(gmx::formatString("src bond %d %d", k.aI(), k.aJ()));
                 }
                 for(auto &k : bondsConst())
                 {
-                    fprintf(stderr, "dest bond %d %d\n",
-                            k.aI(), k.aJ());
+                    warnings.push_back(gmx::formatString("dest bond %d %d", k.aI(), k.aJ()));
                 }
-                nwarn++;
             }
         }
     }
@@ -505,8 +511,15 @@ int MolProp::Merge(const MolProp *src)
         if (dsExperiment == ei.dataSource())
         {
             Experiment ex(ei.getReference(), ei.getConformation());
-            nwarn += ex.Merge(&ei);
-            AddExperiment(ex);
+            int nwarn = ex.Merge(&ei);
+            if (nwarn > 0)
+            {
+                warnings.push_back("Problem adding experiment");
+            }
+            else
+            {
+                AddExperiment(ex);
+            }
         }
         else
         {
@@ -515,11 +528,18 @@ int MolProp::Merge(const MolProp *src)
                           ei.getBasisset(), ei.getReference(),
                           ei.getConformation(), ei.getDatafile(),
                           jtype);
-            nwarn += ca.Merge(&ei);
-            AddExperiment(ca);
+            int nwarn = ca.Merge(&ei);
+            if (nwarn > 0)
+            {
+                warnings.push_back("Problem adding calculation");
+            }
+            else
+            {
+                AddExperiment(ca);
+            }
         }
     }
-    return nwarn;
+    return warnings;
 }
 
 std::string MolProp::texFormula() const

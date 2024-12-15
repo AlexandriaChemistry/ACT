@@ -461,7 +461,6 @@ int edit_mp(int argc, char *argv[])
     };
     bool     compress    = false;
     real     temperature = 298.15;
-    bool     forceMerge  = false;
     bool     bcast       = false;
     bool     energyHisto = false;
     bool     molinfo     = true;
@@ -477,8 +476,6 @@ int edit_mp(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-temperature", FALSE, etREAL, {&temperature},
           "Temperature for properties to extract from the SQLite database" },
-        { "-force", FALSE, etBOOL, {&forceMerge},
-          "Force merging compounds with the same name even if not the formula matches" },
         { "-bcast", FALSE, etBOOL, {&bcast},
           "Use broadcast instead of send/receive when running in parallel" },
         { "-molinfo", FALSE, etBOOL, {&molinfo},
@@ -512,9 +509,9 @@ int edit_mp(int argc, char *argv[])
     int root  = 0;
     if (cr.isMaster())
     {
-        int nwarn   = merge_xml(fns, &mpt, nullptr, nullptr, nullptr, forceMerge);
+        auto warnings = merge_xml(fns, &mpt);
         int mptsize = mpt.size();
-        if (nwarn <= maxwarn)
+        if (warnings.size() <= static_cast<size_t>(maxwarn))
         {
             ReadSqlite3(opt2fn_null("-db", fnm.size(), fnm.data()), &mpt, temperature);
 
@@ -522,7 +519,11 @@ int edit_mp(int argc, char *argv[])
         }
         else
         {
-            printf("Too many warnings (%d), not generating output\n", nwarn);
+            fprintf(stderr, "Too many warnings, not generating output\n");
+            for (const auto &w : warnings)
+            {
+                fprintf(stderr, "%s\n", w.c_str());
+            }
             mpt.clear();
         }
             
@@ -603,6 +604,7 @@ int edit_mp(int argc, char *argv[])
     }
     if (writeNode == cr.rank())
     {
+        printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
         MolPropWrite(molpropout, mpt, compress);
     }
     return 0;
