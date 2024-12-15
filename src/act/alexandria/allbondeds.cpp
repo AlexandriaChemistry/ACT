@@ -562,7 +562,8 @@ void AllBondeds::extractGeometries(FILE                       *fp,
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         iMolSelect imol;
-        if (gms.status(mpi->getIupac(), &imol) &&
+        if ((gms.status(mpi->getIupac(), &imol) ||
+             gms.status(mpi->getMolname(), &imol)) &&
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::ACTMol mmi;
