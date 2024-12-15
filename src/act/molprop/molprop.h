@@ -104,20 +104,20 @@ public:
     int getIndex() const { return index_; }
 
     /*! \brief Evaluate whether two compounds are the same.
-     * The routine will write to the debug file if open.
+     * The routine will return a list of warnings
      * \param[in] other The MolProp to compare to
-     * \return true if they are the same
+     * \return list of warnings, if empty the molprops are the same
      */
-    bool sameCompound(const MolProp *other);
+    std::vector<std::string> sameCompound(const MolProp *other);
 
     /*! \brief
      * Merge the content of another MolProp into this one
      *
      * \param[in] mpi The object to be merged into the present one
-     * \return Number of warnings
+     * \return List of warnings, if empty the molprops are merged fine
      * \todo Check and double check
      */
-    int Merge(const MolProp *mpi);
+    std::vector<std::string> Merge(const MolProp *mpi);
     
     //! Dump the contents of this object to a file
     void Dump(FILE *fp) const;

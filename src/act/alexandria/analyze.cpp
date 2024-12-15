@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -460,10 +460,14 @@ int analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, TRUE);
-        if (nwarn > maxwarn)
+        auto warnings = merge_xml(mpname, &mp);
+        if (warnings.size() > static_cast<size_t>(maxwarn))
         {
-            printf("Too many warnings (%d). Terminating.\n", nwarn);
+            fprintf(stderr, "Too many warnings. Terminating.\n");
+            for (const auto &w : warnings)
+            {
+                fprintf(stderr, "%s\n", w.c_str());
+            }
             return 0;
         }
     }
