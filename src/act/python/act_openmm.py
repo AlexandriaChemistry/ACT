@@ -1545,8 +1545,20 @@ class ActOpenMMSim:
                     self.system.setParticleMass(atom.index, oldmass[atom.index])
         return ener
 
-    def equilibrate(self):
-        self.txt.write('\nEquilibrating for %d steps at T = %g K.\n' % ( self.equilibrationSteps, self.temperature_c) )
+    def equilibrate(self, constantVolume:bool=False):
+        ensemble  = "NpT"
+        frequency = self.sim_params.getInt('barostatInterval')
+        for force in self.system.getForces():
+            if force.getName() in [ "MonteCarloAnisotropicBarostat", "MonteCarloBarostat" ]:
+                if constantVolume:
+                    # Set frequency to more than the number of steps
+                    force.setFrequency(self.equilibrationSteps + 1)
+                    ensemble = "NVT"
+                else:
+                    force.setFrequency(frequency)
+
+        self.txt.write('\n%s equilibration for %d steps at T = %g K.\n' %
+                       ( ensemble, self.equilibrationSteps, self.temperature_c) )
         self.simulation.context.setVelocitiesToTemperature(self.temperature_c)
         self.simulation.step(self.equilibrationSteps)
 
@@ -1613,7 +1625,8 @@ class ActOpenMMSim:
         # start fresh; start by equilibration
         else:
             self.minimize(maxIter=100)
-            self.equilibrate()
+            self.equilibrate(constantVolume=True)
+            self.equilibrate(constantVolume=False)
             self.print_energy("After equilibration")
         # reset time (former outputs will be overwritten anyway)
         self.simulation.context.setTime(0.0)
