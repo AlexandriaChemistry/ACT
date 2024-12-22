@@ -622,6 +622,7 @@ class ActOpenMMSim:
         ################################################
         self.dt                 = self.sim_params.getFloat('dt')
         self.equilibrationSteps = self.sim_params.getInt('equilibrationSteps')
+        self.minimizationSteps  = self.sim_params.getInt('minimizationSteps', 1000)
         self.steps              = self.sim_params.getInt('steps')
         self.nonbondedMethod           = nbmethod[self.sim_params.getStr('nonbondedMethod')]
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
@@ -976,7 +977,8 @@ class ActOpenMMSim:
                 else:
                     charge     = allParam["charge"]
                 self.custom_coulomb.addParticle([charge])
-                self.txt.write(f"Adding {self.qdist} charge {charge} to particle {index}\n")
+                if self.debug:
+                    self.txt.write(f"Adding {self.qdist} charge {charge} to particle {index}\n")
             else:
                 *myparams, = self.customnb.getParticleParameters(index)
                 allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["CustomNonbondedForce"].items()}
@@ -1596,7 +1598,7 @@ class ActOpenMMSim:
 
     def minimize(self, maxIter:int=0)->float:
         epot = self.minimize_energy(maxIter)
-        self.print_energy("After minimization")
+        self.print_energy("After %d steps of minimization (0 steps means to convergence)" % maxIter)
         return epot
 
     def write_coordinates(self, outfile:str):
@@ -1624,7 +1626,7 @@ class ActOpenMMSim:
             self.print_energy("After loading checkpoint")
         # start fresh; start by equilibration
         else:
-            self.minimize(maxIter=100)
+            self.minimize(maxIter=self.minimizationSteps)
             self.equilibrate(constantVolume=True)
             self.equilibrate(constantVolume=False)
             self.print_energy("After equilibration")
