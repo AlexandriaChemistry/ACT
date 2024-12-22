@@ -129,6 +129,10 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
               "Tolerance for harmonic and linear angles" },
             { "-factor", FALSE, etREAL, {&factor_},
               "Scale factor to set minimum and maximum values of parameters. Min will be set to value*factor and max to value/factor, assuming factor < 1." },
+            { "-bfactor", FALSE, etREAL, {&bfactor_},
+              "Scale factor to set minimum and maximum values of bond lengths. See also previous option." },
+            { "-afactor", FALSE, etREAL, {&afactor_},
+              "Scale factor to set minimum and maximum values of bond angles. See also previous option." },
             { "-bspacing", FALSE, etREAL, {&bspacing_},
               "Spacing for bond histograms in pm" },
             { "-aspacing", FALSE, etREAL, {&aspacing_},
@@ -371,7 +375,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::MORSE_BONDS:
             {
                 fs->addParameter(bondId, morse_name[morseLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
                                                      Mutability::Bounded, false, true));
                 fs->addParameter(bondId, morse_name[morseDE],
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
@@ -388,7 +392,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::HUA_BONDS:
             {
                 fs->addParameter(bondId, hua_name[huaLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
                                                      Mutability::Bounded, false, true));
                 fs->addParameter(bondId, hua_name[huaDE],
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
@@ -404,7 +408,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::HARMONIC_BONDS:
             {
                 fs->addParameter(bondId, bond_name[bondLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, bond_name[bondKB],
                                  ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
                 double D0 = -200;
@@ -416,10 +420,10 @@ void AllBondeds::updateForceField(FILE    *fp,
             {
                 // Compute the numbers such that they make sense
                 fs->addParameter(bondId, cubic_name[cubicLENGTH],
-                                 ForceFieldParameter("pm", av, 0, N, av*factor_, av/factor_, Mutability::Bounded, true, true));
+                                 ForceFieldParameter("pm", av, 0, N, av*bfactor_, av/bfactor_, Mutability::Bounded, true, true));
                 double rmax = 3*av;
                 fs->addParameter(bondId, cubic_name[cubicRMAX],
-                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*factor_, rmax/factor_, Mutability::Bounded, true, true));
+                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*bfactor_, rmax/bfactor_, Mutability::Bounded, true, true));
                 fs->addParameter(bondId, cubic_name[cubicKB],
                                  ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
                 fs->addParameter(bondId, cubic_name[cubicDE],
@@ -460,8 +464,8 @@ void AllBondeds::updateForceField(FILE    *fp,
                 {
                     round_numbers(&av, &sig, 10);
                     fs->addParameter(bondId, angle_name[angleANGLE],
-                                     ForceFieldParameter("degree", av, sig, N, av*factor_,
-                                                         std::min(180.0, av/factor_), Mutability::Bounded, false, true));
+                                     ForceFieldParameter("degree", av, sig, N, av*afactor_,
+                                                         std::min(180.0, av/afactor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, angle_name[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -471,7 +475,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                         std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
                         fs->addParameter(bondId, ub_name[ubR13],
-                                         ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
+                                         ForceFieldParameter(unit, r13, 0, N, r13*bfactor_, r13/bfactor_,
                                                              Mutability::Bounded, false, true));
                         fs->addParameter(bondId, ub_name[ubKUB],
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, true));

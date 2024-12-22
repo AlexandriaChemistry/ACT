@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2022
+ * Copyright (C) 2021-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -121,6 +121,10 @@ namespace alexandria
         real                                               angle_tol_ = 5;
         //! Scaling factor for setting min and max for force parameters
         real                                               factor_    = 0.5;
+        //! Scaling factor for setting min and max for bond lengths
+        real                                               bfactor_   = 0.95;
+        //! Scaling factor for setting min and max for bond angles
+        real                                               afactor_   = 0.95;
         //! Spacing for bond histograms in pm
         real                                               bspacing_  = 1;
         //! Spacing for angle histograms in degrees
