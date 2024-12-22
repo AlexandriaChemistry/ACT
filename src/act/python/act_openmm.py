@@ -1043,7 +1043,7 @@ class ActOpenMMSim:
             dist2 += (self.positions[iatom][m]._value - self.positions[jatom][m]._value)**2
         dist = math.sqrt(dist2)
         if abs(dist) < 0.001: # nm
-            sys.exit("Particles %d and %d have distance %g. Please check your force field, e.g. the virtual site definitions.", iatom, jatom, dist) 
+            sys.exit("Particles %d and %d have distance %g. Please check your force field, e.g. the virtual site definitions." % ( iatom, jatom, dist ) )
 
     def add_excl_correction(self):
         # Add vdW and electrostactics that have been excluded.
