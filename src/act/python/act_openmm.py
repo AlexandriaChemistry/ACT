@@ -1037,6 +1037,14 @@ class ActOpenMMSim:
 
         return False
 
+    def check_dist(self, iatom:int, jatom:int):
+        dist2 = 0
+        for m in range(3):
+            dist2 += (self.positions[iatom][m]._value - self.positions[jatom][m]._value)**2
+        dist = math.sqrt(dist2)
+        if abs(dist) < 0.001: # nm
+            sys.exit("Particles %d and %d have distance %g. Please check your force field, e.g. the virtual site definitions.", iatom, jatom, dist) 
+
     def add_excl_correction(self):
         # Add vdW and electrostactics that have been excluded.
         # This has to be done as the number of exclusions is 3 for
@@ -1073,6 +1081,7 @@ class ActOpenMMSim:
             qq_pme_excl_corr.setName("CoulombPMEExclusionCorrection")
             qq_pme_excl_corr.addPerBondParameter("qiqj")
             # OpenMM uses point charges for PME. No need to correct for this though.
+            # TODO: check whether there is a difference between PC and Gaussia charges.
             # Eqn. 2.5 in Essmann1995a
             if False:
                 qq_pme_excl_corr_self_expression = ("-%g*charge^2;" % ( 2*self.alphaPME*ONE_4PI_EPS0/math.sqrt(math.pi) ) )
@@ -1128,6 +1137,9 @@ class ActOpenMMSim:
                 if self.debug:
                     self.txt.write(f" custom nonbonded force i {', '.join([f'{parameter}={iparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
                     self.txt.write(f" custom nonbonded force j {', '.join([f'{parameter}={jparameters[idx]}' for parameter, idx in self.parameter_indices['CustomNonbondedForce'].items()])}\n")
+            else:
+                sys.exit("Unsupported combination of VdW (%s) and ChargeDistribution (%s)" %
+                         ( dictVdW[self.vdw], dictQdist[self.qdist] ) )
 
             # Van der Waals part
             # Always add the PME exclusion, independent of our own exclusion settings
@@ -1142,6 +1154,7 @@ class ActOpenMMSim:
                 sigma   = math.sqrt(iLJ12_6[1]._value*jLJ12_6[1]._value)
                 epsilon = math.sqrt(iLJ12_6[2]._value*jLJ12_6[2]._value)
                 c6      = 4*epsilon*sigma**6
+                self.check_dist(iatom, jatom)
                 vdw_pme_excl_corr.addBond(iatom, jatom, [ c6 ])
                 if self.debug:
                     self.txt.write("Adding vdw_pme_excl_corr iatom %d jatom %d sigma %g epsilon %g c6 %g\n" % ( iatom, jatom, sigma, epsilon, c6 ))
@@ -1167,9 +1180,10 @@ class ActOpenMMSim:
             # When using PME, add the PME exclusion, independent of our own exclusion settings
             if qq_pme_excl_corr:
                 qiqj = allParam['charge'][0]*allParam['charge'][1]
+                self.check_dist(iatom, jatom)
                 qq_pme_excl_corr.addBond(iatom, jatom, [qiqj])
                 if self.debug:
-                    self.txt.write(f"Adding Coul PME corr i {iatom} j {jatom} qi*qj {qiqj}\n")
+                    self.txt.write(f"Adding Coul PME corr i {iatom} j {jatom} qi*qj {qiqj} dist %g\n" % dist)
             # Now check wheter our exclusions are fewer than OpenMM
             if qq_excl_corr and not self.real_exclusion(nexclqq, iatom, jatom):
                 qiqj = allParam['charge'][0]*allParam['charge'][1]
@@ -1183,7 +1197,8 @@ class ActOpenMMSim:
                         self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} zeta1 {allParam['zeta'][0]} zeta2 {allParam['zeta'][1]} nexclqq {nexclqq}\n")
 
         # Finally single particle self interaction
-        # This is not needed. Throw away?
+        # TODO: This is not needed. Throw away?
+        # Does this differ between PC and Gaussian charges?
         if qq_pme_excl_corr_self:
             for index in range(self.nonbondedforce.getNumParticles()):
                 [ charge, _, _ ] = self.nonbondedforce.getParticleParameters(index)
