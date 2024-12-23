@@ -10,6 +10,7 @@ import time
 from os.path import abspath
 from multiprocessing import Pool, cpu_count
 import csv
+from pathlib import Path, PurePath
 from typing import List
 
 Debug = False
@@ -288,9 +289,9 @@ def plot_curves(xmls: dict):
                 if dimer not in plots:
                     plots[dimer] = []
                 plots[dimer].append({"xvg": xvg, "legend": vdw})
-                if vdw not in plots:
-                    plots[vdw] = []
-                plots[vdw].append({"xvg": xvg, "legend": dimer})
+                #if vdw not in plots:
+                #    plots[vdw] = []
+                #plots[vdw].append({"xvg": xvg, "legend": dimer})
 
                 data = []
                 with open(xvg, 'r') as f:
@@ -300,7 +301,6 @@ def plot_curves(xmls: dict):
                             if len(parts) == 2:
                                 x, y = float(parts[0]), float(parts[1])
                                 data.append([x, y])
-
 
                 csvf = f"{dimer}.csv"
                 csvp = os.path.join(os.getcwd(), csvf)
@@ -313,7 +313,7 @@ def plot_curves(xmls: dict):
         os.chdir("..")
 
     for dimer, plots_list in plots.items():
-        cmd = f"viewxvg -mk -pdf {dimer} -title {dimer} -ymax 10 -noshow -legend_x 0.7 -legend_y 0.95 -alfs 14 -lfs 14 -tickfs 14 -f "
+        cmd = f"viewxvg -mk -pdf {dimer} -title {dimer} -noshow -legend_x 0.7 -legend_y 0.5 -alfs 14 -lfs 14 -tickfs 14 -f "
         cmd += " ".join(p["xvg"] for p in plots_list)
         cmd += " -label " + " ".join(p["legend"] for p in plots_list)
         os.system(cmd)
@@ -345,12 +345,11 @@ if __name__ == "__main__":
     args = parse_args()
 
     required_args = {
-    "ff": "Force field files are required to calculate the dimer potentials.",
-    "pdb": "Path to the PDB file is required to define the dimer structure.",
-    "atom1": "Serial number of Atom1 in the first monomer is required for distance calculation.",
-    "atom2": "Serial number of Atom2 in the second monomer is required for distance calculation."
+        "ff": "Force field files are required to calculate the dimer potentials.",
+        "pdb": "Path to the PDB file is required to define the dimer structure.",
+        "atom1": "Serial number of Atom1 in the first monomer, required for distance calculation.",
+        "atom2": "Serial number of Atom2 in the second monomer, required for distance calculation."
     }
-
 
     for arg, error_message in required_args.items():
         if getattr(args, arg) is None:
@@ -367,18 +366,20 @@ if __name__ == "__main__":
         print(f"Error: The specified PDB file '{args.pdb}' does not exist.")
         sys.exit(1)
 
-    results  = "results"
-    system   =  args.pdb[:-4]
+    system   = Path(args.pdb).stem
     pdb_path = os.path.dirname(pdb_dir)
+    molprop  = os.path.abspath(args.molprop)
 
+    results  = "results"
     os.makedirs(results, exist_ok=True)
     os.chdir(results)
 
     if not args.plot:
         for vdw in fullxml.keys():
-            run_one(vdw, fullxml[vdw], system,  args.rmin, args.atom1, args.atom2,
-                    args.rmax, pdb_path, args.nstep, args.molprop)
-        #run_all(system, fullxml, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, args.molprop)
+            run_one(vdw, fullxml[vdw], system,  args.rmin,
+                    args.atom1, args.atom2,
+                    args.rmax, pdb_path, args.nstep,
+                    molprop)
     plot_curves(fullxml)
     print(f"Checkout output files in {results}")
     os.chdir("..")
