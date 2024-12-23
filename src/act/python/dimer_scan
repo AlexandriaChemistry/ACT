@@ -289,9 +289,6 @@ def plot_curves(xmls: dict):
                 if dimer not in plots:
                     plots[dimer] = []
                 plots[dimer].append({"xvg": xvg, "legend": vdw})
-                #if vdw not in plots:
-                #    plots[vdw] = []
-                #plots[vdw].append({"xvg": xvg, "legend": dimer})
 
                 data = []
                 with open(xvg, 'r') as f:
