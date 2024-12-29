@@ -371,6 +371,10 @@ if __name__ == "__main__":
     molprop  = None
     if args.molprop:
         molprop = os.path.abspath(args.molprop)
+
+    system   = Path(args.pdb).stem
+    pdb_path = os.path.dirname(pdb_dir)
+
     results  = "results"
     os.makedirs(results, exist_ok=True)
     os.chdir(results)
