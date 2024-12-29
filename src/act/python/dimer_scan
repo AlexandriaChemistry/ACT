@@ -82,6 +82,12 @@ def calculate_distance(atom1, atom2):
     dz = atom2['z'] - atom1['z']
     return math.sqrt(dx**2 + dy**2 + dz**2)
 
+def write_pdb_line(outf, atomid:int, atomname:str,
+                   resname:str, resnr:int,
+                   x:float, y:float, z:float,
+                   element:str):
+    outf.write("%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n" %
+               ( "ATOM", atomid, atomname, ' ', resname, ' ', resnr, ' ', x, y, z, 1.00, 0.00, element ) )
 
 def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2_s: int, pdb_path: str) -> str:
     dimer_directory = pdb_path
@@ -111,12 +117,13 @@ def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2
     with open(output_pdb, "w") as outf:
         outf.writelines(header_lines)
         for atom in monomer1:
-            outf.write(f"ATOM{atom['serial']:7d}  {atom['atom']:3s} UNK  {atom['residue_seq']:4d}    "
-                       f"{atom['x']:8.3f}{atom['y']:8.3f}{atom['z']:8.3f}  1.00  0.00           {atom['element']:2s}\n")
-
+            write_pdb_line(outf, atom['serial'], atom['atom'], 'UNK',
+                           atom['residue_seq'],
+                           atom['x'], atom['y'], atom['z'], atom['element'])
         for atom in monomer2:
-            outf.write(f"ATOM{atom['serial']:7d}  {atom['atom']:3s} UNK  {atom['residue_seq']:4d}    "
-                       f"{atom['x']:8.3f}{atom['y']:8.3f}{atom['z']:8.3f}  1.00  0.00           {atom['element']:2s}\n")
+            write_pdb_line(outf, atom['serial'], atom['atom'], 'UNK',
+                           atom['residue_seq'],
+                           atom['x'], atom['y'], atom['z'], atom['element'])
         for conect in conect_records:
             outf.write(conect)
         if master_line:
@@ -247,9 +254,7 @@ def run_one(vdw: str, xml: str, system: str, rmin: float,
     root = os.getcwd()
     myvdw = os.path.basename(vdw)
 
-    if os.path.isdir(myvdw):
-        shutil.rmtree(myvdw)
-    os.makedirs(myvdw, exist_ok=False)
+    os.makedirs(myvdw, exist_ok=True)
     os.chdir(myvdw)
 
     cmps = system.split('/')[-1].split('#')
@@ -363,13 +368,14 @@ if __name__ == "__main__":
         print(f"Error: The specified PDB file '{args.pdb}' does not exist.")
         sys.exit(1)
 
-    system   = Path(args.pdb).stem
-    pdb_path = os.path.dirname(pdb_dir)
-    molprop  = os.path.abspath(args.molprop)
-
+    molprop  = None
+    if args.molprop:
+        molprop = os.path.abspath(args.molprop)
     results  = "results"
     os.makedirs(results, exist_ok=True)
     os.chdir(results)
+    system   = Path(pdb_dir).stem
+    pdb_path = os.path.dirname(pdb_dir)
 
     if not args.plot:
         for vdw in fullxml.keys():
