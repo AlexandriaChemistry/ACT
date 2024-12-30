@@ -33,6 +33,7 @@
 #include "allmols.h"
 
 #include <algorithm>
+#include <string>
 
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -75,6 +76,12 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
             synonyms.insert(ss);
             std::replace(ss.begin(), ss.end(), ' ', '-');
             synonyms.insert(ss);
+        }
+        // Add the filename as well
+        auto fn = line[14].substr(0, line[14].size()-4);
+        if (fn.size() > 0)
+        {
+            synonyms.insert(fn);
         }
     }
 }
