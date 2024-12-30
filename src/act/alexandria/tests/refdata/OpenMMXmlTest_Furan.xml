@@ -66,13 +66,12 @@
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
   <CustomNonbondedForce energy="0" bondCutoff="3">
-    <GlobalParameter name="LJ12_6" defaultValue="1"/>
-    <GlobalParameter name="COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="nexclvdw" defaultValue="2"/>
-    <GlobalParameter name="nexclqq" defaultValue="2"/>
-    <GlobalParameter name="epsilonr" defaultValue="1"/>
-    <GlobalParameter name="cr_epsilon_Geometric" defaultValue="1"/>
-    <GlobalParameter name="cr_sigma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
+    <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="nexcl-vdw" defaultValue="2"/>
+    <GlobalParameter name="nexcl-qq" defaultValue="2"/>
+    <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
@@ -89,13 +88,6 @@
     <Atom type="o2_1" sigma="0.2" epsilon="0.75" zeta="13"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
-    <GlobalParameter name="LJ12_6" defaultValue="1"/>
-    <GlobalParameter name="COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="nexclvdw" defaultValue="2"/>
-    <GlobalParameter name="nexclqq" defaultValue="2"/>
-    <GlobalParameter name="epsilonr" defaultValue="1"/>
-    <GlobalParameter name="cr_epsilon_Geometric" defaultValue="1"/>
-    <GlobalParameter name="cr_sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <Atom type="c2_1" sigma="0.2" epsilon="0.55"/>
     <Atom type="c2_2" sigma="0.2" epsilon="0.55"/>

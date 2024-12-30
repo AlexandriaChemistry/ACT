@@ -441,13 +441,19 @@ static void add_global(xmlNodePtr ptr,
     add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
 }
 
-static void add_global(xmlNodePtr ptr,
-                       const std::string &name,
-                       double value)
+static void add_potential(xmlNodePtr       parent,
+                          const Potential &p)
 {
-    auto gp = add_xml_child(ptr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
-    add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), name.c_str());
-    add_xml_double(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
+    // Prepend the name with pot_ to indicate what kind of parameter this is
+    add_global(parent, "pot-" + potentialToString(p), 1);
+}
+
+static void add_excl(xmlNodePtr         parent,
+                     const std::string &ex,
+                     int                nexcl)
+{
+    // Prepend the name with excl_ to indicate what kind of parameter this is
+    add_global(parent, "nexcl-" + ex, nexcl);
 }
 
 static void add_combrules(xmlNodePtr                     parent,
@@ -456,7 +462,7 @@ static void add_combrules(xmlNodePtr                     parent,
     const auto crules = fs.combinationRules();
     for(const auto &cr : crules)
     {
-        std::string name = "cr_" + cr.first + "_" + cr.second;
+        std::string name = "cr-" + cr.first + "_" + cr.second;
         add_global(parent, name, 1);
     }
 }
@@ -482,8 +488,15 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         }
         auto fs      = pd->findForcesConst(itype);
         auto specPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
-        add_global(specPtr, potentialToString(fs.potential()), 1);
+        add_potential(specPtr, fs.potential());
         add_combrules(specPtr, fs);
+        std::string nnn("nexcl");
+        int nexcl = 3;
+        if (fs.optionExists(nnn))
+        {
+            nexcl = std::stoi(fs.optionValue(nnn));
+            add_excl(specPtr, "special", nexcl);
+        }
         add_xml_int(specPtr, "bondCutoff", 3);
         add_xml_char(specPtr, "energy", "0");
         if (itype == itVC)
@@ -564,12 +577,6 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     {
         nexclqq = std::stoi(fsCoul.optionValue(nnn));
     }
-    double epsilonr = 1;
-    std::string epsr("epsilonr");
-    if (fsCoul.optionExists(epsr))
-    {
-        epsilonr = std::stod(fsCoul.optionValue(epsr));
-    }
     xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
     if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
@@ -578,11 +585,10 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
         add_xml_double(customNBPtr, "energy", 0.0);
         add_xml_int(customNBPtr, "bondCutoff", 3);
 
-        add_global(customNBPtr, potentialToString(fs.potential()), 1);
-        add_global(customNBPtr, potentialToString(fsCoul.potential()), 1);
-        add_global(customNBPtr, "nexclvdw", nexclvdw);
-        add_global(customNBPtr, "nexclqq", nexclqq);
-        add_global(customNBPtr, epsr, epsilonr);
+        add_potential(customNBPtr, fs.potential());
+        add_potential(customNBPtr, fsCoul.potential());
+        add_excl(customNBPtr, "vdw", nexclvdw);
+        add_excl(customNBPtr, "qq", nexclqq);
         add_combrules(customNBPtr, fs);
 
         auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
@@ -632,12 +638,6 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     add_xml_double(ljPtr, "energy", 0.0);
     add_xml_int(ljPtr, "bondCutoff", 3);
 
-    add_global(ljPtr, potentialToString(fs.potential()), 1);
-    add_global(ljPtr, potentialToString(fsCoul.potential()), 1);
-    add_global(ljPtr, "nexclvdw", nexclvdw);
-    add_global(ljPtr, "nexclqq", nexclqq);
-    add_global(ljPtr, epsr, epsilonr);
-    add_combrules(ljPtr, fs);
     auto uafr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
     add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
     
