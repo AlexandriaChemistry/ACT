@@ -70,30 +70,17 @@ int nma(int argc, char *argv[])
 
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff",      "aff",        ffREAD  },
-        { efXML, "-charges", "charges",    ffOPTRD },
         { efSTO, "-c",       "confout",    ffOPTWR },
         { efLOG, "-g",       "nma",        ffWRITE },
         { efXVG, "-ir",      "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    static char              *filename   = (char *)"";
-    static char              *molnm      = (char *)"";
-    static char              *qqm        = (char *)"";
-    double                    qtot       = 0;
     double                    shellToler = 1e-6;
     bool                      verbose    = false;
     bool                      json       = false;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
     double                    linewidth  = 24;
     std::vector<t_pargs>      pa = {
-        { "-f",      FALSE, etSTR,  {&filename},
-          "Molecular structure file in e.g. pdb format" },
-        { "-name",   FALSE, etSTR,  {&molnm},
-          "Name of your molecule" },
-        { "-qtot",   FALSE, etREAL, {&qtot},
-          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
-        { "-qqm",    FALSE, etSTR,  {&qqm},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
         { "-v", FALSE, etBOOL, {&verbose},
