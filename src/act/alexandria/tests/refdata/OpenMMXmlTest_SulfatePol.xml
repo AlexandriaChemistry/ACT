@@ -19,15 +19,15 @@
   </AtomTypes>
   <Residues>
     <Residue name="sulfate">
-      <Atom name="S_1" type="s3_1" charge="0.8082354576908"/>
+      <Atom name="S_1" type="s3_1" charge="0.80823545964492"/>
       <Atom name="s3_s_1" type="s3_s_1" charge="-1.2"/>
-      <Atom name="O_2" type="o2_1" charge="0.79794235855602"/>
+      <Atom name="O_2" type="o2_1" charge="0.79794235806755"/>
       <Atom name="o2_s_2" type="o2_s_1" charge="-1.2"/>
-      <Atom name="O_3" type="o2_2" charge="0.79794331334179"/>
+      <Atom name="O_3" type="o2_2" charge="0.79794331285337"/>
       <Atom name="o2_s_3" type="o2_s_2" charge="-1.2"/>
-      <Atom name="O_4" type="o2_3" charge="0.79793831299329"/>
+      <Atom name="O_4" type="o2_3" charge="0.79793831250463"/>
       <Atom name="o2_s_4" type="o2_s_3" charge="-1.2"/>
-      <Atom name="O_5" type="o2_4" charge="0.7979405574181"/>
+      <Atom name="O_5" type="o2_4" charge="0.79794055692953"/>
       <Atom name="o2_s_5" type="o2_s_4" charge="-1.2"/>
       <Bond atomName1="S_1" atomName2="O_4"/>
       <Bond atomName1="S_1" atomName2="O_3"/>
@@ -48,11 +48,9 @@
   <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="0">
     <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="nexcl-vdw" defaultValue="0"/>
-    <GlobalParameter name="nexcl-qq" defaultValue="0"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
@@ -62,36 +60,26 @@
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
-    <Atom type="o2_1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_2" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_3" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
-    <Atom type="o2_4" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
     <Atom type="o2_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="o2_s_2" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="o2_s_3" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="o2_s_4" sigma="0" epsilon="0" gamma="0" zeta="6"/>
-    <Atom type="s3_1" sigma="0.29" epsilon="1.05" gamma="15" zeta="6"/>
     <Atom type="s3_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
-    <Atom type="o2_1" sigma="0.10690784617684" epsilon="0.75"/>
-    <Atom type="o2_2" sigma="0.10690784617684" epsilon="0.75"/>
-    <Atom type="o2_3" sigma="0.10690784617684" epsilon="0.75"/>
-    <Atom type="o2_4" sigma="0.10690784617684" epsilon="0.75"/>
     <Atom type="o2_s_1" sigma="0" epsilon="0"/>
     <Atom type="o2_s_2" sigma="0" epsilon="0"/>
     <Atom type="o2_s_3" sigma="0" epsilon="0"/>
     <Atom type="o2_s_4" sigma="0" epsilon="0"/>
-    <Atom type="s3_1" sigma="0.2583606282607" epsilon="1.05"/>
     <Atom type="s3_s_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
-    <Particle type2="o2_1" type1="o2_s_1" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="o2_2" type1="o2_s_2" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="o2_3" type1="o2_s_3" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="o2_4" type1="o2_s_4" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="s3_1" type1="s3_s_1" polarizability="0.002" charge="-1.2" thole="0"/>
+    <Particle/>
+    <Particle/>
+    <Particle/>
+    <Particle/>
+    <Particle/>
   </DrudeForce>
 </ForceField>
 ]]></String>

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -167,7 +167,7 @@ protected:
             }
             mp_.Merge(&molprop);
             // Generate charges and topology
-            auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Error);
+            auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Ignore);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -1252,7 +1252,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     return imm;
 }
 
-void Topology::build(const ForceField             *pd,
+bool Topology::build(const ForceField             *pd,
                      std::vector<gmx::RVec>       *x,
                      double                        LinearAngleMin,
                      double                        PlanarAngleMax,
@@ -1395,9 +1395,10 @@ void Topology::build(const ForceField             *pd,
     {
         makePairs(pd, itic);
     }
+    bool allFound = true;
     if (missing != missingParameters::Generate)
     {
-        fillParameters(pd);
+        allFound = fillParameters(pd, missing);
     }
     if (debug)
     {
@@ -1406,6 +1407,7 @@ void Topology::build(const ForceField             *pd,
         dumpPairlist(debug, InteractionType::VDWCORRECTION);
         dumpPairlist(debug, InteractionType::INDUCTIONCORRECTION);
     }
+    return allFound;
 }
 
 const TopologyEntryVector &Topology::entry(InteractionType itype) const
@@ -1587,34 +1589,40 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(const ForceFieldParameterList &fs,
+static bool fillParams(const ForceFieldParameterList &fs,
                        const Identifier              &btype,
                        int                            nr,
                        const char                    *param_names[],
                        std::vector<double>           *param)
 {
     auto ff = fs.findParameterMapConst(btype);
-    if (!ff.empty())
+    if (ff.empty())
     {
-        if (param->empty())
-        {
-            param->resize(nr, 0);
-        }
-        for (int i = 0; i < nr; i++)
-        {
-            auto fp      = ff.find(param_names[i]);
-            double value = 0;
-            if (ff.end() != fp)
-            {
-                value = fp->second.internalValue();
-            }
-            (*param)[i] = value;
-        }
+        return false;
     }
+    if (param->empty())
+    {
+        param->resize(nr, 0);
+    }
+    int found = 0;
+    for (int i = 0; i < nr; i++)
+    {
+        auto fp      = ff.find(param_names[i]);
+        double value = 0;
+        if (ff.end() != fp)
+        {
+            value  = fp->second.internalValue();
+            found += 1;
+        }
+        (*param)[i] = value;
+    }
+    return found == nr;
 }
 
-void Topology::fillParameters(const ForceField *pd)
+bool Topology::fillParameters(const ForceField *pd,
+                              missingParameters missing)
 {
+    bool foundAll = true;
     for(auto &entry : entries_)
     {
         if (!pd->interactionPresent(entry.first))
@@ -1622,103 +1630,105 @@ void Topology::fillParameters(const ForceField *pd)
             continue;
         }
         auto &fs = pd->findForcesConst(entry.first);
-        // Loop over entries, incremebt of tp handled at end.
+
+        // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
             auto &topentry = *tp;
 
-            const auto &topID = topentry->id();
-            std::vector<double> param;
+            const auto          &topID = topentry->id();
+            std::vector<double>  param;
+            bool                 found = true;
             switch (fs.potential())
             {
             case Potential::LJ12_6:
-                fillParams(fs, topID, lj12_6NR, lj12_6_name, &param);
+                (void) fillParams(fs, topID, lj12_6NR, lj12_6_name, &param);
                 break;
             case Potential::LJ8_6:
-                fillParams(fs, topID, lj8_6NR, lj8_6_name, &param);
+                (void) fillParams(fs, topID, lj8_6NR, lj8_6_name, &param);
                 break;
             case Potential::LJ14_7:
-                fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
+                (void) fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
                 break;
             case Potential::BUCKINGHAM:
-                fillParams(fs, topID, bhNR, bh_name, &param);
+                (void) fillParams(fs, topID, bhNR, bh_name, &param);
                 break;
             case Potential::TANG_TOENNIES:
-                fillParams(fs, topID, ttNR, tt_name, &param);
+                (void) fillParams(fs, topID, ttNR, tt_name, &param);
                 break;
             case Potential::WANG_BUCKINGHAM:
-                fillParams(fs, topID, wbhNR, wbh_name, &param);
+                (void) fillParams(fs, topID, wbhNR, wbh_name, &param);
                 break;
             case Potential::GENERALIZED_BUCKINGHAM:
-                fillParams(fs, topID, gbhNR, gbh_name, &param);
+                (void) fillParams(fs, topID, gbhNR, gbh_name, &param);
                 break;
             case Potential::EXPONENTIAL:
-                fillParams(fs, topID, expNR, exp_name, &param);
+                (void) fillParams(fs, topID, expNR, exp_name, &param);
                 break;
             case Potential::DOUBLEEXPONENTIAL:
-                fillParams(fs, topID, dexpNR, dexp_name, &param);
+                (void) fillParams(fs, topID, dexpNR, dexp_name, &param);
                 break;
             case Potential::COULOMB_GAUSSIAN:
             case Potential::COULOMB_SLATER:
             case Potential::COULOMB_POINT:
-                fillParams(fs, topID, coulNR, coul_name, &param);
+                (void) fillParams(fs, topID, coulNR, coul_name, &param);
                 break;
             case Potential::MORSE_BONDS:
-                fillParams(fs, topID, morseNR, morse_name, &param);
+                found = fillParams(fs, topID, morseNR, morse_name, &param);
                 break;
             case Potential::HUA_BONDS:
-                fillParams(fs, topID, huaNR, hua_name, &param);
+                found = fillParams(fs, topID, huaNR, hua_name, &param);
                 break;
             case Potential::CUBIC_BONDS:
-                fillParams(fs, topID, cubicNR, cubic_name, &param);
+                found = fillParams(fs, topID, cubicNR, cubic_name, &param);
                 break;
             case Potential::HARMONIC_BONDS:
-                fillParams(fs, topID, bondNR, bond_name, &param);
+                found = fillParams(fs, topID, bondNR, bond_name, &param);
                 break;
             case Potential::HARMONIC_ANGLES:
-                fillParams(fs, topID, angleNR, angle_name, &param);
+                found = fillParams(fs, topID, angleNR, angle_name, &param);
                 break;
             case Potential::UREY_BRADLEY_ANGLES:
-                fillParams(fs, topID, ubNR, ub_name, &param);
+                found = fillParams(fs, topID, ubNR, ub_name, &param);
                 break;
             case Potential::LINEAR_ANGLES:
-                fillParams(fs, topID, linangNR, linang_name, &param);
+                found = fillParams(fs, topID, linangNR, linang_name, &param);
                 break;
             case Potential::HARMONIC_DIHEDRALS:
-                fillParams(fs, topID, idihNR, idih_name, &param);
+                found = fillParams(fs, topID, idihNR, idih_name, &param);
                 break;
             case Potential::FOURIER_DIHEDRALS:
-                fillParams(fs, topID, fdihNR, fdih_name, &param);
+                found = fillParams(fs, topID, fdihNR, fdih_name, &param);
                 break;
             case Potential::POLARIZATION:
-                fillParams(fs, topID, polNR, pol_name, &param);
+                found = fillParams(fs, topID, polNR, pol_name, &param);
                 break;
             case Potential::PROPER_DIHEDRALS:
-                fillParams(fs, topID, pdihNR, pdih_name, &param);
+                found = fillParams(fs, topID, pdihNR, pdih_name, &param);
                 break;
             case Potential::VSITE1:
-                fillParams(fs, topID, vsite1NR, vsite1_name, &param);
+                found = fillParams(fs, topID, vsite1NR, vsite1_name, &param);
                 break;
             case Potential::VSITE2:
-                fillParams(fs, topID, vsite2NR, vsite2_name, &param);
+                found = fillParams(fs, topID, vsite2NR, vsite2_name, &param);
                 break;
             case Potential::VSITE2FD:
-                fillParams(fs, topID, vsite2fdNR, vsite2fd_name, &param);
+                found = fillParams(fs, topID, vsite2fdNR, vsite2fd_name, &param);
                 break;
             case Potential::VSITE3:
-                fillParams(fs, topID, vsite3NR, vsite3_name, &param);
+                found = fillParams(fs, topID, vsite3NR, vsite3_name, &param);
                 break;
             case Potential::VSITE3S:
-                fillParams(fs, topID, vsite3sNR, vsite3s_name, &param);
+                found = fillParams(fs, topID, vsite3sNR, vsite3s_name, &param);
                 break;
             case Potential::VSITE3FD:
-                fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
+                found = fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
                 break;
             case Potential::VSITE3OUT:
-                fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
+                found = fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
                 break;
             case Potential::VSITE3OUTS:
-                fillParams(fs, topID, vsite3outsNR, vsite3outs_name, &param);
+                found = fillParams(fs, topID, vsite3outsNR, vsite3outs_name, &param);
                 break;
                 //Commenting this out such that we do not generate incorrect results but crash instead.
                 //case Potential::VSITE3FAD:
@@ -1728,11 +1738,12 @@ void Topology::fillParameters(const ForceField *pd)
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
                                                                potentialToString(fs.potential()).c_str()).c_str()));
             }
+            foundAll = foundAll && (found || (missing == missingParameters::Ignore));
             if (param.empty())
             {
                 if (debug)
                 {
-                    fprintf(debug, "Force field does not contain %s parameters for %s, removing topology entry.\n",
+                    fprintf(debug, "Force field does not contain an %s parametersentry for %s, removing topology entry.\n",
                             potentialToString(fs.potential()).c_str(),
                             topID.id().c_str());
                 }
@@ -1740,11 +1751,18 @@ void Topology::fillParameters(const ForceField *pd)
             }
             else
             {
+                if (!found && debug)
+                {
+                    fprintf(debug, "Force field does not contain all %s parameters for %s, using zero's.\n",
+                            potentialToString(fs.potential()).c_str(),
+                            topID.id().c_str());
+                }
                 topentry->setParams(param);
                 ++tp;
             }
         }
     }
+    return foundAll;
 }
 
 void Topology::setEntryIdentifiers(const ForceField *pd,

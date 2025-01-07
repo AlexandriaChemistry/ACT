@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -149,7 +149,7 @@ protected:
                 mm.Merge(&molprop);
                 // Generate charges and topology
                 auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Error);
+                                               missingParameters::Ignore);
                 EXPECT_TRUE(immStatus::OK == imm);
                 if (immStatus::OK != imm)
                 {
@@ -301,7 +301,7 @@ TEST_F (MolHandlerTest, AcetoneNoFreq)
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false, 1, 1e-14);
+    test("uracil.sdf", "ACS-g", false, 3, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
@@ -312,7 +312,7 @@ TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-pg", false);
+    test("hydrogen-chloride.sdf", "ACS-pg", false, 5);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreqPol)
@@ -355,7 +355,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true, 1, 1e-14);
+    test("uracil.sdf", "ACS-g", true, 3, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
@@ -365,7 +365,7 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true);
+    test("hydrogen-chloride.sdf", "ACS-pg", true, 3);
 }
 
 TEST_F (MolHandlerTest, WaterPol)

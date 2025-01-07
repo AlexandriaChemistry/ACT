@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -115,17 +115,21 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
-        top->build(pd, &xfrag, 175.0, 5.0, missing);
-        // Array of total charges
-        qtotal_.push_back(f->charge());
-        // ID copied from Fragment ID.
-        ids_.push_back(f->inchi());
-        // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
-        // Total number of atoms
-        natoms_ += top->atoms().size();
-        // Extend topologies_ array
-        topologies_.push_back(std::move(top));
+        allWell = allWell && top->build(pd, &xfrag, 175.0, 5.0, missing);
+        if (allWell)
+        {
+            // Array of total charges
+            qtotal_.push_back(f->charge());
+            // ID copied from Fragment ID.
+            ids_.push_back(f->inchi());
+            // Structure for charge generation
+            QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
+            // Total number of atoms
+            natoms_ += top->atoms().size();
+            // Extend topologies_ array
+            topologies_.push_back(std::move(top));
+        }
+
         // Increase counter
         ff += 1;
     }
@@ -276,9 +280,9 @@ bool FragmentHandler::setCharges(const chargeMap &qmap)
             }
             else
             {
+                fprintf(stderr, "Compound '%s' (%zu particles) from the input does not match the same compound in the charge map (%zu particles).\n",
+                        ids_[i].c_str(), aptr->size(), qptr->second.size());
                 success = false;
-                fprintf(stderr, "Compound '%s' from the input does not match the same compound in the charge map.\n",
-                        ids_[i].c_str());
             }
         }
         else

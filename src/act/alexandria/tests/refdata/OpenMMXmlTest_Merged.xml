@@ -14,23 +14,23 @@
   </AtomTypes>
   <Residues>
     <Residue name="fluorane">
-      <Atom name="H_1" type="h_1" charge="0.13034041511286"/>
-      <Atom name="F_2" type="f_1" charge="-0.13034041511286"/>
+      <Atom name="H_1" type="h_1" charge="0.13034041806755"/>
+      <Atom name="F_2" type="f_1" charge="-0.13034041806755"/>
       <Bond atomName1="H_1" atomName2="F_2"/>
     </Residue>
     <Residue name="chlorane">
-      <Atom name="H_1" type="h_1" charge="0.12066031244409"/>
-      <Atom name="Cl_2" type="cl_1" charge="-0.12066031244409"/>
+      <Atom name="H_1" type="h_1" charge="0.12066031458602"/>
+      <Atom name="Cl_2" type="cl_1" charge="-0.12066031458602"/>
       <Bond atomName1="H_1" atomName2="Cl_2"/>
     </Residue>
     <Residue name="bromane">
-      <Atom name="H_1" type="h_1" charge="0.11678323112977"/>
-      <Atom name="Br_2" type="br_1" charge="-0.11678323112977"/>
+      <Atom name="H_1" type="h_1" charge="0.11678323297287"/>
+      <Atom name="Br_2" type="br_1" charge="-0.11678323297287"/>
       <Bond atomName1="H_1" atomName2="Br_2"/>
     </Residue>
     <Residue name="iodane">
-      <Atom name="H_1" type="h_1" charge="0.11328522403971"/>
-      <Atom name="I_2" type="i_1" charge="-0.11328522403971"/>
+      <Atom name="H_1" type="h_1" charge="0.11328522562632"/>
+      <Atom name="I_2" type="i_1" charge="-0.11328522562632"/>
       <Bond atomName1="H_1" atomName2="I_2"/>
     </Residue>
   </Residues>
@@ -44,11 +44,9 @@
   <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="0">
     <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="nexcl-vdw" defaultValue="2"/>
-    <GlobalParameter name="nexcl-qq" defaultValue="2"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
@@ -56,19 +54,9 @@
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
-    <Atom type="br_1" sigma="0.375" epsilon="1.05" zeta="12"/>
-    <Atom type="cl_1" sigma="0.375" epsilon="1.05" zeta="13"/>
-    <Atom type="f_1" sigma="0.275" epsilon="0.4" zeta="13"/>
-    <Atom type="h_1" sigma="0.005" epsilon="0.065" zeta="13"/>
-    <Atom type="i_1" sigma="0.275" epsilon="2.1" zeta="12"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
-    <Atom type="br_1" sigma="0.375" epsilon="1.05"/>
-    <Atom type="cl_1" sigma="0.375" epsilon="1.05"/>
-    <Atom type="f_1" sigma="0.275" epsilon="0.4"/>
-    <Atom type="h_1" sigma="0.005" epsilon="0.065"/>
-    <Atom type="i_1" sigma="0.275" epsilon="2.1"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>

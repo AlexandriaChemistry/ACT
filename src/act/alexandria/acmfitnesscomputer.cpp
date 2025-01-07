@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -235,11 +235,11 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                 }
             }
             // Now update the topology
-            actmol->topologyPtr()->fillParameters(sii_->forcefield());
+            actmol->topologyPtr()->fillParameters(sii_->forcefield(), missingParameters::Error);
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft->fillParameters(sii_->forcefield());
+                ft->fillParameters(sii_->forcefield(), missingParameters::Error);
             }
 
             // Run charge generation including shell minimization

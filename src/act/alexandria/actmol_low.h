@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -144,7 +144,7 @@ bool is_linear(const rvec xi, const rvec xj,
                const rvec xk, const t_pbc *pbc,
                real th_toler);
 
-real calc_relposition(const ForceField                  *pd,
+real calc_relposition(const ForceField               *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders);
 

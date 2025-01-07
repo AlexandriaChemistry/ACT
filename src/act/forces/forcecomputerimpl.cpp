@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -873,14 +873,14 @@ static void computeMorse(const TopologyEntryVector             &bonds,
     auto   &f     = *forces;
     for (const auto &b : bonds)
     {
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         auto bondlength = params[morseLENGTH];
         auto beta       = params[morseBETA];
         auto De         = params[morseDE];
         auto D0         = params[morseD0];
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
@@ -889,7 +889,11 @@ static void computeMorse(const TopologyEntryVector             &bonds,
         auto vbond      = De*expterm*(expterm - 2) + D0;
         auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
         ebond          += vbond;
-
+        if (debug)
+        {
+            fprintf(debug, "Morse i %d j %d dr %g vbond %g fbond %g\n",
+                    indices[0], indices[1], dr, vbond, fbond);
+        }
         for (int m = 0; (m < DIM); m++)
         {
             auto fij          = fbond*dx[m];

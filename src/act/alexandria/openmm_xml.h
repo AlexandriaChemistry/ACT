@@ -47,12 +47,14 @@ namespace alexandria
      * \param[in] actmols   The ACT molecule structures
      * \param[in] mDrude    Mass to use for the drude particle if any
      * \param[in] compress  Whether or not to write a compressed file
+     * \param[in] ntrain    Minimum number of training data to store a parameter to OpenMM
      * \param[in] addNumbersToAtoms Will add integer index to all atom types
      */
     void writeOpenMM(const std::string         &fileName,
                      const ForceField          *pd,
                      const std::vector<ACTMol> &actmols,
                      double                     mDrude,
+                     int                        ntrain,
                      bool                       addNumbersToAtoms = true);
 
 } // namespace alexandria
