@@ -1033,6 +1033,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             }
             fraghandler_->setCharges(*myatoms);
         }
+        break;
     case ChargeGenerationAlgorithm::Custom:
         {
             for (size_t i = 0; i < myatoms->size(); i++)
