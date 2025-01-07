@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -586,14 +586,6 @@ public:
     void UpdateIdef(const ForceField                      *pd,
                     const std::vector<InteractionType> &iTypes,
                     bool                                updateZeta);
-    
-    /*! \brief
-     * Generate GROMACS structures.
-     */
-    immStatus GenerateGromacs(const gmx::MDLogger       &mdlog,
-                              const CommunicationRecord *cr,
-                              const char                *tabfn,
-                              ChargeType                 iType);
     
     /*! \brief
      * Generate cube

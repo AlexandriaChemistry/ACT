@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -105,6 +105,7 @@ int gentop(int argc, char *argv[])
     };
 
     static int                       nsymm          = 0;
+    static int                       ntrain         = 1;
     static real                      spacing        = 0.01;
     static real                      border         = 0.2;
     static real                      mDrude         = 0.1;
@@ -139,6 +140,8 @@ int gentop(int argc, char *argv[])
           "Spacing of grid points (nm) for computing the potential (not used when a reference file is read)." },
         { "-border", FALSE, etREAL, {&border},
           "Spacing around the compound (nm) for computing the potential (not used when a reference file is read)." },
+        { "-ntrain", FALSE, etINT, {&ntrain},
+          "Minimum number of training data to store a parameter to OpenMM. Parameters that have Mutability::Fixed are counted as having at least one training data point. This is rather fragile, so beware of this when increasing the number. Zero means taht even untrained parameters will be exported to OpenMM, use with care!" },
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-numberAtypes", FALSE, etBOOL, {&addNumbersToAtoms},
@@ -160,7 +163,6 @@ int gentop(int argc, char *argv[])
     }
     ForceField          pd;
     CommunicationRecord cr;
-    gmx::MDLogger       mdlog {};
     std::string         method, basis;
 
     /* Check the options */
@@ -268,7 +270,7 @@ int gentop(int argc, char *argv[])
         if (opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
             writeOpenMM(opt2fn("-openmm", fnm.size(), fnm.data()),
-                        &pd, actmols, mDrude, addNumbersToAtoms);
+                        &pd, actmols, mDrude, addNumbersToAtoms, ntrain);
         }
     }
     if (!errors.empty())

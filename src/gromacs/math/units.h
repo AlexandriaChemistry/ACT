@@ -54,10 +54,12 @@
 #define RAD2DEG          (180.0/M_PI)                      /* Conversion	*/
 #define DEG2RAD          (M_PI/180.0)                      /* id		*/
 #define CAL2JOULE        (4.184)                           /* id		*/
-#define E_CHARGE         (1.602176565e-19)                 /* Coulomb, NIST 2010 CODATA */
+//#define E_CHARGE         (1.602176565e-19)                 /* Coulomb, NIST 2010 CODATA */
+#define E_CHARGE         (1.602176634e-19)                 /* Coulomb, NIST 2018 CODATA */
 
 #define AMU              (1.660538921e-27)                 /* kg, NIST 2010 CODATA  */
-#define BOLTZMANN        (1.3806488e-23)                   /* (J/K, NIST 2010 CODATA */
+//#define BOLTZMANN        (1.3806488e-23)                   /* (J/K, NIST 2010 CODATA */
+#define BOLTZMANN        (1.380649e-23)            /* (J/K), for compatability with OpenMM   */
 // #define AVOGADRO         (6.02214129e23)                   /* no unit, NIST 2010 CODATA */
 #define AVOGADRO         (6.02214076e23)                   /* no unit, NIST 2018 CODATA */
 #define RGAS             (BOLTZMANN*AVOGADRO)              /* (J/(mol K))  */
@@ -69,7 +71,9 @@
 
 #define EPSILON0_SI      (8.854187817e-12)                 /* F/m,  NIST 2010 CODATA */
 /* Epsilon in our MD units: (e^2 / Na (kJ nm)) == (e^2 mol/(kJ nm)) */
-#define EPSILON0         ((EPSILON0_SI*NANO*KILO)/(E_CHARGE*E_CHARGE*AVOGADRO))
+//#define EPSILON0         ((EPSILON0_SI*NANO*KILO)/(E_CHARGE*E_CHARGE*AVOGADRO))
+// Version from OpenMM
+#define EPSILON0     (1e-6*8.8541878128e-12/(E_CHARGE*E_CHARGE*AVOGADRO)) /* (e^2 Na/(kJ nm)) == (e^2/(kJ mol nm)) */
 
 #define SPEED_OF_LIGHT   (2.99792458E05)                   /* nm/ps, NIST 2010 CODATA */
 #define ATOMICMASS_keV   (931494.061)                      /* Atomic mass in keV, NIST 2010 CODATA   */

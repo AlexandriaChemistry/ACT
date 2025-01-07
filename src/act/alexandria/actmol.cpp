@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -518,7 +518,10 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     
     if (immStatus::OK == imm)
     {
-        topology_->build(pd, &coords, 175.0, 5.0, missing);
+        if (!topology_->build(pd, &coords, 175.0, 5.0, missing))
+        {
+            imm = immStatus::Topology;
+        }
     }
     auto myatoms = topology()->atoms();
     if (immStatus::OK == imm)
@@ -988,8 +991,6 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
             }
             fraghandler_->setCharges(*myatoms);
-            
-            return immStatus::OK;
         }
         break;
     case ChargeGenerationAlgorithm::Read:
@@ -1040,7 +1041,6 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
             }
             fraghandler_->setCharges(*myatoms);
-            return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::Custom:
         {

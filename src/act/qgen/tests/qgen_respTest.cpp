@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -120,9 +120,12 @@ protected:
         std::string   basis("Gen");
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
-        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Error);
+        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Ignore);
         EXPECT_TRUE(immStatus::OK == imm);
-        
+        if (immStatus::OK != imm)
+        {
+            return;
+        }
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
         auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);

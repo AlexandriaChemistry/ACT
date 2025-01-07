@@ -14,11 +14,11 @@
   </AtomTypes>
   <Residues>
     <Residue name="sulfate">
-      <Atom name="S_1" type="s3_1" charge="-0.25274662341175"/>
-      <Atom name="O_2" type="o2_1" charge="-0.43681071007313"/>
-      <Atom name="O_3" type="o2_2" charge="-0.43680835613517"/>
-      <Atom name="O_4" type="o2_3" charge="-0.43682033498666"/>
-      <Atom name="O_5" type="o2_4" charge="-0.43681397539329"/>
+      <Atom name="S_1" type="s3_1" charge="-0.25274661365632"/>
+      <Atom name="O_2" type="o2_1" charge="-0.43681071251183"/>
+      <Atom name="O_3" type="o2_2" charge="-0.43680835857378"/>
+      <Atom name="O_4" type="o2_3" charge="-0.43682033742576"/>
+      <Atom name="O_5" type="o2_4" charge="-0.43681397783231"/>
       <Bond atomName1="S_1" atomName2="O_4"/>
       <Bond atomName1="S_1" atomName2="O_3"/>
       <Bond atomName1="O_2" atomName2="S_1"/>
@@ -34,11 +34,9 @@
   <CustomAngleForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
   <PeriodicTorsionForce energy="0"/>
-  <CustomNonbondedForce energy="0" bondCutoff="3">
+  <CustomNonbondedForce energy="0" bondCutoff="0">
     <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
-    <GlobalParameter name="nexcl-vdw" defaultValue="2"/>
-    <GlobalParameter name="nexcl-qq" defaultValue="2"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
@@ -46,19 +44,9 @@
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
-    <Atom type="o2_1" sigma="0.2" epsilon="0.75" zeta="13"/>
-    <Atom type="o2_2" sigma="0.2" epsilon="0.75" zeta="13"/>
-    <Atom type="o2_3" sigma="0.2" epsilon="0.75" zeta="13"/>
-    <Atom type="o2_4" sigma="0.2" epsilon="0.75" zeta="13"/>
-    <Atom type="s3_1" sigma="0.375" epsilon="1.05" zeta="13"/>
   </CustomNonbondedForce>
-  <NonbondedForce coulomb14scale="1" lj14scale="1" energy="0" bondCutoff="3">
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
-    <Atom type="o2_1" sigma="0.2" epsilon="0.75"/>
-    <Atom type="o2_2" sigma="0.2" epsilon="0.75"/>
-    <Atom type="o2_3" sigma="0.2" epsilon="0.75"/>
-    <Atom type="o2_4" sigma="0.2" epsilon="0.75"/>
-    <Atom type="s3_1" sigma="0.375" epsilon="1.05"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>

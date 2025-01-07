@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -319,8 +319,9 @@ private:
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
+     * \return true if all parameters were found, false otherwise.
      */
-    void build(const ForceField       *pd,
+    bool build(const ForceField       *pd,
                std::vector<gmx::RVec> *x,
                double                  LinearAngleMin,
                double                  PlanarAngleMax,
@@ -329,8 +330,11 @@ private:
     /*! \brief Fill in the parameters in the topology entries.
      * Must be called repeatedly during optimizations of energy.
      * \param[in] pd The force field structure
+     * \param[in] missing How to handle missing parameters
+     * \return true if all parameters were found or can be ignored, false otherwise.
      */
-    void fillParameters(const ForceField *pd);
+    bool fillParameters(const ForceField *pd,
+                        missingParameters missing);
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
 

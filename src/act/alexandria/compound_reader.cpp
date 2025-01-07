@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -264,8 +264,9 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
 {
     std::vector<ACTMol>   mols;
     std::set<std::string> lookup;
-    // Try reading from a file first 
-    if (strlen(filename_) > 0)
+    // Try reading from a file first
+    bool readCoordinates = strlen(filename_) > 0;
+    if (readCoordinates)
     {
         ACTMol mol;
         if (readFile(pd, &mol))
@@ -300,7 +301,14 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
         {
             fprintf(logFile_, " '%s'", lu.c_str());
         }
-        fprintf(logFile_, "\n");
+        if (dbname_)
+        {
+            fprintf(logFile_, " in the charges molprop.\n");
+        }
+        else
+        {
+            fprintf(logFile_, " in %s\n", filename_);
+        }
     }
     chargeMap qmap;
     if (!qmapfn_.empty())
@@ -310,29 +318,38 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
         qmap = fetchChargeMap(&pd, forceComp, mps, lookup);
         if (logFile_)
         {
-            fprintf(logFile_, "CompoundReader read %lu entries into charge map from %s\n",
-                    qmap.size(), qmapfn_.c_str());
+            fprintf(logFile_, "CompoundReader read %lu out of %lu entries into charge map from %s\n",
+                    qmap.size(), lookup.size(), qmapfn_.c_str());
         }
         // Throw away those compounds that are not in the selection
-        if (!lookup.empty())
+        if (!lookup.empty() && !readCoordinates)
         {
             for(auto mp = mps.begin(); mp < mps.end(); )
             {
-                if (lookup.find(mp->getMolname()) == lookup.end())
+                if (lookup.find(mp->getMolname()) == lookup.end() &&
+                    lookup.find(mp->getIupac()) == lookup.end())
                 {
                     mp = mps.erase(mp);
                 }
                 else
                 {
+                    if (logFile_)
+                    {
+                        fprintf(logFile_, "Keeping %s (%s) from molprop file %s\n",
+                                mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str());
+                    }
                     ++mp;
                 }
             }
         }
-        for(auto mp : mps)
+        if (!readCoordinates)
         {
-            ACTMol mm;
-            mm.Merge(&mp);
-            mols.push_back(mm);
+            for(auto mp : mps)
+            {
+                ACTMol mm;
+                mm.Merge(&mp);
+                mols.push_back(mm);
+            }
         }
     }
     // Did we find any molecule?
@@ -345,9 +362,12 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     }
     else
     {
+        // Only warn about the total charge for monomers
+        // since we cannot know how charge is divided between molecules.
+        bool warnQtot = mols.size() == 1;
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
-            if (!setCharges(pd, &(*mol), qmap, forceComp, mols.size() == 1))
+            if (!setCharges(pd, &(*mol), qmap, forceComp, warnQtot))
             {
                 if (logFile_)
                 {
@@ -363,7 +383,6 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
             }
         }
     }
-
     return mols;
 }
 
