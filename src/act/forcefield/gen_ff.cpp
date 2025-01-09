@@ -402,9 +402,14 @@ int gen_ff(int argc, char*argv[])
     }
     // Default VDW params
     std::map<std::string, ForceFieldParameter> DP = {
-        { bh_name[bhA],  ForceFieldParameter("kJ/mol", 1e4, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
-        { bh_name[bhB],  ForceFieldParameter("1/nm", 10, 10, 1, 0, 50, Mutability::Bounded, true, true) },
-        { bh_name[bhC6], ForceFieldParameter("kJ/mol nm6", 0.001, 0, 1, 0, 0.01, Mutability::Bounded, true, true) }
+        { bh_name[bhA],   ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e6, Mutability::Bounded, true, true) },
+        { bh_name[bhB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { bh_name[bhC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
+        { tt_name[ttA],   ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
+        { tt_name[ttB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { tt_name[ttC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
+        { tt_name[ttC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 1e3, Mutability::Bounded, true, true) },
+        { tt_name[ttC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) }
     };
     for(const auto &entry : table)
     {
@@ -538,6 +543,13 @@ int gen_ff(int argc, char*argv[])
             case Potential::GENERALIZED_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 rename.insert({"sigma", "rmin"});
+                break;
+            case Potential::TANG_TOENNIES:
+                vdwlist = { { tt_name[ttA], "kJ/mol" }, 
+                            { tt_name[ttB], "1/nm" },
+                            { tt_name[ttC6], "kJ/mol nm^6" },
+                            { tt_name[ttC8], "kJ/mol nm^8" },
+                            { tt_name[ttC10], "kJ/mol nm^10" } };
                 break;
             default: // throws
                 GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));
