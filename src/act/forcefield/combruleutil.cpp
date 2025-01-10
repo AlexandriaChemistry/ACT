@@ -66,6 +66,11 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
                 { "-cr_abh",  "Abh",     5 },
                 { "-cr_bbh",  "bbh",     6 },
                 { "-cr_c6bh", "c6bh",    7 },
+		{ "-cr_ttA",  "Att",      8},
+                { "-cr_ttB",  "btt",      9},
+                { "-cr_ttC6", "c6ttbh",    10},
+                { "-cr_ttC8", "c8ttbh",    11},
+                { "-cr_ttC10","c10ttbh",   12}
             },
         },
         {
