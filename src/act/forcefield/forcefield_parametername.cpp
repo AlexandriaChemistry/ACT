@@ -46,7 +46,7 @@ const char *wbh_name[wbhNR] = { "sigma", "epsilon", "gamma", "sigma_ij", "epsilo
 
 const char *bh_name[bhNR] = { "Abh", "bbh", "c6bh", "Abh_ij", "bbh_ij", "c6bh_ij" };
 
-const char *tt_name[ttNR] = { "Att", "btt", "c6tt", "c8tt", "c10tt", "Att_ij", "btt_ij", "c6tt_ij", "c8tt_ij", "c10tt_ij" };
+const char *tt_name[ttNR] = { "Att", "btt", "c6ttbh", "c8ttbh", "c10ttbh", "Abh_ij", "bbh_ij", "c6bh_ij", "c8bh_ij", "c10bh_ij" };
 
 const char *gbh_name[gbhNR] = { "rmin", "epsilon", "gamma", "delta", "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
 
