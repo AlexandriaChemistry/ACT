@@ -418,9 +418,9 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Abh   = params[ttA];
-        auto bbh   = params[ttB];
-        double cbh[3] = { params[ttC6], params[ttC8], params[ttC10] };
+        auto Abh   = params[ttA_IJ];
+        auto bbh   = params[ttB_IJ];
+        double cbh[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
         if (Abh > 0 && bbh > 0 && cbh[0] > 0)
         {
             // Get the atom indices
