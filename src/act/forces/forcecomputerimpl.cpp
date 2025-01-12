@@ -418,52 +418,49 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Abh   = params[ttA_IJ];
-        auto bbh   = params[ttB_IJ];
-        double cbh[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
-        // At least the C6 dispersion or the exponential term should be non-zero
-        if (Abh > 0 || cbh[0] > 0)
+        auto Att   = params[ttA_IJ];
+        auto btt   = params[ttB_IJ];
+        double ctt[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
+
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2    = iprod(dx, dx);
+        auto rinv   = gmx::invsqrt(dr2);
+        auto rinv2  = rinv*rinv;
+        real br     = btt*dr2*rinv;
+        real ebr    = std::exp(-br);
+        real eerep  = Att*ebr;
+        real frep   = btt*eerep;
+        real eedisp = 0;
+        real fdisp  = 0;
+        real rinvn  = rinv2*rinv2*rinv2;
+        for (int m = 0; m < 3; m++)
         {
-            // Get the atom indices
-            auto &indices   = b->atomIndices();
-            rvec dx;
-            rvec_sub(x[indices[0]], x[indices[1]], dx);
-            auto dr2    = iprod(dx, dx);
-            auto rinv   = gmx::invsqrt(dr2);
-            auto rinv2  = rinv*rinv;
-            real br     = bbh*dr2*rinv;
-            real ebr    = std::exp(-br);
-            real eerep  = Abh*ebr;
-            real frep   = bbh*eerep;
-            real eedisp = 0;
-            real fdisp  = 0;
-            real rinvn  = rinv2*rinv2*rinv2;
-            for (int m = 0; m < 3; m++)
+            real fk = 0;
+            real pp = 1;
+            for (int k = 0; k < 2*(m+3); k++)
             {
-                real fk = 0;
-                real pp = 1;
-                for (int k = 0; k < 2*(m+3); k++)
-                {
-                    fk += pp/fac[k];
-                    pp  = pp*br;
-                }
-                eedisp -= cbh[0]*rinvn*(1-ebr*fk);
-                rinvn  *= rinv2;
+                fk += pp/fac[k];
+                pp  = pp*br;
             }
-            erep     += eerep;
-            edisp    += eedisp;
-            if (debug)
-            {
-                fprintf(debug, "BHAM ai %d aj %d A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
-                        indices[0], indices[1], Abh, bbh, cbh[0], cbh[1], cbh[2], eerep, eedisp);
-            }
-            real fbond = frep+fdisp;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            eedisp -= ctt[0]*rinvn*(1-ebr*fk);
+            rinvn  *= rinv2;
+        }
+        erep     += eerep;
+        edisp    += eedisp;
+        if (debug)
+        {
+            fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
+                    indices[0], indices[1], 1/rinv, Att, btt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
+        }
+        real fbond = frep+fdisp;
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
         }
     }
     energies->insert({InteractionType::EXCHANGE, erep});
