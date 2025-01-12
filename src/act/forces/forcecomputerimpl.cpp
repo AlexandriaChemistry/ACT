@@ -421,7 +421,8 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
         auto Abh   = params[ttA_IJ];
         auto bbh   = params[ttB_IJ];
         double cbh[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
-        if (Abh > 0 && bbh > 0 && cbh[0] > 0)
+        // At least the C6 dispersion or the exponential term should be non-zero
+        if (Abh > 0 || cbh[0] > 0)
         {
             // Get the atom indices
             auto &indices   = b->atomIndices();
