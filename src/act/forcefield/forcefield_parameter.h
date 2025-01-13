@@ -84,7 +84,7 @@ class ForceFieldParameter
     ForceFieldParameter(const std::string &unit,
                         double             value,
                         double             uncertainty,
-                        int                ntrain,
+                        unsigned int       ntrain,
                         double             minimum,
                         double             maximum,
                         Mutability         mutability,
@@ -171,17 +171,17 @@ class ForceFieldParameter
     double originalUncertainty() const { return originalUncertainty_; }
     
     //! \brief Return the number of training points used
-    int ntrain() const { return ntrain_; }
+    unsigned int ntrain() const { return ntrain_; }
 
     //! \brief \return the value of \p originalNtrain_
-    int originalNtrain() const { return originalNtrain_; }
+    unsigned int originalNtrain() const { return originalNtrain_; }
     
     /*!\brief Set the number of training point used for this value if not fixed
      * \param[in] ntrain  The number of data points
      * \throws an exception if the strict flag is true and the
      * variable is not mutable.
      */ 
-    void setNtrain(int ntrain);
+    void setNtrain(unsigned int ntrain);
     
     /*! \brief Add one to the number of training points
      * \throws when the parameter is not mutable and strict flag is true
@@ -291,37 +291,37 @@ class ForceFieldParameter
     //! Update the internal value by converting units
     void calculateInternalValue() { internalValue_ = convertToGromacs(value_, unit_); }
     //! The unit of the parameter
-    std::string unit_;
+    std::string  unit_;
     //! The current value of the parameter
-    double      value_               = 0;
+    double       value_               = 0;
     //! The current internal value of the parameter
-    double      internalValue_       = 0;
+    double       internalValue_       = 0;
     //! The original value of the parameter
-    double      originalValue_       = 0;
+    double       originalValue_       = 0;
     //! The current uncertainty in the parameter
-    double      uncertainty_         = 0;
+    double       uncertainty_         = 0;
     //! The original value of the uncertainty
-    double      originalUncertainty_ = 0;
+    double       originalUncertainty_ = 0;
     //! The number of training points used
-    int         ntrain_              = 0;
+    unsigned int ntrain_              = 0;
     //! The original number of training points used
-    int         originalNtrain_      = 0;
+    unsigned int originalNtrain_      = 0;
     //! Minimum allowed value for the parameter
-    double      minimum_             = 0;
+    double       minimum_             = 0;
     //! Maximum allowed value for the parameter
-    double      maximum_             = 0;
+    double       maximum_             = 0;
     //! In what way this parameter is mutable
-    Mutability  mutability_          = Mutability::Free;
+    Mutability   mutability_          = Mutability::Free;
     /*! Whether or not to throw an exception in case value or
      * uncertainty is set incorrectly
      */
-    bool        strict_              = false;
+    bool         strict_              = false;
     //! Whether this parameter should be strictly positive
-    bool        nonNegative_         = false;
+    bool         nonNegative_         = false;
     //! Externally determined index
-    size_t      index_               = 0;
+    size_t       index_               = 0;
     //! Whether or not the parameter has been recently updated
-    bool        updated_             = false;
+    bool         updated_             = false;
 };
 
 //! Mapping from string to force field parameters

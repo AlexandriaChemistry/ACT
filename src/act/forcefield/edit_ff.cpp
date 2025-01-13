@@ -377,7 +377,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
 
 static void analyzeForceField(ForceField *pd)
 {
-    int    mindata   = 1;
+    unsigned int mindata   = 1;
     double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {

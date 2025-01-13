@@ -114,7 +114,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         {
             header = "Type";
         }
-        int ntrain = 0;
+        unsigned int ntrain = 0;
         for (const auto &ffp : ep.second)
         {
             if (ffp.second.mutability() == Mutability::Dependent)

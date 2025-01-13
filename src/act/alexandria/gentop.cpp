@@ -270,7 +270,7 @@ int gentop(int argc, char *argv[])
         if (opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
             writeOpenMM(opt2fn("-openmm", fnm.size(), fnm.data()),
-                        &pd, actmols, mDrude, addNumbersToAtoms, ntrain);
+                        &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
         }
     }
     if (!errors.empty())

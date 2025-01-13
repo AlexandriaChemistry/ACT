@@ -666,16 +666,31 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
             (*coords)[i][j] = x[jj++];
         }
     }
-    lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), coords,
-                                forces, lbfgs->energies());
+    gmx::RVec field = { 0, 0, 0 };
+    lbfgs->forceComp()->constructVsiteCoordinates(lbfgs->mol()->topology(), coords);
+    lbfgs->forceComp()->computeOnce(lbfgs->pd(), lbfgs->mol()->topology(), coords,
+                                    forces, lbfgs->energies(), field);
+    lbfgs->forceComp()->spreadVsiteForces(lbfgs->mol()->topology(), coords,
+                                          forces);
     f  = lbfgs->energy(InteractionType::EPOT);
     jj = 0;
+    rvec fsum = { 0, 0, 0 };
     for (auto i : theAtoms)
     {
         for(int j = 0; j < DIM; j++)
         {
             g[jj++] = -(*forces)[i][j];
         }
+        if (debug)
+        {
+            fprintf(debug, "Force %03d  %12.3f  %12.3f  %12.3f\n", i,
+                    (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]);
+        }
+        rvec_inc(fsum, (*forces)[i]);
+    }
+    if (debug)
+    {
+        fprintf(debug, "Energy %.3f sum of forces is %g %g %g\n", f, fsum[XX], fsum[YY], fsum[ZZ]);
     }
 }
 
@@ -794,6 +809,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             converged = opt.run(sx);
             if (converged)
             {
+                // Final minimization for shells.
+                lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), lbfgs->coordinates(),
+                                            lbfgs->forces(), lbfgs->energies());
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (logFile)
                 {

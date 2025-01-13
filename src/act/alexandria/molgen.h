@@ -258,7 +258,7 @@ private:
     //! Communication record
     const CommunicationRecord      *cr_;
     //! Minimum number of data points to consider a parameter
-    int                             mindata_    = 1;
+    unsigned int                    mindata_    = 1;
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Tell us whether this interaction type needs optimizing
@@ -415,7 +415,7 @@ public:
     gmx_bool bQsym() const { return qsymm_;}
         
     //! \brief Return minimum amount of data needed
-    int mindata() const { return mindata_; }
+    unsigned int mindata() const { return mindata_; }
   
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp       File pointer for printing information, may be nullptr
