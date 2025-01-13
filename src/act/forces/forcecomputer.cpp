@@ -75,6 +75,21 @@ ForceComputer::~ForceComputer()
     }
 }
 
+void ForceComputer::constructVsiteCoordinates(const Topology         *top,
+                                              std::vector<gmx::RVec> *coordinates) const
+{
+    // Construct virtual site coordinates
+    vsiteHandler_->constructPositions(top, coordinates, box_);
+}
+
+void ForceComputer::spreadVsiteForces(const Topology         *top,
+                                      std::vector<gmx::RVec> *coordinates,
+                                      std::vector<gmx::RVec> *forces) const
+{
+    // Spread virtual site forces
+    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+}
+                              
 double ForceComputer::compute(const ForceField                  *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
@@ -84,8 +99,7 @@ double ForceComputer::compute(const ForceField                  *pd,
                               bool                               resetShells,
                               std::set<int>                      relax) const
 {
-    // Spread virtual sites
-    vsiteHandler_->constructPositions(top, coordinates, box_);
+    constructVsiteCoordinates(top, coordinates);
     // Reset shells if needed
     if (resetShells)
     {
@@ -214,7 +228,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         energies->insert_or_assign(InteractionType::EXCHIND, exchind);
     }
     // Spread forces to atoms
-    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+    spreadVsiteForces(top, coordinates, forces);
     return msForce;
 }
 
@@ -297,7 +311,6 @@ void ForceComputer::plot(const ForceField  *pd,
         return;
     }
     std::string btype("bondtype");
-    std::string vdwtype("vdwtype");
 
     std::map<InteractionType, const std::string> i2s = {
         { InteractionType::BONDS,              btype },
@@ -305,8 +318,8 @@ void ForceComputer::plot(const ForceField  *pd,
         { InteractionType::LINEAR_ANGLES,      btype },
         { InteractionType::PROPER_DIHEDRALS,   btype },
         { InteractionType::IMPROPER_DIHEDRALS, btype },
-        { InteractionType::VDW,                vdwtype },
-        { InteractionType::ELECTROSTATICS,            vdwtype }
+        { InteractionType::VDW,                "vdwtype" },
+        { InteractionType::ELECTROSTATICS,     "acmtype" }
     };
     auto &fs   = pd->findForcesConst(itype);
     // The function we need to do the math
@@ -326,7 +339,7 @@ void ForceComputer::plot(const ForceField  *pd,
         };
         for(const auto &f : fs.parametersConst())
         {
-            int  ntrain  = 0;
+            unsigned int ntrain  = 0;
             for(const auto &pp : f.second)
             {
                 ntrain = std::max(ntrain, pp.second.ntrain());

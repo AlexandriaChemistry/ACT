@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -52,7 +52,7 @@ class ForceFieldTable
     const ForceField *pd_ = nullptr;
 
     //! Minimum number of training points to print
-    int   ntrain_         = 1;
+    unsigned int ntrain_  = 1;
 
  public:
     /*! \brief

@@ -372,7 +372,7 @@ class CombinationRules:
             elif mng == self.comb[param].lower():
                 if "gamma" == param:
                     sigmaIJ = self.combTwoString(geom, "sigma1", "sigma2")
-                    mydict["gamma"] = ("%s*(0.5*(gamma1/sigma1+gamma2/sigma2))" % sigmaIJ)
+                    mydict["gamma"] = ("select(sigma1*sigma2,%s*(0.5*(gamma1/sigma1+gamma2/sigma2)),0)" % sigmaIJ)
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( mng, param ))
             else:
@@ -403,7 +403,7 @@ class ActOpenMMSim:
         self.xtctraj     = xtctraj
         self.pdbtraj     = pdbtraj
         self.emonomer    = emonomer
-        self.nexcl       = {}
+        self.nexcl       = None
         self.txt         = None
         self.debug       = debug
         if self.debug:
@@ -534,7 +534,7 @@ class ActOpenMMSim:
                 self.txt.write("Self: %s group %d\n" % ( self.force_group[group], group ))
         return len(self.force_group.keys())
 
-    def add_force_group(self, force, nonbond_direct:bool, newfg:bool):
+    def add_force_group(self, force, newfg:bool):
         if None == self.force_group:
             new_fgnumber = self.init_force_groups()
         else:
@@ -546,7 +546,7 @@ class ActOpenMMSim:
         fgnumber = force.getForceGroup()
         if force == self.nonbondedforce and self.nonbondedMethod != NoCutoff:
             # Remove direct space nonbondeds and add them to the local book-keeping
-            if nonbond_direct:
+            if force.getIncludeDirectSpace():
                 directname = fcname + ' (direct space)'
                 self.force_group[fgnumber] = directname
                 self.fgnumber[directname]  = fgnumber
@@ -731,6 +731,7 @@ class ActOpenMMSim:
         if self.verbose:
             self.txt.write("There are %d particles.\n" % len(self.positions))
         myDrudeMass    = self.sim_params.getFloat('drudeMass', 0.1)
+        # Document where this constant comes from
         self.EwaldErrorTolerance = self.sim_params.getFloat('ewaldErrorTolerance', 1e-4)
         self.alphaPME = math.sqrt(-math.log(self.EwaldErrorTolerance*2))/self.nonbondedCutoff
         rmcom           = True
@@ -818,12 +819,16 @@ class ActOpenMMSim:
                     self.comb.add_rule(cparm, crule)
                 except:
                     sys.exit("Invalid combination rule '%s'" % ( param[3:] ) )
-            elif param.startswith("nexcl-"):
-                self.nexcl[param[6:]] = value
+            elif param.startswith("nexcl"):
+                if not self.nexcl:
+                    self.nexcl = value
+                elif self.nexcl != value:
+                    sys.exit("Different exclusions provided for different forces, this is not supported")
             else:
                 sys.exit("Unknown global parameter '%s'" % param)
 
         if potname:
+            force.setName(potname)
             self.customnbs.append( { "pot": potname, "force": force, "vdw": isVdw } )
 
     def init_forces(self):
@@ -834,63 +839,61 @@ class ActOpenMMSim:
         placing it in specified force groups.
         The LJ and point charge is used for both the dispersion correction and for LJPME and PME
         and a correction is needed for the exclusioms.
-        Create a CustomBondForce to calculate the direct space force of WBHAM and gaussian Coulomb for interactions
-        that are excluded (besides core-shell interactions).
         """
+
+        # There always is a regular NonbondedForce
+        self.nonbondedforce = None
+        for force in self.system.getForces():
+            if force.getName().startswith('NonbondedForce'):
+                self.nonbondedforce = force
+        if not self.nonbondedforce:
+            sys.exit("No nonbonded force found")
+
+        # Now for the other forces
         cnbname        = "CustomNonbondedForce"
         dforce         = "DrudeForce"
         DDDforce       = "CustomManyParticleForce"
-        forces         = {}
         self.customnbs = []
-        drudeforce     = None
+        self.my_shell = None
+        # Loop over all forces
         for force in self.system.getForces():
             fname = force.getName()
             if self.debug:
                 self.txt.write("Found force %s\n" % fname)
-            forces[fname] = force
-            if cnbname == fname:
-                self.add_customnb(forces[cnbname])
+            if fname == cnbname:
+                # CustomNonbond
+                self.add_customnb(force)
+                self.add_force_group(force, True)
+            elif fname == DDDforce:
+                # Three body dispersion
+                self.add_customnb(force)
+                self.add_force_group(force, False)
             elif dforce == fname:
-                drudeforce = force #s[dforce]
-            # Three body dispersion
-            if DDDforce == fname:
-                self.CustomDDDforce = forces[DDDforce]
-                self.add_force_group(self.CustomDDDforce, True, False)
+                self.add_force_group(force, False)
+                self.find_shells_cores(force)
         if len(self.customnbs) == 0:
             self.useOpenMMForce = True
-        self.count_forces("Direct space 1")
-        # There always is a regular NonbondedForce
-        self.nonbondedforce  = forces['NonbondedForce']
         # Check whether the user wants us to use OpenMM forces or ACT forces
         # If we should use OpenMMForce routines
-        nonbond_direct = True
         if not self.useOpenMMForce:
             self.nonbondedforce.setIncludeDirectSpace(False)
-            nonbond_direct = False
-        self.add_force_group(self.nonbondedforce, nonbond_direct, False)
+        self.add_force_group(self.nonbondedforce, False)
+
         if self.verbose:
             self.txt.write("***************************\n")
             self.txt.write(f"Number of particles (incl. vsites and drudes):  {self.system.getNumParticles()}\n")
-        self.count_forces("Direct space 2")
-        if drudeforce:
-            self.add_force_group(drudeforce, False, False)
-            self.find_shells_cores(drudeforce)
-        else:
-            self.my_shell = None
         self.count_forces("Direct space 3")
 
     def makeVdWFunc(self):
-        vdwParamNames                 = VdWDict[self.vdw]["params"]
-        self.vdw_excl_corr_expression = ( "%s" % VdWDict[self.vdw]["expression"] )
-        if self.debug:
-            self.txt.write("DBG: vdw_ecxl_corr_expression '%s'\n" % self.vdw_excl_corr_expression)
-        self.vdw_expression = self.vdw_excl_corr_expression
+        vdwParamNames       = VdWDict[self.vdw]["params"]
+        self.vdw_expression = ( "%s" % VdWDict[self.vdw]["expression"] )
         # Not a whole lot of documentation around, but this seems OK.
         # Have to verify that it is the same in OpenMM though.
         # https://manual.gromacs.org/documentation/2019/reference-manual/functions/long-range-vdw.html
         self.vdw_pme_excl_corr_expression = None
         if self.nonbondedMethod == LJPME:
             # NB! the minus sign
+            # TODO: IS THIS CORRECT? SHOULD THE SIGN BE REVERSED IN THE NORMAL VDW?
             self.vdw_pme_excl_corr_expression = ( "-((1-exp(-(%s*r)^2)*(1+(%s*r)^2+0.5*(%s*r)^4))*c6/r^6)" %
                                                  ( self.alphaPME, self.alphaPME, self.alphaPME) )
             if self.debug:
@@ -902,7 +905,6 @@ class ActOpenMMSim:
 
         # close energy expressions
         self.vdw_expression           += ";"
-        self.vdw_excl_corr_expression += ";"
 
         # The statements have to be in this order! They are evaluated in the reverse order apparently.
         combdict = self.comb.combStrings()
@@ -921,7 +923,7 @@ class ActOpenMMSim:
 
         if self.debug:
             for i in range(self.custom_vdw.getNumPerParticleParameters()):
-                self.txt.write("Parameter %d %s\n" % ( i, self.custom_vdw.getPerParticleParameterName(i)))
+                self.txt.write("self.custom_vdw parameter %d %s\n" % ( i, self.custom_vdw.getPerParticleParameterName(i)))
         for index in range(self.nonbondedforce.getNumParticles()):
             [ charge, sigma, epsilon ] = self.nonbondedforce.getParticleParameters(index)
             ppp = None
@@ -976,11 +978,11 @@ class ActOpenMMSim:
                 force.setReactionFieldDielectric(self.sim_params.getFloat('dielectricConstant'))
         if self.verbose:
             if hasattr(force, "getNumExclusions"):
-                nexcl = force.getNumExclusions()
+                mynexcl = force.getNumExclusions()
             else:
-                nexcl = force.getNumExceptions()
+                mynexcl = force.getNumExceptions()
             self.txt.write("There are %d particles in %s and %d exclusions\n" %
-                           ( force.getNumParticles(), force.getName(), nexcl ))
+                           ( force.getNumParticles(), force.getName(), mynexcl ))
 
     def add_custom_forces(self):
         if self.useOpenMMForce:
@@ -1025,7 +1027,7 @@ class ActOpenMMSim:
         for index in range(self.nonbondedforce.getNumParticles()):
             if self.useOpenMMForce or qdistDict[self.qdist] == qDist.Point or len(self.customnbs) == 0:
                 *myparams, = self.nonbondedforce.getParticleParameters(index)
-                allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices["NonbondedForce (direct space)"].items()}
+                allParam   = {parameter: myparams[idx] for parameter, idx in self.parameter_indices[self.nonbondedforce.getName()].items()}
                 if hasattr(allParam["charge"], "_value"):
                     charge     = allParam["charge"]._value
                 else:
@@ -1048,7 +1050,7 @@ class ActOpenMMSim:
                             self.txt.write(f"Adding {self.qdist} charge {charge} and zeta {zeta} to particle {index}\n")
             self.charges.append(charge)
 
-        # Van der Waals, is our custom potential minus the default LJ.
+        # Van der Waals, is our custom potential
         self.makeVdWFunc()
 
         # General settings for custom non-bonded potentials, if they are present!
@@ -1058,8 +1060,7 @@ class ActOpenMMSim:
                 force = getattr(self, forcenm)
                 self.do_force_settings(force)
                 # Finally add it to the system forces. Well done!
-                nb_direct = False
-                self.add_force_group(force, nb_direct, True)
+                self.add_force_group(force, True)
                 self.system.addForce(force)
 
     #################################################
@@ -1072,7 +1073,7 @@ class ActOpenMMSim:
             dist2 += (self.positions[iatom][m]._value - self.positions[jatom][m]._value)**2
         dist = math.sqrt(dist2)
         if abs(dist) < 0.001: # nm
-            print("Particles %d and %d have distance %g. Please check your force field, e.g. the virtual site definitions." % ( iatom, jatom, dist ) )
+            self.txt.write("Particles %d and %d have distance %g. Please check your force field, e.g. the virtual site definitions.\n" % ( iatom, jatom, dist ) )
         return dist
 
     def get_nb_excl(self):
@@ -1112,152 +1113,80 @@ class ActOpenMMSim:
 
             self.nb_excl[cexcl] = allParam
 
-    def add_customnb_excls(self):
-        nexcl = 2
-        for cnbname in [ "custom_vdw", "custom_coulomb" ]:
-            if hasattr(self, cnbname ):
-                self.txt.write("Will generate exclusions for %s\n" % ( cnbname ) )
-                myforce = getattr(self, cnbname)
-                # First generate exclusions based on real bonds
-                myforce.createExclusionsFromBonds(self.bonds, nexcl)
-                # Make LookUp table for exclusion
-                exdict = {}
-                for index in range(myforce.getNumExclusions()):
-                    i, j = myforce.getExclusionParticles(index)
-                    if not i in exdict:
-                        exdict[i] = set()
-                    if not j in exdict:
-                        exdict[j] = set()
-                    exdict[i].add(j)
-                    exdict[j].add(i)
-                self.txt.write("Created exclusion dictionary with %d keys\n" % ( len(exdict) ) )
-                origdict = copy.deepcopy(exdict)
-                self.txt.write("origdict %s\n" % ( str(origdict) ) )
-                # Now add exclusion from vsites to constructing atoms, but avoid adding doubles
-                # or OpenMM will puke.
-                for index in range(myforce.getNumParticles()):
-                    if self.system.isVirtualSite(index):
-                        vsite = self.system.getVirtualSite(index)
-                        self.txt.write("Found vsite %d based on %d cores\n" % ( index, vsite.getNumParticles() ) )
-                        for j in range(vsite.getNumParticles()):
-                            core = vsite.getParticle(j)
-                            if not core in exdict:
-                                exdict[core] = set()
-                            exdict[core].add(index)
-                            for k in exdict[core]:
-                                if not k in exdict:
-                                    exdict[k] = set()
-                                exdict[k].add(index)
-                if hasattr(self, "core_shell"):
-                    self.txt.write("There are %d core-shell pairs\n" % len(self.core_shell) )
-                    # First add the core-shell pairs
-                    for shell,core in self.core_shell:
-                        if not core in exdict:
-                            exdict[core] = set()
-                        exdict[core].add(shell)
-                        exdict[shell] = set()
-                        exdict[shell].add(core)
-                    self.txt.write("exdict %s\n" % str(exdict))
-                    # Then loop over the exclusions of the core
-                    for loop in range(1):
-                        for shell,core in self.core_shell:
-                            for k in exdict[core]:
-                                if not shell == k:
-                                    exdict[k].add(shell)
-                                    exdict[shell].add(k)
-                self.txt.write("Final exclusion dict: %s\n" % str(exdict))
-                for i in exdict.keys():
-                    for j in exdict[i]:
-                        if i == j:
-                            continue
-                        if i < j and ((not i in origdict or not (i in origdict and j in origdict[i])) and
-                                      (not j in origdict or not (j in origdict and i in origdict[j]))):
-                            myforce.addExclusion( i, j )
+    def add_customnb_excls(self, myforce):
+        if not self.nexcl:
+            sys.exit("Please make sure nexcl is set in your force field file")
+        self.txt.write("Will generate %d exclusions for %s\n" % ( self.nexcl, myforce.getName() ) )
+        # First generate exclusions based on real bonds
+        myforce.createExclusionsFromBonds(self.bonds, self.nexcl)
+        # Make LookUp table for exclusion
+        exdict = {}
+        for index in range(myforce.getNumExclusions()):
+            i, j = myforce.getExclusionParticles(index)
+            if not i in exdict:
+                exdict[i] = set()
+            if not j in exdict:
+                exdict[j] = set()
+            exdict[i].add(j)
+            exdict[j].add(i)
+        self.txt.write("Created exclusion dictionary with %d keys\n" % ( len(exdict) ) )
+        origdict = copy.deepcopy(exdict)
+        self.txt.write("origdict %s\n" % ( str(origdict) ) )
+        # Now add exclusion from vsites to constructing atoms, but avoid adding doubles
+        # or OpenMM will puke.
+        for index in range(myforce.getNumParticles()):
+            if self.system.isVirtualSite(index):
+                vsite = self.system.getVirtualSite(index)
+                self.txt.write("Found vsite %d based on %d cores\n" % ( index, vsite.getNumParticles() ) )
+                for j in range(vsite.getNumParticles()):
+                    core = vsite.getParticle(j)
+                    if not core in exdict:
+                        exdict[core] = set()
+                    exdict[core].add(index)
+                    for k in exdict[core]:
+                        if not k in exdict:
+                            exdict[k] = set()
+                        exdict[k].add(index)
+        if hasattr(self, "core_shell"):
+            self.txt.write("There are %d core-shell pairs\n" % len(self.core_shell) )
+            # First add the core-shell pairs
+            for shell,core in self.core_shell:
+                if not core in exdict:
+                    exdict[core] = set()
+                exdict[core].add(shell)
+                exdict[shell] = set()
+                exdict[shell].add(core)
+            self.txt.write("exdict %s\n" % str(exdict))
+            # Then loop over the exclusions of the core
+            for loop in range(1):
+                for shell,core in self.core_shell:
+                    for k in exdict[core]:
+                        if not shell == k:
+                            exdict[k].add(shell)
+                            exdict[shell].add(k)
+        self.txt.write("Final exclusion dict: %s\n" % str(exdict))
+        for i in exdict.keys():
+            for j in exdict[i]:
+                if i == j:
+                    continue
+                if i < j and ((not i in origdict or not (i in origdict and j in origdict[i])) and
+                              (not j in origdict or not (j in origdict and i in origdict[j]))):
+                    myforce.addExclusion( i, j )
 
-                self.txt.write("Found CustomNonbonded VDW function %s with %d exclusions\n" %
-                               (cnbname, myforce.getNumExclusions() ) )
-                for index in range(myforce.getNumExclusions()):
-                    # Just get the excluded atoms from the custom NB force
-                    iatom, jatom = myforce.getExclusionParticles(index)
-                    self.txt.write("Exclusion %d %d\n" % ( iatom, jatom ))
-
-    def add_excl_correction(self):
-        # Add vdW and electrostactics that have been excluded.
-        # This has to be done as the number of exclusions is 3 for
-        # nonbonded interactions in OpenMM and it likely less in ACT.
-        # These interactions are added using two CustomBondForce entries.
-
-        # If there are no CustomNonbondedForces we only have 12-6. OpenMM can deal
-        # with everything in that case.
-        # if len(self.customnbs) == 0:
-        #    return
-
-        # First add the customnb exclusions
-        return
-        # Now create the forces
-        vdw_excl_corr = openmm.CustomBondForce(self.vdw_excl_corr_expression)
-        vdw_excl_corr.setName("VanderWaalsExclusionCorrection")
-        for pp in VdWDict[self.vdw]["params"]:
-            vdw_excl_corr.addPerBondParameter(pp)
-        self.txt.write("Made vdw_excl_corr\n")
-
-        if qdistDict[self.qdist] == qDist.Point:
-            qq_excl_corr_expression =  ( "(%s*qiqj/r)" % ( ONE_4PI_EPS0 ) )
-        elif qdistDict[self.qdist] == qDist.Gaussian:
-            qq_excl_corr_expression  = ( "(%s*qiqj*Gaussian/r);" % ( ONE_4PI_EPS0 ) )
-            qq_excl_corr_expression += ( "Gaussian = %s;" % self.comb.gaussianString())
-        else:
-            sys.exit("No support for charge distribution type %s" % self.qdist)
-        qq_excl_corr = openmm.CustomBondForce(qq_excl_corr_expression)
-        qq_excl_corr.setName("CoulombExclusionCorrection")
-        qq_excl_corr.addPerBondParameter("qiqj")
-        if qdistDict[self.qdist] != qDist.Point:
-            qq_excl_corr.addPerBondParameter("zeta1")
-            qq_excl_corr.addPerBondParameter("zeta2")
-        self.txt.write("Made qq_excl_corr\n")
-
-        # Now loop over missing exclusions
-        for ( iatom, jatom ) in self.nb_excl:
-            allParam = self.nb_excl[(iatom, jatom)]
-            if allParam["epsilon"][0] > 0 and allParam["epsilon"][1] > 0:
-                allXXX = self.comb.combFloats(allParam)
-                vdW_parameters = []
-                for parameter in VdWDict[self.vdw]["params"]:
-                    myvdw = allXXX[parameter]
-                    if self.debug:
-                        self.txt.write("DBG: param %s myvdw %s\n" % ( parameter, myvdw ))
-                    vdW_parameters.append(myvdw)
-                vdw_excl_corr.addBond(iatom, jatom, vdW_parameters)
-                if self.debug:
-                    msg = "Adding VDW excl i %d j %d nexcl {nexcl}" % (iatom, jatom)
-                    k   = 0
-                    for parameter in VdWDict[self.vdw]["params"]:
-                        msg += " %s %g" % (parameter, vdW_parameters[k])
-                        k   += 1
-                    self.txt.write("%s\n" % msg)
-            qiqj = allParam['charge'][0]*allParam['charge'][1]
-            if qdistDict[self.qdist] == qDist.Point:
-                qq_excl_corr.addBond(iatom, jatom, [qiqj])
-                if self.debug:
-                    self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj}\n")
-            else:
-                qq_excl_corr.addBond(iatom, jatom, [qiqj, allParam['zeta'][0], allParam['zeta'][1]])
-                if self.debug:
-                    self.txt.write(f"Adding Coul excl corr i {iatom} j {jatom} qi*qj {qiqj} zeta1 {allParam['zeta'][0]} zeta2 {allParam['zeta'][1]}\n")
-        # Finish off. Did we add any exclusion or PME corrections?
-        for myforce in [ vdw_excl_corr, qq_excl_corr ]:
-            if myforce and 0 < myforce.getNumBonds():
-                self.add_force_group(myforce, False, True)
-                self.system.addForce(myforce)
-                mystring = ( "%s %d entries" % ( myforce.getName(), myforce.getNumBonds()))
-                self.count_forces(mystring)
+        self.txt.write("Found CustomNonbonded function %s with %d exclusions\n" %
+                       (myforce.getName(), myforce.getNumExclusions() ) )
+        if self.debug:
+            for index in range(myforce.getNumExclusions()):
+                # Just get the excluded atoms from the custom NB force
+                iatom, jatom = myforce.getExclusionParticles(index)
+                self.txt.write("Exclusion %d %d\n" % ( iatom, jatom ))
 
     def add_pme_excl_correction(self):
         if self.useOpenMMForce:
             return
         if not self.nonbondedMethod in [ PME, LJPME ]:
             return
-        # First fetch the missing exclusions if needed
+        # First fetch the exclusions
         if not hasattr(self, "nb_excl"):
             self.get_nb_excl()
 
@@ -1343,7 +1272,7 @@ class ActOpenMMSim:
         # Finish off. Did we add any exclusion or PME corrections?
         for myforce in [ vdw_pme_excl_corr, qq_pme_excl_corr, qq_pme_excl_corr_self ]:
             if myforce and 0 < myforce.getNumBonds():
-                self.add_force_group(myforce, False, True)
+                self.add_force_group(myforce, True)
                 self.system.addForce(myforce)
                 mystring = ( "%s %d entries" % ( myforce.getName(), myforce.getNumBonds()))
                 self.count_forces(mystring)
@@ -1361,7 +1290,7 @@ class ActOpenMMSim:
                 if cbfname == bond_force.getName():
                     bond_force.setName("AlexandriaBonds")
                 self.count_forces("Add Bondeds")
-                self.add_force_group(bond_force, False, False)
+                self.add_force_group(bond_force, False)
                 for bond_index in range(bond_force.getNumBonds()):
                     # Retrieve atoms (and parameters but we just want the bonds now).
                     bondinfo = bond_force.getBondParameters(bond_index)
@@ -1453,6 +1382,9 @@ class ActOpenMMSim:
                 self.txt.write("Number of bonds/pairs %d\n" % ( force.getNumBonds() ) )
             if hasattr(force, "getNumParticles"):
                 self.txt.write("Number of particles %d\n" % force.getNumParticles())
+                if self.debug:
+                    for i in range(force.getNumParticles()):
+                        self.txt.write("Atom %d params: %s\n" % ( i, str(force.getParticleParameters(i)) ) )
             if hasattr(force, "getNumAngles"):
                 self.txt.write("Number of angles %d\n" % ( force.getNumAngles()))
         self.txt.write("----------------------------\n")
@@ -1593,15 +1525,17 @@ class ActOpenMMSim:
             self.txt.write("Will remove standard (OpenMM) NonBondedForce\n")
             self.del_force(self.nonbondedforce, False)
         # TODO check whether this statement is correct.
+        # We remove the input vdw function that is now split over separate coulomb and vdw
         for cnb in self.customnbs:
-            self.txt.write("Will remove CustomNonBondedForce %s\n" % cnb["pot"])
-            self.del_force(cnb["force"])
+            if cnb["vdw"]:
+                self.txt.write("Will remove CustomNonBondedForce %s\n" % cnb["pot"])
+                self.del_force(cnb["force"])
 
     def update_forces(self):
         for myforce in self.system.getForces():
             if myforce.getName() in self.fgnumber and not myforce.getName() in [ "CMMotionRemover", "MonteCarloAnisotropicBarostat", "MonteCarloBarostat" ]:
                 if self.verbose:
-                    self.txt.write("Will update force %s\n" % myforce.getName())
+                    self.txt.write("Will update force settings %s\n" % myforce.getName())
                 myforce.updateParametersInContext(self.simulation.context)
 
 
@@ -1656,7 +1590,7 @@ class ActOpenMMSim:
         return self.potE
 
     def minimize_energy(self, maxIter:int)->float:
-        #### Minimize and Equilibrate ####
+        #### Minimize energy ####
         enertol = Quantity(value=1e-8, unit=kilojoule/(nanometer*mole))
         self.txt.write("\nPerforming energy minimization with force tolerance %s " % ( str(enertol)))
         if maxIter == 0:
@@ -1743,7 +1677,11 @@ class ActOpenMMSim:
         self.get_parameter_indices()
         self.make_forces()
         if not self.useOpenMMForce:
-            self.add_customnb_excls()
+            for cnbname in [ "custom_vdw", "custom_coulomb" ]:
+                if hasattr(self, cnbname):
+                    self.add_customnb_excls(getattr(self, cnbname))
+            for cnb in self.customnbs:
+                self.add_customnb_excls(cnb["force"])
         self.add_pme_excl_correction()
         self.remove_unused_forces()
         self.print_force_settings()
@@ -1756,7 +1694,7 @@ class ActOpenMMSim:
 
     def minimize(self, maxIter:int=0)->float:
         epot = self.minimize_energy(maxIter)
-        self.print_energy("After minimization:")
+        self.print_energy("After minimization")
         return epot
 
     def write_coordinates(self, outfile:str):
@@ -1794,6 +1732,9 @@ class ActOpenMMSim:
         self.production()
         self.print_energy("After production")
 
+    #############################################################
+    #                  U T I L I T I E S                        #
+    #############################################################
     def act_charges(self)->str:
         # Return all charges in ACT order, that is
         # Core Shell Core Shell Vsite Core Shell etc.

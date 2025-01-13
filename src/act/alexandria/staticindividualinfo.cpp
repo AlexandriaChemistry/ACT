@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -450,7 +450,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillVectors(const int mindata)
+void StaticIndividualInfo::fillVectors(unsigned int mindata)
 {
     if (cr_->isMasterOrMiddleMan())
     {

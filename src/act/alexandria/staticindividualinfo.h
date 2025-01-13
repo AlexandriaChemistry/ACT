@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -309,7 +309,7 @@ public:
      * Dev: Fills \p defaultParam_ \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
      * \param[in] mindata mininum number of existing datapoints to consider a parameter for optimization
      */
-    void fillVectors(const int mindata);
+    void fillVectors(unsigned int mindata);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Vector stuff                      *

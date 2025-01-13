@@ -347,6 +347,12 @@ template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
 }
 
+template <> void CommunicationRecord::bcast<unsigned int>(unsigned int *i, MPI_Comm comm, int root) const
+{
+    check_init_done();
+    check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_UNSIGNED, root, comm));
+}
+
 template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int root) const
 {
     check_init_done();
@@ -450,6 +456,16 @@ template <> void CommunicationRecord::send<int>(int dest, const int &d) const
     send_low(dest, &d, sizeof(d));
 }
 
+template <> void CommunicationRecord::send<unsigned int>(int dest, const unsigned int &d) const
+{
+    check_init_done();
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Sending unsigned int '%u' to %d\n", d, dest);
+    }
+    send_low(dest, &d, sizeof(d));
+}
+
 template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) const
 {
     check_init_done();
@@ -478,6 +494,16 @@ template <> void CommunicationRecord::recv<int>(int src, int *t) const
     if (nullptr != debug)
     {
         fprintf(debug, "Received int '%d' from %d\n", *t, src);
+    }
+}
+
+template <> void CommunicationRecord::recv<unsigned int>(int src, unsigned int *t) const
+{
+    check_init_done();
+    recv_low(src, t, sizeof(*t));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received unsigned int '%u' from %d\n", *t, src);
     }
 }
 
