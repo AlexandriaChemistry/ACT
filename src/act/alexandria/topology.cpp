@@ -1243,10 +1243,11 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     }
     if (nullptr != debug)
     {
-        fprintf(debug, "Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu\n",
+        fprintf(debug, "Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.\n",
                 mol->getMolname().c_str(),
                 ci->getMethod().c_str(),
-                ci->getBasisset().c_str(), atoms_.size());
+                ci->getBasisset().c_str(), atoms_.size(),
+                immsg(imm));
     }
 
     return imm;

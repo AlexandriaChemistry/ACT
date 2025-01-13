@@ -493,17 +493,26 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     // Create fragments before adding shells!
     if (immStatus::OK == imm)
     {
-        fraghandler_ = new FragmentHandler(pd, coords, topology_->atoms(),
-                                           bondsConst(), fragmentPtr(), missing);
-        if (fraghandler_->topologies().empty())
+        auto fptr = fragmentPtr();
+        if (fptr->size() > 0)
         {
-            delete fraghandler_;
-            imm = immStatus::FragmentHandler;
+            fraghandler_ = new FragmentHandler(pd, coords, topology_->atoms(),
+                                               bondsConst(), fptr, missing);
+
+            if (fraghandler_->topologies().empty())
+            {
+                delete fraghandler_;
+                imm = immStatus::FragmentHandler;
+            }
+            else
+            {
+                // Finally, extract frequencies etc.
+                getHarmonics();
+            }
         }
         else
         {
-            // Finally, extract frequencies etc.
-            getHarmonics();
+            imm = immStatus::FragmentHandler;
         }
     }
     
