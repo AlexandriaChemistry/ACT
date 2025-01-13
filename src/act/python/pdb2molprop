@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
+import argparse, glob, os, sys
+
+from molprops import *
+from get_mol_dict import *
+
+def parseArguments():
+    desc = '''This script will read a bunch of pdb files containing 
+    molecule dimers A-B and write an XML file for input to the 
+    Alexandria Chemistry Toolkit. All pdb files should contain the
+    same compounds in different conformations. The pdb file should also
+    contain a REMARK line with the energy according to this format:
+    
+    REMARK   Epot -28.643641666 kJ/mol
+
+    that is, the third word on the line will be considered as the energe
+    and the fourth one as the unit. Finally, the compounds A and B should be
+    designated by the residue numbers 1 and 2.
+    '''
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("-i", "--infile", nargs="+", help="PDB files for reading", type=str)
+    outf = "test.xml"
+    parser.add_argument("-o", "--outfile", help="Output xml file for writing, default "+outf, type=str, default=outf)
+    parser.add_argument("-nA", "--nameA", help="First molecule's name", type=str, default=None)
+    parser.add_argument("-nB", "--nameB", help="Second molecule's name", type=str, default=None)
+    parser.add_argument("-qa", "--charge_a", help="charge of frag A", type=int, default=0)
+    parser.add_argument("-qb", "--charge_b", help="charge of frag B", type=int, default=0)
+
+    parser.add_argument("-v", "--verbose", help="write debug statements", action="store_true")
+    defref = "Maaren2025b"
+    parser.add_argument("-ref", "--reference", help="Reference, default "+defref, type=str, default=defref)
+    method = "SPC/Fw"
+    parser.add_argument("-method", "--method", help="Computational chemistry method, default "+method, type=str, default=method)
+    basisset  = "None"
+    parser.add_argument("-basis", "--basis", help="Basis set used if relevant, default "+basisset, type=str, default=basisset)
+    program = "GROMACS"
+    parser.add_argument("-program", "--program", help="Software used if relevant, default "+program, type=str, default=program)
+
+    return parser.parse_args()
+    
+def read_pdb(args, g2a, mp:Molprop, infile:str, addBasics:bool):
+    # Create a molecule reader
+    md = MoleculeDict()
+    if not md.read(infile, "pdb"):
+        print("Could not read file %s" % infile)
+        return
+
+    personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
+    useForces    = False
+    exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
+                       "minimum", "SP", personnummer, useForces)
+
+    epot = None
+    with open(infile, "r") as inf:
+        for line in inf:
+            if line.startswith("REMARK"):
+                words = line.strip().split()
+                if len(words) == 4:
+                    if words[1].upper() in [ "EPOT", "ENERGY" ]:
+                        try:
+                            epot = float(words[2])
+                            exper.add_energy("DeltaE0", words[3], 0.0, "gas", epot)
+                        except ValueError:
+                            print("Incomprehensible line '%s'" % ( line.strip() ) )
+
+
+    ### Generate fragments 
+    ######################
+
+    # Start counting from 1
+    i    =  1
+    # Residue number
+    res0 = -1
+    rangeA = []
+    rangeB = []
+    weightA = 0
+    weightB = 0
+    mass  = "mass"
+    resnr = "resnr"
+    for atom in md.atoms:
+        alextype = g2a.rename(md.atoms[atom]["atomtype"])
+        exper.add_atom(md.atoms[atom]["atomtype"],
+                       alextype, i, "pm",
+                       100*md.atoms[i]["X"],
+                       100*md.atoms[i]["Y"],
+                       100*md.atoms[i]["Z"],
+                       "Hartree/Bohr", 0, 0, 0, None)
+        if resnr in md.atoms[atom] and mass in md.atoms[atom]:
+            if res0 == -1:
+                res0 = md.atoms[atom][resnr]
+            if md.atoms[atom][resnr] == res0:
+                rangeA.append(i)
+                weightA += md.atoms[atom][mass]
+            else:
+                rangeB.append(i)
+                weightB += md.atoms[atom][mass]
+        i += 1
+    mp.add_experiment(exper)
+
+    if addBasics:
+        # Assume we have a homodimer
+        if len(rangeA) + len(rangeB) != len(md.atoms):
+            j = 0
+            for atom in md.atoms:
+                if j < len(md.atoms)/2:
+                    rangeA.append(j+1)
+                    weightA += md.atoms[atom][mass]
+                else:
+                    rangeB.append(j+1)
+                    weightB += md.atoms[atom][mass]
+                j += 1
+
+        if args.verbose:
+            print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
+
+        # TODO: add proper formulae and inchi's
+        mp.set_molname(md.inchi)
+        Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, "")
+        mp.add_fragment(Afrag)
+        Bfrag = Fragment(args.nameB, args.charge_b, 1, 1, rangeB, weightB, "")
+        mp.add_fragment(Bfrag)
+        # Add the experiment
+        mp.add_prop("mass", str(md.mol_weight))
+        mp.add_prop("formula", str(md.formula))
+
+        for index_tuple in md.bonds:
+            mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
+
+        del Afrag
+        del Bfrag
+        
+if __name__ == "__main__":
+    args = parseArguments()
+
+    if not args.nameA or not args.nameB:
+        sys.exit("Please provide the names of the compounds")
+
+    molprops = Molprops()
+    molprops.open(args.outfile)
+    g2a      = GaffToAlexandria()
+
+    molname   = ("%s#%s" % ( args.nameA, args.nameB ) )
+    mp        = Molprop(molname)
+    addBasics = True
+    for pdb in args.infile:
+        read_pdb(args, g2a, mp, pdb, addBasics)
+        addBasics = False
+    molprops.add_molecule(mp, True)
+    molprops.close()
+    print("Please check %s for correctness." % args.outfile)
