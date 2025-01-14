@@ -85,6 +85,7 @@
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="0"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
@@ -132,15 +133,15 @@
     <Atom type="o2_s_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
-    <Particle type2="c2_1" type1="c2_s_1" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="c2_2" type1="c2_s_2" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="c2_3" type1="c2_s_3" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="c2_4" type1="c2_s_4" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type2="h_1" type1="h_s_1" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="h_2" type1="h_s_2" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="h_3" type1="h_s_3" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="h_4" type1="h_s_4" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type2="o2_1" type1="o2_s_1" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c2_s_1" type2="c2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c2_s_2" type2="c2_2" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c2_s_3" type2="c2_3" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c2_s_4" type2="c2_4" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="h_s_1" type2="h_1" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_2" type2="h_2" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_3" type2="h_3" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_4" type2="h_4" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="o2_s_1" type2="o2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
   </DrudeForce>
 </ForceField>
 ]]></String>
