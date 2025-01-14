@@ -86,47 +86,68 @@
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="0"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="gamma"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
+    <Atom type="c2_1" sigma="0.12" epsilon="0.55" gamma="15" zeta="6"/>
     <Atom type="c2_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="c3_1" sigma="0.1" epsilon="0.55" gamma="10" zeta="6"/>
+    <Atom type="c3_2" sigma="0.1" epsilon="0.55" gamma="10" zeta="6"/>
     <Atom type="c3_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="c3_s_2" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="h_1" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_2" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_3" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_4" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_5" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
+    <Atom type="h_6" sigma="0.23" epsilon="0.265" gamma="15" zeta="6"/>
     <Atom type="h_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="h_s_2" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="h_s_3" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="h_s_4" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="h_s_5" sigma="0" epsilon="0" gamma="0" zeta="6"/>
     <Atom type="h_s_6" sigma="0" epsilon="0" gamma="0" zeta="6"/>
+    <Atom type="o2_1" sigma="0.12" epsilon="0.75" gamma="15" zeta="6"/>
     <Atom type="o2_s_1" sigma="0" epsilon="0" gamma="0" zeta="6"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
+    <Atom type="c2_1" sigma="0.10690784617684" epsilon="0.55"/>
     <Atom type="c2_s_1" sigma="0" epsilon="0"/>
+    <Atom type="c3_1" sigma="0.089089871814034" epsilon="0.55"/>
+    <Atom type="c3_2" sigma="0.089089871814034" epsilon="0.55"/>
     <Atom type="c3_s_1" sigma="0" epsilon="0"/>
     <Atom type="c3_s_2" sigma="0" epsilon="0"/>
+    <Atom type="h_1" sigma="0.20490670517228" epsilon="0.265"/>
+    <Atom type="h_2" sigma="0.20490670517228" epsilon="0.265"/>
+    <Atom type="h_3" sigma="0.20490670517228" epsilon="0.265"/>
+    <Atom type="h_4" sigma="0.20490670517228" epsilon="0.265"/>
+    <Atom type="h_5" sigma="0.20490670517228" epsilon="0.265"/>
+    <Atom type="h_6" sigma="0.20490670517228" epsilon="0.265"/>
     <Atom type="h_s_1" sigma="0" epsilon="0"/>
     <Atom type="h_s_2" sigma="0" epsilon="0"/>
     <Atom type="h_s_3" sigma="0" epsilon="0"/>
     <Atom type="h_s_4" sigma="0" epsilon="0"/>
     <Atom type="h_s_5" sigma="0" epsilon="0"/>
     <Atom type="h_s_6" sigma="0" epsilon="0"/>
+    <Atom type="o2_1" sigma="0.10690784617684" epsilon="0.75"/>
     <Atom type="o2_s_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
-    <Particle/>
+    <Particle type1="c2_s_1" type2="c2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c3_s_1" type2="c3_1" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="c3_s_2" type2="c3_2" polarizability="0.00145" charge="-1.2" thole="0"/>
+    <Particle type1="h_s_1" type2="h_1" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_2" type2="h_2" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_3" type2="h_3" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_4" type2="h_4" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_5" type2="h_5" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="h_s_6" type2="h_6" polarizability="0.00055" charge="-0.8" thole="0"/>
+    <Particle type1="o2_s_1" type2="o2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
   </DrudeForce>
 </ForceField>
 ]]></String>

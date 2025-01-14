@@ -49,14 +49,25 @@
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="2"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
     <PerParticleParameter name="charge"/>
     <PerParticleParameter name="zeta"/>
+    <Atom type="br_1" sigma="0.375" epsilon="1.05" zeta="12"/>
+    <Atom type="cl_1" sigma="0.375" epsilon="1.05" zeta="13"/>
+    <Atom type="f_1" sigma="0.275" epsilon="0.4" zeta="13"/>
+    <Atom type="h_1" sigma="0.005" epsilon="0.065" zeta="13"/>
+    <Atom type="i_1" sigma="0.275" epsilon="2.1" zeta="12"/>
   </CustomNonbondedForce>
   <NonbondedForce coulomb14scale="1" lj14scale="1">
     <UseAttributeFromResidue name="charge"/>
+    <Atom type="br_1" sigma="0.375" epsilon="1.05"/>
+    <Atom type="cl_1" sigma="0.375" epsilon="1.05"/>
+    <Atom type="f_1" sigma="0.275" epsilon="0.4"/>
+    <Atom type="h_1" sigma="0.005" epsilon="0.065"/>
+    <Atom type="i_1" sigma="0.275" epsilon="2.1"/>
   </NonbondedForce>
 </ForceField>
 ]]></String>
