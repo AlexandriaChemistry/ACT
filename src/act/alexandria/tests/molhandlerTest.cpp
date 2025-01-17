@@ -364,7 +364,7 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true);
+    test("hydrogen-chloride.sdf", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
