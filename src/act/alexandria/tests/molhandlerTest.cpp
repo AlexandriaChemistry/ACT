@@ -109,8 +109,7 @@ static void add_energies(const ForceField                        *pd,
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
-              double ftoler=1e-15)
+    void test(const char *molname, const char *forcefield, bool nma, double ftoler=1e-15)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -277,12 +276,12 @@ protected:
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
-    test("methanethiol.sdf", "ACS-g", false, 1, 1e-13);
+    test("methanethiol.sdf", "ACS-g", false, 1e-13);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-6);
+    test("carbon-dioxide.sdf", "ACS-g", false, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
@@ -302,7 +301,7 @@ TEST_F (MolHandlerTest, AcetoneNoFreq)
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false, 3, 1e-14);
+    test("uracil.sdf", "ACS-g", false, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
@@ -313,13 +312,13 @@ TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-pg", false, 5);
+    test("hydrogen-chloride.sdf", "ACS-pg", false);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false, 1, 1e-8);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
@@ -329,12 +328,12 @@ TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
 {
-    test("uracil.sdf", "ACS-pg", false);
+    test("uracil.sdf", "ACS-pg", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true, 1, 1e-8);
+    test("carbon-dioxide.sdf", "ACS-g", true, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
@@ -356,7 +355,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true, 3, 1e-14);
+    test("uracil.sdf", "ACS-g", true, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
@@ -366,22 +365,22 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true, 3);
+    test("hydrogen-chloride.sdf", "ACS-pg", true);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-12);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-12);
+    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilPol)
 {
-    test("uracil.sdf", "ACS-pg", true);
+    test("uracil.sdf", "ACS-pg", true, 1e-12);
 }
 
 } // namespace
