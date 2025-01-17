@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -417,8 +417,6 @@ private:
     int                nstener_              = 1;
     //! Write shells to trajectory and coordinates
     bool               writeShells_          = false;
-    //! Map back hydrogen atoms to one type
-    bool               oneH_                 = false;
     //! Minmize (before MD)
     bool               minimize_             = false;
     //! Minimization algorithm
@@ -474,9 +472,6 @@ public:
     
     //! \return user provided random number seed
     int seed() const { return seed_; }
-
-    //! \return whether there is one H only
-    bool oneH() const { return oneH_; }
 
     //! \return whether or not to write shells to trajectory
     bool writeShells() const { return writeShells_; }

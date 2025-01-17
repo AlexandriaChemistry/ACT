@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -63,6 +63,8 @@ namespace alexandria
         char   *molnm_      = (char *)"";
         //! List of compounds/dimers to extract from charges files
         char   *dbname_     = (char *)"";
+        //! Map back hydrogen atoms to one type
+        bool               oneH_                 = false;
         //! Name of the charge map file
         std::string qmapfn_;
         //! File pointer for debug messages
@@ -110,6 +112,9 @@ namespace alexandria
          * \param[in] logfile The new file pointer to use
          */
         void setLogfile(FILE *logfile) { logFile_ = logfile; }
+
+        //! \return whether there is one H only
+        bool oneH() const { return oneH_; }
 
         /*! \brief Do the actual reading and processing
          * \param[in] pd        The force field

@@ -49,7 +49,12 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
-
+    if (atoms.size() != coordinates.size())
+    {
+        fprintf(stderr, "Received %zu atoms and %zu coordinates in fragmenthandler. Giving up.\n",
+                atoms.size(), coordinates.size());
+        return;
+    }
     bonds_.resize(fragments->size());
     std::vector<bool> atomFound(coordinates.size(), false);
     // Total number of atoms

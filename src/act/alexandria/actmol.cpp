@@ -204,6 +204,11 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
                                           const Topology               *topology)
 {
     auto myatoms = topology->atoms();
+    if (myatoms.empty())
+    {
+        // Called this function too early?
+        return xxx;
+    }
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
@@ -480,7 +485,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
         topology_ = new Topology(*bonds());
     }
     // Get the coordinates.
-    std::vector<gmx::RVec> coords = xOriginal();
+    std::vector<gmx::RVec> coords;// = xOriginal();
 
     if (immStatus::OK == imm)
     {
