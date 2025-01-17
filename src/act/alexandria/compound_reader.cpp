@@ -72,6 +72,8 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
           "Generate charges for your compound(s) using the Alexandria Charge Model." },
         { "-db",     FALSE, etSTR,  {&dbname_},
           "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'." },
+        { "-oneH", FALSE, etBOOL, {&oneH_},
+          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-qtot",   FALSE, etREAL, {&qtot_},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
         { "-qqm",    FALSE, etSTR,  {&qqm_},
@@ -229,10 +231,9 @@ bool CompoundReader::readFile(ForceField &pd,
     int                  maxpot = 100;
     int                  nsymm  = 1;
     bool                 addHydrogen = false;
-    bool                 oneH        = false;
     if (!readBabel(&pd, filename_, &mps, molnm_, molnm_, "", &method,
                    &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
-                   addHydrogen, box, oneH))
+                   addHydrogen, box, oneH_))
     {
         if (logFile_)
         {
@@ -296,18 +297,25 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     }
     if (logFile_)
     {
-        fprintf(logFile_, "CompoundReader found the following compounds:");
-        for(const auto &lu : lookup)
+        if (lookup.empty())
         {
-            fprintf(logFile_, " '%s'", lu.c_str());
-        }
-        if (dbname_)
-        {
-            fprintf(logFile_, " in the charges molprop.\n");
+            fprintf(logFile_, "CompoundReader will include all compounds from %s\n.", qmapfn_.c_str());
         }
         else
         {
-            fprintf(logFile_, " in %s\n", filename_);
+            fprintf(logFile_, "CompoundReader found the following compounds:");
+            for(const auto &lu : lookup)
+            {
+                fprintf(logFile_, " '%s'", lu.c_str());
+            }
+            if (strlen(dbname_) > 0)
+            {
+                fprintf(logFile_, " in the charges molprop.\n");
+            }
+            else
+            {
+                fprintf(logFile_, " in %s\n", filename_);
+            }
         }
     }
     chargeMap qmap;
@@ -371,8 +379,8 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
             {
                 if (logFile_)
                 {
-                    fprintf(logFile_, "CompoundReader could not determine charges for '%s'\n",
-                            mol->getMolname().c_str());
+                    fprintf(logFile_, "CompoundReader could not determine charges for '%s' from '%s'\n",
+                            mol->getMolname().c_str(), filename_);
                 }
                 // Prevent false positives, delete compound
                 mol = mols.erase(mol);

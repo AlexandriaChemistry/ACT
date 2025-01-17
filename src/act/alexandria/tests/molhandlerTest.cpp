@@ -182,6 +182,7 @@ protected:
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(ftoler);
             simConfig.setRetries(maxretry);
+            // Change nullptr to stdout for debugging.
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
@@ -323,7 +324,7 @@ TEST_F (MolHandlerTest, WaterNoFreqPol)
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false);
+    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
@@ -370,12 +371,12 @@ TEST_F (MolHandlerTest, HydrogenChloridePol)
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-8);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-12);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-15);
+    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilPol)

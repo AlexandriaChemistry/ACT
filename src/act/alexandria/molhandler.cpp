@@ -821,8 +821,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                         msf += iprod(f,f);
                     }
                     msf /= theAtoms.size();
-                    fprintf(logFile, "Minimization iteration %d/%d energy %g RMS force %g\n",
-                            retry+1, maxRetry, enew, std::sqrt(msf));
+                    fprintf(logFile, "Minimization of %zu atoms, iteration %d/%d energy %g RMS force %g\n",
+                            theAtoms.size(), retry+1, maxRetry, enew, std::sqrt(msf));
                 }
                 if (enew < eMin)
                 {

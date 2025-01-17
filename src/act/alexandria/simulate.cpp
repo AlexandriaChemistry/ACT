@@ -141,6 +141,7 @@ int simulate(int argc, char *argv[])
     std::vector<ACTMol> actmols = compR.read(pd, forceComp);
     if (actmols.empty())
     {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
         return 1;
     }
     auto &actmol = actmols[0];
