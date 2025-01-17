@@ -1465,69 +1465,59 @@ void Topology::addEntry(InteractionType            itype,
 std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *pairs,
                                                            int                  nrexcl)
 {
-    std::vector<std::vector<int>> exclusions;
+    std::vector<std::set<size_t>> exclusions;
     exclusions.resize(atoms_.size());
     for(auto &myEntry: entries_)
     {
         switch (myEntry.first)
         {
         case InteractionType::BONDS:
+            if (nrexcl > 0)
             {
-                if (nrexcl > 0)
+                for(auto &b : myEntry.second)
                 {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions[a[0]].push_back(a[1]);
-                        exclusions[a[1]].push_back(a[0]);
-                    }
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[1]);
+                    exclusions[a[1]].insert(a[0]);
                 }
             }
             break;
         case InteractionType::VSITE1:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].push_back(a[1]);
-                    exclusions[a[1]].push_back(a[0]);
-                }
+                auto a = b->atomIndices();
+                exclusions[a[0]].insert(a[1]);
+                exclusions[a[1]].insert(a[0]);
             }
             break;
         case InteractionType::VSITE2:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
+                auto a = b->atomIndices();
+                for (int m = 0; m < 2; m++)
                 {
-                    auto a = b->atomIndices();
-                    for (int m = 0; m < 2; m++)
-                    {
-                        exclusions[a[m]].push_back(a[2]);
-                        exclusions[a[2]].push_back(a[m]);
-                    }
+                    exclusions[a[m]].insert(a[2]);
+                    exclusions[a[2]].insert(a[m]);
                 }
             }
             break;
         case InteractionType::POLARIZATION:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].push_back(a[1]);
-                    exclusions[a[1]].push_back(a[0]);
-                }
+                auto a = b->atomIndices();
+                exclusions[a[0]].insert(a[1]);
+                exclusions[a[1]].insert(a[0]);
             }
             break;
         case InteractionType::ANGLES:
         case InteractionType::LINEAR_ANGLES:
+            if (nrexcl > 1)
             {
-                if (nrexcl > 1)
+                for(auto &b : myEntry.second)
                 {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions[a[0]].push_back(a[2]);
-                        exclusions[a[2]].push_back(a[0]);
-                    }
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[2]);
+                    exclusions[a[2]].insert(a[0]);
                 }
             }
             break;
@@ -1535,15 +1525,13 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
         case InteractionType::VSITE3S:
         case InteractionType::VSITE3OUT:
         case InteractionType::VSITE3OUTS:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
+                auto a = b->atomIndices();
+                for (int m = 0; m < 3; m++)
                 {
-                    auto a = b->atomIndices();
-                    for (int m = 0; m < 3; m++)
-                    {
-                        exclusions[a[m]].push_back(a[3]);
-                        exclusions[a[3]].push_back(a[m]);
-                    }
+                    exclusions[a[m]].insert(a[3]);
+                        exclusions[a[3]].insert(a[m]);
                 }
             }
             break;
@@ -1575,11 +1563,12 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             break;
         }
     }
+    std::vector<std::vector<int> > pp(exclusions.size());
     for(size_t ai = 0; ai < exclusions.size(); ai++)
     {
-        for(size_t j = 0; j < exclusions[ai].size(); j++)
+        for(auto aj : exclusions[ai])
         {
-            size_t aj = exclusions[ai][j];
+            pp[ai].push_back(aj);
             for(auto pp = pairs->begin(); pp < pairs->end(); ++pp)
             {
                 size_t a0 = (*pp)->atomIndex(0);
@@ -1592,7 +1581,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
         }
     }
-    return exclusions;
+    return pp;
 }
 
 void Topology::dump(FILE *fp) const
