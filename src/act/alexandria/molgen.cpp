@@ -49,6 +49,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
+#include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
@@ -797,7 +798,12 @@ size_t MolGen::Read(FILE                                *fp,
             std::set<std::string> lookup;
             for(const auto &ims : gms.imolSelect())
             {
-                lookup.insert(ims.iupac());
+                // Split potential dimers since we need to get charges of
+                // monomers in the charge map only.
+                for(const auto &comp : split(ims.iupac(), '#'))
+                {
+                    lookup.insert(comp);
+                }
             }
             qmap = fetchChargeMap(pd, forceComp, qmapfn, lookup, qt);
         }
