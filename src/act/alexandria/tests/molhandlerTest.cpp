@@ -180,7 +180,6 @@ protected:
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(ftoler);
-            simConfig.setRetries(maxretry);
             // Change nullptr to stdout for debugging.
             auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
                                                &xmin, &eAfter, nullptr, {});
@@ -323,7 +322,7 @@ TEST_F (MolHandlerTest, WaterNoFreqPol)
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1, 1e-12);
+    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
