@@ -73,15 +73,15 @@ def set_extent(dataset, axs):
     if len(dataset) < 1:
         print("No data in set_extent")
         return 0, 0, 0, 0
-    xxmin = dataset[0][0].xmin
-    xxmax = dataset[0][0].xmax
-    yymin = dataset[0][0].ymin
-    yymax = dataset[0][0].ymax
+    xxmin = dataset[0].xmin
+    xxmax = dataset[0].xmax
+    yymin = dataset[0].ymin
+    yymax = dataset[0].ymax
     for ii in range(1, len(dataset)):
-        xxmin = min(xxmin, dataset[ii][0].xmin)
-        xxmax = max(xxmax, dataset[ii][0].xmax)
-        yymin = min(yymin, dataset[ii][0].ymin)
-        yymax = max(yymax, dataset[ii][0].ymax)
+        xxmin = min(xxmin, dataset[ii].xmin)
+        xxmax = max(xxmax, dataset[ii].xmax)
+        yymin = min(yymin, dataset[ii].ymin)
+        yymax = max(yymax, dataset[ii].ymax)
     if args.square:
         mmin = min(xxmin, yymin)
         mmax = max(xxmax, yymax)
@@ -140,7 +140,11 @@ def plot_once(axs, ncolumn:int, args):
         if len(dataset) == 0:
             print("File %s has no data" % fn)
             continue
-        datasets.append(dataset)
+        if viewDebug:
+            print("Read %d labels %d legends and %d datasets from %s" % ( len(label), len(legend), len(dataset), fn ) )
+        for d in dataset:
+            datasets.append(d)
+        set_extent(datasets, axs)
         if len(arglabel) > 0:
             # This has to be a list, there can be multiple data sets per file
             if len(label) > 0:
@@ -169,7 +173,7 @@ def plot_once(axs, ncolumn:int, args):
             for n in range(len(dataset)):
                 mylabel  = None
                 if viewDebug:
-                    print("n = %d" % ( len(label) ))
+                    print("number of labels read = %d" % ( len(label) ))
                 if len(label) > n and label[n] not in args.ignore:
                     if print_label:
                         mylabel = label[n]
