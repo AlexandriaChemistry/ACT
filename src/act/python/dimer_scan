@@ -137,18 +137,27 @@ def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2
     return output_pdb
 
 
-def get_final_energy(mylog: str) -> float:
-    epot = None
+def get_final_energies(mylog: str) -> dict:
+    ener     = {}
+    energies = [ "DISPERSION", "EXCHANGE", "COULOMB", "INDUCTION", "EPOT" ]
     with open(mylog, "r") as inf:
         for line in inf:
+            words = line.split()
+            for e in energies:
+                if e in line and "Interaction energy" in line:
+                    try:
+                        ename = e
+                        if "EPOT" == e:
+                            ename = "INTERACTION"
+                        ener[ename] = float(words[3])
+                    except ValueError:
+                        print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
             if "EPOT:" in line and "value" in line:
                 try:
-                    words = line.split()
-                    epot = float(words[2][:-1])
+                    ener["EPOT"] = float(words[2][:-1])
                 except ValueError:
                     print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
-    return epot
-
+    return ener
 
 def make_freeze(indices: list) -> str:
     fndx = os.path.join(os.getcwd(), "freeze.ndx")
@@ -220,16 +229,23 @@ def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: 
         ddstr = ("%04d" % dd)
         mylog = os.path.join(ddstr, "simulation.log")
         if os.path.exists(mylog):
-            edimer = get_final_energy(mylog)
-            if edimer is not None:
+            edimer = get_final_energies(mylog)
+            if len(edimer) == 5:
                 if ener is None:
                     ener = open(efn, "w")
-                    ener.write("@ yaxis legend \"Energy (kJ/mol)\"\n")
-                    ener.write("@ xaxis legend \"Distance (nm)\"\n")
-                ener.write(f"{0.1 * distances[dd]:10g}  {edimer:10g}\n")
+                    ener.write("@ yaxis label \"Energy (kJ/mol)\"\n")
+                    ener.write("@ xaxis label \"Distance (nm)\"\n")
+                    iset = 0
+                    for e in edimer.keys():
+                        ener.write("@ s%d legend \"%s\"\n" % ( iset, e ) )
+                        iset += 1
+                ener.write(f"{0.1 * distances[dd]:10g}")
+                for e in edimer:
+                    ener.write(f"  {edimer[e]:10g}")
+                ener.write("\n")
+
     if ener:
         ener.close()
-
 
 def analyze_ff(ff: str) -> (bool, bool):
     vs = False
