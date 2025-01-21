@@ -9,10 +9,10 @@ from molprops import *
 from get_mol_dict import *
 
 def parseArguments():
-    desc = '''This script will read a bunch of pdb files containing 
+    desc = '''This script will read a bunch of structure files containing 
     molecule dimers A-B and write an XML file for input to the 
     Alexandria Chemistry Toolkit. All pdb files should contain the
-    same compounds in different conformations. The pdb file should also
+    same compounds in different conformations. If pdb files are used they should also
     contain a REMARK line with the energy according to this format:
     
     REMARK   Epot -28.643641666 kJ/mol
@@ -20,6 +20,10 @@ def parseArguments():
     that is, the third word on the line will be considered as the energe
     and the fourth one as the unit. Finally, the compounds A and B should be
     designated by the residue numbers 1 and 2.
+    
+    For xyz files the second word on the 2nd line should contain the energy, e.g.
+    
+    Epot -25.157500198 kJ/mol
     '''
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("-i", "--infile", nargs="+", help="PDB files for reading", type=str)
@@ -42,13 +46,7 @@ def parseArguments():
 
     return parser.parse_args()
     
-def read_pdb(args, g2a, mp:Molprop, infile:str, addBasics:bool):
-    # Create a molecule reader
-    md = MoleculeDict()
-    if not md.read(infile, "pdb"):
-        print("Could not read file %s" % infile)
-        return
-
+def read_pdb(args, g2a, mp:Molprop, addBasics:bool, md:MoleculeDict):
     personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
     useForces    = False
     exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
@@ -133,6 +131,136 @@ def read_pdb(args, g2a, mp:Molprop, infile:str, addBasics:bool):
         del Afrag
         del Bfrag
         
+def generateFragments(md:MoleculeDict):
+    natom     = len(md.atoms)
+    fragIndex = [-1]*natom
+    maxBond   = 0
+    for b in md.bonds:
+        ai = b[0]-1
+        aj = b[1]-1
+        if fragIndex[ai] == -1 and fragIndex[aj] == -1:
+            fragIndex[ai] = maxBond;
+            fragIndex[aj] = maxBond;
+            maxBond += 1;
+        elif (fragIndex[ai] == -1):
+            fragIndex[ai] = fragIndex[aj]
+        elif (fragIndex[aj] == -1):
+            fragIndex[aj] = fragIndex[ai]
+        elif (fragIndex[ai] != fragIndex[aj]):
+            # Merge them.
+            if (fragIndex[ai] < fragIndex[aj]):
+                faj = fragIndex[aj]
+                for i in range(natom):
+                    if (faj == fragIndex[i]):
+                        fragIndex[i] = fragIndex[ai]
+            else:
+                fai = fragIndex[ai]
+                for i in range(natom):
+                    if (fai == fragIndex[i]):
+                        fragIndex[i] = fragIndex[aj]
+
+    for i in range(natom):
+        if (fragIndex[i] == -1):
+            fragIndex[i] = maxBond
+            maxBond     += 1
+    return fragIndex
+
+def read_xyz(args, infile:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool, md:MoleculeDict):
+    personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
+    useForces    = False
+    exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
+                       "minimum", "SP", personnummer, useForces)
+
+    epot = None
+    with open(infile, "r") as inf:
+        lines = inf.readlines()
+        if len(lines) > 2:
+            words = lines[1].strip().split()
+            try:
+                epot = float(words[1])
+                exper.add_energy("DeltaE0", "kJ/mol", 0.0, "gas", epot)
+            except ( ValueError, IndexError ):
+                print("Incomprehensible line '%s' in '%s'" % ( lines[1].strip(), infile ) )
+                return
+
+    ### Generate fragments 
+    ######################
+    fragIndex = generateFragments(md)
+    # Start counting from 1
+    i    =  1
+    # Residue number
+    res0 = -1
+    rangeA = []
+    rangeB = []
+    weightA = 0
+    weightB = 0
+    mass  = "mass"
+    resnr = "resnr"
+    for atom in md.atoms:
+        alextype = g2a.rename(md.atoms[atom]["atomtype"])
+        exper.add_atom(md.atoms[atom]["atomtype"],
+                       alextype, i, "pm",
+                       100*md.atoms[i]["X"],
+                       100*md.atoms[i]["Y"],
+                       100*md.atoms[i]["Z"],
+                       "Hartree/Bohr", 0, 0, 0, None)
+        if res0 == -1:
+            res0 = fragIndex[i-1]
+        if fragIndex[i-1] == res0:
+            rangeA.append(i)
+            weightA += md.atoms[atom][mass]
+        else:
+            rangeB.append(i)
+            weightB += md.atoms[atom][mass]
+        i += 1
+    mp.add_experiment(exper)
+
+    if addBasics:
+        # Assume we have a homodimer
+        if len(rangeA) + len(rangeB) != len(md.atoms):
+            j = 0
+            for atom in md.atoms:
+                if j < len(md.atoms)/2:
+                    rangeA.append(j+1)
+                    weightA += md.atoms[atom][mass]
+                else:
+                    rangeB.append(j+1)
+                    weightB += md.atoms[atom][mass]
+                j += 1
+
+        if args.verbose:
+            print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
+
+        # TODO: add proper formulae and inchi's
+        mp.set_molname(md.inchi)
+        Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, "")
+        mp.add_fragment(Afrag)
+        Bfrag = Fragment(args.nameB, args.charge_b, 1, 1, rangeB, weightB, "")
+        mp.add_fragment(Bfrag)
+        # Add the experiment
+        mp.add_prop("mass", str(md.mol_weight))
+        mp.add_prop("formula", str(md.formula))
+
+        for index_tuple in md.bonds:
+            mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
+
+        del Afrag
+        del Bfrag
+        
+def read_file(args, g2a, mp:Molprop, infile:str, addBasics:bool):
+    # Create a molecule reader
+    md = MoleculeDict()
+    filetype = infile[-3:]
+    if not md.read(infile, filetype):
+        print("Could not read file %s" % infile)
+        return
+    if filetype == "pdb":
+        read_pdb(args, g2a, mp, addBasics, md)
+    elif filetype == "xyz":
+        read_xyz(args, infile, g2a, mp, addBasics, md)
+    else:
+        sys.exit("Don't know how to read a %s file" % filetype)
+
 if __name__ == "__main__":
     args = parseArguments()
 
@@ -147,7 +275,7 @@ if __name__ == "__main__":
     mp        = Molprop(molname)
     addBasics = True
     for pdb in args.infile:
-        read_pdb(args, g2a, mp, pdb, addBasics)
+        read_file(args, g2a, mp, pdb, addBasics)
         addBasics = False
     molprops.add_molecule(mp, True)
     molprops.close()
