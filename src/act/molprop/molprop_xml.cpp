@@ -570,6 +570,10 @@ static void mp_process_tree(FILE                              *fp,
                                                       atoms));
                             clean_xbuf(xbuf, clean1);
                         }
+                        else
+                        {
+                            GMX_THROW(gmx::InvalidInputError("Incomplete fragment definition"));
+                        }
                     }
                     break;
                 case MolPropXml::HARMONICS:

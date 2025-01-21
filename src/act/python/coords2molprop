@@ -46,94 +46,10 @@ def parseArguments():
 
     return parser.parse_args()
     
-def read_pdb(args, g2a, mp:Molprop, addBasics:bool, md:MoleculeDict):
-    personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
-    useForces    = False
-    exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
-                       "minimum", "SP", personnummer, useForces)
-
-    epot = None
-    with open(infile, "r") as inf:
-        for line in inf:
-            if line.startswith("REMARK"):
-                words = line.strip().split()
-                if len(words) == 4:
-                    if words[1].upper() in [ "EPOT", "ENERGY" ]:
-                        try:
-                            epot = float(words[2])
-                            exper.add_energy("DeltaE0", words[3], 0.0, "gas", epot)
-                        except ValueError:
-                            print("Incomprehensible line '%s'" % ( line.strip() ) )
-
-
-    ### Generate fragments 
-    ######################
-
-    # Start counting from 1
-    i    =  1
-    # Residue number
-    res0 = -1
-    rangeA = []
-    rangeB = []
-    weightA = 0
-    weightB = 0
-    mass  = "mass"
-    resnr = "resnr"
-    for atom in md.atoms:
-        alextype = g2a.rename(md.atoms[atom]["atomtype"])
-        exper.add_atom(md.atoms[atom]["atomtype"],
-                       alextype, i, "pm",
-                       100*md.atoms[i]["X"],
-                       100*md.atoms[i]["Y"],
-                       100*md.atoms[i]["Z"],
-                       "Hartree/Bohr", 0, 0, 0, None)
-        if resnr in md.atoms[atom] and mass in md.atoms[atom]:
-            if res0 == -1:
-                res0 = md.atoms[atom][resnr]
-            if md.atoms[atom][resnr] == res0:
-                rangeA.append(i)
-                weightA += md.atoms[atom][mass]
-            else:
-                rangeB.append(i)
-                weightB += md.atoms[atom][mass]
-        i += 1
-    mp.add_experiment(exper)
-
-    if addBasics:
-        # Assume we have a homodimer
-        if len(rangeA) + len(rangeB) != len(md.atoms):
-            j = 0
-            for atom in md.atoms:
-                if j < len(md.atoms)/2:
-                    rangeA.append(j+1)
-                    weightA += md.atoms[atom][mass]
-                else:
-                    rangeB.append(j+1)
-                    weightB += md.atoms[atom][mass]
-                j += 1
-
-        if args.verbose:
-            print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
-
-        # TODO: add proper formulae and inchi's
-        mp.set_molname(md.inchi)
-        Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, "")
-        mp.add_fragment(Afrag)
-        Bfrag = Fragment(args.nameB, args.charge_b, 1, 1, rangeB, weightB, "")
-        mp.add_fragment(Bfrag)
-        # Add the experiment
-        mp.add_prop("mass", str(md.mol_weight))
-        mp.add_prop("formula", str(md.formula))
-
-        for index_tuple in md.bonds:
-            mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
-
-        del Afrag
-        del Bfrag
-        
 def generateFragments(md:MoleculeDict):
     natom     = len(md.atoms)
     fragIndex = [-1]*natom
+    forms     = []
     maxBond   = 0
     for b in md.bonds:
         ai = b[0]-1
@@ -165,12 +81,45 @@ def generateFragments(md:MoleculeDict):
             maxBond     += 1
     return fragIndex
 
-def read_xyz(args, infile:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool, md:MoleculeDict):
-    personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
-    useForces    = False
-    exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
-                       "minimum", "SP", personnummer, useForces)
+def generateFormulae(md:MoleculeDict, fragIndex:list)->list:
+    formula = []
+    nfrag = 0
+    for i in fragIndex:
+        nfrag = max(nfrag, i)
+    nfrag += 1
+    for i in range(nfrag):
+        elements = []
+        coords = []
+        j = 0
+        for aaa in md.atoms:
+            atom = md.atoms[aaa]
+            if fragIndex[j] == i:
+                elements.append(atom["element"])
+                coords.append((atom["X"], atom["Y"], atom["Z"]))
+            j += 1
+        mdX = MoleculeDict()
+        mdX.from_coords_elements(elements, coords)
+        formula.append(mdX.formula)
 
+    return formula
+
+def pdb2energy(infile:str)->float:
+    epot = None
+    unit = None
+    with open(infile, "r") as inf:
+        for line in inf:
+            if line.startswith("REMARK"):
+                words = line.strip().split()
+                if len(words) == 4:
+                    if words[1].upper() in [ "EPOT", "ENERGY" ]:
+                        try:
+                            epot = float(words[2])
+                            unit = words[3]
+                        except ValueError:
+                            print("Incomprehensible line '%s'" % ( line.strip() ) )
+    return epot, unit
+
+def xyz2energy(infile:str):
     epot = None
     with open(infile, "r") as inf:
         lines = inf.readlines()
@@ -178,10 +127,26 @@ def read_xyz(args, infile:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool,
             words = lines[1].strip().split()
             try:
                 epot = float(words[1])
-                exper.add_energy("DeltaE0", "kJ/mol", 0.0, "gas", epot)
             except ( ValueError, IndexError ):
                 print("Incomprehensible line '%s' in '%s'" % ( lines[1].strip(), infile ) )
-                return
+                return None, None
+    return epot, "kJ/mol"
+    
+def read_xyz(args, infile:str, filetype:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool, md:MoleculeDict):
+    personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
+    useForces    = False
+    exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
+                       "minimum", "SP", personnummer, useForces)
+
+    if filetype == "xyz":
+        epot, unit = xyz2energy(infile)
+    elif filetype == "pdb":
+        epot, unit = pdb2energy(infile)
+    else:
+        print("Ignoring %s without energy" % infile)
+        return
+    if epot and unit:
+        exper.add_energy("DeltaE0", unit, 0.0, "gas", epot)
 
     ### Generate fragments 
     ######################
@@ -230,12 +195,11 @@ def read_xyz(args, infile:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool,
 
         if args.verbose:
             print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
-
+        fff = generateFormulae(md, fragIndex)
         # TODO: add proper formulae and inchi's
-        mp.set_molname(md.inchi)
-        Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, "")
+        Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, fff[0])
         mp.add_fragment(Afrag)
-        Bfrag = Fragment(args.nameB, args.charge_b, 1, 1, rangeB, weightB, "")
+        Bfrag = Fragment(args.nameB, args.charge_b, 1, 1, rangeB, weightB, fff[1])
         mp.add_fragment(Bfrag)
         # Add the experiment
         mp.add_prop("mass", str(md.mol_weight))
@@ -254,12 +218,12 @@ def read_file(args, g2a, mp:Molprop, infile:str, addBasics:bool):
     if not md.read(infile, filetype):
         print("Could not read file %s" % infile)
         return
-    if filetype == "pdb":
-        read_pdb(args, g2a, mp, addBasics, md)
-    elif filetype == "xyz":
-        read_xyz(args, infile, g2a, mp, addBasics, md)
-    else:
-        sys.exit("Don't know how to read a %s file" % filetype)
+    #if filetype == "pdb":
+    #    read_pdb(args, infile, g2a, mp, addBasics, md)
+    #elif filetype == "xyz":
+    read_xyz(args, infile, filetype, g2a, mp, addBasics, md)
+    #else:
+    #    sys.exit("Don't know how to read a %s file" % filetype)
 
 if __name__ == "__main__":
     args = parseArguments()
