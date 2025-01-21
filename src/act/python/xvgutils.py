@@ -11,12 +11,12 @@ def interpret_legend(line:str):
     
     for axis in [ "x", "y" ]:
         legkey  = axis+"axis"
-        legkey2 = "legend" 
+        legkey2 = "label" 
         if line.find(legkey) >= 0 and line.find(legkey2) >= 0:
             legval = line[line.find(legkey2)+len(legkey2)+1:].strip()
             legval = legval[1:-1]
             return axis+"label", legval
-    labkey = "label"
+    labkey = "legend"
     if line.find(labkey) >= 0 and line[0] == 's':
         labval = line[line.find(labkey)+len(labkey)+1:].strip()
         labval = labval[1:-1]
@@ -65,7 +65,7 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                 elif len(myline) > 0:
                     legkey, legval = interpret_legend(myline)
                     if legkey and legval:
-                        if legkey == "label":
+                        if legkey == "legend":
                             if filelabel:
                                 legval += " " + filename
                             labels.append(legval)

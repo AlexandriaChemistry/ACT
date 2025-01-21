@@ -230,7 +230,7 @@ def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: 
         mylog = os.path.join(ddstr, "simulation.log")
         if os.path.exists(mylog):
             edimer = get_final_energies(mylog)
-            if len(edimer) == 5:
+            if len(edimer) == 6:
                 if ener is None:
                     ener = open(efn, "w")
                     ener.write("@ yaxis label \"Energy (kJ/mol)\"\n")
