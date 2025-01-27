@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -96,6 +96,9 @@ public:
      * \todo Implement this
      */
     void checkConsistency() {};
+
+    //! \return myself
+    MolProp *self() { return this; }
     
     //! Set the index number for sorting
     void setIndex(int index) { index_ = index; }

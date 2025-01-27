@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -127,6 +127,16 @@ private:
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
     
+    /*! \brief Write ACT energies to a molprop file
+     * \param[in]    mpout     File name to write to
+     * \param[in]    pd        A force field
+     * \param[in]    forceComp The force computer
+     * \param[inout] mols      Vector of molecules, will be modified
+     */
+    void writeMolpropsEnergies(const char          *mpout,
+                               const ForceField    *pd,
+                               const ForceComputer *forceComp,
+                               std::vector<ACTMol> *mols);
     /*! \brief do part of the printing, add to statistics
      */
     void printEnergyForces(std::vector<std::string>            *tcout,

@@ -1744,7 +1744,7 @@ bool Topology::fillParameters(const ForceField *pd,
             {
                 if (debug)
                 {
-                    fprintf(debug, "Force field does not contain an %s parametersentry for %s, removing topology entry.\n",
+                    fprintf(debug, "Force field does not contain %s parameters for %s, removing topology entry.\n",
                             potentialToString(fs.potential()).c_str(),
                             topID.id().c_str());
                 }
