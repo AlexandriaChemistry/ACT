@@ -321,7 +321,10 @@ public:
      * Constructor
      */
     ACTMol();
-    
+
+    //! \return the molprop object
+    MolProp *molProp() { return MolProp::self(); }
+
     iMolSelect datasetType() const { return dataset_type_; }
     
     void set_datasetType(iMolSelect dataset_type) 

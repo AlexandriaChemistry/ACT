@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -230,6 +230,11 @@ public:
      */
     const char *getInputUnit() const { return inputUnit_.c_str(); }
     
+    /*! \brief
+     * Set the input unit of the property
+     */
+    void setInputUnit(const std::string &inputUnit) { inputUnit_ = inputUnit; }
+
     /*! \brief
      * Return the temperature
      */

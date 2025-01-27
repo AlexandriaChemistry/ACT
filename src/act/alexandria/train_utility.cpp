@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -46,6 +46,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/stringutil.h"
@@ -53,6 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -502,7 +504,8 @@ void TrainForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
         { efXVG, "-alphacorr", "alpha_corr",    ffOPTWR },
         { efXVG, "-qcorr",     "q_corr",        ffOPTWR },
         { efXVG, "-isopol",    "isopol_corr",   ffOPTWR },
-        { efXVG, "-anisopol",  "anisopol_corr", ffOPTWR }
+        { efXVG, "-anisopol",  "anisopol_corr", ffOPTWR },
+        { efXML, "-mpout",     "molprop_out",   ffOPTWR }
     };
     for(size_t i = 0; i < fnm.size(); i++)
     {
@@ -976,6 +979,81 @@ static void print_diatomics(const alexandria::ACTMol                            
         }
     }    
     xvgrclose(fp);
+}
+
+void TrainForceFieldPrinter::writeMolpropsEnergies(const char          *mpout,
+                                                   const ForceField    *pd,
+                                                   const ForceComputer *forceComp,
+                                                   std::vector<ACTMol> *mols)
+{
+    std::vector<MolProp> mps;
+    std::string version("ACT-");
+    version += act_version();
+    for (auto mol = mols->begin(); mol < mols->end(); ++mol)
+    {
+        std::vector<ACTEnergy>                                              energyMap;
+        std::vector<std::vector<std::pair<double, double> > >               forceMap;
+        std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
+        ACTEnergyMapVector                                                  interactionEnergyMap;
+        mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
+                             &energyComponentMap,
+                             mol->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
+        // TODO: This is copied from actmol.cpp, store in one place instead?
+        std::map<MolPropObservable, InteractionType> interE = {
+            { MolPropObservable::INTERACTIONENERGY,   InteractionType::EPOT                 },
+            { MolPropObservable::ELECTROSTATICS,      InteractionType::ELECTROSTATICS       },
+            { MolPropObservable::DISPERSION,          InteractionType::DISPERSION           },
+            { MolPropObservable::EXCHANGE,            InteractionType::EXCHANGE             },
+            { MolPropObservable::VDWCORRECTION,       InteractionType::VDWCORRECTION        },
+            { MolPropObservable::INDUCTIONCORRECTION, InteractionType::INDUCTIONCORRECTION  },
+            { MolPropObservable::INDUCTION,           InteractionType::INDUCTION            },
+            { MolPropObservable::CHARGETRANSFER,      InteractionType::CHARGETRANSFER       }
+        };
+
+        MolProp mpnew = *mol->molProp();
+
+        size_t ii = 0;
+        for (auto &exper : *mpnew.experiment())
+        {
+            exper.setReference("Spoel2025a");
+            exper.setProgram(version);
+            exper.setMethod("train_ff");
+            exper.setBasisset(pd->filename());
+            std::map<MolPropObservable, std::vector<GenericProperty *> > newprops;
+            auto allprops = exper.properties();
+            for(auto prop = allprops->begin(); prop != allprops->end(); prop++)
+            {
+                auto ie = interE.find(prop->first);
+                if (interE.end() != ie)
+                {
+                    if (prop->second.size() != 1)
+                    {
+                        // Can only handle one energy at a time
+                        fprintf(stderr, "More than one energy %s in experiment data structure for %s\n",
+                                mpo_name(prop->first), mpnew.getMolname().c_str());
+                    }
+                    else
+                    {
+                        auto me    = static_cast<MolecularEnergy *>(prop->second[0]);
+                        auto ae    = interactionEnergyMap[ii].find(ie->second);
+                        if (ae != interactionEnergyMap[ii].end())
+                        {
+                            auto value = ae->second.eact();
+                            me->Set(value, 0);
+                            me->setInputUnit("kJ/mol");
+                        }
+                    }
+                }
+                else
+                {
+                    // Do nothing
+                }
+            }
+            ii += 1;
+        }
+        mps.push_back(mpnew);
+    }
+    MolPropWrite(mpout, mps, false);
 }
 
 void TrainForceFieldPrinter::printEnergyForces(std::vector<std::string>            *tcout,
@@ -1740,6 +1818,12 @@ void TrainForceFieldPrinter::print(FILE                        *fp,
                 }
             }
         }
+    }
+
+    const char *mpout = opt2fn_null("-mpout", filenm.size(), filenm.data());
+    if (mpout)
+    {
+        writeMolpropsEnergies(mpout, pd, forceComp, actmol);
     }
 }
 
