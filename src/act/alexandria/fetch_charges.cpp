@@ -40,7 +40,8 @@
 namespace alexandria
 {
 
-chargeMap fetchChargeMap(ForceField                  *pd,
+chargeMap fetchChargeMap(FILE                        *fp,
+                         ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,
                          const std::set<std::string> &lookup,
@@ -87,6 +88,11 @@ chargeMap fetchChargeMap(ForceField                  *pd,
         auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
         if (immStatus::OK != imm)
         {
+            if (fp)
+            {
+                fprintf(fp, "Could not generate topology for %s due to %s\n",
+                        mp->getIupac().c_str(), immsg(imm));
+            }
             continue;
         }
         std::vector<gmx::RVec> coords = actmol.xOriginal();
@@ -109,11 +115,17 @@ chargeMap fetchChargeMap(ForceField                  *pd,
             }
             qmap.insert( { frags[0].inchi(), newq } );
         }
+        else if (fp)
+        {
+            fprintf(fp, "Could not generate topology for %s due to %s\n",
+                    mp->getIupac().c_str(), immsg(imm));
+        }
     }
     return qmap;
 }
 
-chargeMap fetchChargeMap(ForceField                  *pd,
+chargeMap fetchChargeMap(FILE                        *fp,
+                         ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
                          const std::set<std::string> &lookup,
@@ -121,7 +133,7 @@ chargeMap fetchChargeMap(ForceField                  *pd,
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
-    return fetchChargeMap(pd, forceComp, mps, lookup, qt);
+    return fetchChargeMap(fp, pd, forceComp, mps, lookup, qt);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,

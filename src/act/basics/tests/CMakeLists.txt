@@ -47,6 +47,7 @@ gmx_add_unit_test(
     datasetTest.cpp
     identifierTest.cpp
     identifierMapTest.cpp
+    msgHandlerTest.cpp
     interactiontypeTest.cpp
     # pseudo-library for code for alexandria
     )
