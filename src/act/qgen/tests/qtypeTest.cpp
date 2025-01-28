@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
@@ -163,9 +164,9 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 // Generate charges and topology
                 auto imm = actmol.GenerateTopology(stdout, pd,
                                                    missingParameters::Error);
-                if (immStatus::OK != imm)
+                if (ACTMessage::OK != imm)
                 {
-                    fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                    fprintf(stderr, "Error generating topology: %s\n", actMessage(imm));
                     break;
                 }
 

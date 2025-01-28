@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,9 +38,9 @@
 
 #include <random>
 
+#include "act/basics/msg_handler.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
-
 #include "act/utility/regression.h"
 
 namespace alexandria
@@ -340,7 +340,7 @@ double getDissociationEnergy(FILE                *fplog,
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto actmol = &((*molset)[i]);
-        if (immStatus::OK == actmol->getExpProps(pd, myprops, tmap[iqm]))
+        if (ACTMessage::OK == actmol->getExpProps(pd, myprops, tmap[iqm]))
         {
             double deltaE0;
             if (actmol->energy(MolPropObservable::DELTAE0, &deltaE0))

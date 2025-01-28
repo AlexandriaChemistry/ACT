@@ -42,6 +42,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -168,9 +169,9 @@ protected:
             mp_.Merge(&molprop);
             // Generate charges and topology
             auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Ignore);
-            if (immStatus::OK != imm)
+            if (ACTMessage::OK != imm)
             {
-                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+                fprintf(stderr, "Error generating topology: %s\n", actMessage(imm));
                 return;
             }
             

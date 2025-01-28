@@ -35,6 +35,7 @@
 
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fetch_charges.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
 
 namespace alexandria
@@ -158,11 +159,11 @@ bool CompoundReader::setCharges(ForceField          &pd,
                 mol->totalCharge(), qtot_);
     }
     
-    immStatus imm = mol->GenerateTopology(logFile_, &pd,
+    ACTMessage imm = mol->GenerateTopology(logFile_, &pd,
                                           missingParameters::Error);
 
     std::vector<gmx::RVec> coords = mol->xOriginal();
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         auto fragments  = mol->fragmentHandler();
         if (!qmap.empty())
@@ -209,7 +210,7 @@ bool CompoundReader::setCharges(ForceField          &pd,
             imm    = mol->GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
     }
-    return immStatus::OK == imm;
+    return ACTMessage::OK == imm;
 }
 
 bool CompoundReader::readFile(ForceField &pd,

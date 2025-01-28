@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,11 +33,11 @@
 
 #include "allbondeds.h"
 
-#include "gromacs/fileio/xvgr.h"
-
-#include "train_utility.h"
+#include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/utility/units.h"
+#include "gromacs/fileio/xvgr.h"
 
 static void round_numbers(real *av, real *sig, int power10)
 {
@@ -579,13 +579,13 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 continue;
             }
             auto imm = mmi.GenerateTopology(fp, pd, missingParameters::Generate);
-            if (immStatus::OK != imm)
+            if (ACTMessage::OK != imm)
             {
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Could not make topology for %s, reason %s\n",
                             mmi.getMolname().c_str(),
-                            immsg(imm) );
+                            actMessage(imm) );
                 }
                 continue;
             }

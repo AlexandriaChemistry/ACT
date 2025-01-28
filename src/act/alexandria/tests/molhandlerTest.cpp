@@ -44,6 +44,7 @@
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/alexandria/thermochemistry.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
@@ -149,11 +150,11 @@ protected:
                 // Generate charges and topology
                 auto imm = mm.GenerateTopology(stdout, pd,
                                                missingParameters::Ignore);
-                EXPECT_TRUE(immStatus::OK == imm);
-                if (immStatus::OK != imm)
+                EXPECT_TRUE(ACTMessage::OK == imm);
+                if (ACTMessage::OK != imm)
                 {
                     fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                            immsg(imm), basis.c_str(), method.c_str());
+                            actMessage(imm), basis.c_str(), method.c_str());
                     return;
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());

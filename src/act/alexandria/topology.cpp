@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/topologyentry.h"
@@ -1173,11 +1174,11 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     }
 }
 
-immStatus Topology::GenerateAtoms(const ForceField       *pd,
+ACTMessage Topology::GenerateAtoms(const ForceField       *pd,
                                   const MolProp          *mol,
                                   std::vector<gmx::RVec> *x)
 {
-    immStatus imm   = immStatus::OK;
+    ACTMessage imm   = ACTMessage::OK;
 
     auto ci = mol->findExperimentConst(JobType::OPT);
     if (!ci)
@@ -1190,13 +1191,13 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     }
     if (!ci)
     {
-        return immStatus::Topology;
+        return ACTMessage::Topology;
     }
     if (ci)
     {
         if (ci->NAtom() == 0)
         {
-            return immStatus::NoAtoms;
+            return ACTMessage::NoAtoms;
         }
         int res0  = -666;
         int nres  = 0;
@@ -1233,13 +1234,13 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
                 fprintf(stderr, "Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.\n",
                         cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes());
 
-                return immStatus::AtomTypes;
+                return ACTMessage::AtomTypes;
             }
         }
     }
     else
     {
-        imm = immStatus::Topology;
+        imm = ACTMessage::Topology;
     }
     if (nullptr != debug)
     {
@@ -1247,7 +1248,7 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
                 mol->getMolname().c_str(),
                 ci->getMethod().c_str(),
                 ci->getBasisset().c_str(), atoms_.size(),
-                immsg(imm));
+                actMessage(imm));
     }
 
     return imm;

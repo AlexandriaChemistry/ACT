@@ -43,6 +43,7 @@
 #include "act/alexandria/actmol_low.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
@@ -307,9 +308,9 @@ private:
      * \param[out] x The coordinate
      * \returns status variable
      */
-    immStatus GenerateAtoms(const ForceField       *pd,
-                            const MolProp          *mol,
-                            std::vector<gmx::RVec> *x);
+    ACTMessage GenerateAtoms(const ForceField       *pd,
+                             const MolProp          *mol,
+                             std::vector<gmx::RVec> *x);
     /*! \brief Build the topology internals
      * Calls the functions to generate angles, impropers and dihedrals (if flag set).
      * Will also generate non-bonded atom pairs and exclusions. Shells will be generated

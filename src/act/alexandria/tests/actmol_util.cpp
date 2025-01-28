@@ -38,6 +38,7 @@
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -77,7 +78,7 @@ void initACTMol(const char          *molname,
                 mm.Merge(&molprop);
                 auto imm = mm.GenerateTopology(stdout, pd,
                                                missingParameters::Ignore);
-                EXPECT_TRUE(immStatus::OK ==imm);
+                EXPECT_TRUE(ACTMessage::OK ==imm);
                 std::map<MolPropObservable, iqmType> iqmMap = 
                     {
                         { MolPropObservable::DELTAE0,           iqmType::QM },

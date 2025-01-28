@@ -39,7 +39,8 @@
 
 #include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molselect.h"
-#include "act/alexandria/actmol_low.h"
+//#include "act/alexandria/actmol_low.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
@@ -262,7 +263,7 @@ private:
      * \param[in] atoms The structure to check
      * \return status code.
      */
-    immStatus checkAtoms(const ForceField *pd);
+    ACTMessage checkAtoms(const ForceField *pd);
     
     /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
@@ -455,7 +456,7 @@ public:
      * \param[in]  missing How to treat missing parameters
      * \return status
      */
-    immStatus GenerateTopology(FILE              *fp,
+    ACTMessage GenerateTopology(FILE              *fp,
                                ForceField        *pd,
                                missingParameters  missing);
     
@@ -479,7 +480,7 @@ public:
      * \param[out] forces    This routine will compute energies and forces.
      * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
-    immStatus GenerateCharges(const ForceField          *pd,
+    ACTMessage GenerateCharges(const ForceField          *pd,
                               const ForceComputer       *forceComp,
                               ChargeGenerationAlgorithm  algorithm,
                               qType                      qtype,
@@ -496,7 +497,7 @@ public:
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    The forces
      */
-    immStatus GenerateAcmCharges(const ForceField       *pd,
+    ACTMessage GenerateAcmCharges(const ForceField       *pd,
                                  const ForceComputer    *forceComp,
                                  std::vector<gmx::RVec> *coords,
                                  std::vector<gmx::RVec> *forces);
@@ -511,10 +512,10 @@ public:
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    immStatus getExpProps(const ForceField                           *pd,
-                          const std::map<MolPropObservable, iqmType> &iqm,
-                          real                                        watoms = 0,
-                          int                                         maxESP = 100);
+    ACTMessage getExpProps(const ForceField                           *pd,
+                           const std::map<MolPropObservable, iqmType> &iqm,
+                           real                                        watoms = 0,
+                           int                                         maxESP = 100);
     
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.
@@ -551,13 +552,13 @@ public:
      * \param[out] forces        Force array
      * \param[out] energies      The energy components
      * \param[out] shellForceRMS Root mean square force on the shells
-     * \return immStatus::OK if everything worked fine, error code otherwise.
+     * \return ACTMessage::OK if everything worked fine, error code otherwise.
      */
-    immStatus calculateEnergyOld(const t_commrec                   *crtmp,
-                                 std::vector<gmx::RVec>            *coordinates,
-                                 PaddedVector<gmx::RVec>           *forces,
-                                 std::map<InteractionType, double> *energies,
-                                 real                              *shellForceRMS);
+    ACTMessage calculateEnergyOld(const t_commrec                   *crtmp,
+                                  std::vector<gmx::RVec>            *coordinates,
+                                  PaddedVector<gmx::RVec>           *forces,
+                                  std::map<InteractionType, double> *energies,
+                                  real                              *shellForceRMS);
     
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute

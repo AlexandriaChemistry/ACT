@@ -36,6 +36,7 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
 #include "act/utility/communicationrecord.h"
 
@@ -245,10 +246,10 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();
-            immStatus imm = actmol->GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
+            ACTMessage imm = actmol->GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
-            if (immStatus::OK != imm && removeMol_)
+            if (ACTMessage::OK != imm && removeMol_)
             {
                 actmol->setSupport(eSupport::No);
                 continue;

@@ -42,6 +42,7 @@
 #include "act/alexandria/compound_reader.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/openmm_xml.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
@@ -208,7 +209,7 @@ int gentop(int argc, char *argv[])
 
     //gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     int mp_index   = 1;
-    std::map<std::string, std::pair<immStatus, std::vector<std::string>>> errors;
+    std::map<std::string, std::pair<ACTMessage, std::vector<std::string>>> errors;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); )
     {
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
@@ -260,7 +261,7 @@ int gentop(int argc, char *argv[])
         else
         {
             errors.insert({ actmol->getMolname(),
-                            { immStatus::Topology, actmol->errors() } });
+                            { ACTMessage::Topology, actmol->errors() } });
             actmol = actmols.erase(actmol);
         }
         mp_index++;
@@ -280,7 +281,7 @@ int gentop(int argc, char *argv[])
         fprintf(fp, "Errors encountered during processing:\n");
         for(const auto &mess : errors)
         {
-            fprintf(fp, "%s: %s\n", mess.first.c_str(), immsg(mess.second.first));
+            fprintf(fp, "%s: %s\n", mess.first.c_str(), actMessage(mess.second.first));
             for(const auto &m : mess.second.second)
             {
                 fprintf(fp, "    %s\n", m.c_str());
