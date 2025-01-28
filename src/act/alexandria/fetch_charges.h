@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -58,6 +58,7 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * For polarizable models the charge of the shell are added explicitly in the list, and the same
  * goes for virtual sites. The fragment id (InChi) is used as the string in the returned map.
  *
+ * \param[in] fp        File for messages, may be nullptr
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] charge_fn The name of a molprop file
@@ -65,13 +66,15 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map.
  */
-chargeMap fetchChargeMap(ForceField                  *pd,
+chargeMap fetchChargeMap(FILE                        *fp,
+                         ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
                          const std::set<std::string> &lookup,
                          qType                        qt = qType::ACM);
 
 /*! \brief Generate charges for all compounds in a molprop file.
+ * \param[in] fp        File for messages, may be nullptr
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] mps       Vector of molprops read previously
@@ -79,7 +82,8 @@ chargeMap fetchChargeMap(ForceField                  *pd,
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map, see above.
  */
-chargeMap fetchChargeMap(ForceField                  *pd,
+chargeMap fetchChargeMap(FILE                        *fp,
+                         ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,
                          const std::set<std::string> &lookup,

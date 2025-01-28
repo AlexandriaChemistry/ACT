@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -782,10 +782,10 @@ size_t MolGen::Read(FILE                                *fp,
 
     //  Now  we have read the forcefield and spread it to processors
     fillIopt(pd, cr_->isMaster() ? fp : nullptr);
-    /* Reading Molecules from allmols.dat */
+    /* Reading Molecules from allmols.xml */
+    auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
     if (cr_->isMaster())
     {
-        auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
         MolPropRead(molfn, &mp);
         auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
         if (qmapfn && strlen(qmapfn) > 0)
@@ -805,7 +805,7 @@ size_t MolGen::Read(FILE                                *fp,
                     lookup.insert(comp);
                 }
             }
-            qmap = fetchChargeMap(pd, forceComp, qmapfn, lookup, qt);
+            qmap = fetchChargeMap(fp, pd, forceComp, qmapfn, lookup, qt);
         }
         // Even if we did not read a file, we have to tell the other processors
         // about it.
@@ -965,10 +965,10 @@ size_t MolGen::Read(FILE                                *fp,
                 }
                 incrementImmCount(&imm_count, imm);
             }
-            if (ssOK != ss && verbose && fp)
+            if (ssNotFound == ss && verbose && fp)
             {
-                fprintf(fp, "Could not find %s in molprop file.\n",
-                        sel.iupac().c_str());
+                fprintf(fp, "Could not find %s in molprop file %s.\n",
+                        sel.iupac().c_str(), molfn);
             }
         }
         print_memory_usage(debug);

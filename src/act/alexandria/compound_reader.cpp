@@ -323,7 +323,7 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     {
         std::vector<MolProp> mps;
         MolPropRead(qmapfn_.c_str(), &mps);
-        qmap = fetchChargeMap(&pd, forceComp, mps, lookup);
+        qmap = fetchChargeMap(logFile_, &pd, forceComp, mps, lookup);
         if (logFile_)
         {
             fprintf(logFile_, "CompoundReader read %lu out of %lu entries into charge map from %s\n",

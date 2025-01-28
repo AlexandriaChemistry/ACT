@@ -120,7 +120,8 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
-        allWell = allWell && top->build(pd, &xfrag, 175.0, 5.0, missing);
+        bool allParametersFound = top->build(pd, &xfrag, 175.0, 5.0, missing);
+        allWell = allWell && allParametersFound;
         if (allWell)
         {
             // Array of total charges
