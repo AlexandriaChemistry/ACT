@@ -36,6 +36,7 @@
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/forcecomputerutils.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
 
@@ -180,16 +181,11 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::PROPER_DIHEDRALS:
         {
             rvec  r_ij, r_kj, r_kl, mm, nn;
-            int   t1, t2, t3;
-            t_pbc pbc;
-            matrix box = {{ 0 }};
-            set_pbc(&pbc, epbcNONE, box);
             refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
-                                         &pbc, r_ij, r_kj, r_kl, mm, nn,
-                                         &t1, &t2, &t3);
+                                         r_ij, r_kj, r_kl, mm, nn);
             if (refValue < 0)
             {
                 refValue += 360;
@@ -199,16 +195,11 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::IMPROPER_DIHEDRALS:
         {
             rvec  r_ij, r_kj, r_kl, mm, nn;
-            int   t1, t2, t3;
-            t_pbc pbc;
-            matrix box = {{ 0 }};
-            set_pbc(&pbc, epbcNONE, box);
             refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
-                                         &pbc, r_ij, r_kj, r_kl, mm, nn,
-                                         &t1, &t2, &t3);
+                                         r_ij, r_kj, r_kl, mm, nn);
             if (refValue < 0)
             {
                 refValue += 360;

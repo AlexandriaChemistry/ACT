@@ -39,7 +39,6 @@
 
 #include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molselect.h"
-//#include "act/alexandria/actmol_low.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
@@ -49,19 +48,8 @@
 #include "act/qgen/qtype.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/mdtypes/fcdata.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/real.h"
 
 namespace alexandria
 {
@@ -295,9 +283,6 @@ private:
     // Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
-    t_nrnb                         nrnb_;
-    gmx_wallcycle_t                wcycle_;
-    gmx_shellfc_t                 *shellfc_       = nullptr;
     std::vector<int>               symmetric_charges_;
     std::vector<std::string>       error_messages_;
     eSupport                       eSupp_         = eSupport::Local;
