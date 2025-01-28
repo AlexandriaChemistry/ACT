@@ -42,6 +42,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -121,8 +122,8 @@ protected:
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
         auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Ignore);
-        EXPECT_TRUE(immStatus::OK == imm);
-        if (immStatus::OK != imm)
+        EXPECT_TRUE(ACTMessage::OK == imm);
+        if (ACTMessage::OK != imm)
         {
             return;
         }

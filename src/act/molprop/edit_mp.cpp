@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -42,6 +42,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
@@ -76,7 +77,7 @@ static bool dump_molecule(FILE              *fp,
     alexandria::ACTMol actmol;
     actmol.Merge(mp);
     auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error);
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         // TODO check whether this is needed.
@@ -94,10 +95,10 @@ static bool dump_molecule(FILE              *fp,
                                          qType::ACM, dummy, &coords, &forces);
         }
     }
-    if (immStatus::OK != imm)
+    if (ACTMessage::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                actmol.getMolname().c_str(), immsg(imm));
+                actmol.getMolname().c_str(), actMessage(imm));
         return false;
     }
     else

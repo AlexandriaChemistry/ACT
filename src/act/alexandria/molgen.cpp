@@ -43,6 +43,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forces/combinationrules.h"
@@ -665,7 +666,7 @@ void MolGen::checkDataSufficiency(FILE        *fp,
     }
 }
 
-static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm) // Called in read method
+static void incrementImmCount(std::map<ACTMessage, int> *map, ACTMessage imm) // Called in read method
 {
     if (map->find(imm) == map->end())
     {
@@ -773,8 +774,8 @@ size_t MolGen::Read(FILE                                *fp,
                     bool                                 verbose)
 {
     int                              nwarn    = 0;
-    std::map<immStatus, int>         imm_count;
-    immStatus                        imm      = immStatus::OK;
+    std::map<ACTMessage, int>         imm_count;
+    ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
     chargeMap                        qmap;
     auto forceComp = new ForceComputer();
@@ -899,12 +900,12 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.Merge(&(*mpi));
                 imm = actmol.GenerateTopology(fp, pd,
                                               missingParameters::Error);
-                if (immStatus::OK != imm)
+                if (ACTMessage::OK != imm)
                 {
                     if (verbose && fp)
                     {
                         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), actMessage(imm));
                     }
                     ss = ssNoTopology;
                     break;
@@ -912,17 +913,17 @@ size_t MolGen::Read(FILE                                *fp,
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
                 imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
-                if (immStatus::OK != imm)
+                if (ACTMessage::OK != imm)
                 {
                     if (verbose && fp)
                     {
                         fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), actMessage(imm));
                     }
                     ss = ssNoTopology;
                     break;
                 }
-                if (immStatus::OK == imm)
+                if (ACTMessage::OK == imm)
                 {
                     auto fragments = actmol.fragmentHandler();
                     if (!qmap.empty())
@@ -934,7 +935,7 @@ size_t MolGen::Read(FILE                                *fp,
                         }
                         else
                         {
-                            imm = immStatus::NoMolpropCharges;
+                            imm = ACTMessage::NoMolpropCharges;
                         }
                     }
                     else
@@ -945,12 +946,12 @@ size_t MolGen::Read(FILE                                *fp,
                                                      qtype, dummy, &coords, &forces, true);
                     }
                 }
-                if (immStatus::OK != imm)
+                if (ACTMessage::OK != imm)
                 {
                     if (verbose && fp)
                     {
                         fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), immsg(imm));
+                                actmol.getMolname().c_str(), actMessage(imm));
                     }
                     ss = ssNoTopology;
                     break;
@@ -1107,7 +1108,7 @@ size_t MolGen::Read(FILE                                *fp,
             CommunicationStatus cs = actmol.BroadCast(cr_, root, mycomm);
             if (CommunicationStatus::OK != cs)
             {
-                imm = immStatus::CommProblem;
+                imm = ACTMessage::CommProblem;
             }
             else if (nullptr != debug)
             {
@@ -1117,11 +1118,11 @@ size_t MolGen::Read(FILE                                *fp,
             imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
 
             std::vector<gmx::RVec> coords = actmol.xOriginal();
-            if (immStatus::OK == imm)
+            if (ACTMessage::OK == imm)
             {
                 imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
             }
-            if (immStatus::OK == imm)
+            if (ACTMessage::OK == imm)
             {
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
@@ -1133,7 +1134,7 @@ size_t MolGen::Read(FILE                                *fp,
                     }
                     else
                     {
-                        imm = immStatus::NoMolpropCharges;
+                        imm = ACTMessage::NoMolpropCharges;
                     }
                 }
                 else
@@ -1158,7 +1159,7 @@ size_t MolGen::Read(FILE                                *fp,
                 actmol.setSupport(eSupport::Local);
             }
             incrementImmCount(&imm_count, imm);
-            if (immStatus::OK == imm)
+            if (ACTMessage::OK == imm)
             {
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
@@ -1171,9 +1172,9 @@ size_t MolGen::Read(FILE                                *fp,
                             fprintf(debug, "No DeltaE0 for %s",
                                     actmol.getMolname().c_str());
                         }
-                        imm = immStatus::NoData;
+                        imm = ACTMessage::NoData;
                     }
-                    if (immStatus::OK == imm)
+                    if (ACTMessage::OK == imm)
                     {
                         double hform;
                         if (!actmol.energy(MolPropObservable::DHFORM, &hform))
@@ -1183,7 +1184,7 @@ size_t MolGen::Read(FILE                                *fp,
                                 fprintf(debug, "No DeltaHform for %s",
                                         actmol.getMolname().c_str());
                             }
-                            imm = immStatus::NoData;
+                            imm = ACTMessage::NoData;
                         }
                         else if (nullptr != debug)
                         {
@@ -1238,11 +1239,11 @@ size_t MolGen::Read(FILE                                *fp,
         for (const auto &imm : imm_count)
         {
             fprintf(fp, "%d molecules - %s.\n", imm.second,
-                    alexandria::immsg(imm.first));
+                    alexandria::actMessage(imm.first));
         }
-        if (imm_count.find(immStatus::OK) != imm_count.end())
+        if (imm_count.find(ACTMessage::OK) != imm_count.end())
         {
-            if (imm_count.find(immStatus::OK)->second != static_cast<int>(mp.size()))
+            if (imm_count.find(ACTMessage::OK)->second != static_cast<int>(mp.size()))
             {
                 fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }

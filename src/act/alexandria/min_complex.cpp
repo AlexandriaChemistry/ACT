@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,7 @@
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -129,10 +130,10 @@ int min_complex(int argc, char *argv[])
         clear_mat(box);
         actmol.Merge(&(*mp));
     
-        immStatus imm = immStatus::OK;
+        ACTMessage imm = ACTMessage::OK;
         imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-        if (immStatus::OK == imm)
+        if (ACTMessage::OK == imm)
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             
@@ -141,7 +142,7 @@ int min_complex(int argc, char *argv[])
             auto qtype = qType::Calc;
             imm        = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
-        if (immStatus::OK == imm)
+        if (ACTMessage::OK == imm)
         {
             auto eMin = eMinimizeStatus::OK;
             /* Generate output file for debugging if requested */

@@ -35,6 +35,7 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
 
 namespace alexandria
@@ -86,12 +87,12 @@ chargeMap fetchChargeMap(FILE                        *fp,
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
         auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
-        if (immStatus::OK != imm)
+        if (ACTMessage::OK != imm)
         {
             if (fp)
             {
                 fprintf(fp, "Could not generate topology for %s due to %s\n",
-                        mp->getIupac().c_str(), immsg(imm));
+                        mp->getIupac().c_str(), actMessage(imm));
             }
             continue;
         }
@@ -105,7 +106,7 @@ chargeMap fetchChargeMap(FILE                        *fp,
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
         imm = actmol.GenerateCharges(pd, forceComp, alg,
                                      qt, dummy, &coords, &forces);
-        if (immStatus::OK == imm)
+        if (ACTMessage::OK == imm)
         {
             // Add ACM charges
             std::vector<std::pair<Identifier, double>> newq;
@@ -118,7 +119,7 @@ chargeMap fetchChargeMap(FILE                        *fp,
         else if (fp)
         {
             fprintf(fp, "Could not generate topology for %s due to %s\n",
-                    mp->getIupac().c_str(), immsg(imm));
+                    mp->getIupac().c_str(), actMessage(imm));
         }
     }
     return qmap;

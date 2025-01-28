@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/secondvirial.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
@@ -272,7 +273,7 @@ int simulate(int argc, char *argv[])
         }
     }
 
-    auto imm = immStatus::OK;
+    auto imm = ACTMessage::OK;
     if (eMinimizeStatus::OK != eMin)
     {
         fprintf(stderr, "Minimization failed: %s, check log file %s\n",
@@ -280,10 +281,10 @@ int simulate(int argc, char *argv[])
                 logFileName);
         status = 1;
     }
-    else if (immStatus::OK != imm)
+    else if (ACTMessage::OK != imm)
     {
         fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
-        fprintf(logFile, "%s\n", immsg(imm));
+        fprintf(logFile, "%s\n", actMessage(imm));
         for(const auto &err: actmol.errors())
         {
             fprintf(logFile, "%s\n", err.c_str());
@@ -299,9 +300,9 @@ int simulate(int argc, char *argv[])
         jtree.fwrite(logFile, json);
     }
     gmx_ffclose(logFile);
-    if (immStatus::OK != imm)
+    if (ACTMessage::OK != imm)
     {
-        printf("Simulate failed with an error:\n%s\n", immsg(imm));
+        printf("Simulate failed with an error:\n%s\n", actMessage(imm));
     }
     return status;
 }

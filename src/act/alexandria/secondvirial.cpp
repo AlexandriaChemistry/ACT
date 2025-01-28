@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -779,10 +779,10 @@ int b2(int argc, char *argv[])
 
     std::vector<ACTMol> actmols = compR.read(pd, forceComp);
     auto &actmol = actmols[0];
-    immStatus imm = immStatus::OK;
+    ACTMessage imm = ACTMessage::OK;
     std::vector<gmx::RVec> coords = actmol.xOriginal();
 
-    if (immStatus::OK == imm && status == 0)
+    if (ACTMessage::OK == imm && status == 0)
     {
         if (debug)
         {

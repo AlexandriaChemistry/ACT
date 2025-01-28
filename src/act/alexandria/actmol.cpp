@@ -46,6 +46,7 @@
 #include "act/alexandria/gromacs_top.h"
 #include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/symmetrize_charges.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
@@ -165,7 +166,7 @@ void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-immStatus ACTMol::checkAtoms(const ForceField *pd)
+ACTMessage ACTMol::checkAtoms(const ForceField *pd)
 {
     int nmissing        = 0;
     int atomnumberTotal = 0;
@@ -186,7 +187,7 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
     }
     if (nmissing > 0)
     {
-        return immStatus::AtomTypes;
+        return ACTMessage::AtomTypes;
     }
     // Check multiplicity
     int multOk = atomnumberTotal + totalMultiplicity() + totalCharge();
@@ -195,9 +196,9 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
         fprintf(stderr, "WARNING: atomnumberTotal %d, totalMultiplicity %d, totalCharge %d for %s\n",
                 atomnumberTotal, totalMultiplicity(), totalCharge(),
                 getMolname().c_str());
-        return immStatus::Multiplicity;
+        return ACTMessage::Multiplicity;
     }
-    return immStatus::OK;
+    return ACTMessage::OK;
 }
 
 static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
@@ -463,11 +464,11 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
     return linear;
 }
 
-immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
+ACTMessage ACTMol::GenerateTopology(gmx_unused FILE   *fp,
                                    ForceField        *pd,
                                    missingParameters  missing)
 {
-    immStatus   imm = immStatus::OK;
+    ACTMessage   imm = ACTMessage::OK;
     std::string btype1, btype2;
 
     if (nullptr != debug)
@@ -477,26 +478,26 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
     generateComposition();
     if (NAtom() <= 0)
     {
-        imm = immStatus::AtomTypes;
+        imm = ACTMessage::AtomTypes;
     }
     /* Store bonds in harmonic potential list first, update type later */
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         topology_ = new Topology(*bonds());
     }
     // Get the coordinates.
     std::vector<gmx::RVec> coords;// = xOriginal();
 
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         imm = topology_->GenerateAtoms(pd, this,  &coords);
     }
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         imm = checkAtoms(pd);
     }
     // Create fragments before adding shells!
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         auto fptr = fragmentPtr();
         if (fptr->size() > 0)
@@ -507,7 +508,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             if (fraghandler_->topologies().empty())
             {
                 delete fraghandler_;
-                imm = immStatus::FragmentHandler;
+                imm = ACTMessage::FragmentHandler;
             }
             else
             {
@@ -517,19 +518,19 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
         }
         else
         {
-            imm = immStatus::FragmentHandler;
+            imm = ACTMessage::FragmentHandler;
         }
     }
     
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         if (!topology_->build(pd, &coords, 175.0, 5.0, missing))
         {
-            imm = immStatus::Topology;
+            imm = ACTMessage::Topology;
         }
     }
     auto myatoms = topology()->atoms();
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         realAtoms_.clear();
         for(size_t i = 0; i < myatoms.size(); i++)
@@ -540,7 +541,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             }
         }
     }
-    if (immStatus::OK == imm && missing != missingParameters::Generate)
+    if (ACTMessage::OK == imm && missing != missingParameters::Generate)
     {
         std::vector<InteractionType> itUpdate;
         for(auto &entry : *(topology_->entries()))
@@ -548,18 +549,18 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             itUpdate.push_back(entry.first);
         }
     }
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         imm = checkAtoms(pd);
     }
-    if (immStatus::OK != imm && debug)
+    if (ACTMessage::OK != imm && debug)
     {
         for(const auto &emsg : error_messages_)
         {
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    if (immStatus::OK == imm)
+    if (ACTMessage::OK == imm)
     {
         isLinear_ = isLinearMolecule(myatoms, coords);
         // Symmetrize the atoms
@@ -845,7 +846,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     }
 }
 
-immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
+ACTMessage ACTMol::GenerateAcmCharges(const ForceField       *pd,
                                      const ForceComputer    *forceComp,
                                      std::vector<gmx::RVec> *coords,
                                      std::vector<gmx::RVec> *forces)
@@ -857,7 +858,7 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
                                                        getMolname().c_str(), atomsConst().size(), qold.size()).c_str()));
     }
-    immStatus imm       = immStatus::OK;
+    ACTMessage imm       = ACTMessage::OK;
     if (fraghandler_->fixedCharges())
     {
         // We do not need to derive charges again, since they were set once already.
@@ -890,16 +891,16 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
         }
         else if (eQgen::NOSUPPORT == eqgen)
         {
-            imm = immStatus::MissingChargeGenerationParameters;
+            imm = ACTMessage::MissingChargeGenerationParameters;
         }
         else
         {
-            imm = immStatus::ChargeGeneration;
+            imm = ACTMessage::ChargeGeneration;
         }
         iter++;
     }
-    while (imm == immStatus::OK && (!converged) && (iter < maxQiter_));
-    if (immStatus::OK == imm)
+    while (imm == ACTMessage::OK && (!converged) && (iter < maxQiter_));
+    if (ACTMessage::OK == imm)
     {
         if (!converged)
         {
@@ -922,7 +923,7 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     return imm;
 }
 
-immStatus ACTMol::GenerateCharges(const ForceField          *pd,
+ACTMessage ACTMol::GenerateCharges(const ForceField          *pd,
                                   const ForceComputer       *forceComp,
                                   ChargeGenerationAlgorithm  algorithm,
                                   qType                      qtype,
@@ -931,7 +932,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                                   std::vector<gmx::RVec>    *forces,
                                   bool                       updateQprops)
 {
-    immStatus imm         = immStatus::OK;
+    ACTMessage imm         = ACTMessage::OK;
     bool      converged   = false;
 
     // TODO check whether this needed
@@ -1022,7 +1023,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             }
             if (qread.empty())
             {
-                return immStatus::NoMolpropCharges;
+                return ACTMessage::NoMolpropCharges;
             }
             size_t j = 0;
             for(size_t i = 0; i < myatoms->size(); i++)
@@ -1036,7 +1037,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     const auto &pId = (*myatoms)[i].ffType();
                     if (!pd->hasParticleType(pId))
                     {
-                        return immStatus::AtomTypes;
+                        return ACTMessage::AtomTypes;
                     }
                     auto piter = pd->findParticleType(pId);
                     auto q = piter->charge();
@@ -1055,7 +1056,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 (*myatoms)[i].setCharge(qcustom[i]);
             }
             fraghandler_->setCharges(*myatoms);
-            return immStatus::OK;
+            return ACTMessage::OK;
         }
     case ChargeGenerationAlgorithm::ESP:
         {
@@ -1122,7 +1123,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
                 else
                 {
-                    imm = immStatus::ChargeGeneration;
+                    imm = ACTMessage::ChargeGeneration;
                 }
             }
         }
@@ -1482,7 +1483,7 @@ void ACTMol::getHarmonics()
     }
 }
 
-immStatus ACTMol::getExpProps(const ForceField                           *pd,
+ACTMessage ACTMol::getExpProps(const ForceField                           *pd,
                               const std::map<MolPropObservable, iqmType> &iqm,
                               real                                        watoms,
                               int                                         maxESP)
@@ -1490,7 +1491,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
     std::vector<double> vec;
     std::string         myref;
     std::string         mylot;
-    immStatus           imm        = immStatus::OK;
+    ACTMessage           imm        = ACTMessage::OK;
     
     auto &myatoms = atomsConst();
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
@@ -1651,7 +1652,7 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
     {
         ACTQprop actq(topology()->atoms(), xOriginal());
         qProps_.push_back(std::move(actq));
-        imm = immStatus::NoData;
+        imm = ACTMessage::NoData;
     }
     return imm;
 }
