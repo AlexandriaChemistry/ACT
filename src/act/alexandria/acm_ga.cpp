@@ -37,7 +37,8 @@
 namespace ga
 {
 
-bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
+bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
+                  std::map<iMolSelect, Genome> *bestGenome)
 {
 
     if (sii_->nParam() < 1)
@@ -69,9 +70,9 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
-    fitnessComputer()->compute(ind->genomePtr(), imstr, true);
+    fitnessComputer()->compute(msghandler, ind->genomePtr(), imstr);
     // Not really needed but just to print the components
-    fitnessComputer()->compute(ind->genomePtr(), imste, true);
+    fitnessComputer()->compute(msghandler, ind->genomePtr(), imste);
     if (logFile_)
     {
         fprintf(logFile_, "\n");
@@ -118,7 +119,7 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     }
 
     // Mutate my own genome
-    mutator()->mutate(ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
+    mutator()->mutate(msghandler, ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
     // Bring it into the population
     pool.replaceGenome(0, ind->bestGenome());
 
@@ -162,7 +163,8 @@ bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     return bMinimum;
 }
 
-bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
+bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome)
 {
     auto cr = sii_->commRec();
     // FIXME: have we already checked that the number of processors is the correct one?
@@ -254,9 +256,9 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
     {
         fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
-    fitnessComputer()->compute(ind->genomePtr(), imstr, true);
+    fitnessComputer()->compute(msghandler, ind->genomePtr(), imstr);
     // Maybe not really needed but just to print the components
-    fitnessComputer()->compute(ind->genomePtr(), imste, true);
+    fitnessComputer()->compute(msghandler, ind->genomePtr(), imste);
     if (logFile_)
     {
         fprintf(logFile_, "\n");
@@ -344,7 +346,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             {
                 auto genome0 = pool[pold]->genomePtr(0);
                 genome0->unsetFitness(imstr);
-                fitnessComputer()->compute(genome0, imstr, true);
+                fitnessComputer()->compute(msghandler, genome0, imstr);
             }
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
@@ -492,7 +494,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 fprintf(debug, "Mutating the MASTER's genome...\n");
             }
             auto g0ptr = pool[pnew]->genomePtr(0);
-            mutator()->mutate(g0ptr, ind->bestGenomePtr(), gach_->prMut());
+            mutator()->mutate(msghandler, g0ptr, ind->bestGenomePtr(), gach_->prMut());
             if (mutator()->foundMinimum())
             {
                 // Store master's best genome in the pool at position 0
@@ -501,11 +503,11 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
                 // For HYBRID the fitness is already computed by the mutator
-                fitnessComputer()->compute(g0ptr, imstr);
+                fitnessComputer()->compute(msghandler, g0ptr, imstr);
             }
             if (gach_->evaluateTestset())
             {
-                fitnessComputer()->compute(g0ptr, imste);
+                fitnessComputer()->compute(msghandler, g0ptr, imste);
             }
         }
         if (debug)

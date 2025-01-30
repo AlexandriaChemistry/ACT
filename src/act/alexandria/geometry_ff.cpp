@@ -200,7 +200,8 @@ int geometry_ff(int argc, char *argv[])
     std::vector<alexandria::MolProp> mp;
     std::string                      method, basis;
     AllBondeds bonds;
-    
+    MsgHandler msghandler;
+
     bonds.addOptions(&pa);    
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
                            pa.size(), pa.data(), asize(desc), desc,
@@ -210,6 +211,7 @@ int geometry_ff(int argc, char *argv[])
     }
 
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
+    msghandler.setFilePointer(fp);
     print_memory_usage(debug);
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
@@ -251,7 +253,7 @@ int geometry_ff(int argc, char *argv[])
         return 0;
     }
     std::vector<ACTMol> actmols;
-    bonds.extractGeometries(fp, mp, &actmols, &pd, gms);
+    bonds.extractGeometries(&msghandler, mp, &actmols, &pd, gms);
     
     print_memory_usage(debug);
     if (bHisto)

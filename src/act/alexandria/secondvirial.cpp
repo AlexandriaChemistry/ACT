@@ -740,6 +740,7 @@ int b2(int argc, char *argv[])
     rerun.addOptions(&pa, &fnm);
     CompoundReader      compR;
     compR.addOptions(&pa, &fnm, &desc);
+    MsgHandler          msghandler;
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -748,8 +749,14 @@ int b2(int argc, char *argv[])
         status = 1;
         return status;
     }
+    if (cr.isMaster())
+    {
+        msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
+        print_header(msghandler.filePointer(), pa, fnm);
+    }
     gendimers.finishOptions(fnm);
-    if (!compR.optionsOK(fnm))
+    compR.optionsOK(&msghandler, fnm);
+    if (!msghandler.ok())
     {
         return 1;
     }
@@ -761,14 +768,7 @@ int b2(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    FILE *logFile = nullptr;
-    if (cr.isMaster())
-    {
-        const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-        logFile = gmx_ffopen(logFileName, "w");
-        print_header(logFile, pa, fnm);
-    }
-    compR.setLogfile(logFile);
+
     auto  forceComp = new ForceComputer(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
@@ -777,31 +777,30 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
     auto &actmol = actmols[0];
-    ACTMessage imm = ACTMessage::OK;
     std::vector<gmx::RVec> coords = actmol.xOriginal();
 
-    if (ACTMessage::OK == imm && status == 0)
+    if (msghandler.ok() && status == 0)
     {
         if (debug)
         {
             actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        rerun.runB2(&cr, logFile, &pd, &actmol, maxdimers, verbose, fnm);
+        rerun.runB2(&cr, msghandler.filePointer(), &pd, &actmol, maxdimers, verbose, fnm);
     }
     if (json && cr.isMaster())
     {
         jtree.write("simulate.json", json);
     }
-    else if (logFile)
+    else 
     {
-        jtree.fwrite(logFile, json);
-    }
-    if (logFile)
-    {
-        gmx_ffclose(logFile);
+        auto fp = msghandler.filePointer();
+        if (fp)
+        {
+            jtree.fwrite(fp, json);
+        }
     }
     return status;
 }

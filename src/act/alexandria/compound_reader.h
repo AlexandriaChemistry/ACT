@@ -67,24 +67,24 @@ namespace alexandria
         bool               oneH_                 = false;
         //! Name of the charge map file
         std::string qmapfn_;
-        //! File pointer for debug messages
-        FILE   *logFile_    = stderr;
         /*! Read molecule from a single file
+         * \param[in] msghandler Error and message handler, check whether ok after returning
          * \param[in] pd   The force field
          * \param[out] mol The molecule
-         * \return true if successful
          */
-        bool readFile(ForceField &pd,
+        void readFile(MsgHandler *msghandler,
+                      ForceField &pd,
                       ACTMol     *mol);
         /*! Set charges for a single molecule
+         * \param[in] msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd        The force field
          * \param[out] mol       The molecule
          * \param[in]  qmap      A charge map
          * \param[in]  forceComp A force computer
          * \param[in]  warnQtot  Print a warning when qtot does not match the input
-         * \return true if successful
          */
-        bool setCharges(ForceField          &pd,
+        void setCharges(MsgHandler          *msghandler,
+                        ForceField          &pd,
                         ACTMol              *mol,
                         const chargeMap     &qmap,
                         const ForceComputer *forceComp,
@@ -103,15 +103,11 @@ namespace alexandria
                         std::vector<const char *> *desc);
 
         /*! Check whether passed options make sense
+         * \param[in] msghandler Error and message handler
          * \param[in] filenm The filenames after processing
-         * \return true if all is fine
          */
-        bool optionsOK(const std::vector<t_filenm> &filenm);
-
-        /*! \brief Set a new log file
-         * \param[in] logfile The new file pointer to use
-         */
-        void setLogfile(FILE *logfile) { logFile_ = logfile; }
+        void optionsOK(MsgHandler                  *msghandler,
+                       const std::vector<t_filenm> &filenm);
 
         //! \return whether there is one H only
         bool oneH() const { return oneH_; }
@@ -121,7 +117,8 @@ namespace alexandria
          * \param[in] forceComp A force computer
          * \return A vector of zero or more compounds
          */
-        std::vector<ACTMol> read(ForceField          &pd,
+        std::vector<ACTMol> read(MsgHandler          *msghandler,
+                                 ForceField          &pd,
                                  const ForceComputer *forceComp);
         
         //! Return true if user provided charges

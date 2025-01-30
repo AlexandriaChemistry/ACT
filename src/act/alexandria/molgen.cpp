@@ -254,7 +254,7 @@ void MolGen::optionsFinished()
 }
 
 void MolGen::fillIopt(ForceField *pd,
-                      FILE       *fp)
+                      MsgHandler *msghandler)
 // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
@@ -263,21 +263,20 @@ void MolGen::fillIopt(ForceField *pd,
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
-            if (debug)
-            {
-                fprintf(debug, "Adding parameter %s to fitting\n", fit.first.c_str());
-            }
+            msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                            gmx::formatString("Adding parameter %s to fitting\n", fit.first.c_str()));
         }
-        else if (fp)
+        else
         {
-            fprintf(fp, "Cannot find parameter '%s' in force field\n",
-                    fit.first.c_str()); 
+            msghandler->msg(ACTStatus::Warning,
+                            ACTMessage::MissingFFParameter, fit.first);
         }
     }
 }
 
 void MolGen::checkDataSufficiency(FILE        *fp,
-                                  ForceField  *pd) // Called in read method
+                                  ForceField  *pd)
+// Called in Read method
 {
     size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
@@ -766,12 +765,11 @@ static double computeCost(const ACTMol                         *actmol,
     return w;
 }
 
-size_t MolGen::Read(FILE                                *fp,
+size_t MolGen::Read(MsgHandler                          *msghandler,
                     const std::vector<t_filenm>         &filenms,
                     ForceField                          *pd,
                     const MolSelect                     &gms,
-                    const std::map<eRMS, FittingTarget> &targets,
-                    bool                                 verbose)
+                    const std::map<eRMS, FittingTarget> &targets)
 {
     int                              nwarn    = 0;
     std::map<ACTMessage, int>         imm_count;
@@ -782,7 +780,7 @@ size_t MolGen::Read(FILE                                *fp,
     print_memory_usage(debug);
 
     //  Now  we have read the forcefield and spread it to processors
-    fillIopt(pd, cr_->isMaster() ? fp : nullptr);
+    fillIopt(pd, msghandler);
     /* Reading Molecules from allmols.xml */
     auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
     if (cr_->isMaster())
@@ -806,18 +804,17 @@ size_t MolGen::Read(FILE                                *fp,
                     lookup.insert(comp);
                 }
             }
-            qmap = fetchChargeMap(fp, pd, forceComp, qmapfn, lookup, qt);
+            qmap = fetchChargeMap(msghandler, pd, forceComp, qmapfn, lookup, qt);
         }
         // Even if we did not read a file, we have to tell the other processors
         // about it.
         broadcastChargeMap(cr_, &qmap);
-        if (fp)
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                        gmx::formatString("Read %zu compounds from %s", mp.size(), molfn));
+        if (qmap.size() > 0)
         {
-            fprintf(fp, "Read %zu compounds from %s\n", mp.size(), molfn);
-            if (qmap.size() > 0)
-            {
-                fprintf(fp, "Read chargemap containing %lu entries from %s\n", qmap.size(), qmapfn);
-            }
+            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                            gmx::formatString("Read chargemap containing %lu entries from %s", qmap.size(), qmapfn));
         }
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
@@ -869,17 +866,18 @@ size_t MolGen::Read(FILE                                *fp,
     auto qtype = qType::Calc;
     if (cr_->isMaster())
     {
-        if (fp)
-        {
-            fprintf(fp, "Trying to generate topologies for %zu out of %zu molecules!\n",
-                    gms.nMol(), mp.size());
-        }
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                        gmx::formatString("Trying to generate topologies for %zu out of %zu molecules.",
+                                          gms.nMol(), mp.size()));
+
         enum selStat { ssNotFound, ssOK, ssNoTopology };
         // TODO: A double loop is not nice, alternative would be to make a map first
         // or to sort the molprop vector and then use a search algorithm,
         for (auto &sel : gms.imolSelect())
         {
             auto ss = ssNotFound;
+            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                            gmx::formatString("Looking for %s in molprop file %s", sel.iupac().c_str(), molfn));
             for (auto mpi = mp.begin(); ssNotFound == ss && mpi < mp.end(); ++mpi)
             {
                 if (mpi->getIupac() == sel.iupac() ||
@@ -891,70 +889,51 @@ size_t MolGen::Read(FILE                                *fp,
                 {
                     continue;
                 }
+                // Reset status to not let one compound ruin for all the others
+                msghandler->resetStatus();
                 // If we got here, we found the correct molprop
                 alexandria::ACTMol actmol;
-                if (debug)
-                {
-                    fprintf(debug, "%s\n", mpi->getMolname().c_str());
-                }
+                msghandler->msg(ACTStatus::Debug, ACTMessage::Info, mpi->getMolname());
+
                 actmol.Merge(&(*mpi));
-                imm = actmol.GenerateTopology(fp, pd,
-                                              missingParameters::Error);
-                if (ACTMessage::OK != imm)
+                actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
+                if (!msghandler->ok())
                 {
-                    if (verbose && fp)
-                    {
-                        fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), actMessage(imm));
-                    }
                     ss = ssNoTopology;
-                    break;
+                    continue;
                 }
 
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
-                if (ACTMessage::OK != imm)
+                actmol.getExpProps(msghandler, pd, iqmMap, watoms_, maxpot_);
+                if (!msghandler->ok())
                 {
-                    if (verbose && fp)
-                    {
-                        fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), actMessage(imm));
-                    }
                     ss = ssNoTopology;
-                    break;
+                    continue;
                 }
-                if (ACTMessage::OK == imm)
+                auto fragments = actmol.fragmentHandler();
+                if (!qmap.empty())
                 {
-                    auto fragments = actmol.fragmentHandler();
-                    if (!qmap.empty())
+                    if (fragments->setCharges(qmap))
                     {
-                        if (fragments->setCharges(qmap))
-                        {
-                            // Copy charges to the high-level topology as well
-                            fragments->fetchCharges(actmol.atoms());
-                        }
-                        else
-                        {
-                            imm = ACTMessage::NoMolpropCharges;
-                        }
+                        // Copy charges to the high-level topology as well
+                        fragments->fetchCharges(actmol.atoms());
                     }
                     else
                     {
-                        std::vector<double> dummy;
-                        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                        imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                     qtype, dummy, &coords, &forces, true);
+                        msghandler->msg(ACTStatus::Warning, ACTMessage::NoMolpropCharges, actmol.getMolname());
                     }
                 }
-                if (ACTMessage::OK != imm)
+                else
                 {
-                    if (verbose && fp)
-                    {
-                        fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
-                                actmol.getMolname().c_str(), actMessage(imm));
-                    }
+                    std::vector<double> dummy;
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
+                                           qtype, dummy, &coords, &forces, true);
+                }
+                if (!msghandler->ok())
+                {
                     ss = ssNoTopology;
-                    break;
+                    continue;
                 }
                 else
                 {
@@ -966,10 +945,11 @@ size_t MolGen::Read(FILE                                *fp,
                 }
                 incrementImmCount(&imm_count, imm);
             }
-            if (ssNotFound == ss && verbose && fp)
+            if (ssNotFound == ss)
             {
-                fprintf(fp, "Could not find %s in molprop file %s.\n",
-                        sel.iupac().c_str(), molfn);
+                msghandler->msg(ACTStatus::Warning, ACTMessage::NoData,
+                                gmx::formatString("Could not find %s in molprop file %s.",
+                                                  sel.iupac().c_str(), molfn));
             }
         }
         print_memory_usage(debug);
@@ -1055,13 +1035,10 @@ size_t MolGen::Read(FILE                                *fp,
                     actmol->setSupport(eSupport::Remote);
                 }
             }
-            if (fp)
-            {
-                fprintf(fp, "Computing %s on %s nexp = %zu\n", actmol->getMolname().c_str(),
-                        eSupport::Local == actmol->support() ? "master" : "helper",
-                        actmol->experimentConst().size());
-            }
-
+            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                            gmx::formatString("Computing %s on %s nexp = %zu", actmol->getMolname().c_str(),
+                                              eSupport::Local == actmol->support() ? "master" : "helper",
+                                              actmol->experimentConst().size()));
             actmolIndex += 1;
         }
         if (CommunicationStatus::OK != cs)
@@ -1076,6 +1053,7 @@ size_t MolGen::Read(FILE                                *fp,
         // TODO: Free mycomms
         print_memory_usage(debug);
         // Print cost per helper
+        auto fp = msghandler->filePointer();
         if (fp)
         {
             fprintf(fp, "Computational cost estimate per helper:\n");
@@ -1115,14 +1093,14 @@ size_t MolGen::Read(FILE                                *fp,
                 fprintf(debug, "Succesfully retrieved %s\n", actmol.getMolname().c_str());
                 fflush(debug);
             }
-            imm = actmol.GenerateTopology(debug, pd, missingParameters::Error);
+            actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
 
             std::vector<gmx::RVec> coords = actmol.xOriginal();
-            if (ACTMessage::OK == imm)
+            if (msghandler->ok())
             {
-                imm = actmol.getExpProps(pd, iqmMap, watoms_, maxpot_);
+                actmol.getExpProps(msghandler, pd, iqmMap, watoms_, maxpot_);
             }
-            if (ACTMessage::OK == imm)
+            if (msghandler->ok())
             {
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
@@ -1141,8 +1119,8 @@ size_t MolGen::Read(FILE                                *fp,
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                     std::vector<double> dummy;
-                    imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                                 qtype, dummy, &coords, &forces, true);
+                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
+                                           qtype, dummy, &coords, &forces, true);
                 }
             }
             if (cr_->isMiddleMan())
@@ -1209,7 +1187,7 @@ size_t MolGen::Read(FILE                                *fp,
     // After all molecules have been sent around let's check whether we have
     // support for them, at least on the middlemen but may be needed everywhere.
     // TODO Check that this is correct.
-    checkDataSufficiency(fp, pd);
+    checkDataSufficiency(msghandler->filePointer(), pd);
     
     // Some extra debug printing.
     if (debug)
@@ -1228,14 +1206,16 @@ size_t MolGen::Read(FILE                                *fp,
         fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
                 nCount[iMolSelect::Test], actmol_.size());
     }
+    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                    gmx::formatString("There were %d warnings because of zero error bars.", nwarn));
+    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                    gmx::formatString("Made topologies for %zu out of %zu molecules.",
+                                      nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
+                                      nTargetSize(iMolSelect::Ignore),
+                                      mp.size()));
+    auto fp = msghandler->filePointer();
     if (fp)
     {
-        fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
-        fprintf(fp, "Made topologies for %zu out of %zu molecules.\n",
-                nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
-                nTargetSize(iMolSelect::Ignore),
-                mp.size());
-
         for (const auto &imm : imm_count)
         {
             fprintf(fp, "%d molecules - %s.\n", imm.second,

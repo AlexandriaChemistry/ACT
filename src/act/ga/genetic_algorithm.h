@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,7 @@
 
 #include <map>
 
+#include "act/basics/msg_handler.h"
 #include "gene_pool.h"
 #include "genome.h"
 #include "initializer.h"
@@ -48,9 +49,6 @@
 #include "mutator.h"
 #include "terminator.h"
 #include "penalizer.h"
-
-struct gmx_output_env_t;
-struct t_commrec;
 
 namespace ga
 {
@@ -122,12 +120,14 @@ public:
     void updateGenePool(const GenePool &gpin);
  
     /*! \brief Evolve the initial population
+     * \param[in]  msghandler Message and status handler
      * \param[out] bestGenome The best genome(s) found during the evolution (for different datasets, if applicable).
      *                        Comes in as an empty map, and subclasses of GeneticAlgorithm will fill it for the
      *                        datasets according to their configuration
      * \return whether a genome with better fitness (for training set) was found.
      */
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome) = 0;
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome) = 0;
 
     /*! \brief Retrieve the last population (to be called after evolve,
      * otherwise undersired behavior will occur)

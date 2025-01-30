@@ -21,7 +21,7 @@
   <Int64 Name="No input to generate a topology">1</Int64>
   <Int64 Name="Fragment Handler could not make topologies">1</Int64>
   <Int64 Name="Compound not in training set">1</Int64>
-  <Int64 Name="No experimental data">1</Int64>
+  <Int64 Name="No data">1</Int64>
   <Int64 Name="Generating shells">1</Int64>
   <Int64 Name="Generating bonds">1</Int64>
   <Int64 Name="Communicating MolProp">1</Int64>
@@ -32,4 +32,7 @@
   <Int64 Name="NotSupportedAngle">1</Int64>
   <Int64 Name="NotSupportedLinearAngle">1</Int64>
   <Int64 Name="NotSupportedDihedral">1</Int64>
+  <Int64 Name="Missing parameter in force field">1</Int64>
+  <Int64 Name="Minimization failed">1</Int64>
+  <Int64 Name="Information">1</Int64>
 </ReferenceData>

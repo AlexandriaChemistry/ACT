@@ -64,6 +64,7 @@ namespace alexandria
         size_t                             natoms_ = 0;
     public:
         /*! Constructor
+         * \param[in] msghandler    Message handler
          * \param[in] pd            Force field data
          * \param[in] coordinates   The atomic coordinates, may be extended if shells are present.
          * \param[in] atoms         The ActAtoms
@@ -71,7 +72,8 @@ namespace alexandria
          * \param[in] fragments     The fragmentation information
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(ForceField                   *pd,
+        FragmentHandler(MsgHandler                   *msghandler,
+                        ForceField                   *pd,
                         const std::vector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>   &atoms,
                         const std::vector<Bond>      &bonds,

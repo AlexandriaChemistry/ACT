@@ -83,6 +83,7 @@ int min_complex(int argc, char *argv[])
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" }
     };
+    MsgHandler               msghandler;
     SimulationConfigHandler  sch;
     sch.add_options(&pa, &fnm);
     sch.add_MD_options(&pa);
@@ -95,6 +96,9 @@ int min_complex(int argc, char *argv[])
         status = 1;
         return status;
     }
+    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
+    FILE *logFile   = gmx_ffopen(logFileName, "w");
+    msghandler.setFilePointer(logFile);
     sch.check_pargs();
 
     ForceField        pd;
@@ -105,8 +109,6 @@ int min_complex(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-    FILE *logFile   = gmx_ffopen(logFileName, "w");
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
@@ -130,19 +132,18 @@ int min_complex(int argc, char *argv[])
         clear_mat(box);
         actmol.Merge(&(*mp));
     
-        ACTMessage imm = ACTMessage::OK;
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
+        actmol.GenerateTopology(&msghandler, &pd, missingParameters::Error);
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-        if (ACTMessage::OK == imm)
+        if (msghandler.ok())
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             
             std::vector<double> myq;
             auto alg   = pd.chargeGenerationAlgorithm();
             auto qtype = qType::Calc;
-            imm        = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+            actmol.GenerateCharges(&msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
-        if (ACTMessage::OK == imm)
+        if (msghandler.ok())
         {
             auto eMin = eMinimizeStatus::OK;
             /* Generate output file for debugging if requested */

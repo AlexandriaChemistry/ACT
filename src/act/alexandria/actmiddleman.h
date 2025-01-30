@@ -88,8 +88,10 @@ namespace alexandria
                      gmx_output_env_t     *oenv,
                      bool                  openConvFiles);
         
-        //! \brief Run the middleman process
-        void run();
+        /*! \brief Run the helper process
+         * \param[in] msghandler Message and status handler
+         */
+        void run(MsgHandler *msghandler);
 
         //! Print the MCMC statistics if appropriate
         void printStatistics(FILE *logFile);

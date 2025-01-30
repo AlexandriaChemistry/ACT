@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,12 +32,12 @@
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
-#include "act/forces/forcecomputerimpl.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/forcecomputerimpl.h"
+#include "act/qgen/qtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "act/qgen/qtype.h"
 
 namespace alexandria
 {
@@ -301,7 +301,8 @@ Potential ForceComputer::ftype(const ForceField *pd,
     return ftype;
 }
 
-void ForceComputer::plot(const ForceField  *pd,
+void ForceComputer::plot(MsgHandler        *msghandler,
+                         const ForceField  *pd,
                          InteractionType    itype) const
 {
     if (!pd->interactionPresent(itype))
@@ -403,7 +404,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::ELECTROSTATICS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     // First atom is zero, second must be the other particle
                     size_t jatom = 1+top.atoms()[0].shells().size();
@@ -467,7 +469,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::ANGLES:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
@@ -486,7 +489,8 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
@@ -504,7 +508,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
@@ -522,7 +527,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;

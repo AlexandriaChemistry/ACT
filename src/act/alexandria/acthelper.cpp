@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -45,7 +45,7 @@ ACTHelper::ACTHelper(StaticIndividualInfo *sii,
     fitComp_   = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
 }
 
-void ACTHelper::run()
+void ACTHelper::run(MsgHandler *msghandler)
 {
     // H E L P E R   N O D E
     CalcDev cd = CalcDev::Compute;
@@ -72,7 +72,7 @@ void ACTHelper::run()
             // Evaluate on my part of the dataset. The second flag
             // is not used inside the routine for helper, instead a
             // new dataset is distributed from the master or middlemen.
-            (void) fitComp_->calcDeviation(cd, iMolSelect::Train);
+            (void) fitComp_->calcDeviation(msghandler, cd, iMolSelect::Train);
             break;
         case CalcDev::ComputeAll:
         case CalcDev::Stop:

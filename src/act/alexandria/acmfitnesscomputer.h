@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -113,14 +113,14 @@ public:
     }
 
     /*! \brief Do the actual computation
+     * \param[in] msghandler Message Handler
      * \param[in] genome    The genome
      * \param[in] trgtFit   The selection to compute
      * \param[in] forceComp The force computer
-     * \param[in] verbose   Whether to print stuff
      */
-    void compute(ga::Genome    *genome,
-                 iMolSelect     trgtFit,
-                 bool           verbose = false) override;  // Does not inherit the default value, damn C++ ...
+    void compute(MsgHandler *msghandler,
+                 ga::Genome *genome,
+                 iMolSelect  trgtFit);
 
     /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] params   The force field parameters
@@ -138,11 +138,14 @@ public:
     CalcDev distributeTasks(CalcDev task);
     
     /*! \brief Computes deviation from target
-     * \param[in] ims      The dataset to do computations on
+     * \param[in] msghandler Message Handler
+     * \param[in] task       The task at hand
+     * \param[in] ims        The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(CalcDev    task,
-                         iMolSelect ims);
+    double calcDeviation(MsgHandler *msghandler,
+                         CalcDev     task,
+                         iMolSelect  ims);
 
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }

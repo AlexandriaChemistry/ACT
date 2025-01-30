@@ -39,22 +39,21 @@
 
 #include <vector>
 
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/bayes.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputer.h"
+#include "act/ga/genetic_algorithm.h"
+#include "act/ga/mutator.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/unique_cptr.h"
-
-#include "molgen.h"
-#include "bayes.h"
-#include "staticindividualinfo.h"
-#include "acmfitnesscomputer.h"
-#include "acminitializer.h"
-#include "act/utility/communicationrecord.h"
-#include "act/forces/forcecomputer.h"
-#include "act/ga/mutator.h"
-#include "act/ga/genetic_algorithm.h"
-
 
 namespace alexandria
 {
@@ -79,14 +78,12 @@ private:
     bool bRemoveMol_ = true;
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool flush_ = false;
-    //! Print extra stuff during the optimization
-    bool verbose_ = false;
-    //! Pointer to log file
-    gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! ACT Communication data structure
     CommunicationRecord   commRec_;
     //! GROMACS output environment
     gmx_output_env_t     *oenv_ = nullptr;
+    //! Message handler
+    MsgHandler            msghandler_;
     //! MolGen instance
     MolGen                mg_;
     //! BayesConfigHandler instance
@@ -148,14 +145,8 @@ public:
      */
     void optionsFinished(const std::vector<t_filenm> &filenames);
 
-    /*! \brief Routine that opens a log file
-     * \param[in] filenms The file names
-     */
-    void openLogFile(const std::vector<t_filenm> &filenms);
-
-    //! \return a file pointer to the open logfile
-    FILE *logFile();
-
+    //! \return the message handler
+    MsgHandler *msgHandler() { return &msghandler_; }
     /*! \brief Initialize charge generation
      * \param[in] ims The data set to do the work for
      */
@@ -191,11 +182,11 @@ public:
     //! \return whether or not we remove problematic compounds
     bool removeMol() const { return bRemoveMol_; }
 
-    //! \return whether or not we are in verbose mode
-    bool verbose() const { return verbose_; }
-
     const CommunicationRecord *commRec() const { return &commRec_; }
-    
+
+    //! \return The logFile pointer, may be nullptr
+    FILE *logFile() { return msghandler_.filePointer(); }    
+
     /*! \brief Set the output environment pointer \p oenv_
      * \param[in] oenv the reference pointer
      */

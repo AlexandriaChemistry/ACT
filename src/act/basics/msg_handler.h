@@ -36,9 +36,15 @@
 
 #include <cstdio>
 #include <map>
+#include <string>
+#include <vector>
+
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 
 namespace alexandria
 {
+
 enum class ACTMessage
     {
         //! Unknown error, this should not happen
@@ -102,33 +108,90 @@ enum class ACTMessage
         //! A not supported LinearAngle was found
         NotSupportedLinearAngle,
         //! A not supported Dihedral was found
-        NotSupportedDihedral
+        NotSupportedDihedral,
+        //! Missing FF parameter
+        MissingFFParameter,
+        //! Minimization failed
+        MinimizationFailed,
+        //! General FYI
+        Info
     };
 
-    extern std::map<ACTMessage, const char *> ACTMessages;
+extern std::map<ACTMessage, const char *> ACTMessages;
 
-    /*! \brief Return error message corresponding to code
-     * \param[in] actm The code
-     * \return The corresponding message
-     */
-    const char *actMessage(ACTMessage actm);
+/*! \brief Return error message corresponding to code
+ * \param[in] actm The code
+ * \return The corresponding message
+ */
+const char *actMessage(ACTMessage actm);
+
+/*! \brief enum to determine how verbose we are going to be
+ * Each level includes the previous levels as well
+ */
+enum class ACTStatus {
+    //! Only print fatal errors
+    Fatal = 0,
+    //! Errors that are not fatal at once
+    Error = 1,
+    //! Also print warnings
+    Warning = 2,
+    //! Give more output
+    Verbose = 3,
+    //! Print debugging messages as well
+    Debug = 4
+};
 
 /*! \brief Simple class to print message to a file or stdout
- * Verbosity level can be set.
+ * ACTStatus level can be set.
  * Messages are counted and can be summarized
  */
 class MsgHandler
     {
     private:
         //! File pointer to write stuff to
-        FILE         *fp_      = nullptr;
-        //! Verbosity level
-        bool          verbose_ = false;
+        FILE         *fp_          = nullptr;
+        //! File name of log file if known
+        std::string   filename_;
+        //! ACTStatus level, messages at this or lower level are printed
+        ACTStatus     printLevel_  = ACTStatus::Fatal;
+        //! Level integer for command line selection of print level
+        int           ilevel_      = 3;
+        //! Whether to flush output
+        bool          flush_       = false;
+        //! Lowest level of error encountered (lower is more severe)
+        ACTStatus     status_      = ACTStatus::Debug;
+        //! Last message reported
+        ACTMessage    last_;
         //! Warning count per type
         std::map<ACTMessage, unsigned int> wcount_;
+        /*! \brief Fatal error message, will throw a fatal error
+         * \param[in] level Seriousness
+         * \param[in] actm  The message type
+         * \param[in] msg   Additional information to provide
+         */
+        void print(ACTStatus   level,
+                   ACTMessage  actm,
+                   const char *msg) const;
     public:
         //! Constructor
         MsgHandler();
+
+        /*! Destructor
+         * If we are responsible for opening the file, close it as well.
+         */
+        ~MsgHandler();
+
+        /*! \brief Add command-line options
+         * \param[in] pargs  Command line flags
+         * \param[in] filenm Filenames
+         * \param[in] defaultLogName Variable name says it all
+         */
+        void addOptions(std::vector<t_pargs>      *pargs,
+                        std::vector<t_filenm>     *filenm,
+                        const std::string         &defaultLogName);
+
+        //! \brief Check and evaluate command line options
+        void optionsFinished(const std::vector<t_filenm> &filenm);
 
         /*! \brief Set the file pointer
          * \param[in] fp the file pointer
@@ -137,32 +200,70 @@ class MsgHandler
         {
             fp_ = fp;
         }
-        /*! Set verbosity level
+
+        //! \return the internal file pointer. It may be a nullptr.
+        FILE *filePointer() const { return fp_; }
+
+        /*! \brief Set the file name and open it
+         * \param[in] fn the file name
+         */
+        void setFileName(const std::string &fn);
+
+        //! \return the file name (may be empty)
+        std::string filename() const { return filename_; }
+
+        /*! Set verbosity level for printing
          * \param[in] verbose Whether or not to print a lot
          */
-        void setVerbosity(bool verbose) { verbose_ = verbose; }
+        void setPrintLevel(ACTStatus level) { printLevel_ = level; }
+
         //! \return the current verbosity level
-        bool verbose() const { return verbose_; }
+        ACTStatus printLevel() const { return printLevel_; }
+
+        //! \brief Reset severity level
+        void resetStatus() { status_ = ACTStatus::Debug; }
+
         /*! \brief Fatal error message, will throw a fatal error
          * \param[in] actm The message type
          * \param[in] msg  Additional information to provide
          */
         void fatal(ACTMessage  actm,
-                   const char *msg) const;
+                   const char *msg);
+
         /*! \brief Fatal error message, will throw a fatal error
          * \param[in] actm The message type
          * \param[in] msg  Additional information to provide
          */
         void fatal(ACTMessage         actm,
-                   const std::string &msg) const { fatal(actm, msg.c_str()); }
-        /*! \brief Warning message, will only print if verbose, but type will be logged
-         * \param[in] actm The message type
-         * \param[in] msg  Additional information to provide
+                   const std::string &msg) { fatal(actm, msg.c_str()); }
+
+        /*! \brief Message, will only print if verbosity level
+         * is at least what has been configure but type will be logged
+         * \param[in] level The verbosity of this message
+         * \param[in] actm  The message type
+         * \param[in] msg   Additional information to provide
          */
-        void warning(ACTMessage         actm,
-                     const std::string &msg);
-        //! \brief Print summary of warnings to file pointer or stdout, independent of verbosity
+        void msg(ACTStatus          level,
+                 ACTMessage         actm,
+                 const std::string &msg);
+
+        //! \return Level of severity encountered
+        ACTStatus status() const { return status_; }
+
+        //! \return whether the status is above error level 
+        bool ok() const { return status_ > ACTStatus::Error; }
+
+        //! \return whether we are in a verbose mode
+        bool verbose() const { return status_ > ACTStatus::Warning; }
+
+        //! \return ID of last message
+        ACTMessage last() const { return last_; }
+
+        /*! \brief Print summary of warnings to file pointer or stdout
+         * independent of verbosity.
+         */
         void summary() const;
+
         //! \return warning count
         unsigned int warningCount(ACTMessage actm) { return wcount_[actm]; }
     };

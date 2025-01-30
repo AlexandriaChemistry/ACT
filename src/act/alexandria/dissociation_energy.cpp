@@ -336,11 +336,14 @@ double getDissociationEnergy(FILE                *fplog,
     std::map<iqmType, double> tmap = {
         { iqmType::QM, 0 }, { iqmType::Both, -1 }
     };
+    MsgHandler msghandler;
+    msghandler.setFilePointer(fplog);
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto actmol = &((*molset)[i]);
-        if (ACTMessage::OK == actmol->getExpProps(pd, myprops, tmap[iqm]))
+        actmol->getExpProps(&msghandler, pd, myprops, tmap[iqm]);
+        if (msghandler.ok())
         {
             double deltaE0;
             if (actmol->energy(MolPropObservable::DELTAE0, &deltaE0))
@@ -351,7 +354,8 @@ double getDissociationEnergy(FILE                *fplog,
     }
     if (hasExpData.size() < 2)
     {
-        fprintf(fplog, "Not enough molecules with experimental data to determine dissocation energy.\n");
+        msghandler.msg(ACTStatus::Error, ACTMessage::Info,
+                       "Not enough molecules with experimental data to determine dissocation energy.");
         return -1;
     }
     // Call the low level routine once to get optimal values and to
@@ -361,7 +365,8 @@ double getDissociationEnergy(FILE                *fplog,
     double                          rmsd = 0;
     if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
     {
-        gmx_fatal(FARGS, "Cannot solve the matrix equations for determining the dissociation energies");
+        msghandler.msg(ACTStatus::Fatal, ACTMessage::Info,
+                       "Cannot solve the matrix equations for determining the dissociation energies");
     }
     // Now run the bootstrapping
     std::map<Identifier, gmx_stats> edissoc_bootstrap;

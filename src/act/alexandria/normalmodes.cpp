@@ -93,6 +93,7 @@ int nma(int argc, char *argv[])
     SimulationConfigHandler  sch;
     sch.setMinimize(true);
     sch.add_options(&pa, &fnm);
+    MsgHandler msghandler;
     CompoundReader compR;
     compR.addOptions(&pa, &fnm, &desc);
     int status = 0;
@@ -102,8 +103,11 @@ int nma(int argc, char *argv[])
     {
         return 1;
     }
+    msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
+
     sch.check_pargs();
-    if (!compR.optionsOK(fnm))
+    compR.optionsOK(&msghandler, fnm);
+    if (!msghandler.ok())
     {
         return 1;
     }
@@ -116,16 +120,15 @@ int nma(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-    FILE *logFile   = gmx_ffopen(logFileName, "w");
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        printf("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
+        msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                       gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g",
+                                         shellToler));
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa, fnm);
-    compR.setLogfile(logFile);
+    print_header(msghandler.filePointer(), pa, fnm);
     
     JsonTree jtree("simulate");
     if (verbose)
@@ -133,13 +136,12 @@ int nma(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
     if (actmols.empty())
     {
         return 1;
     }
     auto &actmol = actmols[0];
-    std::vector<gmx::RVec> coords = actmol.xOriginal();
 
     if (debug)
     {
@@ -147,62 +149,59 @@ int nma(int argc, char *argv[])
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */
-    if (actmol.errors().empty())
+    MolHandler molhandler;
+    std::vector<gmx::RVec> coords = actmol.xOriginal();
+    std::vector<gmx::RVec> xmin   = coords;
+    if (sch.minimize())
     {
-        MolHandler molhandler;
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
-        std::vector<gmx::RVec> xmin   = coords;
-        if (sch.minimize())
-        {
-            std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                  &xmin, &energies, logFile, {});
-            if (eMinimizeStatus::OK == eMin)
-            {
-                auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                fprintf(logFile, "Final energy: %g. RMSD wrt original structure %g nm.\n",
-                        energies[InteractionType::EPOT], rmsd);
-                JsonTree jtener("Energies");
-                std::string unit("kJ/mol");
-                for (const auto &ener : energies)
-                {
-                    jtener.addValueUnit(interactionTypeToString(ener.first),
-                                        gmx_ftoa(ener.second), unit);
-                }
-                jtree.addObject(jtener);
-
-                auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-                if (confout)
-                {
-                    matrix box;
-                    clear_mat(box);
-                    // TODO This will crash
-                    write_sto_conf(confout, actmol.getMolname().c_str(),
-                                   nullptr,
-                                   as_rvec_array(xmin.data()), nullptr,
-                                   epbcNONE, box);
-                }
-            }
-        }
-        else
-        {
-            fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
-        }
+        std::map<InteractionType, double> energies;
+        eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
+                                              &xmin, &energies, msghandler.filePointer(), {});
         if (eMinimizeStatus::OK == eMin)
         {
-            AtomizationEnergy        atomenergy;
-            doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
-                                atomenergy, nullptr, &jtree,
-                                opt2fn_null("-ir", fnm.size(), fnm.data()),
-                                    linewidth, oenv, verbose);
+            auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
+            msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                           gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
+                                             energies[InteractionType::EPOT], rmsd));
+            JsonTree jtener("Energies");
+            std::string unit("kJ/mol");
+            for (const auto &ener : energies)
+            {
+                jtener.addValueUnit(interactionTypeToString(ener.first),
+                                    gmx_ftoa(ener.second), unit);
+            }
+            jtree.addObject(jtener);
+
+            auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
+            if (confout)
+            {
+                matrix box;
+                clear_mat(box);
+                // TODO This will crash
+                write_sto_conf(confout, actmol.getMolname().c_str(),
+                               nullptr,
+                               as_rvec_array(xmin.data()), nullptr,
+                               epbcNONE, box);
+            }
         }
+    }
+    else
+    {
+        fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
+    }
+    if (eMinimizeStatus::OK == eMin)
+    {
+        AtomizationEnergy        atomenergy;
+        doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
+                            atomenergy, nullptr, &jtree,
+                            opt2fn_null("-ir", fnm.size(), fnm.data()),
+                            linewidth, oenv, verbose);
     }
 
     if (eMinimizeStatus::OK != eMin)
     {
-        fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                eMinimizeStatusToString(eMin).c_str(),
-                logFileName);
+        msghandler.msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
+                       gmx::formatString("check log file %s", msghandler.filename().c_str()));
         status = 1;
     }
 
@@ -212,9 +211,8 @@ int nma(int argc, char *argv[])
     }
     else
     {
-        jtree.fwrite(logFile, json);
+        jtree.fwrite(msghandler.filePointer(), json);
     }
-    gmx_ffclose(logFile);
     return status;
 }
 

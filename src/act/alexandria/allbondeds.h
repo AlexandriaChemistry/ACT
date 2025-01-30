@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -134,17 +134,17 @@ namespace alexandria
         //! Spacing for dihedrals in degrees
         real                                               dspacing_  = 1;
         /*! \brief Add bonds etc. for one molecule and list of atoms
-         * \param[in] fplog   File to print information
+         * \param[in] msghandler Message handler
          * \param[in] iType   InteractionType
          * \param[in] mmi     Molecule structure
          * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
           */
-        void addBonded(FILE                           *fplog, 
-                       InteractionType                 iType,
-                       const ACTMol                    &mmi,
-                       const Identifier               &bondId,         
-                       const std::vector<int>         &atomid);
+        void addBonded(MsgHandler             *msghandler,
+                       InteractionType         iType,
+                       const ACTMol           &mmi,
+                       const Identifier       &bondId,         
+                       const std::vector<int> &atomid);
 
     public:
         //! Constructor
@@ -168,13 +168,13 @@ namespace alexandria
                               ForceField *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
-         * \param[in]  fp     File pointer for information
+         * \param[in]  msghandler Message handler
          * \param[in]  mp     MolProp array
          * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
-        void extractGeometries(FILE                       *fp,
+        void extractGeometries(MsgHandler                 *msghandler,
                                const std::vector<MolProp> &mp,
                                std::vector<ACTMol>        *actmols,
                                ForceField                 *pd,

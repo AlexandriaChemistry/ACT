@@ -141,6 +141,7 @@ protected:
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
+        MsgHandler msghandler;
         if (readOK)
         {
             for(auto &molprop: molprops)
@@ -148,19 +149,20 @@ protected:
                 ACTMol mm;
                 mm.Merge(&molprop);
                 // Generate charges and topology
-                auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Ignore);
-                EXPECT_TRUE(ACTMessage::OK == imm);
-                if (ACTMessage::OK != imm)
+                mm.GenerateTopology(&msghandler, pd,
+                                    missingParameters::Ignore);
+                EXPECT_TRUE(msghandler.ok());
+                if (!msghandler.ok())
                 {
-                    fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                            actMessage(imm), basis.c_str(), method.c_str());
                     return;
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
-                mps.push_back(mm);
+                mm.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+                if (msghandler.ok())
+                {
+                    mps.push_back(mm);
+                }
             }
         }
         

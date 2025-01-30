@@ -140,6 +140,7 @@ private:
 
     /*!
      * \brief Take a step of MCMC by attempting to alter a parameter
+     * \param[in]  msghandler The message and status handler
      * \param[inout] genome         pointer to a genome
      * \param[out] bestGenome       pointer to the best genome, to be filled
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
@@ -149,7 +150,8 @@ private:
      * \param[in] checkPoint        whether or not to checkpoint during optimization
      * \param[in] beta0             pointer to beta for annealing
      */
-    void stepMCMC(ga::Genome                   *genome,
+    void stepMCMC(MsgHandler                   *msghandler,
+                  ga::Genome                   *genome,
                   ga::Genome                   *bestGenome,
                   std::map<iMolSelect, double> *prevEval,
                   size_t                        pp,
@@ -184,12 +186,14 @@ public:
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
+     * \param[in]  msghandler The message and status handler
      * \param[in]  genome     pointer to the genome
      * \param[out] bestGenome pointer to the best genome
      * \param[in]  prMut      Probability for mutation. 
      *                   Abused as a boolean for evaluating the test set here, if > 0.
      */
-    virtual void mutate(ga::Genome *genome,
+    virtual void mutate(MsgHandler *msghandler,
+                        ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
 
@@ -213,11 +217,14 @@ public:
                                    const ga::Genome &bestGenome);
 
     /*!
-     * \brief Perform a sensitivity analysis by systematically changing all parameters and re-evaluating the \f$ \chi^2 \f$.
+     * \brief Perform a sensitivity analysis by systematically changing all parameters and
+     * re-evaluating the \f$ \chi^2 \f$.
+     * \param[in]  msghandler The message and status handler
      * \param[in] genome Pointer to genome
      * \param[in] ims    Dataset to perform sensitivity analysis on
      */
-    void sensitivityAnalysis(ga::Genome *genome,
+    void sensitivityAnalysis(MsgHandler *msghandler,
+                             ga::Genome *genome,
                              iMolSelect  ims);
 
     /*!

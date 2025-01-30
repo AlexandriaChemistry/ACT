@@ -38,6 +38,7 @@
 #include <string>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
@@ -58,7 +59,7 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * For polarizable models the charge of the shell are added explicitly in the list, and the same
  * goes for virtual sites. The fragment id (InChi) is used as the string in the returned map.
  *
- * \param[in] fp        File for messages, may be nullptr
+ * \param[in] msghandler The message handler
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] charge_fn The name of a molprop file
@@ -66,7 +67,7 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map.
  */
-chargeMap fetchChargeMap(FILE                        *fp,
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
@@ -74,7 +75,7 @@ chargeMap fetchChargeMap(FILE                        *fp,
                          qType                        qt = qType::ACM);
 
 /*! \brief Generate charges for all compounds in a molprop file.
- * \param[in] fp        File for messages, may be nullptr
+ * \param[in] msghandler The message handler
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] mps       Vector of molprops read previously
@@ -82,7 +83,7 @@ chargeMap fetchChargeMap(FILE                        *fp,
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map, see above.
  */
-chargeMap fetchChargeMap(FILE                        *fp,
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,

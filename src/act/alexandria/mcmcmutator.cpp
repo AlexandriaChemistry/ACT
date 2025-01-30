@@ -69,7 +69,8 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
     acceptedMoves_.resize(nParam, 0);
 }
 
-void MCMCMutator::mutate(ga::Genome        *genome,
+void MCMCMutator::mutate(MsgHandler        *msghandler,
+                         ga::Genome        *genome,
                          ga::Genome        *bestGenome,
                          gmx_unused double  prMut)
 {
@@ -102,13 +103,13 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     cd        = CalcDev::Compute;
     auto ims  = iMolSelect::Train;
     fitComp_->distributeTasks(cd);
-    auto chi2 = fitComp_->calcDeviation(cd, ims);
+    auto chi2 = fitComp_->calcDeviation(msghandler, cd, ims);
     prevEval[ims] = chi2;
     genome->setFitness(ims, chi2);
     if (evaluateTestSet_)
     {
         auto ims_test  = iMolSelect::Test;
-        auto chi2_test = fitComp_->calcDeviation(cd, ims_test);
+        auto chi2_test = fitComp_->calcDeviation(msghandler, cd, ims_test);
         prevEval[ims_test] = chi2_test;
         genome->setFitness(ims_test, chi2_test);
     }
@@ -126,7 +127,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
-            stepMCMC(genome, bestGenome, &prevEval,
+            stepMCMC(msghandler, genome, bestGenome, &prevEval,
                      pp, iter, iterOffset, bch_->checkPoint(), &beta0);
 
             // For the second half of the optimization, collect data 
@@ -163,13 +164,14 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     }
 }
 
-void MCMCMutator::stepMCMC(ga::Genome                   *genome,
+void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
+                           ga::Genome                   *genome,
                            ga::Genome                   *bestGenome,
                            std::map<iMolSelect, double> *prevEval,
                            size_t                        pp,
                            int                           iter,
                            int                           iterOffset,
-			   bool                          checkPoint,
+                           bool                          checkPoint,
                            double                       *beta0)
 {
     // Pick a random parameter index
@@ -201,7 +203,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     // Evaluate the energy on training set
     cd = CalcDev::Compute;
     (void) fitComp_->distributeTasks(cd);
-    auto chi2 = fitComp_->calcDeviation(cd, imstr);
+    auto chi2 = fitComp_->calcDeviation(msghandler, cd, imstr);
     currEval[imstr] = chi2;
     double deltaEval = chi2 - prevEval->find(imstr)->second;
     // Evaluate the energy on the test set only on whole steps!
@@ -210,7 +212,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
         currEval[imste] = prevEval->find(imste)->second;
         if (pp == 0)  // Recompute for test set
         {
-            currEval[imste] = fitComp_->calcDeviation(cd, imste);
+            currEval[imste] = fitComp_->calcDeviation(msghandler, cd, imste);
         }
     }
 
@@ -440,7 +442,8 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
     }
 }                    
 
-void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
+void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
+                                      ga::Genome *genome,
                                       iMolSelect  ims)
 {
     
@@ -457,7 +460,7 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     sii_->updateForceField(changed, genome->bases());
     auto cdc    = CalcDev::Compute;
     fitComp_->distributeTasks(cdc);
-    auto chi2_0 = fitComp_->calcDeviation(cdc, ims);
+    auto chi2_0 = fitComp_->calcDeviation(msghandler, cdc, ims);
     if (logfile_)
     {
         fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
@@ -477,15 +480,15 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
         (*param)[i]     = pmin;
         sii_->updateForceField(changed, *param);
         fitComp_->distributeTasks(cdc);
-        s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
+        s.add((*param)[i], fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = p_0;
         sii_->updateForceField(changed, *param);
         fitComp_->distributeTasks(cdc);
-        s.add((*param)[i], fitComp_->calcDeviation(cdc, ims));
+        s.add((*param)[i], fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = pmax;
         sii_->updateForceField(changed, *param);
         fitComp_->distributeTasks(cdc);
-        s.add((*param)[i],  fitComp_->calcDeviation(cdc, ims));
+        s.add((*param)[i],  fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = pstore;
         sii_->updateForceField(changed, *param);
         s.computeForceConstants(logfile_);

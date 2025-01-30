@@ -21,7 +21,7 @@
   <String Name="17">No input to generate a topology</String>
   <String Name="18">Fragment Handler could not make topologies</String>
   <String Name="19">Compound not in training set</String>
-  <String Name="20">No experimental data</String>
+  <String Name="20">No data</String>
   <String Name="21">Generating shells</String>
   <String Name="22">Generating bonds</String>
   <String Name="23">Communicating MolProp</String>
@@ -32,4 +32,7 @@
   <String Name="28">NotSupportedAngle</String>
   <String Name="29">NotSupportedLinearAngle</String>
   <String Name="30">NotSupportedDihedral</String>
+  <String Name="31">Missing parameter in force field</String>
+  <String Name="32">Minimization failed</String>
+  <String Name="33">Information</String>
 </ReferenceData>

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -33,7 +33,7 @@
 #ifndef ACT_ACTHELPER_H
 #define ACT_ACTHELPER_H
 
-#include "gromacs/mdtypes/commrec.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 
 namespace alexandria
@@ -64,8 +64,10 @@ namespace alexandria
                   double                shellToler,
                   int                   shellMaxIter);
         
-        //! \brief Run the helper process
-        void run();    
+        /*! \brief Run the helper process
+         * \param[in] msghandler Message and status handler
+         */
+        void run(MsgHandler *msghandler);    
     };
     
 } // namespace alexandria

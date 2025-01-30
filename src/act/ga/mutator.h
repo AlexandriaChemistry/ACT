@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,7 +35,8 @@
 #include <random>
 #include <time.h>
 
-#include "genome.h"
+#include "act/basics/msg_handler.h"
+#include "act/ga/genome.h"
 
 namespace ga
 {
@@ -68,15 +69,26 @@ public:
 
     /*!
      * \brief Mutate genes of a Genome (in place)
+     * \param[in]  msghandler The message and status handler
      * \param[inout] genome     Pointer to the genome to mutate
      * \param[out]   bestGenome Pointer to the best genome found
      * \param[in]    prMut      Probability of mutating a gene
      */
-    virtual void mutate(Genome *genome,
-                        Genome *bestGenome,
-                        double  prMut) = 0;
+    virtual void mutate(alexandria::MsgHandler *msghandler,
+                        Genome                 *genome,
+                        Genome                 *bestGenome,
+                        double                  prMut) = 0;
 
-    virtual void sensitivityAnalysis(Genome *bestGenome, iMolSelect ims) = 0;
+    /*!
+     * \brief Perform a sensitivity analysis by systematically changing all parameters and
+     * re-evaluating the \f$ \chi^2 \f$.
+     * \param[in]  msghandler The message and status handler
+     * \param[in] genome Pointer to genome
+     * \param[in] ims    Dataset to perform sensitivity analysis on
+     */
+    virtual void sensitivityAnalysis(alexandria::MsgHandler *msghandler,
+                                     Genome                 *bestGenome,
+                                     iMolSelect              ims) = 0;
 
     virtual bool foundMinimum() = 0;
 };

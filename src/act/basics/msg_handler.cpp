@@ -34,8 +34,12 @@
 
 #include "msg_handler.h"
 
+#include <cstdio>
 #include <cstdlib>
 
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
@@ -61,7 +65,7 @@ std::map<ACTMessage, const char *> ACTMessages = {
     { ACTMessage::FragmentHandler,          "Fragment Handler could not make topologies" },
     { ACTMessage::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
     { ACTMessage::Test,                     "Compound not in training set" },
-    { ACTMessage::NoData,                   "No experimental data" },
+    { ACTMessage::NoData,                   "No data" },
     { ACTMessage::NoMolpropCharges,         "No charges in the molprop file" },
     { ACTMessage::GenShells,                "Generating shells" },
     { ACTMessage::GenBonds,                 "Generating bonds" },
@@ -72,75 +76,173 @@ std::map<ACTMessage, const char *> ACTMessages = {
     { ACTMessage::NotSupportedBond,         "NotSupportedBond" },
     { ACTMessage::NotSupportedAngle,        "NotSupportedAngle" },
     { ACTMessage::NotSupportedLinearAngle,  "NotSupportedLinearAngle" },
-    { ACTMessage::NotSupportedDihedral,     "NotSupportedDihedral" }
+    { ACTMessage::NotSupportedDihedral,     "NotSupportedDihedral" },
+    { ACTMessage::MissingFFParameter,       "Missing parameter in force field" },
+    { ACTMessage::MinimizationFailed,       "Minimization failed" },
+    { ACTMessage::Info,                     "Information" }
 };
 
-    const char *actMessage(ACTMessage actm)
+std::map<ACTStatus, const char *> statnm = {
+    { ACTStatus::Fatal, "Fatal" },
+    { ACTStatus::Error, "Error" },
+    { ACTStatus::Warning, "Warning" },
+    { ACTStatus::Verbose, "Verbose" },
+    { ACTStatus::Debug, "Debug" }
+};
+
+const char *actMessage(ACTMessage actm)
+{
+    auto m = ACTMessages.find(actm);
+    if (ACTMessages.end() == m)
     {
-        auto m = ACTMessages.find(actm);
-        if (ACTMessages.end() == m)
-        {
-            return ACTMessages[ACTMessage::Unknown];
-        }
-        else
-        {
-            return m->second;
-        }
+        return ACTMessages[ACTMessage::Unknown];
     }
+    else
+    {
+        return m->second;
+    }
+}
     
-    static std::string combine(ACTMessage  actm,
-                               const char *msg)
-    {
-        return gmx::formatString("%s: %s", ACTMessages[actm], msg);
-    }
-
-    MsgHandler::MsgHandler()
-    {
-        for(const auto actm: ACTMessages)
-        {
-            wcount_.insert( { actm.first, 0 });
-        }
-    }    
-
-    void MsgHandler::fatal(ACTMessage  actm,
-                           const char *msg) const
+void MsgHandler::print(ACTStatus   level,
+                       ACTMessage  actm,
+                       const char *msg) const
+{
+    auto mymsg = gmx::formatString("%s - %s: %s", 
+                                   statnm[level],
+                                   ACTMessages[actm], msg);
+    if (level <= printLevel_)
     {
         if (fp_)
         {
-            fprintf(fp_, "%s\n", combine(actm, msg).c_str());
-            
-            fclose(fp_);
-        }
-        fprintf(stderr, "%s\n", combine(actm, msg).c_str());
-        throw;
-    }
-
-    void MsgHandler::warning(ACTMessage  actm,
-                             const std::string &msg)
-    {
-        if (verbose_)
-        {
-            if (fp_)
+            fprintf(fp_, "%s\n", mymsg.c_str());
+            if (flush_)
             {
-                fprintf(fp_, "%s\n", combine(actm, msg.c_str()).c_str());
+                fflush(fp_);
+            }
+        }
+        else
+        {
+            if (level <= ACTStatus::Error)
+            {
+                fprintf(stderr, "%s\n", mymsg.c_str());
+                if (flush_)
+                {
+                    fflush(stderr);
+                }
             }
             else
             {
-                fprintf(stdout, "%s\n", combine(actm, msg.c_str()).c_str());
+                fprintf(stdout, "%s\n", mymsg.c_str());
+                if (flush_)
+                {
+                    fflush(stdout);
+                }
             }
         }
-        wcount_.find(actm)->second++;
     }
+}
 
-    void MsgHandler::summary() const
+MsgHandler::MsgHandler()
+{
+    for(const auto actm: ACTMessages)
     {
-        for(const auto &wc : wcount_)
+        wcount_.insert( { actm.first, 0 });
+    }
+}
+
+MsgHandler::~MsgHandler()
+{
+    if (!filename_.empty() && fp_)
+    {
+        gmx_ffclose(fp_);
+    }
+}
+
+void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
+                            std::vector<t_filenm>     *filenm,
+                            const std::string         &defaultLogName)
+{
+    pargs->push_back( { "-v", FALSE, etINT, { &ilevel_ },
+            "Verbosity level: 0 (Fatal), 1 (Error), 2 (Warning), 3 (Info), 4 (Debug)" } );
+    pargs->push_back( { "-flush", FALSE, etBOOL, {&flush_},
+            "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."} );
+
+    filenm->push_back( { efLOG, "-g", defaultLogName.c_str(), ffWRITE }); 
+}
+
+void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm)
+{
+    if (ilevel_ == 0)
+    {
+        printLevel_ = ACTStatus::Fatal;
+    }
+    else if (ilevel_ == 1)
+    {
+        printLevel_ = ACTStatus::Error;
+    }
+    else if (ilevel_ == 2)
+    {
+        printLevel_ = ACTStatus::Warning;
+    }
+    else if (ilevel_ == 3)
+    {
+        printLevel_ = ACTStatus::Verbose;
+    }
+    else
+    {
+        printLevel_ = ACTStatus::Debug;
+    }
+    std::string fn(opt2fn("-g", filenm.size(), filenm.data()));
+    setFileName(fn);
+}
+
+void MsgHandler::setFileName(const std::string &fn)
+{
+    fp_ = gmx_ffopen(fn.c_str(), "w");
+    if (!fp_)
+    {
+        fatal(ACTMessage::Info, gmx::formatString("Cannot open file '%s' for writing", fn.c_str()).c_str());
+    }
+}
+
+void MsgHandler::fatal(ACTMessage  actm,
+                       const char *msg)
+{
+    status_ = ACTStatus::Fatal;
+    print(status_, actm, msg);
+    if (fp_)
+    {
+        fclose(fp_);
+    }
+    GMX_THROW(gmx::InvalidInputError("See message above"));
+}
+
+void MsgHandler::msg(ACTStatus         level,
+                     ACTMessage        actm,
+                     const std::string &msg)
+{
+    if (level == ACTStatus::Fatal)
+    {
+        fatal(actm, msg.c_str());
+    }
+    if (level < status_)
+    {
+        status_ = level;
+    }
+    last_ = actm;
+    print(level, actm, msg.c_str());
+    wcount_.find(actm)->second++;
+}
+
+void MsgHandler::summary() const
+{
+    for(const auto &wc : wcount_)
+    {
+        if (fp_)
         {
-            if (fp_)
-            {
-                fprintf(fp_, "%s : %d\n", ACTMessages[wc.first], wc.second);
-            }
+            fprintf(fp_, "%s : %d\n", ACTMessages[wc.first], wc.second);
         }
     }
+}
 
 }
