@@ -88,23 +88,20 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
     }
 }
 
-bool CompoundReader::optionsOK(const std::vector<t_filenm> &filenm)
+void CompoundReader::optionsOK(MsgHandler                  *msghandler,
+                               const std::vector<t_filenm> &filenm)
 {
     if (strlen(filename_) == 0 && strlen(dbname_) == 0)
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Please provide either a filename (-f flag) with a compound/dimer structure to optimize or simulate, or a compound/dimer from the charges database (-db flag).\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "Please provide either a filename (-f flag) with a compound/dimer structure to optimize or simulate, or a compound/dimer from the charges database (-db flag).");
+        return;
     }
     if (strlen(filename_) != 0 && strlen(dbname_) != 0)
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Please provide just one of the flags -f and -db.\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "Please provide just one of the flags -f and -db.");
+        return;
     }
     const char *qfn = opt2fn_null("-charges", filenm.size(), filenm.data());
     if (qfn)
@@ -113,57 +110,48 @@ bool CompoundReader::optionsOK(const std::vector<t_filenm> &filenm)
     }
     if (!qmapfn_.empty() && (strlen(qcustom_) > 0 || strlen(qqm_) > 0 || genCharges_))
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "If you provide a charge map please do not provide a custom charge string or a QM charge selection or the generateCharges flag at the same time.\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "If you provide a charge map please do not provide a custom charge string or a QM charge selection or the generateCharges flag at the same time.");
+        return;
     }
     if (strlen(dbname_) > 0 && qmapfn_.empty())
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Please provide -charges flag in conjunction with -db.\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "Please provide -charges flag in conjunction with -db.");
+        return;
     }
     if (strlen(qcustom_) > 0 && strlen(qqm_) > 0)
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Please do not provide both the custom charges and the QM charge type to read.\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "Please do not provide both the custom charges and the QM charge type to read.");
+        return;
     }
     if (genCharges_ && (strlen(qcustom_) > 0 || strlen(qqm_) > 0))
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Please do not provide both the generateCharges flag and either custom charges or the QM charge type to read.\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        "Please do not provide both the generateCharges flag and either custom charges or the QM charge type to read.");
+        return;
     }
-    
-    return true;
 }
 
-bool CompoundReader::setCharges(ForceField          &pd,
+void CompoundReader::setCharges(MsgHandler          *msghandler,
+                                ForceField          &pd,
                                 ACTMol              *mol,
                                 const chargeMap     &qmap,
                                 const ForceComputer *forceComp,
                                 bool                 warnQtot)
 {
-    if (mol->totalCharge() != qtot_ && warnQtot && logFile_)
+    if (mol->totalCharge() != qtot_ && warnQtot)
     {
-        fprintf(logFile_, "WARNING: detected total charge %d, command line says %g.\n",
-                mol->totalCharge(), qtot_);
+        msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                        gmx::formatString("Detected total charge %d, command line says %g.",
+                                          mol->totalCharge(), qtot_));
     }
     
-    ACTMessage imm = mol->GenerateTopology(logFile_, &pd,
-                                          missingParameters::Error);
+    mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
 
     std::vector<gmx::RVec> coords = mol->xOriginal();
-    if (ACTMessage::OK == imm)
+    if (msghandler->ok())
     {
         auto fragments  = mol->fragmentHandler();
         if (!qmap.empty())
@@ -175,11 +163,9 @@ bool CompoundReader::setCharges(ForceField          &pd,
             }
             else
             {
-                if (logFile_)
-                {
-                    fprintf(logFile_, "CompoundReader: not all compounds present in the charge map %s\n", qmapfn_.c_str());
-                }
-                return false;
+                msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                                gmx::formatString("CompoundReader: not all compounds present in the charge map %s", qmapfn_.c_str()));
+                return;
             }
         }
         else
@@ -203,28 +189,26 @@ bool CompoundReader::setCharges(ForceField          &pd,
                 alg   = ChargeGenerationAlgorithm::Read;
                 qtype = stringToQtype(qqm_);
             }
-            if (!genCharges_ && logFile_)
+            if (!genCharges_)
             {
-                fprintf(logFile_, "WARNING: Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str());
+                msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                                gmx::formatString("Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str()));
             }
-            imm    = mol->GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+            mol->GenerateCharges(msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
     }
-    return ACTMessage::OK == imm;
 }
 
-bool CompoundReader::readFile(ForceField &pd,
+void CompoundReader::readFile(MsgHandler *msghandler,
+                              ForceField &pd,
                               ACTMol     *mol)
 {
     matrix box;
     clear_mat(box);
     if (strlen(filename_) == 0)
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Empty filename\n");
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info, "Empty filename");
+        return;
     }
     std::vector<MolProp> mps;
     double               qtot_babel = qtot_;
@@ -236,32 +220,28 @@ bool CompoundReader::readFile(ForceField &pd,
                    &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
                    addHydrogen, box, oneH_))
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Reading %s failed.\n", filename_);
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        gmx::formatString("Reading %s failed.\n", filename_));
+        return;
     }
 
-    if (mps.size() > 1 && logFile_)
+    if (mps.size() > 1)
     {
-        fprintf(logFile_, "WARNING: will only use the first compound (out of %zu) in %s\n",
-                mps.size(), filename_);
+        msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                        gmx::formatString("will only use the first compound (out of %zu) in %s\n",
+                                          mps.size(), filename_));
     }
     if (mps.size() == 0)
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Failed to import coordinate file %s using OpenBabel", filename_);
-        }
-        return false;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
+        return;
     }
     mol->Merge(&mps[0]);
-
-    return true;
 }
 
-std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
+std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
+                                         ForceField          &pd,
                                          const ForceComputer *forceComp)
 {
     std::vector<ACTMol>   mols;
@@ -271,7 +251,8 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     if (readCoordinates)
     {
         ACTMol mol;
-        if (readFile(pd, &mol))
+        readFile(msghandler, pd, &mol);
+        if (msghandler->ok())
         {
             auto fp = mol.fragmentPtr();
             if (fp)
@@ -296,40 +277,39 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
             lookup.insert(mymol);
         }
     }
-    if (logFile_)
+    if (lookup.empty())
     {
-        if (lookup.empty())
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                        gmx::formatString("CompoundReader will include all compounds from %s\n.", qmapfn_.c_str()));
+    }
+    else
+    {
+        std::string msg("CompoundReader found the following compounds:");
+        for(const auto &lu : lookup)
         {
-            fprintf(logFile_, "CompoundReader will include all compounds from %s\n.", qmapfn_.c_str());
+            msg += " " + lu;
+        }
+        if (strlen(dbname_) > 0)
+        {
+            msg += " in the charges molprop.";
         }
         else
         {
-            fprintf(logFile_, "CompoundReader found the following compounds:");
-            for(const auto &lu : lookup)
-            {
-                fprintf(logFile_, " '%s'", lu.c_str());
-            }
-            if (strlen(dbname_) > 0)
-            {
-                fprintf(logFile_, " in the charges molprop.\n");
-            }
-            else
-            {
-                fprintf(logFile_, " in %s\n", filename_);
-            }
+            msg += " in ";
+            msg += filename_;
         }
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info, msg);
     }
     chargeMap qmap;
     if (!qmapfn_.empty())
     {
         std::vector<MolProp> mps;
         MolPropRead(qmapfn_.c_str(), &mps);
-        qmap = fetchChargeMap(logFile_, &pd, forceComp, mps, lookup);
-        if (logFile_)
-        {
-            fprintf(logFile_, "CompoundReader read %lu out of %lu entries into charge map from %s\n",
-                    qmap.size(), lookup.size(), qmapfn_.c_str());
-        }
+        qmap = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup);
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                        gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
+                                          qmap.size(), lookup.size(), qmapfn_.c_str()));
+        
         // Throw away those compounds that are not in the selection
         if (!lookup.empty() && !readCoordinates)
         {
@@ -342,11 +322,9 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
                 }
                 else
                 {
-                    if (logFile_)
-                    {
-                        fprintf(logFile_, "Keeping %s (%s) from molprop file %s\n",
-                                mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str());
-                    }
+                    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                                    gmx::formatString("Keeping %s (%s) from molprop file %s\n",
+                                                      mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str()));
                     ++mp;
                 }
             }
@@ -364,10 +342,7 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
     // Did we find any molecule?
     if (mols.empty())
     {
-        if (logFile_)
-        {
-            fprintf(logFile_, "Couldn't find any molecule!\n");
-        }
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info, "Couldn't find any molecule!");
     }
     else
     {
@@ -376,13 +351,12 @@ std::vector<ACTMol> CompoundReader::read(ForceField          &pd,
         bool warnQtot = mols.size() == 1;
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
-            if (!setCharges(pd, &(*mol), qmap, forceComp, warnQtot))
+            setCharges(msghandler, pd, &(*mol), qmap, forceComp, warnQtot);
+            if (!msghandler->ok())
             {
-                if (logFile_)
-                {
-                    fprintf(logFile_, "CompoundReader could not determine charges for '%s' from '%s'\n",
-                            mol->getMolname().c_str(), filename_);
-                }
+                msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                                gmx::formatString("CompoundReader could not determine charges for '%s' from '%s'\n",
+                                                  mol->getMolname().c_str(), filename_));
                 // Prevent false positives, delete compound
                 mol = mols.erase(mol);
             }

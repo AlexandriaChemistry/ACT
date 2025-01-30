@@ -38,7 +38,8 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(ForceField                   *pd,
+FragmentHandler::FragmentHandler(MsgHandler                   *msghandler,
+                                 ForceField                   *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
@@ -51,8 +52,9 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
     if (atoms.size() != coordinates.size())
     {
-        fprintf(stderr, "Received %zu atoms and %zu coordinates in fragmenthandler. Giving up.\n",
-                atoms.size(), coordinates.size());
+        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+                        gmx::formatString("Received %zu atoms and %zu coordinates in fragmenthandler. Giving up.",
+                                          atoms.size(), coordinates.size()));
         return;
     }
     bonds_.resize(fragments->size());
@@ -120,8 +122,8 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
-        bool allParametersFound = top->build(pd, &xfrag, 175.0, 5.0, missing);
-        allWell = allWell && allParametersFound;
+        top->build(msghandler, pd, &xfrag, 175.0, 5.0, missing);
+        allWell = allWell && msghandler->ok();
         if (allWell)
         {
             // Array of total charges

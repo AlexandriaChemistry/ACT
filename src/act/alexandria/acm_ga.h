@@ -101,7 +101,8 @@ public:
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome);
 
 };
 
@@ -134,7 +135,8 @@ public:
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome);
 
 };
 

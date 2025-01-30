@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
@@ -135,11 +136,13 @@ private:
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.
+     * \param[in] msghandler Message handler
      * \param[in] pd    Pointer to force field structure
      * \param[in] itype The interaction type
      */
-    void plot(const ForceField   *pd,
-              InteractionType  itype) const;
+    void plot(MsgHandler       *msghandler,
+              const ForceField *pd,
+              InteractionType   itype) const;
 
     /*! \brief Generate vsites
      * \param[in] top         Topology

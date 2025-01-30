@@ -70,15 +70,19 @@ void initACTMol(const char          *molname,
                                 maxpot, nsymm, jobtype, userqtot,
                                 &qtot, false, box, true);
         EXPECT_TRUE(readOK);
+        MsgHandler msghandler;
+        // Uncomment in case of issues
+        // msghandler.setACTStatus(ACTStatus::Debug);
+
         if (readOK)
         {
             for(auto &molprop : molprops)
             {
                 ACTMol mm;
                 mm.Merge(&molprop);
-                auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Ignore);
-                EXPECT_TRUE(ACTMessage::OK ==imm);
+                mm.GenerateTopology(&msghandler, pd,
+                                    missingParameters::Ignore);
+                EXPECT_TRUE(msghandler.ok());
                 std::map<MolPropObservable, iqmType> iqmMap = 
                     {
                         { MolPropObservable::DELTAE0,           iqmType::QM },
@@ -91,11 +95,17 @@ void initACTMol(const char          *molname,
                         { MolPropObservable::POLARIZABILITY,    iqmType::QM },
                         { MolPropObservable::CHARGE,            iqmType::QM }
                     };
-                imm = mm.getExpProps(pd, iqmMap, 0);
-                std::vector<gmx::RVec> forces(mm.atomsConst().size());
-                std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
-                mps->push_back(mm);
+                mm.getExpProps(&msghandler, pd, iqmMap, 0);
+                if (msghandler.ok())
+                {
+                    std::vector<gmx::RVec> forces(mm.atomsConst().size());
+                    std::vector<gmx::RVec> coords = mm.xOriginal();
+                    mm.GenerateCharges(&msghandler, pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
+                }
+                if (msghandler.ok())
+                {
+                    mps->push_back(mm);
+                }
             }
         }
     }    

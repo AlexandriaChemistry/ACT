@@ -47,9 +47,9 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Genome    *genome,
-                                 iMolSelect     trgtFit,
-                                 bool           verbose)
+void ACMFitnessComputer::compute(MsgHandler *msghandler,
+                                 ga::Genome *genome,
+                                 iMolSelect  trgtFit)
 {
     if (nullptr == genome)
     {
@@ -61,14 +61,15 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
     distributeParameters(genome->basesPtr(), changed);
     // Then do the computation
     auto cd = distributeTasks(CalcDev::Compute);
-    double fitness = calcDeviation(cd, trgtFit);
+    double fitness = calcDeviation(msghandler, cd, trgtFit);
     genome->setFitness(trgtFit, fitness);
     if (debug)
     {
         // TODO fix printing
         //tmpInd->printParameters(debug);
     }
-    if (verbose && logfile_)
+    auto fp = msghandler->filePointer();
+    if (fp)
     {
         const auto &targets = sii_->targets();
         if (targets.empty())
@@ -81,10 +82,10 @@ void ACMFitnessComputer::compute(ga::Genome    *genome,
             auto fts = ttt->second;
             if (!fts.empty())
             {
-                fprintf(logfile_, "Components of training function for %s set\n", iMolSelectName(trgtFit));
+                fprintf(fp, "Components of training function for %s set\n", iMolSelectName(trgtFit));
                 for (const auto &ft : fts)
                 {
-                    ft.second.print(logfile_);
+                    ft.second.print(fp);
                 }
             }
         }
@@ -160,8 +161,9 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
     }
 }
 
-double ACMFitnessComputer::calcDeviation(CalcDev    task,
-                                         iMolSelect ims)
+double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
+                                         CalcDev     task,
+                                         iMolSelect  ims)
 {
     if (debug)
     {
@@ -236,11 +238,11 @@ double ACMFitnessComputer::calcDeviation(CalcDev    task,
                 }
             }
             // Now update the topology
-            actmol->topologyPtr()->fillParameters(sii_->forcefield(), missingParameters::Error);
+            actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft->fillParameters(sii_->forcefield(), missingParameters::Error);
+                ft->fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
             }
 
             // Run charge generation including shell minimization

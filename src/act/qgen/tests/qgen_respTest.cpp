@@ -121,9 +121,10 @@ protected:
         std::string   basis("Gen");
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
-        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Ignore);
-        EXPECT_TRUE(ACTMessage::OK == imm);
-        if (ACTMessage::OK != imm)
+        MsgHandler msghandler;
+        mp.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+        EXPECT_TRUE(msghandler.ok());
+        if (!msghandler.ok())
         {
             return;
         }
@@ -141,11 +142,11 @@ protected:
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::POTENTIAL, iqmType::QM }
         };
-        mp.getExpProps(pd, iqm, 0, 100);
+        mp.getExpProps(&msghandler, pd, iqm, 0, 100);
 
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
-        mp.GenerateCharges(pd, forceComp, ChargeGenerationAlgorithm::ESP,
+        mp.GenerateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
                            qType::ESP, qcustom, &coords, &forces, true);
         
         std::vector<double> qtotValues;

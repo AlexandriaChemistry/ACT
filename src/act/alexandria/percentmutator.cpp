@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -39,9 +39,10 @@
 namespace alexandria
 {
 
-void PercentMutator::mutate(ga::Genome *genome,
+void PercentMutator::mutate(gmx_unused MsgHandler *msghandler,
+                            ga::Genome            *genome,
                             gmx_unused ga::Genome *bestGenome,
-                            double      prMut)
+                            double                 prMut)
 {
     const std::vector<double> oldParam = genome->bases();
     const std::vector<double> lb = sii_->lowerBound();

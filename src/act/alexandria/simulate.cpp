@@ -113,22 +113,24 @@ int simulate(int argc, char *argv[])
     {
         return 1;
     }
+    MsgHandler msghandler;
+    msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
+
     sch.check_pargs();
-    if (!compR.optionsOK(fnm))
+    compR.optionsOK(&msghandler, fnm);
+    if (!msghandler.ok())
     {
         return 1;
     }
     gendimers.finishOptions(fnm);
 
-    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-    FILE *logFile   = gmx_ffopen(logFileName, "w");
-    print_header(logFile, pa, fnm);
-    compR.setLogfile(logFile);
+    print_header(msghandler.filePointer(), pa, fnm);
 
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        fprintf(logFile, "\nShell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
+        msghandler.msg(ACTStatus::Warning, ACTMessage::Info,
+                       gmx::formatString("\nShell tolerance larger than atom tolerance, changing it to %g\n", shellToler));
     }
     ForceField        pd;
     try
@@ -139,7 +141,7 @@ int simulate(int argc, char *argv[])
     (void) pd.verifyCheckSum(stderr);
 
     auto forceComp = new ForceComputer(shellToler, sch.maxIter());
-    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
     if (actmols.empty())
     {
         fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
@@ -185,9 +187,9 @@ int simulate(int argc, char *argv[])
     {
         rerun.setFunctions(forceComp, &gendimers, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-        rerun.rerun(logFile, &pd, &actmol, verbose);
+        rerun.rerun(msghandler.filePointer(), &pd, &actmol, verbose);
     }
-    else if (actmol.errors().empty())
+    else
     {
         MolHandler molhandler;
         std::vector<gmx::RVec> coords = actmol.xOriginal();
@@ -227,12 +229,13 @@ int simulate(int argc, char *argv[])
                 jtree.addObject(jtener);
             }
             eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                  &xmin, &energies, logFile, freeze);
+                                                  &xmin, &energies, msghandler.filePointer(), freeze);
             if (eMinimizeStatus::OK == eMin)
             {
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                fprintf(logFile, "Final energy: %g RMSD wrt original structure %g nm.\n",
-                        energies[InteractionType::EPOT], rmsd);
+                msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                               gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
+                                                 energies[InteractionType::EPOT], rmsd));
                 auto nfrag = actmol.fragmentHandler()->topologies().size();
                 printf("There are %lu fragments\n", nfrag);
                 if (nfrag == 2)
@@ -243,8 +246,9 @@ int simulate(int argc, char *argv[])
                                                       &interactionForces, &xmin, true);
                     for(const auto &ei : einter)
                     {
-                        fprintf(logFile, "Interaction energy %s: %g\n",
-                                interactionTypeToString(ei.first).c_str(), ei.second);
+                        msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                                       gmx::formatString("Interaction energy %s: %g",
+                                                         interactionTypeToString(ei.first).c_str(), ei.second));
                     }
                 }
                 JsonTree jtener("Energies after");
@@ -260,7 +264,7 @@ int simulate(int argc, char *argv[])
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {
-            molhandler.simulate(&pd, &actmol, forceComp, sch, logFile,
+            molhandler.simulate(&pd, &actmol, forceComp, sch, msghandler.filePointer(),
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
                                 oenv);
@@ -278,17 +282,14 @@ int simulate(int argc, char *argv[])
     {
         fprintf(stderr, "Minimization failed: %s, check log file %s\n",
                 eMinimizeStatusToString(eMin).c_str(),
-                logFileName);
+                msghandler.filename().c_str());
         status = 1;
     }
     else if (ACTMessage::OK != imm)
     {
-        fprintf(stderr, "\nFatal Error. Please check the log file %s for error messages.\n", logFileName);
-        fprintf(logFile, "%s\n", actMessage(imm));
-        for(const auto &err: actmol.errors())
-        {
-            fprintf(logFile, "%s\n", err.c_str());
-        }
+        msghandler.msg(ACTStatus::Error, ACTMessage::MinimizationFailed,
+                       gmx::formatString("Please check the log file %s for error messages.\n",
+                                         msghandler.filename().c_str()));
         status = 1;
     }
     if (json)
@@ -297,12 +298,11 @@ int simulate(int argc, char *argv[])
     }
     else
     {
-        jtree.fwrite(logFile, json);
+        jtree.fwrite(msghandler.filePointer(), json);
     }
-    gmx_ffclose(logFile);
-    if (ACTMessage::OK != imm)
+    if (!msghandler.ok())
     {
-        printf("Simulate failed with an error:\n%s\n", actMessage(imm));
+        printf("Simulate failed with an error:\n");
     }
     return status;
 }

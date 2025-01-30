@@ -146,11 +146,11 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
 }
 
-void AllBondeds::addBonded(FILE                           *fplog,
-                           InteractionType                 iType,
-                           const ACTMol                    &mmi,
-                           const Identifier               &bondId,
-                           const std::vector<int>         &atomid)
+void AllBondeds::addBonded(MsgHandler             *msghandler,
+                           InteractionType         iType,
+                           const ACTMol           &mmi,
+                           const Identifier       &bondId,
+                           const std::vector<int> &atomid)
 {
     auto x = mmi.xOriginal();
     // We need to check for linear angles here before we
@@ -250,12 +250,10 @@ void AllBondeds::addBonded(FILE                           *fplog,
     }
     ob->addPoint(refValue);
 
-    if (nullptr != fplog)
-    {
-        fprintf(fplog, "%s %s-%s %g\n",
-                mmi.getMolname().c_str(), interactionTypeToString(iType).c_str(),
-                bondId.id().c_str(), refValue);
-    }
+    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+                    gmx::formatString("%s %s-%s %g\n",
+                                      mmi.getMolname().c_str(), interactionTypeToString(iType).c_str(),
+                                      bondId.id().c_str(), refValue));
 }
 
 void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
@@ -548,7 +546,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     }
 }
 
-void AllBondeds::extractGeometries(FILE                       *fp,
+void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
                                    const std::vector<MolProp> &mp,
                                    std::vector<ACTMol>        *actmols,
                                    ForceField                 *pd,
@@ -565,19 +563,13 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
-                fprintf(fp, "Empty molname for molecule with formula %s\n",
-                        mmi.formula().c_str());
+                msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                                gmx::formatString("Empty molname for molecule with formula %s\n", mmi.formula().c_str()));
                 continue;
             }
-            auto imm = mmi.GenerateTopology(fp, pd, missingParameters::Generate);
-            if (ACTMessage::OK != imm)
+            mmi.GenerateTopology(msghandler, pd, missingParameters::Generate);
+            if (!msghandler->ok())
             {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Could not make topology for %s, reason %s\n",
-                            mmi.getMolname().c_str(),
-                            actMessage(imm) );
-                }
                 continue;
             }
             {
@@ -597,13 +589,11 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         break;
                     }
                 }
+                // TODO: Check whether this occurs
                 if (i < myatoms.size())
                 {
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "You may need to check the number of atoms for %s\n",
-                                mmi.getMolname().c_str());
-                    }
+                    msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                                    gmx::formatString("You may need to check the number of atoms for %s", mmi.getMolname().c_str()));
                     continue;
                 }
             }
@@ -612,7 +602,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             {
                 for (const auto &topentry : entry.second)
                 {
-                    addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
+                    addBonded(msghandler, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
             actmols->push_back(mmi);

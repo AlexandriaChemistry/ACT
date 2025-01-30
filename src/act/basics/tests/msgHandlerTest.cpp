@@ -38,6 +38,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "gromacs/utility/exceptions.h"
+
 namespace alexandria
 {
 
@@ -72,14 +74,14 @@ class MsgHandlerTest : public gmx::test::CommandLineTestBase
         }
     }
         
-    void runTest(bool verbose)
+    void runTest(ACTStatus level)
     {
         mh.setFilePointer(stdout);
-        mh.setVerbosity(verbose);
+        mh.setPrintLevel(level);
         int i = 0;
         for(const auto &actm : ACTMessages)
         {
-            mh.warning(actm.first, std::to_string(i));
+            mh.msg(level, actm.first, std::to_string(i));
             i += 1;
         }
         for(const auto &actm : ACTMessages)
@@ -96,12 +98,17 @@ TEST_F(MsgHandlerTest, List)
 
 TEST_F(MsgHandlerTest, Verbose) 
 {
-    runTest(true);
+    runTest(ACTStatus::Warning);
 }
 
 TEST_F(MsgHandlerTest, NonVerbose) 
 {
-    runTest(false);
+    runTest(ACTStatus::Error);
+}
+
+TEST_F(MsgHandlerTest, Fatal) 
+{
+    EXPECT_THROW(runTest(ACTStatus::Fatal), gmx::InvalidInputError);
 }
 
 } // namespace

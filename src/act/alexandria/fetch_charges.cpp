@@ -41,7 +41,7 @@
 namespace alexandria
 {
 
-chargeMap fetchChargeMap(FILE                        *fp,
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,
@@ -86,27 +86,22 @@ chargeMap fetchChargeMap(FILE                        *fp,
         }
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
-        auto imm = actmol.GenerateTopology(nullptr, pd, missingParameters::Error);
-        if (ACTMessage::OK != imm)
+        actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
+        if (!msghandler->ok())
         {
-            if (fp)
-            {
-                fprintf(fp, "Could not generate topology for %s due to %s\n",
-                        mp->getIupac().c_str(), actMessage(imm));
-            }
             continue;
         }
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::CHARGE, iqmType::QM }
         };
-        actmol.getExpProps(pd, iqm, 0.0, 100);
+        actmol.getExpProps(msghandler, pd, iqm, 0.0, 100);
 
         std::vector<double> dummy;
         std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-        imm = actmol.GenerateCharges(pd, forceComp, alg,
-                                     qt, dummy, &coords, &forces);
-        if (ACTMessage::OK == imm)
+        actmol.GenerateCharges(msghandler, pd, forceComp, alg,
+                               qt, dummy, &coords, &forces);
+        if (msghandler->ok())
         {
             // Add ACM charges
             std::vector<std::pair<Identifier, double>> newq;
@@ -116,16 +111,11 @@ chargeMap fetchChargeMap(FILE                        *fp,
             }
             qmap.insert( { frags[0].inchi(), newq } );
         }
-        else if (fp)
-        {
-            fprintf(fp, "Could not generate topology for %s due to %s\n",
-                    mp->getIupac().c_str(), actMessage(imm));
-        }
     }
     return qmap;
 }
 
-chargeMap fetchChargeMap(FILE                        *fp,
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
@@ -134,7 +124,7 @@ chargeMap fetchChargeMap(FILE                        *fp,
 {
     std::vector<MolProp> mps;
     MolPropRead(charge_fn, &mps);
-    return fetchChargeMap(fp, pd, forceComp, mps, lookup, qt);
+    return fetchChargeMap(msghandler, pd, forceComp, mps, lookup, qt);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,

@@ -150,6 +150,7 @@ int gentop(int argc, char *argv[])
          { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
+    MsgHandler          msghandler;
     CompoundReader      compR;
     compR.addOptions(&pa, &fnm, &desc);
     int status = 0;
@@ -158,7 +159,11 @@ int gentop(int argc, char *argv[])
     {
         return 1;
     }
-    if (!compR.optionsOK(fnm))
+    // Open log file and give it to the message handler
+    msghandler.setFileName(opt2fn("-g", fnm.size(), fnm.data()));
+    
+    compR.optionsOK(&msghandler, fnm);
+    if (!msghandler.ok())
     {
         return 1;
     }
@@ -205,9 +210,8 @@ int gentop(int argc, char *argv[])
     }
 
     auto forceComp = new ForceComputer();
-    std::vector<ACTMol> actmols = compR.read(pd, forceComp);
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
 
-    //gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     int mp_index   = 1;
     std::map<std::string, std::pair<ACTMessage, std::vector<std::string>>> errors;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); )
@@ -228,41 +232,32 @@ int gentop(int argc, char *argv[])
                              opt2fn_null("-diffhist", fnm.size(), fnm.data()),
                              oenv);
 
-        if (actmol->errors().size() == 0)
+        std::string index;
+        if (actmols.size() > 1)
         {
-            std::string index;
-            if (actmols.size() > 1)
-            {
-                index = gmx::formatString("%d_", mp_index);
-            }
-            if (!opt2bSet("-openmm", fnm.size(), fnm.data()))
-            {
-                std::string tfn = gmx::formatString("%s%s", index.c_str(),
-                                                    bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
-                actmol->PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
-                                     &cr, coords, method, basis, bITP);
-            }
-            if (opt2bSet("-c", fnm.size(), fnm.data()))
-            {
-                matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
-                std::string cfn = gmx::formatString("%s%s", index.c_str(),
-                                                    opt2fn("-c", fnm.size(), fnm.data()));
-                if (opt2parg_bSet("-box", pa.size(), pa.data()))
-                {
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        box[m][m] = mybox[m];
-                    }
-                }
-                actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
-            }
-            ++actmol;
+            index = gmx::formatString("%d_", mp_index);
         }
-        else
+        if (!opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
-            errors.insert({ actmol->getMolname(),
-                            { ACTMessage::Topology, actmol->errors() } });
-            actmol = actmols.erase(actmol);
+            std::string tfn = gmx::formatString("%s%s", index.c_str(),
+                                                bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
+            actmol->PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
+                                  &cr, coords, method, basis, bITP);
+        }
+        if (opt2bSet("-c", fnm.size(), fnm.data()))
+        {
+            matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
+            std::string cfn = gmx::formatString("%s%s", index.c_str(),
+                                                opt2fn("-c", fnm.size(), fnm.data()));
+            if (opt2parg_bSet("-box", pa.size(), pa.data()))
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    box[m][m] = mybox[m];
+                    }
+            }
+            actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
+            ++actmol;
         }
         mp_index++;
     }
@@ -274,21 +269,9 @@ int gentop(int argc, char *argv[])
                         &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
         }
     }
-    if (!errors.empty())
+    printf("\nPlease check the %s file for warnings and error messages.\n", msghandler.filename().c_str());
+    if (!msghandler.ok())
     {
-        auto fn = opt2fn("-g", fnm.size(), fnm.data());
-        auto fp = gmx_ffopen(fn, "w");
-        fprintf(fp, "Errors encountered during processing:\n");
-        for(const auto &mess : errors)
-        {
-            fprintf(fp, "%s: %s\n", mess.first.c_str(), actMessage(mess.second.first));
-            for(const auto &m : mess.second.second)
-            {
-                fprintf(fp, "    %s\n", m.c_str());
-            }
-        }
-        gmx_ffclose(fp);
-        fprintf(stderr, "\nPlease check the %s file for error messages.\n", fn);
         status = 1;
     }
     return status;

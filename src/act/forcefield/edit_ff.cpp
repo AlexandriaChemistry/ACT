@@ -462,10 +462,11 @@ static void plotInteractions(ForceField           *pd,
     {
         return;
     }
+    MsgHandler msghandler;
     ForceComputer fc;
     for(auto &m : myset)
     {
-        fc.plot(pd, m);
+        fc.plot(&msghandler, pd, m);
     }
 }
 

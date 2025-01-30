@@ -87,7 +87,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     }
 }
     
-void ACTMiddleMan::run()
+void ACTMiddleMan::run(MsgHandler *msghandler)
 {
     auto cr = ind_->sii()->commRec();
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
@@ -100,10 +100,10 @@ void ACTMiddleMan::run()
         cr->recv(master, ind_->genomePtr()->basesPtr());
     }
     // Start by computing my own fitness
-    fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
+    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
     {
-        fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+        fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
     }
     // I.
     // Send my initial genome and fitness to the master if needed
@@ -132,11 +132,11 @@ void ACTMiddleMan::run()
         cr->recv(master, &mode);
         if (mode == TrainFFMiddlemanMode::MUTATION)
         {
-            mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
+            mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
             
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
-                fitComp_->compute(ind_->genomePtr(), ims);
+                fitComp_->compute(msghandler, ind_->genomePtr(), ims);
                 // IV.
                 // Send the mutated vector
                 cr->send(master, *ind_->genomePtr()->basesPtr());
@@ -146,7 +146,7 @@ void ACTMiddleMan::run()
                 cr->send(master, ind_->genome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+                    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->genome().fitness(iMolSelect::Test));
                 }
             }
@@ -162,14 +162,14 @@ void ACTMiddleMan::run()
                 cr->send(master, ind_->bestGenome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(ind_->bestGenomePtr(), iMolSelect::Test);
+                    fitComp_->compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->bestGenome().fitness(iMolSelect::Test));
                 }
             }
         }
         else if (mode == TrainFFMiddlemanMode::FITNESS)
         {
-            fitComp_->compute(ind_->genomePtr(), ims);
+            fitComp_->compute(msghandler, ind_->genomePtr(), ims);
             cr->send(master, ind_->genome().fitness(ims));
         }
         cont = cr->recv_data(master);

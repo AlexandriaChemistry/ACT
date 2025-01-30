@@ -247,11 +247,11 @@ private:
      * Check whether atom types exist in the force field
      * also check whether the multiplicity is correct.
      *
+     * \param[in] msghandler Message handler
      * \param[in] pd    The force field structure
-     * \param[in] atoms The structure to check
-     * \return status code.
      */
-    ACTMessage checkAtoms(const ForceField *pd);
+    void checkAtoms(MsgHandler       *msghandler,
+                    const ForceField *pd);
     
     /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
@@ -284,7 +284,6 @@ private:
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
     std::vector<int>               symmetric_charges_;
-    std::vector<std::string>       error_messages_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
     FragmentHandler               *fraghandler_   = nullptr;
@@ -392,9 +391,6 @@ public:
     //! Return the reference intensities collected earlier
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
 
-    //! Return accumulated list of errors.    
-    const std::vector<std::string> errors() const {return error_messages_;}
-    
     /*! \brief
      * \return atoms data for editing
      */
@@ -436,14 +432,13 @@ public:
     /*! \brief
      * It generates the atoms structure which will be used to print the topology file.
      *
-     * \param[in]  fp      File to write (debug) information to
-     * \param[in]  pd      Data structure containing atomic properties
-     * \param[in]  missing How to treat missing parameters
-     * \return status
+     * \param[in]  msghandler Message handler
+     * \param[in]  pd         Data structure containing atomic properties
+     * \param[in]  missing    How to treat missing parameters
      */
-    ACTMessage GenerateTopology(FILE              *fp,
-                               ForceField        *pd,
-                               missingParameters  missing);
+    void GenerateTopology(MsgHandler        *msghandler,
+                          ForceField        *pd,
+                          missingParameters  missing);
     
     //! Return the ACT topology structure
     const Topology *topology() const { return topology_; }
@@ -454,6 +449,7 @@ public:
     /*! \brief
      * Generate atomic partial charges
      *
+     * \param[in]  msghandler Message Handler
      * \param[in]  pd        Data structure containing atomic properties
      * \param[in]  forceComp Force computer utility
      * \param[in]  algorithm The algorithm for determining charges,
@@ -465,14 +461,15 @@ public:
      * \param[out] forces    This routine will compute energies and forces.
      * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
-    ACTMessage GenerateCharges(const ForceField          *pd,
-                              const ForceComputer       *forceComp,
-                              ChargeGenerationAlgorithm  algorithm,
-                              qType                      qtype,
-                              const std::vector<double> &qcustom,
-                              std::vector<gmx::RVec>    *coords,
-                              std::vector<gmx::RVec>    *forces,
-                              bool                       updateQprops = false);
+    void GenerateCharges(MsgHandler                *msghandler,
+                         const ForceField          *pd,
+                         const ForceComputer       *forceComp,
+                         ChargeGenerationAlgorithm  algorithm,
+                         qType                      qtype,
+                         const std::vector<double> &qcustom,
+                         std::vector<gmx::RVec>    *coords,
+                         std::vector<gmx::RVec>    *forces,
+                         bool                       updateQprops = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
@@ -483,24 +480,26 @@ public:
      * \param[out] forces    The forces
      */
     ACTMessage GenerateAcmCharges(const ForceField       *pd,
-                                 const ForceComputer    *forceComp,
-                                 std::vector<gmx::RVec> *coords,
-                                 std::vector<gmx::RVec> *forces);
+                                  const ForceComputer    *forceComp,
+                                  std::vector<gmx::RVec> *coords,
+                                  std::vector<gmx::RVec> *forces);
     
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.
      *
+     * \param[in] msghandler Message and status handler 
      * \param[in] pd   The force field   
      * \param[in] iqm  Determine whether to allow exp or QM results or both for each property
      * \param[in]  watoms  Weight for the potential on the atoms in 
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    ACTMessage getExpProps(const ForceField                           *pd,
-                           const std::map<MolPropObservable, iqmType> &iqm,
-                           real                                        watoms = 0,
-                           int                                         maxESP = 100);
+    void getExpProps(MsgHandler                                 *msghandler,
+                     const ForceField                           *pd,
+                     const std::map<MolPropObservable, iqmType> &iqm,
+                     real                                        watoms = 0,
+                     int                                         maxESP = 100);
     
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.

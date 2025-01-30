@@ -355,11 +355,11 @@ public:
     bool hasMolPropObservable(MolPropObservable mpo) const;
 
     /*! \brief Fill the  iOpt_ map
-     * \param[in] pd Pointer to forcefield
-     * \param[in] fp File for information, may be nullptr
+     * \param[in] pd         Pointer to forcefield
+     * \param[in] msghandler For information
      */
     void fillIopt(ForceField *pd,
-                  FILE       *fp);
+                  MsgHandler *msghandler);
     
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }
@@ -418,19 +418,17 @@ public:
     unsigned int mindata() const { return mindata_; }
   
     /*! \brief Read the molecular property data file to generate molecules.
-     * \param[in] fp       File pointer for printing information, may be nullptr
+     * \param[in] msghandler Message handler
      * \param[in] filenms  Information about filenames
      * \param[in] pd       Pointer to ForceField object
      * \param[in] gms      The molecule selection
-     * \param[in] verbose  Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
-    size_t Read(FILE                                *fp,
+    size_t Read(MsgHandler                          *msghandler,
                 const std::vector<t_filenm>         &filenms,
                 ForceField                          *pd,
                 const MolSelect                     &gms,
-                const std::map<eRMS, FittingTarget> &targets,
-                bool                                 verbose);
+                const std::map<eRMS, FittingTarget> &targets);
 
 };
 

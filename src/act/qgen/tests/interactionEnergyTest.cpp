@@ -167,11 +167,11 @@ protected:
                 (*fptr)[i].setCharge(qtotal[i]);
             }
             mp_.Merge(&molprop);
+            MsgHandler msghandler;
             // Generate charges and topology
-            auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Ignore);
-            if (ACTMessage::OK != imm)
+            mp_.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+            if (!msghandler.ok())
             {
-                fprintf(stderr, "Error generating topology: %s\n", actMessage(imm));
                 return;
             }
             
@@ -184,7 +184,7 @@ protected:
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
-            mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();

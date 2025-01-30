@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,32 +44,30 @@
 
 #include <random>
 
+#include "act/alexandria/acm_ga.h"
+#include "act/alexandria/acthelper.h"
+#include "act/alexandria/actmiddleman.h"
+#include "act/alexandria/actmol_low.h"
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/bayes.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/percentmutator.h"
+#include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_tables.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/ga/npointcrossover.h"
+#include "act/ga/penalizer.h"
+#include "act/molprop/molprop_util.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-
-#include "acm_ga.h"
-#include "acthelper.h"
-#include "actmiddleman.h"
-#include "alex_modules.h"
-#include "bayes.h"
-#include "act/utility/memory_check.h"
-#include "mcmcmutator.h"
-#include "molgen.h"
-#include "act/molprop/molprop_util.h"
-#include "actmol_low.h"
-#include "act/ga/npointcrossover.h"
-#include "act/ga/penalizer.h"
-#include "percentmutator.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_tables.h"
-#include "act/forcefield/forcefield_xml.h"
-#include "train_utility.h"
-#include "act/utility/units.h"
-
 namespace alexandria
 {
 
@@ -88,18 +86,13 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
     std::vector<t_pargs> pa =
     {
         { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-          "Remove a molecule from training set if shell minimization does not converge."},
-        { "-flush",              FALSE, etBOOL, {&flush_},
-          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
-        { "-v",              FALSE, etBOOL, {&verbose_},
-          "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
+          "Remove a molecule from training set if shell minimization does not converge."}
     };
     for (size_t i = 0; i < pa.size(); i++) {
         pargs->push_back(pa[i]);
     }
     std::vector<t_filenm> filenames = {
         { efXML, "-o",     "train_ff", ffWRITE },
-        { efLOG, "-g",     "train_ff", ffWRITE },
         { efCSV, "-gpin",  "genepool", ffOPTRD },
         { efCSV, "-gpout", "genepool", ffWRITE }
     };
@@ -112,6 +105,8 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
 
     bch_.add_options(pargs, fnms);
     gach_.add_options(pargs, fnms);
+    static std::string defname("train_ff");
+    msghandler_.addOptions(pargs, fnms, defname);
 }
 
 void OptACM::check_pargs()
@@ -122,6 +117,7 @@ void OptACM::check_pargs()
 
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
+    msghandler_.optionsFinished(filenames);
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     if (debug)
@@ -138,24 +134,6 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     {
         baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
         sii_->setOutputFile(baseOutputFileName_);
-    }
-}
-
-void OptACM::openLogFile(const std::vector<t_filenm> &filenms)
-{
-    auto logfileName = opt2fn("-g", filenms.size(), filenms.data());
-    fplog_.reset(gmx_ffopen(logfileName, "w"));
-}
-
-FILE *OptACM::logFile()
-{
-    if (fplog_)
-    {
-        return fplog_.get();
-    }
-    else
-    {
-        return nullptr;
     }
 }
 
@@ -201,7 +179,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         }
     }
     // Do this only when explicitly requested.
-    if (bch_.checkPoint() || verbose_)
+    if (bch_.checkPoint() || msghandler_.verbose())
     {
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
@@ -209,7 +187,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     forceComp_ = new ForceComputer();
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(logFile(), msghandler_.verbose(), sii_, &mg_, false, forceComp_);
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
@@ -246,9 +224,9 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(logFile(), msghandler_.verbose(), flush_, dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
         // TODO Only open these files when we are optimizing in verbose mode.
-        if (verbose_)
+        if (msghandler_.verbose())
         {
             fprintf(logFile(), "Will open param conv file on the master!\n");
             mut->openParamConvFiles(oenv_);
@@ -548,7 +526,7 @@ bool OptACM::runMaster(bool        optimize,
             fflush(logFile());
         }
         // Train the force field!
-        bMinimum = ga_->evolve(&bestGenome);
+        bMinimum = ga_->evolve(&msghandler_, &bestGenome);
         if (logFile())
         {
             fprintf(logFile(), "\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
@@ -559,7 +537,7 @@ bool OptACM::runMaster(bool        optimize,
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
-        mutator_->sensitivityAnalysis(&bestGenome[iMolSelect::Train], iMolSelect::Train);
+        mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
@@ -582,7 +560,7 @@ bool OptACM::runMaster(bool        optimize,
             {
                 it->second.print("Final best genome", logFile());
                 fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
-                fitComp_->compute(&(it->second), it->first, true);
+                fitComp_->compute(&msghandler_, &(it->second), it->first);
                 double chi2 = it->second.fitness(it->first);
                 fprintf(logFile(), "Minimum chi2 for %s %g\n",
                         iMolSelectName(it->first), chi2);
@@ -624,11 +602,11 @@ bool OptACM::runMaster(bool        optimize,
         if (bestGenome.end() != bbb)
         {
             sii_->updateForceField(changed, bbb->second.bases());
-            fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
+            fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
         }
         // Now compute the test compounds, with the best Train parameters.
         ims = iMolSelect::Test;
-        fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
+        fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
     }
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
@@ -765,7 +743,6 @@ int train_ff(int argc, char *argv[])
 
     if (opt.commRec()->isMaster())
     {
-        opt.openLogFile(filenms);
         print_memory_usage(debug);
         print_header(opt.logFile(), pargs, filenms);
 
@@ -831,9 +808,8 @@ int train_ff(int argc, char *argv[])
     }
 
     // MolGen read being called here!
-    if (0 == opt.mg()->Read(fp, filenms, opt.sii()->forcefield(), gms,
-                            opt.sii()->fittingTargetsConst(iMolSelect::Train),
-                            opt.verbose()))
+    if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train)))
     {
         GMX_THROW(gmx::InvalidInputError("Training set is empty, check your input. Rerun with -v option or -debug 1"));
     }
@@ -841,7 +817,7 @@ int train_ff(int argc, char *argv[])
 
     // StaticIndividualInfo things
     {
-        FILE *myfp = opt.verbose() ? debug : fp;
+        FILE *myfp = opt.msgHandler()->verbose() ? debug : fp;
         opt.sii()->generateOptimizationIndex(myfp, opt.mg(), opt.commRec());
         opt.sii()->fillVectors(opt.mg()->mindata());
         opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
@@ -929,9 +905,10 @@ int train_ff(int argc, char *argv[])
                 {
                     // Master and Individuals (middle-men) need to initialize more,
                     // so let's go.
+                    auto verbose = opt.msgHandler()->verbose();
                     ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                           opt.verbose(), opt.oenv(), opt.verbose());
-                    middleman.run();
+                                           verbose, opt.oenv(), verbose);
+                    middleman.run(opt.msgHandler());
                 }
             }
             else if (bOptimize || bSensitivity)
@@ -941,7 +918,7 @@ int train_ff(int argc, char *argv[])
                     ACTHelper helper(opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter());
-                    helper.run();
+                    helper.run(opt.msgHandler());
                 }
             }
         }

@@ -74,10 +74,12 @@ static bool dump_molecule(FILE              *fp,
                           ForceField        &pd,
                           MolProp           *mp)
 {
+    MsgHandler msghandler;
+    msghandler.setFilePointer(fp);
     alexandria::ACTMol actmol;
     actmol.Merge(mp);
-    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error);
-    if (ACTMessage::OK == imm)
+    actmol.GenerateTopology(&msghandler, &pd, missingParameters::Error);
+    if (msghandler.ok())
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         // TODO check whether this is needed.
@@ -85,20 +87,19 @@ static bool dump_molecule(FILE              *fp,
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::CHARGE, iqmType::QM }
         };
-        actmol.getExpProps(&pd, iqm, 0.0, 100);
+        actmol.getExpProps(&msghandler, &pd, iqm, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(&pd, forceComp, pd.chargeGenerationAlgorithm(),
-                                         qType::ACM, dummy, &coords, &forces);
+            actmol.GenerateCharges(&msghandler, &pd, forceComp,
+                                   pd.chargeGenerationAlgorithm(),
+                                   qType::ACM, dummy, &coords, &forces);
         }
     }
-    if (ACTMessage::OK != imm)
+    if (!msghandler.ok())
     {
-        fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                actmol.getMolname().c_str(), actMessage(imm));
         return false;
     }
     else
@@ -114,7 +115,7 @@ static bool dump_molecule(FILE              *fp,
         {
             f.dump(fp);
         }
-        actmol.getExpProps(&pd, iqm, -1);
+        actmol.getExpProps(&msghandler, &pd, iqm, -1);
         actmol.Dump(fp);
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
