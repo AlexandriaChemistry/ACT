@@ -101,8 +101,7 @@ int gentop(int argc, char *argv[])
         { efXVG, "-diffhist",   "diffpot",   ffOPTWR },
         { efXVG, "-his",        "pot-histo", ffOPTWR },
         { efXVG, "-pc",         "pot-comp",  ffOPTWR },
-        { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR },
-        { efLOG, "-g",          "errors",    ffWRITE }
+        { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR }
     };
 
     static int                       nsymm          = 0;
@@ -116,15 +115,12 @@ int gentop(int argc, char *argv[])
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = false;
     static gmx_bool                  bITP           = false;
-    static gmx_bool                  bVerbose       = false;
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addNumbersToAtoms = true;
     static rvec                      mybox           = { 0, 0, 0 };
 
     std::vector<t_pargs> pa =
     {
-        { "-v",      FALSE, etBOOL, {&bVerbose},
-          "Generate verbose output in the top file and on terminal." },
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
         { "-ws",     FALSE, etBOOL, {&writeShells},
@@ -153,14 +149,16 @@ int gentop(int argc, char *argv[])
     MsgHandler          msghandler;
     CompoundReader      compR;
     compR.addOptions(&pa, &fnm, &desc);
+    msghandler.addOptions(&pa, &fnm, "gentop.log");
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 1;
     }
-    // Open log file and give it to the message handler
-    msghandler.setFileName(opt2fn("-g", fnm.size(), fnm.data()));
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
     
     compR.optionsOK(&msghandler, fnm);
     if (!msghandler.ok())
@@ -168,7 +166,6 @@ int gentop(int argc, char *argv[])
         return 1;
     }
     ForceField          pd;
-    CommunicationRecord cr;
     std::string         method, basis;
 
     /* Check the options */
@@ -183,7 +180,7 @@ int gentop(int argc, char *argv[])
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
-    if (!bVerbose)
+    if (!msghandler.verbose())
     {
         gmx_atomprop_quiet(aps);
     }
@@ -203,11 +200,8 @@ int gentop(int argc, char *argv[])
     auto qType = potentialToChargeType(fs.potential());
     printf("Using%s force field file %s and charge distribution model %s\n",
            my_pol.c_str(), gentop_fnm, chargeTypeName(qType).c_str());
-    if (bVerbose)
-    {
-        printf("Read force field information. There are %zu atomtypes.\n",
-               pd.getNatypes());
-    }
+    msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
+                                       pd.getNatypes()));
 
     auto forceComp = new ForceComputer();
     std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
@@ -241,7 +235,7 @@ int gentop(int argc, char *argv[])
         {
             std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                 bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
-            actmol->PrintTopology(tfn.c_str(), bVerbose, &pd, forceComp,
+            actmol->PrintTopology(tfn.c_str(), msghandler.verbose(), &pd, forceComp,
                                   &cr, coords, method, basis, bITP);
         }
         if (opt2bSet("-c", fnm.size(), fnm.data()))

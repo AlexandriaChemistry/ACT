@@ -81,16 +81,12 @@ int simulate(int argc, char *argv[])
         { efPDB, "-o",       "trajectory", ffWRITE },
         { efSTO, "-c",       "confout",    ffOPTWR },
         { efXVG, "-e",       "energy",     ffWRITE },
-        { efLOG, "-g",       "simulation", ffWRITE },
         { efNDX, "-freeze",  "freeze",     ffOPTRD }
     };
     gmx_output_env_t         *oenv;
     double                    shellToler = 1e-6;
-    bool                      verbose    = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" },
         { "-json", FALSE, etBOOL, {&json},
@@ -106,6 +102,8 @@ int simulate(int argc, char *argv[])
     rerun.addOptions(&pa, &fnm);
     CompoundReader compR;
     compR.addOptions(&pa, &fnm, &desc);
+    MsgHandler msghandler;
+    msghandler.addOptions(&pa, &fnm, "simulate");
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -113,8 +111,9 @@ int simulate(int argc, char *argv[])
     {
         return 1;
     }
-    MsgHandler msghandler;
-    msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
 
     sch.check_pargs();
     compR.optionsOK(&msghandler, fnm);
@@ -124,12 +123,12 @@ int simulate(int argc, char *argv[])
     }
     gendimers.finishOptions(fnm);
 
-    print_header(msghandler.filePointer(), pa, fnm);
+    print_header(msghandler.tw(), pa, fnm);
 
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        msghandler.msg(ACTStatus::Warning, ACTMessage::Info,
+        msghandler.msg(ACTStatus::Warning,
                        gmx::formatString("\nShell tolerance larger than atom tolerance, changing it to %g\n", shellToler));
     }
     ForceField        pd;
@@ -149,7 +148,7 @@ int simulate(int argc, char *argv[])
     }
     auto &actmol = actmols[0];
     JsonTree jtree("simulate");
-    if (verbose)
+    if (msghandler.verbose())
     {
         forceFieldSummary(&jtree, &pd);
     }
@@ -187,7 +186,7 @@ int simulate(int argc, char *argv[])
     {
         rerun.setFunctions(forceComp, &gendimers, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
-        rerun.rerun(msghandler.filePointer(), &pd, &actmol, verbose);
+        rerun.rerun(&msghandler, &pd, &actmol, msghandler.verbose());
     }
     else
     {
@@ -228,12 +227,12 @@ int simulate(int argc, char *argv[])
                 }
                 jtree.addObject(jtener);
             }
-            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                                  &xmin, &energies, msghandler.filePointer(), freeze);
+            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, forceComp, sch,
+                                                  &xmin, &energies, freeze);
             if (eMinimizeStatus::OK == eMin)
             {
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                msghandler.msg(ACTStatus::Verbose,
                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
                                                  energies[InteractionType::EPOT], rmsd));
                 auto nfrag = actmol.fragmentHandler()->topologies().size();
@@ -246,7 +245,7 @@ int simulate(int argc, char *argv[])
                                                       &interactionForces, &xmin, true);
                     for(const auto &ei : einter)
                     {
-                        msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+                        msghandler.msg(ACTStatus::Verbose,
                                        gmx::formatString("Interaction energy %s: %g",
                                                          interactionTypeToString(ei.first).c_str(), ei.second));
                     }
@@ -264,7 +263,7 @@ int simulate(int argc, char *argv[])
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {
-            molhandler.simulate(&pd, &actmol, forceComp, sch, msghandler.filePointer(),
+            molhandler.simulate(&msghandler, &pd, &actmol, forceComp, sch,
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
                                 oenv);
@@ -298,7 +297,8 @@ int simulate(int argc, char *argv[])
     }
     else
     {
-        jtree.fwrite(msghandler.filePointer(), json);
+        int indent = 0;
+        msghandler.write(jtree.writeString(json, &indent));
     }
     if (!msghandler.ok())
     {

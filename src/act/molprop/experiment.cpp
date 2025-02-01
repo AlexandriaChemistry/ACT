@@ -35,6 +35,7 @@
 #include "experiment.h"
 
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "act/utility/units.h"
 
@@ -147,38 +148,38 @@ Experiment::Experiment(Experiment &&other)
 
 #endif
 
-void Experiment::Dump(FILE *fp) const
+void Experiment::Dump(gmx::TextWriter *tw) const
 {
-    if (nullptr != fp)
+    if (nullptr != tw)
     {
-        fprintf(fp, "Experiment %s\n", dataSourceName(dataSource()));
+        tw->writeStringFormatted("Experiment %s\n", dataSourceName(dataSource()));
         if (dsExperiment == dataSource())
         {
-            fprintf(fp, "reference    = %s\n", reference_.c_str());
-            fprintf(fp, "conformation = %s\n", conformation_.c_str());
+            tw->writeStringFormatted("reference    = %s\n", reference_.c_str());
+            tw->writeStringFormatted("conformation = %s\n", conformation_.c_str());
         }
         else
         {
-            fprintf(fp, "program    = %s\n", program_.c_str());
-            fprintf(fp, "method     = %s\n", method_.c_str());
-            fprintf(fp, "basisset   = %s\n", basisset_.c_str());
-            fprintf(fp, "datafile   = %s\n", datafile_.c_str());
+            tw->writeStringFormatted("program    = %s\n", program_.c_str());
+            tw->writeStringFormatted("method     = %s\n", method_.c_str());
+            tw->writeStringFormatted("basisset   = %s\n", basisset_.c_str());
+            tw->writeStringFormatted("datafile   = %s\n", datafile_.c_str());
             for (auto &cai : calcAtomConst())
             {
                 double   x, y, z, fx, fy, fz;
                 cai.coords(&x, &y, &z);
                 cai.forces(&fx, &fy, &fz);
-                fprintf(fp, "%-3s  %-3s  %3d X: %10.3f  %10.3f  %10.3f F: %10.3f  %10.3f  %10.3f\n",
-                        cai.getName().c_str(), cai.getObtype().c_str(),
-                        cai.getAtomid(), x, y, z, fx, fy, fz);
+                tw->writeStringFormatted("%-3s  %-3s  %3d X: %10.3f  %10.3f  %10.3f F: %10.3f  %10.3f  %10.3f\n",
+                                         cai.getName().c_str(), cai.getObtype().c_str(),
+                                         cai.getAtomid(), x, y, z, fx, fy, fz);
             }
         }
         for(const auto &p : property_)
         {
-            fprintf(fp, "Property %s.\n", mpo_name(p.first));
+            tw->writeStringFormatted("Property %s.\n", mpo_name(p.first));
             for (const auto &gp : p.second)
             {
-                gp->Dump(fp);
+                gp->Dump(tw);
             }
         }
     }

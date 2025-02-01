@@ -184,8 +184,8 @@ protected:
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(ftoler);
             // Change nullptr to stdout for debugging.
-            auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                               &xmin, &eAfter, nullptr, {});
+            auto eMin = mh.minimizeCoordinates(&msghandler, pd, &mp, forceComp,
+                                               simConfig, &xmin, &eAfter, {});
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             if (eMinimizeStatus::OK != eMin)
             {

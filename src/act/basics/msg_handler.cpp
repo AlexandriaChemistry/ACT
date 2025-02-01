@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
@@ -46,6 +47,7 @@ namespace alexandria
 {
 
 std::map<ACTMessage, const char *> ACTMessages = {
+    { ACTMessage::Silent,                   nullptr },
     { ACTMessage::Unknown,                  "Unknown status" },
     { ACTMessage::OK,                       "OK" },
     { ACTMessage::NoAtoms,                  "No Atoms" },
@@ -78,8 +80,7 @@ std::map<ACTMessage, const char *> ACTMessages = {
     { ACTMessage::NotSupportedLinearAngle,  "NotSupportedLinearAngle" },
     { ACTMessage::NotSupportedDihedral,     "NotSupportedDihedral" },
     { ACTMessage::MissingFFParameter,       "Missing parameter in force field" },
-    { ACTMessage::MinimizationFailed,       "Minimization failed" },
-    { ACTMessage::Info,                     "Information" }
+    { ACTMessage::MinimizationFailed,       "Minimization failed" }
 };
 
 std::map<ACTStatus, const char *> statnm = {
@@ -107,37 +108,31 @@ void MsgHandler::print(ACTStatus   level,
                        ACTMessage  actm,
                        const char *msg) const
 {
-    auto mymsg = gmx::formatString("%s - %s: %s", 
-                                   statnm[level],
-                                   ACTMessages[actm], msg);
+    std::string mymsg;
+
+    if (actm == ACTMessage::Silent)
+    {
+        mymsg = gmx::formatString("%s: %s", statnm[level], msg);
+    }
+    else
+    {
+        mymsg = gmx::formatString("%s - %s: %s", 
+                                  statnm[level],
+                                  ACTMessages[actm], msg);
+    }
     if (level <= printLevel_)
     {
-        if (fp_)
+        if (level == ACTStatus::Debug)
         {
-            fprintf(fp_, "%s\n", mymsg.c_str());
-            if (flush_)
-            {
-                fflush(fp_);
-            }
+            writeDebug(mymsg);
         }
         else
         {
-            if (level <= ACTStatus::Error)
-            {
-                fprintf(stderr, "%s\n", mymsg.c_str());
-                if (flush_)
-                {
-                    fflush(stderr);
-                }
-            }
-            else
-            {
-                fprintf(stdout, "%s\n", mymsg.c_str());
-                if (flush_)
-                {
-                    fflush(stdout);
-                }
-            }
+            write(mymsg);
+        }
+        if (level <= ACTStatus::Error)
+        {
+            fprintf(stderr, "%s\n", mymsg.c_str());
         }
     }
 }
@@ -152,9 +147,23 @@ MsgHandler::MsgHandler()
 
 MsgHandler::~MsgHandler()
 {
-    if (!filename_.empty() && fp_)
+    if (!filename_.empty())
     {
-        gmx_ffclose(fp_);
+        printf("\nPlease checkout output in file %s.\n", filename_.c_str());
+    }
+    if (printLevel_ == ACTStatus::Debug)
+    {
+        printf("\nPlease check debug statements in the actXXXXX.debug files.\n");
+    }
+    if (tw_)
+    {
+        tw_->close();
+        delete tw_;
+    }
+    if (twdebug_)
+    {
+        twdebug_->close();
+        delete twdebug_;
     }
 }
 
@@ -162,15 +171,15 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
                             std::vector<t_filenm>     *filenm,
                             const std::string         &defaultLogName)
 {
+    defaultLogName_ = defaultLogName;
     pargs->push_back( { "-v", FALSE, etINT, { &ilevel_ },
             "Verbosity level: 0 (Fatal), 1 (Error), 2 (Warning), 3 (Info), 4 (Debug)" } );
-    pargs->push_back( { "-flush", FALSE, etBOOL, {&flush_},
-            "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."} );
 
-    filenm->push_back( { efLOG, "-g", defaultLogName.c_str(), ffWRITE }); 
+    filenm->push_back( { efLOG, "-g", defaultLogName_.c_str(), ffWRITE }); 
 }
 
-void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm)
+void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
+                                 const CommunicationRecord   *cr)
 {
     if (ilevel_ == 0)
     {
@@ -192,16 +201,18 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm)
     {
         printLevel_ = ACTStatus::Debug;
     }
-    std::string fn(opt2fn("-g", filenm.size(), filenm.data()));
-    setFileName(fn);
-}
-
-void MsgHandler::setFileName(const std::string &fn)
-{
-    fp_ = gmx_ffopen(fn.c_str(), "w");
-    if (!fp_)
+    if (cr->isMaster())
     {
-        fatal(ACTMessage::Info, gmx::formatString("Cannot open file '%s' for writing", fn.c_str()).c_str());
+        filename_.assign(opt2fn("-g", filenm.size(), filenm.data()));
+        tw_ = new gmx::TextWriter(filename_);
+        tw_->writeLineFormatted("Verbosity level %d (%s or more serious messages are printed).",
+                                ilevel_, statnm[printLevel_]);
+        tw_->writeLine("");
+    }
+    if (printLevel_ == ACTStatus::Debug)
+    {
+        std::string debugfn = gmx::formatString("act%05d.debug", cr->rank());
+        twdebug_ = new gmx::TextWriter(debugfn);
     }
 }
 
@@ -210,9 +221,9 @@ void MsgHandler::fatal(ACTMessage  actm,
 {
     status_ = ACTStatus::Fatal;
     print(status_, actm, msg);
-    if (fp_)
+    if (tw_)
     {
-        fclose(fp_);
+        tw_->close();
     }
     GMX_THROW(gmx::InvalidInputError("See message above"));
 }
@@ -234,13 +245,29 @@ void MsgHandler::msg(ACTStatus         level,
     wcount_.find(actm)->second++;
 }
 
+void MsgHandler::msg(ACTStatus         level,
+                     const std::string &msg)
+{
+    auto actm = ACTMessage::Silent;
+    if (level == ACTStatus::Fatal)
+    {
+        fatal(actm, msg.c_str());
+    }
+    if (level < status_)
+    {
+        status_ = level;
+    }
+    print(level, actm, msg.c_str());
+    wcount_.find(actm)->second++;
+}
+
 void MsgHandler::summary() const
 {
     for(const auto &wc : wcount_)
     {
-        if (fp_)
+        if (tw_)
         {
-            fprintf(fp_, "%s : %d\n", ACTMessages[wc.first], wc.second);
+            tw_->writeStringFormatted("%s : %d\n", ACTMessages[wc.first], wc.second);
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,32 +40,23 @@
 
 #include <algorithm>
 
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/allbondeds.h"
+#include "act/alexandria/dissociation_energy.h"
+#include "act/alexandria/train_utility.h"
+#include "act/basics/identifier.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/molprop_util.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/utility/real.h"
-
-#include "alex_modules.h"
-#include "allbondeds.h"
-#include "dissociation_energy.h"
-#include "act/basics/identifier.h"
-#include "act/utility/memory_check.h"
-#include "act/molprop/molprop_util.h"
-#include "act/alexandria/actmol.h"
-#include "act/forcefield/forcefield_xml.h"
-#include "act/utility/stringutil.h"
-#include "train_utility.h"
 
 namespace alexandria
 {
@@ -141,7 +132,7 @@ static void generate_bcc(ForceField *pd,
 
 int geometry_ff(int argc, char *argv[])
 {
-    static const char               *desc[] = {
+    std::vector<const char *> desc = {
         "geometry_ff read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
         "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]",
@@ -149,16 +140,14 @@ int geometry_ff(int argc, char *argv[])
         "experimental or QM data when the [TT]-dissoc[tt] option is given." 
     };
 
-    t_filenm                         fnm[] = {
+    std::vector<t_filenm> fnm = {
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "aff_out",      ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
-        { efLOG, "-g",   "geometry",     ffWRITE },
         { efCSV, "-de",  "dissociation", ffOPTWR }
     };
 
-    const int                        NFILE       = asize(fnm);
     static real                      delta_eta    = 5;
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
@@ -192,37 +181,38 @@ int geometry_ff(int argc, char *argv[])
           "Default bond delta_eta when generating bond charge corrections based on the list of bonds" },
     };
 
-    FILE                            *fp;
     time_t                           my_t;
     gmx_output_env_t                *oenv      = nullptr;
-    ForceField                          pd;
+    ForceField                       pd;
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      method, basis;
     AllBondeds bonds;
     MsgHandler msghandler;
-
+    msghandler.addOptions(&pa, &fnm, "geometry_ff");
     bonds.addOptions(&pa);    
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           pa.size(), pa.data(), asize(desc), desc,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, fnm.size(), fnm.data(),
+                           pa.size(), pa.data(), desc.size(), desc.data(),
                            0, nullptr, &oenv))
     {
         return 0;
     }
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
 
-    fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-    msghandler.setFilePointer(fp);
+    auto tw = msghandler.tw();
     print_memory_usage(debug);
     time(&my_t);
-    fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
+    tw->writeStringFormatted("# This file was created %s", ctime(&my_t));
+    tw->writeStringFormatted("# The Alexandria Chemistry Toolkit.\n#\n");
 
-    auto selfile = opt2fn("-sel", NFILE, fnm);
+    auto selfile = opt2fn("-sel", fnm.size(), fnm.data());
     gms.read(selfile);
     print_memory_usage(debug);
     printf("There are %d molecules in the selection file %s.\n",
            (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
-    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
+    tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
     print_memory_usage(debug);
@@ -230,7 +220,7 @@ int geometry_ff(int argc, char *argv[])
     /* Read ForceField file */
     try
     {
-        readForceField(opt2fn_null("-ff", NFILE, fnm), &pd);
+        readForceField(opt2fn_null("-ff", fnm.size(), fnm.data()), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);
@@ -240,7 +230,7 @@ int geometry_ff(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto warnings = merge_xml(opt2fns("-mp", NFILE, fnm), &mp);
+    auto warnings = merge_xml(opt2fns("-mp", fnm.size(), fnm.data()), &mp);
     print_memory_usage(debug);
 
     if (warnings.size() > static_cast<size_t>(maxwarn))
@@ -260,7 +250,7 @@ int geometry_ff(int argc, char *argv[])
     {
         bonds.writeHistogram(oenv);
     }
-    bonds.updateForceField(fp, &pd);
+    bonds.updateForceField(tw, &pd);
     pd.setPolarizable(polar);
     if (genBCC)
     {
@@ -274,17 +264,16 @@ int geometry_ff(int argc, char *argv[])
         {
             iqm = iqmType::QM;
         }
-        double rmsd = getDissociationEnergy(fp, &pd, &actmols, iqm,
-                                            opt2fn_null("-de",  NFILE, fnm), 
+        double rmsd = getDissociationEnergy(&msghandler, &pd, &actmols, iqm,
+                                            opt2fn_null("-de",  fnm.size(), fnm.data()), 
                                             nBootStrap);
-        fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);
+        tw->writeStringFormatted("Root mean square deviation %.1f kJ/mol\n", rmsd);
     }
     pd.updateTimeStamp();
     pd.updateCheckSum();
-    writeForceField(opt2fn("-o", NFILE, fnm), &pd, compress);
-    bonds.writeSummary(fp);
+    writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
+    bonds.writeSummary(tw);
     print_memory_usage(debug);
-    gmx_ffclose(fp);
     return 0;
 }
 

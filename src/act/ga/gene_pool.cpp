@@ -45,19 +45,17 @@
 namespace ga
 {
 
-void GenePool::print(FILE *fp) const
+std::vector<std::string> GenePool::print() const
 {
-    if (fp)
+    std::vector<std::string> out;
+    out.push_back("Population:");
+    int i = 0;
+    for (auto &ind : genomes_)
     {
-        fprintf(fp, "Population:\n");
-        int i = 0;
-        for (auto &ind : genomes_)
-        {
-            auto istr = gmx::formatString("Individual %3d", i++);
-            ind.print(istr.c_str(), fp);
-        }
-        fflush(fp);
+        auto istr = gmx::formatString("Individual %3d", i++);
+        out.push_back(ind.print(istr.c_str()));
     }
+    return out;
 }
 
 void GenePool::sort(iMolSelect ims)

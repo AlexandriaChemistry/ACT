@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -57,15 +57,6 @@ bool multipoleIndex(const std::string &id, int *index);
  */
 std::vector<std::string> formatMultipole(MolPropObservable          mpo,
                                          const std::vector<double> &values);
-
-/*! \brief Print a pretty formatted multipole
- * \param[in] fp     File pointer to print to
- * \param[in] mpo    Should be a multipole
- * \param[in] values The numerical components
- */
-void printMultipole(FILE                      *fp,
-                    MolPropObservable          mpo,
-                    const std::vector<double> &values);
 
 /*! \brief Return the name of a multipole index.
  * The length of m determines the order of the multipole:

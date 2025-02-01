@@ -45,6 +45,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -226,19 +227,16 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
-void ReRunner::rerun(FILE             *logFile,
+void ReRunner::rerun(MsgHandler       *msghandler,
                      const ForceField *pd,
                      const ACTMol     *actmol,
                      bool              verbose)
 {
     std::vector<std::vector<gmx::RVec>> dimers;
     gendimers_->read(&dimers);
-    if (logFile)
-    {
-        fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
-                dimers.size(), gendimers_->trajname());
-        fflush(logFile);
-    }
+    msghandler->write(gmx::formatString("Doing energy calculation for %zu structures from %s\n",
+                                        dimers.size(), gendimers_->trajname()));
+
     if (verbose && debug)
     {
         print_memory_usage(debug);
@@ -276,10 +274,7 @@ void ReRunner::rerun(FILE             *logFile,
             }
         }
         std::vector<gmx::RVec> forces(coords.size());
-        if (verbose)
-        {
-            fprintf(logFile, "%5d", mp_index);
-        }
+        std::string out = gmx::formatString("%5d", mp_index);
         if (eInter_)
         {
             std::map<InteractionType, double> einter;
@@ -311,13 +306,10 @@ void ReRunner::rerun(FILE             *logFile,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (logFile && verbose)
+            out += gmx::formatString(" r %g", rcom);
+            for (auto &EE: einter)
             {
-                fprintf(logFile, " r %g", rcom);
-                for (auto &EE: einter)
-                {
-                    fprintf(logFile, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
-                }
+                out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
             }
             edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
@@ -327,12 +319,12 @@ void ReRunner::rerun(FILE             *logFile,
                                 &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
-                fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                out += gmx::formatString("  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
             }
         }
-        if (verbose)
+        if (msghandler->verbose())
         {
-            fprintf(logFile, "\n");
+            msghandler->write(out);
         }
         mp_index++;
     }
@@ -343,11 +335,10 @@ void ReRunner::rerun(FILE             *logFile,
 }
 
 void ReRunner::runB2(CommunicationRecord         *cr,
-                     FILE                        *logFile,
+                     MsgHandler                  *msghandler,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
                      int                          maxdimer,
-                     bool                         verbose,
                      const std::vector<t_filenm> &fnm)
 {
     // Compute the relative masses
@@ -400,10 +391,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 ndimer = nrest;
             }
             gendimers_->resetAllRandom(ndimer);
-            if (logFile)
-            {
-                fprintf(logFile, "Will generate or read %d dimers on helpers and %d on master.\n", ndimer, nrest);
-            }
+            msghandler->write(gmx::formatString("Will generate or read %d dimers on helpers and %d on master.", ndimer, nrest));
         }
         else
         {
@@ -416,10 +404,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 gendimers_->addRandomNumbers(q);
             }
         }
-    }
-    if (logFile)
-    {
-        fflush(logFile);
     }
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
@@ -575,26 +559,26 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (verbose && logFile)
+            if (msghandler->verbose())
             {
-                fprintf(logFile, " r %g", rcom);
+                std::string out = gmx::formatString(" r %g", rcom);
                 for (auto &EE: einter)
                 {
-                    fprintf(logFile, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
+                    out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
                 }
-                fprintf(logFile, " Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
-                        f[0][XX], f[0][YY], f[0][ZZ],
-                        torque[0][XX], torque[0][YY], torque[0][ZZ],
-                        torque[1][XX], torque[1][YY], torque[1][ZZ],
-                        torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
-                        torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
-                fprintf(logFile, "\n");
+                out += gmx::formatString(" Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
+                                         f[0][XX], f[0][YY], f[0][ZZ],
+                                         torque[0][XX], torque[0][YY], torque[0][ZZ],
+                                         torque[1][XX], torque[1][YY], torque[1][ZZ],
+                                         torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
+                                         torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
+                msghandler->write(out);
             }
             edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
-        if (verbose && logFile)
+        if (msghandler->verbose())
         {
-            fprintf(logFile, "\n");
+            msghandler->write("");
         }
         for(int kk = 0; kk < 2; kk++)
         {
@@ -671,15 +655,15 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
             b2t_[b2Type::Total][iTemp]     = Btot;
             
-            if (logFile)
+            if (msghandler->verbose())
             {
-                fprintf(logFile, "T = %g K. ", T);
+                std::string out = gmx::formatString("T = %g K. ", T);
                 for(const auto &b2b : b2Type2str)
                 {
-                    fprintf(logFile, " %s %8.1f", b2b.second.c_str(),
-                            b2t_[b2b.first][iTemp]);
+                    out += gmx::formatString(" %s %8.1f", b2b.second.c_str(),
+                                             b2t_[b2b.first][iTemp]);
                 }
-                fprintf(logFile, "\n");
+                msghandler->write(out);
             }
         }
         if (!fnm.empty())
@@ -708,23 +692,16 @@ int b2(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff",      "aff",     ffREAD  },
-        { efLOG, "-g",       "b2",      ffWRITE } 
+        { efXML, "-ff",      "aff",     ffREAD  }
     };
     gmx_output_env_t         *oenv;
     static char              *molnm      = (char *)"";
     double                    shellToler = 1e-6;
     int                       maxdimers  = 1024;
-    bool                      verbose    = false;
-    bool                      oneH       = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
-        { "-oneH", FALSE, etBOOL, {&oneH},
-          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-maxdimer", FALSE, etINT, {&maxdimers},
           "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -741,6 +718,7 @@ int b2(int argc, char *argv[])
     CompoundReader      compR;
     compR.addOptions(&pa, &fnm, &desc);
     MsgHandler          msghandler;
+    msghandler.addOptions(&pa, &fnm, "b2");
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -749,10 +727,10 @@ int b2(int argc, char *argv[])
         status = 1;
         return status;
     }
+    msghandler.optionsFinished(fnm, &cr);
     if (cr.isMaster())
     {
-        msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
-        print_header(msghandler.filePointer(), pa, fnm);
+        print_header(msghandler.tw(), pa, fnm);
     }
     gendimers.finishOptions(fnm);
     compR.optionsOK(&msghandler, fnm);
@@ -772,7 +750,7 @@ int b2(int argc, char *argv[])
     auto  forceComp = new ForceComputer(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
-    if (verbose)
+    if (msghandler.verbose())
     {
         forceFieldSummary(&jtree, &pd);
     }
@@ -788,7 +766,7 @@ int b2(int argc, char *argv[])
             actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        rerun.runB2(&cr, msghandler.filePointer(), &pd, &actmol, maxdimers, verbose, fnm);
+        rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
     if (json && cr.isMaster())
     {
@@ -796,11 +774,8 @@ int b2(int argc, char *argv[])
     }
     else 
     {
-        auto fp = msghandler.filePointer();
-        if (fp)
-        {
-            jtree.fwrite(fp, json);
-        }
+        int indent = 0;
+        msghandler.write(jtree.writeString(json, &indent));
     }
     return status;
 }

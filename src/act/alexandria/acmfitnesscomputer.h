@@ -45,6 +45,11 @@
 #include "devcomputer.h"
 #include "molgen.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -56,8 +61,6 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-    //! \brief The filepointer to the log file.
-    FILE *logfile_;
     //! \brief A pointer to the BoundsDevComputer.
     BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
@@ -82,33 +85,31 @@ private:
 
     /*!
      * \brief Fill the devComputers vector according to the needs of the user
-     * \param[in] verbose                     Whether the DevComputers write stuff to the logfile or not
+     * \param[in] msghandler                  Message Handler
      * \param[in] zetadiff                    Allowed difference in zeta between cores and shells (if both have distributed charges)
      * \param[in] haveInductionCorrectionData Whether or not this energy term is present in the input data
      */
-    void fillDevComputers(bool   verbose,
-                          double zetaDiff,
-                          bool   haveInductionCorrectionData);
+    void fillDevComputers(MsgHandler *msghandler,
+                          double      zetaDiff,
+                          bool        haveInductionCorrectionData);
 
 public:
 
     /*!
      * Constructor
-     * \param[in] logfile           pointer to logfile
-     * \param[in] verbose           print more stuff to the logfile. Used by the DevComputers
-     * \param[in] sii               pointer to StaticIndividualInfo
-     * \param[in] mg                pointer to molgen
-     * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
+     * \param[in] msghandler Message Handler
+     * \param[in] sii        pointer to StaticIndividualInfo
+     * \param[in] mg         pointer to molgen
+     * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
      */
-    ACMFitnessComputer(      FILE                  *logfile,
-                       const bool                   verbose,
-                             StaticIndividualInfo  *sii,
-                             MolGen                *molgen,
-                       const bool                   removeMol,
-                             ForceComputer         *forceComp)
-        : logfile_(logfile), sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
+    ACMFitnessComputer(MsgHandler            *msghandler,
+                       StaticIndividualInfo  *sii,
+                       MolGen                *molgen,
+                       const bool             removeMol,
+                       ForceComputer         *forceComp)
+        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
     {
-        fillDevComputers(verbose, molgen->zetaDiff(),
+        fillDevComputers(msghandler, molgen->zetaDiff(),
                          molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2023,2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -71,20 +71,16 @@ int nma(int argc, char *argv[])
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff",      "aff",        ffREAD  },
         { efSTO, "-c",       "confout",    ffOPTWR },
-        { efLOG, "-g",       "nma",        ffWRITE },
         { efXVG, "-ir",      "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     double                    shellToler = 1e-6;
-    bool                      verbose    = false;
     bool                      json       = false;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
     double                    linewidth  = 24;
     std::vector<t_pargs>      pa = {
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" },
         { "-json", FALSE, etBOOL, {&json},
@@ -96,6 +92,7 @@ int nma(int argc, char *argv[])
     MsgHandler msghandler;
     CompoundReader compR;
     compR.addOptions(&pa, &fnm, &desc);
+    msghandler.addOptions(&pa, &fnm, "nma");
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -103,7 +100,9 @@ int nma(int argc, char *argv[])
     {
         return 1;
     }
-    msghandler.setFileName(opt2fn("-g", fnm.size(),fnm.data()));
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
 
     sch.check_pargs();
     compR.optionsOK(&msghandler, fnm);
@@ -123,15 +122,15 @@ int nma(int argc, char *argv[])
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+        msghandler.msg(ACTStatus::Verbose,
                        gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g",
                                          shellToler));
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(msghandler.filePointer(), pa, fnm);
+    print_header(msghandler.tw(), pa, fnm);
     
     JsonTree jtree("simulate");
-    if (verbose)
+    if (msghandler.verbose())
     {
         forceFieldSummary(&jtree, &pd);
     }
@@ -155,12 +154,12 @@ int nma(int argc, char *argv[])
     if (sch.minimize())
     {
         std::map<InteractionType, double> energies;
-        eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
-                                              &xmin, &energies, msghandler.filePointer(), {});
+        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, forceComp, sch,
+                                              &xmin, &energies, {});
         if (eMinimizeStatus::OK == eMin)
         {
             auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-            msghandler.msg(ACTStatus::Verbose, ACTMessage::Info,
+            msghandler.msg(ACTStatus::Verbose,
                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
                                              energies[InteractionType::EPOT], rmsd));
             JsonTree jtener("Energies");
@@ -195,7 +194,7 @@ int nma(int argc, char *argv[])
         doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             opt2fn_null("-ir", fnm.size(), fnm.data()),
-                            linewidth, oenv, verbose);
+                            linewidth, oenv, msghandler.verbose());
     }
 
     if (eMinimizeStatus::OK != eMin)
@@ -211,7 +210,8 @@ int nma(int argc, char *argv[])
     }
     else
     {
-        jtree.fwrite(msghandler.filePointer(), json);
+        int indent = 0;
+        msghandler.write(jtree.writeString(false, &indent));
     }
     return status;
 }

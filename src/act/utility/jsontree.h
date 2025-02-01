@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -135,13 +135,6 @@ public:
      */
     void write(const std::string &fileName,
                bool               json);
-    
-    /*! \brief Write the tree to a file
-     * \param[in] fp    The open file pointer to write to
-     * \param[in] json  Whether or not to use JSON format
-     */
-    void fwrite(FILE *fp, 
-                bool  json);
     
 };
 

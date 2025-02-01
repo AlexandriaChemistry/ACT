@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -42,23 +42,18 @@
 #include "bayes.h"
 #include "act/utility/memory_check.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
 
-MCMCMutator::MCMCMutator(FILE                 *logfile,
-                         bool                  verbose,
-                         bool                  flush,
-                         int                   seed,
+MCMCMutator::MCMCMutator(int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii,
                          bool                  evaluateTestSet)
     : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
-    logfile_ = logfile;
-    verbose_ = verbose;
-    flush_   = flush;
     bch_     = bch;
     fitComp_ = fitComp;
     sii_     = sii;
@@ -241,10 +236,8 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
             currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
-            if (logfile_ && verbose_)
-            {
-                printNewMinimum(currEval, xiter);
-            }
+            printNewMinimum(msghandler, currEval, xiter);
+
             *bestGenome = *genome;
             bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
             if (evaluateTestSet_)
@@ -322,11 +315,11 @@ void MCMCMutator::changeParam(ga::Genome *genome,
 }
 
 
-void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
+void MCMCMutator::printMonteCarloStatistics(gmx::TextWriter  *tw,
                                             const ga::Genome &initialGenome,
                                             const ga::Genome &bestGenome)
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
@@ -335,11 +328,11 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
     const auto ntrain = sii_->nTrain();
     const auto weightedTemperature = sii_->weightedTemperature();
 
-    fprintf(fp, "Monte Carlo statistics of parameters after optimization\n");
-    fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
-            bestGenome.nBase(), pMean_.size(), 
-            pSigma_.size(), paramNames.size());
-    fprintf(fp, "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
+    tw->writeStringFormatted("Monte Carlo statistics of parameters after optimization\n");
+    tw->writeStringFormatted("#best %zu #mean %zu #sigma %zu #param %zu\n",
+                             bestGenome.nBase(), pMean_.size(), 
+                             pSigma_.size(), paramNames.size());
+    tw->writeStringFormatted("Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
     for (size_t k = 0; k < bestGenome.nBase(); k++)
     {
         double acceptance_ratio = 0;
@@ -347,31 +340,33 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
         {
             acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
         }
-        fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %10.5f\n",
-                paramNames[k].c_str(), ntrain[k],
-                initialGenome.base(k), bestGenome.base(k), 
-                pMean_[k], pSigma_[k],
-                attemptedMoves_[k], acceptance_ratio, weightedTemperature[k]);
+        tw->writeStringFormatted("%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %10.5f\n",
+                                 paramNames[k].c_str(), ntrain[k],
+                                 initialGenome.base(k), bestGenome.base(k), 
+                                 pMean_[k], pSigma_[k],
+                                 attemptedMoves_[k], acceptance_ratio, weightedTemperature[k]);
     }
 }
 
-void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
+void MCMCMutator::printNewMinimum(MsgHandler                         *msghandler,
+                                  const std::map<iMolSelect, double> &chi2,
                                   double                              xiter)
 {
-    if (!logfile_)
+    auto tw = msghandler->tw();
+    if (tw && msghandler->verbose())
     {
-        return;
-    }
-    fprintf(logfile_, "Middleman %i ", sii_->id());
-    if (evaluateTestSet_)
-    {
-        fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
-                xiter, chi2.find(iMolSelect::Train)->second, chi2.find(iMolSelect::Test)->second);
-    }
-    else
-    {
-        fprintf(logfile_, "iter %10g. Found new minimum at %10g\n",
-                xiter, chi2.find(iMolSelect::Train)->second);
+        tw->writeStringFormatted("Middleman %i ", sii_->id());
+        if (evaluateTestSet_)
+        {
+            tw->writeStringFormatted("iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g",
+                                     xiter, chi2.find(iMolSelect::Train)->second,
+                                     chi2.find(iMolSelect::Test)->second);
+        }
+        else
+        {
+            tw->writeStringFormatted("iter %10g. Found new minimum at %10g\n",
+                                     xiter, chi2.find(iMolSelect::Train)->second);
+        }
     }
 }             
 
@@ -405,12 +400,6 @@ void MCMCMutator::printParameterStep(ga::Genome *genome,
             if (fp.get())
             {
                 fprintf(fp.get(), "\n");
-                // If asked, flush the file to be able to add 
-                // new data to surveillance plots
-                if (flush_)
-                {
-                    fflush(fp.get());
-                }
             }
         }
     }
@@ -436,10 +425,6 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
         fprintf(fpe_.get(), "%8f  %10g\n",
                 xiter, chi2.find(iMolSelect::Train)->second);
     }
-    if (flush_)
-    {
-        fflush(fpe_.get());
-    }
 }                    
 
 void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
@@ -461,11 +446,11 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
     auto cdc    = CalcDev::Compute;
     fitComp_->distributeTasks(cdc);
     auto chi2_0 = fitComp_->calcDeviation(msghandler, cdc, ims);
-    if (logfile_)
+    auto tw = msghandler->tw();
+    if (tw)
     {
-        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
-                chi2_0, param->size());
-        fflush(logfile_);
+        tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
+                                 chi2_0, param->size());
     }
     for (size_t i = 0; i < param->size(); ++i)
     {
@@ -491,12 +476,12 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
         s.add((*param)[i],  fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = pstore;
         sii_->updateForceField(changed, *param);
-        s.computeForceConstants(logfile_);
-        s.print(logfile_, paramNames[i]);
+        s.computeForceConstants(tw);
+        s.print(tw, paramNames[i]);
     }
-    if (logfile_)
+    if (tw)
     {
-        fprintf(logfile_, "Sensitivity analysis done.\n");
+        tw->writeString("Sensitivity analysis done.");
     }
 
 }                                      

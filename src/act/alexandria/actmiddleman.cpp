@@ -1,16 +1,9 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
- * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Julian Marrades,
- *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
- *             David van der Spoel (Project leader)
- *
- * This program is free software; you can redistribute it and/or
+ * this program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
@@ -27,22 +20,22 @@
  */
 #include "actmiddleman.h" 
 
-#include "gromacs/utility/gmxassert.h"
-
-#include "acminitializer.h"
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/percentmutator.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/utility/communicationrecord.h"
-#include "mcmcmutator.h"
-#include "percentmutator.h"
-#include "staticindividualinfo.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
  
-ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
+ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
+                           MolGen               *mg,
                            StaticIndividualInfo *sii,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
-                           bool                  flush,
                            gmx_output_env_t     *oenv,
                            bool                  openConvFiles)
 : gach_(gach), id_(sii->commRec()->middleManOrdinal())
@@ -64,18 +57,16 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,
-                                      false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_);
     
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, dis(gen),
-                                                  gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, dis(gen), gach->percent());
     }
     else
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
-        auto mut = new alexandria::MCMCMutator(nullptr, false, flush, dis(gen),
+        auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, fitComp_, sii,
                                                bch->evaluateTestset());
         if (openConvFiles)
@@ -179,12 +170,12 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     stopHelpers();
 }
 
-void ACTMiddleMan::printStatistics(FILE *logFile)
+void ACTMiddleMan::printStatistics(gmx::TextWriter *tw)
 {
-   if (gach_->optimizer() == OptimizerAlg::MCMC && logFile)
+   if (gach_->optimizer() == OptimizerAlg::MCMC && tw)
    {       
-       fprintf(logFile, "Middle man %i\n", id_);
-       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile, ind_->initialGenome(),
+       tw->writeStringFormatted("Middle man %i\n", id_);
+       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(tw, ind_->initialGenome(),
                                                                        ind_->bestGenome());
    }
 }

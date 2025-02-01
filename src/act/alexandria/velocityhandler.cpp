@@ -37,6 +37,7 @@
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -86,7 +87,7 @@ void maxwell_speed(real                        tempi,
                    unsigned int                seed, 
                    const std::vector<ActAtom> &atoms,
                    std::vector<gmx::RVec>     *v,
-                   FILE                       *fp)
+                   gmx::TextWriter            *tw)
 {
     if (tempi <= 0)
     {
@@ -95,9 +96,9 @@ void maxwell_speed(real                        tempi,
     if (seed == 0)
     {
         seed = static_cast<int>(gmx::makeRandomSeed());
-        if (fp)
+        if (tw)
         {
-            fprintf(fp, "Using random seed %u for generating velocities", seed);
+            tw->writeLineFormatted("Using random seed %u for generating velocities", seed);
         }
     }
     gmx::ThreeFry2x64<> rng(seed, gmx::RandomDomain::MaxwellVelocities);

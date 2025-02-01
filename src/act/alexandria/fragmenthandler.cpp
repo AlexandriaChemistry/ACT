@@ -52,7 +52,7 @@ FragmentHandler::FragmentHandler(MsgHandler                   *msghandler,
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
     if (atoms.size() != coordinates.size())
     {
-        msghandler->msg(ACTStatus::Error, ACTMessage::Info,
+        msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Received %zu atoms and %zu coordinates in fragmenthandler. Giving up.",
                                           atoms.size(), coordinates.size()));
         return;

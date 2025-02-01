@@ -69,14 +69,17 @@ class MsgHandlerTest : public gmx::test::CommandLineTestBase
         int i = 0;
         for(const auto &actm : ACTMessages)
         {
-            checker_.checkString(actMessage(actm.first), std::to_string(i).c_str());
+            auto aaa = actMessage(actm.first);
+            if (aaa)
+            {
+                checker_.checkString(aaa, std::to_string(i).c_str());
+            }
             i += 1;
         }
     }
         
     void runTest(ACTStatus level)
     {
-        mh.setFilePointer(stdout);
         mh.setPrintLevel(level);
         int i = 0;
         for(const auto &actm : ACTMessages)

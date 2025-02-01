@@ -122,8 +122,8 @@ public:
      */
     std::vector<std::string> Merge(const MolProp *mpi);
     
-    //! Dump the contents of this object to a file
-    void Dump(FILE *fp) const;
+    //! Dump the contents of this object to a text writer
+    void Dump(gmx::TextWriter *tw) const;
     
     //! \return the LaTeX formula
     std::string texFormula() const;

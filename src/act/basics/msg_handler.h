@@ -41,12 +41,17 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
 
+class CommunicationRecord;
+
 enum class ACTMessage
     {
+        //! Silent, do not print anything
+        Silent,
         //! Unknown error, this should not happen
         Unknown,
         //! No error, all OK.
@@ -112,9 +117,7 @@ enum class ACTMessage
         //! Missing FF parameter
         MissingFFParameter,
         //! Minimization failed
-        MinimizationFailed,
-        //! General FYI
-        Info
+        MinimizationFailed
     };
 
 extern std::map<ACTMessage, const char *> ACTMessages;
@@ -148,23 +151,25 @@ enum class ACTStatus {
 class MsgHandler
     {
     private:
-        //! File pointer to write stuff to
-        FILE         *fp_          = nullptr;
+        //! TextWriter for normal output
+        gmx::TextWriter *tw_          = nullptr;
+        //! TextWriter for debug output
+        gmx::TextWriter *twdebug_     = nullptr;
         //! File name of log file if known
-        std::string   filename_;
+        std::string      filename_;
+        //! Default log file name
+        std::string      defaultLogName_;
         //! ACTStatus level, messages at this or lower level are printed
-        ACTStatus     printLevel_  = ACTStatus::Fatal;
+        ACTStatus        printLevel_  = ACTStatus::Fatal;
         //! Level integer for command line selection of print level
-        int           ilevel_      = 3;
-        //! Whether to flush output
-        bool          flush_       = false;
+        int              ilevel_      = 2;
         //! Lowest level of error encountered (lower is more severe)
-        ACTStatus     status_      = ACTStatus::Debug;
+        ACTStatus        status_      = ACTStatus::Debug;
         //! Last message reported
-        ACTMessage    last_;
+        ACTMessage       last_;
         //! Warning count per type
         std::map<ACTMessage, unsigned int> wcount_;
-        /*! \brief Fatal error message, will throw a fatal error
+        /*! \brief Print at different levels of seriousness
          * \param[in] level Seriousness
          * \param[in] actm  The message type
          * \param[in] msg   Additional information to provide
@@ -172,6 +177,7 @@ class MsgHandler
         void print(ACTStatus   level,
                    ACTMessage  actm,
                    const char *msg) const;
+
     public:
         //! Constructor
         MsgHandler();
@@ -191,23 +197,8 @@ class MsgHandler
                         const std::string         &defaultLogName);
 
         //! \brief Check and evaluate command line options
-        void optionsFinished(const std::vector<t_filenm> &filenm);
-
-        /*! \brief Set the file pointer
-         * \param[in] fp the file pointer
-         */
-        void setFilePointer(FILE *fp)
-        {
-            fp_ = fp;
-        }
-
-        //! \return the internal file pointer. It may be a nullptr.
-        FILE *filePointer() const { return fp_; }
-
-        /*! \brief Set the file name and open it
-         * \param[in] fn the file name
-         */
-        void setFileName(const std::string &fn);
+        void optionsFinished(const std::vector<t_filenm> &filenm,
+                             const CommunicationRecord   *cr);
 
         //! \return the file name (may be empty)
         std::string filename() const { return filename_; }
@@ -234,8 +225,7 @@ class MsgHandler
          * \param[in] actm The message type
          * \param[in] msg  Additional information to provide
          */
-        void fatal(ACTMessage         actm,
-                   const std::string &msg) { fatal(actm, msg.c_str()); }
+        void fatal(const std::string &msg) { fatal(ACTMessage::Silent, msg.c_str()); }
 
         /*! \brief Message, will only print if verbosity level
          * is at least what has been configure but type will be logged
@@ -247,6 +237,30 @@ class MsgHandler
                  ACTMessage         actm,
                  const std::string &msg);
 
+        /*! \brief Simple message, will only print if verbosity level
+         * is at least what has been configure but type will be logged
+         * \param[in] level The verbosity of this message
+         * \param[in] msg   Additional information to provide
+         */
+        void msg(ACTStatus          level,
+                 const std::string &msg);
+
+        //! Return pointer to internal TextWriter object
+        gmx::TextWriter *tw() { return tw_; }
+
+        //! Return pointer to internal TextWriter object for debugging
+        gmx::TextWriter *twDebug() { return twdebug_; }
+
+        /*! \brief Just write a string
+         * \param[in] str String
+         */
+        void write(const std::string &s) const { if (tw_) tw_->writeLine(s); }
+
+        /*! \brief Just write a string
+         * \param[in] str String
+         */
+        void writeDebug(const std::string &s) const { if (twdebug_) twdebug_->writeLine(s); }
+
         //! \return Level of severity encountered
         ACTStatus status() const { return status_; }
 
@@ -255,6 +269,9 @@ class MsgHandler
 
         //! \return whether we are in a verbose mode
         bool verbose() const { return status_ > ACTStatus::Warning; }
+
+        //! \return whether we are in debug mode
+        bool debug() const { return status_ == ACTStatus::Debug; }
 
         //! \return ID of last message
         ACTMessage last() const { return last_; }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -173,16 +173,6 @@ std::vector<std::string> formatMultipole(MolPropObservable          mpo,
         fmp.push_back(fmpi);
     }
     return fmp;
-}
-
-void printMultipole(FILE                      *fp,
-                    MolPropObservable          mpo,
-                    const std::vector<double> &values)
-{
-    for(auto &f : formatMultipole(mpo, values))
-    {
-        fprintf(fp, "%s\n", f.c_str());
-    }
 }
 
 } // namespace alexandria

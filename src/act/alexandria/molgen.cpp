@@ -94,15 +94,17 @@ const char *rmsName(eRMS e)
   return ermsNames[e];
 }
 
-void FittingTarget::print(FILE *fp) const
+std::string FittingTarget::info() const
 {
-  if (fp != nullptr && chiSquared_ > 0 && totalWeight_ > 0)
+    std::string out;
+    if (chiSquared_ > 0 && totalWeight_ > 0)
     {
-      fprintf(fp, "%-15s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
-              rmsName(erms_), chiSquared_, totalWeight_,
-              weight_, chiSquaredWeighted(),
-              iMolSelectName(ims_));
+        out = gmx::formatString("%-15s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
+                                rmsName(erms_), chiSquared_, totalWeight_,
+                                weight_, chiSquaredWeighted(),
+                                iMolSelectName(ims_));
     }
+    return out;
 }
 
 MolGen::MolGen(const CommunicationRecord *cr)
@@ -197,7 +199,7 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
     return hasMPO;
 }
 
-bool MolGen::checkOptions(FILE                        *logFile,
+bool MolGen::checkOptions(MsgHandler                  *msghandler,
                           const std::vector<t_filenm> &filenames,
                           ForceField                  *pd)
 {
@@ -215,20 +217,17 @@ bool MolGen::checkOptions(FILE                        *logFile,
         }
         else
         {
-            if (debug)
-            {
-                fprintf(debug, "Ignoring unknown training parameter '%s'\n",
-                        toFit->first.c_str());
-            }
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Ignoring unknown training parameter '%s'",
+                                              toFit->first.c_str()));
             toFit = fit_.erase(toFit);
         }
     }
     auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
     if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
     {
-        std::string w("ERROR: supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
-        fprintf(logFile, "\n%s\n", w.c_str());
-        fprintf(stderr, "\n%s\n\n", w.c_str());
+        msghandler->msg(ACTStatus::Error,
+                        "supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
         return false;
     }
     return true;
@@ -263,7 +262,7 @@ void MolGen::fillIopt(ForceField *pd,
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
-            msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+            msghandler->msg(ACTStatus::Debug,
                             gmx::formatString("Adding parameter %s to fitting\n", fit.first.c_str()));
         }
         else
@@ -274,8 +273,8 @@ void MolGen::fillIopt(ForceField *pd,
     }
 }
 
-void MolGen::checkDataSufficiency(FILE        *fp,
-                                  ForceField  *pd)
+void MolGen::checkDataSufficiency(MsgHandler *msghandler,
+                                  ForceField *pd)
 // Called in Read method
 {
     size_t nmol = 0;
@@ -287,10 +286,10 @@ void MolGen::checkDataSufficiency(FILE        *fp,
     {
         // We check data sufficiency only for the training set
         nmol = targetSize_.find(iMolSelect::Train)->second;
-        if (fp)
+        if (msghandler->verbose())
         {
-            fprintf(fp, "Will check data sufficiency for %zu training compounds.\n",
-                    nmol);
+            msghandler->write(gmx::formatString("Will check data sufficiency for %zu training compounds.\n",
+                                                nmol));
         }
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
@@ -522,29 +521,28 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                             // TODO check multiple ids
                             if (!angles->parameterExists(topentry->id()))
                             {
-                                if (fp)
+                                std::string swapped;
+                                if (topentry->id().haveSwapped())
                                 {
-                                    std::string swapped;
-                                    if (topentry->id().haveSwapped())
-                                    {
-                                        swapped = topentry->id().swapped();
-                                    }
-                                    fprintf(fp, "Cannot find parameter '%s' CanSwap %s swapped '%s' in parameter list %s CanSwap %s\n",
-                                            topentry->id().id().c_str(),
-                                            canSwapToString(topentry->id().canSwap()).c_str(),
-                                            swapped.c_str(),
-                                            interactionTypeToString(atype).c_str(),
-                                            canSwapToString(angles->canSwap()).c_str());
+                                    swapped = topentry->id().swapped();
                                 }
+                                msghandler->msg(ACTStatus::Warning,
+                                                gmx::formatString("Cannot find parameter '%s' CanSwap %s swapped '%s' in parameter list %s CanSwap %s\n",
+                                                                  topentry->id().id().c_str(),
+                                                                  canSwapToString(topentry->id().canSwap()).c_str(),
+                                                                  swapped.c_str(),
+                                                                  interactionTypeToString(atype).c_str(),
+                                                                  canSwapToString(angles->canSwap()).c_str()));
                                 continue;
                             }
                             for (auto &ff : *(angles->findParameters(topentry->id())))
                             {
-                                if (debug && isVsite(atype))
+                                if (msghandler->debug() && isVsite(atype))
                                 {
-                                    fprintf(debug, "Found %s %s\n",
-                                            interactionTypeToString(atype).c_str(),
-                                            topentry->id().id().c_str());
+                                    msghandler->msg(ACTStatus::Debug,
+                                                    gmx::formatString("Found %s %s",
+                                                                      interactionTypeToString(atype).c_str(),
+                                                                      topentry->id().id().c_str()));
                                 }
                                 if (ff.second.isMutable())
                                 {
@@ -582,14 +580,15 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                                     if (force.second.isMutable() &&
                                         force.second.ntrain() < mindata_)
                                     {
-                                        if (fp)
+                                        if (msghandler->debug())
                                         {
-                                            fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                    ztype.id().c_str(),
-                                                    interactionTypeToString(itype).c_str(),
-                                                    mol.getMolname().c_str(),
-                                                    force.second.ntrain(),
-                                                    mindata_);
+                                            msghandler->msg(ACTStatus::Debug,
+                                                            gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                                              ztype.id().c_str(),
+                                                                              interactionTypeToString(itype).c_str(),
+                                                                              mol.getMolname().c_str(),
+                                                                              force.second.ntrain(),
+                                                                              mindata_));
                                         }
                                         keep = false;
                                         break;
@@ -605,14 +604,15 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                                 auto p = atype->parameter(ccc);
                                 if (p->isMutable() && p->ntrain() < mindata_)
                                 {
-                                    if (fp)
+                                    if (msghandler->debug())
                                     {
-                                        fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                ccc.c_str(),
-                                                interactionTypeToString(itype).c_str(),
-                                                mol.getMolname().c_str(),
-                                                p->ntrain(),
-                                                mindata_);
+                                        msghandler->msg(ACTStatus::Debug,
+                                                        gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                                          ccc.c_str(),
+                                                                          interactionTypeToString(itype).c_str(),
+                                                                          mol.getMolname().c_str(),
+                                                                          p->ntrain(),
+                                                                          mindata_));
                                     }
                                     keep = false;
                                     break;
@@ -635,10 +635,11 @@ void MolGen::checkDataSufficiency(FILE        *fp,
                 removeMol.push_back(mol.getIupac());
             }
         }
-        if (fp && removeMol.size() > 0)
+        if (msghandler->verbose() && removeMol.size() > 0)
         {
-            fprintf(fp, "Found %zu molecules without sufficient support, will remove them.\n",
-                    removeMol.size());
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Found %zu molecules without sufficient support, will remove them.\n",
+                                              removeMol.size()));
         }
         for(auto &rmol : removeMol)
         {
@@ -649,20 +650,15 @@ void MolGen::checkDataSufficiency(FILE        *fp,
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in actmol", rmol.c_str()).c_str()));
             }
-            if (fp)
-            {
-                fprintf(fp, "Removing %s from %s set because of lacking support\n",
-                        rmol.c_str(),
-                        iMolSelectName(moliter->datasetType()));
-            }
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Removing %s from %s set because of lacking support\n",
+                                              rmol.c_str(),
+                                              iMolSelectName(moliter->datasetType())));
             actmol_.erase(moliter);
         }
     }
     while (actmol_.size() > 0 && actmol_.size() < nmol);
-    if (fp)
-    {
-        fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
-    }
+    msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n", nmol));
 }
 
 static void incrementImmCount(std::map<ACTMessage, int> *map, ACTMessage imm) // Called in read method
@@ -809,11 +805,11 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         // Even if we did not read a file, we have to tell the other processors
         // about it.
         broadcastChargeMap(cr_, &qmap);
-        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+        msghandler->msg(ACTStatus::Verbose,
                         gmx::formatString("Read %zu compounds from %s", mp.size(), molfn));
         if (qmap.size() > 0)
         {
-            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+            msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Read chargemap containing %lu entries from %s", qmap.size(), qmapfn));
         }
         print_memory_usage(debug);
@@ -866,7 +862,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     auto qtype = qType::Calc;
     if (cr_->isMaster())
     {
-        msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+        msghandler->msg(ACTStatus::Verbose,
                         gmx::formatString("Trying to generate topologies for %zu out of %zu molecules.",
                                           gms.nMol(), mp.size()));
 
@@ -876,7 +872,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         for (auto &sel : gms.imolSelect())
         {
             auto ss = ssNotFound;
-            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+            msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Looking for %s in molprop file %s", sel.iupac().c_str(), molfn));
             for (auto mpi = mp.begin(); ssNotFound == ss && mpi < mp.end(); ++mpi)
             {
@@ -893,7 +889,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 msghandler->resetStatus();
                 // If we got here, we found the correct molprop
                 alexandria::ACTMol actmol;
-                msghandler->msg(ACTStatus::Debug, ACTMessage::Info, mpi->getMolname());
+                msghandler->msg(ACTStatus::Debug, mpi->getMolname());
 
                 actmol.Merge(&(*mpi));
                 actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
@@ -1035,7 +1031,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     actmol->setSupport(eSupport::Remote);
                 }
             }
-            msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+            msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Computing %s on %s nexp = %zu", actmol->getMolname().c_str(),
                                               eSupport::Local == actmol->support() ? "master" : "helper",
                                               actmol->experimentConst().size()));
@@ -1053,13 +1049,12 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         // TODO: Free mycomms
         print_memory_usage(debug);
         // Print cost per helper
-        auto fp = msghandler->filePointer();
-        if (fp)
+        if (msghandler->verbose())
         {
-            fprintf(fp, "Computational cost estimate per helper:\n");
+            msghandler->write("Computational cost estimate per helper:");
             for(size_t i = 0; i < totalCost.size(); i++)
             {
-                fprintf(fp,"Helper %2lu  Cost %g\n", i, totalCost[i]);
+                msghandler->write(gmx::formatString("Helper %2lu  Cost %g\n", i, totalCost[i]));
             }
         }
     }
@@ -1187,7 +1182,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     // After all molecules have been sent around let's check whether we have
     // support for them, at least on the middlemen but may be needed everywhere.
     // TODO Check that this is correct.
-    checkDataSufficiency(msghandler->filePointer(), pd);
+    checkDataSufficiency(msghandler, pd);
     
     // Some extra debug printing.
     if (debug)
@@ -1206,26 +1201,25 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
                 nCount[iMolSelect::Test], actmol_.size());
     }
-    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Verbose,
                     gmx::formatString("There were %d warnings because of zero error bars.", nwarn));
-    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Verbose,
                     gmx::formatString("Made topologies for %zu out of %zu molecules.",
                                       nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
                                       nTargetSize(iMolSelect::Ignore),
                                       mp.size()));
-    auto fp = msghandler->filePointer();
-    if (fp)
+    if (msghandler->verbose())
     {
         for (const auto &imm : imm_count)
         {
-            fprintf(fp, "%d molecules - %s.\n", imm.second,
-                    alexandria::actMessage(imm.first));
+            msghandler->write(gmx::formatString("%d molecules - %s.\n", imm.second,
+                                                alexandria::actMessage(imm.first)));
         }
         if (imm_count.find(ACTMessage::OK) != imm_count.end())
         {
             if (imm_count.find(ACTMessage::OK)->second != static_cast<int>(mp.size()))
             {
-                fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
+                msghandler->write("Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }
         }
     }

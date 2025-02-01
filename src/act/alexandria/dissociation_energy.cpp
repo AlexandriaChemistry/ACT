@@ -39,9 +39,15 @@
 #include <random>
 
 #include "act/basics/msg_handler.h"
+#include "act/utility/regression.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
-#include "act/utility/regression.h"
+#include "gromacs/utility/textwriter.h"
+
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace alexandria
 {
@@ -116,7 +122,7 @@ static void dump_csv(const char                      *csvFile,
 }
 
 /*! \brief Calculate the dissociation energies once
- * \param[in] fplog               File pointer for logging information
+ * \param[in] tw                  TextWriter
  * \param[in] pd                  The input force field
  * \param[in] molset              The molecules
  * \param[in] pickRandomMolecules Whether or not to pick random molecules or just everything
@@ -132,7 +138,7 @@ static void dump_csv(const char                      *csvFile,
  * \param[out] rmsd               Root mean square deviation, if not nullptr
  * \return true if successful.
  */
-static bool calcDissoc(FILE                              *fplog,
+static bool calcDissoc(gmx::TextWriter                   *tw,
                        const ForceField                  *pd,
                        const std::vector<ACTMol>         &molset,
                        bool                               pickRandomMolecules,
@@ -197,15 +203,15 @@ static bool calcDissoc(FILE                              *fplog,
             }
         }
     }
-    if (fplog)
+    if (tw)
     {
-        fprintf(fplog, "There are %d different bondtypes and %d reference datapoints to optimize the heats of formation\n", nColumn,  nRow);
+        tw->writeStringFormatted("There are %d different bondtypes and %d reference datapoints to optimize the heats of formation\n", nColumn,  nRow);
     }
     if (nColumn > nRow)
     {
-        if (fplog)
+        if (tw)
         {
-            fprintf(fplog, "Not enough data. Try again.\n");
+            tw->writeStringFormatted("Not enough data. Try again.\n");
         }
         return false;
     }
@@ -304,10 +310,10 @@ static bool calcDissoc(FILE                              *fplog,
             auto  &gs = edissoc->find(b.first)->second;
             size_t N  = gs.get_npoints();
             gs.add_point(N, Edissoc[b.second], 0, 0);
-            if (fplog && fabs(Edissoc[b.second]) > 1000)
+            if (tw && fabs(Edissoc[b.second]) > 1000)
             {
-                fprintf(fplog, "Adding energy %g for %s\n", Edissoc[b.second],
-                        b.first.id().c_str());
+                tw->writeStringFormatted("Adding energy %g for %s\n", Edissoc[b.second],
+                                         b.first.id().c_str());
             }
         }
         return true;
@@ -318,7 +324,7 @@ static bool calcDissoc(FILE                              *fplog,
     }
 }
                            
-double getDissociationEnergy(FILE                *fplog,
+double getDissociationEnergy(MsgHandler          *msghandler,
                              ForceField          *pd,
                              std::vector<ACTMol> *molset,
                              iqmType              iqm,
@@ -336,14 +342,13 @@ double getDissociationEnergy(FILE                *fplog,
     std::map<iqmType, double> tmap = {
         { iqmType::QM, 0 }, { iqmType::Both, -1 }
     };
-    MsgHandler msghandler;
-    msghandler.setFilePointer(fplog);
+    
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto actmol = &((*molset)[i]);
-        actmol->getExpProps(&msghandler, pd, myprops, tmap[iqm]);
-        if (msghandler.ok())
+        actmol->getExpProps(msghandler, pd, myprops, tmap[iqm]);
+        if (msghandler->ok())
         {
             double deltaE0;
             if (actmol->energy(MolPropObservable::DELTAE0, &deltaE0))
@@ -354,19 +359,20 @@ double getDissociationEnergy(FILE                *fplog,
     }
     if (hasExpData.size() < 2)
     {
-        msghandler.msg(ACTStatus::Error, ACTMessage::Info,
-                       "Not enough molecules with experimental data to determine dissocation energy.");
+        msghandler->msg(ACTStatus::Error,
+                        "Not enough molecules with experimental data to determine dissocation energy.");
         return -1;
     }
     // Call the low level routine once to get optimal values and to
     // establish all the entries in the edissoc map.
+    auto tw = msghandler->tw();
     std::map<Identifier, gmx_stats> edissoc;
     std::map<Identifier, int>       ntrain;
     double                          rmsd = 0;
-    if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
+    if (!calcDissoc(tw, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
     {
-        msghandler.msg(ACTStatus::Fatal, ACTMessage::Info,
-                       "Cannot solve the matrix equations for determining the dissociation energies");
+        msghandler->msg(ACTStatus::Fatal,
+                        "Cannot solve the matrix equations for determining the dissociation energies");
     }
     // Now run the bootstrapping
     std::map<Identifier, gmx_stats> edissoc_bootstrap;
@@ -386,13 +392,13 @@ double getDissociationEnergy(FILE                *fplog,
     }
     if (nBStries == maxBootStrap)
     {
-        fprintf(fplog, "Maximum number of tries %d for running bootstraps reached.\n", maxBootStrap);
+        tw->writeStringFormatted("Maximum number of tries %d for running bootstraps reached.\n", maxBootStrap);
     }
     
-    if (fplog)
+    if (tw)
     {
-        fprintf(fplog, "Optimized dissociation energy based on %4d bootstraps.\n", iter);
-        fprintf(fplog, "%-14s  %6s  %10s  %10s\n", "Bond", "N", "Edissoc", "Std.Dev.");
+        tw->writeStringFormatted("Optimized dissociation energy based on %4d bootstraps.\n", iter);
+        tw->writeStringFormatted("%-14s  %6s  %10s  %10s\n", "Bond", "N", "Edissoc", "Std.Dev.");
     }
     // Finally copy the new dissociation energies to the force field.
     auto iBonds = InteractionType::BONDS;
@@ -404,9 +410,9 @@ double getDissociationEnergy(FILE                *fplog,
         auto estats = bi.second.get_average(&average);
         if (eStats::OK != estats)
         {
-            if (fplog)
+            if (tw)
             {
-                fprintf(fplog, "%s: %s\n", bi.first.id().c_str(), 
+                tw->writeStringFormatted("%s: %s\n", bi.first.id().c_str(), 
                         gmx_stats_message(estats));
             }
             continue;
@@ -432,9 +438,9 @@ double getDissociationEnergy(FILE                *fplog,
         auto fp  = fs->findParameterType(bi.first, "De");
         int  ntr = ntrain.find(bi.first)->second;
         // Print to the log file    
-        if (fplog)
+        if (tw)
         {
-            fprintf(fplog, "%-14s  %6d  %10.1f  %10.1f\n", 
+            tw->writeStringFormatted("%-14s  %6d  %10.1f  %10.1f\n", 
                     bi.first.id().c_str(), ntr, average, error);
         }
         // Now add the new parameter to the force field
@@ -449,10 +455,10 @@ double getDissociationEnergy(FILE                *fplog,
         }
         else
         {
-            if (fplog)
+            if (tw)
             {
-                fprintf(fplog, "Dissociation energy for %s estimated to be %g, but the parameter is not mutable.\n",
-                        bi.first.id().c_str(), average);
+                tw->writeStringFormatted("Dissociation energy for %s estimated to be %g, but the parameter is not mutable.\n",
+                    bi.first.id().c_str(), average);
             }
         }
     }

@@ -34,6 +34,7 @@
 #include "fragment.h"
 
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -63,15 +64,14 @@ void Fragment::makeTexFormula()
     }
 }
 
-void Fragment::dump(FILE *fp) const
+void Fragment::dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (tw)
     {
-        return;
+        tw->writeStringFormatted("Fragment %s mass %g formula %s charge %d multiplicity %d atoms %s\n",
+                                 inchi_.c_str(), mass_, formula_.c_str(), charge_, multiplicity_,
+                                 atomString_.c_str());
     }
-    fprintf(fp, "Fragment %s mass %g formula %s charge %d multiplicity %d atoms %s\n",
-            inchi_.c_str(), mass_, formula_.c_str(), charge_, multiplicity_,
-            atomString_.c_str());
 }
     
 CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,

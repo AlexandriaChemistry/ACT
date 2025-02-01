@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -126,42 +126,42 @@ public:
      * tolerance inside the forceComp, accoring to:
      * toler = 10*forceComp->rmsForce()^2
      *
-     * \param[in]  pd          Pointer to force field structure
+     * \param[in] msghandler   For output and debugging
+     * \param[in] pd           Pointer to force field structure
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
      * \param[in] sch          Configuration options
      * \param[inout] coords    The coordinates to be minimized
-     * \param[in] logFile      File to write some info to, may be a nullptr
      * \param[in] freeze       List of atoms (not shells) that will not be
      *                         moved during the minimization.
      * \return Status flag
      */
-    eMinimizeStatus minimizeCoordinates(const ForceField                  *pd,
+    eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
+                                        const ForceField                  *pd,
                                         const ACTMol                      *mol,
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,
                                         std::map<InteractionType, double> *energies,
-                                        FILE                              *logFile,
                                         const std::vector<int>            &freeze) const;
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple
      * molecules, while relaxing shells if present.
      *
-     * \param[in]  pd          Pointer to force field structure
+     * \param[in] msghandler     MsgHandler
+     * \param[in] pd             Pointer to force field structure
      * \param[in] mol            The molecule object (will be modified)
      * \param[in] forceComp      Force Computer utility
      * \param[in] simConfig      Simulation configuration handler
-     * \param[in] logFile        File for logging information
      * \param[in] trajectoryFile Filename for writing coordinates
      * \param[in] energyFile     Filename for writing energies
      * \param[in] oenv           GROMACS output environment
      */
-    void simulate(const ForceField              *pd,
+    void simulate(MsgHandler                    *msghandler,
+                  const ForceField              *pd,
                   ACTMol                        *mol,
                   const ForceComputer           *forceComp,
                   const SimulationConfigHandler &simConfig,
-                  FILE                          *logFile,
                   const char                    *trajectoryFile,
                   const char                    *energyFile,
                   const gmx_output_env_t        *oenv) const;

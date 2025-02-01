@@ -270,9 +270,9 @@ public:
     MolPropObservable mpo() const { return mpo_; }
 
     /*! \brief Dump (excerpt of) content tot a file
-     * \param[in] fp File pointer
+     * \param[in] tw TextWriter
      */
-    virtual void Dump(FILE *fp) const;
+    virtual void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Sends this object over an MPI connection
      *
@@ -364,7 +364,7 @@ public:
      */
     void setValue(const std::string &id, double value);
 
-    void Dump(FILE *fp) const;
+    void Dump(gmx::TextWriter *tw) const;
     
     double getValue() const
     {
@@ -462,7 +462,7 @@ public:
         crash();
     }
     
-    void Dump(FILE *fp) const;
+    void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Sends this object over an MPI connection
      *
@@ -557,7 +557,7 @@ public:
         return alpha_;
     }
 
-    void Dump(FILE *fp) const;
+    void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Sends this object over an MPI connection
      *
@@ -647,7 +647,7 @@ public:
 
     const std::vector<double> &getVector() const { crash(); }
 
-    void Dump(FILE *fp) const;
+    void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Sends this object over an MPI connection
      *
@@ -760,7 +760,7 @@ public:
     //! Return the electrostatic potential at this point in space
     const std::vector<double> V() const { return V_; }
 
-    void Dump(FILE *fp) const;
+    void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Sends this object over an MPI connection
      *

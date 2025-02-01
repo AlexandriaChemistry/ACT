@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -120,10 +120,9 @@ public:
      */
     const Genome &getBest(const iMolSelect ims) const;
 
-    /*! Print the Gene Pool
-     * \param[in] fp The file to print to
+    /*! Return strings containing the Gene Pool
      */
-    void print(FILE *fp) const;
+    std::vector<std::string> print() const;
     
     //! \return the minimum value per parameter in this pool
     std::vector<double> min() const;
