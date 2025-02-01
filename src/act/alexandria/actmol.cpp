@@ -468,7 +468,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
 {
     std::string btype1, btype2;
 
-    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Generating topology for %s",
                                       getMolname().c_str()));
 
@@ -1491,7 +1491,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
     bool foundNothing = true;
-    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Found %zu data items for %s",
                                       experimentConst().size(),
                                       getMolname().c_str()));
@@ -1514,7 +1514,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
             }
             // Fetch the property from this experiment
             auto gp = myexp.propertyConst(prop.first);
-            msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+            msghandler->msg(ACTStatus::Debug,
                             gmx::formatString("Found %zu %s values for %s",
                                               gp.size(),
                                               mpo_name(prop.first),
@@ -1529,7 +1529,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                     {
                         qprop = true;
                     }
-                    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Debug,
                                     gmx::formatString("Found %zu charges for %s",
                                                       q.size(), getMolname().c_str()));
                     break;
@@ -1565,7 +1565,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                             }
                         }
                     }
-                    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Debug,
                                     gmx::formatString("Found %zu potential points for %s",
                                                       eee.size(), getMolname().c_str()));
                     qprop = true;
@@ -1592,7 +1592,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                         qelec->setPolarizabilityTensor(polprop->getTensor());
                         qprop = true;
                     }
-                    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Debug,
                                     gmx::formatString("Found %s for %s",
                                                       mpo_name(prop.first),
                                                       getMolname().c_str()));
@@ -1606,7 +1606,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, ieprop->getValue()));
                         foundNothing = false;
                     }
-                    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Debug,
                                     gmx::formatString("Found %s for %s",
                                                       mpo_name(prop.first),
                                                       getMolname().c_str()));
@@ -1629,7 +1629,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, eprop->getValue()));
                         foundNothing = false;
                     }
-                    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Debug,
                                     gmx::formatString("Found %s for %s",
                                                       mpo_name(prop.first),
                                                       getMolname().c_str()));

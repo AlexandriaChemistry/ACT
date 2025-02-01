@@ -63,13 +63,7 @@ void ACMFitnessComputer::compute(MsgHandler *msghandler,
     auto cd = distributeTasks(CalcDev::Compute);
     double fitness = calcDeviation(msghandler, cd, trgtFit);
     genome->setFitness(trgtFit, fitness);
-    if (debug)
-    {
-        // TODO fix printing
-        //tmpInd->printParameters(debug);
-    }
-    auto fp = msghandler->filePointer();
-    if (fp)
+    if (msghandler->tw())
     {
         const auto &targets = sii_->targets();
         if (targets.empty())
@@ -82,10 +76,14 @@ void ACMFitnessComputer::compute(MsgHandler *msghandler,
             auto fts = ttt->second;
             if (!fts.empty())
             {
-                fprintf(fp, "Components of training function for %s set\n", iMolSelectName(trgtFit));
+                msghandler->tw()->writeLineFormatted("Components of training function for %s set\n", iMolSelectName(trgtFit));
                 for (const auto &ft : fts)
                 {
-                    ft.second.print(fp);
+                    auto p = ft.second.info();
+                    if (!p.empty())
+                    {
+                        msghandler->tw()->writeLine(p);
+                    }
                 }
             }
         }
@@ -205,7 +203,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(forceComp_, nullptr, nullptr, targets, sii_->forcefield());
+        bdc_->calcDeviation(msghandler, forceComp_, nullptr, nullptr, targets, sii_->forcefield());
     }
 
     // Loop over molecules
@@ -265,7 +263,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
+                mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
             }
             if (debug)
             {
@@ -332,30 +330,29 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
     }
 }
 
-void ACMFitnessComputer::fillDevComputers(bool   verbose,
-                                          double zetaDiff,
-                                          bool   haveInductionCorrectionData)
+void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
+                                          double      zetaDiff,
+                                          bool        haveInductionCorrectionData)
 {
     if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
     {
-        bdc_ = new BoundsDevComputer(logfile_, verbose, sii_->optIndexPtr(),
-                                     zetaDiff);
+        bdc_ = new BoundsDevComputer(sii_->optIndexPtr(), zetaDiff);
     }
     if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
     {
-        devComputers_.push_back(new ChargeCM5DevComputer(logfile_, verbose));
+        devComputers_.push_back(new ChargeCM5DevComputer());
     }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {
-        devComputers_.push_back(new EspDevComputer(logfile_, verbose, molgen_->fit("zeta")));
+        devComputers_.push_back(new EspDevComputer(molgen_->fit("zeta")));
     }
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
     {
         if (sii_->forcefield()->polarizable())
         {
-            devComputers_.push_back(new PolarDevComputer(logfile_, verbose));
+            devComputers_.push_back(new PolarDevComputer());
         }
         else
         {
@@ -364,23 +361,19 @@ void ACMFitnessComputer::fillDevComputers(bool   verbose,
     }
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
     {
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose,
-                                                         MolPropObservable::DIPOLE));
+        devComputers_.push_back(new MultiPoleDevComputer(MolPropObservable::DIPOLE));
     }
     if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
     {
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
-                                                         MolPropObservable::QUADRUPOLE));
+        devComputers_.push_back(new MultiPoleDevComputer(MolPropObservable::QUADRUPOLE));
     }
     if (sii_->target(iMolSelect::Train, eRMS::OCT)->weight() > 0)
     {
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
-                                                         MolPropObservable::OCTUPOLE));
+        devComputers_.push_back(new MultiPoleDevComputer(MolPropObservable::OCTUPOLE));
     }
     if (sii_->target(iMolSelect::Train, eRMS::HEXADEC)->weight() > 0)
     {
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
-                                                         MolPropObservable::HEXADECAPOLE));
+        devComputers_.push_back(new MultiPoleDevComputer(MolPropObservable::HEXADECAPOLE));
     }
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::Interaction)->weight() > 0 ||
@@ -408,17 +401,25 @@ void ACMFitnessComputer::fillDevComputers(bool   verbose,
                                                 haveInductionCorrectionData ? "" : " not", dhfWeight);
             GMX_THROW(gmx::InvalidInputError(msg.c_str()));
         }
-        auto devcomp     = new ForceEnergyDevComputer(logfile_, verbose, boltzmann);
+        auto devcomp     = new ForceEnergyDevComputer(boltzmann);
+        if (msghandler->verbose())
+        {
+            for(const auto &b : boltzmann)
+            {
+                msghandler->write(gmx::formatString("Component %s Boltzmann temperature %g",
+                                                    rmsName(b.first), b.second));
+            }
+        }
         devcomp->setSeparateInductionCorrection(dhfWeight >  0 && haveInductionCorrectionData);
         devComputers_.push_back(std::move(devcomp));
     }
     if (sii_->target(iMolSelect::Train, eRMS::FREQUENCY)->weight() > 0)
     {
-        devComputers_.push_back(new HarmonicsDevComputer(logfile_, verbose, MolPropObservable::FREQUENCY));
+        devComputers_.push_back(new HarmonicsDevComputer(MolPropObservable::FREQUENCY));
     }
     if (sii_->target(iMolSelect::Train, eRMS::INTENSITY)->weight() > 0)
     {
-        devComputers_.push_back(new HarmonicsDevComputer(logfile_, verbose, MolPropObservable::INTENSITY));
+        devComputers_.push_back(new HarmonicsDevComputer(MolPropObservable::INTENSITY));
     }
 }
 

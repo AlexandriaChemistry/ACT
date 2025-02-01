@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Int64>1</Int64>
   <Int64 Name="Unknown status">1</Int64>
   <Int64 Name="OK">1</Int64>
   <Int64 Name="No Atoms">1</Int64>
@@ -34,5 +35,4 @@
   <Int64 Name="NotSupportedDihedral">1</Int64>
   <Int64 Name="Missing parameter in force field">1</Int64>
   <Int64 Name="Minimization failed">1</Int64>
-  <Int64 Name="Information">1</Int64>
 </ReferenceData>

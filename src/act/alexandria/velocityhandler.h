@@ -42,6 +42,11 @@
 
 #include "topology.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -52,13 +57,13 @@ namespace alexandria
  * \param[in]  seed   Random number generator seed
  * \param[in]  atoms  The atoms
  * \param[out] v      Velocities
- * \param[in]  fp     File pointer for logging info, may be nullptr.
+ * \param[in]  tw     TextWriter
  */
 void maxwell_speed(real                        tempi, 
                    unsigned int                seed, 
                    const std::vector<ActAtom> &atoms,
                    std::vector<gmx::RVec>     *v,
-                   FILE                       *fp);
+                   gmx::TextWriter            *tw);
 
 /*! \brief
  * Remove the center of mass motion in a set of coordinates.

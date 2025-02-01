@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,6 +41,11 @@
 #include "confighandler.h"
 #include "staticindividualinfo.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+    
 namespace alexandria
 {
     // Declare some classes rather than including headers.
@@ -72,19 +77,19 @@ namespace alexandria
 
     public:
         /*! \brief Constructor
+         * \param[in] msghandler Message and status handler
          * \param[in] mg         Molecule info
          * \param[in] sii        The individual info
          * \param[in] gach       GA Config handler
          * \param[in] bch        Bayes Config handler
-         * \param[in] flush      Whether or not to to flush file output directly instead of letting the OS handle it.
          * \param[in] oenv       GROMACS output environment
          * \param[in] openConvFiles Whether or not to create convergence files
          */
-        ACTMiddleMan(MolGen               *mg,
+        ACTMiddleMan(MsgHandler           *msghandler,
+                     MolGen               *mg,
                      StaticIndividualInfo *sii,
                      GAConfigHandler      *gach,
                      BayesConfigHandler   *bch,
-                     bool                  flush,
                      gmx_output_env_t     *oenv,
                      bool                  openConvFiles);
         
@@ -94,7 +99,7 @@ namespace alexandria
         void run(MsgHandler *msghandler);
 
         //! Print the MCMC statistics if appropriate
-        void printStatistics(FILE *logFile);
+        void printStatistics(gmx::TextWriter *tw);
 
     };
     

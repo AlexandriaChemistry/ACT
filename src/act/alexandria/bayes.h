@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,9 +35,13 @@
 #ifndef ALEXANDRIA_BAYES_H
 #define ALEXANDRIA_BAYES_H
 
-#include <cstdio>
 #include <string>
 #include <vector>
+
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace alexandria
 {
@@ -81,9 +85,9 @@ public:
     }
     /*! \brief
      * Compute the fit to the curve
-     * \param[in] fp File pointer for debugging output
+     * \param[in] tw A text writer
      */
-    void computeForceConstants(FILE *fp);
+    void computeForceConstants(gmx::TextWriter *tw);
 
     //! Return the constants after computation
     double a() const { return a_; }
@@ -91,10 +95,10 @@ public:
     double c() const { return c_; }
 
     /*! \brief Print output
-     * \param[in] fp    File pointer for output
+     * \param[in] tw A text writer
      * \param[in] label Label for identifying the parameter
      */
-    void print(FILE *fp, const std::string &label);
+    void print(gmx::TextWriter *tw, const std::string &label);
 };
 
 }  //namespace alexandria

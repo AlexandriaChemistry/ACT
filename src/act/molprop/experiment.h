@@ -131,8 +131,8 @@ public:
     //! Return the type of data
     DataSource dataSource() const { return dataSource_; }
     
-    //! Dump the contents of this object to a file
-    void Dump(FILE *fp) const;
+    //! Dump the contents of this object to a tw
+    void Dump(gmx::TextWriter *tw) const;
 
     //! Set the experiment id
     void setId(int id) { id_ = id; }

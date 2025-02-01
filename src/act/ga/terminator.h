@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,6 +40,10 @@
 
 #include "gene_pool.h"
 
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace ga
 {
@@ -53,26 +57,24 @@ class Terminator
 
 protected:
 
-    //! File to print stuff to (may be stdout, or nullptr)
-    FILE *outfile_ = nullptr;
-
     /*!
      * \brief Constructor
      * \param[in] outfile the file to write stuff to
      */
-    Terminator(FILE *outfile)
-    : outfile_(outfile) {}
+    Terminator() {}
 
 public:
 
     /*!
      * \brief Check whether the evolution should be terminated
+     * \param[in] tw                Text Writer
      * \param[in] pool              The GenePool
      * \param[in] generationNumber  The generation number
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const GenePool *pool,
-                           const int       generationNumber) = 0;
+    virtual bool terminate(gmx::TextWriter *tw,
+                           const GenePool  *pool,
+                           const int        generationNumber) = 0;
 
 };
 
@@ -92,19 +94,20 @@ public:
     /*!
      * \brief Constructor
      * \param[in] maxGenerations the maximum allowed amount of generations
-     * \param[in] outfile        file for printing stuff
      */
-    GenerationTerminator(const int maxGenerations, FILE *outfile)
-    : Terminator(outfile), maxGenerations_(maxGenerations) {}
+    GenerationTerminator(const int maxGenerations)
+    : maxGenerations_(maxGenerations) {}
 
     /*!
      * \brief Will return true when \p generationNumber \f$\geq\f$ \p maxGenerations, and false otherwise.
+     * \param[in] tw                Text Writer
      * \param[in] pool             The gene pool
      * \param[in] generationNumber The generation number
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const GenePool *pool,
-                           const int       generationNumber);
+    virtual bool terminate(gmx::TextWriter *tw,
+                           const GenePool  *pool,
+                           const int        generationNumber);
 
 };
 
@@ -130,21 +133,22 @@ public:
      * \brief Constructor
      * \param[in] generations max amount of generations we allow the test
      *                        fitness to not improve
-     * \param[in] outfile     file for printing stuff
      */
-    TestGenTerminator(const int generations, FILE *outfile)
-    : Terminator(outfile), generations_(generations), remaining_(generations),
+    TestGenTerminator(const int generations)
+    : generations_(generations), remaining_(generations),
       bestFitness_(std::numeric_limits<double>::max()) {}
 
     /*!
      * \brief Will return true when the test fitness has not improved over
      * the given amount of last generations, and false otherwise.
+     * \param[in] tw                Text Writer
      * \param[in] pool             The gene pool
      * \param[in] generationNumber The generation number
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const GenePool *pool,
-                           const int       generationNumber);
+    virtual bool terminate(gmx::TextWriter *tw,
+                           const GenePool  *pool,
+                           const int        generationNumber);
 
 };
 

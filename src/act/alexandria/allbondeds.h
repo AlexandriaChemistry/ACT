@@ -44,6 +44,11 @@
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -161,11 +166,11 @@ namespace alexandria
         void writeHistogram(const gmx_output_env_t *oenv);
             
         /*! \brief Store the bond lengths etc. in the force field
-         * \param[in]  fp  A file to print information to
+         * \param[in]  tw  To print information to
          * \param[out] pd  The force field structure to update
          */
-        void updateForceField(FILE       *fp,
-                              ForceField *pd);
+        void updateForceField(gmx::TextWriter *tw,
+                              ForceField      *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  msghandler Message handler
@@ -183,7 +188,7 @@ namespace alexandria
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to
          */
-        void writeSummary(FILE *fp);
+        void writeSummary(gmx::TextWriter *tw);
 
     };
     

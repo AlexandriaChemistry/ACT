@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -60,10 +60,10 @@ class ForceField
         //! Default constructor
         ForceField() {};
 
-        /*! Print information about the force field
-         * \param[in] fp File pointer
+        /*! Return information about the force field
+         * \return array of strings with info
          */
-        void print(FILE *fp) const;
+        std::vector<std::string> info() const;
 
         /*! \brief
          * Set the file name gentop.dat

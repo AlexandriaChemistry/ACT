@@ -54,12 +54,14 @@ namespace alexandria
         ForceComputer      *forceComp_;
     public:
         /*! \brief Constructor
+         * \param[in] msghandler   Message and status handler
          * \param[in] sii          Static information
          * \param[in] mg           Information about this helpers molecules
          * \param[in] shellToler   Tolerance for minimizing shell positions
          * \param[in] shellMaxIter Max # iterations for the same
          */
-        ACTHelper(StaticIndividualInfo *sii,
+        ACTHelper(MsgHandler           *msghandler,
+                  StaticIndividualInfo *sii,
                   MolGen               *mg,
                   double                shellToler,
                   int                   shellMaxIter);

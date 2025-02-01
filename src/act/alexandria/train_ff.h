@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -76,8 +76,6 @@ class OptACM : public ConfigHandler
 private:
     //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool bRemoveMol_ = true;
-    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-    bool flush_ = false;
     //! ACT Communication data structure
     CommunicationRecord   commRec_;
     //! GROMACS output environment
@@ -183,9 +181,6 @@ public:
     bool removeMol() const { return bRemoveMol_; }
 
     const CommunicationRecord *commRec() const { return &commRec_; }
-
-    //! \return The logFile pointer, may be nullptr
-    FILE *logFile() { return msghandler_.filePointer(); }    
 
     /*! \brief Set the output environment pointer \p oenv_
      * \param[in] oenv the reference pointer

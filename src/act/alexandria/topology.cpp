@@ -1252,7 +1252,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
         msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
                         "Could not make topology");
     }
-    msghandler->msg(ACTStatus::Debug, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
                                       mol->getMolname().c_str(),
                                       ci->getMethod().c_str(),

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,11 @@
 
 #include "gromacs/fileio/xvgr.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace ga
 {
 
@@ -49,11 +54,8 @@ class Penalizer
 
 protected:
 
-    //! File to print stuff to (may be nullptr)
-    FILE *logfile_ = nullptr;
-
     //! \brief Default constructor
-    Penalizer(FILE *logfile): logfile_(logfile) {}
+    Penalizer() {}
 
 public:
 
@@ -62,12 +64,14 @@ public:
 
     /*!
      * \brief Penalize a population
+     * \param[in]    tw         TextWriter
      * \param[inout] pool       the collection of genomes
      * \param[in]    generation the current generation number
      * \return true if the population has been penalized, false otherwise
      */
-    virtual bool penalize(      GenePool *pool,
-                          const int       generation) = 0;
+    virtual bool penalize(gmx::TextWriter *tw,
+                          GenePool        *pool,
+                          const int        generation) = 0;
 
 }; // class Penalizer
 
@@ -121,13 +125,13 @@ public:
      */
     VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
                             const bool               logVolume,
-                                  FILE              *logfile,
                             const double             totalVolume,
                             const double             volFracLimit,
                             const double             popFrac,
                                   Initializer       *initializer);
 
-    bool penalize(      GenePool *pool,
+    bool penalize(gmx::TextWriter *tw,
+                  GenePool        *pool,
                   const int       generation) override;
 
 }; // class VolumeFactorPenalizer
@@ -162,22 +166,21 @@ public:
 
     /*!
      * \brief Create a new CatastrophePenalizer
-     * \param[in] logfile     file to print log stuff to (may be nullptr)
      * \param[in] seed        seed for the random number generation
      * \param[in] genInterval number of generations as interval between penalties
      * \param[in] popFrac     fraction of the population to penalize
      * \param[in] initializer Initializer to randomize genomes
      * \param[in] popSize     Size of the population
      */
-    CatastrophePenalizer(      FILE        *logfile,
-                         const int          seed,
+    CatastrophePenalizer(const int          seed,
                          const int          genInterval,
                          const double       popFrac,
                                Initializer *initializer,
                          const size_t       popSize);
 
-    bool penalize(      GenePool *pool,
-                  const int       generation) override;
+    bool penalize(gmx::TextWriter *tw,
+                  GenePool        *pool,
+                  const int        generation) override;
 
 }; // class CatastrophePenalizer
 

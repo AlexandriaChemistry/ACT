@@ -39,6 +39,7 @@
 #include "act/forces/forcecomputerutils.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/textwriter.h"
 
 static void round_numbers(real *av, real *sig, int power10)
 {
@@ -250,7 +251,7 @@ void AllBondeds::addBonded(MsgHandler             *msghandler,
     }
     ob->addPoint(refValue);
 
-    msghandler->msg(ACTStatus::Verbose, ACTMessage::Info,
+    msghandler->msg(ACTStatus::Verbose,
                     gmx::formatString("%s %s-%s %g\n",
                                       mmi.getMolname().c_str(), interactionTypeToString(iType).c_str(),
                                       bondId.id().c_str(), refValue));
@@ -343,8 +344,8 @@ static void calc_linear_angle_a(const ForceField    *pd,
                           gmx::square(pjk.uncertainty()));
 }
 
-void AllBondeds::updateForceField(FILE    *fp,
-                               ForceField *pd)
+void AllBondeds::updateForceField(gmx::TextWriter *tw,
+                                  ForceField      *pd)
 {
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
@@ -423,7 +424,7 @@ void AllBondeds::updateForceField(FILE    *fp,
             gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
         }
 
-        fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
+        tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s\n",
                 i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
     }
 
@@ -457,7 +458,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                                                          std::min(180.0, av/afactor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, angle_name[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
-                    fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
+                    tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                     if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
@@ -481,7 +482,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                     fs->addParameter(bondId, linang_name[linangKLIN],
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
 
-                    fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
+                    tw->writeStringFormatted("linear_angle-%s angle %g sigma %g N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
@@ -519,7 +520,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported dihedral type %s",
                                                                        potentialToString(fType).c_str()).c_str()));
                     }
-                    fprintf(fp, "dihedral-%s angle %g sigma %g (deg)\n",
+                    tw->writeStringFormatted("dihedral-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
                 }
                 break;
@@ -535,7 +536,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                     fs->addParameter(bondId, idih_name[idihKPHI],
                                      ForceFieldParameter("kJ/mol", kimp_, 0, 1, kimp_*factor_, kimp_/factor_, Mutability::Bounded, false, true));
 
-                    fprintf(fp, "improper-%s angle %g sigma %g (deg)\n",
+                    tw->writeStringFormatted("improper-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
                 }
                 break;
@@ -563,7 +564,7 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
-                msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Empty molname for molecule with formula %s\n", mmi.formula().c_str()));
                 continue;
             }
@@ -592,7 +593,7 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
                 // TODO: Check whether this occurs
                 if (i < myatoms.size())
                 {
-                    msghandler->msg(ACTStatus::Warning, ACTMessage::Info,
+                    msghandler->msg(ACTStatus::Warning,
                                     gmx::formatString("You may need to check the number of atoms for %s", mmi.getMolname().c_str()));
                     continue;
                 }
@@ -610,12 +611,12 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
     }
 }
 
-void AllBondeds::writeSummary(FILE *fp)
+void AllBondeds::writeSummary(gmx::TextWriter *tw)
 {
     for(auto &bb : bondeds_)
     {
-        fprintf(fp, "Extracted %zu %s\n",
-                bb.second.size(), interactionTypeToString(bb.first).c_str());
+        tw->writeStringFormatted("Extracted %zu %s\n",
+                                 bb.second.size(), interactionTypeToString(bb.first).c_str());
     }
 }
 

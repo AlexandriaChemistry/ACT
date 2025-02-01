@@ -38,23 +38,20 @@
 namespace ga
 {
     
-void Genome::print(const char *name, FILE *fp) const
+std::string Genome::print(const char *name) const
 {
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "%s.\nGenome: [ ", name);
+    std::string out = gmx::formatString("%s.\nGenome: [ ", name);
     for (auto &ele : genome_)
     {
-        fprintf(fp, "%8g ", ele);
+        out += gmx::formatString("%8g ", ele);
     }
-    fprintf(fp, "]; ");
+    out += "]; ";
     for (const auto &pair : fitness_)
     {
-        fprintf(fp, "fitness_[%s]: %8g; ", iMolSelectName(pair.first), pair.second);
+        out += gmx::formatString("fitness_[%s]: %8g; ", iMolSelectName(pair.first), pair.second);
     }
-    fprintf(fp, "probability_: %8g\n", probability_);
+    out += gmx::formatString("probability_: %8g\n", probability_);
+    return out;
 }
 
 double Genome::fitness(iMolSelect ims) const

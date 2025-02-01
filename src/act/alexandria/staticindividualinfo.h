@@ -47,6 +47,11 @@
 #include "act/basics/mutability.h"
 #include "molgen.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -150,11 +155,11 @@ public:
 
     /*!
      * \brief Fill the ForceField attribute by reading from a file
-     * \param[in] fp        File pointer for printing information
+     * \param[in] tw        TextWriter
      * \param[in] pd_fn     name of the gentop (Force Field) file
      */
-    void fillForceField(FILE       *fp,
-                        const char *pd_fn);
+    void fillForceField(gmx::TextWriter *tw,
+                        const char      *pd_fn);
 
     /*!
      * \brief Copy the Force Field parameters to the ForceField structure
@@ -287,11 +292,11 @@ public:
     /*!
      * \brief Generate the vector of OptimizationIndex instances
      * This is done on middlemen, who then distribute it to their helpers.
-     * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] tw TextWriter
      * \param[in] mg MolGen pointer
      * \param[in] cr Communication Information
      */
-    void generateOptimizationIndex(FILE                      *fp,
+    void generateOptimizationIndex(gmx::TextWriter           *tw,
                                    const MolGen              *mg,
                                    const CommunicationRecord *cr);
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -44,6 +44,7 @@
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -73,9 +74,10 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceComputer,
-                                      gmx_unused ACTMol                 *actmol,
-                                      gmx_unused std::vector<gmx::RVec> *coords,
+void BoundsDevComputer::calcDeviation(MsgHandler                        *msghandler,
+                                      const ForceComputer               *,
+                                      ACTMol                            *,
+                                      std::vector<gmx::RVec>            *,
                                       std::map<eRMS, FittingTarget>     *targets,
                                       const ForceField                  *forcefield)
 {
@@ -100,10 +102,12 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
             {
                 real db = l2_regularizer(p.value(), p.minimum(), p.maximum());
                 bound += db;
-                if (verbose_ && logfile_ && db != 0.0)
+                if (db != 0.0)
                 {
-                    fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n",
-                            optIndex.name().c_str(), p.value(), p.minimum(), p.maximum());
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("Variable %s is %g, should be within %g and %g\n",
+                                                      optIndex.name().c_str(),
+                                                      p.value(), p.minimum(), p.maximum()));
                 }
             }
         }
@@ -171,11 +175,12 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCo
 * BEGIN: ChargeCM5DevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
-                                         ACTMol                               *actmol,
-                                         gmx_unused std::vector<gmx::RVec>    *coords,
-                                         std::map<eRMS, FittingTarget>        *targets,
-                                         const ForceField                     *forcefield)
+void ChargeCM5DevComputer::calcDeviation(MsgHandler                    *msghandler,
+                                         const ForceComputer           *,
+                                         ACTMol                        *actmol,
+                                         std::vector<gmx::RVec>        *,
+                                         std::map<eRMS, FittingTarget> *targets,
+                                         const ForceField              *forcefield)
 {
     double qtot = 0;
     int i = 0;
@@ -192,7 +197,9 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
             {
                 for (size_t j = 0; j < myatoms.size(); j++)
                 {
-                    fprintf(debug, "Charge %lu. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms[j].charge());
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Charge %lu. CM5 = %g ACM = %g\n",
+                                                      j, qcm5[j], myatoms[j].charge()));
                 }
             }
         }
@@ -218,9 +225,10 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         case Mutability::Fixed:
             if (qparm.value() != qj)
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
-                                                               myatoms[j].name().c_str(),
-                                                               actmol->getMolname().c_str(), qparm.value(), qj).c_str()));
+                msghandler->msg(ACTStatus::Fatal,
+                                gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
+                                                    myatoms[j].name().c_str(),
+                                                    actmol->getMolname().c_str(), qparm.value(), qj).c_str());
             }
             break;
         case Mutability::ACM:
@@ -259,11 +267,12 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 * BEGIN: EspDevComputer                    *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceComputer,
-                                   ACTMol                            *actmol,
-                                   gmx_unused std::vector<gmx::RVec> *coords,
-                                   std::map<eRMS, FittingTarget>     *targets,
-                                   const ForceField                  *forcefield)
+void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
+                                   const ForceComputer           *forceComputer,
+                                   ACTMol                        *actmol,
+                                   std::vector<gmx::RVec>        *,
+                                   std::map<eRMS, FittingTarget> *targets,
+                                   const ForceField              *forcefield)
 {
     real rrms     = 0;
     real cosangle = 0;
@@ -292,7 +301,10 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
             forceComputer->compute(forcefield, topology, &coords, &forces, &energies);
             qgr->updateAtomCoords(coords);
         }
-        dumpQX(logfile_, actmol, coords, "ESP");
+        if (msghandler->debug())
+        {
+            dumpQX(msghandler->tw(), actmol, "ESP");
+        }
         double epsilonr;
         if (!ffOption(*forcefield, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
         {
@@ -313,33 +325,30 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer    *forceCompu
     }
 }
 
-void EspDevComputer::dumpQX(FILE                         *fp,
-                            const ACTMol                  *mol,
-                            const std::vector<gmx::RVec> &coords,
+void EspDevComputer::dumpQX(gmx::TextWriter              *tw,
+                            const ACTMol                 *mol,
                             const std::string            &info)
 {
-    if (false && fp)
+    if (false && tw)
     {
         std::string label = mol->getMolname() + "-" + info;
-        fprintf(fp, "%s q:", label.c_str());
+        tw->writeStringFormatted("%s q:", label.c_str());
         auto myatoms = mol->topology()->atoms();
         for (size_t i = 0; i < myatoms.size(); i++)
         {
-            fprintf(fp, " %g", myatoms[i].charge());
+            tw->writeStringFormatted(" %g", myatoms[i].charge());
         }
-        fprintf(fp, "\n");
+        tw->writeStringFormatted("\n");
         auto top = mol->topology();
         if (top->hasEntry(InteractionType::POLARIZATION))
         {
-            fprintf(fp, "%s alpha", label.c_str());
+            tw->writeStringFormatted("%s alpha", label.c_str());
             for(auto &topentry : top->entry(InteractionType::POLARIZATION))
             {
-                fprintf(fp, " %g", topentry->params()[polALPHA]);
+                tw->writeStringFormatted(" %g", topentry->params()[polALPHA]);
             }
-            fprintf(fp, "\n");
+            tw->writeStringFormatted("\n");
         }
-        pr_rvecs(fp, 0, label.c_str(), as_rvec_array(coords.data()),
-                 myatoms.size());
     }
 }
 
@@ -352,18 +361,18 @@ void EspDevComputer::dumpQX(FILE                         *fp,
 * BEGIN: PolarDevComputer                  *
 * * * * * * * * * * * * * * * * * * * * * */
 
-PolarDevComputer::PolarDevComputer(    FILE  *logfile,
-                                   const bool verbose)
-    : DevComputer(logfile, verbose, mpo_name(MolPropObservable::POLARIZABILITY))
+PolarDevComputer::PolarDevComputer()
+    : DevComputer(mpo_name(MolPropObservable::POLARIZABILITY))
 {
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
 
-void PolarDevComputer::calcDeviation(const ForceComputer               *forceComputer,
-                                     ACTMol                            *actmol,
-                                     gmx_unused std::vector<gmx::RVec> *coords,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     const ForceField                  *forcefield)
+void PolarDevComputer::calcDeviation(MsgHandler                    *,
+                                     const ForceComputer           *forceComputer,
+                                     ACTMol                        *actmol,
+                                     std::vector<gmx::RVec>        *,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     const ForceField              *forcefield)
 {
     auto qProps = actmol->qProps();
     int    ndiff = 0;
@@ -401,11 +410,12 @@ void PolarDevComputer::calcDeviation(const ForceComputer               *forceCom
 * BEGIN: MultiPoleDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *forceComputer,
-                                         ACTMol                             *actmol,
-                                         gmx_unused std::vector<gmx::RVec>  *coords,
-                                         std::map<eRMS, FittingTarget>      *targets,
-                                         gmx_unused const ForceField        *forcefield)
+void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandler,
+                                         const ForceComputer           *forceComputer,
+                                         ACTMol                        *actmol,
+                                         std::vector<gmx::RVec>        *,
+                                         std::map<eRMS, FittingTarget> *targets,
+                                         const ForceField              *forcefield)
 {
     auto   qProps   = actmol->qProps();
     int    ndiff    = 0;
@@ -454,7 +464,7 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
         rms = eRMS::HEXADEC;
         break;
     default: // throws
-        GMX_THROW(gmx::InternalError(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str()));
+        msghandler->fatal(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str());
     }
     
     (*targets).find(rms)->second.increase(ndiff, delta);
@@ -468,14 +478,13 @@ void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer     *for
 * BEGIN: HarmonicsDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
-                                           const bool               verbose,
-                                                 MolPropObservable  mpo)
-    : DevComputer(logfile, verbose, mpo_name(mpo)), mpo_(mpo) 
+HarmonicsDevComputer::HarmonicsDevComputer(MolPropObservable  mpo)
+    : DevComputer(mpo_name(mpo)), mpo_(mpo) 
 {
 }
 
-void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceComputer,
+void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandler,
+                                         const ForceComputer           *forceComputer,
                                          ACTMol                        *actmol,
                                          std::vector<gmx::RVec>        *coords,
                                          std::map<eRMS, FittingTarget> *targets,
@@ -486,8 +495,8 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
     {
         return;
     }
-    auto eMin = handler_.minimizeCoordinates(forcefield, actmol, forceComputer, simConfig_, coords,
-                                             nullptr, nullptr, {});
+    auto eMin = handler_.minimizeCoordinates(msghandler, forcefield, actmol, forceComputer,
+                                             simConfig_, coords, nullptr, {});
     if (eMinimizeStatus::OK != eMin)
     {
         // Something fishy happened, but it means we cannot use this structure
@@ -552,19 +561,10 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer           *forceCom
 * BEGIN: ForceEnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-ForceEnergyDevComputer::ForceEnergyDevComputer(      FILE                   *logfile,
-                                               const bool                    verbose,
-                                                     std::map<eRMS, double>  boltzmannTemperature)
-    : DevComputer(logfile, verbose, "ForceEnergy")
+ForceEnergyDevComputer::ForceEnergyDevComputer(std::map<eRMS, double>  boltzmannTemperature)
+    : DevComputer("ForceEnergy")
 {
     boltzmannTemperature_ = boltzmannTemperature;
-    if (verbose && logfile)
-    {
-        for(const auto &b : boltzmannTemperature)
-        {
-            fprintf(logfile, "Component %s Boltzmann temperature %g\n", rmsName(b.first), b.second);
-        }
-    }
 }
 
 double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
@@ -581,11 +581,12 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
     return beta;
 }
 
-void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *forceComputer,
-                                           ACTMol                            *actmol,
-                                           gmx_unused std::vector<gmx::RVec> *coords,
-                                           std::map<eRMS, FittingTarget>     *targets,
-                                           const ForceField                  *forcefield)
+void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghandler,
+                                           const ForceComputer           *forceComputer,
+                                           ACTMol                        *actmol,
+                                           std::vector<gmx::RVec>        *,
+                                           std::map<eRMS, FittingTarget> *targets,
+                                           const ForceField              *forcefield)
 {
     std::vector<ACTEnergy>                                              energyMap;
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
@@ -652,7 +653,8 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer               *fo
             {
                 if (std::isnan(ff.eact()))
                 {
-                    printf("Energy for %s is NaN\n", actmol->getMolname().c_str());
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
                 }
                 else
                 {

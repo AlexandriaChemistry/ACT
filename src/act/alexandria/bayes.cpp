@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "act/utility/regression.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -57,7 +58,7 @@ const char *calcDevName(CalcDev cd)
     return cdMap[cd];
 }
 
-void Sensitivity::computeForceConstants(FILE *fp)
+void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
 {
     if (p_.size() >= 3)
     {
@@ -78,29 +79,29 @@ void Sensitivity::computeForceConstants(FILE *fp)
             c_ = solution[2];
         }
     }
-    else if (fp)
+    else if (tw)
     {
-        fprintf(fp, "Not enough parameters %zu to do sensitivty analysis\n",
-                p_.size());
+        tw->writeStringFormatted("Not enough parameters %zu to do sensitivty analysis\n",
+                                 p_.size());
     }
 }
 
-void Sensitivity::print(FILE *fp, const std::string &label)
+void Sensitivity::print(gmx::TextWriter *tw, const std::string &label)
 {
-    if (fp)
+    if (tw)
     {
-        fprintf(fp, "Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
-                label.c_str(), a_, b_, c_);
+        tw->writeStringFormatted("Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
+                                 label.c_str(), a_, b_, c_);
         for(size_t i = 0; i < p_.size(); ++i)
         {
-            fprintf(fp, "    p[%zu] %g chi2[%zu] %g\n", i, p_[i], i, chi2_[i]);
+            tw->writeStringFormatted("    p[%zu] %g chi2[%zu] %g\n", i, p_[i], i, chi2_[i]);
         }
         if (a_ != 0.0)
         {
             double p_min = -b_/(2.0*a_);
             double chi2_min = a_*p_min*p_min + b_*p_min + c_;
-            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n",
-                    p_min, chi2_min);
+            tw->writeStringFormatted("    pmin %g chi2min %g (estimate based on parabola)\n",
+                                     p_min, chi2_min);
         }
     }
 }

@@ -57,7 +57,7 @@ namespace alexandria
  * deviations will then be extracted from the spread of results.
  * 
  * As a side effect, the molecular energy will be computed.
- * \param[in]    fplog   File pointer to write to
+ * \param[in]    msghandler Message handler
  * \param[inout] pd      The force field to update
  * \param[inout] molset  The molecules
  * \param[in]    iqm     Whether to use QM or Exp data for determining
@@ -66,7 +66,7 @@ namespace alexandria
  * \param[in]    nBootStrap Number of times a bootstrap is repeated
  * \return Root mean square deviation from experimental data
  */
-double getDissociationEnergy(FILE                *fplog,
+double getDissociationEnergy(MsgHandler          *msghandler,
                              ForceField          *pd,
                              std::vector<ACTMol> *molset,
                              iqmType              iqm,

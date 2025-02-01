@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -79,14 +79,6 @@ private:
     std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
     gmx::FilePtr               fpe_;
-    //! Pointer to log file (may be nullptr)
-    FILE                      *logfile_ = nullptr;
-    /*! Flush output immediately rather than letting the OS buffer it.
-     * Don't use for production simulations.
-     */
-    bool                  flush_ = false;
-    //! Print information to the log file as we optimize
-    bool                  verbose_ = false;
     //! Evaluate the test set at each iteration?
     bool                  evaluateTestSet_ = false;
     // Random number generation
@@ -103,10 +95,12 @@ private:
 
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
+     * \param[in] msghandler        The message handler, what else?
      * \param[in] chi2              the new minimum
      * \param[in] xiter             fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void printNewMinimum(const std::map<iMolSelect, double> &chi2,
+    void printNewMinimum(MsgHandler                         *msghandler,
+                         const std::map<iMolSelect, double> &chi2,
                          double                              xiter);
 
     /*!
@@ -175,10 +169,7 @@ public:
      * \param[in] evaluateTestSet Whether or not to evaluate the test set
      *                            every once in a while
      */
-    MCMCMutator(FILE                 *logfile,
-                bool                  verbose,
-                bool                  flush,
-                int                   seed,
+    MCMCMutator(int                   seed,
                 BayesConfigHandler   *bch,
                 ACMFitnessComputer   *fitComp,
                 StaticIndividualInfo *sii,
@@ -208,11 +199,11 @@ public:
 
     /*!
      * \brief Print the MC statistics to a file.
-     * \param[in] fp            File pointer to print to
+     * \param[in] tw            TextWriter
      * \param[in] initialGenome The initial genome
      * \param[in] bestGenome    The genome with highest fitness
      */
-    void printMonteCarloStatistics(FILE             *fp,
+    void printMonteCarloStatistics(gmx::TextWriter  *tw,
                                    const ga::Genome &initialGenome,
                                    const ga::Genome &bestGenome);
 

@@ -143,31 +143,29 @@ public:
     void setEInteraction(bool eInter) { eInter_ = eInter; }
 
     /*! \brief Do the rerunning with different options
-     * \param[in] logFile        File pointer to print info
+     * \param[in] msghandler The MsgHandler for printing and status
      * \param[in] pd             Force field structure
      * \param[in] actmol         Structure with molecule info
      * \param[in] verbose        Whether or not to print a lot
      */
-    void rerun(FILE             *logFile,
+    void rerun(MsgHandler       *msghandler,
                const ForceField *pd,
                const ACTMol     *actmol,
                bool              verbose);
 
     /*! \brief Compute second virial coefficient including QM corrections
-     * \param[in] cr       Communication Record for parallel calcs
-     * \param[in] logFile  File pointer to print info (may be nullptr)
-     * \param[in] pd       Force field structure
-     * \param[in] actmol   Structure with molecule info
-     * \param[in] maxdimer Number of dimers to generate (if any)
-     * \param[in] verbose  Whether or not to print a lot
-     * \param[in] fnm      The filenames
+     * \param[in] cr         Communication Record for parallel calcs
+     * \param[in] msghandler The MsgHandler for printing and status
+     * \param[in] pd         Force field structure
+     * \param[in] actmol     Structure with molecule info
+     * \param[in] maxdimer   Number of dimers to generate (if any)
+     * \param[in] fnm        The filenames
      */
     void runB2(CommunicationRecord         *cr,
-               FILE                        *logFile,
+               MsgHandler                  *msghandler,
                const ForceField            *pd,
                const ACTMol                *actmol,
                int                          maxdimer,
-               bool                         verbose,
                const std::vector<t_filenm> &fnm);
 
     //! \return the second virial as a function of T.

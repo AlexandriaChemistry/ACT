@@ -50,6 +50,11 @@
 #include "terminator.h"
 #include "penalizer.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace ga
 {
 
@@ -208,22 +213,26 @@ public:
     /*!
      * \brief Check if we have to stop the evolution by asking each terminator.
      * Never call this method if no terminators were given to the GA.
+     * \param[in] tw               Text writer
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
      * \return true if we stop the evolution, false otherwise
      */
-    bool terminate(const GenePool *pool,
-                   const int       generationNumber);
+    bool terminate(gmx::TextWriter *tw,
+                   const GenePool  *pool,
+                   const int        generationNumber);
 
     /*!
      * \brief Penalize the population.
      * Never call this method if no terminators were given to the GA.
+     * \param[in] tw               Text writer
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
      * \return true if the population has been penalized, false otherwise
      */
-    bool penalize(      GenePool *pool,
-                  const int       generationNumber);
+    bool penalize(gmx::TextWriter *tw,
+                  GenePool        *pool,
+                  const int        generationNumber);
 
 };
 

@@ -42,6 +42,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -74,17 +75,17 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     alexandria::MolPropIterator mpi, mmm[2];
     std::string                 molname[2];
     std::string                 form[2];
-
     int   i, ndouble = 0;
     bool  bDouble;
     int   cur   = 0;
 #define prev (1-cur)
+    auto tw = gmx::TextWriter(debug);
 
     i = 0;
     for (mpi = mp->begin(); (mpi < mp->end()); )
     {
         bDouble = false;
-        mpi->Dump(debug);
+        mpi->Dump(&tw);
         mmm[cur]     = mpi;
         molname[cur] = mpi->getMolname();
         form[cur]    = mpi->formula();
@@ -132,7 +133,7 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     }
     for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
-        mpi->Dump(debug);
+        mpi->Dump(&tw);
     }
     printf("There were %d double entries, leaving %d after merging.\n",
            ndouble, (int)mp->size());
@@ -157,13 +158,14 @@ std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &filen
         }
     }
     tmp = mpout->size();
+    auto tw = gmx::TextWriter(debug);
     if (nullptr != debug)
     {
-        fprintf(debug, "mpout->size() = %u mpout->max_size() = %u\n",
-                (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
+        tw.writeStringFormatted("mpout->size() = %u mpout->max_size() = %u\n",
+                                (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
         for (auto mpi = mpout->begin(); mpi < mpout->end(); ++mpi)
         {
-            mpi->Dump(debug);
+            mpi->Dump(&tw);
         }
     }
     MolSelect gms;
@@ -270,12 +272,13 @@ void MolPropSort(std::vector<alexandria::MolProp> *mp,
                  MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
                  const MolSelect &gms)
 {
+    auto tw = gmx::TextWriter(debug);
     printf("There are %d molprops. Will now sort them.\n", (int)mp->size());
     for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         if (nullptr != debug)
         {
-            mpi->Dump(debug);
+            mpi->Dump(&tw);
         }
     }
     switch (mpsa)

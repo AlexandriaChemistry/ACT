@@ -46,6 +46,7 @@
 #include "act/utility/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -570,28 +571,28 @@ std::string MolProp::formula() const
     return form;
 }
 
-void MolProp::Dump(FILE *fp) const
+void MolProp::Dump(gmx::TextWriter *tw) const
 {
-    if (fp)
+    if (tw)
     {
-        fprintf(fp, "molname:      %s\n", getMolname().c_str());
-        fprintf(fp, "iupac:        %s\n", getIupac().c_str());
-        fprintf(fp, "CAS:          %s\n", getCas().c_str());
-        fprintf(fp, "cis:          %s\n", getCid().c_str());
-        fprintf(fp, "InChi:        %s\n", getInchi().c_str());
-        fprintf(fp, "category:    ");
+        tw->writeStringFormatted("molname:      %s\n", getMolname().c_str());
+        tw->writeStringFormatted("iupac:        %s\n", getIupac().c_str());
+        tw->writeStringFormatted("CAS:          %s\n", getCas().c_str());
+        tw->writeStringFormatted("cis:          %s\n", getCid().c_str());
+        tw->writeStringFormatted("InChi:        %s\n", getInchi().c_str());
+        tw->writeStringFormatted("category:    ");
         for (auto &f : fragments())
         {
-            f.dump(fp);
+            f.dump(tw);
         }
         for (auto &si : categoryConst())
         {
-            fprintf(fp, " '%s'", si.c_str());
+            tw->writeStringFormatted(" '%s'", si.c_str());
         }
-        fprintf(fp, "\n");
+        tw->writeStringFormatted("\n");
         for (auto &ei : experimentConst())
         {
-            ei.Dump(fp);
+            ei.Dump(tw);
         }
     }
 }

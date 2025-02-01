@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -503,30 +503,30 @@ void MolHandler::nma(const ForceField         *pd,
 
 }
 
-static void printEnergies(FILE *logFile, int myIter,
+static void printEnergies(gmx::TextWriter *tw, int myIter,
                           double msAtomForce,
                           double msShellForce,
                           double fcurprev,
                           const std::map<InteractionType, double> &energies,
                           double gamma)
 {
-    if (nullptr == logFile)
+    if (nullptr == tw)
     {
         return;
     }
-    fprintf(logFile, "Iter %5d msAtomForce %10g msShellForce %10g fcur.fprev %10g gamma %10g\n    ",
-            myIter, msAtomForce, msShellForce, fcurprev, gamma);
+    tw->writeLineFormatted("Iter %5d msAtomForce %10g msShellForce %10g fcur.fprev %10g gamma %10g",
+                           myIter, msAtomForce, msShellForce, fcurprev, gamma);
     double evdw = 0;
     for(const auto &ee : energies)
     {
-        fprintf(logFile, "  %s %.5f", interactionTypeToString(ee.first).c_str(), ee.second);
+        tw->writeStringFormatted("  %s %.5f", interactionTypeToString(ee.first).c_str(), ee.second);
         if (InteractionType::DISPERSION == ee.first || 
             InteractionType::EXCHANGE == ee.first)
         {
             evdw += ee.second;
         }
     }
-    fprintf(logFile," (VANDERWAALS %.5f)\n", evdw);
+    tw->writeLineFormatted(" (VANDERWAALS %.5f)", evdw);
 }
 
 static double msForce(const std::vector<int>       &theAtoms,
@@ -604,9 +604,9 @@ public:
 
     const std::vector<int> &theAtoms() const { return theAtoms_; }
 
-    void printFrozenForce(FILE *logFile, const std::vector<int> &myFreeze)
+    void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
     {
-        if (logFile && myFreeze.size() == 2)
+        if (tw && myFreeze.size() == 2)
         {
             rvec dx;
             // If minimization with constraints worked well, the resulting
@@ -639,8 +639,8 @@ public:
                 // Otherwise just copy the force on the first atom
                 copy_rvec(forces_[myFreeze[0]], frot);
             }
-            fprintf(logFile, "Force on frozen atom %d = %12f %12f %12f\n",
-                    myFreeze[0], frot[XX], frot[YY], frot[ZZ]);
+            tw->writeLineFormatted("Force on frozen atom %d = %12f %12f %12f",
+                                   myFreeze[0], frot[XX], frot[YY], frot[ZZ]);
         }
     }
 };
@@ -694,13 +694,13 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
 }
 
-eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                  *pd,
+eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                        *msghandler,
+                                                const ForceField                  *pd,
                                                 const ACTMol                      *mol,
                                                 const ForceComputer               *forceComp,
                                                 const SimulationConfigHandler     &simConfig,
                                                 std::vector<gmx::RVec>            *coords,
                                                 std::map<InteractionType, double> *energies,
-                                                FILE                              *logFile,
                                                 const std::vector<int>            &freeze) const
 {
     bool      converged    = false;
@@ -710,11 +710,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     double    msForceToler = simConfig.forceTolerance();
     if (msForceToler < shellToler2)
     {
-        if (logFile && msForceToler != 0)
+        if (msForceToler != 0)
         {
-            fprintf(logFile, "Atom mean square force tolerance (%g) more strict than shell force tolerance (%g).\n",
-                    msForceToler, shellToler2);
-            fprintf(logFile, "Increasing atom mean square force tolerance to hundred times that for shells.\n");
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
+                                              msForceToler, shellToler2));
         }
         msForceToler = 100*shellToler2;
     }
@@ -753,12 +753,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
     }
     bool                   firstStep = true;
     // Now start the minimization loop.
-    if (logFile)
-    {
-        fprintf(logFile, "Starting minimization of '%s' using %s algorithm.\n",
-                mol->getMolname().c_str(),
-                eMinimizeAlgorithmToString(simConfig.minAlg()).c_str());
-    }
+    msghandler->write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
+                                        mol->getMolname().c_str(),
+                                        eMinimizeAlgorithmToString(simConfig.minAlg()).c_str()));
+
     double              epotMin = 1e8;
     double              msfMin  = 1e16;
     // Two sets of coordinates
@@ -778,10 +776,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         STLBFGS::Optimizer                      opt{func, 1000};
         opt.ftol    = simConfig.forceTolerance();
         opt.gtol    = simConfig.forceTolerance();
-        if (logFile)
-        {
-            opt.verbose = true;
-        }
+        opt.verbose = msghandler->verbose();
+
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
         std::random_device                      rd;
@@ -795,9 +791,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
         double eMin         = 1e8;
         while (retry < maxRetry && (!converged || simConfig.forceReminimize()))
         {
-            if (logFile && retry > 0)
+            if (retry > 0)
             {
-                fprintf(logFile, "Will retry minimization with slightly modified input coordinates.\n");
+                msghandler->msg(ACTStatus::Verbose,
+                                "Will retry minimization with slightly modified input coordinates.\n");
             }
             for(size_t i = 0; i < theAtoms.size(); i++)
             {
@@ -813,7 +810,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), lbfgs->coordinates(),
                                             lbfgs->forces(), lbfgs->energies());
                 double enew = lbfgs->energy(InteractionType::EPOT);
-                if (logFile)
+                if (msghandler->verbose())
                 {
                     double msf = 0;
                     for(const auto &f : *lbfgs->forces())
@@ -821,8 +818,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                         msf += iprod(f,f);
                     }
                     msf /= theAtoms.size();
-                    fprintf(logFile, "Minimization of %zu atoms, iteration %d/%d energy %g RMS force %g\n",
-                            theAtoms.size(), retry+1, maxRetry, enew, std::sqrt(msf));
+                    msghandler->write(gmx::formatString("Minimization of %zu atoms, iteration %d/%d energy %g RMS force %g\n",
+                                                        theAtoms.size(), retry+1, maxRetry, enew, std::sqrt(msf)));
                 }
                 if (enew < eMin)
                 {
@@ -835,7 +832,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             retry += 1;
         }
         // If applicable, print the force between the frozen two atoms
-        lbfgs->printFrozenForce(logFile, myFreeze);
+        lbfgs->printFrozenForce(msghandler->tw(), myFreeze);
 
         delete lbfgs;
     }
@@ -866,9 +863,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 computeHessian(pd, mol, forceComp, &newCoords[current],
                                theAtoms, &Hessian, &f0, &newEnergies[current]);
                                
-                if (logFile && firstStep && false)
+                if (msghandler->verbose() && firstStep && false)
                 {
-                    fprintf(logFile, "Hessian:\n%s\n", Hessian.toString().c_str());
+                    msghandler->write("Hessian:\n");
+                    msghandler->write(Hessian.toString());
                 }
                 // Averaging the Hessian completely messes up the information here
                 // since it is exactly the deviations from symmetry we need to
@@ -966,7 +964,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             epotMin = newEnergies[current][InteractionType::EPOT];
             msfMin  = msForce(theAtoms, forces[current]);
             // Write stuff
-            printEnergies(logFile, myIter, msfMin, 0, 0, newEnergies[current], gamma);
+            printEnergies(msghandler->tw(), myIter, msfMin, 0, 0, newEnergies[current], gamma);
             firstStep = false;
         }
         if (eMinimizeStatus::OK != eMin)
@@ -987,17 +985,17 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
             double gmin    = gamma;
             if (!acceptStep)
             {
-                if (logFile)
+                if (msghandler->verbose())
                 {
-                    fprintf(logFile, "Trying line minimization, step 1.\n");
-                    printEnergies(logFile, myIter, msfNew, 0, 0, newEnergies[next], gamma);
+                    msghandler->write("Trying line minimization, step 1.");
+                    printEnergies(msghandler->tw(), myIter, msfNew, 0, 0, newEnergies[next], gamma);
                 }
                 updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
                 msShellForce    = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
-                if (logFile)
+                if (msghandler->verbose())
                 {
-                    fprintf(logFile, "Trying line minimization, step 2.\n");
-                    printEnergies(logFile, myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
+                    msghandler->write("Trying line minimization, step 2.\n");
+                    printEnergies(msghandler->tw(), myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
                 }
                 double epotHalf = newEnergies[next][InteractionType::EPOT];
                 // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
@@ -1014,12 +1012,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                     double epotGmin = newEnergies[next][InteractionType::EPOT];
                     acceptStep = (epotGmin <= epotMin);
                 }
-                else if (logFile)
+                else if (msghandler->verbose())
                 {
-                    fprintf(logFile, "Line minimization parameters a = %g b = %g c = %g\n",
-                            abc[0], abc[1], abc[2]);
-                    fprintf(logFile, "EpotMin = %g, EpotHalf = %g, EpotNew = %g\n",
-                            epotMin, epotHalf, epotNew);
+                    msghandler->write(gmx::formatString("Line minimization parameters a = %g b = %g c = %g\n",
+                                                        abc[0], abc[1], abc[2]));
+                    msghandler->write(gmx::formatString("EpotMin = %g, EpotHalf = %g, EpotNew = %g\n",
+                                                        epotMin, epotHalf, epotNew));
                 }
             }
             if (acceptStep)
@@ -1054,7 +1052,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(const ForceField                
                 fcurprev += forces[current][i][m]*forces[next][i][m];
             }
         }
-        printEnergies(logFile, myIter, msAtomForce, msShellForce,
+        printEnergies(msghandler->tw(), myIter, msAtomForce, msShellForce,
                       fcurprev, newEnergies[current], gamma);
         if (debug)
         {
@@ -1212,11 +1210,11 @@ static void initArrays(const ACTMol           *mol,
     }
 }
                        
-void MolHandler::simulate(const ForceField              *pd,
+void MolHandler::simulate(MsgHandler                    *msghandler,
+                          const ForceField              *pd,
                           ACTMol                        *mol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,
-                          FILE                          *logFile,
                           const char                    *trajectoryFile,
                           const char                    *energyFile,
                           const gmx_output_env_t        *oenv) const
@@ -1246,7 +1244,7 @@ void MolHandler::simulate(const ForceField              *pd,
     if (simConfig.temperature() > 0)
     {
         maxwell_speed(simConfig.temperature(), simConfig.seed(),
-                      mol->atomsConst(), &velocities, logFile);
+                      mol->atomsConst(), &velocities, msghandler->tw());
         stop_cm(mol->atomsConst(), coordinates, &velocities);
     }
     auto xmol    = mol->xOriginal();
@@ -1269,7 +1267,7 @@ void MolHandler::simulate(const ForceField              *pd,
     }
 
     int nDOF = DIM*mol->nRealAtoms();
-    fprintf(logFile, "\nWill start simulation.\n");
+    msghandler->write("\nWill start simulation.\n");
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
         // Check whether we need to print stuff
@@ -1328,7 +1326,7 @@ void MolHandler::simulate(const ForceField              *pd,
     
     gmx_ffclose(traj);
     xvgrclose(exvg);
-    fprintf(logFile, "Simulation finished correctly.\n");
+    msghandler->write("Simulation finished correctly.");
 }
 
 } // namespace alexandria

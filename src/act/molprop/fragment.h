@@ -39,6 +39,11 @@
 
 #include "act/utility/communicationrecord.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -164,10 +169,9 @@ class Fragment
     //! Return a string containing the atom numbers
     const std::string &atomString() const { return atomString_; }
     
-    /*! Write the content of this fragment to a file
-     * \param[in] fp The file pointer, if nullptr function will do nothing
+    /*! \return the content of this fragment to a tw
      */
-    void dump(FILE *fp) const;
+    void dump(gmx::TextWriter *tw) const;
     
     /*! \brief
      * Sends this object over an MPI connection

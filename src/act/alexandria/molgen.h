@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -194,10 +194,8 @@ public:
         chiSquared_  = 0;
     }
   
-    /*! \brief Print if non zero
-     * \param[in] fp   File pointer, print only if non null
-     */
-    void print(FILE *fp) const;
+    //! \return statistics info
+    std::string info() const;
     
 };
 
@@ -286,11 +284,11 @@ private:
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
-     * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] msghandler For logging information to. May be nullptr.
      * \param[in] pd Pointer to forcefield object
      */
-    void checkDataSufficiency(FILE     *fp,
-                              ForceField  *pd);
+    void checkDataSufficiency(MsgHandler *msghandler,
+                              ForceField *pd);
     
     //! Compute amount of compounds in each group
     void countTargetSize();
@@ -330,12 +328,12 @@ public:
     void addFilenames(std::vector<t_filenm> *filenms);
 
     /*! \brief Check whether options make sense.
-     * \params[in] logFile   To print warnings to
-     * \params[in] filenames List of filenames
-     * \params[in] pd        ForceField for information
+     * \params[in] msghandler For logging and status
+     * \params[in] filenames  List of filenames
+     * \params[in] pd         ForceField for information
      * \return true if options are consistent, false otherwise.
      */
-    bool checkOptions(FILE                        *logFile,
+    bool checkOptions(MsgHandler                  *msghandler,
                       const std::vector<t_filenm> &filenames,
                       ForceField                  *pd);
 
