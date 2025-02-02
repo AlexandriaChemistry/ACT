@@ -38,6 +38,7 @@
 #include <cstring>
 #include <map>
 
+#include "act/basics/msg_handler.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
@@ -136,7 +137,7 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
     }
 }
 
-void BayesConfigHandler::check_pargs()
+void BayesConfigHandler::check_pargs(MsgHandler *)
 {
     // Check seed
     GMX_RELEASE_ASSERT(seed_ >= 0, "-seed must be nonnegative.");
@@ -264,7 +265,7 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
 
 }
 
-void GAConfigHandler::check_pargs()
+void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 {
     optAlg_ = stringToOptimizerAlg(optimizerStr[0]);
     pcAlg_  = stringToProbabilityComputerAlg(probStr[0]);
@@ -278,7 +279,7 @@ void GAConfigHandler::check_pargs()
     // If MCMC is selected, change the probability of mutation to 1
     if (optAlg_ == OptimizerAlg::MCMC)
     {
-      prMut_ = 1;
+        prMut_ = 1;
     }
     
     GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-n_elites must be nonnegative and even.");
@@ -299,51 +300,43 @@ void GAConfigHandler::check_pargs()
     
     if (maxTestGenerations_ != -1)
     {
-      GMX_RELEASE_ASSERT(maxTestGenerations_ > 0, "-max_test_generations must be positive or -1 (disabled).");
+        GMX_RELEASE_ASSERT(maxTestGenerations_ > 0, "-max_test_generations must be positive or -1 (disabled).");
     }
 
     if (vfpVolFracLimit_ != -1)
     {
-      GMX_RELEASE_ASSERT(
-        vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
-        "-vfp_vol_frac_limit must be in [0, 1] when enabled."
-      );
+        GMX_RELEASE_ASSERT(vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
+                           "-vfp_vol_frac_limit must be in [0, 1] when enabled.");
     }
-    GMX_RELEASE_ASSERT(
-      vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
-      "-vfp_pop_frac must be in [0, 1]."
-    );
+    GMX_RELEASE_ASSERT(vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
+                       "-vfp_pop_frac must be in [0, 1].");
 
     if (cpGenInterval_ != -1)
     {
-      GMX_RELEASE_ASSERT(
-        cpGenInterval_ > 0,
-        "When enabled (!= -1), -cp_gen_interval must be positive."
-      );
+        GMX_RELEASE_ASSERT(cpGenInterval_ > 0,
+                           "When enabled (!= -1), -cp_gen_interval must be positive.");
     }
-    GMX_RELEASE_ASSERT(
-      cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
-      "-cp_pop_frac must be in [0, 1]."
-    );
+    GMX_RELEASE_ASSERT(cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
+                       "-cp_pop_frac must be in [0, 1].");
 
     // Enable test loss if needed
     if (maxTestGenerations_ > 0)
     {
-      if (!evaluateTestset_)
-      {
-        printf("Enabling test loss computation in GA...\n");
-      }
-      evaluateTestset_ = true;
+        if (!evaluateTestset_)
+        {
+            msghandler->write("Enabling test fitness computation in GA...");
+        }
+        evaluateTestset_ = true;
     }
 
     // Enable sorting if needed
     if (nElites_ > 0 || pcAlg_ == ProbabilityComputerAlg::pcRANK || vfpVolFracLimit_ != -1)
     {
-      if (!sort_)
-      {
-        printf("Enabling sorting...\n");
-      }
-      sort_ = true;
+        if (!sort_)
+        {
+            msghandler->write("Enabling genome sorting...");
+        }
+        sort_ = true;
     }
 
 }
@@ -435,7 +428,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
     }
 }
 
-void SimulationConfigHandler::check_pargs()
+void SimulationConfigHandler::check_pargs(MsgHandler *)
 {
     GMX_RELEASE_ASSERT(nsteps_ >= 0, "Number of steps must be larger than zero");
     GMX_RELEASE_ASSERT(temperature_ >= 0, "Temperature must be larger than zero");

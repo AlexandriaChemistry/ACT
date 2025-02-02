@@ -115,7 +115,7 @@ int simulate(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
 
-    sch.check_pargs();
+    sch.check_pargs(&msghandler);
     compR.optionsOK(&msghandler, fnm);
     if (!msghandler.ok())
     {
@@ -148,7 +148,7 @@ int simulate(int argc, char *argv[])
     }
     auto &actmol = actmols[0];
     JsonTree jtree("simulate");
-    if (msghandler.verbose())
+    if (msghandler.info())
     {
         forceFieldSummary(&jtree, &pd);
     }
@@ -232,7 +232,7 @@ int simulate(int argc, char *argv[])
             if (eMinimizeStatus::OK == eMin)
             {
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                msghandler.msg(ACTStatus::Verbose,
+                msghandler.msg(ACTStatus::Info,
                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
                                                  energies[InteractionType::EPOT], rmsd));
                 auto nfrag = actmol.fragmentHandler()->topologies().size();
@@ -245,7 +245,7 @@ int simulate(int argc, char *argv[])
                                                       &interactionForces, &xmin, true);
                     for(const auto &ei : einter)
                     {
-                        msghandler.msg(ACTStatus::Verbose,
+                        msghandler.msg(ACTStatus::Info,
                                        gmx::formatString("Interaction energy %s: %g",
                                                          interactionTypeToString(ei.first).c_str(), ei.second));
                     }

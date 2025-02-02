@@ -87,6 +87,7 @@ std::map<ACTStatus, const char *> statnm = {
     { ACTStatus::Fatal, "Fatal" },
     { ACTStatus::Error, "Error" },
     { ACTStatus::Warning, "Warning" },
+    { ACTStatus::Info, "Info" },
     { ACTStatus::Verbose, "Verbose" },
     { ACTStatus::Debug, "Debug" }
 };
@@ -173,7 +174,7 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
 {
     defaultLogName_ = defaultLogName;
     pargs->push_back( { "-v", FALSE, etINT, { &ilevel_ },
-            "Verbosity level: 0 (Fatal), 1 (Error), 2 (Warning), 3 (Info), 4 (Debug)" } );
+            "Verbosity level: 0 (Fatal), 1 (Error), 2 (Warning), 3 (Info), 4 (Verbose), 5 (Debug)" } );
 
     filenm->push_back( { efLOG, "-g", defaultLogName_.c_str(), ffWRITE }); 
 }
@@ -181,25 +182,23 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
 void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
                                  const CommunicationRecord   *cr)
 {
-    if (ilevel_ == 0)
+    std::map<int, ACTStatus> i2s = {
+        { 0, ACTStatus::Fatal },
+        { 1, ACTStatus::Error },
+        { 2, ACTStatus::Warning },
+        { 3, ACTStatus::Info },
+        { 4, ACTStatus::Verbose },
+        { 5, ACTStatus::Debug }
+    };
+
+    auto i2 = i2s.find(ilevel_);
+    if (i2s.end() == i2)
     {
-        printLevel_ = ACTStatus::Fatal;
-    }
-    else if (ilevel_ == 1)
-    {
-        printLevel_ = ACTStatus::Error;
-    }
-    else if (ilevel_ == 2)
-    {
-        printLevel_ = ACTStatus::Warning;
-    }
-    else if (ilevel_ == 3)
-    {
-        printLevel_ = ACTStatus::Verbose;
+        printLevel_ = i2->second;
     }
     else
     {
-        printLevel_ = ACTStatus::Debug;
+        printLevel_ = ACTStatus::Info;
     }
     if (cr->isMaster())
     {

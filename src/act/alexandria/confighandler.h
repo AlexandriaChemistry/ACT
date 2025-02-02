@@ -42,6 +42,7 @@
 namespace alexandria
 {
 
+class MsgHandler;
 /*!
  * Abstract class to handle configuration for methods.
  * It adds its command-line arguments to a given parameter vector
@@ -64,7 +65,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs() = 0;
+    virtual void check_pargs(MsgHandler *msghandler) = 0;
 
 };
 
@@ -164,9 +165,10 @@ public:
 
     /*!
      * \brief Check the validity of the provided arguments
+     * \param[in] msghandler Message Handler
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
@@ -310,7 +312,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
@@ -453,7 +455,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     //! \return number of MD steps
     int nsteps() const { return nsteps_; }

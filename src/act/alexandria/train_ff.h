@@ -136,7 +136,7 @@ public:
     
     /*! \brief Evaluate arguments after parsing.
      */
-    void check_pargs();
+    void check_pargs(MsgHandler *msghandler);
 
     /*! \brief Routine to be called after processing options
      * \param[in] filenames The file names

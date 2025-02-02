@@ -126,11 +126,12 @@ namespace alexandria
          * \param[in] q The charges
          */
         void setCharges(const std::vector<double> &q);
-        /*! \brief Copy charges from a charge map
-         * \param[in] qmap The charge map
-         * \return true if charges for all fragments were found
+        /*! \brief Copy charges from a charge map. Check msghandler status on return
+         * \param[in] msghandler For status and messaging
+         * \param[in] qmap       The charge map
          */
-        bool setCharges(const chargeMap &qmap);
+        void setCharges(MsgHandler      *msghandler,
+                        const chargeMap &qmap);
         //! \return whether charges are fixed or not
         bool fixedCharges() const { return fixedQ_; }
         /*! \brief Set the charge generation algorithm to use

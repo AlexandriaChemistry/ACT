@@ -68,7 +68,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Compute its fitness
     auto tw = msghandler->tw();
-    msghandler->msg(alexandria::ACTStatus::Verbose,
+    msghandler->msg(alexandria::ACTStatus::Info,
                     "MASTER's initial parameter vector chi2 components:");
 
     fitnessComputer()->compute(msghandler, ind->genomePtr(), imstr);
@@ -269,7 +269,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             pool[pnew]->addGenome(genome);
         }
     }
-    if (msghandler->verbose())
+    if (msghandler->info())
     {
         // Now we have filled the gene pool and initial fitness values
         for(const auto &p : pool[pold]->print())

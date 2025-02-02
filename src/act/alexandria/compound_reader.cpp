@@ -156,7 +156,8 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
         auto fragments  = mol->fragmentHandler();
         if (!qmap.empty())
         {
-            if (fragments->setCharges(qmap))
+            fragments->setCharges(msghandler, qmap);
+            if (msghandler->ok())
             {
                 // Copy charges to the high-level topology as well
                 fragments->fetchCharges(mol->atoms());
@@ -279,7 +280,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     }
     if (lookup.empty())
     {
-        msghandler->msg(ACTStatus::Verbose,
+        msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader will include all compounds from %s\n.", qmapfn_.c_str()));
     }
     else
@@ -298,7 +299,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             msg += " in ";
             msg += filename_;
         }
-        msghandler->msg(ACTStatus::Verbose, msg);
+        msghandler->msg(ACTStatus::Info, msg);
     }
     chargeMap qmap;
     if (!qmapfn_.empty())
@@ -306,7 +307,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         std::vector<MolProp> mps;
         MolPropRead(qmapfn_.c_str(), &mps);
         qmap = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup);
-        msghandler->msg(ACTStatus::Verbose,
+        msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
                                           qmap.size(), lookup.size(), qmapfn_.c_str()));
         
@@ -322,7 +323,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 }
                 else
                 {
-                    msghandler->msg(ACTStatus::Verbose,
+                    msghandler->msg(ACTStatus::Info,
                                     gmx::formatString("Keeping %s (%s) from molprop file %s\n",
                                                       mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str()));
                     ++mp;
