@@ -402,7 +402,7 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
             GMX_THROW(gmx::InvalidInputError(msg.c_str()));
         }
         auto devcomp     = new ForceEnergyDevComputer(boltzmann);
-        if (msghandler->verbose())
+        if (msghandler->info())
         {
             for(const auto &b : boltzmann)
             {

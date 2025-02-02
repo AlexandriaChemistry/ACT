@@ -391,7 +391,7 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                         const auto &fs = gg->second.find(i.parameterType());
                         if (gg->second.end() != fs)
                         {
-                            tw->writeStringFormatted("%-15s %11s  %10g  %10g\n",
+                            tw->writeStringFormatted("%-20s %11s  %10g  %10g\n",
                                                      i.id().id().c_str(), i.parameterType().c_str(),
                                                      fs->second.minimum(), fs->second.maximum());
                         }

@@ -322,7 +322,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
                 out += gmx::formatString("  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
             }
         }
-        if (msghandler->verbose())
+        if (msghandler->info())
         {
             msghandler->write(out);
         }
@@ -655,7 +655,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
             b2t_[b2Type::Total][iTemp]     = Btot;
             
-            if (msghandler->verbose())
+            if (msghandler->info())
             {
                 std::string out = gmx::formatString("T = %g K. ", T);
                 for(const auto &b2b : b2Type2str)
@@ -750,7 +750,7 @@ int b2(int argc, char *argv[])
     auto  forceComp = new ForceComputer(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
-    if (msghandler.verbose())
+    if (msghandler.info())
     {
         forceFieldSummary(&jtree, &pd);
     }

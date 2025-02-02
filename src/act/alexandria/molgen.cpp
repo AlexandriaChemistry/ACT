@@ -217,8 +217,8 @@ bool MolGen::checkOptions(MsgHandler                  *msghandler,
         }
         else
         {
-            msghandler->msg(ACTStatus::Verbose,
-                            gmx::formatString("Ignoring unknown training parameter '%s'",
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Ignoring training parameter '%s' not present in force field.",
                                               toFit->first.c_str()));
             toFit = fit_.erase(toFit);
         }
@@ -635,9 +635,9 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 removeMol.push_back(mol.getIupac());
             }
         }
-        if (msghandler->verbose() && removeMol.size() > 0)
+        if (msghandler->info() && removeMol.size() > 0)
         {
-            msghandler->msg(ACTStatus::Verbose,
+            msghandler->msg(ACTStatus::Warning,
                             gmx::formatString("Found %zu molecules without sufficient support, will remove them.\n",
                                               removeMol.size()));
         }
@@ -805,11 +805,11 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         // Even if we did not read a file, we have to tell the other processors
         // about it.
         broadcastChargeMap(cr_, &qmap);
-        msghandler->msg(ACTStatus::Verbose,
+        msghandler->msg(ACTStatus::Info,
                         gmx::formatString("Read %zu compounds from %s", mp.size(), molfn));
         if (qmap.size() > 0)
         {
-            msghandler->msg(ACTStatus::Verbose,
+            msghandler->msg(ACTStatus::Info,
                             gmx::formatString("Read chargemap containing %lu entries from %s", qmap.size(), qmapfn));
         }
         print_memory_usage(debug);
@@ -862,7 +862,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     auto qtype = qType::Calc;
     if (cr_->isMaster())
     {
-        msghandler->msg(ACTStatus::Verbose,
+        msghandler->msg(ACTStatus::Info,
                         gmx::formatString("Trying to generate topologies for %zu out of %zu molecules.",
                                           gms.nMol(), mp.size()));
 
@@ -909,7 +909,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
                 {
-                    if (fragments->setCharges(qmap))
+                    fragments->setCharges(msghandler, qmap);
+                    if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
                         fragments->fetchCharges(actmol.atoms());
@@ -1031,7 +1032,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     actmol->setSupport(eSupport::Remote);
                 }
             }
-            msghandler->msg(ACTStatus::Verbose,
+            msghandler->msg(ACTStatus::Info,
                             gmx::formatString("Computing %s on %s nexp = %zu", actmol->getMolname().c_str(),
                                               eSupport::Local == actmol->support() ? "master" : "helper",
                                               actmol->experimentConst().size()));
@@ -1049,7 +1050,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         // TODO: Free mycomms
         print_memory_usage(debug);
         // Print cost per helper
-        if (msghandler->verbose())
+        if (msghandler->info())
         {
             msghandler->write("Computational cost estimate per helper:");
             for(size_t i = 0; i < totalCost.size(); i++)
@@ -1100,7 +1101,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 auto fragments = actmol.fragmentHandler();
                 if (!qmap.empty())
                 {
-                    if (fragments->setCharges(qmap))
+                    fragments->setCharges(msghandler, qmap);
+                    if (msghandler->ok())
                     {
                         // Copy charges to the high-level topology as well
                         fragments->fetchCharges(actmol.atoms());
@@ -1201,9 +1203,12 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
                 nCount[iMolSelect::Test], actmol_.size());
     }
-    msghandler->msg(ACTStatus::Verbose,
-                    gmx::formatString("There were %d warnings because of zero error bars.", nwarn));
-    msghandler->msg(ACTStatus::Verbose,
+    if (nwarn > 0)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("There were %d warnings because of zero error bars.", nwarn));
+    }
+    msghandler->msg(ACTStatus::Info,
                     gmx::formatString("Made topologies for %zu out of %zu molecules.",
                                       nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
                                       nTargetSize(iMolSelect::Ignore),

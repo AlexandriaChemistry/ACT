@@ -109,10 +109,10 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
     msghandler_.addOptions(pargs, fnms, defname);
 }
 
-void OptACM::check_pargs()
+void OptACM::check_pargs(MsgHandler *)
 {
-    bch_.check_pargs();
-    gach_.check_pargs();
+    bch_.check_pargs(&msghandler_);
+    gach_.check_pargs(&msghandler_);
 }
 
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
@@ -230,7 +230,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         if (msghandler_.verbose())
         {
             msghandler_.msg(ACTStatus::Verbose,
-                            "Will open param conv file on the master!\n");
+                            "Will open parameter convergence files on the master!\n");
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
@@ -402,7 +402,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                               const ga::GenePool                     &pop)
 {
     auto tw = msghandler_.tw();
-    if (tw)
+    if (!tw)
     {
         return;
     }
@@ -711,7 +711,7 @@ int train_ff(int argc, char *argv[])
     opt.setOenv(oenv);
 
     // Check validity of arguments with check_pargs() in ConfigHandler(s)
-    opt.check_pargs();
+    opt.check_pargs(nullptr);
 
     // Finishing MolGen stuff and setting output file for FF in OptACM.
     // Initializes commRec_ in opt
@@ -854,8 +854,8 @@ int train_ff(int argc, char *argv[])
             bMinimum = opt.runMaster(bOptimize, bSensitivity);
             if (bOptimize)
             {
-                opt.msgHandler()->msg(ACTStatus::Verbose,
-                                      "DONE WITH OPTIMIZATION");
+                auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
+                opt.msgHandler()->msg(ACTStatus::Info, msg);
             }
         }
         if (bMinimum || bForceOutput || !bOptimize)

@@ -793,7 +793,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         {
             if (retry > 0)
             {
-                msghandler->msg(ACTStatus::Verbose,
+                msghandler->msg(ACTStatus::Info,
                                 "Will retry minimization with slightly modified input coordinates.\n");
             }
             for(size_t i = 0; i < theAtoms.size(); i++)
@@ -862,8 +862,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
                 computeHessian(pd, mol, forceComp, &newCoords[current],
                                theAtoms, &Hessian, &f0, &newEnergies[current]);
-                               
-                if (msghandler->verbose() && firstStep && false)
+
+                if (msghandler->verbose() && firstStep)
                 {
                     msghandler->write("Hessian:\n");
                     msghandler->write(Hessian.toString());

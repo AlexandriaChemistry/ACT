@@ -240,7 +240,10 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     {
         check_return("MPI_Comm_dup", MPI_Comm_dup(mpi_act_world_, &mpi_act_helpers_));
     }
-    print(stdout);
+    if (isMaster())
+    {
+        print(stdout);
+    }
     initCalled_ = true;
     return CommunicationStatus::OK;
 }

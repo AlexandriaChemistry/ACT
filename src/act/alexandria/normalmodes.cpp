@@ -104,7 +104,7 @@ int nma(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
 
-    sch.check_pargs();
+    sch.check_pargs(&msghandler);
     compR.optionsOK(&msghandler, fnm);
     if (!msghandler.ok())
     {
@@ -122,7 +122,7 @@ int nma(int argc, char *argv[])
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        msghandler.msg(ACTStatus::Verbose,
+        msghandler.msg(ACTStatus::Warning,
                        gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g",
                                          shellToler));
     }
@@ -159,7 +159,7 @@ int nma(int argc, char *argv[])
         if (eMinimizeStatus::OK == eMin)
         {
             auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-            msghandler.msg(ACTStatus::Verbose,
+            msghandler.msg(ACTStatus::Info,
                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
                                              energies[InteractionType::EPOT], rmsd));
             JsonTree jtener("Energies");

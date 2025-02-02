@@ -258,59 +258,55 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
     return true;
 }
 
-bool FragmentHandler::setCharges(const chargeMap &qmap)
+void FragmentHandler::setCharges(MsgHandler      *msghandler,
+                                 const chargeMap &qmap)
 {
-    bool success = true;
-    for(size_t i = 0; i < ids_.size() && success; i++)
+    for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {
         auto qptr = qmap.find(ids_[i]);
         if (qmap.end() != qptr)
         {
             auto aptr = topologies_[i]->atomsPtr();
-            if (aptr->size() == qptr->second.size())
+            // Complicated loop since model in topology may contain shells or vsites
+            // but at least the atoms should match.
+            size_t q = 0;
+            for(size_t a = 0; msghandler->ok() && a < aptr->size(); a++)
             {
-                for(size_t a = 0; success && a < aptr->size(); a++)
+                if ((*aptr)[a].pType() == ActParticle::Atom)
                 {
-                    if (!((*aptr)[a].id() == qptr->second[a].first))
+                    if (!((*aptr)[a].id() == qptr->second[q].first))
                     {
-                        fprintf(stderr, "Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
-                                ids_[i].c_str(), (*aptr)[a].id().id().c_str(),
-                                qptr->second[a].first.id().c_str());
-                        success = false;
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
+                                                          ids_[i].c_str(), (*aptr)[a].id().id().c_str(),
+                                                          qptr->second[a].first.id().c_str()));
                     }
-                    (*aptr)[a].setCharge(qptr->second[a].second);
-                    if (debug)
+                    if (msghandler->ok())
                     {
-                        fprintf(debug, "qmap Charge %zu = %g\n", a,
-                                (*aptr)[a].charge());
+                        (*aptr)[a].setCharge(qptr->second[q].second);
+                        msghandler->msg(ACTStatus::Debug,
+                                        gmx::formatString("qmap Charge %zu = %g\n", a,
+                                                          (*aptr)[a].charge()));
+                        q += 1;
                     }
                 }
-            }
-            else
-            {
-                fprintf(stderr, "Compound '%s' (%zu particles) from the input does not match the same compound in the charge map (%zu particles).\n",
-                        ids_[i].c_str(), aptr->size(), qptr->second.size());
-                success = false;
             }
         }
         else
         {
-            fprintf(stderr, "Cannot find compound '%s' in the charge map\n",
-                    ids_[i].c_str());
-            success = false;
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Cannot find compound '%s' in the charge map\n",
+                                              ids_[i].c_str()));
         }
     }
-    fixedQ_ = success;
+    fixedQ_ = msghandler->ok();
     // Set algorithm to reading charges for the future
-    if (debug)
-    {
-        fprintf(debug, "Copied charges from chargemap to fragments\n");
-    }
-    if (success)
+    msghandler->msg(ACTStatus::Debug,
+                    "Copied charges from chargemap to fragments\n");
+    if (msghandler->ok())
     {
         algorithm_ = ChargeGenerationAlgorithm::Read;
     }
-    return success;
 }
 
 void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)

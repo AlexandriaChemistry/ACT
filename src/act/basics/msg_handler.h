@@ -138,10 +138,12 @@ enum class ACTStatus {
     Error = 1,
     //! Also print warnings
     Warning = 2,
-    //! Give more output
-    Verbose = 3,
+    //! Just right amount of output
+    Info = 3,
+    //! Give even more output
+    Verbose = 4,
     //! Print debugging messages as well
-    Debug = 4
+    Debug = 5
 };
 
 /*! \brief Simple class to print message to a file or stdout
@@ -267,8 +269,11 @@ class MsgHandler
         //! \return whether the status is above error level 
         bool ok() const { return status_ > ACTStatus::Error; }
 
+        //! \return whether we are in a info mode
+        bool info() const { return status_ >= ACTStatus::Info; }
+
         //! \return whether we are in a verbose mode
-        bool verbose() const { return status_ > ACTStatus::Warning; }
+        bool verbose() const { return status_ >= ACTStatus::Verbose; }
 
         //! \return whether we are in debug mode
         bool debug() const { return status_ == ACTStatus::Debug; }

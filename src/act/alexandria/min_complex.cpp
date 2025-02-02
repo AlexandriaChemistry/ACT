@@ -97,7 +97,7 @@ int min_complex(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
     auto tw = msghandler.tw();
-    sch.check_pargs();
+    sch.check_pargs(&msghandler);
 
     ForceField        pd;
     try
