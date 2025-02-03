@@ -81,7 +81,10 @@ protected:
               bool testPolarizability, double stretch = 1, int nexcl = 0)
     {
         // Get forcefield
-        auto pd  = getForceField(forcefield);
+        auto qd  = getForceField(forcefield);
+        // Copy FF to prevent that changes mess up opther tests
+        ForceField qqd = *qd;
+        ForceField *pd = &qqd;
         if (nexcl > 2)
         {
             auto fff = pd->forces();
