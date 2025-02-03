@@ -76,7 +76,6 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         atomicNumber_.push_back(atype->atomnumber());
-        auto &qparam = atype->parameterConst("charge");
         if (atype->hasInteractionType(entype))
         {
             const auto &acmtype = atype->interactionTypeToIdentifier(entype);
@@ -91,8 +90,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             acmtypes.push_back("");
         }
-        if (atype->hasInteractionType(entype) &&
-            (qparam.mutability() == Mutability::ACM))
+        if (atype->hasInteractionType(entype) && atoms[i].pType() == ActParticle::Atom)
         {
             eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
@@ -144,9 +142,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
                 {
                     GMX_THROW(gmx::InvalidInputError("Inconsistent EEM parameters in force field"));
                 }
-                Identifier bccId({acmtypes[nonFixed_[b.aI()]],
-                        acmtypes[nonFixed_[b.aJ()]] },
-                    { b.bondOrder() }, fs->canSwap());
+                auto ai = acmtypes[nonFixed_[b.aI()]];
+                auto aj = acmtypes[nonFixed_[b.aJ()]];
+                //auto ai = acmtypes[b.aI()];
+                //auto aj = acmtypes[b.aJ()];
+                Identifier bccId( { ai, aj }, { b.bondOrder() }, fs->canSwap());
                 double dcf = 1;
                 if (!fs->parameterExists(bccId))
                 {
@@ -157,8 +157,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
                     }
                     else
                     {
-                        bccId = Identifier({acmtypes[nonFixed_[b.aJ()]], acmtypes[nonFixed_[b.aI()]] },
-                                           { b.bondOrder() }, fs->canSwap());
+                        bccId = Identifier( { aj, ai }, { b.bondOrder() }, fs->canSwap());
                         dcf = -1;
                     }
                 }
