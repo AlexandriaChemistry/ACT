@@ -1547,11 +1547,26 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
                 }
             }
             break;
+        case InteractionType::PROPER_DIHEDRALS:
+            {
+                if (nrexcl > 2)
+                {
+                    for(auto &b : myEntry.second)
+                    {
+                        auto a = b->atomIndices();
+                        for (int m = 0; m < 3; m++)
+                        {
+                            exclusions[a[m]].push_back(a[3]);
+                            exclusions[a[3]].push_back(a[m]);
+                        }
+                    }
+                }
+            }
+            break;
         case InteractionType::VDW:
         case InteractionType::VDWCORRECTION:
         case InteractionType::INDUCTIONCORRECTION:
         case InteractionType::ELECTROSTATICS:
-        case InteractionType::PROPER_DIHEDRALS:
         case InteractionType::IMPROPER_DIHEDRALS:
             break;
         default: // throws
