@@ -377,7 +377,7 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
         if (tw)
         {
             tw->writeStringFormatted("There are %zu parameters to train.\n", optIndex_.size());
-            tw->writeStringFormatted("Identifier        Parameter     Minimum     Maximum\n");
+            tw->writeStringFormatted("Identifier             Parameter     Minimum     Maximum\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
