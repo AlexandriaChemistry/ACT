@@ -448,7 +448,8 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
             ndiff += 1;
         }
     }
-    eRMS rms;
+    // Not correct, but just to make compiler happy.
+    eRMS rms = eRMS::TOT;
     switch (mpo_)
     {
     case MolPropObservable::DIPOLE:
