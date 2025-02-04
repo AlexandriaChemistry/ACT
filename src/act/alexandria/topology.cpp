@@ -1544,8 +1544,8 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
                         auto a = b->atomIndices();
                         for (int m = 0; m < 3; m++)
                         {
-                            exclusions[a[m]].push_back(a[3]);
-                            exclusions[a[3]].push_back(a[m]);
+                            exclusions[a[m]].insert(a[3]);
+                            exclusions[a[3]].insert(a[m]);
                         }
                     }
                 }
