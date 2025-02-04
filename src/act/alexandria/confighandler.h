@@ -426,7 +426,7 @@ private:
     //! Tolerance on mean square force for minimizer.
     double             forceToler_           = 1e-6;
     //! Number of retries for minimizing
-    int                minimizeRetries_      = 3;
+    int                minimizeRetries_      = 1;
     //! Max random displacement (nm) before re-trying to minize a structure
     double             minimizeDisplacement_ = 0.002;
     //! Whether to force using displacement and reminimize even if converged

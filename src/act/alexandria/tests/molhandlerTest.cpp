@@ -314,7 +314,7 @@ TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-pg", false);
+    test("hydrogen-chloride.sdf", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreqPol)
