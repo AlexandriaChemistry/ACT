@@ -79,13 +79,16 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     bool  bDouble;
     int   cur   = 0;
 #define prev (1-cur)
-    auto tw = gmx::TextWriter(debug);
-
+    gmx::TextWriter *tw = nullptr;
+    if (debug)
+    {
+        tw = new gmx::TextWriter(debug);
+    }
     i = 0;
     for (mpi = mp->begin(); (mpi < mp->end()); )
     {
         bDouble = false;
-        mpi->Dump(&tw);
+        mpi->Dump(tw);
         mmm[cur]     = mpi;
         molname[cur] = mpi->getMolname();
         form[cur]    = mpi->formula();
@@ -133,10 +136,14 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     }
     for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
-        mpi->Dump(&tw);
+        mpi->Dump(tw);
     }
     printf("There were %d double entries, leaving %d after merging.\n",
            ndouble, (int)mp->size());
+    if (tw)
+    {
+        delete tw;
+    }
 }
 
 std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &filens,
