@@ -1767,10 +1767,6 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
             switch (itype)
             {
             case InteractionType::VDW:
-                {
-                    btype.push_back(atoms_[jj].ffType());
-                    break;
-                }
             case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:

@@ -303,6 +303,18 @@
       <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
+    <particletype identifier="ow" type="Atom" description="water oxygen">
+      <option key="acmtype" value="o3_z"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="o3_b"/>
+      <option key="element" value="O"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="o3"/>
+      <option key="zetatype" value="o3_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
     <particletype identifier="p1" type="Atom" description="sp phosphor">
       <option key="acmtype" value="p1_z"/>
       <option key="atomnumber" value="15"/>

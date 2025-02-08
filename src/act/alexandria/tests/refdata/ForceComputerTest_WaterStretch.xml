@@ -6,9 +6,9 @@
   <Real Name="ALLELEC0.98_act">0</Real>
   <Real Name="EXCHIND0.98_act">0</Real>
   <Real Name="EPOT0.98_act">2.4355966057985832</Real>
-  <Real Name="o3-1_act0.98 fX">0</Real>
-  <Real Name="o3-1_act0.98 fY">0</Real>
-  <Real Name="o3-1_act0.98 fZ">841.96801716831453</Real>
+  <Real Name="ow-1_act0.98 fX">0</Real>
+  <Real Name="ow-1_act0.98 fY">0</Real>
+  <Real Name="ow-1_act0.98 fZ">841.96801716831453</Real>
   <Real Name="h-2_act0.98 fX">0</Real>
   <Real Name="h-2_act0.98 fY">860.67843588670166</Real>
   <Real Name="h-2_act0.98 fZ">-420.98400858415727</Real>
@@ -20,9 +20,9 @@
   <Real Name="ALLELEC1.02_act">0</Real>
   <Real Name="EXCHIND1.02_act">0</Real>
   <Real Name="EPOT1.02_act">2.1636433804612132</Real>
-  <Real Name="o3-1_act1.02 fX">0</Real>
-  <Real Name="o3-1_act1.02 fY">0</Real>
-  <Real Name="o3-1_act1.02 fZ">-1344.5333466240172</Real>
+  <Real Name="ow-1_act1.02 fX">0</Real>
+  <Real Name="ow-1_act1.02 fY">0</Real>
+  <Real Name="ow-1_act1.02 fZ">-1344.5333466240172</Real>
   <Real Name="h-2_act1.02 fX">0</Real>
   <Real Name="h-2_act1.02 fY">-579.27965944673497</Real>
   <Real Name="h-2_act1.02 fZ">672.26667331200861</Real>
