@@ -4,7 +4,7 @@
   <Int Name="water-3-oep.log.pdb">3</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
-    <String>o3</String>
+    <String>ow</String>
     <String>h</String>
     <String>h</String>
   </Sequence>
