@@ -29,7 +29,7 @@
 
 #include "forcecomputerimpl.h"
 
-#include "act/coulombintegrals/coulomb_gaussian.h"
+#include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
@@ -42,16 +42,33 @@
 namespace alexandria
 {
 
+static inline void pairforces(double                  fscalar,
+                              const gmx::RVec        &dx,
+                              const std::vector<int> &indices,
+                              std::vector<gmx::RVec> *forces)
+{
+    auto  &f = *forces;
+
+    auto fijX          = fscalar*dx[XX];
+    f[indices[0]][XX] += fijX;
+    f[indices[1]][XX] -= fijX;
+    auto fijY          = fscalar*dx[YY];
+    f[indices[0]][YY] += fijY;
+    f[indices[1]][YY] -= fijY;
+    auto fijZ          = fscalar*dx[ZZ];
+    f[indices[0]][ZZ] += fijZ;
+    f[indices[1]][ZZ] -= fijZ;
+}
+
 static void computeLJ12_6(const TopologyEntryVector             &pairs,
-                      gmx_unused const std::vector<ActAtom> &atoms,
-                      const std::vector<gmx::RVec>          *coordinates,
-                      std::vector<gmx::RVec>                *forces,
-                      std::map<InteractionType, double>     *energies)
+                          gmx_unused const std::vector<ActAtom> &atoms,
+                          const std::vector<gmx::RVec>          *coordinates,
+                          std::vector<gmx::RVec>                *forces,
+                          std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
-    auto  &f     = *forces;
+    auto   &x    = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -79,15 +96,9 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
             fprintf(debug, "ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g\n",
                     ai, aj, vvdw_rep, vvdw_disp, c6, c12);
         }
-        
+        pairforces(flj, dx, indices, forces);
         erep      += vvdw_rep;
         edisp     += vvdw_disp;
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = flj*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
     }
     if (debug)
     {
@@ -106,7 +117,6 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {   
         // Get the parameters. We have to know their names to do this.
@@ -136,12 +146,7 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
 
         erep  += vvdw_rep;
         edisp += vvdw_disp;
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = flj*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(flj, dx, indices, forces);
     }
     if (debug)               
     {                        
@@ -160,7 +165,6 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -200,12 +204,7 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
             edisp    += eedisp;
         }
         real fbond  = f147*rinv;
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -219,7 +218,6 @@ static void computeExponential(const TopologyEntryVector             &pairs,
 {
     double eexp  = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -247,12 +245,7 @@ static void computeExponential(const TopologyEntryVector             &pairs,
             eexp      += eeexp;
 
             real fbond  = fexp*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            pairforces(fbond, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::VDWCORRECTION, eexp});
@@ -266,7 +259,6 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
 {
     double eexp  = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -294,12 +286,7 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
         eexp      += eeexp;
         
         real fbond  = fexp*rinv;
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
 }
@@ -313,17 +300,12 @@ static void computeWBH(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         auto sigma      = params[wbhSIGMA_IJ];
         auto epsilon    = params[wbhEPSILON_IJ];
-        if (0 == epsilon)
-        {
-            continue;
-        }
         auto gamma      = params[wbhGAMMA_IJ];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
@@ -343,12 +325,7 @@ static void computeWBH(const TopologyEntryVector             &pairs,
                         indices[0], indices[1], sigma, epsilon, gamma, eerep, eedisp);
             }
             real fbond  = fwbh*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            pairforces(fbond, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -364,7 +341,6 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -391,12 +367,7 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
                         indices[0], indices[1], Abh, bbh, c6bh, eerep, eedisp);
             }
             real fbond  = (bbh*eerep + 6*edisp*rinv)*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            pairforces(fbond, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -412,7 +383,6 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
     for (const auto &b : pairs)
     {
@@ -456,12 +426,7 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
                     indices[0], indices[1], 1/rinv, Att, btt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
         }
         real fbond = frep+fdisp;
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -476,7 +441,6 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -514,12 +478,7 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
             erep     += eerep;
             edisp    += eedisp;
             real fbond  = fgbham*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            pairforces(fbond, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -535,7 +494,6 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -571,12 +529,7 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
             erep     += eerep;
             edisp    += eedisp;
             real fbond  = fgbham*rinv;
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij          = fbond*dx[m];
-                f[indices[0]][m] += fij;
-                f[indices[1]][m] -= fij;
-            }
+            pairforces(fbond, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -591,12 +544,12 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
 {
     double ebond = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto ai     = b->atomIndices()[0];
-        auto aj     = b->atomIndices()[1];
+        // Get the parameters.
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
         auto &params= b->params();
         auto izeta  = params[coulZETAI];
         auto jzeta  = params[coulZETAJ];
@@ -605,8 +558,10 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
-        real velec, felec;
-        coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
+        auto r          = std::sqrt(dr2);
+        real velec =  qq*Coulomb_GG(r, izeta, jzeta);
+        real felec = -qq*DCoulomb_GG(r, izeta, jzeta);
+
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
@@ -618,12 +573,7 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         if (dr2 > 0)
         {
             felec *= gmx::invsqrt(dr2);
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij  = felec*dx[m];
-                f[ai][m] += fij;
-                f[aj][m] -= fij;
-            }
+            pairforces(felec, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
@@ -637,12 +587,12 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
 {
     double ebond = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     for (const auto &b : pairs)
     {
-        // Get the atom indices
-        auto ai     = b->atomIndices()[0];
-        auto aj     = b->atomIndices()[1];
+        // Get the parameters.
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
         // Get the parameters. We have to know their names to do this.
         auto &params= b->params();
         auto izeta  = params[coulZETAI];
@@ -670,12 +620,7 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         if (dr2 > 0)
         {
             felec *= gmx::invsqrt(dr2);
-            for (int m = 0; (m < DIM); m++)
-            {
-                auto fij  = felec*dx[m];
-                f[ai][m] += fij;
-                f[aj][m] -= fij;
-            }
+            pairforces(felec, dx, indices, forces);
         }
     }
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
@@ -775,7 +720,6 @@ static void computeBonds(const TopologyEntryVector             &bonds,
     }
     double ebond = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     
     for (const auto &b : bonds)
     {
@@ -799,12 +743,7 @@ static void computeBonds(const TopologyEntryVector             &bonds,
         fbond *= r_1;
         ebond += vB+D0;
         
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
 }
@@ -821,7 +760,6 @@ static void computeCubic(const TopologyEntryVector             &bonds,
     }
     double ebond = 0;
     auto   x     = *coordinates;
-    auto  &f     = *forces;
     
     for (const auto &b : bonds)
     {
@@ -850,12 +788,7 @@ static void computeCubic(const TopologyEntryVector             &bonds,
         
         ebond += vB;
         
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
 }
@@ -868,7 +801,6 @@ static void computeMorse(const TopologyEntryVector             &bonds,
 {
     double  ebond = 0;
     auto    x     = *coordinates;
-    auto   &f     = *forces;
     for (const auto &b : bonds)
     {
         // Get the atom indices
@@ -892,12 +824,7 @@ static void computeMorse(const TopologyEntryVector             &bonds,
             fprintf(debug, "Morse i %d j %d dr %g vbond %g fbond %g\n",
                     indices[0], indices[1], dr, vbond, fbond);
         }
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
 }
@@ -910,7 +837,6 @@ static void computeHua(const TopologyEntryVector             &bonds,
 {
     double  ebond = 0;
     auto    x     = *coordinates;
-    auto   &f     = *forces;
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
@@ -932,12 +858,7 @@ static void computeHua(const TopologyEntryVector             &bonds,
         auto fbond      = 2*De*hb*expterm*(expterm-1)*(c-1)/(dr*denom*denom*denom);
         ebond          += vbond;
 
-        for (int m = 0; (m < DIM); m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
 }
@@ -1139,10 +1060,9 @@ static void computePolarization(const TopologyEntryVector             &bonds,
                                 std::vector<gmx::RVec>                *forces,
                                 std::map<InteractionType, double>     *energies)
 {
-    double ebond = 0;
-    auto   x     = *coordinates;
-    auto  &f     = *forces;
-    const  real half = 0.5;
+    const real half = 0.5;
+    double ebond    = 0;
+    auto   x        = *coordinates;
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1191,12 +1111,7 @@ static void computePolarization(const TopologyEntryVector             &bonds,
                         x[indices[0]][YY],x[indices[0]][ZZ], ddr);
             }
         }
-        for (int m = 0; m < DIM; m++)
-        {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
-        }
+        pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::POLARIZATION, ebond});
 

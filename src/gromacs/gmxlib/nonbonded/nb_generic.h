@@ -53,11 +53,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                       nb_kernel_data_t *        kernel_data,
                       t_nrnb *                  nrnb);
 
-static void gmx_unused wang_buckingham(real sigma, real epsilon, real gamma, 
-                                       real rsq, real rinv,
-                                       real *vrepulsion,
-                                       real *vdispersion,
-                                       real *fvdw)
+static inline void gmx_unused wang_buckingham(real sigma, real epsilon, real gamma,
+                                              real rsq, real rinv,
+                                              real *vrepulsion,
+                                              real *vdispersion,
+                                              real *fvdw)
 {
     /* Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
     real r           = rsq*rinv;
