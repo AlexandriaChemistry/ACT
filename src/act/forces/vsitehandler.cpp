@@ -107,18 +107,12 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     /* TOTAL: 10 flops */
 }
 
-static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
+static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a)
 {
     rvec dx;
 
-    if (pbc)
-    {
-        pbc_dx_aiuc(pbc, xj, xi, dx);
-    }
-    else
-    {
-        rvec_sub(xj, xi, dx);
-    }
+    rvec_sub(xj, xi, dx);
+
     real factor = a*gmx::invsqrt(iprod(dx, dx));
     x[XX] = xi[XX] + factor*dx[XX];
     x[YY] = xi[YY] + factor*dx[YY];
@@ -379,44 +373,39 @@ static void spread_vsite2(const std::vector<int> &ia, real a,
     /* TOTAL: 13 flops */
 }
 
-static void spread_vsite2fd(const t_iatom ia[], real a,
-                            const rvec x[],
-                            rvec f[], const t_pbc *pbc)
+static void spread_vsite2fd(const rvec xi,
+                            const rvec xj,
+                            real       a,
+                            rvec       fi,
+                            rvec       fj,
+                            rvec       fav)
 {
     rvec    dx;
-    t_iatom av, ai, aj;
 
-    av = ia[3];
-    ai = ia[1];
-    aj = ia[2];
-
-    if (pbc)
+    rvec_sub(xj, xi, dx);
+    if (norm(dx) == 0)
     {
-        pbc_rvec_sub(pbc, x[aj], x[ai], dx);
-    }
-    else
-    {
-        rvec_sub(x[aj], x[ai], dx);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Distance between atoms is zero").c_str()));
     }
     real gamma = a*gmx::invsqrt(iprod(dx, dx));
     rvec xis;
     for (int m = 0; m < DIM; m++)
     {
-        xis[m] = x[ai][m] + gamma*dx[m];
+        xis[m] = xi[m] + gamma*dx[m];
     }
     rvec p;
-    svmul(iprod(xis, f[av])/iprod(xis, xis), xis, p);
+    svmul(iprod(xis, fav)/iprod(xis, xis), xis, p);
     rvec df;
     for(int m = 0; m < DIM; m++)
     {
-        df[m] = gamma*(f[av][m]-p[m]);
+        df[m] = gamma*(fav[m]-p[m]);
     }
     
-    rvec_inc(f[ai], df);
-    rvec_dec(f[aj], df);
+    rvec_inc(fi, df);
+    rvec_dec(fj, df);
     
     /* 6 Flops */
-    clear_rvec(f[av]);
+    clear_rvec(fav);
 }
 
 static void spread_vsite3(rvec ffi,
@@ -757,7 +746,7 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
             }
         }
     }
-
+    clear_rvec(f[av]);
     /* TOTAL: 54 flops */
 }
 
@@ -1088,21 +1077,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
 {
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
-    std::set<InteractionType>  vsites = {
-        InteractionType::VSITE1,
-        InteractionType::VSITE2,
-        InteractionType::VSITE2FD,
-        InteractionType::VSITE3,
-        InteractionType::VSITE3S,
-        InteractionType::VSITE3FD,
-        InteractionType::VSITE3FAD,
-        InteractionType::VSITE3OUT,
-        InteractionType::VSITE3OUTS
-    };
     for (const auto &entry: top->entries())
     {
         // Only construct positions for vsites.
-        if (vsites.find(entry.first) == vsites.end())
+        if (!isVsite(entry.first))
         {
             continue;
         }
@@ -1137,10 +1115,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 break;
             case InteractionType::VSITE2FD:
                 ak = atomIndices[2];
-                constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
+                constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2fdA]);
                 if (debug)
                 {
-                    fprintf(debug, "vsite a = %g\n", params[vsite2A]);
+                    fprintf(debug, "vsite a = %g\n", params[vsite2fdA]);
                 }
                 break;
             case InteractionType::VSITE3:
@@ -1245,6 +1223,10 @@ void VsiteHandler::distributeForces(const Topology               *top,
     rvec       *f    = as_rvec_array((*forces).data());
     for (const auto &entry: top->entries())
     {
+        if (!isVsite(entry.first))
+        {
+            continue;
+        }
         for (const auto &vs : entry.second)
         {
             auto &atomIndices = vs->atomIndices();
@@ -1264,7 +1246,8 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite2(atomIndices, params[vsite2A], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE2FD:
-                spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
+                spread_vsite2fd(x[atomIndices[0]], x[atomIndices[1]], params[vsite2fdA],
+                                f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]]);
                 break;
             case InteractionType::VSITE3:
                 spread_vsite3(f[atomIndices[0]], f[atomIndices[1]],
