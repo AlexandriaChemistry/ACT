@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="coords[Br-0][X]">0</Real>
+  <Real Name="coords[Br-0][Y]">0</Real>
+  <Real Name="coords[Br-0][Z]">0.00396</Real>
+  <Real Name="coords[Brs-1][X]">0</Real>
+  <Real Name="coords[Brs-1][Y]">0</Real>
+  <Real Name="coords[Brs-1][Z]">0.00396</Real>
+  <Real Name="coords[v2br1-2][X]">0</Real>
+  <Real Name="coords[v2br1-2][Y]">0</Real>
+  <Real Name="coords[v2br1-2][Z]">0.00396</Real>
+  <Real Name="coords[H-3][X]">0</Real>
+  <Real Name="coords[H-3][Y]">0</Real>
+  <Real Name="coords[H-3][Z]">-0.13849</Real>
+  <Real Name="coords[Hs-4][X]">0</Real>
+  <Real Name="coords[Hs-4][Y]">0</Real>
+  <Real Name="coords[Hs-4][Z]">-0.13849</Real>
+  <Real Name="coords[v2-5][X]">0</Real>
+  <Real Name="coords[v2-5][Y]">0</Real>
+  <Real Name="coords[v2-5][Z]">0.00396</Real>
+  <Real Name="coords[v2-6][X]">0</Real>
+  <Real Name="coords[v2-6][Y]">0</Real>
+  <Real Name="coords[v2-6][Z]">-0.14561250000000001</Real>
+</ReferenceData>

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="coords[H-0][X]">0</Real>
+  <Real Name="coords[H-0][Y]">0.076339999999999991</Real>
+  <Real Name="coords[H-0][Z]">-0.046809999999999997</Real>
+  <Real Name="coords[Hs-1][X]">0</Real>
+  <Real Name="coords[Hs-1][Y]">0.076339999999999991</Real>
+  <Real Name="coords[Hs-1][Z]">-0.046809999999999997</Real>
+  <Real Name="coords[O-2][X]">0</Real>
+  <Real Name="coords[O-2][Y]">0</Real>
+  <Real Name="coords[O-2][Z]">0.0117</Real>
+  <Real Name="coords[Os-3][X]">0</Real>
+  <Real Name="coords[Os-3][Y]">0</Real>
+  <Real Name="coords[Os-3][Z]">0.0117</Real>
+  <Real Name="coords[H-4][X]">0</Real>
+  <Real Name="coords[H-4][Y]">-0.076339999999999991</Real>
+  <Real Name="coords[H-4][Z]">-0.046809999999999997</Real>
+  <Real Name="coords[Hs-5][X]">0</Real>
+  <Real Name="coords[Hs-5][Y]">-0.076339999999999991</Real>
+  <Real Name="coords[Hs-5][Z]">-0.046809999999999997</Real>
+  <Real Name="coords[v3out-6][X]">0.057173163519999994</Real>
+  <Real Name="coords[v3out-6][Y]">-1.001199123606966e-18</Real>
+  <Real Name="coords[v3out-6][Z]">0.052656999999999995</Real>
+  <Real Name="coords[v3out-7][X]">-0.057173163519999994</Real>
+  <Real Name="coords[v3out-7][Y]">-1.001199123606966e-18</Real>
+  <Real Name="coords[v3out-7][Z]">0.052656999999999995</Real>
+  <Real Name="coords[v3-8][X]">0</Real>
+  <Real Name="coords[v3-8][Y]">-5.0059956180348299e-19</Real>
+  <Real Name="coords[v3-8][Z]">-0.011703999999999999</Real>
+</ReferenceData>
