@@ -1491,6 +1491,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
             break;
         case InteractionType::VSITE2:
+        case InteractionType::VSITE2FD:
             for(auto &b : myEntry.second)
             {
                 auto a = b->atomIndices();
