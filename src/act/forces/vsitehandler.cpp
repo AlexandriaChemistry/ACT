@@ -419,61 +419,24 @@ static void spread_vsite2fd(const t_iatom ia[], real a,
     clear_rvec(f[av]);
 }
 
-static void spread_vsite3(const std::vector<int> &indices,
-                          real a, real b,
-                          const rvec x[], rvec f[], rvec fshift[],
-                          const t_pbc *pbc, const t_graph *g)
+static void spread_vsite3(rvec ffi,
+                          rvec ffj,
+                          rvec ffk,
+                          rvec fav,
+                          real a, real b)
 {
-    rvec    fi, fj, fk, dx;
-    int     av, ai, aj, ak;
-    ivec    di;
-    int     siv, sij, sik;
-
-    ai = indices[0];
-    aj = indices[1];
-    ak = indices[2];
-    av = indices[3];
-
-    svmul(1 - a - b, f[av], fj);
-    svmul(        a, f[av], fi);
-    svmul(        b, f[av], fk);
+    rvec fi, fj, fk;
+    svmul(1 - a - b, fav, fj);
+    svmul(        a, fav, fi);
+    svmul(        b, fav, fk);
     /* 11 flops */
 
-    rvec_inc(f[ai], fi);
-    rvec_inc(f[aj], fj);
-    rvec_inc(f[ak], fk);
+    rvec_inc(ffi, fi);
+    rvec_inc(ffj, fj);
+    rvec_inc(ffk, fk);
     /* 9 Flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, av), di);
-        siv = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), di);
-        sij = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), di);
-        sik = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        siv = pbc_dx_aiuc(pbc, x[ai], x[av], dx);
-        sij = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
-        sik = pbc_dx_aiuc(pbc, x[ai], x[ak], dx);
-    }
-    else
-    {
-        siv = CENTRAL;
-        sij = CENTRAL;
-        sik = CENTRAL;
-    }
-
-    if (fshift && (siv != CENTRAL || sij != CENTRAL || sik != CENTRAL))
-    {
-        rvec_inc(fshift[siv], f[av]);
-        rvec_dec(fshift[CENTRAL], fi);
-        rvec_dec(fshift[sij], fj);
-        rvec_dec(fshift[sik], fk);
-    }
-    clear_rvec(f[av]);
+    clear_rvec(fav);
     /* TOTAL: 20 flops */
 }
 
@@ -1114,7 +1077,7 @@ VsiteHandler::VsiteHandler(matrix &box,
     // TODO More checking.
     if (pbc_.ePBC != epbcNONE)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundara conditions").c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundary conditions").c_str()));
     }
     dt_ = dt;
 }
@@ -1304,11 +1267,14 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
                 break;
             case InteractionType::VSITE3:
-                spread_vsite3(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                spread_vsite3(f[atomIndices[0]], f[atomIndices[1]],
+                              f[atomIndices[2]], f[atomIndices[3]],
+                              params[vsite3A], params[vsite3B]);
                 break;
             case InteractionType::VSITE3S:
-                spread_vsite3(atomIndices, params[vsite3sA], params[vsite3sA], x, f, fshift, &pbc_, g);
-                //spread_vsite3s(atomIndices, params[vsite3sA], f);
+                spread_vsite3(f[atomIndices[0]], f[atomIndices[1]],
+                              f[atomIndices[2]], f[atomIndices[3]],
+                              params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
                 spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,

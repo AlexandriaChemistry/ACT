@@ -773,6 +773,26 @@
       <parameter type="charge" unit="e" value="0.1" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
+    <particletype identifier="v2br1" type="VSite" description="bond virtual site">
+      <option key="atomnumber" value="0"/>
+      <option key="bondtype" value="v2"/>
+      <option key="element" value="X"/>
+      <option key="row" value="0"/>
+      <option key="vdwtype" value="v2"/>
+      <option key="zetatype" value="v2_z"/>
+      <parameter type="charge" unit="e" value="0.1" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="v2f1" type="VSite" description="bond virtual site">
+      <option key="atomnumber" value="0"/>
+      <option key="bondtype" value="v2"/>
+      <option key="element" value="X"/>
+      <option key="row" value="0"/>
+      <option key="vdwtype" value="v2"/>
+      <option key="zetatype" value="v2_z"/>
+      <parameter type="charge" unit="e" value="0.1" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
     <particletype identifier="xe_s" type="Shell" description="xe shell">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>

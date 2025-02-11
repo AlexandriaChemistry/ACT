@@ -637,6 +637,18 @@
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
+    <particletype identifier="ow" type="Atom" description="water oxygen">
+      <option key="acmtype" value="o3_z"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="o3_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="o3_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="o3"/>
+      <option key="zetatype" value="o3_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
     <particletype identifier="o3_s" type="Shell" description="sp3 oxygen shell">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>
@@ -796,7 +808,6 @@
       <option key="atomnumber" value="0"/>
       <option key="bondtype" value="v3"/>
       <option key="element" value="VS"/>
-      <option key="poltype" value="v3_s"/>
       <option key="row" value="0"/>
       <option key="vdwtype" value="v3"/>
       <option key="zetatype" value="v3_z"/>
@@ -816,7 +827,6 @@
       <option key="atomnumber" value="0"/>
       <option key="bondtype" value="v3out"/>
       <option key="element" value="VS"/>
-      <option key="poltype" value="v3out_s"/>
       <option key="row" value="0"/>
       <option key="vdwtype" value="v3out"/>
       <option key="zetatype" value="v3OUT_z"/>
