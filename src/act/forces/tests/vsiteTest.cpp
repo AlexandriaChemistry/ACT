@@ -65,8 +65,9 @@ private:
     matrix box = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
     real   dt  = 0.001;
 protected:
-    void testX(const std::string &ff,
-               const std::string &molName)
+    bool setup(const std::string &ff,
+               const std::string &molName,
+               ACTMol            *mol)
     {
         // Get forcefield
         auto pd  = getForceField(ff);
@@ -91,33 +92,80 @@ protected:
         auto &molprop = molprops[0];
         alexandria::ACTMol               mp_;
 
-        mp_.Merge(&molprop);
+        mol->Merge(&molprop);
         MsgHandler msghandler;
         // Uncomment in case of issues
         // msghandler.setACTStatus(ACTStatus::Debug);
         // Generate charges and topology
-        mp_.GenerateTopology(&msghandler, pd,
-                             missingParameters::Ignore);
-        if (!msghandler.ok())
+        mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+
+        return msghandler.ok();
+    }
+    void testX(const std::string &ff,
+               const std::string &molName)
+    {
+        ACTMol mp_;
+
+        if (setup(ff, molName, &mp_))
         {
-            return;
-        }
-        std::vector<gmx::RVec> coords = mp_.xOriginal();
-                        
-        VsiteHandler vh(box, dt);
-        vh.constructPositions(mp_.topology(), &coords, box);
-        
-        gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
-        checker_.setDefaultTolerance(tolerance);
-        auto  myatoms = mp_.topology()->atoms();
-        const char *xyz[DIM] = { "X", "Y", "Z" };
-        for(size_t i = 0; i < coords.size(); i++)
-        {
-            for(int m = 0; m < DIM; m++)
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+
+            VsiteHandler vh(box, dt);
+            vh.constructPositions(mp_.topology(), &coords, box);
+
+            gmx::test::TestReferenceChecker checker_(this->rootChecker());
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            checker_.setDefaultTolerance(tolerance);
+            auto  myatoms = mp_.topology()->atoms();
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+            for(size_t i = 0; i < coords.size(); i++)
             {
-                auto label = gmx::formatString("coords[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
-                checker_.checkReal(coords[i][m], label.c_str());
+                for(int m = 0; m < DIM; m++)
+                {
+                    auto label = gmx::formatString("coords[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    checker_.checkReal(coords[i][m], label.c_str());
+                }
+            }
+        }
+    }
+    void testF(const std::string &ff,
+               const std::string &molName)
+    {
+        ACTMol mp_;
+        
+        if (setup(ff, molName, &mp_))
+        {
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+
+            VsiteHandler vh(box, dt);
+            vh.constructPositions(mp_.topology(), &coords, box);
+            gmx::RVec fzero = { 0, 0, 0 };
+            std::vector<gmx::RVec> forces(coords.size(), fzero);
+            auto  myatoms = mp_.topology()->atoms();
+            size_t i = 0;
+            int    m = 0;
+            for (const auto &a : myatoms)
+            {
+                if (a.pType() == ActParticle::Vsite)
+                {
+                    forces[i][m] = 1;
+                    m = (m+1) % DIM;
+                }
+                i += 1;
+            }
+            vh.distributeForces(mp_.topology(), coords, &forces, box);
+            gmx::test::TestReferenceChecker checker_(this->rootChecker());
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            checker_.setDefaultTolerance(tolerance);
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+
+            for(size_t i = 0; i < forces.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    auto label = gmx::formatString("forces[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    checker_.checkReal(forces[i][m], label.c_str());
+                }
             }
         }
     }
@@ -138,13 +186,28 @@ TEST_F (VsiteHandlerTest, VSite3H20)
     testX("ACS-pg-vs3", "water");
 }
 
+TEST_F (VsiteHandlerTest, VSite2HFForce)
+{
+    testF("ACS-pg-vs2", "hydrogen-fluoride");
+}
+
+TEST_F (VsiteHandlerTest, VSite2HBrForce)
+{
+    testF("ACS-pg-vs2", "hydrogen-bromide");
+}
+
+TEST_F (VsiteHandlerTest, VSite3H20Force)
+{
+    testF("ACS-pg-vs3", "water");
+}
+
 TEST(Vsite1, HF)
 {
     std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f", "v2f1" }, { 9 }, CanSwap::Yes);
+    auto fh = Identifier({ "f", "v1f1" }, { 9 }, CanSwap::Yes);
 
     auto itype = InteractionType::VSITE1;
     EXPECT_TRUE(pd->interactionPresent(itype));

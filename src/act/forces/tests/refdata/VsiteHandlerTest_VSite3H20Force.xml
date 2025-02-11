@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="forces[H-0][X]">-0.074463999999999975</Real>
+  <Real Name="forces[H-0][Y]">-0.074463999999999975</Real>
+  <Real Name="forces[H-0][Z]">0.68857599999999997</Real>
+  <Real Name="forces[Hs-1][X]">0</Real>
+  <Real Name="forces[Hs-1][Y]">0</Real>
+  <Real Name="forces[Hs-1][Z]">0</Real>
+  <Real Name="forces[O-2][X]">0.34999999999999998</Real>
+  <Real Name="forces[O-2][Y]">0.34999999999999998</Real>
+  <Real Name="forces[O-2][Z]">-0.37715199999999982</Real>
+  <Real Name="forces[Os-3][X]">0</Real>
+  <Real Name="forces[Os-3][Y]">0</Real>
+  <Real Name="forces[Os-3][Z]">0</Real>
+  <Real Name="forces[H-4][X]">0.724464</Real>
+  <Real Name="forces[H-4][Y]">0.724464</Real>
+  <Real Name="forces[H-4][Z]">0.68857599999999997</Real>
+  <Real Name="forces[Hs-5][X]">0</Real>
+  <Real Name="forces[Hs-5][Y]">0</Real>
+  <Real Name="forces[Hs-5][Z]">0</Real>
+  <Real Name="forces[v3out-6][X]">0</Real>
+  <Real Name="forces[v3out-6][Y]">0</Real>
+  <Real Name="forces[v3out-6][Z]">0</Real>
+  <Real Name="forces[v3out-7][X]">0</Real>
+  <Real Name="forces[v3out-7][Y]">0</Real>
+  <Real Name="forces[v3out-7][Z]">0</Real>
+  <Real Name="forces[v3-8][X]">0</Real>
+  <Real Name="forces[v3-8][Y]">0</Real>
+  <Real Name="forces[v3-8][Z]">0</Real>
+</ReferenceData>
