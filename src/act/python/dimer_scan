@@ -89,10 +89,28 @@ def write_pdb_line(outf, atomid:int, atomname:str,
     outf.write("%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n" %
                ( "ATOM", atomid, atomname, ' ', resname, ' ', resnr, ' ', x, y, z, 1.00, 0.00, element ) )
 
+def find_freeze_atoms(pdbfile:str):
+    atoms, conect_records, header_lines, master_line, end_line = read_pdb(pdbfile)
+    monomer1 = [atom for atom in atoms if atom['residue_seq'] == 1]
+    monomer2 = [atom for atom in atoms if atom['residue_seq'] != 1]
+    atom1 = -1
+    atom2 = -1
+    dist2 = 1e8
+    for m1 in range(len(monomer1)):
+        for m2 in range(len(monomer1), len(atoms)):
+            d2 = calculate_distance(atoms[m1], atoms[m2])
+            if d2 < dist2:
+                atom1 = m1+1
+                atom2 = m2+1
+                dist2 = d2
+    return atom1, atom2
+
+def pdb_name(dimername: str, pdb_path: str) -> str:
+    return os.path.join(pdb_path, f"{dimername}.pdb")
+    
 def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2_s: int, pdb_path: str) -> str:
-    dimer_directory = pdb_path
-    pdb_file_path = os.path.join(dimer_directory, f"{dimername}.pdb")
-    output_pdb = f"{dimername}-modified-{dist:.2f}.pdb"
+    pdb_file_path = pdb_name(dimername, pdb_path)
+    output_pdb    = f"{dimername}-modified-{dist:.2f}.pdb"
 
     atoms, conect_records, header_lines, master_line, end_line = read_pdb(pdb_file_path)
 
@@ -149,7 +167,7 @@ def get_final_energies(mylog: str) -> dict:
                         ename = e
                         if "EPOT" == e:
                             ename = "INTERACTION"
-                        ener[ename] = float(words[3])
+                        ener[ename] = float(words[4])
                     except ValueError:
                         print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
             if "EPOT:" in line and "value" in line:
@@ -187,12 +205,16 @@ def get_dists(rmin: float, rmax: float, nstep: float) -> list:
 
 
 def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
-              force: bool, pol: bool, nvsite1: int, rmin: float, atom1_s: int,
-              atom2_s: int, end_dist: float, pdb_path: str, nstep: float, molprop:str):
+              force: bool, pol: bool, nvsite1: int, rmin: float, atom1_s,
+              atom2_s, end_dist: float, pdb_path: str, nstep: float, molprop:str):
     label = f"{c1}#{c2}"
     dists = get_dists(rmin, end_dist, nstep)
+    if not atom1_s or not atom2_s:
+        atom1_s, atom2_s = find_freeze_atoms(pdb_name(system, pdb_path))
+        print("Will use atoms %d and %d to determine distance" % ( atom1_s, atom2_s ) )
+
     freeze_ind = [atom1_s, atom2_s]
-    fndx = make_freeze(freeze_ind)
+    fndx       = make_freeze(freeze_ind)
 
     for dd, dfl in enumerate(dists):
         dstr = ("%04d" % dd)
@@ -205,7 +227,7 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
 
             mylog = "simulation.log"
             outpdb = "final.pdb"
-            command = f"alexandria simulate -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
+            command = f"alexandria simulate -v 3 -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
             if molprop and len(molprop) > 0:
                 command += f" -charges {molprop} "
             command += " > sim.txt 2>&1 "
@@ -259,7 +281,7 @@ def analyze_ff(ff: str) -> (bool, bool):
     return pol, vs
 
 def run_one(vdw: str, xml: str, system: str, rmin: float,
-            atom1_s: int, atom2_s: int, end_dist: float,
+            atom1_s, atom2_s, end_dist: float,
             pdb_path: str, nstep: float, molprop:str):
     global final_distance
     if not os.path.exists(xml):
@@ -364,9 +386,7 @@ if __name__ == "__main__":
 
     required_args = {
         "ff": "Force field files are required to calculate the dimer potentials.",
-        "pdb": "Path to the PDB file is required to define the dimer structure.",
-        "atom1": "Serial number of Atom1 in the first monomer, required for distance calculation.",
-        "atom2": "Serial number of Atom2 in the second monomer, required for distance calculation."
+        "pdb": "Path to the PDB file is required to define the dimer structure."
     }
 
     for arg, error_message in required_args.items():
