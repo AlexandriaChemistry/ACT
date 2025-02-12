@@ -377,7 +377,7 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
         if (tw)
         {
             tw->writeStringFormatted("There are %zu parameters to train.\n", optIndex_.size());
-            tw->writeStringFormatted("Identifier             Parameter     Minimum     Maximum\n");
+            tw->writeStringFormatted("Identifier             Parameter     Minimum     Maximum     Initial\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
@@ -391,9 +391,10 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                         const auto &fs = gg->second.find(i.parameterType());
                         if (gg->second.end() != fs)
                         {
-                            tw->writeStringFormatted("%-20s %11s  %10g  %10g\n",
+                            tw->writeStringFormatted("%-20s %11s  %10g  %10g  %10g\n",
                                                      i.id().id().c_str(), i.parameterType().c_str(),
-                                                     fs->second.minimum(), fs->second.maximum());
+                                                     fs->second.minimum(), fs->second.maximum(),
+                                                     fs->second.value());
                         }
                     }
                 }

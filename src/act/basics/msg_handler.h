@@ -270,13 +270,13 @@ class MsgHandler
         bool ok() const { return status_ > ACTStatus::Error; }
 
         //! \return whether we are in a info mode
-        bool info() const { return status_ >= ACTStatus::Info; }
+        bool info() const { return printLevel_ >= ACTStatus::Info; }
 
         //! \return whether we are in a verbose mode
-        bool verbose() const { return status_ >= ACTStatus::Verbose; }
+        bool verbose() const { return printLevel_ >= ACTStatus::Verbose; }
 
         //! \return whether we are in debug mode
-        bool debug() const { return status_ == ACTStatus::Debug; }
+        bool debug() const { return printLevel_ == ACTStatus::Debug; }
 
         //! \return ID of last message
         ACTMessage last() const { return last_; }
