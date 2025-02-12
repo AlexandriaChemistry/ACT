@@ -192,7 +192,7 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     };
 
     auto i2 = i2s.find(ilevel_);
-    if (i2s.end() == i2)
+    if (i2s.end() != i2)
     {
         printLevel_ = i2->second;
     }
