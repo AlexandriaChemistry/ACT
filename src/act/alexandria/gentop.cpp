@@ -208,7 +208,7 @@ int gentop(int argc, char *argv[])
 
     int mp_index   = 1;
     std::map<std::string, std::pair<ACTMessage, std::vector<std::string>>> errors;
-    for(auto actmol = actmols.begin(); actmol < actmols.end(); )
+    for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
     {
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
         std::vector<gmx::RVec> coords = actmol->xOriginal();
@@ -251,7 +251,6 @@ int gentop(int argc, char *argv[])
                     }
             }
             actmol->PrintConformation(cfn.c_str(), coords, writeShells, box);
-            ++actmol;
         }
         mp_index++;
     }

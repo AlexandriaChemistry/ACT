@@ -239,10 +239,12 @@ int simulate(int argc, char *argv[])
                 printf("There are %lu fragments\n", nfrag);
                 if (nfrag == 2)
                 {
+                    // Make a copy to keep the correct shell coordinates when saving the structure.
+                    auto newxmin = xmin;
                     std::map<InteractionType, double> einter;
                     std::vector<gmx::RVec>            interactionForces;
                     actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
-                                                      &interactionForces, &xmin, true);
+                                                      &interactionForces, &newxmin, true);
                     for(const auto &ei : einter)
                     {
                         msghandler.msg(ACTStatus::Info,
