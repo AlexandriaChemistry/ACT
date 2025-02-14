@@ -150,9 +150,9 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
     
     mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
 
-    std::vector<gmx::RVec> coords = mol->xOriginal();
     if (msghandler->ok())
     {
+        std::vector<gmx::RVec> coords = mol->xOriginal();
         auto fragments  = mol->fragmentHandler();
         if (!qmap.empty())
         {

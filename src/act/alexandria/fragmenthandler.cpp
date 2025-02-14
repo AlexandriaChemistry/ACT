@@ -287,9 +287,9 @@ void FragmentHandler::setCharges(MsgHandler      *msghandler,
                         msghandler->msg(ACTStatus::Debug,
                                         gmx::formatString("qmap Charge %zu = %g\n", a,
                                                           (*aptr)[a].charge()));
-                        q += 1;
                     }
                 }
+                q += 1;
             }
         }
         else

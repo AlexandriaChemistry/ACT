@@ -207,7 +207,6 @@ int gentop(int argc, char *argv[])
     std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
 
     int mp_index   = 1;
-    std::map<std::string, std::pair<ACTMessage, std::vector<std::string>>> errors;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
     {
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
@@ -258,7 +257,8 @@ int gentop(int argc, char *argv[])
     {
         if (opt2bSet("-openmm", fnm.size(), fnm.data()))
         {
-            writeOpenMM(opt2fn("-openmm", fnm.size(), fnm.data()),
+            writeOpenMM(&msghandler,
+                        opt2fn("-openmm", fnm.size(), fnm.data()),
                         &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
         }
     }
