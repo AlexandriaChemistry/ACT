@@ -163,12 +163,13 @@ int interactionTypeToNatoms(InteractionType iType)
     return 0;
 }
 
+// Presorted set, just in case it speeds up finding, although it shouldn't matter.
+static const std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
+                               InteractionType::VSITE3, InteractionType::VSITE3FAD, InteractionType::VSITE3FD,
+                               InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS, InteractionType::VSITE3S };
+
 bool isVsite(InteractionType iType)
 {
-    std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
-                      InteractionType::VSITE3, InteractionType::VSITE3S,
-                      InteractionType::VSITE3FD, InteractionType::VSITE3FAD,
-                      InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS };
     return (myvs.end() != myvs.find(iType));
 }
 

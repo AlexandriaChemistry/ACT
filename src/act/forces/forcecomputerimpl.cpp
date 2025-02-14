@@ -565,9 +565,9 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         if (debug)
         {
             auto r1 = std::sqrt(dr2);
-            fprintf(debug, "vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g\n",
+            fprintf(debug, "vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g felec %g\n",
                     ai, aj, velec, izeta, jzeta, 
-                    atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1);
+                    atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1, felec/r1);
         }
         ebond += velec;
         if (dr2 > 0)
