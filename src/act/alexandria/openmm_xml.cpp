@@ -49,6 +49,7 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -307,7 +308,8 @@ private:
     void addBondAtoms(xmlNodePtr                      parent,
                       const std::vector<std::string> &atoms);
 
-    void addXmlNonbonded(xmlNodePtr                       parent,
+    void addXmlNonbonded(MsgHandler                      *msghandler,
+                         xmlNodePtr                       parent,
                          const ForceField                *pd,
                          const std::map<std::string, int> &ffTypeMap);
 
@@ -326,7 +328,8 @@ private:
                             const std::map<std::string, int> &ffTypeMap,
                             double                            epsr_fac);
 
-    void addXmlForceField(xmlNodePtr                 parent,
+    void addXmlForceField(MsgHandler                *msghandler,
+                          xmlNodePtr                 parent,
                           const ForceField          *pd,
                           const std::vector<ACTMol> &actmols);
                           
@@ -353,16 +356,11 @@ public:
      * \param[in] pd       The ACT force field
      * \param[in] actmols  The ACT molecules
      */
-    void writeXml(const std::string         &fileName,
+    void writeXml(MsgHandler                      *msghandler,
+                  const std::string         &fileName,
                   const ForceField          *pd,
                   const std::vector<ACTMol> &actmols);
 
-    /*! \brief Do the writing of the parameter file
-     * \param[in] fileName The name of the file
-     * \param[in] pd       The ACT force field
-     */
-    void writeDat(const std::string         &fileName,
-                  const ForceField          *pd);
 };
 
 void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
@@ -629,7 +627,8 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
     }
 }
   
-void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
+void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
+                                   xmlNodePtr                       parent,
                                    const ForceField                *pd,
                                    const std::map<std::string, int> &ffTypeMap)
 {
@@ -661,11 +660,13 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             auto ccrr = cr.find(cr_e.first);
             if (ccrr == cr.end())
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No combination rule for %s", cr_e.first.c_str()).c_str()));
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("No combination rule for %s", cr_e.first.c_str()).c_str());
             }
             else if (ccrr->second != cr_e.second)
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule %s is not supported by OpenMM for %s (use %s)", ccrr->second.c_str(), cr_e.first.c_str(), cr_e.second.c_str()).c_str()));
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Combination rule %s is not supported by OpenMM for %s (use %s)", ccrr->second.c_str(), cr_e.first.c_str(), cr_e.second.c_str()));
             }
         }
     }
@@ -1094,7 +1095,8 @@ static void add_xml_weight(xmlNodePtr  parent,
     add_xml_char(parent, wname, w1.c_str());
 }
 
-void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
+void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
+                                    xmlNodePtr                 parent,
                                     const ForceField          *pd,
                                     const std::vector<ACTMol> &actmols)
 {
@@ -1385,8 +1387,9 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                         }
                                         break;
                                     default:
-                                        GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s not supported yet.",
-                                                                                       interactionTypeToString(itp.first).c_str()).c_str()));
+                                        msghandler->msg(ACTStatus::Warning,
+                                                        gmx::formatString("InteractionType %s not supported yet.",
+                                                                          interactionTypeToString(itp.first).c_str()).c_str());
                                     }
                                 }
                             }
@@ -1400,12 +1403,13 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             addTopologyEntries(pd, &BondClassUsed, actmol.topology());
         }
     }
-    addXmlNonbonded(parent, pd, fftypeGlobalMap);
+    addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);
     addXmlSpecial(parent, pd, fftypeGlobalMap);
     addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
 }
 
-void OpenMMWriter::writeXml(const std::string         &fileName,
+void OpenMMWriter::writeXml(MsgHandler                *msghandler,
+                            const std::string         &fileName,
                             const ForceField          *pd,
                             const std::vector<ACTMol> &actmols)
 {
@@ -1436,7 +1440,7 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlForceField(myroot, pd, actmols);
+    addXmlForceField(msghandler, myroot, pd, actmols);
 
     // Do not compress the OpenMM file.
     xmlSetDocCompressMode(doc, 0);
@@ -1448,7 +1452,8 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
     xmlFreeDoc(doc);
 }
 
-void writeOpenMM(const std::string         &fileName,
+void writeOpenMM(MsgHandler                *msghandler,
+                 const std::string         &fileName,
                  const ForceField          *pd,
                  const std::vector<ACTMol> &actmols,
                  double                     mDrude,
@@ -1458,7 +1463,7 @@ void writeOpenMM(const std::string         &fileName,
     rmapyyyOpenMM.clear();
     
     OpenMMWriter writer(mDrude, addNumbersToAtoms, ntrain);
-    writer.writeXml(fileName, pd, actmols);
+    writer.writeXml(msghandler, fileName, pd, actmols);
 }
 
 } // namespace alexandria
