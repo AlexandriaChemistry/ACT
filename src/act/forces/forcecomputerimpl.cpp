@@ -544,6 +544,7 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
 {
     double ebond = 0;
     auto   x     = *coordinates;
+    double vc_pt = 0;
     for (const auto &b : pairs)
     {
         // Get the parameters.
@@ -568,6 +569,7 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
             fprintf(debug, "vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g felec %g\n",
                     ai, aj, velec, izeta, jzeta, 
                     atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1, felec/r1);
+            vc_pt += qq/r1;
         }
         ebond += velec;
         if (dr2 > 0)
@@ -575,6 +577,10 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
             felec *= gmx::invsqrt(dr2);
             pairforces(felec, dx, indices, forces);
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "vcoul %g vcoul_pc %g\n", ebond, vc_pt);
     }
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
 }

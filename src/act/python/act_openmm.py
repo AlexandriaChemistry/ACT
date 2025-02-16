@@ -1295,7 +1295,7 @@ class ActOpenMMSim:
                     # Retrieve atoms (and parameters but we just want the bonds now).
                     bondinfo = bond_force.getBondParameters(bond_index)
                     if self.debug:
-                        self.txt.write("DBG: bondinfo {}\n".format(bondinfo))
+                        self.txt.write("DBG: bond %d %d length %f kb %f\n" % ( bondinfo[0], bondinfo[1], bondinfo[2]._value, bondinfo[3]._value ) )
                     self.bonds.append((bondinfo[0], bondinfo[1]))
                 self.bond_force = bond_force
         # pairs with constraints
