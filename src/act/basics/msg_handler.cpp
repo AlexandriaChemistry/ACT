@@ -168,6 +168,14 @@ MsgHandler::~MsgHandler()
     }
 }
 
+void MsgHandler::flush()
+{
+    if (tw_)
+    {
+        tw_->flush();
+    }
+}
+
 void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
                             std::vector<t_filenm>     *filenm,
                             const std::string         &defaultLogName)

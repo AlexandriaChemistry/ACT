@@ -843,6 +843,7 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
         }
 
         void write(const char *str) override { contents_.write(str); }
+        void flush() override {};
         void close() override
         {
             const std::string &newContents = contents_.toString();

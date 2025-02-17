@@ -253,6 +253,9 @@ class MsgHandler
         //! Return pointer to internal TextWriter object for debugging
         gmx::TextWriter *twDebug() { return twdebug_; }
 
+        //! \brief Flush the output if possible
+        void flush();
+
         /*! \brief Just write a string
          * \param[in] str String
          */

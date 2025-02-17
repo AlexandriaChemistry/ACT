@@ -28,6 +28,8 @@
 #include "acm_ga.h"
 
 #include <algorithm>
+#include <ctime>
+#include <regex>
 
 #include "act/basics/msg_handler.h"
 #include "act/ga/gene_pool.h"
@@ -296,6 +298,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     msghandler->write(gmx::formatString("Starting %d generations of force field training.\n",
                                         gach_->maxGenerations()));
 
+    // Store starting time
+    time_t start_time = std::time(nullptr);
     // Iterate and create new generation
     do
     {
@@ -553,14 +557,21 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = (*bestGenome)[imstr];
-        time_t my_t;
-        time(&my_t);
+        time_t my_time = std::time(nullptr);
+        time_t diff_time   = my_time - start_time;
+        time_t finish_time = my_time + (diff_time / (generation+1)) * gach_->maxGenerations();
+        std::string t_now(std::ctime(&my_time));
+        std::string t_finish(std::ctime(&finish_time));
+        // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
+        std::regex newlines_re("\n+");
+        auto mess_start = gmx::formatString("Generation %d/%d. Time: %s, expect to finish at %s",
+                                            generation, gach_->maxGenerations(),
+                                            std::regex_replace(t_now, newlines_re, "").c_str(),
+                                            std::regex_replace(t_finish, newlines_re, "").c_str());
+
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for train",
-                                          generation,
-                                          gach_->maxGenerations(),
-                                          ctime(&my_t));
+            auto mess = gmx::formatString("\n%s. New best individual for train", mess_start.c_str());
             msghandler->write(tmpGenome.print(mess.c_str()));
             (*bestGenome)[imstr] = tmpGenome;
             bMinimum = true;
@@ -575,14 +586,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             const auto tmpBestTest = (*bestGenome)[imste];
             if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
             {
-                auto mess = gmx::formatString("Generation %d/%d at %s. New best individual for test",
-                                              generation,
-                                              gach_->maxGenerations(),
-                                              ctime(&my_t));
+                auto mess = gmx::formatString("%s. New best individual for test", mess_start.c_str());
                 (*bestGenome)[imste] = tmpGenome;
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
+        msghandler->flush();
     }
     while (!terminate(msghandler->tw(), pool[pold], generation));
 

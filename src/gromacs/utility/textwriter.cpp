@@ -114,7 +114,10 @@ class TextWriter::Impl
                 writeRawString(str);
             }
         }
-
+        void flush()
+        {
+            stream_->flush();
+        }
         TextOutputStreamPointer stream_;
         TextLineWrapper         wrapper_;
         int                     newLineCount_;
@@ -228,6 +231,11 @@ void TextWriter::ensureEmptyLine()
     {
         impl_->pendingNewLine_ = true;
     }
+}
+
+void TextWriter::flush()
+{
+    impl_->flush();
 }
 
 void TextWriter::close()
