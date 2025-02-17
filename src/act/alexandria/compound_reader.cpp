@@ -358,7 +358,8 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("CompoundReader could not determine charges for '%s' from '%s'\n",
                                                   mol->getMolname().c_str(), filename_));
-                // Prevent false positives, delete compound
+                // Prevent false positives, delete compound and reset status
+                msghandler->resetStatus();
                 mol = mols.erase(mol);
             }
             else

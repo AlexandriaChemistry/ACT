@@ -89,6 +89,7 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
         actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
         if (!msghandler->ok())
         {
+            msghandler->resetStatus();
             continue;
         }
         std::vector<gmx::RVec> coords = actmol.xOriginal();
@@ -110,6 +111,10 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                 newq.push_back({atom.id(), atom.charge()});
             }
             qmap.insert( { frags[0].inchi(), newq } );
+        }
+        else
+        {
+            msghandler->resetStatus();
         }
     }
     return qmap;
