@@ -290,6 +290,8 @@ private:
     bool  tempWeight_        = false;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real  anneal_            = 1;
+    //! Whether annealing restart during each mutation round or is global over GA generations
+    bool  annealGlobally_    = false;
     //! Evaluate on test set during the MCMC run
     bool  evaluate_testset_  = false;
     //! Checkpointing on or not?
@@ -325,6 +327,13 @@ public:
     //! \brief Return temperature
     real temperature() const { return temperature_; }
 
+    /*! \brief Return temperature dependent on generation if global annealing is used
+     * \param[in] generation      Current generation
+     * \param[in] max_generations Total number of generations
+     */
+    real temperature(int generation,
+                     int max_generations) const;
+
     /*! \brief set a new value for temperature
      * \param[in] temperature the new temperature
      */
@@ -340,13 +349,20 @@ public:
      * \param[in] seed The new seed
      */
     void setSeed(int seed) { seed_ = seed; }
-    
+
     /*! \brief Compute and return the Boltzmann factor
-    *
-    * \param[in] iter  The iteration number
-    * \return The Boltzmann factor
-    */
-    double computeBeta(int iter);
+     * Takes into account both local annealing (within a generation)
+     * and global annealing (spreading over generations) depending
+     * on user specified command line options.
+     *
+     * \param[in] generation      The generation number
+     * \param[in] max_generations The total number of generations planned
+     * \param[in] iteration       The iteration number
+     * \return The Boltzmann factor
+     */
+    double computeBeta(int generation,
+                       int max_generations,
+                       int iteration);
 
     /*! \brief Compute and return the Boltzmann factor
     * it applies periodic annealing
@@ -356,7 +372,7 @@ public:
     * \param[in] ncycle  The multiplicity of the cosine function
     * \return The Boltzmann factor
     */
-    double computeBeta(int maxiter, int iter, int ncycle);
+    double computeBetaOld(int maxiter, int iter, int ncycle);
 
     //! \brief Return the step
     real step() const { return step_; }
@@ -368,9 +384,20 @@ public:
     bool temperatureWeighting() const { return tempWeight_; }
 
     /*! \brief Return whether or not to do simulated annealing
-    * \param iter The iteration number
-    */
-    bool anneal (int iter) const;
+     * \param[in] generation The generation number for HYBRID
+     * \param[in] iteration  The iteration number
+     */
+    bool anneal (int generation,
+                 int iteration) const;
+
+    //! \return start of annealing in fraction of iterations
+    double annealStart() const { return anneal_; }
+
+    //! \return true if annealing was requested
+    bool annealing() const { return anneal_ < 1; }
+
+    //! \return true if global annealing was requested
+    bool globalAnnealing() const { return annealing() && annealGlobally_; }
 
     /*! \brief Set a new value for annealing start
      * \param[in] anneal the new starting point for simulated annealing

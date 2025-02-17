@@ -51,7 +51,8 @@ MCMCMutator::MCMCMutator(int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii,
-                         bool                  evaluateTestSet)
+                         bool                  evaluateTestSet,
+                         int                   maxGenerations)
     : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
     bch_     = bch;
@@ -62,6 +63,7 @@ MCMCMutator::MCMCMutator(int                   seed,
     pSigma_.resize(nParam, 0.0);
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
+    maxGenerations_ = maxGenerations;
 }
 
 void MCMCMutator::mutate(MsgHandler        *msghandler,
@@ -114,7 +116,23 @@ void MCMCMutator::mutate(MsgHandler        *msghandler,
 
     print_memory_usage(debug);
 
-    double beta0      = 1 / (BOLTZ * bch_->temperature());
+    double beta0      = bch_->computeBeta(0, maxGenerations_, 0);
+    if (bch_->globalAnnealing() && myGeneration_ == 0)
+    {
+        if (bch_->globalAnnealing())
+        {
+            msghandler->msg(ACTStatus::Info,
+                            gmx::formatString("Global annealing starting from T = %g, cooling step-wise over %d generations",
+                                              bch_->temperature(), maxGenerations_));
+        }
+    }
+    if (bch_->annealing())
+    {
+        msghandler->msg(ACTStatus::Info,
+                        gmx::formatString("Local annealing starting from T = %g commencing from iteration %d out of %d during the mutation cycle",
+                                          bch_->temperature(myGeneration_, maxGenerations_),
+                                          int(bch_->annealStart() * bch_->maxIter()), bch_->maxIter()));
+    }
     // Optimization loop
     int    iterOffset = myGeneration_*bch_->maxIter();
     for (int iter = 0; iter < bch_->maxIter(); iter++)
@@ -219,9 +237,9 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     if (!accept)
     {
         // Only anneal if the simulation reached a certain number of steps
-        if (bch_->anneal(iter))
+        if (bch_->anneal(myGeneration_, iter))
         {
-            *beta0 = bch_->computeBeta(iter);
+            *beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
         }
         const double randProbability = randNum();
         const double mcProbability   = exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );

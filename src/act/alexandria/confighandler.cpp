@@ -118,6 +118,8 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies." },
         { "-anneal", FALSE, etREAL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
+        { "-anneal_globally", FALSE, etBOOL, {&annealGlobally_},
+          "Whether annealing restart during each mutation round or is global over GA generations" },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
@@ -155,9 +157,23 @@ void BayesConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(anneal_ >= 0 && anneal_ <= 1, "-anneal must be in range [0, 1].");
 }
 
-double BayesConfigHandler::computeBeta(int iter)
+real BayesConfigHandler::temperature(int generation,
+                                     int max_generations) const
 {
-    double temp = temperature_;
+    double temp0 = temperature_;
+    if (annealGlobally_ && generation > 0)
+    {
+        temp0 *= (max_generations - generation)/(1.0 * max_generations);
+    }
+    return temp0;
+}
+
+double BayesConfigHandler::computeBeta(int generation,
+                                       int max_generations,
+                                       int iter)
+{
+    double temp0 = temperature(generation, max_generations);
+    double temp  = temp0;
     if (iter >= maxiter_)
     {
         temp = 1e-6;
@@ -166,12 +182,12 @@ double BayesConfigHandler::computeBeta(int iter)
     {
         // temp = temperature_*(1.0 - iter/(1.0*maxiter_));
         // Line: temp = m * iter + b
-        temp = ( temperature_ / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temperature_ / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
+        temp = ( temp0 / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temp0 / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
     }
     return 1/(BOLTZ*temp);
 }
 
-double BayesConfigHandler::computeBeta(int maxiter, int iter, int ncycle)
+double BayesConfigHandler::computeBetaOld(int maxiter, int iter, int ncycle)
 {
     double temp = temperature_;
     if (iter >= maxiter_)
@@ -185,8 +201,13 @@ double BayesConfigHandler::computeBeta(int maxiter, int iter, int ncycle)
     return 1/(BOLTZ*temp);
 }
 
-bool BayesConfigHandler::anneal(int iter) const
+bool BayesConfigHandler::anneal(int generation,
+                                int iter) const
 {
+    if (annealGlobally_ && generation > 0)
+    {
+        return true;
+    }
     if (anneal_ >= 1)
     {
         return false;
