@@ -126,7 +126,7 @@ class ForceFieldParameter
                       gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]",
                       value_, unit_.c_str(), minimum_, maximum_).c_str()));
         }
-        else if (minimum_ == maximum_ && mutability_ == Mutability::Bounded)
+        if (minimum_ == maximum_ && mutability_ == Mutability::Bounded)
         {
             mutability_ = Mutability::Fixed;
         }
@@ -253,11 +253,11 @@ class ForceFieldParameter
     //! \brief Return whether this parameter is mutable at all
     bool isMutable() const
     { 
-        return (mutability_ != Mutability::Fixed && 
-                mutability_ != Mutability::ACM && 
+        return (mutability_ != Mutability::Fixed &&
+                mutability_ != Mutability::ACM &&
                 mutability_ != Mutability::Dependent); 
     }
-    
+
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }
 
