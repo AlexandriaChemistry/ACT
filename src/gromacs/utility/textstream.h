@@ -136,6 +136,7 @@ class TextOutputStream
          * writing to the stream.
          */
         virtual void close() = 0;
+        virtual void flush() = 0;
 };
 
 //! Shorthand for a smart pointer to a TextInputStream.

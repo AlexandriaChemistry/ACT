@@ -70,7 +70,7 @@ class StringOutputStream : public TextOutputStream
         // From TextOutputStream
         void write(const char *text) override;
         void close() override;
-
+        void flush() override {};
     private:
         std::string str_;
 };

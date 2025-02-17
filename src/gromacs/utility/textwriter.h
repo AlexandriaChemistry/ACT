@@ -190,6 +190,10 @@ class TextWriter
         void ensureEmptyLine();
 
         /*! \brief
+         * Flush the underlying stream.
+         */
+        void flush();
+        /*! \brief
          * Closes the underlying stream.
          */
         void close();
