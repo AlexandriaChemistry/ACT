@@ -466,6 +466,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         {
             msghandler->msg(alexandria::ACTStatus::Debug, "Sending for mutation...");
         }
+
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];

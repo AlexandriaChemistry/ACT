@@ -225,7 +225,8 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
+                                               gach_.maxGenerations());
         // TODO Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {
@@ -318,7 +319,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     {
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(initializer, fitComp_, probComputer, selector, crossover,
-                                 mutator_, terminators, penalizers, sii_, &gach_, 
+                                 mutator_, terminators, penalizers, sii_, &gach_,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),
                                  opt2fn("-gpout", fnm.size(), fnm.data()),

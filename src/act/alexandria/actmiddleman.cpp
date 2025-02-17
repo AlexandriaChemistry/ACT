@@ -68,7 +68,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, fitComp_, sii,
-                                               bch->evaluateTestset());
+                                               bch->evaluateTestset(),
+                                               gach->maxGenerations());
         if (openConvFiles)
         {
             mut->openParamConvFiles(oenv);

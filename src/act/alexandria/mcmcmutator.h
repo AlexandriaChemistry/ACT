@@ -74,7 +74,9 @@ private:
     //! Standard deviation of each parameter
     std::vector<double>        pSigma_;
     //! Internal counter for generation number
-    int                        myGeneration_ = 0;
+    int                        myGeneration_   = 0;
+    //! Copy of max generations from GA config handler
+    int                        maxGenerations_ = 1;
     //! Convergence file for each parameter type
     std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
@@ -168,12 +170,14 @@ public:
      * \param[in] nParam          size of the force field parameter vector
      * \param[in] evaluateTestSet Whether or not to evaluate the test set
      *                            every once in a while
+     * \param[in] maxGenerations  If this is part of the HYBRID training this may be needed for annealing
      */
     MCMCMutator(int                   seed,
                 BayesConfigHandler   *bch,
                 ACMFitnessComputer   *fitComp,
                 StaticIndividualInfo *sii,
-                bool                  evaluateTestSet);
+                bool                  evaluateTestSet,
+                int                   maxGenerations);
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation

@@ -69,7 +69,7 @@ public:
 
     /*!
      * \brief Mutate genes of a Genome (in place)
-     * \param[in]  msghandler The message and status handler
+     * \param[in]  msghandler   The message and status handler
      * \param[inout] genome     Pointer to the genome to mutate
      * \param[out]   bestGenome Pointer to the best genome found
      * \param[in]    prMut      Probability of mutating a gene
