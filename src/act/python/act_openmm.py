@@ -311,12 +311,15 @@ class CombinationRules:
                 gamma2 = allParam["gamma"][1]
             if hvs == self.comb[param].lower():
                 e12 = self.combineTwoFloat(hve, epsilon1, epsilon2)
-                if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == "sigma":
-                    mydict["sigma"]  = math.sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
-                elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == "rmin":
-                    mydict["rmin"]   = math.sqrt(((epsilon1*gamma1*rmin1**6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
+                if e12 == 0:
+                    mydict[param] = 0
                 else:
-                    sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
+                    if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == "sigma":
+                        mydict["sigma"]  = math.sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
+                    elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == "rmin":
+                        mydict["rmin"]   = math.sqrt(((epsilon1*gamma1*rmin1**6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2**6)/(gamma2-6)))*((gamma1+gamma2)/2-6)/(e12*(gamma1+gamma2)/2)**(1.0/6.0)
+                    else:
+                        sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
             elif wme == self.comb[param].lower():
                 if "epsilon" == param:
                     if "sigma" in allParam:
@@ -354,9 +357,9 @@ class CombinationRules:
             if hvs == self.comb[param].lower():
                 e12 = self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2")
                 if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == sigma:
-                    mydict[sigma]  = ("(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
+                    mydict[sigma]  = ("select(e12,(((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*((gamma1+gamma2)/2-6))/(e12*(gamma1+gamma2)/2))^(1.0/6.0)),0);e12=%s" % e12)
                 elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == 'rmin':
-                    mydict["rmin"] = ("(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(%s*(gamma1+gamma2)/2))^(1.0/6.0))" % e12)
+                    mydict["rmin"] = ("select(e12,(((sqrt(((epsilon1*gamma1*rmin1^6)/(gamma1-6)) * ((epsilon2*gamma2*rmin2^6)/(gamma2-6)))*((gamma1+gamma2)/2-6))/(e12*(gamma1+gamma2)/2))^(1.0/6.0)),0);e12=%s" % e12)
                 else:
                     sys.exit("Combination rule %s not supported for param %s and VdW function %s" % ( hvs, param, self.vdw ))
             elif wme == self.comb[param].lower():
@@ -774,7 +777,7 @@ class ActOpenMMSim:
             self.cores.append(particle1) # particle1 = core
             self.my_core[particle] = particle1
             self.my_shell[particle1] = particle
-            self.core_shell.append((particle,particle1))
+            self.core_shell.append(( particle1, particle ))
         if self.debug:
             # Checking correct atom/shell pairing
             self.txt.write(f"cores      {self.cores}\n")
@@ -1680,8 +1683,6 @@ class ActOpenMMSim:
             for cnbname in [ "custom_vdw", "custom_coulomb" ]:
                 if hasattr(self, cnbname):
                     self.add_customnb_excls(getattr(self, cnbname))
-            for cnb in self.customnbs:
-                self.add_customnb_excls(cnb["force"])
         self.add_pme_excl_correction()
         self.remove_unused_forces()
         self.print_force_settings()
