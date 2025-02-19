@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -559,7 +559,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         const auto tmpBest     = (*bestGenome)[imstr];
         time_t my_time = std::time(nullptr);
         time_t diff_time   = my_time - start_time;
-        time_t finish_time = my_time + (diff_time / (generation+1)) * gach_->maxGenerations();
+        time_t finish_time = my_time + (diff_time / (generation+1)) * (gach_->maxGenerations() - generation);
         std::string t_now(std::ctime(&my_time));
         std::string t_finish(std::ctime(&finish_time));
         // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
