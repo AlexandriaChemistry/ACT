@@ -1720,6 +1720,7 @@ class ActOpenMMSim:
         if self.chkReporter and self.chkfile and os.path.isfile(self.chkfile):
             with open(self.chkfile, 'rb') as chk:
                 self.simulation.context.loadCheckpoint(chk.read())
+            self.simulation.context.reinitialize(preserveState=True)
             self.print_energy("After loading checkpoint")
         # start fresh; start by equilibration
         else:
