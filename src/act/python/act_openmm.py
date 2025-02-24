@@ -1476,9 +1476,11 @@ class ActOpenMMSim:
             if "DrudeNoseHooverIntegrator" == integrator:
                 self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, friction_c, temperature_s,
                                                             self.sim_params.getFloat('friction_s'), self.dt)
+                self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
             elif "DrudeSCFIntegrator" == integrator:
                 self.integrator = DrudeSCFIntegrator(self.dt)
                 self.integrator.setDrudeTemperature(temperature_s)
+                # This one does not support setMaxDrudeDistance
             else:
                 dli = "DrudeLangevinIntegrator"
                 if dli != integrator:
@@ -1486,11 +1488,11 @@ class ActOpenMMSim:
                                    % ( integrator, dli ))
                 self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s,
                                                           self.sim_params.getFloat('friction_s'), self.dt)
+                self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
                 self.txt.write("Andersen thermostat will be turned off since %s contains a built-in thermostat.\n"
                                % self.integrator)
                 self.useAndersenThermostat = False
-            self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
         else:
             nhi = "NoseHooverIntegrator"
             if nhi != integrator:
@@ -1546,8 +1548,8 @@ class ActOpenMMSim:
             for np in new_pos:
                 self.txt.write("%10.5f  %10.5f  %10.5f\n" % ( np[0]._value, np[1]._value, np[2]._value ))
         for force in [ self.custom_vdw, self.custom_coulomb ]:
-            force.updateParametersInContext(self.simulation.context)
-
+            if hasattr(force, "updateParametersInContext"):
+                force.updateParametersInContext(self.simulation.context)
 
     def remove_unused_forces(self):
         if not self.useOpenMMForce and not self.nonbondedMethod in [ PME, LJPME ]:
@@ -1564,10 +1566,10 @@ class ActOpenMMSim:
     def update_forces(self):
         for myforce in self.system.getForces():
             if myforce.getName() in self.fgnumber and not myforce.getName() in [ "CMMotionRemover", "MonteCarloAnisotropicBarostat", "MonteCarloBarostat" ]:
-                if self.verbose:
-                    self.txt.write("Will update force settings %s\n" % myforce.getName())
-                myforce.updateParametersInContext(self.simulation.context)
-
+                if hasattr(myforce, "updateParametersInContext"):
+                    if self.verbose:
+                        self.txt.write("Will update force settings %s\n" % myforce.getName())
+                    myforce.updateParametersInContext(self.simulation.context)
 
     def dhvap(self, epot:float)->float:
         if None == self.emonomer:
