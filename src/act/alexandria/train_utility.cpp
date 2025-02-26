@@ -1840,11 +1840,6 @@ void print_header(gmx::TextWriter             *tw,
     {
         return;
     }
-    time_t my_t;
-    time(&my_t);
-    tw->writeStringFormatted("# This file was created %s", ctime(&my_t));
-    tw->writeStringFormatted("# alexandria is the engine of the Alexandria Chemistry Toolkit\n#\n");
-    tw->writeStringFormatted("# https://github.com/dspoel/ACT\n#\n");
     for (auto &p: pargs)
     {
         std::string value, type;

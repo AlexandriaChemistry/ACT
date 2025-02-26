@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "act/basics/version.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/utility/exceptions.h"
@@ -150,14 +151,17 @@ MsgHandler::~MsgHandler()
 {
     if (!filename_.empty())
     {
-        printf("\nPlease checkout output in file %s.\n", filename_.c_str());
+        printf("\nPlease checkout output in file %s.\n\n", filename_.c_str());
     }
     if (printLevel_ == ACTStatus::Debug)
     {
-        printf("\nPlease check debug statements in the actXXXXX.debug files.\n");
+        printf("\nPlease check debug statements in the actXXXXX.debug files.\n\n");
     }
     if (tw_)
     {
+        tw_->writeLine("Program finished, please check the output in this file.");
+        tw_->writeLine();
+        write(act_goodbye());
         tw_->close();
         delete tw_;
     }
@@ -212,9 +216,13 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     {
         filename_.assign(opt2fn("-g", filenm.size(), filenm.data()));
         tw_ = new gmx::TextWriter(filename_);
+        tw_->writeLine(act_welcome());
         tw_->writeLineFormatted("Verbosity level %d (%s or more serious messages are printed).",
                                 ilevel_, statnm[printLevel_]);
-        tw_->writeLine("");
+        time_t my_t;
+        time(&my_t);
+        tw_->writeStringFormatted("# This file was created %s", ctime(&my_t));
+        tw_->writeLine();
     }
     if (printLevel_ == ACTStatus::Debug)
     {
