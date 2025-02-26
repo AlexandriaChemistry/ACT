@@ -184,21 +184,7 @@ double BayesConfigHandler::computeBeta(int generation,
         // Line: temp = m * iter + b
         temp = ( temp0 / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temp0 / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
     }
-    return 1/(BOLTZ*temp);
-}
-
-double BayesConfigHandler::computeBetaOld(int maxiter, int iter, int ncycle)
-{
-    double temp = temperature_;
-    if (iter >= maxiter_)
-    {
-        temp = 1e-6;
-    }
-    else
-    {
-        temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
-    }
-    return 1/(BOLTZ*temp);
+    return 1/temp;
 }
 
 bool BayesConfigHandler::anneal(int generation,
