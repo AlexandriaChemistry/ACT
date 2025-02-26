@@ -353,7 +353,9 @@ public:
     /*! \brief Compute and return the Boltzmann factor
      * Takes into account both local annealing (within a generation)
      * and global annealing (spreading over generations) depending
-     * on user specified command line options.
+     * on user specified command line options. Will return 1/temperature
+     * that is, not multiply with the Boltzmann constant. This is because
+     * the deviation used in the MCMC algorithm is not an energy anyway.
      *
      * \param[in] generation      The generation number
      * \param[in] max_generations The total number of generations planned
@@ -363,16 +365,6 @@ public:
     double computeBeta(int generation,
                        int max_generations,
                        int iteration);
-
-    /*! \brief Compute and return the Boltzmann factor
-    * it applies periodic annealing
-    *
-    * \param[in] maxiter The maximum number of iteration
-    * \param[in] iter    The iteration number
-    * \param[in] ncycle  The multiplicity of the cosine function
-    * \return The Boltzmann factor
-    */
-    double computeBetaOld(int maxiter, int iter, int ncycle);
 
     //! \brief Return the step
     real step() const { return step_; }
