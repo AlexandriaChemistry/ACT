@@ -1480,6 +1480,11 @@ class ActOpenMMSim:
             elif "DrudeSCFIntegrator" == integrator:
                 self.integrator = DrudeSCFIntegrator(self.dt)
                 self.integrator.setDrudeTemperature(temperature_s)
+                deftoler = self.integrator.getMinimizationErrorTolerance()
+                newtoler = self.sim_params.getFloat('DrudeSCFTolerance', 1.0)
+                self.txt.write("Default SCF error tolerance %g kJ/mol/nm, setting it to %g kJ/mol/nm\n" %
+                               (deftoler._value, newtoler) )
+                self.integrator.setMinimizationErrorTolerance(newtoler)
                 # This one does not support setMaxDrudeDistance
             else:
                 dli = "DrudeLangevinIntegrator"
