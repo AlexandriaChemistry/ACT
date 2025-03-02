@@ -1151,39 +1151,68 @@ class ActOpenMMSim:
         origdict = copy.deepcopy(exdict)
         if self.debug:
             self.txt.write("origdict %s\n" % ( str(origdict) ) )
+            self.txt.write("exdict before adding vsite stuff %s\n" % ( str(exdict) ) )
         # Now add exclusion from vsites to constructing atoms, but avoid adding doubles
         # or OpenMM will puke.
-        for index in range(myforce.getNumParticles()):
-            if self.system.isVirtualSite(index):
-                vsite = self.system.getVirtualSite(index)
-                self.txt.write("Found vsite %d based on %d cores\n" % ( index, vsite.getNumParticles() ) )
-                for j in range(vsite.getNumParticles()):
-                    core = vsite.getParticle(j)
-                    if not core in exdict:
-                        exdict[core] = set()
-                    exdict[core].add(index)
-                    for k in exdict[core]:
-                        if not k in exdict:
-                            exdict[k] = set()
-                        exdict[k].add(index)
+        nvsiteexcl = 0
+        for loop in range(2):
+            for index in range(myforce.getNumParticles()):
+                if self.system.isVirtualSite(index):
+                    vsite = self.system.getVirtualSite(index)
+                    self.txt.write("Found vsite %d based on %d cores\n" % ( index, vsite.getNumParticles() ) )
+                    for j in range(vsite.getNumParticles()):
+                        core = vsite.getParticle(j)
+                        if not core in exdict:
+                            if self.debug:
+                                self.txt.write("DBG: did not find core %d in exdict\n" % core)
+                            exdict[core] = set()
+                        exdict[core].add(index)
+                        for k in exdict[core]:
+                            if not k in exdict:
+                                if self.debug:
+                                    self.txt.write("DBG: did not find exclusion %d from core %d in exdict\n" %
+                                                   ( k, core ) )
+                                exdict[k] = set()
+                            exdict[k].add(index)
+                            if not index in exdict:
+                                if self.debug:
+                                    self.txt.write("DBG: did not find index %d in exdict\n" %
+                                                   ( index ) )
+                                exdict[index] = set()
+                            exdict[index].add(k)
+                            nvsiteexcl += 1
+        self.txt.write("Exclusion dictionary now has %d keys, added %d vsite-excls\n" % ( len(exdict), nvsiteexcl ) )
+        if self.debug:
+            self.txt.write("exdict after adding vsite stuff %s\n" % ( str(exdict) ) )
+
         if hasattr(self, "core_shell"):
             self.txt.write("There are %d core-shell pairs\n" % len(self.core_shell) )
-            # First add the core-shell pairs
-            for shell,core in self.core_shell:
-                if not core in exdict:
-                    exdict[core] = set()
-                exdict[core].add(shell)
-                exdict[shell] = set()
-                exdict[shell].add(core)
+            # First add the core-shell pairs. Need to run twice to get mutual shells in exclusion list.
+            for loop in range(2):
+                for core, shell in self.core_shell:
+                    if not core in exdict:
+                        if self.debug:
+                            self.txt.write("DBG: did not find core %d in exdict\n" %
+                                           ( core ) )
+                        exdict[core] = set()
+                    exdict[core].add(shell)
+                    exdict[shell] = set()
+                    exdict[shell].add(core)
             if self.debug:
-                self.txt.write("exdict %s\n" % str(exdict))
+                self.txt.write("exdict step 3 %s\n" % str(exdict))
             # Then loop over the exclusions of the core
-            for loop in range(1):
-                for shell,core in self.core_shell:
+            for loop in range(2):
+                for core, shell in self.core_shell:
                     for k in exdict[core]:
                         if not shell == k:
                             exdict[k].add(shell)
                             exdict[shell].add(k)
+        # Mirror exclusion dict
+        for i in exdict:
+            for j in exdict[i]:
+                if not j in exdict:
+                    exdict[j] = set()
+                exdict[j].add(i)
         if self.debug:
             self.txt.write("Final exclusion dict: %s\n" % str(exdict))
         for i in exdict.keys():
@@ -1197,10 +1226,15 @@ class ActOpenMMSim:
         self.txt.write("Found CustomNonbonded function %s with %d exclusions\n" %
                        (myforce.getName(), myforce.getNumExclusions() ) )
         if self.debug:
+            # First make a list
+            final_excl = []
             for index in range(myforce.getNumExclusions()):
                 # Just get the excluded atoms from the custom NB force
                 iatom, jatom = myforce.getExclusionParticles(index)
-                self.txt.write("Exclusion %d %d\n" % ( iatom, jatom ))
+                final_excl.append( ( iatom, jatom ) )
+            # Print it sorted
+            for fe in sorted(final_excl):
+                self.txt.write("Exclusion %d %d\n" % ( fe[0], fe[1] ))
 
     def add_pme_excl_correction(self):
         if self.useOpenMMForce:
@@ -1309,6 +1343,12 @@ class ActOpenMMSim:
         cbfname = 'CustomBondForce'
         hbfname = 'HarmonicBondForce'
         # pairs without constraints
+        atms = []
+        for a in self.topology.atoms():
+            atms.append(a)
+            if self.debug:
+                self.txt.write("DBG: Atom %d %s residue %d\n" % ( a.index, a.name, a.residue.index ) )
+
         for bond_force in self.system.getForces():
             if bond_force.getName() in [ cbfname, hbfname ]:
                 if self.verbose:
@@ -1321,7 +1361,12 @@ class ActOpenMMSim:
                     # Retrieve atoms (and parameters but we just want the bonds now).
                     bondinfo = bond_force.getBondParameters(bond_index)
                     if self.debug:
-                        self.txt.write("DBG: bond %d %d length %f kb %f\n" % ( bondinfo[0], bondinfo[1], bondinfo[2]._value, bondinfo[3]._value ) )
+                        self.txt.write("DBG: bond %s %d %s %d" %
+                                       ( atms[bondinfo[0]].name, bondinfo[0],
+                                         atms[bondinfo[1]].name, bondinfo[1] ) )
+                        for kk in range(2, len(bondinfo)):
+                            self.txt.write(" bondinfo[%d] %s" % ( kk, str(bondinfo[kk]) ) )
+                        self.txt.write("\n")
                     self.bonds.append((bondinfo[0], bondinfo[1]))
                 self.bond_force = bond_force
         # pairs with constraints
@@ -1656,7 +1701,7 @@ class ActOpenMMSim:
 
         return respos
 
-    def minimize_shells(self)->float:
+    def minimize_shells(self, maxiter:int=1000)->float:
         # Store atom masses
         oldmass = {}
         for res in self.topology.residues():
@@ -1665,7 +1710,7 @@ class ActOpenMMSim:
                     oldmass[atom.index] = self.system.getParticleMass(atom.index)
                     self.system.setParticleMass(atom.index, 0)
         # Compute energy after just minimizing shells
-        ener = self.minimize_energy(0)
+        ener = self.minimize_energy(maxiter)
         # Restore atom masses
         for res in self.topology.residues():
             for atom in res.atoms():
