@@ -1,7 +1,7 @@
 Alexandria Chemistry Toolkit
 ============================
 
-All documentation is in the [ACT Manual](https://github.com/dspoel/ACT/blob/main/doc/ACT_Manual.pdf).
+All documentation is in the [ACT Manual](https://github.com/dspoel/ACT/blob/main/docs/ACT_Manual_latest.pdf).
 To install the ACT, please download the [install_act](https://github.com/dspoel/ACT/blob/main/src/act/python/install_act) script and run it according to instructions in the manual.
 
 ACT is begin developed by
