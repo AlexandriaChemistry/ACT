@@ -1552,9 +1552,11 @@ class ActOpenMMSim:
             self.txt.write(f"number of particles (incl. drudes):  {self.system.getNumParticles()}\n")
             for np in new_pos:
                 self.txt.write("%10.5f  %10.5f  %10.5f\n" % ( np[0]._value, np[1]._value, np[2]._value ))
-        for force in [ self.custom_vdw, self.custom_coulomb ]:
-            if hasattr(force, "updateParametersInContext"):
-                force.updateParametersInContext(self.simulation.context)
+        for fff in [ "custom_vdw", "custom_coulomb" ]:
+            if hasattr(self, fff):
+                force = getattr(self, fff)
+                if hasattr(force, "updateParametersInContext"):
+                    force.updateParametersInContext(self.simulation.context)
 
     def remove_unused_forces(self):
         if not self.useOpenMMForce and not self.nonbondedMethod in [ PME, LJPME ]:
