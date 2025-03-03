@@ -277,9 +277,9 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         std::string out = gmx::formatString("%5d", mp_index);
         if (eInter_)
         {
-            std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
-
+            std::map<InteractionType, double> energies;
+            forceComp_->compute(pd, actmol->topology(),
+                                &coords, &forces, &energies);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
@@ -307,11 +307,11 @@ void ReRunner::rerun(MsgHandler       *msghandler,
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
             out += gmx::formatString(" r %g", rcom);
-            for (auto &EE: einter)
+            for (auto &EE: energies)
             {
                 out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
             }
-            edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
+            edist.add_point(rcom, energies[InteractionType::EPOT], 0, 0);
         }
         else
         {
