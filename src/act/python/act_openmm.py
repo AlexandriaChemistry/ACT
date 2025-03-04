@@ -1709,8 +1709,13 @@ class ActOpenMMSim:
                 if atom.element:
                     oldmass[atom.index] = self.system.getParticleMass(atom.index)
                     self.system.setParticleMass(atom.index, 0)
+        # Copy shell positions to close to core positions
+        self.update_positions()
+
         # Compute energy after just minimizing shells
         ener = self.minimize_energy(maxiter)
+        if self.verbose:
+            self.txt.write("Energy after minimizing shells %g" % ener)
         # Restore atom masses
         for res in self.topology.residues():
             for atom in res.atoms():

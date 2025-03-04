@@ -190,16 +190,17 @@ static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x
 static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x,
                              real a, real b, real c, const t_pbc *pbc)
 {
-    rvec xij, xkj, temp;
+    rvec xij, xik, temp;
 
+    /* For water-like compounds this assumes O H H as the order of atoms */
     pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xj, xk, xkj);
-    cprod(xij, xkj, temp);
+    pbc_rvec_sub(pbc, xk, xi, xik);
+    cprod(xij, xik, temp);
     /* 15 Flops */
 
-    x[XX] = xj[XX] + a*xij[XX] + b*xkj[XX] + c*temp[XX];
-    x[YY] = xj[YY] + a*xij[YY] + b*xkj[YY] + c*temp[YY];
-    x[ZZ] = xj[ZZ] + a*xij[ZZ] + b*xkj[ZZ] + c*temp[ZZ];
+    x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
+    x[YY] = xi[YY] + a*xij[YY] + b*xik[YY] + c*temp[YY];
+    x[ZZ] = xi[ZZ] + a*xij[ZZ] + b*xik[ZZ] + c*temp[ZZ];
     /* 18 Flops */
 
     /* TOTAL: 33 flops */
@@ -672,9 +673,11 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     ivec    di;
     int     svi, sji, ski;
 
+    // ACT uses H O H but the code below needs
+    // O H H so renumber the atoms.
     av = ia[4];
-    ai = ia[1];
-    aj = ia[2];
+    ai = ia[2];
+    aj = ia[1];
     ak = ia[3];
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
@@ -1151,7 +1154,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     ak                 = atomIndices[2];
                     al                 = atomIndices[3];
-                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                    constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC], &pbc_);
                     if (debug)
@@ -1167,7 +1170,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     ak                 = atomIndices[2];
                     al                 = atomIndices[3];
-                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                    constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outsA], params[vsite3outsA],
                                      vsite3out_vs->sign() * params[vsite3outsC], &pbc_);
                     if (debug)

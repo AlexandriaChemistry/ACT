@@ -674,12 +674,20 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                           forces);
     f  = lbfgs->energy(InteractionType::EPOT);
     jj = 0;
-    rvec fsum = { 0, 0, 0 };
+    rvec   fsum = { 0, 0, 0 };
+    double fmax = 0;
+    int    imax = -1;
     for (auto i : theAtoms)
     {
         for(int j = 0; j < DIM; j++)
         {
-            g[jj++] = -(*forces)[i][j];
+            double ff = (*forces)[i][j];
+            g[jj++]   = -ff;
+            if (std::abs(ff) > fmax)
+            {
+                fmax = std::abs(ff);
+                imax = i;
+            }
         }
         if (debug)
         {
@@ -690,7 +698,8 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
     if (debug)
     {
-        fprintf(debug, "Energy %.3f sum of forces is %g %g %g\n", f, fsum[XX], fsum[YY], fsum[ZZ]);
+        fprintf(debug, "Energy %.3f sum of forces is %g %g %g fmax %g on atom %d out of %zu\n",
+                f, fsum[XX], fsum[YY], fsum[ZZ], fmax, imax, theAtoms.size());
     }
 }
 
