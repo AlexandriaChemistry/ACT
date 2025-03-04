@@ -304,7 +304,7 @@ TEST(Vsite3, hoh)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.2);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     if (fs.parameterExists(hoh))
     {
         auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
@@ -329,7 +329,7 @@ TEST(VSite3, hohCanSwapVsite3)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.2);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 
@@ -372,7 +372,7 @@ TEST(VSite3OUT, hohCanSwapNo)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3out_name[vsite3outA]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.35);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.35);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 
