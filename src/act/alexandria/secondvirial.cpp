@@ -632,7 +632,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     if (cr->isMaster())
     {
         // Starting energy, all values until first data entry
-        
+        auto header = gmx::formatString("Temperature");
+        for(const auto &b2b : b2Type2str)
+        {
+            header += gmx::formatString("  %16s", b2b.second.c_str());
+        }
+        msghandler->write(header);
         for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
         {
             auto T      = Temperature[iTemp];
@@ -655,16 +660,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
             b2t_[b2Type::Total][iTemp]     = Btot;
             
-            if (msghandler->info())
+            std::string out = gmx::formatString("%11.2f", T);
+            for(const auto &b2b : b2Type2str)
             {
-                std::string out = gmx::formatString("T = %g K. ", T);
-                for(const auto &b2b : b2Type2str)
-                {
-                    out += gmx::formatString(" %s %8.1f", b2b.second.c_str(),
-                                             b2t_[b2b.first][iTemp]);
-                }
-                msghandler->write(out);
+                out += gmx::formatString("  %16.2f", b2t_[b2b.first][iTemp]);
             }
+            msghandler->write(out);
         }
         if (!fnm.empty())
         {
