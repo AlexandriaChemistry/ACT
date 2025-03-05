@@ -1109,7 +1109,7 @@ static void computePolarization(const TopologyEntryVector             &bonds,
             auto ddr2 = ddr * ddr;
             ebond += fchyper * ddr2 * ddr2;
             // We will multiply by the distance vector components below
-            fbond -= 4 * fchyper * ddr2;
+            fbond -= 4 * fchyper * ddr2 * ddr/dr;
             if (debug)
             {
                 fprintf(debug, "Adding hyperpolarization energy correction %g kJ/mol core pos %g %g %g ddr = %g.\n",
