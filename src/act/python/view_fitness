@@ -49,28 +49,27 @@ def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
 
     fig, ax = plt.subplots()
 
-    ax.set_title(f"{dataset.capitalize()} fitness")
-    ax.set_xlabel("Generation")
+    ax.set_title(f"{dataset.capitalize()} fitness", fontsize=args.fontsize)
+    ax.set_xlabel("Generation", fontsize=args.fontsize)
     if args.log:
         ax.set_yscale('log')
-        ax.set_ylabel("Fitness")
+        ax.set_ylabel("Fitness", fontsize=args.fontsize)
     else:
         if not args.ymin:  # Weird matplotlib things
             args.ymin = 0
-        ax.set_ylabel("Fitness")
+        ax.set_ylabel("Fitness", fontsize=args.fontsize)
 
-    if 'min' not in args.hide:
-        ax.plot(gen_vector, min, color='C0', label="min")
-    if 'max' not in args.hide:
-        ax.plot(gen_vector, max, color='C1', label="max")
-    if 'mean' not in args.hide:
-        ax.plot(gen_vector, mean, color='C2', label="mean")
-    if 'median' not in args.hide:
-        ax.plot(gen_vector, median, color='C3', label="median")
+    mycol = 0
+    for graph in [ 'min', 'max', 'mean', 'median' ]:
+        if graph not in args.hide:
+            ax.plot(gen_vector, eval(graph), color='C'+str(mycol), label=graph)
+        mycol += 1
 
     ax.set_ylim(args.ymin, args.ymax)
+    for aa in [ 'x', 'y' ]:
+        ax.tick_params(axis=aa, labelsize=args.fontsize)
     
-    ax.legend(loc='upper right')
+    ax.legend(loc='upper right', fontsize=args.fontsize)
 
     fig.tight_layout()
 
@@ -90,6 +89,8 @@ def parse_cmdline() -> SimpleNamespace:
     parser.add_argument('-log',  help='Plot the log10 of the fitness value', action="store_true")
     parser.add_argument('-ymax', help="Maximum value for y-axis in plot(s).", type=float, default=None)
     parser.add_argument('-ymin', help="Minimum value for y-axis in plot(s). For regular y-axis scale, if not specified by the user, it defaults to 0.", type=float, default=None)
+    fontsize=18
+    parser.add_argument("-fs", "--fontsize", help="Font size, default "+str(fontsize), type=int, default=fontsize)
     parser.add_argument('-hide', help="Statistics to hide. E.g. 'max median' (without quotes)", nargs='*', default=[])
     return parser.parse_args()
 
