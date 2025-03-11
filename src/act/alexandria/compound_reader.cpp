@@ -195,7 +195,8 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str()));
             }
-            mol->GenerateCharges(msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
+            mol->GenerateCharges(msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces,
+                                 msghandler->verbose());
         }
     }
 }
@@ -353,6 +354,8 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
             setCharges(msghandler, pd, &(*mol), qmap, forceComp, warnQtot);
+            // Load all the other properties of the compounds as well
+            mol->getExpProps(msghandler, &pd, {});
             if (!msghandler->ok())
             {
                 msghandler->msg(ACTStatus::Warning,

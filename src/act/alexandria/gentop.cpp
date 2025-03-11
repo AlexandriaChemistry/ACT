@@ -205,6 +205,12 @@ int gentop(int argc, char *argv[])
 
     auto forceComp = new ForceComputer();
     std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    // Write information about force field
+    msghandler.write("");
+    for (const auto &ii : pd.info())
+    {
+        msghandler.write(ii);
+    }
 
     int mp_index   = 1;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
@@ -212,7 +218,7 @@ int gentop(int argc, char *argv[])
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
         std::vector<gmx::RVec> coords = actmol->xOriginal();
         forceComp->generateVsites(actmol->topology(), &coords);
-
+        actmol->updateQprops(&pd, forceComp, &forces);
         actmol->GenerateCube(&pd, coords, forceComp,
                              spacing, border,
                              opt2fn_null("-ref",      fnm.size(), fnm.data()),
@@ -234,9 +240,14 @@ int gentop(int argc, char *argv[])
         {
             std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                 bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
-            actmol->PrintTopology(tfn.c_str(), msghandler.verbose(), &pd, forceComp,
-                                  &cr, coords, method, basis, bITP);
+            actmol->PrintTopology(&msghandler, tfn.c_str(), &pd, forceComp,
+                                  coords, bITP);
         }
+        for(const auto &c : actmol->generateCommercials(&pd, forceComp, coords))
+        {
+            msghandler.write(c);
+        }
+
         if (opt2bSet("-c", fnm.size(), fnm.data()))
         {
             matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};

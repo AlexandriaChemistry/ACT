@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2020,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -479,9 +479,3 @@ void splitLot(const char  *lot,
     }
 }
 
-std::string makeLot(const std::string &method,
-                    const std::string &basis)
-{
-    std::string s = method + "/" + basis;
-    return s;
-}

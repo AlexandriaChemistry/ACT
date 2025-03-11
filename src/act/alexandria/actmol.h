@@ -280,9 +280,14 @@ private:
     Topology                      *topology_      = nullptr;
     //! All the atoms, but not shells or vsites
     std::vector<int>               realAtoms_; 
-    // Reference data for devcomputer
+    //! Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
+    //! QM method used for data
+    std::string                    method_;
+    //! QM basis set used for data
+    std::string                    basis_;
+    //! Charge symmetry 
     std::vector<int>               symmetric_charges_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
@@ -407,6 +412,19 @@ public:
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
 
+    //! \return the level of theory used for data
+    std::string levelOfTheory();
+
+    /*! \brief Set QM basis set 
+     * \param[in] basis Will be new basis set if not empty
+     */
+    void setBasisset(const std::string &basis) { if (!basis.empty()) basis_ = basis; }
+
+    /*! \brief Set QM method 
+     * \param[in] method Will be new method if not empty
+     */
+    void setMethod(const std::string &method) { if (!method.empty()) method_ = method; }
+
     /*! Whether data is present
      * \param[in] mpo The observable to look for
      * \return true if any data of the type is present 
@@ -445,7 +463,15 @@ public:
     
     //! Return the ACT topology structure for editing
     Topology *topologyPtr() { return topology_; }
-    
+    /*! \brief
+     * Update internal structures with electric moments etc.
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp Force computer utility
+     * \param[out] forces    This routine will compute energies and forces.
+     */
+    void updateQprops(const ForceField          *pd,
+                      const ForceComputer       *forceComp,
+                      std::vector<gmx::RVec>    *forces);
     /*! \brief
      * Generate atomic partial charges
      *
@@ -469,7 +495,7 @@ public:
                          const std::vector<double> &qcustom,
                          std::vector<gmx::RVec>    *coords,
                          std::vector<gmx::RVec>    *forces,
-                         bool                       updateQprops = false);
+                         bool                       updateQProps = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
@@ -500,28 +526,34 @@ public:
                      const std::map<MolPropObservable, iqmType> &iqm,
                      real                                        watoms = 0,
                      int                                         maxESP = 100);
-    
+
+
+    /*!\brief Generate molecule info
+     *
+     * \param[in] pd          The force field
+     * \param[in] forceComp   The force computer utility
+     * \param[in] coords      The coordinates
+     * \return a text about the compound including properties and citation infor
+     */
+    std::vector<std::string> generateCommercials(const ForceField             *pd,
+                                                 const ForceComputer          *forceComp,
+                                                 const std::vector<gmx::RVec> &coords);
+
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.
      *
-     * \param[in] fn        File name
-     * \param[in] bVerbose  Verbose
-     * \param[in] pd        Data structure containing atomic properties
-     * \param[in] forceComp The force computer utility
-     * \param[in] cr        Communication record
-     * \param[in] coords    The coordinates
-     * \param[in] method    QC method
-     * \param[in] basis     QC basis set
-     * \param[in] bITP      Whether or not to write an itp file iso top file
+     * \param[in] msg_handler For warning and status
+     * \param[in] fn          File name
+     * \param[in] pd          Data structure containing atomic properties
+     * \param[in] forceComp   The force computer utility
+     * \param[in] coords      The coordinates
+     * \param[in] bITP        Whether or not to write an itp file iso top file
      */
-    void PrintTopology(const char                   *fn,
-                       bool                          bVerbose,
+    void PrintTopology(MsgHandler                   *msg_handler,
+                       const char                   *fn,
                        const ForceField             *pd,
                        const ForceComputer          *forceComp,
-                       const CommunicationRecord    *cr,
                        const std::vector<gmx::RVec> &coords,
-                       const std::string            &method,
-                       const std::string            &basis,
                        bool                          bITP = false);
     
     //! \brief Update GROMACS data structures

@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -48,6 +48,7 @@ namespace alexandria
 
 class ForceField;
 class Topology;
+class MsgHandler;
 
 void print_top_mols(FILE *out, const char *title,
                     int nmol, t_mols *mols);
@@ -58,7 +59,8 @@ void print_top_header(FILE                           *fp,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
 
-void write_top(FILE                *out,
+void write_top(MsgHandler          *msg_handler,
+               FILE                *out,
                char                *molname,
                const Topology      *topology,
                const ForceField    *pd);
