@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,6 +37,7 @@
 #include <map>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -62,7 +63,8 @@ static int get_subtype(directive d, int ftype)
     return 1;
 }
 
-static void print_bondeds(FILE                      *out,
+static void print_bondeds(MsgHandler                *msg_handler,
+                          FILE                      *out,
                           directive                  d,
                           int                        ftype,
                           const TopologyEntryVector &entries)
@@ -113,9 +115,10 @@ static void print_bondeds(FILE                      *out,
                     params[idihKPHI],
                     entry->id().id().c_str());
             break;
-        default: // throws
-            GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported function type %s",
-                                                           interaction_function[ftype].name).c_str()));
+        default: // writes warning
+            msg_handler->msg(ACTStatus::Warning,
+                             gmx::formatString("Unsupported function type %s for writing GROMACS topology",
+                                               interaction_function[ftype].name).c_str());
         }
     }
     fprintf(out, "\n");
@@ -219,7 +222,8 @@ static void print_atoms(FILE                           *out,
     fprintf(out, "\n");
 }
 
-void write_top(FILE             *out,
+void write_top(MsgHandler       *msg_handler,
+               FILE             *out,
                char             *molname,
                const Topology   *topology,
                const ForceField *pd)
@@ -262,19 +266,19 @@ void write_top(FILE             *out,
             auto fType = potentialToGromacsType(fs.second.potential());
             if (InteractionType::BONDS == fs.first)
             {
-                print_bondeds(out, d_bonds, fType, topology->entry(iType));
+                print_bondeds(msg_handler, out, d_bonds, fType, topology->entry(iType));
             }
             else if (InteractionType::ANGLES == iType || InteractionType::LINEAR_ANGLES == iType)
             {
-                print_bondeds(out, d_angles, fType, topology->entry(iType));
+                print_bondeds(msg_handler, out, d_angles, fType, topology->entry(iType));
             }
             else if (InteractionType::PROPER_DIHEDRALS == iType || InteractionType::IMPROPER_DIHEDRALS == iType)
             {
-                print_bondeds(out, d_dihedrals, fType, topology->entry(iType));
+                print_bondeds(msg_handler, out, d_dihedrals, fType, topology->entry(iType));
             }
             else if (toPrint.end() != toPrint.find(fType))
             {
-                print_bondeds(out, toPrint.find(fType)->second, fType, topology->entry(iType));
+                print_bondeds(msg_handler, out, toPrint.find(fType)->second, fType, topology->entry(iType));
             }
         }
         print_excl(out, topology);

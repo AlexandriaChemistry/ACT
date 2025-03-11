@@ -187,12 +187,4 @@ void splitLot(const char  *lot,
               std::string *method,
               std::string *basis);
 
-/*! \brief Utility to generate a lot
- *
- * \param[out] method QM method
- * \param[out] basis  QM basis set
- * \return  Level of theory
- */
-std::string makeLot(const std::string &method,
-                    const std::string &basis);
 #endif
