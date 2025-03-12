@@ -127,7 +127,7 @@ static void generate_bcc(ForceField *pd,
             }
         }
     }
-    printf("Have generated %zu entries for BCC\n", bcc->parameters()->size());
+    printf("Have generated %zu entries for bond charge correction (SQE algorithm).\n", bcc->parameters()->size());
 }
 
 int geometry_ff(int argc, char *argv[])

@@ -1,12 +1,14 @@
 Running Alexandria force field simulations with OpenMM
 ------------------------------------------------------
 In this folder you find a python script that can be used to run OpenMM
-(once you have installed it). 
+(once you have installed it). The system is a sodium chloride crystal using
+the force field due to Walz et al.
+https://doi.org/10.1021/acs.jctc.8b00507
 
 Use the python script with the following flags:
 
 ```
-./run.py -pdb your_coordinate_file.pdb -dat your_simulation_settings_file.dat -xml your_force_field_parameter_file.xml 
+./run.py
 ```
 
 As examples the following files are provided:
@@ -14,12 +16,6 @@ As examples the following files are provided:
 + your_simulation_settings_file.dat: simulation.dat (a file specifying simulation settings)
 + your_force_field_parameter_file.xml  openmm_ff.xml (an example of an OpenMM compatible force field file that can be generated using alexandria gentop)
 
-The output of the MD run is saved into the folder "output".
-
-To run with the above inputs, please use:
-```
-./run.py -pdb MX_1000.pdb -xml openmm_ff.xml -dat simulation.dat
-```
 The final output line should be similar to
 ```
 potential energy = -389092 kJ/mol

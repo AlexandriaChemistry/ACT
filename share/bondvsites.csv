@@ -2,5 +2,5 @@ v2f|VSITE2|f_b~h_b|-1|0||||
 v2cl|VSITE2|cl_b~h_b|-1|0||||
 v2br|VSITE2|br_b~h_b|-1|0||||
 v2i|VSITE2|i_b~h_b|-1|0||||
-v3hoh|VSITE3|h_b~o3_b~h_b|-1.05|-.05|-1.05|-.05||
-v3ohoh|VSITE3OUT|h_b~o3_b~h_b|-1|-0.17|-1|-0.17|-12.8|2
+v3bw|VSITE3S|hw_b~ow_b~hw_b|0.05|0.25|0|0|||
+v3out|VSITE3OUT|hw_b~ow_b~hw_b|-1|-0.3|-1|-0.3|-12.8|2

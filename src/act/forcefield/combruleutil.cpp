@@ -107,7 +107,7 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
     for(const auto &cr : mycr)
     {
-        cr_flag_.resize(cr_flag_.size() + cr.second.size());
+        cr_flag_.resize(cr_flag_.size() + cr.second.size(), nullptr);
     }
     for(const auto &cr : mycr)
     {

@@ -151,7 +151,7 @@ MsgHandler::~MsgHandler()
 {
     if (!filename_.empty())
     {
-        printf("\nPlease checkout output in file %s.\n\n", filename_.c_str());
+        printf("\nPlease check output in file %s.\n\n", filename_.c_str());
     }
     if (printLevel_ == ACTStatus::Debug)
     {

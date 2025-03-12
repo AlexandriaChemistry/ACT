@@ -1,48 +1,66 @@
-atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|comment|reference
-#|||||||||kJ/mol||||||nm||||||nm||A3|A3||1/nm|1/nm||eV|||eV||||
-h|H|0|0.5|ACM|h_b||h_z|h_z|0.03|0.5|Bounded|10|20|Bounded|0.01|0.4|Bounded|1|6|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|hydrogen|
-c1|C|0|0|ACM|c1_b||c1_z|c1_z|0.5|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.069|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp carbon|
-c2|C|0|0|ACM|c2_b||c2_z|c2_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.073|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 carbon|
-c3|C|0|0|ACM|c3_b||c3_z|c3_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.076|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 carbon|
-n1|N|0|0|ACM|n1_b||n1_z|n1_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp1 nitrogen|
-n2|N|0|0|ACM|n2_b||n2_z|n2_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 nitrogen|
-n3|N|0|0|ACM|n3_b||n3_z|n3_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 nitrogen|
-n4|N|0|0|ACM|n4_b||n4_z|n4_z|0.3|0.8|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|positively charged sp3 nitrogen|
-o1|O|0|0|ACM|o1_b||o1_z|o1_z|0.5|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp oxygen|
-o2|O|0|0|ACM|o2_b||o2_z|o2_z|0.5|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 oxygen|
-o3|O|0|0|ACM|o3_b||o3_z|o3_z|0.5|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 oxygen|
-f|F|0|0|ACM|f_b||f_z|f_z|0.2|0.6|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.057|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|fluorine|
-p1|P|0|0|ACM|p1_b||p1_z|p1_z|0.5|1.2|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp phosphor|
-p2|P|0|0|ACM|p2_b||p2_z|p2_z|0.5|1.2|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 phosphor|
-p3|P|0|0|ACM|p3_b||p3_z|p3_z|0.5|1.2|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 phosphor|
-s1|S|0|0|ACM|s1_b||s1_z|s1_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp sulfur|
-s2|S|0|0|ACM|s2_b||s2_z|s2_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 sulfur|
-s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 sulfur|
-cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.102|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|chlorine|
-br|Br|0|0|ACM|br_b||br_z|br_z|0.6|1.5|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.12|4||||4|20|Bounded|6|24|Bounded|4|9|Bounded|bromine|
-i|I|0|0|ACM|i_b||i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.139|5||||4|20|Bounded|6|24|Bounded|4|9|Bounded|iodine|
-# Virtual site particle| can be turned on or off independently|||||||||||||||||||||||||||||||||||
-v2f|VS|0.2|0.8|Bounded|v2f||v2f_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-v2cl|VS|0.2|0.8|Bounded|v2cl||v2cl_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-v2br|VS|0.2|0.8|Bounded|v2br||v2br_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-v2i|VS|0.2|0.8|Bounded|v2i||v2i_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-v3hoh|VS|0.2|0.8|Bounded|v3hoh||v3hoh_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-v3ohoh|VS|0.2|0.8|Bounded|v3ohoh||v3ohoh_z||0|1|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||10|40|Bounded|4|4|Fixed|4|4|Fixed|bond virtual site|
-# Ions| that can not use any ACM algorithm for charges|||||||||||||||||||||||||||||||||||
-Be2+|Be|2|2|Fixed|||Be2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.059|2||||6|20|Bounded|||||||beryllium ion|
-Ca2+|Ca|2|2|Fixed|||Ca2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.114|4||||6|20|Bounded|||||||calcium ion|
-Mg2+|Mg|2|2|Fixed|||Mg2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||magnesium ion|?
-Na+|Na|1|1|Fixed|||Na+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||sodium ion|
-Cl-|Cl|-1|-1|Fixed|||Cl-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||chloride ion|
-I-|I|-1|-1|Fixed|||I-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|5||||6|20|Bounded|||||||iodide ion|
-F-|F|-1|-1|Fixed|||F-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|2||||6|20|Bounded|||||||fluoride ion|
-Rb+|Rb|1|1|Fixed|||Rb+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|5||||6|20|Bounded|||||||rubidium ion|
-Li+|Li|1|1|Fixed|||Li+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|2||||6|20|Bounded|||||||lithium ion|
-Br-|Br|-1|-1|Fixed|||Br-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||bromide ion|
-Cs+|Cs|1|1|Fixed|||Cs+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|6||||6|20|Bounded|||||||cesium ion|
-K+|K|1|1|Fixed|||K+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||potassium ion|
-He|He|0|0|Fixed|||he_z|he_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|he|
-Ne|Ne|0|0|Fixed|||ne_z|ne_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ne|
-Ar|Ar|0|0|Fixed|||ar_z|ar_z|0.03|3|Bounded|4|25|Bounded|0.15|0.5|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ar|
-Kr|Kr|0|0|Fixed|||kr_z|kr_z|0.03|3|Bounded|4|25|Bounded|0.15|0.6|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|
-Xe|Xe|0|0|Fixed|||xe_z|xe_z|0.03|3|Bounded|4|25|Bounded|0.15|0.8|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|xe|
+#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aqt_min|aqt_max|aqt_mutability|bqt_min|bqt_max|bqt_mutability|comment|reference
+#|||||||||kJ/mol||||||nm||||||nm||A3|A3||1/nm|1/nm||eV|||eV||||||||||
+h1|H|0|0|ACM|h_b||h1_z|h1_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+h2|H|0|0|ACM|h_b||h2_z|h2_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+h3|H|0|0|ACM|h_b||h3_z|h3_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+h4|H|0|0|ACM|h_b||h4_z|h4_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+h5|H|0|0|ACM|h_b||h5_z|h5_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hc|H|0|0|ACM|h_b||hc_z|hc_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+ha|H|0|0|ACM|h_b||ha_z|ha_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hn|H|0|0|ACM|h_b||hn_z|hn_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+ho|H|0|0|ACM|h_b||ho_z|ho_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hf|H|0|0|ACM|h_b||hf_z|hf_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hp|H|0|0|ACM|h_b||hp_z|hp_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hs|H|0|0|ACM|h_b||hs_z|hs_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hcl|H|0|0|ACM|h_b||hcl_z|hcl_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hbr|H|0|0|ACM|h_b||hbr_z|hbr_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hi|H|0|0|ACM|h_b||hi_z|hi_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+hw|H|0|0|ACM|h_b||hw_z|hw_z|0|0.5|Bounded|7|20|Bounded|0.2|0.4|Bounded|1|6|Bounded|0.031|1||||8|24|Bounded|6|24|Bounded|2|2|Fixed|3000|50000|Bounded|10|80|Bounded|hydrogen|
+b|B|0|0|ACM|b_b||b_z|b_z|0.3|1|Bounded|7|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.098|2||||4|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|boron|
+c1|C|0|0|ACM|c1_b||c1_z|c1_z|0.3|1|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.069|2||||4|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp carbon|
+c2|C|0|0|ACM|c2_b||c2_z|c2_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.073|2||||4|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp2 carbon|
+c3|C|0|0|ACM|c3_b||c3_z|c3_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.076|2||||4|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 carbon|
+n1|N|0|0|ACM|n1_b||n1_z|n1_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.071|2||||5|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp1 nitrogen|
+n2|N|0|0|ACM|n2_b||n2_z|n2_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.071|2||||5|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp2 nitrogen|
+n3|N|0|0|ACM|n3_b||n3_z|n3_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.071|2||||5|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 nitrogen|
+n4|N|0|0|ACM|n4_b||n4_z|n4_z|0.3|0.8|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.071|2||||5|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|positively charged sp3 nitrogen|
+o1|O|0|0|ACM|o1_b||o1_z|o1_z|0.5|1|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.066|2||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp oxygen|
+o2|O|0|0|ACM|o2_b||o2_z|o2_z|0.5|1|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.066|2||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp2 oxygen|
+o3|O|0|0|ACM|o3_b||o3_z|o3_z|0.5|1|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.066|2||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 oxygen|
+ow|O|0|0|ACM|ow_b||ow_z|ow_z|0.5|1|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.066|2||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 oxygen|
+f|F|0|0|ACM|f_b||f_z|f_z|0.1|2|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.057|2||||8|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|fluorine|
+p1|P|0|0|ACM|p1_b||p1_z|p1_z|0.5|1.2|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.107|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp phosphor|
+p2|P|0|0|ACM|p2_b||p2_z|p2_z|0.5|1.2|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.107|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp2 phosphor|
+p3|P|0|0|ACM|p3_b||p3_z|p3_z|0.5|1.2|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.107|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 phosphor|
+s1|S|0|0|ACM|s1_b||s1_z|s1_z|0.6|1.5|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.105|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp sulfur|
+s2|S|0|0|ACM|s2_b||s2_z|s2_z|0.6|1.5|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.105|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp2 sulfur|
+s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|7|20|Bounded|0.3|0.5|Bounded|1|6|Bounded|0.105|3||||6|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|sp3 sulfur|
+cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.8|4|Bounded|7|20|Bounded|0.3|0.6|Bounded|1|6|Bounded|0.102|3||||3|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|chlorine|
+br|Br|0|0|ACM|br_b||br_z|br_z|0.8|5|Bounded|7|20|Bounded|0.3|0.7|Bounded|1|6|Bounded|0.12|4||||2|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|bromine|
+i|I|0|0|ACM|i_b||i_z|i_z|1.2|6|Bounded|7|20|Bounded|0.3|0.8|Bounded|1|6|Bounded|0.139|5||||1|24|Bounded|6|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|iodine|
+# Virtual site particle|can be turned on or off independently|||||||||||||||||||||||||||||||||||||||||
+v2f|VS|0.2|0.8|Bounded|v2f||v2f_z||0|2|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0q||||6|40|Bounded|4|4|Fixed|4|4|Fixed|3000|50000|Bounded|10|80|Bounded|bond virtual site|
+v2cl|VS|0.2|0.8|Bounded|v2cl||v2cl_z||0|2|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||6|40|Bounded|4|4|Fixed|4|4|Fixed|3000|50000|Bounded|10|80|Bounded|bond virtual site|
+v2br|VS|0.2|0.8|Bounded|v2br||v2br_z||0|2|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||6|40|Bounded|4|4|Fixed|4|4|Fixed|3000|50000|Bounded|10|80|Bounded|bond virtual site|
+v2i|VS|0.2|0.8|Bounded|v2i||v2i_z||0|2|Bounded|0|2|Bounded|0|0.5|Bounded|0|1|Bounded|0|0||||6|40|Bounded|4|4|Fixed|4|4|Fixed|3000|50000|Bounded|10|80|Bounded|bond virtual site|
+v2core|VS|-1|1|Bounded|v2core||v2core_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|1|Bounded|0|0||||6|40|Bounded|4|4|Fixed|4|4|Fixed|3000|50000|Bounded|10|80|Bounded|bond virtual site|
+v3Ow|VS|-0.3|0.3|Bounded|v3Ow||v3Ow_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0||||2|10|Bounded|4|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|Water lone pair virtuals|
+v3bw|VS|-1.5|-0.5|Bounded|v3bw||v3bw_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0||||2|10|Bounded|4|24|Bounded|4|9|Bounded|3000|50000|Bounded|10|80|Bounded|Water bisector virtual site|
+# Ions|that can not use any ACM algorithm for charges|||||||||||||||||||||||||||||||||||||||||
+Be2+|Be|2|2|Fixed|||Be2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.059|2||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|beryllium ion|
+Ca2+|Ca|2|2|Fixed|||Ca2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.114|4||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|calcium ion|
+Mg2+|Mg|2|2|Fixed|||Mg2+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|magnesium ion|?
+Na+|Na|1|1|Fixed|||Na+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|sodium ion|
+Cl-|Cl|-1|-1|Fixed|||Cl-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|3||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|chloride ion|
+I-|I|-1|-1|Fixed|||I-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|5||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|iodide ion|
+F-|F|-1|-1|Fixed|||F-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|2||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|fluoride ion|
+Rb+|Rb|1|1|Fixed|||Rb+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|5||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|rubidium ion|
+Li+|Li|1|1|Fixed|||Li+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|2||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|lithium ion|
+Br-|Br|-1|-1|Fixed|||Br-_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|bromide ion|
+Cs+|Cs|1|1|Fixed|||Cs+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|6||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|cesium ion|
+K+|K|1|1|Fixed|||K+_z||0.02|1|Bounded|10|20|Bounded|0.2|0.5|Bounded|1|6|Bounded|0.141|4||||6|20|Bounded|||||||3000|50000|Bounded|10|80|Bounded|potassium ion|
+He|He|0|0|Fixed|||he_z|he_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|3000|50000|Bounded|10|80|Bounded|he|
+Ne|Ne|0|0|Fixed|||ne_z|ne_z|0.03|3|Bounded|4|25|Bounded|0.15|0.4|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|3000|50000|Bounded|10|80|Bounded|ne|
+Ar|Ar|0|0|Fixed|||ar_z|ar_z|0.03|3|Bounded|4|25|Bounded|0.15|0.5|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|3000|50000|Bounded|10|80|Bounded|ar|
+Kr|Kr|0|0|Fixed|||kr_z|kr_z|0.03|3|Bounded|4|25|Bounded|0.15|0.6|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|3000|50000|Bounded|10|80|Bounded|kr|
+Xe|Xe|0|0|Fixed|||xe_z|xe_z|0.03|3|Bounded|4|25|Bounded|0.15|0.8|Bounded|1|25|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|3000|50000|Bounded|10|80|Bounded|xe|

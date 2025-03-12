@@ -39,9 +39,8 @@ install(FILES
          atomprops.csv
          atomprops.csv
          atomtype_mapping.csv
-         atomtypes.csv
+         atomtypes_pol.csv
          atomtypes_nonpol.csv
-         atomtypes_same_zeta.csv
          bondvsites.csv
          excluded_molecules.csv
          ffnames.csv
