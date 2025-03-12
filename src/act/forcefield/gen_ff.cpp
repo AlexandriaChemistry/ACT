@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -312,16 +312,16 @@ int gen_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t *oenv;
-    int               nexclqq  = 0;
-    int               nexclvdw = 0;
+    int               nexclqq  = 2;
+    int               nexclvdw = 2;
     double            epsilonr = 1;
     bool              qsymm    = true;
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", "HUA", nullptr };
+    const char *bondfn[]  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     std::vector<Potential> nbpot = {
-        Potential::LJ8_6, Potential::LJ12_6, Potential::LJ14_7,
+        Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
         Potential::BUCKINGHAM, Potential::TANG_TOENNIES };
     std::vector<const char *> vdwfn = { nullptr };

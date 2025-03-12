@@ -1,0 +1,12 @@
+methanol#methanol|Train
+methanol#propane-12-diol|Test
+ethanol#ethanol|Train
+ethanol#methanol|Test
+1-propanol#ethanol|Train
+1-propanol#methanol|Test
+1-propanol#propane-12-diol|Train
+1-propanol#2-propanol|Test
+2-propanol#2-propanol|Train
+2-propanol#ethanol|Test
+2-propanol#methanol|Train
+2-propanol#propane-12-diol|Test
