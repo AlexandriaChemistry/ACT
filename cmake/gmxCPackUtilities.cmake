@@ -95,11 +95,11 @@ endfunction()
 # used in installation rules, so it should come after all install() commands.
 function (gmx_cpack_write_config)
     # Set basic package information.
-    set(CPACK_PACKAGE_NAME    "gromacs")
-    set(CPACK_PACKAGE_VENDOR  "gromacs.org")
-    set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
+    set(CPACK_PACKAGE_NAME    "ACT")
+    set(CPACK_PACKAGE_VENDOR  "https://github.com/AlexandriaChemistry")
+    set(CPACK_PACKAGE_CONTACT "TBD")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-        "GROMACS - a toolkit for high-performance molecular simulation")
+        "Alexandria Chemistry Toolkit for Designing and Training Force Fields")
     # Set version info.
     set(CPACK_PACKAGE_VERSION_MAJOR ${ACT_VERSION_MAJOR})
     set(CPACK_PACKAGE_VERSION_PATCH ${ACT_VERSION_PATCH})

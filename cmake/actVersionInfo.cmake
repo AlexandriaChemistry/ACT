@@ -44,7 +44,7 @@
 #       "-dev" is automatically added when not building from a source package,
 #       and does not need to be kept here. This mechanism is not quite enough
 #       for building a tarball, but setting the CMake cache variable
-#       GMX_BUILD_TARBALL=on will suppress the addition of "-dev" to the
+#       ACT_BUILD_TARBALL=on will suppress the addition of "-dev" to the
 #       version string.
 #   LIBRARY_SOVERSION_MAJOR so major version for the built libraries.
 #       Should be increased for each binary incompatible release. In GROMACS,
@@ -67,16 +67,6 @@
 #       and beta versions will not increase this number, since nobody should
 #       write code against such versions.
 #   LIBRARY_VERSION        Full library version.
-#   REGRESSIONTEST_BRANCH  For builds not from source packages, name of the
-#       regressiontests branch at gerrit.gromacs.org whose HEAD can test this
-#       code, *if* this code is recent enough (i.e., contains all changes from
-#       the corresponding code branch that affects the regression test
-#       results). Even after a release branch is forked for the source
-#       repository, the correct regressiontests branch can still be master,
-#       because we do not fork it until behaviour needs to change.
-#   REGRESSIONTEST_MD5SUM
-#       The MD5 checksum of the regressiontest tarball. Only used when building
-#       from a source package.
 #   ACT_SOURCE_DOI_ID
 #       ID collected from Zenodo connected to the doi for a released version
 #       used to identify the source when building an official released version.
@@ -97,9 +87,6 @@
 #       where the API does not change, but programs/libraries do.
 #       In such a case, this should be the first version where the current API
 #       appeared.
-#   REGRESSIONTEST_VERSION For source packages, version number of the
-#       matching regressiontests tarball.  Not used for builds not from source
-#       packages.
 # The latter two are used to generate gromacs/version.h to allow software
 # written against the GROMACS API to provide some #ifdef'ed code to support
 # multiple GROMACS versions.
@@ -197,13 +184,13 @@
 # Hacked for ACT.
 # The ACT convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(ACT_VERSION_MAJOR 2025)
+set(ACT_VERSION_MAJOR 1)
 set(ACT_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(ACT_VERSION_SUFFIX "beta")
+set(ACT_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -227,23 +214,14 @@ else()
     set(ACT_VERSION "${ACT_VERSION_MAJOR}")
 endif()
 set(ACT_VERSION_STRING "${ACT_VERSION}${ACT_VERSION_SUFFIX}")
-option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
-mark_as_advanced(GMX_BUILD_TARBALL)
+option(ACT_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
+mark_as_advanced(ACT_BUILD_TARBALL)
 # If run with cmake -P, the -dev suffix is managed elsewhere.
 if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
-    NOT GMX_BUILD_TARBALL AND
+    NOT ACT_BUILD_TARBALL AND
     NOT CMAKE_SCRIPT_MODE_FILE)
     set(ACT_VERSION_STRING "${ACT_VERSION_STRING}-dev")
 endif()
-
-set(REGRESSIONTEST_VERSION "${ACT_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
-# Run the regressiontests packaging job with the correct pakage
-# version string, and the release box checked, in order to have it
-# build the regressiontests tarball with all the right naming. The
-# naming affects the md5sum that has to go here, and if it isn't right
-# release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "3d06d41e07f523d70ae575b9ad75c670" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR ACT_VERSION_NUMERIC
      "${ACT_VERSION_MAJOR}*10000 + ${ACT_VERSION_PATCH}")
@@ -252,7 +230,7 @@ set(GMX_API_VERSION ${ACT_VERSION_NUMERIC})
 # If run with cmake -P from releng scripts, print out necessary version info
 # as JSON.
 if (CMAKE_SCRIPT_MODE_FILE)
-    message("{ \"version\": \"${ACT_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
+    message("{ \"version\": \"${ACT_VERSION_STRING}\" }")
     return()
 endif()
 
@@ -260,8 +238,8 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(ACT_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(ACT_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+set(ACT_MANUAL_DOI "" CACHE INTERNAL "reserved doi for ACT manual" FORCE)
+set(ACT_SOURCE_DOI "" CACHE INTERNAL "reserved doi for ACT source code" FORCE)
 
 #####################################################################
 # git version info management
