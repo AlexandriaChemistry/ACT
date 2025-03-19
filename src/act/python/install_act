@@ -116,7 +116,7 @@ def check_for_openbabel(destination):
     if not os.path.exists(obabel):
         sys.exit("Could not build %s, check cmake.log and make.log in %s" % ( obabel, os.getcwd() ) )
     return True
-    
+
 def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST, verbose):
     # Get working directory
     pwd = os.getcwd()
@@ -129,9 +129,15 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
             else:
                 os.system("git clone git@github.com:dspoel/openbabel.git")
         else:
-            oblatest = "openbabel-alexandria-0.91.tar.gz"
-            os.system("curl https://github.com/dspoel/openbabel/archive/refs/tags/%s" % oblatest)
+            oblatest = "openbabel-alexandria-0.92.tar.gz"
+            if verbose:
+                print("Will try to fetch %s" % oblatest)
+            url = "https://github.com/dspoel/openbabel/archive/refs/tags"
+            os.system("curl -L %s/%s -o %s" % ( url, oblatest, oblatest ) )
+            if not os.path.exists(oblatest):
+                sys.exit("Could not download %s" % oblatest)
             os.system("tar xzf %s" % oblatest)
+            swdir = "openbabel-" + oblatest[:-7]
         # See if we succeeded, if so let's go
         if not os.path.isdir(swdir):
             sys.exit("No directory %s. You may want to use the '-clone_OB' flag" % swdir)
@@ -165,25 +171,6 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         # Check the result
         if check_for_openbabel(destination):
             print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
-        # Some hacking for MacOS only
-        if "darwin" in HOST or "mac" in HOST:
-            oblib = ( "%s/lib/openbabel" % destination )
-            if not os.path.exists(oblib):
-                oblib = ( "%s/lib64/openbabel" % destination )
-            if os.path.exists(oblib):
-                os.chdir(oblib)
-                for obversion in glob.glob("*"):
-                    os.chdir(obversion)
-                    for lib in glob.glob("*.so"):
-                        for rpath in [ "libz.1.dylib", "libcairo.2.dylib" ]:
-                            for SW_path in SW.split(';'):
-                                lib_path = f'{SW_path}/lib/{rpath}'
-                                if os.path.exists(lib_path):
-                                    cmd = ("install_name_tool -change @rpath/%s %s %s" % ( rpath, lib_path, lib) )
-                                    if debug:
-                                        print("Will run command '%s'" % cmd)
-                                    os.system(cmd)
-                    os.chdir("..")
     # Go back to where we came from
     os.chdir(pwd)
     
@@ -207,9 +194,14 @@ def install_act(args, CXX, CC, HOST, prefix):
             os.chdir(swdir)
         os.system("git pull")
     else:
-        actlatest = "v1.0beta.tar.gz"
-        os.system("curl https://github.com/dspoel/ACT/archive/refs/tags/%s" % actlatest)
+        actversion = "1.0"
+        actlatest = ( "v%s.tar.gz" % actversion )
+        url       = "https://github.com/AlexandriaChemistry/ACT/archive/refs/tags"
+        os.system("curl -L %s/%s -o %s" % ( url, actlatest, actlatest ) )
+        if not os.path.exists(actlatest):
+            sys.exit("Failed to download %s" % actlatest)
         os.system("tar xzf %s" % actlatest)
+        swdir = "ACT-" + actversion
         os.chdir(swdir)
 
 
@@ -290,6 +282,10 @@ if __name__ == '__main__':
     # Remove duplicates from SW
     SW = ';'.join(list(set(SW.split(';'))))
     debug = args.debug
+    if args.verbose:
+        print("HOST = %s" % HOST)
+        print("CC   = %s" % CC)
+        print("CXX  = %s" % CXX)
     if debug:
         print("args.prefix = %s SW = '%s'" % ( args.prefix, SW ))
 
