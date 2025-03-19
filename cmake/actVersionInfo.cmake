@@ -184,7 +184,7 @@
 # Hacked for ACT.
 # The ACT convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(ACT_VERSION_MAJOR 2025)
+set(ACT_VERSION_MAJOR 1)
 set(ACT_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
