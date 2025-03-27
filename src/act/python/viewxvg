@@ -134,7 +134,7 @@ def plot_once(axs, ncolumn:int, args):
     ipanel     = 0
     colors = args.colors if args.colors else ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
 
-    markers = [ "o", "+", "x", ".", "v", "s" ]
+    markers = [ "o", "x", ".", "v", "s", "+" ]
     for fn in args.filename:
         label, legend, dataset = read_xvg(fn, args.residual, args.filelabel)
         if len(dataset) == 0:
@@ -186,7 +186,14 @@ def plot_once(axs, ncolumn:int, args):
                 if viewDebug:
                     print("mylabel = {}".format(mylabel))
                     print("mymarker = {}".format(mymarker))
-                thisax.plot(dataset[n].x, dataset[n].y, markersize=args.markersize, linewidth=4, label=mylabel, ls=myline, marker=mymarker, color=colors[setcount % len(colors)], markeredgewidth=args.markeredgewidth)
+                mycolor = colors[setcount % len(colors)]
+                if dataset[n].have_dy():
+                    thisax.errorbar(dataset[n].x, dataset[n].y, yerr=dataset[n].dy,
+                                    capsize=3, label=mylabel, markersize=args.markersize, linewidth=2, 
+                                    ls=myline, marker=mymarker, color=mycolor, ecolor=mycolor)
+                else:
+                    thisax.plot(dataset[n].x, dataset[n].y, markersize=args.markersize, linewidth=4, 
+                                label=mylabel, ls=myline, marker=mymarker, color=mycolor, markeredgewidth=args.markeredgewidth)
                 setcount += 1
         for aa in [ 'x', 'y' ]:
             thisax.tick_params(axis=aa, labelsize=args.tickfontsize)
