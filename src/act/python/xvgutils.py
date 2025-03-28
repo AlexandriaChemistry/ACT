@@ -71,8 +71,8 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
             nleg = line.find("@")
             if nleg >= 0:
                 myline = line[nleg+1:].strip()
-                if line.find("type") >= 0:
-                    dataset.append(xvgDataSet(line))
+                if myline.find("type") >= 0 and myline.find("loctype") < 0:
+                    dataset.append(xvgDataSet(myline))
                 elif len(myline) > 0:
                     legkey, legval = interpret_legend(myline)
                     if legkey and legval:
@@ -105,7 +105,18 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                         if debugXvgUtils:
                             print("Could not read line '%s'" % line)
                 elif numwords > 2:
-                    if not dataset[0].have_dy():
+                    if len(dataset) > 0 and dataset[0].have_dy() and numwords == 3:
+                        try:
+                            xx = float(w[0])
+                            yy = float(w[1])
+                            dy = float(w[2])
+                            if residual:
+                                yy -= xx
+                            dataset[0].add_point(xx, yy, dy)
+                        except:
+                            if debugXvgUtils:
+                                print("Could not read line '%s'" % line)
+                    else:
                         if len(dataset) < numwords-1:
                             for i in range(len(dataset), numwords-1):
                                 dataset.append(xvgDataSet())
@@ -116,17 +127,6 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                                 if residual:
                                     yy -= xx
                                 dataset[i].add_point(xx, yy)
-                            except:
-                                if debugXvgUtils:
-                                    print("Could not read line '%s'" % line)
-                    else:
-                            try:
-                                xx = float(w[0])
-                                yy = float(w[1])
-                                dy = float(w[2])
-                                if residual:
-                                    yy -= xx
-                                dataset[0].add_point(xx, yy, dy)
                             except:
                                 if debugXvgUtils:
                                     print("Could not read line '%s'" % line)
