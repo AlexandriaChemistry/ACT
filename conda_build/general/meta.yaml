@@ -57,7 +57,7 @@ requirements:
     - python>=3.10
 
 about:
-  home: https://github.com/dspoel/ACT
-  license: MIT
+  home: https://github.com/AlexandriaChemistry/ACT
+  license: GPLv2
   summary: 'Global optimization of force fields for molecular simulation'
-  doc_url: https://github.com/dspoel/ACT/wiki
+  doc_url: https://doi.org/10.5281/zenodo.15020365
