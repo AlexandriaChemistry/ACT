@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -71,29 +71,32 @@ bool ForceField::verifyCheckSum(FILE              *fp,
     return match;
 }
 
-void ForceField::print(FILE *fp) const
+std::vector<std::string> ForceField::info() const
 {
-    if (nullptr == fp)
-    {
-        return;
-    }
-    fprintf(fp, "Force field information\n");
-    fprintf(fp, "-----------------------------------------------\n");
-    fprintf(fp, "Filename:    %s\n", filename_.c_str());
-    fprintf(fp, "CheckSum:    %s\n", checkSum_.c_str());
-    fprintf(fp, "TimeStamp:   %s\n", timeStamp_.c_str());
-    fprintf(fp, "Polarizable: %s\n", polarizable() ? "True" : "False");
-    fprintf(fp, "Interactions:\n");
+    std::vector<std::string> out;
+    out.push_back("Force field information");
+    out.push_back("-----------------------------------------------");
+    out.push_back(gmx::formatString("Filename:    %s", filename_.c_str()));
+    out.push_back(gmx::formatString("CheckSum:    %s", checkSum_.c_str()));
+    out.push_back(gmx::formatString("TimeStamp:   %s", timeStamp_.c_str()));
+    out.push_back(gmx::formatString("Polarizable: %s", polarizable() ? "True" : "False"));
+    out.push_back("Interactions:");
     for(const auto &fs : forces_)
     {
-        fprintf(fp, "  %s function %s\n", interactionTypeToString(fs.first).c_str(),
-                potentialToString(fs.second.potential()).c_str());
+        out.push_back(gmx::formatString("  %s function %s #entries %zu", interactionTypeToString(fs.first).c_str(),
+                                        potentialToString(fs.second.potential()).c_str(),
+                                        fs.second.parametersConst().size()));
         for(const auto &opt : fs.second.option())
         {
-            fprintf(fp, "    option %s value %s\n", opt.first.c_str(), opt.second.c_str());
+            out.push_back(gmx::formatString("    option %s value %s", opt.first.c_str(), opt.second.c_str()));
+        }
+        for(const auto &cr : fs.second.combinationRules())
+        {
+            out.push_back(gmx::formatString("    parameter %s combination rule %s", cr.first.c_str(), cr.second.c_str()));
         }
     }
-    fprintf(fp, "-----------------------------------------------\n");
+    out.push_back("-----------------------------------------------");
+    return out;
 }
 
 bool ForceField::verifyCheckSum(FILE *fp)
@@ -749,7 +752,7 @@ void ForceField::checkConsistency(FILE *fp) const
     if (interactionPresent(InteractionType::BONDCORRECTIONS) &&
         chargeGenerationAlgorithm() != ChargeGenerationAlgorithm::SQE)
     {
-        fprintf(fp, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
+        fprintf(stderr, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
         nerror += 1;
     }
     auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
@@ -758,33 +761,44 @@ void ForceField::checkConsistency(FILE *fp) const
     {
         if (!atp.second.hasInteractionType(itype))
         {
-            continue;
-        }
-        auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-        // Check whether zeta types are present
-        if (!eem.parameterExists(acmtype))
-        {
-            if (fp)
+            auto &qparam = atp.second.parameterConst("charge");
+            if (qparam.mutability() == Mutability::ACM)
             {
-                fprintf(fp, "ERROR: No eemprops for %s in ForceField::checkConsistency\n", acmtype.id().c_str());
+                fprintf(stderr, "No %s type for particletype %s\n",
+                        interactionTypeToParticleSubtype(itype).c_str(),
+                        atp.second.id().id().c_str());
+                nerror += 1;
             }
-            nerror += 1;
+            else
+            {
+                continue;
+            }
         }
         else
         {
-            auto eep = eem.findParametersConst(acmtype);
-            double chi0 = eep["chi"].value();
-            double J00  = eep["eta"].value();
-            if (nullptr != fp)
+            auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            // Check whether zeta types are present
+            if (!eem.parameterExists(acmtype))
             {
-                fprintf(fp, "chi0 %g eta %g", chi0, J00);
+                fprintf(stderr, "ERROR: No eemprops for %s in ForceField::checkConsistency\n", acmtype.id().c_str());
+                nerror += 1;
             }
-            double zeta = 0;//eep["zeta"].value();
-            int    row  = eep["row"].value();
-            double q    = eep["charge"].value();
-            if (nullptr != fp)
+            else
             {
-                fprintf(fp, " row %d zeta %g q %g", row, zeta, q);
+                auto eep = eem.findParametersConst(acmtype);
+                double chi0 = eep["chi"].value();
+                double J00  = eep["eta"].value();
+                if (nullptr != fp)
+                {
+                    fprintf(fp, "chi0 %g eta %g", chi0, J00);
+                }
+                double zeta = 0;
+                int    row  = eep["row"].value();
+                double q    = eep["charge"].value();
+                if (nullptr != fp)
+                {
+                    fprintf(fp, " row %d zeta %g q %g", row, zeta, q);
+                }
             }
         }
         if (nullptr != fp)
@@ -807,7 +821,8 @@ void ForceField::checkConsistency(FILE *fp) const
                     auto myval = param.second.internalValue();
                     if (param.first == zeta && myval != 0)
                     {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force field specifies Point charges but %s = %g for %s", zeta.c_str(), myval, myparam.first.id().c_str()).c_str()));
+                        fprintf(stderr, "Force field specifies Point charges but %s = %g for %s", zeta.c_str(), myval, myparam.first.id().c_str());
+                        nerror += 1;
                     }
                 }
             }
@@ -815,7 +830,7 @@ void ForceField::checkConsistency(FILE *fp) const
     }
     if (nerror > 0)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("ForceField inconsistency. Use the -debug 1 flag to find out more").c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("ForceField inconsistency.").c_str()));
     }
 }
 

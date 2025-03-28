@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -27,7 +27,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -38,6 +38,7 @@
 
 #include <map>
 
+#include "act/basics/msg_handler.h"
 #include "gene_pool.h"
 #include "genome.h"
 #include "initializer.h"
@@ -49,8 +50,10 @@
 #include "terminator.h"
 #include "penalizer.h"
 
-struct gmx_output_env_t;
-struct t_commrec;
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace ga
 {
@@ -122,12 +125,14 @@ public:
     void updateGenePool(const GenePool &gpin);
  
     /*! \brief Evolve the initial population
+     * \param[in]  msghandler Message and status handler
      * \param[out] bestGenome The best genome(s) found during the evolution (for different datasets, if applicable).
      *                        Comes in as an empty map, and subclasses of GeneticAlgorithm will fill it for the
      *                        datasets according to their configuration
      * \return whether a genome with better fitness (for training set) was found.
      */
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome) = 0;
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome) = 0;
 
     /*! \brief Retrieve the last population (to be called after evolve,
      * otherwise undersired behavior will occur)
@@ -208,22 +213,26 @@ public:
     /*!
      * \brief Check if we have to stop the evolution by asking each terminator.
      * Never call this method if no terminators were given to the GA.
+     * \param[in] tw               Text writer
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
      * \return true if we stop the evolution, false otherwise
      */
-    bool terminate(const GenePool *pool,
-                   const int       generationNumber);
+    bool terminate(gmx::TextWriter *tw,
+                   const GenePool  *pool,
+                   const int        generationNumber);
 
     /*!
      * \brief Penalize the population.
      * Never call this method if no terminators were given to the GA.
+     * \param[in] tw               Text writer
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
      * \return true if the population has been penalized, false otherwise
      */
-    bool penalize(      GenePool *pool,
-                  const int       generationNumber);
+    bool penalize(gmx::TextWriter *tw,
+                  GenePool        *pool,
+                  const int        generationNumber);
 
 };
 

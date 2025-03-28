@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,9 +54,15 @@
  */
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[]);
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
+class MsgHandler;
 using qtStats = std::map<qType, gmx_stats>;
 
 
@@ -109,27 +115,37 @@ private:
     std::vector<InteractionType> terms_;
 
     //! \brief Analyse polarizability, add to statistics and print
-    void analysePolarisability(FILE                *fp,
+    void analysePolarisability(gmx::TextWriter     *tw,
                                const ForceField    *pd,
                                alexandria::ACTMol  *mol,
                                iMolSelect           ims,
                                const ForceComputer *forceComp);
     
     //! \brief Analyses dipoles, quadrupoles, etc.
-    void analyse_multipoles(FILE                                            *fp,
+    void analyse_multipoles(gmx::TextWriter                                 *tw,
                             const std::vector<alexandria::ACTMol>::iterator &mol,
                             std::map<MolPropObservable, double>              toler,
                             const ForceField                                *pd,
                             const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
-    void printAtoms(FILE                         *fp,
-                    alexandria::ACTMol            *mol,
+    void printAtoms(gmx::TextWriter              *tw,
+                    alexandria::ACTMol           *mol,
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
     
+    /*! \brief Write ACT energies to a molprop file
+     * \param[in]    mpout     File name to write to
+     * \param[in]    pd        A force field
+     * \param[in]    forceComp The force computer
+     * \param[inout] mols      Vector of molecules, will be modified
+     */
+    void writeMolpropsEnergies(const char          *mpout,
+                               const ForceField    *pd,
+                               const ForceComputer *forceComp,
+                               std::vector<ACTMol> *mols);
     /*! \brief do part of the printing, add to statistics
      */
-    void printEnergyForces(std::vector<std::string>            *tcout,
+    void printEnergyForces(MsgHandler                          *msghandler,
                            const ForceField                    *pd,
                            const ForceComputer                 *forceComp,
                            const std::map<eRMS, FittingTarget> &targets,
@@ -140,7 +156,7 @@ private:
                            bool                                 printAll);
     /*! \brief Print data on outliers.
      */
-    void printOutliers(FILE                                  *fp,
+    void printOutliers(gmx::TextWriter                       *tw,
                        iMolSelect                             ims,
                        double                                 sigma,
                        bool                                   bIntermolecular,
@@ -162,14 +178,14 @@ public:
     /*! \brief Do the force field info printing to the log file.
      * By default only the interactions/energies/observables that are
      * used in optimization will be printed.
-     * \param[in] fp       File to print to
-     * \param[in] sii      Information on the training
-     * \param[in] actmol   The compounds/dimers
-     * \param[in] oenv     For printing xvg files
-     * \param[in] filenm   Filenames for additional output files
-     * \param[in] printAll Tell the printer to print all observables.
+     * \param[in] msghandler For printing and status
+     * \param[in] sii        Information on the training
+     * \param[in] actmol     The compounds/dimers
+     * \param[in] oenv       For printing xvg files
+     * \param[in] filenm     Filenames for additional output files
+     * \param[in] printAll   Tell the printer to print all observables.
      */
-    void print(FILE                        *fp,
+    void print(MsgHandler                  *msghandler,
                StaticIndividualInfo        *sii,
                std::vector<ACTMol>         *actmol,
                const gmx_output_env_t      *oenv,
@@ -179,12 +195,12 @@ public:
 
 /*! \brief Print header and command line arguments
  *
- * \param[in] fp      File pointer, if nullptr the function returns 
- *                    without doing anything
+ * \param[in] tw      TextWriter pointer, if nullptr
+ *                    will not do anything
  * \param[in] pargs   The command line arguments
  * \param[in] filenms The filenms used
  */
-void print_header(FILE                        *fp, 
+void print_header(gmx::TextWriter             *tw,
                   const std::vector<t_pargs>  &pargs,
                   const std::vector<t_filenm> &filenms);
                   

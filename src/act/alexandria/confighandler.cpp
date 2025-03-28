@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -38,6 +38,7 @@
 #include <cstring>
 #include <map>
 
+#include "act/basics/msg_handler.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
@@ -117,6 +118,8 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies." },
         { "-anneal", FALSE, etREAL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
+        { "-anneal_globally", FALSE, etBOOL, {&annealGlobally_},
+          "Whether annealing restart during each mutation round or is global over GA generations" },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
@@ -136,7 +139,7 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
     }
 }
 
-void BayesConfigHandler::check_pargs()
+void BayesConfigHandler::check_pargs(MsgHandler *)
 {
     // Check seed
     GMX_RELEASE_ASSERT(seed_ >= 0, "-seed must be nonnegative.");
@@ -154,9 +157,23 @@ void BayesConfigHandler::check_pargs()
     GMX_RELEASE_ASSERT(anneal_ >= 0 && anneal_ <= 1, "-anneal must be in range [0, 1].");
 }
 
-double BayesConfigHandler::computeBeta(int iter)
+real BayesConfigHandler::temperature(int generation,
+                                     int max_generations) const
 {
-    double temp = temperature_;
+    double temp0 = temperature_;
+    if (annealGlobally_ && generation > 0)
+    {
+        temp0 *= (max_generations - generation)/(1.0 * max_generations);
+    }
+    return temp0;
+}
+
+double BayesConfigHandler::computeBeta(int generation,
+                                       int max_generations,
+                                       int iter)
+{
+    double temp0 = temperature(generation, max_generations);
+    double temp  = temp0;
     if (iter >= maxiter_)
     {
         temp = 1e-6;
@@ -165,27 +182,18 @@ double BayesConfigHandler::computeBeta(int iter)
     {
         // temp = temperature_*(1.0 - iter/(1.0*maxiter_));
         // Line: temp = m * iter + b
-        temp = ( temperature_ / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temperature_ / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
+        temp = ( temp0 / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temp0 / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
     }
-    return 1/(BOLTZ*temp);
+    return 1/temp;
 }
 
-double BayesConfigHandler::computeBeta(int maxiter, int iter, int ncycle)
+bool BayesConfigHandler::anneal(int generation,
+                                int iter) const
 {
-    double temp = temperature_;
-    if (iter >= maxiter_)
+    if (annealGlobally_ && generation > 0)
     {
-        temp = 1e-6;
+        return true;
     }
-    else
-    {
-        temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
-    }
-    return 1/(BOLTZ*temp);
-}
-
-bool BayesConfigHandler::anneal(int iter) const
-{
     if (anneal_ >= 1)
     {
         return false;
@@ -264,7 +272,7 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
 
 }
 
-void GAConfigHandler::check_pargs()
+void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 {
     optAlg_ = stringToOptimizerAlg(optimizerStr[0]);
     pcAlg_  = stringToProbabilityComputerAlg(probStr[0]);
@@ -278,7 +286,7 @@ void GAConfigHandler::check_pargs()
     // If MCMC is selected, change the probability of mutation to 1
     if (optAlg_ == OptimizerAlg::MCMC)
     {
-      prMut_ = 1;
+        prMut_ = 1;
     }
     
     GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-n_elites must be nonnegative and even.");
@@ -299,51 +307,43 @@ void GAConfigHandler::check_pargs()
     
     if (maxTestGenerations_ != -1)
     {
-      GMX_RELEASE_ASSERT(maxTestGenerations_ > 0, "-max_test_generations must be positive or -1 (disabled).");
+        GMX_RELEASE_ASSERT(maxTestGenerations_ > 0, "-max_test_generations must be positive or -1 (disabled).");
     }
 
     if (vfpVolFracLimit_ != -1)
     {
-      GMX_RELEASE_ASSERT(
-        vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
-        "-vfp_vol_frac_limit must be in [0, 1] when enabled."
-      );
+        GMX_RELEASE_ASSERT(vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
+                           "-vfp_vol_frac_limit must be in [0, 1] when enabled.");
     }
-    GMX_RELEASE_ASSERT(
-      vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
-      "-vfp_pop_frac must be in [0, 1]."
-    );
+    GMX_RELEASE_ASSERT(vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
+                       "-vfp_pop_frac must be in [0, 1].");
 
     if (cpGenInterval_ != -1)
     {
-      GMX_RELEASE_ASSERT(
-        cpGenInterval_ > 0,
-        "When enabled (!= -1), -cp_gen_interval must be positive."
-      );
+        GMX_RELEASE_ASSERT(cpGenInterval_ > 0,
+                           "When enabled (!= -1), -cp_gen_interval must be positive.");
     }
-    GMX_RELEASE_ASSERT(
-      cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
-      "-cp_pop_frac must be in [0, 1]."
-    );
+    GMX_RELEASE_ASSERT(cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
+                       "-cp_pop_frac must be in [0, 1].");
 
     // Enable test loss if needed
     if (maxTestGenerations_ > 0)
     {
-      if (!evaluateTestset_)
-      {
-        printf("Enabling test loss computation in GA...\n");
-      }
-      evaluateTestset_ = true;
+        if (!evaluateTestset_)
+        {
+            msghandler->write("Enabling test fitness computation in GA...");
+        }
+        evaluateTestset_ = true;
     }
 
     // Enable sorting if needed
     if (nElites_ > 0 || pcAlg_ == ProbabilityComputerAlg::pcRANK || vfpVolFracLimit_ != -1)
     {
-      if (!sort_)
-      {
-        printf("Enabling sorting...\n");
-      }
-      sort_ = true;
+        if (!sort_)
+        {
+            msghandler->write("Enabling genome sorting...");
+        }
+        sort_ = true;
     }
 
 }
@@ -400,8 +400,6 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
           "Force using displacement and reminimize even if converged in an attempt to overcome local minima (LBFGS only)" },
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
-        { "-oneH", FALSE, etBOOL, {&oneH_},
-          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
           "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
     };
@@ -437,7 +435,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
     }
 }
 
-void SimulationConfigHandler::check_pargs()
+void SimulationConfigHandler::check_pargs(MsgHandler *)
 {
     GMX_RELEASE_ASSERT(nsteps_ >= 0, "Number of steps must be larger than zero");
     GMX_RELEASE_ASSERT(temperature_ >= 0, "Temperature must be larger than zero");

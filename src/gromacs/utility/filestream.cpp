@@ -264,6 +264,11 @@ void TextOutputFile::write(const char *str)
     }
 }
 
+void TextOutputFile::flush()
+{
+    std::fflush(impl_->handle());
+}
+
 void TextOutputFile::close()
 {
     impl_->close();

@@ -27,9 +27,16 @@
   </Sequence>
   <Real Name="Molecule 1 charge">-1.0000000000000011</Real>
   <Real Name="Molecule 2 charge">-4.4408920985006262e-16</Real>
-  <Real Name="InteractionEnergy">-32.580193894853551</Real>
-  <Real Name="Coulomb">-20.783171992412747</Real>
-  <Real Name="Induction">-8.1962726574872136</Real>
-  <Real Name="Dispersion">-5.4523528796142333</Real>
-  <Real Name="Repulsion">1.9987012517596754</Real>
+  <Real Name="BONDS">-4.5474735088646412e-13</Real>
+  <Real Name="ANGLES">0</Real>
+  <Real Name="IMPROPER_DIHEDRALS">0</Real>
+  <Real Name="DISPERSION">-5.4523528796142333</Real>
+  <Real Name="EXCHANGE">1.9987012517596754</Real>
+  <Real Name="COULOMB">-20.783686911809255</Real>
+  <Real Name="POLARIZATION">0</Real>
+  <Real Name="INDUCTION">-0.14709862748645008</Real>
+  <Real Name="INDUCTIONCORRECTION">-8.1963044294975091</Real>
+  <Real Name="ALLELEC">-29.127089968793214</Real>
+  <Real Name="EXCHIND">-6.3447018052242843</Real>
+  <Real Name="EPOT">-32.580741596647954</Real>
 </ReferenceData>

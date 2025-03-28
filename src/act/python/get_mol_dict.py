@@ -86,7 +86,7 @@ class MoleculeDict:
             mass = atom.GetExactMass()
             self.atoms.update({index: {}})
             self.atoms[index] = {"atomic_number": atomic_number, "obtype": obtype.GetValue(),
-                                 "atomtype": atomtype, "mass": mass,
+                                 "atomtype": atomtype, "mass": mass, "element": atom.GetAtomicNum(),
                                  "X": X, "Y": Y, "Z": Z}
         g2a = None
         # Add the bonds

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,12 +32,12 @@
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
-#include "act/forces/forcecomputerimpl.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/forcecomputerimpl.h"
+#include "act/qgen/qtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "act/qgen/qtype.h"
 
 namespace alexandria
 {
@@ -75,6 +75,21 @@ ForceComputer::~ForceComputer()
     }
 }
 
+void ForceComputer::constructVsiteCoordinates(const Topology         *top,
+                                              std::vector<gmx::RVec> *coordinates) const
+{
+    // Construct virtual site coordinates
+    vsiteHandler_->constructPositions(top, coordinates, box_);
+}
+
+void ForceComputer::spreadVsiteForces(const Topology         *top,
+                                      std::vector<gmx::RVec> *coordinates,
+                                      std::vector<gmx::RVec> *forces) const
+{
+    // Spread virtual site forces
+    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+}
+                              
 double ForceComputer::compute(const ForceField                  *pd,
                               const Topology                    *top,
                               std::vector<gmx::RVec>            *coordinates,
@@ -84,8 +99,7 @@ double ForceComputer::compute(const ForceField                  *pd,
                               bool                               resetShells,
                               std::set<int>                      relax) const
 {
-    // Spread virtual sites
-    vsiteHandler_->constructPositions(top, coordinates, box_);
+    constructVsiteCoordinates(top, coordinates);
     // Reset shells if needed
     if (resetShells)
     {
@@ -214,7 +228,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         energies->insert_or_assign(InteractionType::EXCHIND, exchind);
     }
     // Spread forces to atoms
-    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+    spreadVsiteForces(top, coordinates, forces);
     return msForce;
 }
 
@@ -287,7 +301,8 @@ Potential ForceComputer::ftype(const ForceField *pd,
     return ftype;
 }
 
-void ForceComputer::plot(const ForceField  *pd,
+void ForceComputer::plot(MsgHandler        *msghandler,
+                         const ForceField  *pd,
                          InteractionType    itype) const
 {
     if (!pd->interactionPresent(itype))
@@ -297,7 +312,6 @@ void ForceComputer::plot(const ForceField  *pd,
         return;
     }
     std::string btype("bondtype");
-    std::string vdwtype("vdwtype");
 
     std::map<InteractionType, const std::string> i2s = {
         { InteractionType::BONDS,              btype },
@@ -305,8 +319,8 @@ void ForceComputer::plot(const ForceField  *pd,
         { InteractionType::LINEAR_ANGLES,      btype },
         { InteractionType::PROPER_DIHEDRALS,   btype },
         { InteractionType::IMPROPER_DIHEDRALS, btype },
-        { InteractionType::VDW,                vdwtype },
-        { InteractionType::ELECTROSTATICS,            vdwtype }
+        { InteractionType::VDW,                "vdwtype" },
+        { InteractionType::ELECTROSTATICS,     "acmtype" }
     };
     auto &fs   = pd->findForcesConst(itype);
     // The function we need to do the math
@@ -326,7 +340,7 @@ void ForceComputer::plot(const ForceField  *pd,
         };
         for(const auto &f : fs.parametersConst())
         {
-            int  ntrain  = 0;
+            unsigned int ntrain  = 0;
             for(const auto &pp : f.second)
             {
                 ntrain = std::max(ntrain, pp.second.ntrain());
@@ -390,9 +404,15 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::ELECTROSTATICS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
-                    size_t jatom = top.nAtoms()/2;
+                    // First atom is zero, second must be the other particle
+                    size_t jatom = 1+top.atoms()[0].shells().size();
+                    if (jatom == 0)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
+                    }
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.001;
@@ -429,21 +449,18 @@ void ForceComputer::plot(const ForceField  *pd,
                         ff.push_back(forces[0][0]);
                     }
                     // Check whether force is derivative of energy
-                    if (debug)
+                    for(size_t i = 1; i < vv.size()-1; i++)
                     {
-                        for(size_t i = 1; i < vv.size()-1; i++)
+                        if (std::abs(ff[i]) > 1e-6)
                         {
-                            if (std::abs(ff[i]) > 1e-6)
+                            double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
+                            double relerror = (fnumeric-ff[i])/ff[i];
+                            if (std::abs(relerror) > 1e-1)
                             {
-                                double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
-                                double relerror = (fnumeric-ff[i])/ff[i];
-                                if (std::abs(relerror) > 1e-1)
-                                {
-                                    fprintf(debug, "%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
-                                            filename.c_str(),
-                                            ff[i], fnumeric, relerror, rr[i],
-                                            vv[i+1], vv[i-1], 2*delta);
-                                }
+                                printf("%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
+                                       filename.c_str(),
+                                       ff[i], fnumeric, relerror, rr[i],
+                                       vv[i+1], vv[i-1], 2*delta);
                             }
                         }
                     }
@@ -452,7 +469,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::ANGLES:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 180, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
@@ -471,7 +489,8 @@ void ForceComputer::plot(const ForceField  *pd,
                 {
                     // TODO take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
@@ -489,7 +508,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
@@ -507,7 +527,8 @@ void ForceComputer::plot(const ForceField  *pd,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(pd, &coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.build(msghandler,
+                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;

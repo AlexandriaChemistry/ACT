@@ -74,7 +74,7 @@ B2Data::B2Data(int                        nbins,
         for(int kk = 0; kk < 2; kk++)
         {
             exp_F2_[kk][i].resize(nbins, 0);
-                exp_tau_[kk][i].resize(nbins, { 0.0, 0.0, 0.0 });
+            exp_tau_[kk][i].resize(nbins, { 0.0, 0.0, 0.0 });
         }
         n_U12_[i].resize(nbins, 0);
     }
@@ -112,7 +112,12 @@ void B2Data::aggregate(CommunicationRecord *cr)
                 }
                 for(size_t i = 0; i < n_U12_.size(); i++)
                 {
-                    cr->recv(src, &n_U12_[i]);
+                    std::vector<int> d;
+                    cr->recv(src, &d);
+                    for(size_t j = 0; j < d.size(); j++)
+                    {
+                        n_U12_[i][j] += d[j];
+                    }
                 }
                 for(int kk = 0; kk < 2; kk++)
                 {

@@ -78,6 +78,7 @@ class MockTextOutputStream : public TextOutputStream
     public:
         MOCK_METHOD1(write, void(const char *));
         MOCK_METHOD0(close, void());
+        MOCK_METHOD0(flush, void());
 };
 
 class InteractiveTestHelper::Impl

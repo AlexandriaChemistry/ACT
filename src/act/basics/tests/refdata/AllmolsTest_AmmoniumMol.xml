@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="IUPAC">azanium</String>
+  <String Name="Formula">H4N+</String>
+  <Int Name="Charge">1</Int>
+  <Real Name="Mass">18.0383</Real>
+  <Int Name="Multiplicity">1</Int>
+  <String Name="CAS">6684-80-6</String>
+  <Int Name="ChemSpiderID">218</Int>
+  <Int Name="PubChemID">223</Int>
+  <String Name="InChiKey">QGZKDVFQNNGYKY-UHFFFAOYSA-O</String>
+</ReferenceData>

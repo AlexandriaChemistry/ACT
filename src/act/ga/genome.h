@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -128,9 +128,9 @@ public:
     
     /*! \brief Print my content
      * \param[in] name String identifier
-     * \param[in] fp   File pointer to print to. If nullptr nothing is printed.
+     * \return string with nicely formatted genome
      */
-    void print(const char *name, FILE *fp) const;
+    std::string print(const char *name) const;
     
     /*! \brief Send to another processor
      * \param[in] cr   The communication record

@@ -30,7 +30,7 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 

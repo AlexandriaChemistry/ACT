@@ -27,7 +27,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 #include "genetic_algorithm.h"
@@ -75,8 +75,9 @@ void GeneticAlgorithm::updateGenePool(const GenePool &gpin)
     lastPop_ = gpin;
 }
 
-bool GeneticAlgorithm::terminate(const GenePool *pool,
-                                 const int       generationNumber)
+bool GeneticAlgorithm::terminate(gmx::TextWriter *tw,
+                                 const GenePool  *pool,
+                                 const int        generationNumber)
 {
     GMX_RELEASE_ASSERT(
         terminators_ != nullptr,
@@ -87,7 +88,7 @@ bool GeneticAlgorithm::terminate(const GenePool *pool,
     bool halt = false;
     for (auto *term : *terminators_)
     {
-        if (term->terminate(pool, generationNumber))
+        if (term->terminate(tw, pool, generationNumber))
         {
             halt = true;
         }
@@ -95,8 +96,9 @@ bool GeneticAlgorithm::terminate(const GenePool *pool,
     return halt;
 }
 
-bool GeneticAlgorithm::penalize(      GenePool *pool,
-                                const int       generationNumber)
+bool GeneticAlgorithm::penalize(gmx::TextWriter *tw,
+                                GenePool        *pool,
+                                const int        generationNumber)
 {
     GMX_RELEASE_ASSERT(
         penalizers_ != nullptr,
@@ -105,7 +107,7 @@ bool GeneticAlgorithm::penalize(      GenePool *pool,
     bool penalized = false;
     for (auto pen : *penalizers_)
     {
-        if (pen->penalize(pool, generationNumber))
+        if (pen->penalize(tw, pool, generationNumber))
         {
             penalized = true;
         }

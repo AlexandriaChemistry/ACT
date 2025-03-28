@@ -54,17 +54,15 @@ class DimerGenerator
 {
 private:
     //! Number of distances to use. See alexandria b2 -h for an explanation
-    int ndist_          =    0;
+    int ndist_          =  0;
     //! The bin width (nm)
     double binWidth_    =  0.0025;
     //! Minimum com-com distance (nm)
     double mindist_     =  0.1;
     //! Maximum com-com distance (nm)
     double maxdist_     =  4.0;
-    //! (Quasi-) random number seed
-    int    seed_        =    0;
-    //! Internal copy of seed
-    long long int sobolSeed_ = 0;
+    //! Random number seed, not applied to the Sobol algorithm
+    int    dimerseed_   =  1993;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! Rotation algorithm
@@ -77,6 +75,12 @@ private:
     std::uniform_real_distribution<double> dis_;
     //! Rotator
     Rotator                               *rot_ = nullptr;
+    //! Trajectory name
+    const char                            *trajname_ = nullptr;
+    //! The random numbers
+    std::vector<std::vector<double>>       allRandom_;
+    //! Random number index
+    size_t                                 randIndex_ = 0;
 public:
     //! Constructor
     DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
@@ -85,23 +89,52 @@ public:
     ~DimerGenerator();
   
     /*! \brief Add my options
-     * \param[inout] pa  The command line options
-     * \param[inout] fnm File names for the command line
+     * \param[inout] pa   The command line options
+     * \param[inout] fnm  File names for the command line
+     * \param[inout] desc Descriptive text
      */
-    void addOptions(std::vector<t_pargs>  *pa,
-                    std::vector<t_filenm> *fnm);
+    void addOptions(std::vector<t_pargs>      *pa,
+                    std::vector<t_filenm>     *fnm,
+                    std::vector<const char *> *desc);
 
-    //! \brief Process the options
-    void finishOptions();
+    /*! \brief Process the options
+     * \param[in] fnm The file names after processing
+     */
+    void finishOptions(const std::vector<t_filenm> &fnm);
 
     //! Get the original seed
-    int seed() const { return seed_; }
+    int seed() const { return dimerseed_; }
 
     //! Set a new seed
     void setSeed(int seed);
-    
+
+    /*! Generate the random numbers for all rotations
+     * \param[in] ndimers The number of dimers
+     */
+    void generateRandomNumbers(int ndimers);
+
+    //! \return The list of random numbers
+    const std::vector<std::vector<double>> &allRandom() const { return allRandom_; }
+
+    //! Empty random number array
+    void clearAllRandom() { allRandom_.clear(); }
+
+    //! Empty random number array
+    void resetAllRandom(size_t ndimer) { allRandom_.resize(ndimer); }
+
+    /*! \brief Set the random numbers
+     * \param[in] allRand The new random numbers
+     */
+    void addRandomNumbers(const std::vector<double> &newRand)
+    {
+        allRandom_.push_back(newRand);
+    }
+
     //! Return the number of distancea
     int ndist() const { return ndist_; }
+
+    //! Return trajectory name
+    const char *trajname() const { return trajname_; }
 
     //! Return max distance
     double maxdist() const { return maxdist_; }
@@ -109,12 +142,17 @@ public:
     //! Return bin width
     double binwidth() const { return binWidth_; }
 
+    //! Return whether or not there is a trajectory to read
+    bool hasTrajectory() const { return trajname_ && strlen(trajname_) > 0; }
+
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.
+     * \param[in]  logFile   For debugging info, may be a nullptr
      * \param[in]  actmol  The description of the two fragments
      * \return The coordinate sets
      */
-    std::vector<std::vector<gmx::RVec>>  generateDimers(const ACTMol *actmol);
+    std::vector<std::vector<gmx::RVec>> generateDimers(FILE         *logFile,
+                                                       const ACTMol *actmol);
     /*! \brief Do the actual generation for many dimers.
      * Note that the memory usage can be significant (many Gb).
      * 
@@ -130,6 +168,11 @@ public:
                   int                                  maxdimer,
                   std::vector<std::vector<gmx::RVec>> *coords,
                   const char                          *outcoords);
+
+    /*! \brief Read all the dimers at once from a file. 
+     * \param[out]   coords   The coordinates. If empty reading failed or the variable was empty
+     */
+    void read(std::vector<std::vector<gmx::RVec>> *coords);
 };
 
 } // namespace alexandria

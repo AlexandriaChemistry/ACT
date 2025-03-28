@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,6 +42,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -166,12 +167,14 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 (*fptr)[i].setCharge(qtotal[i]);
             }
             mp_.Merge(&molprop);
+            MsgHandler msghandler;
+            // Uncomment in case of issues
+            // msghandler.setACTStatus(ACTStatus::Debug);
             // Generate charges and topology
-            auto imm = mp_.GenerateTopology(stdout, pd,
-                                            missingParameters::Error);
-            if (immStatus::OK != imm)
+            mp_.GenerateTopology(&msghandler, pd,
+                                 missingParameters::Ignore);
+            if (!msghandler.ok())
             {
-                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
             
@@ -184,7 +187,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
-            mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();

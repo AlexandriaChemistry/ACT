@@ -60,7 +60,7 @@ endif ()
 # repository).  Also declares a few functions that will be used for generating
 # version info files later.
 include(gmxBuildTreeInfo)
-include(gmxVersionInfo)
+include(actVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/ACT" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)

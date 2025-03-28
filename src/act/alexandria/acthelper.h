@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -28,12 +28,12 @@
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #ifndef ACT_ACTHELPER_H
 #define ACT_ACTHELPER_H
 
-#include "gromacs/mdtypes/commrec.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 
 namespace alexandria
@@ -54,18 +54,22 @@ namespace alexandria
         ForceComputer      *forceComp_;
     public:
         /*! \brief Constructor
+         * \param[in] msghandler   Message and status handler
          * \param[in] sii          Static information
          * \param[in] mg           Information about this helpers molecules
          * \param[in] shellToler   Tolerance for minimizing shell positions
          * \param[in] shellMaxIter Max # iterations for the same
          */
-        ACTHelper(StaticIndividualInfo *sii,
+        ACTHelper(MsgHandler           *msghandler,
+                  StaticIndividualInfo *sii,
                   MolGen               *mg,
                   double                shellToler,
                   int                   shellMaxIter);
         
-        //! \brief Run the helper process
-        void run();    
+        /*! \brief Run the helper process
+         * \param[in] msghandler Message and status handler
+         */
+        void run(MsgHandler *msghandler);    
     };
     
 } // namespace alexandria

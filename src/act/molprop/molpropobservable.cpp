@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,13 +37,13 @@
 #include <map>
 #include <string>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-
 #include "act/molprop/multipole_names.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -142,25 +142,25 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
     return false;
 }
 
-static void print_values(FILE *fp, const std::vector<double> values, double factor)
+static void print_values(gmx::TextWriter *tw, const std::vector<double> values, double factor)
 {
-    fprintf(fp, "  Values:");
+    tw->writeStringFormatted("  Values:");
     for(const auto v : values)
     {
-        fprintf(fp, " %g", v*factor);
+        tw->writeStringFormatted(" %g", v*factor);
     }
-    fprintf(fp, "\n");
+    tw->writeStringFormatted("\n");
 }
 
-void GenericProperty::Dump(FILE *fp) const
+void GenericProperty::Dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    fprintf(fp, "  Type: %s Unit: %s T: %g K Phase: %s\n",
-            getType(), inputUnit_.c_str(), getTemperature(),
-            phase2string(getPhase()).c_str());
+    tw->writeStringFormatted("  Type: %s Unit: %s T: %g K Phase: %s\n",
+                             getType(), inputUnit_.c_str(), getTemperature(),
+                             phase2string(getPhase()).c_str());
 }
 
 CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int dest) const
@@ -269,16 +269,17 @@ bool MolecularMultipole::hasId(const std::string &myid)
             myid.compare("error") == 0);
 }
 
-void MolecularMultipole::Dump(FILE *fp) const
+void MolecularMultipole::Dump(gmx::TextWriter *tw) const
+
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    GenericProperty::Dump(fp);
-    fprintf(fp, "  Average %g Error %g\n", average_, error_);
+    GenericProperty::Dump(tw);
+    tw->writeStringFormatted("  Average %g Error %g\n", average_, error_);
     double factor = convertFromGromacs(1, getInputUnit());
-    print_values(fp, values_, factor);
+    print_values(tw, values_, factor);
 }
 
 void MolecularMultipole::setValue(const std::string &myid, double value)
@@ -389,15 +390,15 @@ void Harmonics::addValue(double value)
     values_.push_back(convertToGromacs(value, getInputUnit()));
 }
 
-void Harmonics::Dump(FILE *fp) const
+void Harmonics::Dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    GenericProperty::Dump(fp);
+    GenericProperty::Dump(tw);
     double factor = convertFromGromacs(1, getInputUnit());
-    print_values(fp, values_, factor);
+    print_values(tw, values_, factor);
 }
 
 CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) const
@@ -498,24 +499,24 @@ void MolecularPolarizability::Set(double xx, double yy, double zz, double xy, do
     alpha_[YY][ZZ] = convertToGromacs(yz, unit);
 };
 
-void MolecularPolarizability::Dump(FILE *fp) const
+void MolecularPolarizability::Dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    GenericProperty::Dump(fp);
+    GenericProperty::Dump(tw);
     double factor = convertFromGromacs(1, getInputUnit());
-    fprintf(fp, "  Average %g Error %g\n", average_*factor, error_*factor);
-    fprintf(fp, "  Alpha:\n");
+    tw->writeStringFormatted("  Average %g Error %g\n", average_*factor, error_*factor);
+    tw->writeStringFormatted("  Alpha:\n");
     for(int m = 0; m < DIM; m++)
     {
-        fprintf(fp, "  ");
+        tw->writeStringFormatted("  ");
         for(int n = 0; n < DIM; n++)
         {
-            fprintf(fp, " %10g", alpha_[m][n]*factor);
+            tw->writeStringFormatted(" %10g", alpha_[m][n]*factor);
         }
-        fprintf(fp, "\n");
+        tw->writeStringFormatted("\n");
     }
 }
 
@@ -618,14 +619,14 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
     setUnit(gromacsUnit(inputUnit));
 }
 
-void MolecularEnergy::Dump(FILE *fp) const
+void MolecularEnergy::Dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    GenericProperty::Dump(fp);
-    fprintf(fp, "  Average %g Error %g\n", average_, error_);
+    GenericProperty::Dump(tw);
+    tw->writeStringFormatted("  Average %g Error %g\n", average_, error_);
 }
 
 CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
@@ -708,19 +709,19 @@ void ElectrostaticPotential::addPoint(int    espid,
     V_.push_back(V*Vfac);
 }
 
-void ElectrostaticPotential::Dump(FILE *fp) const
+void ElectrostaticPotential::Dump(gmx::TextWriter *tw) const
 {
-    if (!fp)
+    if (!tw)
     {
         return;
     }
-    GenericProperty::Dump(fp);
+    GenericProperty::Dump(tw);
     double factor = convertFromGromacs(1, getInputUnit());
-    fprintf(fp, "  %4s  %8s  %8s  %8s  %12s\n", "ID", "x", "y", "z", "V");
+    tw->writeStringFormatted("  %4s  %8s  %8s  %8s  %12s\n", "ID", "x", "y", "z", "V");
     for(size_t i = 0; i < espID_.size(); i++)
     {
-        fprintf(fp, "  %4d  %8.3f  %8.3f  %8.3f  %12.3f\n", espID_[i],xyz_[i][XX],
-                xyz_[i][YY], xyz_[i][ZZ], factor*V_[i]);
+        tw->writeStringFormatted("  %4d  %8.3f  %8.3f  %8.3f  %12.3f\n", espID_[i],xyz_[i][XX],
+                                 xyz_[i][YY], xyz_[i][ZZ], factor*V_[i]);
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -27,13 +27,14 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 
 #include "terminator.h"
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "gene_pool.h"
 
@@ -45,18 +46,16 @@ namespace ga
 * BEGIN: GenerationTerminator              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-bool GenerationTerminator::terminate(gmx_unused const GenePool *pool,
-                                                const int       generationNumber)
+bool GenerationTerminator::terminate(gmx::TextWriter *tw,
+                                     const GenePool  *,
+                                     const int        generationNumber)
 {
     if (generationNumber >= maxGenerations_)
     {
-        if (outfile_)
+        if (tw)
         {
-            fprintf(
-                outfile_,
-                "GenerationTerminator: evolution will be terminated as the maximum number of generations (%d) has been reached.\n",
-                maxGenerations_
-            );
+            tw->writeStringFormatted("GenerationTerminator: evolution will be terminated as the maximum number of generations (%d) has been reached.\n",
+                                     maxGenerations_);
         }
         return true;
     }
@@ -74,8 +73,9 @@ bool GenerationTerminator::terminate(gmx_unused const GenePool *pool,
 * BEGIN: TestGenTerminator                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-bool TestGenTerminator::terminate(           const GenePool *pool,
-                                  gmx_unused const int       generationNumber)
+bool TestGenTerminator::terminate(gmx::TextWriter *tw,
+                                  const GenePool  *pool,
+                                  const int        )
 {
     remaining_ -= 1;
     
@@ -91,14 +91,11 @@ bool TestGenTerminator::terminate(           const GenePool *pool,
 
     if (remaining_ <= 0)
     {
-        if (outfile_)
+        if (tw)
         {
-            fprintf(
-                outfile_,
-                "TestGenTerminator: evolution will be terminated as the best test fitness (%lf) has not improved in the last (%d) generation(s).\n",
-                bestFitness_,
-                generations_
-            );
+            tw->writeStringFormatted("TestGenTerminator: evolution will be terminated as the best test fitness (%lf) has not improved in the last (%d) generation(s).\n",
+                                     bestFitness_,
+                                     generations_);
         }
         return true;
     }

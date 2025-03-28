@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,11 +33,13 @@
 
 #include "allbondeds.h"
 
-#include "gromacs/fileio/xvgr.h"
-
-#include "train_utility.h"
+#include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/forcecomputerutils.h"
 #include "act/utility/units.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/textwriter.h"
 
 static void round_numbers(real *av, real *sig, int power10)
 {
@@ -129,6 +131,10 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
               "Tolerance for harmonic and linear angles" },
             { "-factor", FALSE, etREAL, {&factor_},
               "Scale factor to set minimum and maximum values of parameters. Min will be set to value*factor and max to value/factor, assuming factor < 1." },
+            { "-bfactor", FALSE, etREAL, {&bfactor_},
+              "Scale factor to set minimum and maximum values of bond lengths. See also previous option." },
+            { "-afactor", FALSE, etREAL, {&afactor_},
+              "Scale factor to set minimum and maximum values of bond angles. See also previous option." },
             { "-bspacing", FALSE, etREAL, {&bspacing_},
               "Spacing for bond histograms in pm" },
             { "-aspacing", FALSE, etREAL, {&aspacing_},
@@ -141,11 +147,11 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
 }
 
-void AllBondeds::addBonded(FILE                           *fplog,
-                           InteractionType                 iType,
-                           const ACTMol                    &mmi,
-                           const Identifier               &bondId,
-                           const std::vector<int>         &atomid)
+void AllBondeds::addBonded(MsgHandler             *msghandler,
+                           InteractionType         iType,
+                           const ACTMol           &mmi,
+                           const Identifier       &bondId,
+                           const std::vector<int> &atomid)
 {
     auto x = mmi.xOriginal();
     // We need to check for linear angles here before we
@@ -176,16 +182,11 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::PROPER_DIHEDRALS:
         {
             rvec  r_ij, r_kj, r_kl, mm, nn;
-            int   t1, t2, t3;
-            t_pbc pbc;
-            matrix box = {{ 0 }};
-            set_pbc(&pbc, epbcNONE, box);
             refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
-                                         &pbc, r_ij, r_kj, r_kl, mm, nn,
-                                         &t1, &t2, &t3);
+                                         r_ij, r_kj, r_kl, mm, nn);
             if (refValue < 0)
             {
                 refValue += 360;
@@ -195,16 +196,11 @@ void AllBondeds::addBonded(FILE                           *fplog,
     case InteractionType::IMPROPER_DIHEDRALS:
         {
             rvec  r_ij, r_kj, r_kl, mm, nn;
-            int   t1, t2, t3;
-            t_pbc pbc;
-            matrix box = {{ 0 }};
-            set_pbc(&pbc, epbcNONE, box);
             refValue = RAD2DEG*dih_angle(x[atomid[0]],
                                          x[atomid[1]],
                                          x[atomid[2]],
                                          x[atomid[3]],
-                                         &pbc, r_ij, r_kj, r_kl, mm, nn,
-                                         &t1, &t2, &t3);
+                                         r_ij, r_kj, r_kl, mm, nn);
             if (refValue < 0)
             {
                 refValue += 360;
@@ -255,12 +251,10 @@ void AllBondeds::addBonded(FILE                           *fplog,
     }
     ob->addPoint(refValue);
 
-    if (nullptr != fplog)
-    {
-        fprintf(fplog, "%s %s-%s %g\n",
-                mmi.getMolname().c_str(), interactionTypeToString(iType).c_str(),
-                bondId.id().c_str(), refValue);
-    }
+    msghandler->msg(ACTStatus::Verbose,
+                    gmx::formatString("%s %s-%s %g\n",
+                                      mmi.getMolname().c_str(), interactionTypeToString(iType).c_str(),
+                                      bondId.id().c_str(), refValue));
 }
 
 void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
@@ -350,8 +344,8 @@ static void calc_linear_angle_a(const ForceField    *pd,
                           gmx::square(pjk.uncertainty()));
 }
 
-void AllBondeds::updateForceField(FILE    *fp,
-                               ForceField *pd)
+void AllBondeds::updateForceField(gmx::TextWriter *tw,
+                                  ForceField      *pd)
 {
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
@@ -371,7 +365,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::MORSE_BONDS:
             {
                 fs->addParameter(bondId, morse_name[morseLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
                                                      Mutability::Bounded, false, true));
                 fs->addParameter(bondId, morse_name[morseDE],
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
@@ -388,7 +382,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::HUA_BONDS:
             {
                 fs->addParameter(bondId, hua_name[huaLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
                                                      Mutability::Bounded, false, true));
                 fs->addParameter(bondId, hua_name[huaDE],
                                  ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
@@ -404,7 +398,7 @@ void AllBondeds::updateForceField(FILE    *fp,
         case Potential::HARMONIC_BONDS:
             {
                 fs->addParameter(bondId, bond_name[bondLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, bond_name[bondKB],
                                  ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
                 double D0 = -200;
@@ -416,10 +410,10 @@ void AllBondeds::updateForceField(FILE    *fp,
             {
                 // Compute the numbers such that they make sense
                 fs->addParameter(bondId, cubic_name[cubicLENGTH],
-                                 ForceFieldParameter("pm", av, 0, N, av*factor_, av/factor_, Mutability::Bounded, true, true));
+                                 ForceFieldParameter("pm", av, 0, N, av*bfactor_, av/bfactor_, Mutability::Bounded, true, true));
                 double rmax = 3*av;
                 fs->addParameter(bondId, cubic_name[cubicRMAX],
-                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*factor_, rmax/factor_, Mutability::Bounded, true, true));
+                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*bfactor_, rmax/bfactor_, Mutability::Bounded, true, true));
                 fs->addParameter(bondId, cubic_name[cubicKB],
                                  ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
                 fs->addParameter(bondId, cubic_name[cubicDE],
@@ -430,7 +424,7 @@ void AllBondeds::updateForceField(FILE    *fp,
             gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
         }
 
-        fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
+        tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s\n",
                 i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
     }
 
@@ -460,18 +454,18 @@ void AllBondeds::updateForceField(FILE    *fp,
                 {
                     round_numbers(&av, &sig, 10);
                     fs->addParameter(bondId, angle_name[angleANGLE],
-                                     ForceFieldParameter("degree", av, sig, N, av*factor_,
-                                                         std::min(180.0, av/factor_), Mutability::Bounded, false, true));
+                                     ForceFieldParameter("degree", av, sig, N, av*afactor_,
+                                                         std::min(180.0, av/afactor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, angle_name[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
-                    fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
+                    tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                     if (fType == Potential::UREY_BRADLEY_ANGLES)
                     {
                         std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
                         fs->addParameter(bondId, ub_name[ubR13],
-                                         ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
+                                         ForceFieldParameter(unit, r13, 0, N, r13*bfactor_, r13/bfactor_,
                                                              Mutability::Bounded, false, true));
                         fs->addParameter(bondId, ub_name[ubKUB],
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, true));
@@ -488,7 +482,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                     fs->addParameter(bondId, linang_name[linangKLIN],
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
 
-                    fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
+                    tw->writeStringFormatted("linear_angle-%s angle %g sigma %g N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
@@ -526,7 +520,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported dihedral type %s",
                                                                        potentialToString(fType).c_str()).c_str()));
                     }
-                    fprintf(fp, "dihedral-%s angle %g sigma %g (deg)\n",
+                    tw->writeStringFormatted("dihedral-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
                 }
                 break;
@@ -542,7 +536,7 @@ void AllBondeds::updateForceField(FILE    *fp,
                     fs->addParameter(bondId, idih_name[idihKPHI],
                                      ForceFieldParameter("kJ/mol", kimp_, 0, 1, kimp_*factor_, kimp_/factor_, Mutability::Bounded, false, true));
 
-                    fprintf(fp, "improper-%s angle %g sigma %g (deg)\n",
+                    tw->writeStringFormatted("improper-%s angle %g sigma %g (deg)\n",
                             bondId.id().c_str(), av, sig);
                 }
                 break;
@@ -553,7 +547,7 @@ void AllBondeds::updateForceField(FILE    *fp,
     }
 }
 
-void AllBondeds::extractGeometries(FILE                       *fp,
+void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
                                    const std::vector<MolProp> &mp,
                                    std::vector<ACTMol>        *actmols,
                                    ForceField                 *pd,
@@ -562,26 +556,21 @@ void AllBondeds::extractGeometries(FILE                       *fp,
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         iMolSelect imol;
-        if (gms.status(mpi->getIupac(), &imol) &&
+        if ((gms.status(mpi->getIupac(), &imol) ||
+             gms.status(mpi->getMolname(), &imol)) &&
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::ACTMol mmi;
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
-                fprintf(fp, "Empty molname for molecule with formula %s\n",
-                        mmi.formula().c_str());
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Empty molname for molecule with formula %s\n", mmi.formula().c_str()));
                 continue;
             }
-            auto imm = mmi.GenerateTopology(fp, pd, missingParameters::Generate);
-            if (immStatus::OK != imm)
+            mmi.GenerateTopology(msghandler, pd, missingParameters::Generate);
+            if (!msghandler->ok())
             {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Could not make topology for %s, reason %s\n",
-                            mmi.getMolname().c_str(),
-                            immsg(imm) );
-                }
                 continue;
             }
             {
@@ -601,13 +590,11 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         break;
                     }
                 }
+                // TODO: Check whether this occurs
                 if (i < myatoms.size())
                 {
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "You may need to check the number of atoms for %s\n",
-                                mmi.getMolname().c_str());
-                    }
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("You may need to check the number of atoms for %s", mmi.getMolname().c_str()));
                     continue;
                 }
             }
@@ -616,7 +603,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             {
                 for (const auto &topentry : entry.second)
                 {
-                    addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
+                    addBonded(msghandler, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
             actmols->push_back(mmi);
@@ -624,12 +611,12 @@ void AllBondeds::extractGeometries(FILE                       *fp,
     }
 }
 
-void AllBondeds::writeSummary(FILE *fp)
+void AllBondeds::writeSummary(gmx::TextWriter *tw)
 {
     for(auto &bb : bondeds_)
     {
-        fprintf(fp, "Extracted %zu %s\n",
-                bb.second.size(), interactionTypeToString(bb.first).c_str());
+        tw->writeStringFormatted("Extracted %zu %s\n",
+                                 bb.second.size(), interactionTypeToString(bb.first).c_str());
     }
 }
 

@@ -286,10 +286,10 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
             }
         }
         auto inchi = conv->WriteString(&fmol, true);
-        auto amol  = amols.find(inchi);
+        auto amol  = amols.findInChi(inchi);
         if (nullptr != amol)
         {
-            fptr->setId(inchi);
+            fptr->setInchi(inchi);
             fptr->setIupac(amol->iupac);
             fptr->setCharge(amol->charge);
             fptr->setMass(amol->mass);
@@ -297,7 +297,7 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
         }
         else
         {
-            fptr->setId(inchi);
+            fptr->setInchi(inchi);
         }
     }
     return true;

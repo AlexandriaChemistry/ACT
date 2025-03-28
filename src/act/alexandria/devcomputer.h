@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -47,6 +47,11 @@
 #include "staticindividualinfo.h"
 #include "molhandler.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -58,33 +63,27 @@ class DevComputer
 {
 
 protected:
-
-    //! Pointer to log file
-    FILE       *logfile_ = nullptr;
-    //! Whether to print stuff in the logfile
-    bool        verbose_;
     //! My name
     std::string name_;
     /*! \brief Create a new DevComputer
-     * @param logfile   pointer to log file
-     * @param verbose   Whether to print stuff in the logfile
+     * @param name My name
      */
-    DevComputer(FILE             *logfile,
-                const bool        verbose,
-                const std::string name) : logfile_(logfile), verbose_(verbose), name_(name)
+    DevComputer(const std::string  name) : name_(name)
     {}
 
 public:
 
     /*! \brief Computes a component of the chi-squared deviation.
      * Put the value into the appropriate FittingTarget.
+     * @param msghandler    For status and output
      * @param forceComputer The utility to compute forces and energies
-     * @param actmol     pointer to the molecule to compute the deviation for
-     * @param coords    the coordinates
-     * @param targets   map between different components of chi-squared and their fitting targets
-     * @param forcefield   pointer to ForceField structure, that should contain the newest parameters
+     * @param actmol        Pointer to the molecule to compute the deviation for
+     * @param coords        The coordinates
+     * @param targets       Map between different components of chi-squared and their fitting targets
+     * @param forcefield    Pointer to ForceField structure, that should contain the newest parameters
      */
-    virtual void calcDeviation(const ForceComputer           *forceComputer,
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
@@ -109,25 +108,24 @@ private:
 public:
 
     /*! \brief Create a new BoundsDevComputer
-     * @param logfile   pointer to log file
+     * @param tw        Pointer to TextWriter
      * @param verbose   whether we are in verbose mode
      * @param optIndex  pointer to vector containing information about each force field parameter
      */
-    BoundsDevComputer(      FILE                           *logfile,
-                      const bool                            verbose,
-                            std::vector<OptimizationIndex> *optIndex,
-                            double                          zetaDiff)
-        : DevComputer(logfile, verbose, "Bounds")
+    BoundsDevComputer(std::vector<OptimizationIndex> *optIndex,
+                      double                          zetaDiff)
+        : DevComputer("Bounds")
     {
         optIndex_ = optIndex;
         zetaDiff_ = zetaDiff;
     }
 
-    virtual void calcDeviation(const ForceComputer           *forceComputer,
-                               ACTMol                         *actmol,
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                 *forcefield);
+                               const ForceField              *forcefield);
 
 };
 
@@ -147,19 +145,16 @@ private:
 public:
 
     /*! \brief Create a new FrequencyDevComputer
-     * @param logfile pointer to log file
-     * @param verbose whether we are in verbose mode
      * @param mpo     indicating which of the two observables are being used
      */
-    HarmonicsDevComputer(      FILE              *logfile,
-                         const bool               verbose,
-                               MolPropObservable  mpo);
+    HarmonicsDevComputer(MolPropObservable  mpo);
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 };
 
 /*!
@@ -172,19 +167,19 @@ class ChargeCM5DevComputer : public DevComputer
 public:
 
     /*! \brief Create a new DevComputer
-     * @param logfile   pointer to log file
+     * @param tw        Pointer to TextWriter
      * @param verbose   whether we are in verbose mode
      */
-    ChargeCM5DevComputer(      FILE *logfile,
-                         const bool  verbose)
-        : DevComputer(logfile, verbose, "ChargeCM5")
+    ChargeCM5DevComputer()
+        : DevComputer("ChargeCM5")
     {}
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 
 };
 
@@ -202,36 +197,31 @@ private:
     /*! \brief Dump charges to a file
      * Debugging routine
      * \TODO move to cpp file
-     * \param[in] fp   The file pointer to print to
+     * \param[in] tw   The textwriter
      * \param[in] mol  The molecule to read from
-     * \param[in] coords The atomic coordinates
      * \param[in] info Additional debugging information
      */
-    void dumpQX(FILE                         *fp,
-                const ACTMol                  *mol,
-                const std::vector<gmx::RVec> &coords,
+    void dumpQX(gmx::TextWriter              *tw,
+                const ACTMol                 *mol,
                 const std::string            &info);
    
 public:
 
     /*! \brief Create a new DevComputer
-     * @param logfile   pointer to log file
-     * @param verbose   whether we are in verbose mode
      * @param fit       whether we fit zeta parameters
      */
-    EspDevComputer(      FILE *logfile,
-                   const bool  verbose,
-                   const bool  fitZeta)
-        : DevComputer(logfile, verbose, "ESP")
+    EspDevComputer(const bool       fitZeta)
+        : DevComputer("ESP")
     {
         fitZeta_ = fitZeta;
     }
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 
 };
 
@@ -247,17 +237,15 @@ private:
 public:
 
     /*! \brief Create a new PolarDevComputer
-     * @param logfile           pointer to log file
-     * @param verbose           whether we are in verbose mode
      */
-    PolarDevComputer(    FILE  *logfile,
-                    const bool verbose);
+    PolarDevComputer();
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                       *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 
 };
 
@@ -273,22 +261,21 @@ private:
 public:
 
     /*! \brief Create a new MultiPoleDevComputer
-     * @param logfile  Pointer to log file
+     * @param tw       Pointer to TextWriter
      * @param verbose  Whether we are in verbose mode
      * @param mpo      The MolPropObservable, e.g. quadrupole
      */
-    MultiPoleDevComputer(FILE             *logfile,
-                         const bool        verbose,
-                         MolPropObservable mpo)
-        : DevComputer(logfile, verbose, mpo_name(mpo)), mpo_(mpo)
+    MultiPoleDevComputer(MolPropObservable mpo)
+        : DevComputer(mpo_name(mpo)), mpo_(mpo)
     {
     }
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                         *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                    *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 
 };
 
@@ -302,6 +289,9 @@ private:
     //! Whether or not to use Boltzmann weighting of energies and forces
     std::map<eRMS, double> boltzmannTemperature_;
 
+    //! Whether to split off induction correction from induction
+    bool        separateInductionCorrection_ = true;
+
     /*! \brief Compute Boltzmann weighting factor for this eRMS
      * \param[in] ermsi Which energy or force
      * \return The corresponding beta or zero if no temperature was given
@@ -309,22 +299,27 @@ private:
     double computeBeta(eRMS ermsi);
 public:
 
+    /*! \brief Set internal variable
+     * \param[in] sepIndCorr The new value
+     */
+    void setSeparateInductionCorrection(bool sepIndCorr) { separateInductionCorrection_ = sepIndCorr; }
+
+    //! \return Internal variable
+    bool separateInductionCorrection() const { return separateInductionCorrection_; }
+
     /*! \brief Create a new ForceEnergyDevComputer
-     * \param[in] logfile              pointer to log file
-     * \param[in] verbose              whether we are in verbose mode
      * \param[in] boltzmannTemperature Map from the different eRMS terms to a number
      *                                 indicating whether (>0) or not (0) Boltzmann weighting
      *                                 of energies and forces should be done.
      */
-    ForceEnergyDevComputer(      FILE                   *logfile,
-                           const bool                    verbose,
-                                 std::map<eRMS, double>  boltzmannTemperature);
+    ForceEnergyDevComputer(std::map<eRMS, double>  boltzmannTemperature);
 
-    virtual void calcDeviation(const ForceComputer                 *forceComputer,
-                                     ACTMol                        *actmol,
-                                     std::vector<gmx::RVec>        *coords,
-                                     std::map<eRMS, FittingTarget> *targets,
-                               const ForceField                    *forcefield);
+    virtual void calcDeviation(MsgHandler                    *msghandler,
+                               const ForceComputer           *forceComputer,
+                               ACTMol                        *actmol,
+                               std::vector<gmx::RVec>        *coords,
+                               std::map<eRMS, FittingTarget> *targets,
+                               const ForceField              *forcefield);
 
 };
 

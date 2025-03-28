@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,6 +41,8 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
@@ -65,7 +67,7 @@ namespace alexandria
 
 typedef std::map<const std::string, int> stringCount;
 
-static bool dump_molecule(FILE              *fp,
+static bool dump_molecule(MsgHandler        *msghandler,
                           ForceComputer     *forceComp,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
@@ -74,8 +76,8 @@ static bool dump_molecule(FILE              *fp,
 {
     alexandria::ACTMol actmol;
     actmol.Merge(mp);
-    auto imm = actmol.GenerateTopology(fp, &pd, missingParameters::Error);
-    if (immStatus::OK == imm)
+    actmol.GenerateTopology(msghandler, &pd, missingParameters::Error);
+    if (msghandler->ok())
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         // TODO check whether this is needed.
@@ -83,20 +85,19 @@ static bool dump_molecule(FILE              *fp,
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::CHARGE, iqmType::QM }
         };
-        actmol.getExpProps(&pd, iqm, 0.0, 100);
+        actmol.getExpProps(msghandler, &pd, iqm, 0.0, 100);
         auto fhandler = actmol.fragmentHandler();
         if (fhandler->topologies().size() == 1)
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            imm = actmol.GenerateCharges(&pd, forceComp, pd.chargeGenerationAlgorithm(),
-                                         qType::ACM, dummy, &coords, &forces);
+            actmol.GenerateCharges(msghandler, &pd, forceComp,
+                                   pd.chargeGenerationAlgorithm(),
+                                   qType::ACM, dummy, &coords, &forces);
         }
     }
-    if (immStatus::OK != imm)
+    if (!msghandler->ok())
     {
-        fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
-                actmol.getMolname().c_str(), immsg(imm));
         return false;
     }
     else
@@ -106,14 +107,11 @@ static bool dump_molecule(FILE              *fp,
             { MolPropObservable::QUADRUPOLE, iqmType::Both },
             { MolPropObservable::POLARIZABILITY, iqmType::Both },
         };
-       
-        fprintf(fp, "Molecule: %s\n", actmol.getMolname().c_str());
-        for(const auto &f : actmol.fragments())
-        {
-            f.dump(fp);
-        }
-        actmol.getExpProps(&pd, iqm, -1);
-        actmol.Dump(fp);
+        // Fetch TextWriter object
+        auto tw = msghandler->tw();
+        tw->writeStringFormatted("Molecule: %s\n", actmol.getMolname().c_str());
+        actmol.getExpProps(msghandler, &pd, iqm, -1);
+        actmol.Dump(tw);
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
         std::vector<Identifier> atomId;
@@ -121,7 +119,7 @@ static bool dump_molecule(FILE              *fp,
         for (size_t i = 0; i < atoms.size(); i++)
         {
             const auto &atype = atoms[i].ffType();
-            fprintf(fp, "atom: %2lu  %5s  %5s", i+1, 
+            tw->writeStringFormatted("atom: %2lu  %5s  %5s", i+1, 
                     atoms[i].name().c_str(), atype.c_str());
             Identifier pid(atype);
             atomId.push_back(pid);
@@ -131,7 +129,7 @@ static bool dump_molecule(FILE              *fp,
                 if (pIter->hasInteractionType(ztype))
                 {
                     auto zid = pIter->interactionTypeToIdentifier(ztype);
-                    fprintf(fp, "  %s", zid.id().c_str());
+                    tw->writeStringFormatted("  %s", zid.id().c_str());
                     auto atypeMap = atomTypeCount->find(zid.id());
                     if (atypeMap == atomTypeCount->end())
                     {
@@ -143,7 +141,7 @@ static bool dump_molecule(FILE              *fp,
                     }
                 }
             }
-            fprintf(fp, "\n");
+            tw->writeStringFormatted("\n");
         }
         // Bonds! We cannot use the bonds in the molprop anymore
         // since there may be vsites or shells and the numbering
@@ -161,7 +159,7 @@ static bool dump_molecule(FILE              *fp,
             int    ai = aa[0];
             int    aj = aa[1];
             double bo = mybond.bondOrders()[0];
-            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, bo);
+            tw->writeStringFormatted("bcc: %3d  %3d  %5g", ai+1, aj+1, bo);
             if (pd.hasParticleType(atomId[ai]) && pd.hasParticleType(atomId[aj]))
             {
                 auto pidI = pd.findParticleType(atomId[ai]);
@@ -176,7 +174,7 @@ static bool dump_molecule(FILE              *fp,
                     auto fs         = pd.findForcesConst(bctype);
                     if (fs.parameterExists(mybond))
                     {
-                        fprintf(fp, "  %s", mybond.id().c_str());
+                        tw->writeStringFormatted("  %s", mybond.id().c_str());
                         bondExists = true;
                     }
                     else
@@ -187,12 +185,12 @@ static bool dump_molecule(FILE              *fp,
                         auto fs = pd.findForcesConst(bctype);
                         if (fs.parameterExists(mybond))
                         {
-                            fprintf(fp, "  %s", mybond.id().c_str());
+                            tw->writeStringFormatted("  %s", mybond.id().c_str());
                             bondExists = true;
                         }
                         else
                         {
-                            fprintf(fp, "  N/A");
+                            tw->writeStringFormatted("  N/A");
                         }
                     }
                     if (bondExists)
@@ -208,13 +206,13 @@ static bool dump_molecule(FILE              *fp,
                     }
                 }
             }
-            fprintf(fp, "\n");
+            tw->writeStringFormatted("\n");
         }
     }
     return true;
 }
 
-static void check_mp(FILE                 *mylog,
+static void check_mp(MsgHandler           *msghandler,
                      const char           *ffname,
                      std::vector<MolProp> *mp)
 {
@@ -230,9 +228,10 @@ static void check_mp(FILE                 *mylog,
 
     auto forceComp = new ForceComputer();
 
-    if (mylog)
+    if (msghandler)
     {
-        fprintf(mylog, "Force field file %s\n", ffname);
+        auto tw = msghandler->tw();
+        tw->writeStringFormatted("Force field file %s\n", ffname);
         int numberOk = 0, numberFailed = 0;
         for (auto m = mp->begin(); m < mp->end(); ++m)
         {
@@ -260,9 +259,9 @@ static void check_mp(FILE                 *mylog,
                 }
                 if (nC > 0 && nH == 0)
                 {
-                    fprintf(mylog, "%s #C %d #H %d\n",
-                            ci.getDatafile().c_str(), 
-                            nC, nH);
+                     tw->writeStringFormatted("%s #C %d #H %d\n",
+                                              ci.getDatafile().c_str(), 
+                                              nC, nH);
                 }
                 if (ci.NAtom() > 0)
                 {
@@ -298,17 +297,17 @@ static void check_mp(FILE                 *mylog,
                         double rmsd = std::sqrt(msd/Xcalc.size());
                         if (rmsd != 0)
                         {
-                            fprintf(mylog, "%s RMSD coordinates between ESP and QM %g\n",
-                                    m->getMolname().c_str(), rmsd);
+                            tw->writeStringFormatted("%s RMSD coordinates between ESP and QM %g\n",
+                                                     m->getMolname().c_str(), rmsd);
                         }
                         if (rmsd > 1e-3)
                         {
                             for(size_t i = 0; i < Xcalc.size(); i++)
                             {
-                                fprintf(mylog, "%2zu %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                                        i+1,
-                                        Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
-                                        fac*xyz[i][XX], fac*xyz[i][YY], fac*xyz[i][ZZ]);
+                                tw->writeStringFormatted("%2zu %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                                                         i+1,
+                                                         Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
+                                                         fac*xyz[i][XX], fac*xyz[i][YY], fac*xyz[i][ZZ]);
                             }
                         }
                     }
@@ -319,14 +318,15 @@ static void check_mp(FILE                 *mylog,
             {
                 for(const auto &mi : mus)
                 {
-                    fprintf(debug, "%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
-                            mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("%s %s %.2f %.2f %.2f\n", m->getMolname().c_str(),
+                                                      mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]));
                 }
             }
             
-            if (dump_molecule(mylog, forceComp, &atomTypeCount,
+            if (dump_molecule(msghandler, forceComp, &atomTypeCount,
                               &bccTypeCount, pd, &(*m)))
-        {
+            {
             numberOk++;
         }
         else
@@ -335,27 +335,28 @@ static void check_mp(FILE                 *mylog,
             mp->erase(m);
         }
         }
-        fprintf(mylog, "Succeed making %d topologies, failed for %d compounds\n",
-            numberOk, numberFailed);
-        fprintf(mylog, "Statistics\n");
+        tw->writeStringFormatted("Succeed making %d topologies, failed for %d compounds\n",
+                                 numberOk, numberFailed);
+        tw->writeStringFormatted("Statistics\n");
         for(auto &atc : atomTypeCount)
         {
-            fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
+            tw->writeStringFormatted("atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
         }
         for(auto &bcc : bccTypeCount)
         {
-            fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+            tw->writeStringFormatted("bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
         }
     }
 }
 
-static void gen_ehist(FILE                       *mylog,
+static void gen_ehist(MsgHandler                 *msghandler,
                       const std::vector<MolProp> *mpt,
                       gmx_output_env_t           *oenv,
                       real                        ewarnLow,
                       real                        ewarnHi)
 {
     std::set<MolPropObservable> mpset = { MolPropObservable::DELTAE0, MolPropObservable::INTERACTIONENERGY };
+    auto tw = msghandler->tw();
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
         std::map<MolPropObservable, gmx_stats> histo;
@@ -384,7 +385,7 @@ static void gen_ehist(FILE                       *mylog,
                 bool warnHi  = false;
                 for(size_t i = 0; i < x.size(); i++)
                 {
-                    fprintf(fp, "%10g  %10g\n", x[i], y[i]);
+                    tw->writeStringFormatted("%10g  %10g\n", x[i], y[i]);
                     if (x[i] < ewarnLow)
                     {
                         warnLow = true;
@@ -397,15 +398,41 @@ static void gen_ehist(FILE                       *mylog,
                 xvgrclose(fp);
                 if (warnLow)
                 {
-                    fprintf(mylog, "Warning: low energies encountered for %s\n", mp->getMolname().c_str());
+                    tw->writeStringFormatted("Warning: low energies encountered for %s\n", mp->getMolname().c_str());
                 }
                 if (warnHi)
                 {
-                    fprintf(mylog, "Warning: high energies encountered for %s\n", mp->getMolname().c_str());
+                    tw->writeStringFormatted("Warning: high energies encountered for %s\n", mp->getMolname().c_str());
                 }
-                fprintf(mylog, "Range of energies for %s : %g - %g%s\n",
-                        mp->getMolname().c_str(), x[0], x[x.size()-1],
-                        x[0] > 0 ? " ALL-POSITIVE" : "");
+                tw->writeStringFormatted("Range of energies for %s : %g - %g%s\n",
+                                         mp->getMolname().c_str(), x[0], x[x.size()-1],
+                                         x[0] > 0 ? " ALL-POSITIVE" : "");
+            }
+        }
+    }
+}
+
+static void updateMolInfo(MsgHandler           *msghandler,
+                          std::vector<MolProp> *mpt)
+{
+    AlexandriaMols amols;
+    auto tw = msghandler->tw();
+    for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
+    {
+        auto frags = mp->fragments();
+        if (frags.size() == 1)
+        {
+            auto amol = amols.findInChi(frags[0].inchi());
+            if (amol)
+            {
+                if (tw)
+                {
+                    tw->writeStringFormatted("Updating %s\n", mp->getMolname().c_str());
+                }
+                mp->SetIupac(amol->iupac);
+                mp->SetCas(amol->cas);
+                mp->SetCid(std::to_string(amol->csid));
+                mp->SetInchi(amol->inchi);
             }
         }
     }
@@ -430,14 +457,13 @@ int edit_mp(int argc, char *argv[])
         { efXML, "-mp",  "data",    ffOPTRDMULT },
         { efXML, "-o",   "allmols", ffWRITE     },
         { efXML, "-ff",  "aff",     ffOPTRD     },
-        { efLOG, "-g",   "check",   ffOPTWR     },
         { efDAT, "-db",  "sqlite",  ffOPTRD     }
     };
-    int      compress    = 1;
+    bool     compress    = false;
     real     temperature = 298.15;
-    bool     forceMerge  = false;
-    gmx_bool bcast       = false;
+    bool     bcast       = false;
     bool     energyHisto = false;
+    bool     molinfo     = true;
     int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
@@ -450,10 +476,10 @@ int edit_mp(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-temperature", FALSE, etREAL, {&temperature},
           "Temperature for properties to extract from the SQLite database" },
-        { "-force", FALSE, etBOOL, {&forceMerge},
-          "Force merging compounds with the same name even if not the formula matches" },
         { "-bcast", FALSE, etBOOL, {&bcast},
           "Use broadcast instead of send/receive when running in parallel" },
+        { "-molinfo", FALSE, etBOOL, {&molinfo},
+          "Update iupac, cas etc. using the Alexandria Molecule Database" },
         { "-wn", FALSE, etINT, {&writeNode},
           "Processor ID to write from if in parallel." },
         { "-ehisto", FALSE, etBOOL, {&energyHisto},
@@ -465,8 +491,9 @@ int edit_mp(int argc, char *argv[])
     };
     std::vector<MolProp>  mpt;
     ForceField            pd;
-
+    MsgHandler msghandler;
     gmx_output_env_t     *oenv;
+    msghandler.addOptions(&pa, &fnm, "edit_mp.log");
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, fnm.size(), fnm.data(),
                            pa.size(), pa.data(), sizeof(desc)/sizeof(desc[0]), desc,
@@ -474,18 +501,19 @@ int edit_mp(int argc, char *argv[])
     {
         return 0;
     }
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
 
     auto fns = opt2fns("-mp", fnm.size(), fnm.data());
 
-    CommunicationRecord cr;
-    cr.init(cr.size());
     auto comm = MPI_COMM_WORLD;
     int root  = 0;
     if (cr.isMaster())
     {
-        int nwarn   = merge_xml(fns, &mpt, nullptr, nullptr, nullptr, forceMerge);
+        auto warnings = merge_xml(fns, &mpt);
         int mptsize = mpt.size();
-        if (nwarn <= maxwarn)
+        if (warnings.size() <= static_cast<size_t>(maxwarn))
         {
             ReadSqlite3(opt2fn_null("-db", fnm.size(), fnm.data()), &mpt, temperature);
 
@@ -493,7 +521,11 @@ int edit_mp(int argc, char *argv[])
         }
         else
         {
-            printf("Too many warnings (%d), not generating output\n", nwarn);
+            fprintf(stderr, "Too many warnings, not generating output\n");
+            for (const auto &w : warnings)
+            {
+                fprintf(stderr, "%s\n", w.c_str());
+            }
             mpt.clear();
         }
             
@@ -543,33 +575,29 @@ int edit_mp(int argc, char *argv[])
         }
     }
     auto ffname  = opt2fn_null("-ff", fnm.size(), fnm.data());
-    auto logname = opt2fn_null("-g", fnm.size(), fnm.data());
-    FILE *mylog = nullptr;
-    if (logname || energyHisto)
+
+    auto tw = msghandler.tw();
+    if (molinfo)
     {
-        mylog = gmx_ffopen(logname, "w");
+        updateMolInfo(&msghandler, &mpt);
     }
     auto molpropout = opt2fn("-o", fnm.size(), fnm.data());
     if (ffname)
     {
-        if (mylog)
-        {
-            printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
-        }
-        check_mp(mylog, ffname, &mpt);
+        printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
+        check_mp(&msghandler, ffname, &mpt);
     }
     if (energyHisto)
     {
-        gen_ehist(mylog, &mpt, oenv, ewarnLow, ewarnHi);
+        gen_ehist(&msghandler, &mpt, oenv, ewarnLow, ewarnHi);
     }
-    if (nullptr != mylog)
+    if (tw)
     {
-        printf("Please check %s for analyses.\n", 
-               opt2fn("-g", fnm.size(), fnm.data()));
-        gmx_ffclose(mylog);
+        printf("Please check %s for analyses.\n", msghandler.filename().c_str());
     }
     if (writeNode == cr.rank())
     {
+        printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
         MolPropWrite(molpropout, mpt, compress);
     }
     return 0;

@@ -1,7 +1,7 @@
 
 debugXvgUtils = False
         
-def interpret_legend(line):
+def interpret_legend(line:str):
     legval = None
     legkey = "title"
     if line.find(legkey) >= 0:
@@ -16,11 +16,11 @@ def interpret_legend(line):
             legval = line[line.find(legkey2)+len(legkey2)+1:].strip()
             legval = legval[1:-1]
             return axis+"label", legval
-    legkey = "legend"
-    if line.find(legkey) >= 0 and line[0] == 's':
-        legval = line[line.find(legkey)+len(legkey)+1:].strip()
-        legval = legval[1:-1]
-        return "label", legval
+    labkey = "legend"
+    if line.find(labkey) >= 0 and line[0] == 's':
+        labval = line[line.find(labkey)+len(labkey)+1:].strip()
+        labval = labval[1:-1]
+        return labkey, labval
     return None, None
 
 class xvgDataSet:
@@ -60,12 +60,12 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
             nleg = line.find("@")
             if nleg >= 0:
                 myline = line[nleg+1:].strip()
-                if line.find("@type") == 0:
+                if line.find("type") == 0:
                     dataset.append(xvgDataSet())
                 elif len(myline) > 0:
                     legkey, legval = interpret_legend(myline)
                     if legkey and legval:
-                        if legkey == "label":
+                        if legkey == "legend":
                             if filelabel:
                                 legval += " " + filename
                             labels.append(legval)

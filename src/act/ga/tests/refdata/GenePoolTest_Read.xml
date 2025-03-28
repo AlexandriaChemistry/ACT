@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Gene 1">
+    <Int Name="Length">4</Int>
+    <Real>3.3999999999999999</Real>
+    <Real>5.5999999999999996</Real>
+    <Real>0.10000000000000001</Real>
+    <Real>2.2999999999999998</Real>
+  </Sequence>
+  <Sequence Name="Gene 2">
+    <Int Name="Length">4</Int>
+    <Real>6.7000000000000002</Real>
+    <Real>7.7999999999999998</Real>
+    <Real>0.90000000000000002</Real>
+    <Real>2.3999999999999999</Real>
+  </Sequence>
+  <Sequence Name="Gene 3">
+    <Int Name="Length">4</Int>
+    <Real>1.2</Real>
+    <Real>3.3999999999999999</Real>
+    <Real>5.4000000000000004</Real>
+    <Real>-2.1000000000000001</Real>
+  </Sequence>
+</ReferenceData>

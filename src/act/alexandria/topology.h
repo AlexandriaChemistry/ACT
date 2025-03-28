@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,6 +43,7 @@
 #include "act/alexandria/actmol_low.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/particletype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
@@ -227,10 +228,12 @@ private:
                              InteractionType   itype);
 
     /*! Add polarizabilities to the topology if needed
+     * \param[in] msghandler Message handler
      * \param[in]    pd       Force field
      * \param[inout] atomList The atoms and coordinates will be updated as well
      */
-    void addShells(const ForceField *pd,
+    void addShells(MsgHandler       *msghandler,
+                   const ForceField *pd,
                    AtomList         *atomList);
 
     /*! \brief Find a topology entry matching the inputs if it exists
@@ -302,25 +305,28 @@ private:
     const std::vector<int> &realAtoms() const { return realAtoms_; }
 
     /*! Generate atoms in the topology from an experiment (QM calc)
+     * \param[in] msghandler Message handler
      * \param[in] pd  The force field
      * \param[in] mol The molecule
      * \param[out] x The coordinate
-     * \returns status variable
      */
-    immStatus GenerateAtoms(const ForceField       *pd,
-                            const MolProp          *mol,
-                            std::vector<gmx::RVec> *x);
+    void GenerateAtoms(MsgHandler             *msghandler,
+                       const ForceField       *pd,
+                       const MolProp          *mol,
+                       std::vector<gmx::RVec> *x);
     /*! \brief Build the topology internals
      * Calls the functions to generate angles, impropers and dihedrals (if flag set).
      * Will also generate non-bonded atom pairs and exclusions. Shells will be generated
      * if they are present in the force field.
+     * \param[in] msghandler Message handler
      * \param[in] pd             The force field structure
      * \param[inout] x           The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
-    void build(const ForceField       *pd,
+    void build(MsgHandler             *msghandler,
+               const ForceField       *pd,
                std::vector<gmx::RVec> *x,
                double                  LinearAngleMin,
                double                  PlanarAngleMax,
@@ -328,9 +334,13 @@ private:
 
     /*! \brief Fill in the parameters in the topology entries.
      * Must be called repeatedly during optimizations of energy.
+     * \param[in] msghandler Message handler
      * \param[in] pd The force field structure
+     * \param[in] missing How to handle missing parameters
      */
-    void fillParameters(const ForceField *pd);
+    void fillParameters(MsgHandler        *msghandler,
+                        const ForceField  *pd,
+                        missingParameters missing);
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
 

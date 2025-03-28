@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,7 +30,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 #include "actpre.h"
@@ -44,32 +44,30 @@
 
 #include <random>
 
+#include "act/alexandria/acm_ga.h"
+#include "act/alexandria/acthelper.h"
+#include "act/alexandria/actmiddleman.h"
+#include "act/alexandria/actmol_low.h"
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/bayes.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/percentmutator.h"
+#include "act/alexandria/train_utility.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_tables.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/ga/npointcrossover.h"
+#include "act/ga/penalizer.h"
+#include "act/molprop/molprop_util.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-
-#include "acm_ga.h"
-#include "acthelper.h"
-#include "actmiddleman.h"
-#include "alex_modules.h"
-#include "bayes.h"
-#include "act/utility/memory_check.h"
-#include "mcmcmutator.h"
-#include "molgen.h"
-#include "act/molprop/molprop_util.h"
-#include "actmol_low.h"
-#include "act/ga/npointcrossover.h"
-#include "act/ga/penalizer.h"
-#include "percentmutator.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_tables.h"
-#include "act/forcefield/forcefield_xml.h"
-#include "train_utility.h"
-#include "act/utility/units.h"
-
 namespace alexandria
 {
 
@@ -88,18 +86,13 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
     std::vector<t_pargs> pa =
     {
         { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-          "Remove a molecule from training set if shell minimization does not converge."},
-        { "-flush",              FALSE, etBOOL, {&flush_},
-          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
-        { "-v",              FALSE, etBOOL, {&verbose_},
-          "Print extra information to the log file during optimization. Also create convergence files for all parameters."}
+          "Remove a molecule from training set if shell minimization does not converge."}
     };
     for (size_t i = 0; i < pa.size(); i++) {
         pargs->push_back(pa[i]);
     }
     std::vector<t_filenm> filenames = {
         { efXML, "-o",     "train_ff", ffWRITE },
-        { efLOG, "-g",     "train_ff", ffWRITE },
         { efCSV, "-gpin",  "genepool", ffOPTRD },
         { efCSV, "-gpout", "genepool", ffWRITE }
     };
@@ -112,16 +105,19 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
 
     bch_.add_options(pargs, fnms);
     gach_.add_options(pargs, fnms);
+    static std::string defname("train_ff");
+    msghandler_.addOptions(pargs, fnms, defname);
 }
 
-void OptACM::check_pargs()
+void OptACM::check_pargs(MsgHandler *)
 {
-    bch_.check_pargs();
-    gach_.check_pargs();
+    bch_.check_pargs(&msghandler_);
+    gach_.check_pargs(&msghandler_);
 }
 
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
+    msghandler_.optionsFinished(filenames, &commRec_);
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     if (debug)
@@ -138,24 +134,6 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     {
         baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
         sii_->setOutputFile(baseOutputFileName_);
-    }
-}
-
-void OptACM::openLogFile(const std::vector<t_filenm> &filenms)
-{
-    auto logfileName = opt2fn("-g", filenms.size(), filenms.data());
-    fplog_.reset(gmx_ffopen(logfileName, "w"));
-}
-
-FILE *OptACM::logFile()
-{
-    if (fplog_)
-    {
-        return fplog_.get();
-    }
-    else
-    {
-        return nullptr;
     }
 }
 
@@ -201,7 +179,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         }
     }
     // Do this only when explicitly requested.
-    if (bch_.checkPoint() || verbose_)
+    if (bch_.checkPoint() || msghandler_.verbose())
     {
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
@@ -209,11 +187,12 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     forceComp_ = new ForceComputer();
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, false, forceComp_);
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
-        fprintf(stderr, "Nothing to train! Check your input and your code.\n");
+        msghandler_.msg(ACTStatus::Error,
+                        "Nothing to train! Check your input and your code.\n");
         return 0;
     }
     // Adjust the seed that gets passed around to components of the optimizer
@@ -246,11 +225,13 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
+                                               gach_.maxGenerations());
         // TODO Only open these files when we are optimizing in verbose mode.
-        if (verbose_)
+        if (msghandler_.verbose())
         {
-            fprintf(logFile(), "Will open param conv file on the master!\n");
+            msghandler_.msg(ACTStatus::Verbose,
+                            "Will open parameter convergence files on the master!\n");
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
@@ -260,10 +241,11 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     // Selector
     auto *selector = new ga::RouletteSelector(dis(gen));
 
+    auto tw = msghandler_.tw();
     // Crossover
     if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
     {
-        fprintf(logFile(), "The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
+        tw->writeStringFormatted("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
                 gach_.nCrossovers(), sii_->nParam());
         gach_.setCrossovers(1);
     }
@@ -276,36 +258,33 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
     const double totalVolume = sii_->getParamSpaceVolume(gach_.logVolume());
-    if (logFile())
+    if (tw)
     {
-        fprintf(
-            logFile(),
-            "\nTotal %s(hyper)volume of the parameter space is %g.\n",
-            gach_.logVolume() ? "log " : "",
-            totalVolume
-        );
+        tw->writeStringFormatted("\nTotal %s(hyper)volume of the parameter space is %g.\n",
+                                 gach_.logVolume() ? "log " : "",
+                                 totalVolume);
     }
     if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
     {
-        if (logFile())
+        if (tw)
         {
-            fprintf(logFile(), "Appending a VolumeFractionPenalizer to the list of penalizers...\n");
+            tw->writeStringFormatted("Appending a VolumeFractionPenalizer to the list of penalizers...\n");
         }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
-                oenv_, gach_.logVolume(), logFile(), totalVolume,
+                oenv_, gach_.logVolume(), totalVolume,
                 gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
             )
         );
     }
     if (gach_.cpGenInterval() != -1)  // CatastrophePenalizer enabled
     {
-        if (logFile())
+        if (tw)
         {
-            fprintf(logFile(), "Appending a CatastrophePenalizer to the list of penalizers...\n");
+            tw->writeStringFormatted("Appending a CatastrophePenalizer to the list of penalizers...\n");
         }
         penalizers->push_back(
-            new ga::CatastrophePenalizer(logFile(), dis(gen),
+            new ga::CatastrophePenalizer(dis(gen),
                                          gach_.cpGenInterval(),
                                          gach_.cpPopFrac(),
                                          initializer, gach_.popSize()
@@ -315,48 +294,40 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
 
     // Terminator(s)
     std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
-    if (logFile())
+    if (tw)
     {
-        fprintf(
-            logFile(),
-            "Appending a GenerationTerminator to the list of terminators...\n"
-        );
+        tw->writeStringFormatted("Appending a GenerationTerminator to the list of terminators...\n");
     }
-    terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
+    terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
+    // maxGenerations will always be positive!
     // If maxTestGenerations is enabled and there is something to test as well
     if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
     {
-        if (logFile())
+        if (tw)
         {
-            fprintf(
-                logFile(),
-                "Appending a TestGenTerminator to the list of terminators...\n"
-            );
+            tw->writeString("Appending a TestGenTerminator to the list of terminators...\n");
         }
-        terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
+        terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
     }
 
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator_, sii_, &gach_);
+        ga_ = new ga::MCMC(initializer, fitComp_, mutator_, sii_, &gach_);
     }
     else
     {
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(
-            logFile(), initializer, fitComp_, probComputer, selector, crossover,
-            mutator_, terminators, penalizers, sii_, &gach_, 
-            opt2fn("-fitness", fnm.size(), fnm.data()),
-            opt2fn_null("-gpin", fnm.size(), fnm.data()),
-            opt2fn("-gpout", fnm.size(), fnm.data()),
-            dis(gen)
-        );
+        ga_ = new ga::HybridGAMC(initializer, fitComp_, probComputer, selector, crossover,
+                                 mutator_, terminators, penalizers, sii_, &gach_,
+                                 opt2fn("-fitness", fnm.size(), fnm.data()),
+                                 opt2fn_null("-gpin", fnm.size(), fnm.data()),
+                                 opt2fn("-gpout", fnm.size(), fnm.data()),
+                                 dis(gen));
     }
-    if (logFile())
+    if (tw)
     {
-        fprintf(logFile(), "Done initializing master node\n");
-        fflush(logFile());
+        tw->writeStringFormatted("Done initializing master node\n");
     }
     return 1;
 }
@@ -415,28 +386,24 @@ void OptACM::printNumCalcDevEstimate()
     nCalcDevTest += 1;  // At the end, for the best
     nCalcDevIgnore += 1;  // At the end, for the best
 
+    auto tw = msghandler_.tw();
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        fprintf(
-            logFile(),
-            "\nMaximum number of fitness computations to be done for MCMC:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
-            nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
-        );
+        tw->writeStringFormatted("\nMaximum number of fitness computations to be done for MCMC:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
+                                 nCalcDevTrain, nCalcDevTest, nCalcDevIgnore);
     }
     else  // GA/HYBRID
     {
-        fprintf(
-            logFile(),
-            "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set. The count above includes the Catastrophe penalizer but we cannot predict when the VolumePenalizer will kick in...\n\n",
-            gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
-        );
+        tw->writeStringFormatted("\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set. The count above includes the Catastrophe penalizer but we cannot predict when the VolumePenalizer will kick in...\n\n",
+                                 gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore);
     }
 }
 
 void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                               const ga::GenePool                     &pop)
 {
-    if (!logFile())
+    auto tw = msghandler_.tw();
+    if (!tw)
     {
         return;
     }
@@ -479,12 +446,12 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
-    fprintf(logFile(), "%s\n|", HLINE.c_str());
+    tw->writeStringFormatted("%s\n|", HLINE.c_str());
     for (size_t i = 0; i < headerNames.size(); i++)
     {
-        fprintf(logFile(), " %-*s |", sizes[i], headerNames[i].c_str());
+        tw->writeStringFormatted(" %-*s |", sizes[i], headerNames[i].c_str());
     }
-    fprintf(logFile(), "\n%s\n", HLINE.c_str());
+    tw->writeStringFormatted("\n%s\n", HLINE.c_str());
     // Gather statistics from the population
     const std::vector<double> min    = pop.min();
     const std::vector<double> max    = pop.max();
@@ -500,32 +467,23 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
             {
                 continue;
             }
-            fprintf(
-                logFile(),
-                "| %-*s | %-*s |",
-                sizes[0], paramClass[i].c_str(),
-                sizes[1], paramNames[j].c_str()
-            );
+            tw->writeStringFormatted("| %-*s | %-*s |",
+                                     sizes[0], paramClass[i].c_str(),
+                                     sizes[1], paramNames[j].c_str());
             size_t k = 2;
             for (const auto &pair : genome)
             {
-                fprintf(
-                    logFile(),
-                    " %-*g |",
-                    sizes[k], pair.second.base(j)
-                );
+                tw->writeStringFormatted(" %-*g |",
+                                         sizes[k], pair.second.base(j));
                 k++;
             }
-            fprintf(
-                logFile(),
-                " %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
-                sizes[k], min[j],
-                sizes[k+1], max[j],
-                sizes[k+2], mean[j],
-                sizes[k+3], stdev[j],
-                sizes[k+4], median[j],
-                HLINE.c_str()
-            );
+            tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
+                                     sizes[k], min[j],
+                                     sizes[k+1], max[j],
+                                     sizes[k+2], mean[j],
+                                     sizes[k+3], stdev[j],
+                                     sizes[k+4], median[j],
+                                     HLINE.c_str());
         }
     }
 }
@@ -537,29 +495,28 @@ bool OptACM::runMaster(bool        optimize,
                        "I thought I was the master...");
 
     print_memory_usage(debug);
+    auto tw = msghandler_.tw();
     bool bMinimum = false;
     std::map<iMolSelect, ga::Genome> bestGenome;
     if (optimize)
     {
         // Estimate number of fitness computations per dataset
-        if (logFile())
+        if (tw)
         {
             printNumCalcDevEstimate();
-            fflush(logFile());
         }
         // Train the force field!
-        bMinimum = ga_->evolve(&bestGenome);
-        if (logFile())
+        bMinimum = ga_->evolve(&msghandler_, &bestGenome);
+        if (tw)
         {
-            fprintf(logFile(), "\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
+            tw->writeStringFormatted("\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
-        fflush(logFile());
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
-        mutator_->sensitivityAnalysis(&bestGenome[iMolSelect::Train], iMolSelect::Train);
+        mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
@@ -576,15 +533,15 @@ bool OptACM::runMaster(bool        optimize,
         {
             GMX_THROW(gmx::InternalError("Minimum found but the <Dataset, Genome> map is empty"));
         }
-        if (logFile())
+        if (tw)
         {   
             for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
-                it->second.print("Final best genome", logFile());
-                fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
-                fitComp_->compute(&(it->second), it->first, true);
+                tw->writeString(it->second.print("Final best genome"));
+                tw->writeStringFormatted("\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
+                fitComp_->compute(&msghandler_, &(it->second), it->first);
                 double chi2 = it->second.fitness(it->first);
-                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                tw->writeStringFormatted("Minimum chi2 for %s %g\n",
                         iMolSelectName(it->first), chi2);
             }
         }
@@ -594,7 +551,7 @@ bool OptACM::runMaster(bool        optimize,
             std::set<int> changed;
             sii_->updateForceField(changed, pair.second.bases());
             auto myfilenm = gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_;
-            fprintf(logFile(), "Will save best force field to %s\n", myfilenm.c_str());
+            tw->writeStringFormatted("Will save best force field to %s\n", myfilenm.c_str());
             sii_->saveState(true, myfilenm);
         }
         // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
@@ -603,9 +560,9 @@ bool OptACM::runMaster(bool        optimize,
     }
     else if (optimize)
     {
-        if (logFile())
+        if (tw)
         {
-            fprintf(logFile(), "Did not find a better parameter set\n");
+            tw->writeString("Did not find a better parameter set\n");
         }
     }
 
@@ -624,11 +581,11 @@ bool OptACM::runMaster(bool        optimize,
         if (bestGenome.end() != bbb)
         {
             sii_->updateForceField(changed, bbb->second.bases());
-            fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
+            fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
         }
         // Now compute the test compounds, with the best Train parameters.
         ims = iMolSelect::Test;
-        fitComp_->calcDeviation(CalcDev::ComputeAll, ims);
+        fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
     }
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
@@ -755,24 +712,25 @@ int train_ff(int argc, char *argv[])
     opt.setOenv(oenv);
 
     // Check validity of arguments with check_pargs() in ConfigHandler(s)
-    opt.check_pargs();
+    opt.check_pargs(nullptr);
 
     // Finishing MolGen stuff and setting output file for FF in OptACM.
     // Initializes commRec_ in opt
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(filenms);
-
+    auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {
-        opt.openLogFile(filenms);
         print_memory_usage(debug);
-        print_header(opt.logFile(), pargs, filenms);
-
         gms.read(opt2fn_null("-sel", filenms.size(), filenms.data()));
-        fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
-                gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
-                opt2fn("-sel", filenms.size(), filenms.data()));
+        if (tw)
+        {
+            print_header(tw, pargs, filenms);
+            tw->writeStringFormatted("Found %d Train and %d Test compounds in %s\n\n",
+                                     gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
+                                     opt2fn("-sel", filenms.size(), filenms.data()));
+        }
         print_memory_usage(debug);
     }
     gms.bcast(opt.commRec());
@@ -784,16 +742,13 @@ int train_ff(int argc, char *argv[])
     {
         opt.gach()->setEvaluateTestset(false);
         opt.bch()->setEvaluateTestset(false);
-        if (opt.commRec()->isMaster())
+        if (opt.commRec()->isMaster() && tw)
         {
-            fprintf(opt.logFile(), "Turning off the evaluate of test set since it is empty.\n");
+            tw->writeString("Turning off the evaluate of test set since it is empty.\n");
         }
     }
     // Propagate weights from training set to other sets
     opt.sii()->propagateWeightFittingTargets();
-
-    // Figure out a logfile to pass down :)
-    FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
 
     // Read forcefield in StaticIndividualInfo sii_
     {
@@ -806,23 +761,26 @@ int train_ff(int argc, char *argv[])
         {
             fnIndex = opt.commRec()->middleManOrdinal();
         }
-        opt.sii()->fillForceField(fp, fns[fnIndex].c_str());
-        if (fp)
+        opt.sii()->fillForceField(tw, fns[fnIndex].c_str());
+        if (tw)
         {
-            fprintf(fp, "On proc %d, found %d particle types\n",
-                    opt.sii()->commRec()->rank(),
-                    opt.sii()->forcefield()->nParticleTypes());
+            tw->writeStringFormatted("On proc %d, found %d particle types\n",
+                                     opt.sii()->commRec()->rank(),
+                                     opt.sii()->forcefield()->nParticleTypes());
         }
     }
     if (opt.sii()->commRec()->isMaster())
     {
-        opt.sii()->forcefield()->print(fp);
+        for(const auto &ss : opt.sii()->forcefield()->info())
+        {
+            tw->writeLine(ss);
+        }
     }
     // Check inputs
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        optionsOk = opt.mg()->checkOptions(fp, filenms, opt.sii()->forcefield());
+        optionsOk = opt.mg()->checkOptions(opt.msgHandler(), filenms, opt.sii()->forcefield());
     }
     opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
     if (!optionsOk)
@@ -831,9 +789,8 @@ int train_ff(int argc, char *argv[])
     }
 
     // MolGen read being called here!
-    if (0 == opt.mg()->Read(fp, filenms, opt.sii()->forcefield(), gms,
-                            opt.sii()->fittingTargetsConst(iMolSelect::Train),
-                            opt.verbose()))
+    if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train)))
     {
         GMX_THROW(gmx::InvalidInputError("Training set is empty, check your input. Rerun with -v option or -debug 1"));
     }
@@ -841,8 +798,7 @@ int train_ff(int argc, char *argv[])
 
     // StaticIndividualInfo things
     {
-        FILE *myfp = opt.verbose() ? debug : fp;
-        opt.sii()->generateOptimizationIndex(myfp, opt.mg(), opt.commRec());
+        opt.sii()->generateOptimizationIndex(tw, opt.mg(), opt.commRec());
         opt.sii()->fillVectors(opt.mg()->mindata());
         opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
     }
@@ -854,7 +810,8 @@ int train_ff(int argc, char *argv[])
         {
             if (opt.sii()->commRec()->isMaster())
             {
-                fprintf(stderr, "No parameters to train. Did you run alexandria geometry_ff?\n");
+                opt.msgHandler()->msg(ACTStatus::Error,
+                                      "No parameters to train. Did you run alexandria geometry_ff?");
             }
             return 0;
         }
@@ -898,18 +855,20 @@ int train_ff(int argc, char *argv[])
             bMinimum = opt.runMaster(bOptimize, bSensitivity);
             if (bOptimize)
             {
-                printf("DONE WITH OPTIMIZATION\n");
+                auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
+                opt.msgHandler()->msg(ACTStatus::Info, msg);
             }
         }
         if (bMinimum || bForceOutput || !bOptimize)
         {
             if (bForceOutput && !bMinimum)
             {
-                fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
+                opt.msgHandler()->msg(ACTStatus::Warning,
+                                      gmx::formatString("No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data())));
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.logFile(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
+            printer.print(opt.msgHandler(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
             print_memory_usage(debug);
         }
         else if (!bMinimum)
@@ -929,19 +888,19 @@ int train_ff(int argc, char *argv[])
                 {
                     // Master and Individuals (middle-men) need to initialize more,
                     // so let's go.
-                    ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                                           opt.verbose(), opt.oenv(), opt.verbose());
-                    middleman.run();
+                    ACTMiddleMan middleman(opt.msgHandler(), opt.mg(), opt.sii(), opt.gach(),
+                                           opt.bch(), opt.oenv(), opt.msgHandler()->verbose());
+                    middleman.run(opt.msgHandler());
                 }
             }
             else if (bOptimize || bSensitivity)
             {
                 if (opt.sii()->nParam() > 0)
                 {
-                    ACTHelper helper(opt.sii(), opt.mg(),
+                    ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter());
-                    helper.run();
+                    helper.run(opt.msgHandler());
                 }
             }
         }

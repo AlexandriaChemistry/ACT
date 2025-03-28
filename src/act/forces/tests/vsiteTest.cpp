@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,17 +35,20 @@
  */
 #include "actpre.h"
 
-#include "act/forces/forcecomputer.h"
+#include "../vsitehandler.h"
 
 #include <cmath>
-
 #include <memory>
 
 #include <gtest/gtest.h>
 
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/babel_io.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/forces/forcecomputer.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -56,13 +59,155 @@ namespace alexandria
 namespace
 {
 
+class VsiteHandlerTest : public gmx::test::CommandLineTestBase
+{
+private:
+    matrix box = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    real   dt  = 0.001;
+protected:
+    bool setup(const std::string &ff,
+               const std::string &molName,
+               ACTMol            *mol)
+    {
+        // Get forcefield
+        auto pd  = getForceField(ff);
+        
+        std::vector<alexandria::MolProp> molprops;
+        bool   userqtot   = false;
+        double qtot_babel = 0;
+        const char           *conf      = (char *)"minimum";
+        const char           *jobtype   = (char *)"Opt";
+        int                   maxpot    = 100;
+        int                   nsymm     = 0;
+        std::string           method;
+        std::string           basis;
+        std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
+        std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
+        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+                              molName.c_str(), molName.c_str(),
+                              conf, &method, &basis, maxpot,
+                              nsymm, jobtype, userqtot ,&qtot_babel,
+                              false, box, true));
+        EXPECT_TRUE(molprops.size() == 1);
+        auto &molprop = molprops[0];
+        alexandria::ACTMol               mp_;
+
+        mol->Merge(&molprop);
+        MsgHandler msghandler;
+        // Uncomment in case of issues
+        // msghandler.setACTStatus(ACTStatus::Debug);
+        // Generate charges and topology
+        mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+
+        return msghandler.ok();
+    }
+    void testX(const std::string &ff,
+               const std::string &molName)
+    {
+        ACTMol mp_;
+
+        if (setup(ff, molName, &mp_))
+        {
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+
+            VsiteHandler vh(box, dt);
+            vh.constructPositions(mp_.topology(), &coords, box);
+
+            gmx::test::TestReferenceChecker checker_(this->rootChecker());
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            checker_.setDefaultTolerance(tolerance);
+            auto  myatoms = mp_.topology()->atoms();
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+            for(size_t i = 0; i < coords.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    auto label = gmx::formatString("coords[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    checker_.checkReal(coords[i][m], label.c_str());
+                }
+            }
+        }
+    }
+    void testF(const std::string &ff,
+               const std::string &molName)
+    {
+        ACTMol mp_;
+        
+        if (setup(ff, molName, &mp_))
+        {
+            std::vector<gmx::RVec> coords = mp_.xOriginal();
+
+            VsiteHandler vh(box, dt);
+            vh.constructPositions(mp_.topology(), &coords, box);
+            gmx::RVec fzero = { 0, 0, 0 };
+            std::vector<gmx::RVec> forces(coords.size(), fzero);
+            auto  myatoms = mp_.topology()->atoms();
+            size_t i = 0;
+            int    m = 0;
+            for (const auto &a : myatoms)
+            {
+                if (a.pType() == ActParticle::Vsite)
+                {
+                    forces[i][m] = 1;
+                    m = (m+1) % DIM;
+                }
+                i += 1;
+            }
+            vh.distributeForces(mp_.topology(), coords, &forces, box);
+            gmx::test::TestReferenceChecker checker_(this->rootChecker());
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            checker_.setDefaultTolerance(tolerance);
+            const char *xyz[DIM] = { "X", "Y", "Z" };
+
+            for(size_t i = 0; i < forces.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    auto label = gmx::formatString("forces[%s-%zu][%s]", myatoms[i].name().c_str(), i, xyz[m]);
+                    checker_.checkReal(forces[i][m], label.c_str());
+                }
+            }
+        }
+    }
+};
+
+TEST_F (VsiteHandlerTest, VSite2HF)
+{
+    testX("ACS-pg-vs2", "hydrogen-fluoride");
+}
+
+TEST_F (VsiteHandlerTest, VSite2HBr)
+{
+    testX("ACS-pg-vs2", "hydrogen-bromide");
+}
+
+TEST_F (VsiteHandlerTest, VSite3H20)
+{
+    testX("ACS-pg-vs3", "water");
+}
+
+TEST_F (VsiteHandlerTest, VSite2HFForce)
+{
+    testF("ACS-pg-vs2", "hydrogen-fluoride");
+}
+
+TEST_F (VsiteHandlerTest, VSite2HBrForce)
+{
+    testF("ACS-pg-vs2", "hydrogen-bromide");
+}
+
+TEST_F (VsiteHandlerTest, VSite3H20Force)
+{
+    testF("ACS-pg-vs3", "water");
+}
+
 TEST(Vsite1, HF)
 {
     std::string forcefield("ACS-pg-vs2");
     // Get forcefield
     auto pd  = getForceField(forcefield);
 
-    auto fh = Identifier({ "f", "v2f1" }, { 9 }, CanSwap::Yes);
+    auto fh = Identifier({ "f", "v1f1" }, { 9 }, CanSwap::Yes);
 
     auto itype = InteractionType::VSITE1;
     EXPECT_TRUE(pd->interactionPresent(itype));
@@ -159,7 +304,7 @@ TEST(Vsite3, hoh)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.2);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     if (fs.parameterExists(hoh))
     {
         auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
@@ -184,7 +329,7 @@ TEST(VSite3, hohCanSwapVsite3)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.2);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 
@@ -227,7 +372,7 @@ TEST(VSite3OUT, hohCanSwapNo)
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
     auto param_hoh = fs.findParameterType(hoh, vsite3out_name[vsite3outA]);
-    EXPECT_TRUE(param_hoh->internalValue() == 0.35);
+    EXPECT_TRUE(param_hoh->internalValue() == -0.35);
     EXPECT_FALSE(fs.parameterExists(coh));
 }
 

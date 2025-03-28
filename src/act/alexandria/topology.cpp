@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/topologyentry.h"
@@ -122,7 +123,8 @@ bool Topology::hasVsites() const
             hasEntry(InteractionType::VSITE3OUTS));
 }
 
-void Topology::addShells(const ForceField *pd,
+void Topology::addShells(MsgHandler       *msghandler,
+                         const ForceField *pd,
                          AtomList         *atomList)
 {
     if (!pd->polarizable())
@@ -177,8 +179,10 @@ void Topology::addShells(const ForceField *pd,
             }
             else
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find atomtype %s in forcefield\n",
-                                                                   atomtype.c_str())));
+                msghandler->msg(ACTStatus::Warning,
+                                ACTMessage::AtomTypes,
+                                gmx::formatString("Cannot find atomtype %s in forcefield\n",
+                                                  atomtype.c_str()));
             }
         }
     }
@@ -470,7 +474,7 @@ void Topology::makePairs(const ForceField *pd,
         int nexcl;
         if (!ffOption(*pd, itype, "nexcl", &nexcl))
         {
-            nexcl = 0;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(itype).c_str(), pd->filename().c_str())));
         }
         //! Non bonded exclusions, array is length of number of atoms
         auto exclusions = generateExclusions(&pairs, nexcl);
@@ -1173,11 +1177,12 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     }
 }
 
-immStatus Topology::GenerateAtoms(const ForceField       *pd,
-                                  const MolProp          *mol,
-                                  std::vector<gmx::RVec> *x)
+void Topology::GenerateAtoms(MsgHandler             *msghandler,
+                             const ForceField       *pd,
+                             const MolProp          *mol,
+                             std::vector<gmx::RVec> *x)
 {
-    immStatus imm   = immStatus::OK;
+    ACTMessage imm   = ACTMessage::OK;
 
     auto ci = mol->findExperimentConst(JobType::OPT);
     if (!ci)
@@ -1190,13 +1195,16 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
     }
     if (!ci)
     {
-        return immStatus::Topology;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
+                        gmx::formatString("No molecule %s", mol->getMolname().c_str()).c_str());
+        return;
     }
     if (ci)
     {
         if (ci->NAtom() == 0)
         {
-            return immStatus::NoAtoms;
+            msghandler->msg(ACTStatus::Error, ACTMessage::NoAtoms, "No atoms");
+            return;
         }
         int res0  = -666;
         int nres  = 0;
@@ -1230,33 +1238,34 @@ immStatus Topology::GenerateAtoms(const ForceField       *pd,
             }
             else
             {
-                fprintf(stderr, "Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.\n",
-                        cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes());
+                msghandler->msg(ACTStatus::Warning,
+                                ACTMessage::AtomTypes,
+                                gmx::formatString("Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.",
+                                                  cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes()).c_str());
 
-                return immStatus::AtomTypes;
+                return;
             }
         }
     }
     else
     {
-        imm = immStatus::Topology;
+        msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
+                        "Could not make topology");
     }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu\n",
-                mol->getMolname().c_str(),
-                ci->getMethod().c_str(),
-                ci->getBasisset().c_str(), atoms_.size());
-    }
-
-    return imm;
+    msghandler->msg(ACTStatus::Debug,
+                    gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
+                                      mol->getMolname().c_str(),
+                                      ci->getMethod().c_str(),
+                                      ci->getBasisset().c_str(), atoms_.size(),
+                                      actMessage(imm)).c_str());
 }
 
-void Topology::build(const ForceField             *pd,
-                     std::vector<gmx::RVec>       *x,
-                     double                        LinearAngleMin,
-                     double                        PlanarAngleMax,
-                     missingParameters             missing)
+void Topology::build(MsgHandler             *msghandler,
+                     const ForceField       *pd,
+                     std::vector<gmx::RVec> *x,
+                     double                  LinearAngleMin,
+                     double                  PlanarAngleMax,
+                     missingParameters       missing)
 {
     // We use a list structure to keep track of the atoms and their coordinates.
     // This is needed since we may insert both shells and virtual sites. Although
@@ -1308,7 +1317,11 @@ void Topology::build(const ForceField             *pd,
     }
 
     // Now time for shells.
-    addShells(pd, &atomList);
+    addShells(msghandler, pd, &atomList);
+    if (!msghandler->ok())
+    {
+        return;
+    }
     if (debug)
     {
         auto nshell = atomList.size()-nRealAtoms;
@@ -1397,7 +1410,7 @@ void Topology::build(const ForceField             *pd,
     }
     if (missing != missingParameters::Generate)
     {
-        fillParameters(pd);
+        fillParameters(msghandler, pd, missing);
     }
     if (debug)
     {
@@ -1452,69 +1465,60 @@ void Topology::addEntry(InteractionType            itype,
 std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *pairs,
                                                            int                  nrexcl)
 {
-    std::vector<std::vector<int>> exclusions;
+    std::vector<std::set<size_t>> exclusions;
     exclusions.resize(atoms_.size());
     for(auto &myEntry: entries_)
     {
         switch (myEntry.first)
         {
         case InteractionType::BONDS:
+            if (nrexcl > 0)
             {
-                if (nrexcl > 0)
+                for(auto &b : myEntry.second)
                 {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions[a[0]].push_back(a[1]);
-                        exclusions[a[1]].push_back(a[0]);
-                    }
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[1]);
+                    exclusions[a[1]].insert(a[0]);
                 }
             }
             break;
         case InteractionType::VSITE1:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].push_back(a[1]);
-                    exclusions[a[1]].push_back(a[0]);
-                }
+                auto a = b->atomIndices();
+                exclusions[a[0]].insert(a[1]);
+                exclusions[a[1]].insert(a[0]);
             }
             break;
         case InteractionType::VSITE2:
+        case InteractionType::VSITE2FD:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
+                auto a = b->atomIndices();
+                for (int m = 0; m < 2; m++)
                 {
-                    auto a = b->atomIndices();
-                    for (int m = 0; m < 2; m++)
-                    {
-                        exclusions[a[m]].push_back(a[2]);
-                        exclusions[a[2]].push_back(a[m]);
-                    }
+                    exclusions[a[m]].insert(a[2]);
+                    exclusions[a[2]].insert(a[m]);
                 }
             }
             break;
         case InteractionType::POLARIZATION:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].push_back(a[1]);
-                    exclusions[a[1]].push_back(a[0]);
-                }
+                auto a = b->atomIndices();
+                exclusions[a[0]].insert(a[1]);
+                exclusions[a[1]].insert(a[0]);
             }
             break;
         case InteractionType::ANGLES:
         case InteractionType::LINEAR_ANGLES:
+            if (nrexcl > 1)
             {
-                if (nrexcl > 1)
+                for(auto &b : myEntry.second)
                 {
-                    for(auto &b : myEntry.second)
-                    {
-                        auto a = b->atomIndices();
-                        exclusions[a[0]].push_back(a[2]);
-                        exclusions[a[2]].push_back(a[0]);
-                    }
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[2]);
+                    exclusions[a[2]].insert(a[0]);
                 }
             }
             break;
@@ -1522,14 +1526,28 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
         case InteractionType::VSITE3S:
         case InteractionType::VSITE3OUT:
         case InteractionType::VSITE3OUTS:
+            for(auto &b : myEntry.second)
             {
-                for(auto &b : myEntry.second)
+                auto a = b->atomIndices();
+                for (int m = 0; m < 3; m++)
                 {
-                    auto a = b->atomIndices();
-                    for (int m = 0; m < 3; m++)
+                    exclusions[a[m]].insert(a[3]);
+                        exclusions[a[3]].insert(a[m]);
+                }
+            }
+            break;
+        case InteractionType::PROPER_DIHEDRALS:
+            {
+                if (nrexcl > 2)
+                {
+                    for(auto &b : myEntry.second)
                     {
-                        exclusions[a[m]].push_back(a[3]);
-                        exclusions[a[3]].push_back(a[m]);
+                        auto a = b->atomIndices();
+                        for (int m = 0; m < 3; m++)
+                        {
+                            exclusions[a[m]].insert(a[3]);
+                            exclusions[a[3]].insert(a[m]);
+                        }
                     }
                 }
             }
@@ -1538,7 +1556,6 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
         case InteractionType::VDWCORRECTION:
         case InteractionType::INDUCTIONCORRECTION:
         case InteractionType::ELECTROSTATICS:
-        case InteractionType::PROPER_DIHEDRALS:
         case InteractionType::IMPROPER_DIHEDRALS:
             break;
         default: // throws
@@ -1547,11 +1564,12 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             break;
         }
     }
+    std::vector<std::vector<int> > pp(exclusions.size());
     for(size_t ai = 0; ai < exclusions.size(); ai++)
     {
-        for(size_t j = 0; j < exclusions[ai].size(); j++)
+        for(auto aj : exclusions[ai])
         {
-            size_t aj = exclusions[ai][j];
+            pp[ai].push_back(aj);
             for(auto pp = pairs->begin(); pp < pairs->end(); ++pp)
             {
                 size_t a0 = (*pp)->atomIndex(0);
@@ -1564,7 +1582,7 @@ std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *
             }
         }
     }
-    return exclusions;
+    return pp;
 }
 
 void Topology::dump(FILE *fp) const
@@ -1587,33 +1605,47 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(const ForceFieldParameterList &fs,
+static void fillParams(MsgHandler                    *msghandler,
+                       const ForceFieldParameterList &fs,
                        const Identifier              &btype,
                        int                            nr,
+                       int                            independent,
                        const char                    *param_names[],
                        std::vector<double>           *param)
 {
     auto ff = fs.findParameterMapConst(btype);
-    if (!ff.empty())
+    std::string msg = potentialToString(fs.potential()) + " " + btype.id();
+    if (ff.empty())
     {
-        if (param->empty())
+        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+        return;
+    }
+    if (param->empty())
+    {
+        param->resize(nr, 0);
+    }
+    int found = 0;
+    for (int i = 0; i < nr; i++)
+    {
+        auto fp      = ff.find(param_names[i]);
+        double value = 0;
+        if (ff.end() != fp)
         {
-            param->resize(nr, 0);
+            value  = fp->second.internalValue();
+            found += 1;
         }
-        for (int i = 0; i < nr; i++)
-        {
-            auto fp      = ff.find(param_names[i]);
-            double value = 0;
-            if (ff.end() != fp)
-            {
-                value = fp->second.internalValue();
-            }
-            (*param)[i] = value;
-        }
+        (*param)[i] = value;
+    }
+    if (found != independent)
+    {
+        msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
+        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
     }
 }
 
-void Topology::fillParameters(const ForceField *pd)
+void Topology::fillParameters(MsgHandler        *msghandler,
+                              const ForceField  *pd,
+                              missingParameters  missing)
 {
     for(auto &entry : entries_)
     {
@@ -1622,124 +1654,77 @@ void Topology::fillParameters(const ForceField *pd)
             continue;
         }
         auto &fs = pd->findForcesConst(entry.first);
-        // Loop over entries, incremebt of tp handled at end.
+
+        // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
             auto &topentry = *tp;
 
-            const auto &topID = topentry->id();
-            std::vector<double> param;
-            switch (fs.potential())
+            const auto          &topID = topentry->id();
+            std::vector<double>  param;
+            struct ppp
             {
-            case Potential::LJ12_6:
-                fillParams(fs, topID, lj12_6NR, lj12_6_name, &param);
-                break;
-            case Potential::LJ8_6:
-                fillParams(fs, topID, lj8_6NR, lj8_6_name, &param);
-                break;
-            case Potential::LJ14_7:
-                fillParams(fs, topID, lj14_7NR, lj14_7_name, &param);
-                break;
-            case Potential::BUCKINGHAM:
-                fillParams(fs, topID, bhNR, bh_name, &param);
-                break;
-            case Potential::TANG_TOENNIES:
-                fillParams(fs, topID, ttNR, tt_name, &param);
-                break;
-            case Potential::WANG_BUCKINGHAM:
-                fillParams(fs, topID, wbhNR, wbh_name, &param);
-                break;
-            case Potential::GENERALIZED_BUCKINGHAM:
-                fillParams(fs, topID, gbhNR, gbh_name, &param);
-                break;
-            case Potential::EXPONENTIAL:
-                fillParams(fs, topID, expNR, exp_name, &param);
-                break;
-            case Potential::DOUBLEEXPONENTIAL:
-                fillParams(fs, topID, dexpNR, dexp_name, &param);
-                break;
-            case Potential::COULOMB_GAUSSIAN:
-            case Potential::COULOMB_SLATER:
-            case Potential::COULOMB_POINT:
-                fillParams(fs, topID, coulNR, coul_name, &param);
-                break;
-            case Potential::MORSE_BONDS:
-                fillParams(fs, topID, morseNR, morse_name, &param);
-                break;
-            case Potential::HUA_BONDS:
-                fillParams(fs, topID, huaNR, hua_name, &param);
-                break;
-            case Potential::CUBIC_BONDS:
-                fillParams(fs, topID, cubicNR, cubic_name, &param);
-                break;
-            case Potential::HARMONIC_BONDS:
-                fillParams(fs, topID, bondNR, bond_name, &param);
-                break;
-            case Potential::HARMONIC_ANGLES:
-                fillParams(fs, topID, angleNR, angle_name, &param);
-                break;
-            case Potential::UREY_BRADLEY_ANGLES:
-                fillParams(fs, topID, ubNR, ub_name, &param);
-                break;
-            case Potential::LINEAR_ANGLES:
-                fillParams(fs, topID, linangNR, linang_name, &param);
-                break;
-            case Potential::HARMONIC_DIHEDRALS:
-                fillParams(fs, topID, idihNR, idih_name, &param);
-                break;
-            case Potential::FOURIER_DIHEDRALS:
-                fillParams(fs, topID, fdihNR, fdih_name, &param);
-                break;
-            case Potential::POLARIZATION:
-                fillParams(fs, topID, polNR, pol_name, &param);
-                break;
-            case Potential::PROPER_DIHEDRALS:
-                fillParams(fs, topID, pdihNR, pdih_name, &param);
-                break;
-            case Potential::VSITE1:
-                fillParams(fs, topID, vsite1NR, vsite1_name, &param);
-                break;
-            case Potential::VSITE2:
-                fillParams(fs, topID, vsite2NR, vsite2_name, &param);
-                break;
-            case Potential::VSITE2FD:
-                fillParams(fs, topID, vsite2fdNR, vsite2fd_name, &param);
-                break;
-            case Potential::VSITE3:
-                fillParams(fs, topID, vsite3NR, vsite3_name, &param);
-                break;
-            case Potential::VSITE3S:
-                fillParams(fs, topID, vsite3sNR, vsite3s_name, &param);
-                break;
-            case Potential::VSITE3FD:
-                fillParams(fs, topID, vsite3fdNR, vsite3fd_name, &param);
-                break;
-            case Potential::VSITE3OUT:
-                fillParams(fs, topID, vsite3outNR, vsite3out_name, &param);
-                break;
-            case Potential::VSITE3OUTS:
-                fillParams(fs, topID, vsite3outsNR, vsite3outs_name, &param);
-                break;
-                //Commenting this out such that we do not generate incorrect results but crash instead.
-                //case Potential::VSITE3FAD:
-                //fillParams(fs, topID, vsite3fadNR, vsite3fad_name, &param);
-                //break;
-            default: // throws
+                int nr;
+                int independent;
+                const char **names;
+            };
+            std::map<Potential, ppp> allPot = {
+                { Potential::LJ12_6, { lj12_6NR, lj12_6NR/2, lj12_6_name } },
+                { Potential::LJ8_6, { lj8_6NR, lj8_6NR/2, lj8_6_name } },
+                { Potential::LJ14_7, { lj14_7NR, lj14_7NR/2, lj14_7_name } },
+                { Potential::BUCKINGHAM, { bhNR,  bhNR/2, bh_name } },
+                { Potential::TANG_TOENNIES, { ttNR, ttNR/2, tt_name } },
+                { Potential::WANG_BUCKINGHAM, { wbhNR, wbhNR/2, wbh_name } },
+                { Potential::GENERALIZED_BUCKINGHAM, { gbhNR, gbhNR/2, gbh_name } },
+                { Potential::EXPONENTIAL, { expNR, expNR/2, exp_name } },
+                { Potential::DOUBLEEXPONENTIAL, { dexpNR, dexpNR/2, dexp_name } },
+                // TODO remove hardcoded number of independent parameters
+                { Potential::COULOMB_GAUSSIAN, { coulNR, 2, coul_name } },
+                { Potential::COULOMB_SLATER, { coulNR, 2, coul_name } },
+                { Potential::COULOMB_POINT, { coulNR, 2, coul_name } },
+                { Potential::MORSE_BONDS, { morseNR, morseNR, morse_name } },
+                { Potential::HUA_BONDS, { huaNR, huaNR, hua_name } },
+                { Potential::CUBIC_BONDS, { cubicNR, cubicNR, cubic_name } },
+                { Potential::HARMONIC_BONDS, { bondNR, bondNR, bond_name } },
+                { Potential::HARMONIC_ANGLES, { angleNR, angleNR, angle_name } },
+                { Potential::UREY_BRADLEY_ANGLES, { ubNR, ubNR, ub_name } },
+                { Potential::LINEAR_ANGLES, { linangNR, linangNR, linang_name } },
+                { Potential::HARMONIC_DIHEDRALS, { idihNR, idihNR, idih_name } },
+                { Potential::FOURIER_DIHEDRALS, { fdihNR, fdihNR, fdih_name } },
+                { Potential::POLARIZATION, { polNR, polNR, pol_name } },
+                { Potential::PROPER_DIHEDRALS, { pdihNR, pdihNR, pdih_name } },
+                { Potential::VSITE1, { vsite1NR, vsite1NR, vsite1_name } },
+                { Potential::VSITE2, { vsite2NR, vsite2NR, vsite2_name } },
+                { Potential::VSITE2FD, { vsite2fdNR, vsite2fdNR, vsite2fd_name } },
+                { Potential::VSITE3, { vsite3NR, vsite3NR, vsite3_name } },
+                { Potential::VSITE3S, { vsite3sNR, vsite3sNR, vsite3s_name } },
+                { Potential::VSITE3FD, { vsite3fdNR, vsite3fdNR, vsite3fd_name } },
+                { Potential::VSITE3OUT, { vsite3outNR, vsite3outNR, vsite3out_name } },
+                { Potential::VSITE3OUTS, { vsite3outsNR, vsite3outsNR, vsite3outs_name } }
+            };
+
+            auto pp = allPot.find(fs.potential());
+            if (allPot.end() != pp)
+            {
+                fillParams(msghandler, fs, topID, pp->second.nr,
+                           pp->second.independent, pp->second.names, &param);
+            }
+            else
+            {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
                                                                potentialToString(fs.potential()).c_str()).c_str()));
             }
             if (param.empty())
             {
-                if (debug)
-                {
-                    fprintf(debug, "Force field does not contain %s parameters for %s, removing topology entry.",
-                            potentialToString(fs.potential()).c_str(),
-                            topID.id().c_str());
-                }
                 tp = entry.second.erase(tp);
             }
             else
             {
+                if (!msghandler->ok() && missing == missingParameters::Error)
+                {
+                    msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
+                                    gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str()));
+                }
                 topentry->setParams(param);
                 ++tp;
             }
@@ -1783,10 +1768,6 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
             switch (itype)
             {
             case InteractionType::VDW:
-                {
-                    btype.push_back(atoms_[jj].ffType());
-                    break;
-                }
             case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:

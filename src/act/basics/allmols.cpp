@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023,2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,7 +32,12 @@
  */
 #include "allmols.h"
 
+#include <algorithm>
+#include <string>
+
 #include "act/utility/stringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -53,6 +58,31 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
         pubid    = my_atoi(line[9].c_str(), "pubchem");
         inchi    = line[10];
         inchikey = line[11];
+        for(auto ss : split(line[12], ';'))
+        {
+            classid.insert(ss);
+            std::replace(ss.begin(), ss.end(), ' ', '-');
+            classid.insert(ss);
+        }
+        // Synonyms must include the iupac as well in case we are
+        // looking that one up later.
+        synonyms.insert(iupac);
+        for(auto ss : split(line[13], ';'))
+        {
+            if (ss.empty())
+            {
+                continue;
+            }
+            synonyms.insert(ss);
+            std::replace(ss.begin(), ss.end(), ' ', '-');
+            synonyms.insert(ss);
+        }
+        // Add the filename as well
+        auto fn = line[14].substr(0, line[14].size()-4);
+        if (fn.size() > 0)
+        {
+            synonyms.insert(fn);
+        }
     }
 }
 
@@ -78,15 +108,42 @@ AlexandriaMols::AlexandriaMols()
             AlexandriaMol am(words);
             if (!am.inchi.empty())
             {
-                mols_.insert({am.inchi, am});
+                mols_.insert( { am.inchi, am } );
+                for(const auto &syn : am.synonyms)
+                {
+                    nameToInChi_.insert( { syn, am.inchi } );
+                }
             }
+        }
+    }
+    if (debug)
+    {
+        fprintf(debug, "There are %zu molecules and %zu synonyms\n", mols_.size(), nameToInChi_.size());
+        for(const auto &n2i : nameToInChi_)
+        {
+            fprintf(debug, "%s %s\n", n2i.first.c_str(), n2i.second.c_str());
         }
     }
 }
       
-const AlexandriaMol *AlexandriaMols::find(const std::string &inchi) const
+const AlexandriaMol *AlexandriaMols::findInChi(const std::string &inchi) const
 {
     auto mptr = mols_.find(inchi);
+    if (mols_.end() == mptr)
+    {
+        return nullptr;
+    }
+    return &mptr->second;
+}
+
+const AlexandriaMol *AlexandriaMols::findMol(const std::string &name) const
+{
+    auto n2i = nameToInChi_.find(name);
+    if (n2i == nameToInChi_.end())
+    {
+        return nullptr;
+    }
+    auto mptr = mols_.find(n2i->second);
     if (mols_.end() == mptr)
     {
         return nullptr;

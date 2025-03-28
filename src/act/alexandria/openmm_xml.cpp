@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,6 +49,7 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/symcharges.h"
 #include "act/forcefield/forcefield_parameter.h"
@@ -65,6 +66,30 @@
 
 namespace alexandria
 {
+
+static int minTrain(const ForceFieldParameterMap &ffpm)
+{
+    // TODO: Remove or implement something that works.
+    return 1;
+    unsigned int mintrain = 0;
+    for(const auto &p : ffpm)
+    {
+        auto ntrain = p.second.ntrain();
+        if (p.second.mutability() == Mutability::Fixed)
+        {
+            ntrain = 1;
+        }
+        if (mintrain == 0)
+        {
+            mintrain = ntrain;
+        }
+        else
+        {
+            mintrain = std::min(mintrain, ntrain);
+        }
+    }
+    return mintrain;
+}
 
 /*! \brief The different entry types that can be found
  * TODO: Comment each element
@@ -245,7 +270,7 @@ static int tellme_RealAtom(int                         index,
 
 	for (size_t i = 0; i < myatoms.size(); i++)
     {
-		if (myatoms[i].pType() == ActParticle::Atom) 
+		if (myatoms[i].pType() == ActParticle::Atom || myatoms[i].pType() == ActParticle::Vsite)
 		{
 			realAtoms = realAtoms + 1;
 		}
@@ -266,6 +291,10 @@ private:
     double mDrude_                = 0.1;
     // Whether or not to add numbers to atomtypes
     bool   addNumbersToAtomTypes_ = true;
+    // Minimum number of training points needed to specify output
+    int    ntrain_                = 1;
+    // Number of exclusions, should be the same for all forces
+    int    nexcl_                 = -1;
     // Mapping from InteractionType to xml branch
     std::map<InteractionType, xmlNodePtr> xmlMap_;
     
@@ -278,36 +307,47 @@ private:
 
     void addBondAtoms(xmlNodePtr                      parent,
                       const std::vector<std::string> &atoms);
-                      
-    void addXmlNonbonded(xmlNodePtr                       parent,
+
+    void addXmlNonbonded(MsgHandler                      *msghandler,
+                         xmlNodePtr                       parent,
                          const ForceField                *pd,
                          const std::map<std::string, int> &ffTypeMap);
+
+    void addXmlSpecial(xmlNodePtr                       parent,
+                       const ForceField                *pd,
+                       const std::map<std::string, int> &ffTypeMap);
 
     void addXmlBond(xmlNodePtr                      parent,
                     xmlEntryOpenMM                  xmlEntry,
                     const std::vector<std::string> &atoms,
                     const char                     *param_names[],
                     const std::vector<double>      &params);
-    
+
     void addXmlPolarization(xmlNodePtr                        parent,
                             const ForceField                 *pd,
                             const std::map<std::string, int> &ffTypeMap,
                             double                            epsr_fac);
 
-    void addXmlForceField(xmlNodePtr                 parent,
+    void addXmlForceField(MsgHandler                *msghandler,
+                          xmlNodePtr                 parent,
                           const ForceField          *pd,
                           const std::vector<ACTMol> &actmols);
                           
     void addTopologyEntries(const ForceField                                  *pd,
                             std::map<InteractionType, std::set<std::string> > *BondClassUsed,
                             const Topology                                    *topology);
-                          
+
     void makeXmlMap(xmlNodePtr        parent,
                     const ForceField *pd);
-               
+
+    void setNexcl(int nexcl);
+
+    int nexcl() const { return nexcl_; }
+
 public:
     OpenMMWriter(double mDrude,
-                 bool   addNumbersToAtoms) : mDrude_(mDrude), addNumbersToAtomTypes_(addNumbersToAtoms)
+                 bool   addNumbersToAtoms,
+                 int    ntrain) : mDrude_(mDrude), addNumbersToAtomTypes_(addNumbersToAtoms), ntrain_(ntrain)
     {
     }
     
@@ -316,16 +356,11 @@ public:
      * \param[in] pd       The ACT force field
      * \param[in] actmols  The ACT molecules
      */
-    void writeXml(const std::string         &fileName,
+    void writeXml(MsgHandler                      *msghandler,
+                  const std::string         &fileName,
                   const ForceField          *pd,
                   const std::vector<ACTMol> &actmols);
 
-    /*! \brief Do the writing of the parameter file
-     * \param[in] fileName The name of the file
-     * \param[in] pd       The ACT force field
-     */
-    void writeDat(const std::string         &fileName,
-                  const ForceField          *pd);
 };
 
 void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
@@ -369,7 +404,19 @@ static void addXmlResidueBond(xmlNodePtr         residuePtr,
     add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES),
                  atom2.c_str()); 
 }
-                              
+
+void OpenMMWriter::setNexcl(int nexcl)
+{
+    if (nexcl_ == -1)
+    {
+        nexcl_ = nexcl;
+    }
+    else if (nexcl_ != nexcl)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("In OpenMM all CustomNonbonded forces must have the same number of exclusions. You specified %d in one place and %d in another.", nexcl_, nexcl).c_str()));
+    }
+}
+
 void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
                                       const ForceField *pd, 
                                       const Topology   *topol)
@@ -428,22 +475,214 @@ void OpenMMWriter::addXmlBond(xmlNodePtr                      parent,
     }
 }
 
-void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
+static void add_global(xmlNodePtr ptr,
+                       const std::string &name,
+                       int value)
+{
+    auto gp = add_xml_child(ptr, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
+    add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), name.c_str());
+    add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
+}
+
+static void add_potential(xmlNodePtr       parent,
+                          const Potential &p)
+{
+    // Prepend the name with pot_ to indicate what kind of parameter this is
+    add_global(parent, "pot-" + potentialToString(p), 1);
+}
+
+static void add_combrules(xmlNodePtr                     parent,
+                          const ForceFieldParameterList &fs)
+{
+    const auto crules = fs.combinationRules();
+    for(const auto &cr : crules)
+    {
+        std::string name = "cr-" + cr.first + "_" + cr.second;
+        add_global(parent, name, 1);
+    }
+}
+
+void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
+                                 const ForceField                *pd,
+                                 const std::map<std::string, int> &ffTypeMap)
+{
+    const auto itIC = InteractionType::INDUCTIONCORRECTION;
+    const auto itVC = InteractionType::VDWCORRECTION;
+    std::map<InteractionType, std::string> allIT = 
+        {
+            { itIC, "induccorrtype" },
+            { itVC, "vdwcorrtype" }
+        };
+
+    for(auto &it : allIT)
+    {
+        auto itype = it.first;
+        if (!pd->interactionPresent(itype))
+        {
+            continue;
+        }
+        auto fs      = pd->findForcesConst(itype);
+        if (fs.parametersConst().empty())
+        {
+            continue;
+        }
+        auto specPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
+        add_potential(specPtr, fs.potential());
+        std::string nnn("nexcl");
+        if (fs.optionExists(nnn))
+        {
+            setNexcl(std::stoi(fs.optionValue(nnn)));
+        }
+        add_global(specPtr, "nexcl", nexcl());
+        // Bondcutoff should be zero for all CustomNobonded forces since we determine exclusions
+        // ourselves in the Python interface.
+        add_xml_int(specPtr, "bondCutoff", 0);
+        if (itVC == itype)
+        {
+            // Implement xor function for Kronecker combination rule
+            add_xml_char(specPtr, "energy", "-A*exp(-b*r); b=0.5*(bexp1+bexp2); A=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,sqrt(aexp1*aexp2))");
+        }
+        else if (itIC == itype)
+        {
+            add_xml_char(specPtr, "energy", "(Ab-Aa)*exp(-b*r); b=0.5*(bdexp1+bdexp2); Aa=sqrt(a1dexp1*a1dexp2); Ab=sqrt(a2dexp1*a2dexp2)");
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Forgot to implement something");
+        }
+        const char *vsite = "vsite";
+        if (itype == itVC)
+        {
+            auto vsParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+            add_xml_char(vsParam, exml_names(xmlEntryOpenMM::NAME), vsite);
+            for(int i = 0; i < expA_IJ; i++)
+            {
+                auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+                add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), exp_name[i]);
+            }
+        }
+        else if (itype == itIC)
+        {
+            for(int i = 0; i < dexpA1_IJ; i++)
+            {
+                auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+                add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), dexp_name[i]);
+            }
+        }
+        size_t count = 0;
+        for(const auto &fft: ffTypeMap)
+        {
+            auto aType = pd->findParticleType(fft.first);
+            for(int ii = 1; ii <= fft.second; ii++)
+            {
+                std::string mytype(it.second);
+                if (!aType->hasOption(mytype))
+                {
+                    fprintf(stderr, "Incomplete force field. No option %s for %s.\n",
+                            mytype.c_str(), fft.first.c_str());
+                    continue;
+                }
+                auto myId  = Identifier(aType->optionValue(mytype));
+                std::string type1 = fft.first;
+                if (addNumbersToAtomTypes_)
+                {
+                    type1 = nameIndex(myId.id(), ii);
+                }
+                if (!fs.parameterExists(myId))
+                {
+                    fprintf(stderr, "No %s parameters for %s\n", interactionTypeToString(itype).c_str(),
+                            myId.id().c_str());
+                    continue;
+                }
+                auto param      = fs.findParametersConst(Identifier(myId));
+                if (minTrain(param) >= ntrain_)
+                {
+                    auto nbParamPtr = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+                    add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
+                    if (itype == itVC)
+                    {
+                        int val = aType->apType() == ActParticle::Vsite ? 1: 0;
+                        add_xml_int(nbParamPtr, vsite, val);
+                    }
+                    for(size_t j = 0; j < param.size(); j++)
+                    {
+                        if (itype == itVC && (Mutability::Dependent != param[exp_name[j]].mutability()))
+                        {
+                            add_xml_double(nbParamPtr, exp_name[j], param[exp_name[j]].internalValue());
+                        }
+                        else if (itype == itIC && (Mutability::Dependent != param[dexp_name[j]].mutability()))
+                        {
+                            add_xml_double(nbParamPtr, dexp_name[j], param[dexp_name[j]].internalValue());
+                        }
+                    }
+                    count += 1;
+                }
+            }
+        }
+        if (count == 0)
+        {
+            xmlUnlinkNode(specPtr);
+            xmlFreeNode(specPtr);
+        }
+    }
+}
+  
+void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
+                                   xmlNodePtr                       parent,
                                    const ForceField                *pd,
                                    const std::map<std::string, int> &ffTypeMap)
 {
+    // Fetch number of exclusions. 3 is the default in OpenMM.
     auto fs     = pd->findForcesConst(InteractionType::VDW);
-    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     std::string nnn("nexcl");
-    //int nrexcl  = std::max(my_atoi(fs.optionValue(nnn), "nrexclvdw"),
-    //                     my_atoi(fsCoul.optionValue(nnn), "nrexclqq"));
+    if (fs.optionExists(nnn))
+    {
+        setNexcl(std::stoi(fs.optionValue(nnn)));
+    }
+    // Now for Coulomb.
+    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+    if (fsCoul.optionExists(nnn))
+    {
+        setNexcl(std::stoi(fsCoul.optionValue(nnn)));
+    }
+
     xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
-    if (!(fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT))
+    if (fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT)
+    {
+        // Need to check the combination rules somewhere
+        auto cr = fs.combinationRules();
+        std::map<std::string, std::string> cr_expect = {
+            { "epsilon", "Geometric" }, { "sigma", "Arithmetic" }
+        };
+        for(const auto &cr_e : cr_expect)
+        {
+            auto ccrr = cr.find(cr_e.first);
+            if (ccrr == cr.end())
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("No combination rule for %s", cr_e.first.c_str()).c_str());
+            }
+            else if (ccrr->second != cr_e.second)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Combination rule %s is not supported by OpenMM for %s (use %s)", ccrr->second.c_str(), cr_e.first.c_str(), cr_e.second.c_str()));
+            }
+        }
+    }
+    else
     {
         customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
         add_xml_double(customNBPtr, "energy", 0.0);
-        add_xml_int(customNBPtr, "bondCutoff", 3);
+        // Bondcutoff should be zero for CustomNobondedForce since we determine exclusions
+        // ourselves in the Python interface.
+        add_xml_int(customNBPtr, "bondCutoff", 0);
+
+        add_potential(customNBPtr, fs.potential());
+        add_potential(customNBPtr, fsCoul.potential());
+        add_combrules(customNBPtr, fs);
+        add_global(customNBPtr, "nexcl", nexcl());
+
         auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
@@ -488,8 +727,7 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
     auto ljPtr        = add_xml_child(parent, exml_names(xmlEntryOpenMM::NONBONDEDFORCE));
     add_xml_double(ljPtr, "coulomb14scale", 1.0); 
     add_xml_double(ljPtr, "lj14scale", 1.0); 
-    add_xml_double(ljPtr, "energy", 0.0);
-    add_xml_int(ljPtr, "bondCutoff", 3);
+
     auto uafr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
     add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
     
@@ -507,18 +745,26 @@ void OpenMMWriter::addXmlNonbonded(xmlNodePtr                       parent,
             }
             auto vdwId = Identifier(aType->optionValue(vdwtype));
             auto param = fs.findParametersConst(Identifier(vdwId));
-            
+            if (minTrain(param) < ntrain_)
+            {
+                continue;
+            }
             std::string type1 = fft.first;
             if (addNumbersToAtomTypes_)
             {
                 type1 = nameIndex(type1, i);
             }
             xmlNodePtr nbParamPtr = nullptr;
-            if (nullptr != customNBPtr)
+            if (nullptr == customNBPtr)
+            {
+                nbParamPtr = add_xml_child(ljPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
+            }
+            else
             {
                 nbParamPtr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
             }
+            add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());  
+            
             double scaleSigma = std::pow(2.0, -1.0/6.0);
             double sigma = 0, epsilon = 0;
             switch (fs.potential())
@@ -628,25 +874,27 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
             {
                 if (aType->hasOption("poltype"))
                 {
-                    auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE)); 
 
                     std::string type1 = aType->optionValue("poltype");
                     auto param        = fs.findParametersConst(Identifier(type1));
-                    auto alpha        = fs.findParameterTypeConst(Identifier({type1}), pol_name[polALPHA]);
-                    auto stp          = pd->findParticleType(type1);
-                    
-                    std::string type2 = fft.first;                    
-                    if (addNumbersToAtomTypes_)
+                    if (minTrain(param) >= ntrain_)
                     {
-                        type1 = nameIndex(type1, i);
-                        type2 = nameIndex(type2, i);
+                        auto alpha        = fs.findParameterTypeConst(Identifier({type1}), pol_name[polALPHA]);
+                        auto stp          = pd->findParticleType(type1);
+
+                        std::string type2 = fft.first;                    
+                        if (addNumbersToAtomTypes_)
+                        {
+                            type1 = nameIndex(type1, i);
+                            type2 = nameIndex(type2, i);
+                        }
+                        auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE));
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
+                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str());
+                        add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+                        add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge()*epsr_fac);
+                        add_xml_double(grandchild2, "thole", 0);
                     }
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str()); 
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
-                        
-                    add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                    add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge()*epsr_fac);
-                    add_xml_double(grandchild2, "thole", 0);
                 }
             }
         }
@@ -798,12 +1046,12 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                     break;
                     
                 case Potential::FOURIER_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::RBTORSIONFORCE,
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, fdih_name, entry->params());
                     break;
                     
                 case Potential::PROPER_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PERIODICTORSIONFORCE,
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, pdih_name, entry->params());
                     break;
                     
@@ -820,6 +1068,8 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case Potential::LJ8_6:
                 case Potential::WANG_BUCKINGHAM:
                 case Potential::GENERALIZED_BUCKINGHAM:
+                case Potential::EXPONENTIAL:
+                case Potential::DOUBLEEXPONENTIAL:
                 case Potential::POLARIZATION:
                 case Potential::VSITE3OUTS:
                 case Potential::VSITE3OUT:
@@ -837,7 +1087,16 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
     }
 }
 
-void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
+static void add_xml_weight(xmlNodePtr  parent,
+                           const char *wname,
+                           double      w)
+{
+    auto w1 = gmx::formatString("%.8f", w);
+    add_xml_char(parent, wname, w1.c_str());
+}
+
+void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
+                                    xmlNodePtr                 parent,
                                     const ForceField          *pd,
                                     const std::vector<ACTMol> &actmols)
 {
@@ -905,7 +1164,7 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            auto amol  = amols.find(fragIds[fff]);
+            auto amol  = amols.findInChi(fragIds[fff]);
             if (nullptr != amol)
             {
                 add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), amol->iupac.c_str());
@@ -1086,50 +1345,51 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
                                     case InteractionType::VSITE2:
                                         {
                                             auto p = ee->params()[0];
-                                            add_xml_double(baby, "weight1", 1-p);
-                                            add_xml_double(baby, "weight2", p);
+                                            add_xml_weight(baby, "weight1", 1-p);
+                                            add_xml_weight(baby, "weight2", p);
                                         }
                                         break;
                                     case InteractionType::VSITE3S:
                                         {
                                             auto p = ee->params()[0];
-                                            add_xml_double(baby, "weight1", p);
-                                            add_xml_double(baby, "weight2", 1-2*p);
-                                            add_xml_double(baby, "weight3", p);
+                                            add_xml_weight(baby, "weight1", p);
+                                            add_xml_weight(baby, "weight2", 1-2*p);
+                                            add_xml_weight(baby, "weight3", p);
                                         }
                                         break;
                                     case InteractionType::VSITE3:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", 1-p[0]-p[1]);
-                                            add_xml_double(baby, "weight3", p[1]);
+                                            add_xml_weight(baby, "weight1", p[0]);
+                                            add_xml_weight(baby, "weight2", 1-p[0]-p[1]);
+                                            add_xml_weight(baby, "weight3", p[1]);
                                         }
                                         break;
                                     case InteractionType::VSITE3OUT:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", p[1]);
+                                            add_xml_weight(baby, "weight12", p[0]);
+                                            add_xml_weight(baby, "weight13", p[1]);
                                             // To make the two vsites different, we assume they are next to each other
                                             // in the row of atoms. In which order the vsites have +/- does not matter.
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_double(baby, "weight3", sign*p[2]);
+                                            add_xml_weight(baby, "weightCross", sign*p[2]);
                                         }
                                         break;
                                     case InteractionType::VSITE3OUTS:
                                         {
                                             auto p = ee->params();
-                                            add_xml_double(baby, "weight1", p[0]);
-                                            add_xml_double(baby, "weight2", p[0]);
+                                            add_xml_weight(baby, "weight12", p[0]);
+                                            add_xml_weight(baby, "weight13", p[0]);
                                             // See above
                                             int sign = 2*(i % 2)-1;
-                                            add_xml_double(baby, "weight3", sign*p[1]);
+                                            add_xml_weight(baby, "weightCross", sign*p[1]);
                                         }
                                         break;
                                     default:
-                                        GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s not supported yet.",
-                                                                                       interactionTypeToString(itp.first).c_str()).c_str()));
+                                        msghandler->msg(ACTStatus::Warning,
+                                                        gmx::formatString("InteractionType %s not supported yet.",
+                                                                          interactionTypeToString(itp.first).c_str()).c_str());
                                     }
                                 }
                             }
@@ -1143,11 +1403,13 @@ void OpenMMWriter::addXmlForceField(xmlNodePtr                 parent,
             addTopologyEntries(pd, &BondClassUsed, actmol.topology());
         }
     }
-    addXmlNonbonded(parent, pd, fftypeGlobalMap);
+    addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);
+    addXmlSpecial(parent, pd, fftypeGlobalMap);
     addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
 }
 
-void OpenMMWriter::writeXml(const std::string         &fileName,
+void OpenMMWriter::writeXml(MsgHandler                *msghandler,
+                            const std::string         &fileName,
                             const ForceField          *pd,
                             const std::vector<ACTMol> &actmols)
 {
@@ -1178,7 +1440,7 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlForceField(myroot, pd, actmols);
+    addXmlForceField(msghandler, myroot, pd, actmols);
 
     // Do not compress the OpenMM file.
     xmlSetDocCompressMode(doc, 0);
@@ -1190,69 +1452,18 @@ void OpenMMWriter::writeXml(const std::string         &fileName,
     xmlFreeDoc(doc);
 }
 
-static void writeCombinationRules(FILE *fp,
-                                  const std::map<const std::string, CombRule> cmap)
-{
-    fprintf(fp, "combinationRule =");
-    for(const auto &cm : cmap)
-    {
-        fprintf(fp, " %s %s", cm.first.c_str(), combinationRuleName(cm.second).c_str());
-    }
-    fprintf(fp, "\n");
-}
-
-void OpenMMWriter::writeDat(const std::string &fileName,
-                            const ForceField  *pd)
-{
-    std::map<InteractionType, std::vector<std::pair<std::string, std::string>>> act2omm = {
-        { InteractionType::ELECTROSTATICS, 
-          { { "chargetype", "chargeDistribution" },
-            { "epsilonr", "dielectricConstant" },
-            { "nexcl", "nexclqq" } } },
-        { InteractionType::VDW,
-          { {  "nexcl", "nexclvdw" } } }
-    };
-
-    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
-    fprintf(fp, "rigidWater  = False\n");
-    fprintf(fp, "constraints = None\n");
-    for(const auto &a2o : act2omm)
-    {
-        if (pd->interactionPresent(a2o.first))
-        {
-            auto fs = pd->findForcesConst(a2o.first);
-            for(const auto &opt : a2o.second)
-            {
-                if (fs.optionExists(opt.first))
-                {
-                    fprintf(fp, "%s = %s\n", opt.second.c_str(),
-                            fs.optionValue(opt.first).c_str());
-                }
-            }
-            if (InteractionType::VDW == a2o.first)
-            {
-                fprintf(fp, "vanderwaals = %s\n", 
-                        potentialToString(fs.potential()).c_str());
-                writeCombinationRules(fp, getCombinationRule(fs));
-            }
-        }
-    }
-    
-    gmx_ffclose(fp);
-}
-
-void writeOpenMM(const std::string         &fileName,
-                 const std::string         &simParams,
+void writeOpenMM(MsgHandler                *msghandler,
+                 const std::string         &fileName,
                  const ForceField          *pd,
                  const std::vector<ACTMol> &actmols,
                  double                     mDrude,
+                 int                        ntrain,
                  bool                       addNumbersToAtoms)
 {
     rmapyyyOpenMM.clear();
     
-    OpenMMWriter writer(mDrude, addNumbersToAtoms);
-    writer.writeXml(fileName, pd, actmols);
-    writer.writeDat(simParams, pd);
+    OpenMMWriter writer(mDrude, addNumbersToAtoms, ntrain);
+    writer.writeXml(msghandler, fileName, pd, actmols);
 }
 
 } // namespace alexandria

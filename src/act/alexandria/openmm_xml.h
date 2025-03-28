@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021 
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -40,21 +40,25 @@
 
 namespace alexandria
 {
+    class MsgHandler;
+    
     /*! \brief Store the ForceField force field to an OpenMM XML file
      *
-     * \param[in] fileName  The filename to save the force field to
-     * \param[in] simParams The filename to save the simulation params to
-     * \param[in] pd        Pointer to a ForceField class instance
-     * \param[in] actmols   The ACT molecule structures
-     * \param[in] mDrude    Mass to use for the drude particle if any
-     * \param[in] compress  Whether or not to write a compressed file
+     * \param[in] msghandler For status and messages
+     * \param[in] fileName   The filename to save the force field to
+     * \param[in] pd         Pointer to a ForceField class instance
+     * \param[in] actmols    The ACT molecule structures
+     * \param[in] mDrude     Mass to use for the drude particle if any
+     * \param[in] compress   Whether or not to write a compressed file
+     * \param[in] ntrain     Minimum number of training data to store a parameter to OpenMM
      * \param[in] addNumbersToAtoms Will add integer index to all atom types
      */
-    void writeOpenMM(const std::string         &fileName,
-                     const std::string         &simParams,
+    void writeOpenMM(MsgHandler                *msghandler,
+                     const std::string         &fileName,
                      const ForceField          *pd,
                      const std::vector<ACTMol> &actmols,
                      double                     mDrude,
+                     int                        ntrain,
                      bool                       addNumbersToAtoms = true);
 
 } // namespace alexandria

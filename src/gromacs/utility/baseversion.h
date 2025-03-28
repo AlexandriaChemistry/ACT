@@ -53,7 +53,7 @@
  *
  * \ingroup module_utility
  */
-const char *gmx_version();
+const char *act_version();
 /*! \brief
  * Full git hash of the latest commit.
  *
@@ -61,7 +61,7 @@ const char *gmx_version();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_full_hash();
+const char *act_version_git_full_hash();
 /*! \brief
  * Full git hash of the latest commit in a central \Gromacs repository.
  *
@@ -71,7 +71,7 @@ const char *gmx_version_git_full_hash();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_central_base_hash();
+const char *act_version_git_central_base_hash();
 
 /*! \brief
  * Defined if ``libactgromacs`` has been compiled in double precision.
@@ -99,6 +99,6 @@ const char *getGpuImplementationString();
 /*! \brief
  * DOI string, or empty when not a release build.
  */
-const char *gmxDOI();
+const char *actDOI();
 
 #endif

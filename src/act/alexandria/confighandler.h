@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
@@ -42,6 +42,7 @@
 namespace alexandria
 {
 
+class MsgHandler;
 /*!
  * Abstract class to handle configuration for methods.
  * It adds its command-line arguments to a given parameter vector
@@ -64,7 +65,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs() = 0;
+    virtual void check_pargs(MsgHandler *msghandler) = 0;
 
 };
 
@@ -164,9 +165,10 @@ public:
 
     /*!
      * \brief Check the validity of the provided arguments
+     * \param[in] msghandler Message Handler
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
@@ -288,6 +290,8 @@ private:
     bool  tempWeight_        = false;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real  anneal_            = 1;
+    //! Whether annealing restart during each mutation round or is global over GA generations
+    bool  annealGlobally_    = false;
     //! Evaluate on test set during the MCMC run
     bool  evaluate_testset_  = false;
     //! Checkpointing on or not?
@@ -310,7 +314,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
@@ -322,6 +326,13 @@ public:
 
     //! \brief Return temperature
     real temperature() const { return temperature_; }
+
+    /*! \brief Return temperature dependent on generation if global annealing is used
+     * \param[in] generation      Current generation
+     * \param[in] max_generations Total number of generations
+     */
+    real temperature(int generation,
+                     int max_generations) const;
 
     /*! \brief set a new value for temperature
      * \param[in] temperature the new temperature
@@ -338,23 +349,22 @@ public:
      * \param[in] seed The new seed
      */
     void setSeed(int seed) { seed_ = seed; }
-    
-    /*! \brief Compute and return the Boltzmann factor
-    *
-    * \param[in] iter  The iteration number
-    * \return The Boltzmann factor
-    */
-    double computeBeta(int iter);
 
     /*! \brief Compute and return the Boltzmann factor
-    * it applies periodic annealing
-    *
-    * \param[in] maxiter The maximum number of iteration
-    * \param[in] iter    The iteration number
-    * \param[in] ncycle  The multiplicity of the cosine function
-    * \return The Boltzmann factor
-    */
-    double computeBeta(int maxiter, int iter, int ncycle);
+     * Takes into account both local annealing (within a generation)
+     * and global annealing (spreading over generations) depending
+     * on user specified command line options. Will return 1/temperature
+     * that is, not multiply with the Boltzmann constant. This is because
+     * the deviation used in the MCMC algorithm is not an energy anyway.
+     *
+     * \param[in] generation      The generation number
+     * \param[in] max_generations The total number of generations planned
+     * \param[in] iteration       The iteration number
+     * \return The Boltzmann factor
+     */
+    double computeBeta(int generation,
+                       int max_generations,
+                       int iteration);
 
     //! \brief Return the step
     real step() const { return step_; }
@@ -366,9 +376,20 @@ public:
     bool temperatureWeighting() const { return tempWeight_; }
 
     /*! \brief Return whether or not to do simulated annealing
-    * \param iter The iteration number
-    */
-    bool anneal (int iter) const;
+     * \param[in] generation The generation number for HYBRID
+     * \param[in] iteration  The iteration number
+     */
+    bool anneal (int generation,
+                 int iteration) const;
+
+    //! \return start of annealing in fraction of iterations
+    double annealStart() const { return anneal_; }
+
+    //! \return true if annealing was requested
+    bool annealing() const { return anneal_ < 1; }
+
+    //! \return true if global annealing was requested
+    bool globalAnnealing() const { return annealing() && annealGlobally_; }
 
     /*! \brief Set a new value for annealing start
      * \param[in] anneal the new starting point for simulated annealing
@@ -417,8 +438,6 @@ private:
     int                nstener_              = 1;
     //! Write shells to trajectory and coordinates
     bool               writeShells_          = false;
-    //! Map back hydrogen atoms to one type
-    bool               oneH_                 = false;
     //! Minmize (before MD)
     bool               minimize_             = false;
     //! Minimization algorithm
@@ -426,7 +445,7 @@ private:
     //! Tolerance on mean square force for minimizer.
     double             forceToler_           = 1e-6;
     //! Number of retries for minimizing
-    int                minimizeRetries_      = 3;
+    int                minimizeRetries_      = 1;
     //! Max random displacement (nm) before re-trying to minize a structure
     double             minimizeDisplacement_ = 0.002;
     //! Whether to force using displacement and reminimize even if converged
@@ -455,7 +474,7 @@ public:
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
      */
-    virtual void check_pargs();
+    virtual void check_pargs(MsgHandler *msghandler);
 
     //! \return number of MD steps
     int nsteps() const { return nsteps_; }
@@ -474,9 +493,6 @@ public:
     
     //! \return user provided random number seed
     int seed() const { return seed_; }
-
-    //! \return whether there is one H only
-    bool oneH() const { return oneH_; }
 
     //! \return whether or not to write shells to trajectory
     bool writeShells() const { return writeShells_; }

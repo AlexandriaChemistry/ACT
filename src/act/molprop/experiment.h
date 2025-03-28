@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -131,8 +131,8 @@ public:
     //! Return the type of data
     DataSource dataSource() const { return dataSource_; }
     
-    //! Dump the contents of this object to a file
-    void Dump(FILE *fp) const;
+    //! Dump the contents of this object to a tw
+    void Dump(gmx::TextWriter *tw) const;
 
     //! Set the experiment id
     void setId(int id) { id_ = id; }
@@ -209,18 +209,33 @@ public:
     
     //! Return a complete forces array
     const std::vector<gmx::RVec> &getForces() const { return forces_; }
-    
+
     //! Return the program used to perform the calculation
     const std::string &getProgram() const { return program_; }
-    
+
     //! Return the basis set used to perform the calculation
     const std::string &getBasisset() const { return basisset_; }
-    
+
     //! Return the method used to perform the calculation
     const std::string &getMethod() const { return method_; }
-    
+
     //! Return the datafile from which the calculation output was extracted
     const std::string &getDatafile() const { return datafile_; }
+
+    //! Set the program used to perform the calculation
+    void setProgram(const std::string &program) { program_ = program; }
+
+    //! Set the basis set used to perform the calculation
+    void setBasisset(const std::string &basis) { basisset_ = basis; }
+
+    //! Set the method used to perform the calculation
+    void setMethod(const std::string &method) { method_ = method; }
+
+    //! Set the datafile from which the calculation output was extracted
+    void setDatafile(const std::string &df) { datafile_ = df; }
+
+    //! Set the reference
+    void setReference(const std::string &ref) { reference_ = ref; }
     
     /*! \brief
      * Function that fetches charges from this QM

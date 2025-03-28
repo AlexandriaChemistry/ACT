@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -312,16 +312,16 @@ int gen_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t *oenv;
-    int               nexclqq  = 0;
-    int               nexclvdw = 0;
+    int               nexclqq  = 2;
+    int               nexclvdw = 2;
     double            epsilonr = 1;
     bool              qsymm    = true;
     const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "CUBICBONDS", "BONDS", "MORSE", "HUA", nullptr };
+    const char *bondfn[]  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
     const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
     const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
     std::vector<Potential> nbpot = {
-        Potential::LJ8_6, Potential::LJ12_6, Potential::LJ14_7,
+        Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
         Potential::BUCKINGHAM, Potential::TANG_TOENNIES };
     std::vector<const char *> vdwfn = { nullptr };
@@ -339,9 +339,9 @@ int gen_ff(int argc, char*argv[])
     std::vector<t_pargs> pa =
     {
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
-          "Number of exclusions for Coulomb interactions, zero recommend for polarizable force fields." },
+          "Number of exclusions for Coulomb and InductionCorrection interactions." },
         { "-nexclvdw", FALSE, etINT,  {&nexclvdw},
-          "Number of exclusions for Van der Waals interactions." },
+          "Number of exclusions for Van der Waals interactions and Van der Waals corrections." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-qsymm", FALSE, etBOOL, {&qsymm},
@@ -387,6 +387,7 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
     ForceFieldParameterList induccorr(potentialToString(Potential::DOUBLEEXPONENTIAL), CanSwap::Yes);
+    induccorr.addOption("nexcl", gmx_itoa(nexclqq));
     // Combination rules
     crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
@@ -401,9 +402,14 @@ int gen_ff(int argc, char*argv[])
     }
     // Default VDW params
     std::map<std::string, ForceFieldParameter> DP = {
-        { bh_name[bhA],  ForceFieldParameter("kJ/mol", 1e4, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
-        { bh_name[bhB],  ForceFieldParameter("1/nm", 10, 10, 1, 0, 50, Mutability::Bounded, true, true) },
-        { bh_name[bhC6], ForceFieldParameter("kJ/mol nm6", 0.001, 0, 1, 0, 0.01, Mutability::Bounded, true, true) }
+        { bh_name[bhA],   ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e6, Mutability::Bounded, true, true) },
+        { bh_name[bhB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { bh_name[bhC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
+        { tt_name[ttA],   ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
+        { tt_name[ttB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { tt_name[ttC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
+        { tt_name[ttC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 1e3, Mutability::Bounded, true, true) },
+        { tt_name[ttC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) }
     };
     for(const auto &entry : table)
     {
@@ -537,6 +543,13 @@ int gen_ff(int argc, char*argv[])
             case Potential::GENERALIZED_BUCKINGHAM:
                 vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
                 rename.insert({"sigma", "rmin"});
+                break;
+            case Potential::TANG_TOENNIES:
+                vdwlist = { { tt_name[ttA], "kJ/mol" }, 
+                            { tt_name[ttB], "1/nm" },
+                            { tt_name[ttC6], "kJ/mol nm^6" },
+                            { tt_name[ttC8], "kJ/mol nm^8" },
+                            { tt_name[ttC10], "kJ/mol nm^10" } };
                 break;
             default: // throws
                 GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));

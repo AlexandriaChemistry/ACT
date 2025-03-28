@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -27,13 +27,15 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 #include <limits>
 #include <cmath>
 
 #include "penalizer.h"
+
+#include "gromacs/utility/textwriter.h"
 
 namespace ga
 {
@@ -44,12 +46,11 @@ namespace ga
 
 VolumeFractionPenalizer::VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
                                                  const bool               logVolume,
-                                                       FILE              *logfile,
                                                  const double             totalVolume,
                                                  const double             volFracLimit,
                                                  const double             popFrac,
                                                        Initializer       *initializer)
-: Penalizer(logfile), logVolume_(logVolume), totalVolume_(totalVolume),
+: logVolume_(logVolume), totalVolume_(totalVolume),
   volFracLimit_(volFracLimit), popFrac_(popFrac), initializer_(initializer)
 {
     outfile_ = xvgropen(
@@ -66,8 +67,9 @@ VolumeFractionPenalizer::VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
     xvgr_legend(outfile_, tmpParamNames.size(), tmpParamNames.data(), oenv);
 }
 
-bool VolumeFractionPenalizer::penalize(      GenePool *pool,
-                                       const int       generation)
+bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
+                                       GenePool        *pool,
+                                       const int        generation)
 {
     // Get the volume of the population
     const double poolVolume = getPoolVolume(*pool);
@@ -76,19 +78,17 @@ bool VolumeFractionPenalizer::penalize(      GenePool *pool,
     fprintf(outfile_, "%d %lf %lf\n", generation, poolVolume, volFrac_);
     if (volFrac_ < volFracLimit_)
     {
-        if (logfile_)
+        if (tw)
         {
-            fprintf(
-                logfile_,
-                "Generation %d -> VolumeFractionPenalizer %s: population volume is %g, total volume is %g, fraction %g is below the limit %g, thus randomizing the worst %g%% of genomes...\n",
-                generation,
-                logVolume_ ? "(log scale)" : "",
-                poolVolume,
-                totalVolume_,
-                volFrac_,
-                volFracLimit_,
-                popFrac_ * 100
-            );
+            tw->writeStringFormatted("Generation %d -> VolumeFractionPenalizer %s: population volume is %g, total volume is %g, fraction %g is below the limit %g, thus randomizing the worst %g%% of genomes...\n",
+                                     generation,
+                                     logVolume_ ? "(log scale)" : "",
+                                     poolVolume,
+                                     totalVolume_,
+                                     volFrac_,
+                                     volFracLimit_,
+                                     popFrac_ * 100
+                                     );
         }
         // Randomize
         size_t i = static_cast<size_t>(
@@ -148,13 +148,12 @@ VolumeFractionPenalizer::~VolumeFractionPenalizer()
 * BEGIN: CatastrophePenalizer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-CatastrophePenalizer::CatastrophePenalizer(      FILE        *logfile,
-                                           const int          seed,
+CatastrophePenalizer::CatastrophePenalizer(const int          seed,
                                            const int          genInterval,
                                            const double       popFrac,
                                                  Initializer *initializer,
                                            const size_t       popSize)
-: Penalizer(logfile), gen(rd()), genInterval_(genInterval), popFrac_(popFrac),
+: gen(rd()), genInterval_(genInterval), popFrac_(popFrac),
   initializer_(initializer), availableIndices_(popSize)
 {
     gen.seed(seed);
@@ -164,10 +163,10 @@ CatastrophePenalizer::CatastrophePenalizer(      FILE        *logfile,
     }
 }
 
-static void printCause(FILE         *out,
-                       int           generation,
-                       double        percentage,
-                       std::mt19937 &gen)
+static void printCause(gmx::TextWriter *tw,
+                       int              generation,
+                       double           percentage,
+                       std::mt19937    &gen)
 {
     std::vector<const char *> ccc = {
         "Earth was hit by a strong burst of gamma radiation wiping out %g percent\nof the population. New mutants will take over.\n",
@@ -193,18 +192,19 @@ static void printCause(FILE         *out,
     };
     std::uniform_int_distribution<int>  distr(0, ccc.size());
     int csel = distr(gen) % ccc.size();
-    fprintf(out, "\nGeneration %d: ", generation);
-    fprintf(out, ccc[csel], percentage);
+    tw->writeStringFormatted("\nGeneration %d: ", generation);
+    tw->writeStringFormatted(ccc[csel], percentage);
 }
 
-bool CatastrophePenalizer::penalize(      GenePool *pool,
-                                    const int       generation)
+bool CatastrophePenalizer::penalize(gmx::TextWriter *tw,
+                                    GenePool        *pool,
+                                    const int        generation)
 {
     if (generation > 0 && generation % genInterval_ == 0)
     {
-        if (logfile_)
+        if (tw)
         {
-            printCause(logfile_, generation, popFrac_ * 100, gen);
+            printCause(tw, generation, popFrac_ * 100, gen);
         }
         // Shuffle the indices vector and randomize the last (100 - popFrac_*100)%
         std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);

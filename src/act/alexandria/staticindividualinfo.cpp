@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 
@@ -44,6 +44,7 @@
 #include "act/forcefield/forcefield_xml.h"
 
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -83,8 +84,8 @@ void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
 * BEGIN: ForceField stuff                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillForceField(      FILE *fp,
-                                       const char *pd_fn)
+void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
+                                          const char      *pd_fn)
 {
     int root = 0;
     if (!cr_->isHelper())
@@ -111,10 +112,10 @@ void StaticIndividualInfo::fillForceField(      FILE *fp,
     {
         pd_.sendToHelpers(cr_, root);
     }
-    if (nullptr != fp)
+    if (tw)
     {
-        fprintf(fp, "There are %d atom types in the input file %s.\n\n",
-                static_cast<int>(pd_.getNatypes()), pd_fn);
+        tw->writeStringFormatted("There are %d atom types in the input file %s.\n\n",
+                                 static_cast<int>(pd_.getNatypes()), pd_fn);
     }
 }
 
@@ -333,7 +334,7 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * END: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::generateOptimizationIndex(FILE                      *fp,
+void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *tw,
                                                      const MolGen              *mg,
                                                      const CommunicationRecord *cr)
 {
@@ -373,10 +374,10 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                 }
             }
         }
-        if (fp)
+        if (tw)
         {
-            fprintf(fp, "There are %zu parameters to train.\n", optIndex_.size());
-            fprintf(fp, "Identifier        Parameter     Minimum     Maximum\n");
+            tw->writeStringFormatted("There are %zu parameters to train.\n", optIndex_.size());
+            tw->writeStringFormatted("Identifier             Parameter     Minimum     Maximum     Initial\n");
             auto fcs = pd_.forcesConst();
             for(auto &i : optIndex_)
             {
@@ -390,9 +391,10 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                         const auto &fs = gg->second.find(i.parameterType());
                         if (gg->second.end() != fs)
                         {
-                            fprintf(fp, "%-15s %11s  %10g  %10g\n",
-                                    i.id().id().c_str(), i.parameterType().c_str(),
-                                    fs->second.minimum(), fs->second.maximum());
+                            tw->writeStringFormatted("%-20s %11s  %10g  %10g  %10g\n",
+                                                     i.id().id().c_str(), i.parameterType().c_str(),
+                                                     fs->second.minimum(), fs->second.maximum(),
+                                                     fs->second.value());
                         }
                     }
                 }
@@ -406,9 +408,9 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
                     else
                     {
                         auto &pp = pt->parameterConst(i.parameterType());
-                        fprintf(fp, "%-15s %11s  %10g  %10g\n",
-                                i.particleType().c_str(), i.parameterType().c_str(),
-                                pp.minimum(), pp.maximum());
+                        tw->writeStringFormatted("%-15s %11s  %10g  %10g\n",
+                                                 i.particleType().c_str(), i.parameterType().c_str(),
+                                                 pp.minimum(), pp.maximum());
                     }
                 }
                 else
@@ -450,7 +452,7 @@ void StaticIndividualInfo::generateOptimizationIndex(FILE                      *
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillVectors(const int mindata)
+void StaticIndividualInfo::fillVectors(unsigned int mindata)
 {
     if (cr_->isMasterOrMiddleMan())
     {

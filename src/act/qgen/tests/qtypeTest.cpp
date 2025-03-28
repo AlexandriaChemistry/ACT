@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
@@ -160,12 +161,12 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 alexandria::ACTMol actmol;
 
                 actmol.Merge(&molprop);
+                MsgHandler msghandler;
                 // Generate charges and topology
-                auto imm = actmol.GenerateTopology(stdout, pd,
-                                                   missingParameters::Error);
-                if (immStatus::OK != imm)
+                actmol.GenerateTopology(&msghandler, pd,
+                                        missingParameters::Error);
+                if (!msghandler.ok())
                 {
-                    fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                     break;
                 }
 
@@ -177,7 +178,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 {
                     alg = ChargeGenerationAlgorithm::Custom;
                 }
-                actmol.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces, true);
+                actmol.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces, true);
                 
                 std::vector<double> q;
                 auto myatoms = actmol.atomsConst();

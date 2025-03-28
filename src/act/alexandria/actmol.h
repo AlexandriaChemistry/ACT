@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,7 +39,7 @@
 
 #include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molselect.h"
-#include "act/alexandria/actmol_low.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
@@ -48,19 +48,8 @@
 #include "act/qgen/qtype.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/mdtypes/fcdata.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/real.h"
 
 namespace alexandria
 {
@@ -258,11 +247,11 @@ private:
      * Check whether atom types exist in the force field
      * also check whether the multiplicity is correct.
      *
+     * \param[in] msghandler Message handler
      * \param[in] pd    The force field structure
-     * \param[in] atoms The structure to check
-     * \return status code.
      */
-    immStatus checkAtoms(const ForceField *pd);
+    void checkAtoms(MsgHandler       *msghandler,
+                    const ForceField *pd);
     
     /*! \brief
      * Find the atoms inside the molcule needed to construct the inplane virtual sites.
@@ -294,11 +283,7 @@ private:
     // Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
-    t_nrnb                         nrnb_;
-    gmx_wallcycle_t                wcycle_;
-    gmx_shellfc_t                 *shellfc_       = nullptr;
     std::vector<int>               symmetric_charges_;
-    std::vector<std::string>       error_messages_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
     FragmentHandler               *fraghandler_   = nullptr;
@@ -321,7 +306,10 @@ public:
      * Constructor
      */
     ACTMol();
-    
+
+    //! \return the molprop object
+    MolProp *molProp() { return MolProp::self(); }
+
     iMolSelect datasetType() const { return dataset_type_; }
     
     void set_datasetType(iMolSelect dataset_type) 
@@ -381,19 +369,21 @@ public:
      * reference energies paired with a map of ACT energy components. The 
      * InteractionType index points to the energy type in the
      * energyComponentsMap.
-     * \param[in]  pd                   The force field structure
-     * \param[in]  forceComp            The force computer utility
-     * \param[out] forceMap             The forces
-     * \param[out] energyMap            The energy components for a single structure
-     * \param[out] interactionEnergyMap The interaction energies
-     * \param[out] energyComponentsMap  The energy components
+     * \param[in]  pd                         The force field structure
+     * \param[in]  forceComp                  The force computer utility
+     * \param[out] forceMap                   The forces
+     * \param[out] energyMap                  The energy components for a single structure
+     * \param[out] interactionEnergyMap       The interaction energies
+     * \param[out] energyComponentsMap        The energy components
+     * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
     void forceEnergyMaps(const ForceField                                                  *pd,
                          const ForceComputer                                               *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >             *forceMap,
                          std::vector<ACTEnergy>                                            *energyMap,
                          ACTEnergyMapVector                                                *interactionEnergyMap,
-                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const;
+                         std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                         bool                                                               separateInductionCorrection) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
@@ -401,9 +391,6 @@ public:
     //! Return the reference intensities collected earlier
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
 
-    //! Return accumulated list of errors.    
-    const std::vector<std::string> errors() const {return error_messages_;}
-    
     /*! \brief
      * \return atoms data for editing
      */
@@ -419,6 +406,12 @@ public:
 
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
+
+    /*! Whether data is present
+     * \param[in] mpo The observable to look for
+     * \return true if any data of the type is present 
+     */
+    bool hasMolPropObservable(MolPropObservable mpo) const;
 
     /*! \brief Return the fragment handler
      */
@@ -439,14 +432,13 @@ public:
     /*! \brief
      * It generates the atoms structure which will be used to print the topology file.
      *
-     * \param[in]  fp      File to write (debug) information to
-     * \param[in]  pd      Data structure containing atomic properties
-     * \param[in]  missing How to treat missing parameters
-     * \return status
+     * \param[in]  msghandler Message handler
+     * \param[in]  pd         Data structure containing atomic properties
+     * \param[in]  missing    How to treat missing parameters
      */
-    immStatus GenerateTopology(FILE              *fp,
-                               ForceField        *pd,
-                               missingParameters  missing);
+    void GenerateTopology(MsgHandler        *msghandler,
+                          ForceField        *pd,
+                          missingParameters  missing);
     
     //! Return the ACT topology structure
     const Topology *topology() const { return topology_; }
@@ -457,6 +449,7 @@ public:
     /*! \brief
      * Generate atomic partial charges
      *
+     * \param[in]  msghandler Message Handler
      * \param[in]  pd        Data structure containing atomic properties
      * \param[in]  forceComp Force computer utility
      * \param[in]  algorithm The algorithm for determining charges,
@@ -468,14 +461,15 @@ public:
      * \param[out] forces    This routine will compute energies and forces.
      * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
-    immStatus GenerateCharges(const ForceField          *pd,
-                              const ForceComputer       *forceComp,
-                              ChargeGenerationAlgorithm  algorithm,
-                              qType                      qtype,
-                              const std::vector<double> &qcustom,
-                              std::vector<gmx::RVec>    *coords,
-                              std::vector<gmx::RVec>    *forces,
-                              bool                       updateQprops = false);
+    void GenerateCharges(MsgHandler                *msghandler,
+                         const ForceField          *pd,
+                         const ForceComputer       *forceComp,
+                         ChargeGenerationAlgorithm  algorithm,
+                         qType                      qtype,
+                         const std::vector<double> &qcustom,
+                         std::vector<gmx::RVec>    *coords,
+                         std::vector<gmx::RVec>    *forces,
+                         bool                       updateQprops = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
@@ -485,25 +479,27 @@ public:
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    The forces
      */
-    immStatus GenerateAcmCharges(const ForceField       *pd,
-                                 const ForceComputer    *forceComp,
-                                 std::vector<gmx::RVec> *coords,
-                                 std::vector<gmx::RVec> *forces);
+    ACTMessage GenerateAcmCharges(const ForceField       *pd,
+                                  const ForceComputer    *forceComp,
+                                  std::vector<gmx::RVec> *coords,
+                                  std::vector<gmx::RVec> *forces);
     
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.
      *
+     * \param[in] msghandler Message and status handler 
      * \param[in] pd   The force field   
      * \param[in] iqm  Determine whether to allow exp or QM results or both for each property
      * \param[in]  watoms  Weight for the potential on the atoms in 
      *                     doing the RESP fit. Should be 0 in most cases.
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
-    immStatus getExpProps(const ForceField                           *pd,
-                          const std::map<MolPropObservable, iqmType> &iqm,
-                          real                                        watoms = 0,
-                          int                                         maxESP = 100);
+    void getExpProps(MsgHandler                                 *msghandler,
+                     const ForceField                           *pd,
+                     const std::map<MolPropObservable, iqmType> &iqm,
+                     real                                        watoms = 0,
+                     int                                         maxESP = 100);
     
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.
@@ -540,30 +536,33 @@ public:
      * \param[out] forces        Force array
      * \param[out] energies      The energy components
      * \param[out] shellForceRMS Root mean square force on the shells
-     * \return immStatus::OK if everything worked fine, error code otherwise.
+     * \return ACTMessage::OK if everything worked fine, error code otherwise.
      */
-    immStatus calculateEnergyOld(const t_commrec                   *crtmp,
-                                 std::vector<gmx::RVec>            *coordinates,
-                                 PaddedVector<gmx::RVec>           *forces,
-                                 std::map<InteractionType, double> *energies,
-                                 real                              *shellForceRMS);
+    ACTMessage calculateEnergyOld(const t_commrec                   *crtmp,
+                                  std::vector<gmx::RVec>            *coordinates,
+                                  PaddedVector<gmx::RVec>           *forces,
+                                  std::map<InteractionType, double> *energies,
+                                  real                              *shellForceRMS);
     
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute
      * Epot(system) - Sum_f Epot(f) 
-     * where f are the fragments.
+     * where f are the fragments. Importantly the individual components
+     * of the energy are stored.
      * For a polarizable model the shell positions are minimized.
-     * \param[in] pd                 The force field
-     * \param[in] forceComputer      The code to run the calculations.
-     * \param[out] einter            The interaction energy components
-     * \param[out] interactionForces The forces on the atoms due to the interacting components
-     * \param[inout] coords          Atomic coordinates (shell positions can be updated)
+     * \param[in] pd                          The force field
+     * \param[in] forceComputer               The code to run the calculations.
+     * \param[out] einter                     The interaction energy components
+     * \param[out] interactionForces          The forces on the atoms due to the interacting components
+     * \param[inout] coords                   Atomic coordinates (shell positions can be updated)
+     * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
     void calculateInteractionEnergy(const ForceField                  *pd,
                                     const ForceComputer               *forceComputer,
                                     std::map<InteractionType, double> *einter,
                                     std::vector<gmx::RVec>            *interactionForces,
-                                    std::vector<gmx::RVec>            *coords) const;
+                                    std::vector<gmx::RVec>            *coords,
+                                    bool                               separateInductionCorrection) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd
@@ -575,14 +574,6 @@ public:
     void UpdateIdef(const ForceField                      *pd,
                     const std::vector<InteractionType> &iTypes,
                     bool                                updateZeta);
-    
-    /*! \brief
-     * Generate GROMACS structures.
-     */
-    immStatus GenerateGromacs(const gmx::MDLogger       &mdlog,
-                              const CommunicationRecord *cr,
-                              const char                *tabfn,
-                              ChargeType                 iType);
     
     /*! \brief
      * Generate cube

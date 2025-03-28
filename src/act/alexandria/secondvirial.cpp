@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,12 +39,13 @@
 #include "act/alexandria/atype_mapping.h"
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/b2data.h"
+#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -136,8 +137,6 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
                           std::vector<t_filenm> *filenm)
 {
     std::vector<t_pargs> pa = {
-        { "-traj",   FALSE, etSTR,  {&trajname_},
-          "Trajectory or series of structures of the same compound for which the energies will be computed. If this option is present, no simulation will be performed." },
         { "-T1",     FALSE, etREAL, {&T1_},
           "Starting temperature for second virial calculations." },
         { "-T2",     FALSE, etREAL, {&T2_},
@@ -228,70 +227,16 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
-void ReRunner::rerun(FILE                        *logFile,
-                     const ForceField            *pd,
-                     const ACTMol                *actmol,
-                     bool                         userqtot,
-                     double                       qtot,
-                     bool                         verbose,
-                     bool                         oneH)
+void ReRunner::rerun(MsgHandler       *msghandler,
+                     const ForceField *pd,
+                     const ACTMol     *actmol,
+                     bool              verbose)
 {
-    std::vector<std::vector<gmx::RVec> > dimers;
-    std::string          method, basis;
-    int                  maxpot = 100;
-    int                  nsymm  = 1;
-    const char          *molnm  = "";
-    if (verbose && debug)
-    {
-        print_memory_usage(debug);
-    }
-    if (!trajname_ || strlen(trajname_) == 0)
-    {
-        printf("No trajectory passed. Not doing any rerun.\n");
-        return;
-    }
-    std::vector<MolProp> mps;
-    std::string tname(trajname_);
-    auto pos = tname.find(".xml");
-    if (pos != std::string::npos && tname.size() == pos+4)
-    {
-        // Assume this is a molprop file
-        MolPropRead(trajname_, &mps);
-    }
-    else
-    {
-        // Read compounds if we have a trajectory file
-        matrix box;
-        if (!readBabel(pd, trajname_, &mps, molnm, molnm, "", &method,
-                       &basis, maxpot, nsymm, "Opt", userqtot, &qtot, false, box, oneH))
-        {
-            fprintf(stderr, "Could not read compounds from %s\n", trajname_);
-            return;
-        }
-    }
-    for(size_t i = 0; i < mps.size(); i++)
-    {
-        auto exper = mps[i].experimentConst();
-        for(const auto &ep : exper)
-        {
-            std::vector<gmx::RVec> xx;
-            for(const auto &epx: ep.getCoordinates())
-            {
-                xx.push_back(epx);
-                if (pd->polarizable())
-                {
-                    xx.push_back(epx);
-                }
-            }
-            dimers.push_back(xx);
-        }
-    }
-    if (logFile)
-    {
-        fprintf(logFile, "Doing energy calculation for %zu structures from %s\n",
-                dimers.size(), trajname_);
-        fflush(logFile);
-    }
+    std::vector<std::vector<gmx::RVec>> dimers;
+    gendimers_->read(&dimers);
+    msghandler->write(gmx::formatString("Doing energy calculation for %zu structures from %s\n",
+                                        dimers.size(), gendimers_->trajname()));
+
     if (verbose && debug)
     {
         print_memory_usage(debug);
@@ -329,14 +274,12 @@ void ReRunner::rerun(FILE                        *logFile,
             }
         }
         std::vector<gmx::RVec> forces(coords.size());
-        if (verbose)
-        {
-            fprintf(logFile, "%5d", mp_index);
-        }
+        std::string out = gmx::formatString("%5d", mp_index);
         if (eInter_)
         {
-            std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
+            std::map<InteractionType, double> energies;
+            forceComp_->compute(pd, actmol->topology(),
+                                &coords, &forces, &energies);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
@@ -363,16 +306,12 @@ void ReRunner::rerun(FILE                        *logFile,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (debug)
+            out += gmx::formatString(" r %g", rcom);
+            for (auto &EE: energies)
             {
-                fprintf(debug, " r %g", rcom);
-                for (auto &EE: einter)
-                {
-                    fprintf(debug, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
-                }
-                fprintf(debug, "\n");
+                out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
             }
-            edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
+            edist.add_point(rcom, energies[InteractionType::EPOT], 0, 0);
         }
         else
         {
@@ -380,13 +319,12 @@ void ReRunner::rerun(FILE                        *logFile,
                                 &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
-                fprintf(logFile, "  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
+                out += gmx::formatString("  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
             }
-            fprintf(logFile, "\n");
         }
-        if (verbose)
+        if (msghandler->info())
         {
-            fprintf(logFile, "\n");
+            msghandler->write(out);
         }
         mp_index++;
     }
@@ -397,11 +335,10 @@ void ReRunner::rerun(FILE                        *logFile,
 }
 
 void ReRunner::runB2(CommunicationRecord         *cr,
-                     FILE                        *logFile,
+                     MsgHandler                  *msghandler,
                      const ForceField            *pd,
                      const ACTMol                *actmol,
                      int                          maxdimer,
-                     bool                         verbose,
                      const std::vector<t_filenm> &fnm)
 {
     // Compute the relative masses
@@ -409,26 +346,68 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         actmol->fragmentHandler()->topologies()[0]->mass(),
         actmol->fragmentHandler()->topologies()[1]->mass()
     };
-    // Do this in parallel and with little memory
-    int ndimer = maxdimer / cr->size();
-    int nrest  = maxdimer % cr->size();
-    if (cr->isMaster() && nrest != 0)
+    int ndimer = 0;
+    int nrest  = 0;
+    std::vector<std::vector<gmx::RVec>> dimers;
+    if (gendimers_->hasTrajectory())
     {
-        if (logFile)
+        if (cr->isMaster())
         {
-            fprintf(logFile, "Will generate %d dimers on helpers and %d on master.\n", ndimer, nrest);
+            gendimers_->read(&dimers);
         }
-        ndimer = nrest;
+        maxdimer = dimers.size();
+        ndimer   = 1;
     }
-    else if (logFile)
+    else
     {
-        fprintf(logFile, "Will generate %d dimers on each node.\n", ndimer);
+        // Do this in parallel and with little memory
+        ndimer = maxdimer / cr->size();
+        nrest  = maxdimer % cr->size();
+
+        // Make sure that different nodes have different random number generator seed.
+        // For each dimer, 2 x 3 = 6 random numbers are needed. That means, each node
+        // uses ndimer x 6. However (see below), if nrest != 0, the master will get that
+        // number. 
+        if (cr->isMaster())
+        {
+            gendimers_->generateRandomNumbers(maxdimer);
+            auto allRand = gendimers_->allRandom();
+            int ioffset = 0;
+            if (nrest > 0)
+            {
+                ioffset = 1;
+            }
+            for(int dst = 1; dst < cr->size(); dst++)
+            {
+                cr->send(dst, ndimer);
+                int nn = nrest + (dst-ioffset)*ndimer;
+                for(int j = 0; j < ndimer; j++)
+                {
+                    cr->send(dst, allRand[nn + j]);
+                }
+            }
+            if (nrest > 0)
+            {
+                ndimer = nrest;
+            }
+            gendimers_->resetAllRandom(ndimer);
+            msghandler->write(gmx::formatString("Will generate or read %d dimers on helpers and %d on master.", ndimer, nrest));
+        }
+        else
+        {
+            int src = cr->superior();
+            cr->recv(src, &ndimer);
+            for(int i = 0; i < ndimer; i++)
+            {
+                std::vector<double> q;
+                cr->recv(src, &q);
+                gendimers_->addRandomNumbers(q);
+            }
+        }
     }
-    // Make sure that different nodes have different random number generator seed.
-    gendimers_->setSeed(gendimers_->seed() + 2*cr->rank());
     // Will be used to obtain a seed for the random number engine for bootstrapping
     std::random_device                 bsRand;
-    //Standard mersenne_twister_engine seeded with rd()
+    // Standard mersenne_twister_engine seeded with rd()
     std::mt19937                       bsGen(bsRand());
     std::uniform_int_distribution<int> bsDistr(0, gendimers_->ndist());
 
@@ -451,8 +430,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     for(int idimer = 0; idimer < ndimer; idimer++)
     {
         // Generate a new set of dimers for all distances
-        auto   dimers = gendimers_->generateDimers(actmol);
-
+        if (!gendimers_->hasTrajectory())
+        {
+            dimers = gendimers_->generateDimers(debug, actmol);
+        }
         // Structures to store energies, forces and torques
         gmx_stats                           edist;
         std::map<InteractionType, double>   energies;
@@ -497,7 +478,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords);
+            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
+
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -577,26 +559,26 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
             double rcom = norm(dcom);
-            if (verbose)
+            if (msghandler->verbose())
             {
-                fprintf(logFile, " r %g", rcom);
+                std::string out = gmx::formatString(" r %g", rcom);
                 for (auto &EE: einter)
                 {
-                    fprintf(logFile, " %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
+                    out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
                 }
-                fprintf(logFile, " Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
-                        f[0][XX], f[0][YY], f[0][ZZ],
-                        torque[0][XX], torque[0][YY], torque[0][ZZ],
-                        torque[1][XX], torque[1][YY], torque[1][ZZ],
-                        torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
-                        torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
-                fprintf(logFile, "\n");
+                out += gmx::formatString(" Force %g %g %g Torque[0] %g %g %g Torque[1] %g %g %g Rotated Torque[0] %g %g %g Rotated Torque[1] %g %g %g",
+                                         f[0][XX], f[0][YY], f[0][ZZ],
+                                         torque[0][XX], torque[0][YY], torque[0][ZZ],
+                                         torque[1][XX], torque[1][YY], torque[1][ZZ],
+                                         torqueRot[0][XX], torqueRot[0][YY], torqueRot[0][ZZ],
+                                         torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
+                msghandler->write(out);
             }
             edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
         }
-        if (verbose)
+        if (msghandler->verbose())
         {
-            fprintf(logFile, "\n");
+            msghandler->write("");
         }
         for(int kk = 0; kk < 2; kk++)
         {
@@ -650,7 +632,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     if (cr->isMaster())
     {
         // Starting energy, all values until first data entry
-        
+        auto header = gmx::formatString("Temperature");
+        for(const auto &b2b : b2Type2str)
+        {
+            header += gmx::formatString("  %16s", b2b.second.c_str());
+        }
+        msghandler->write(header);
         for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
         {
             auto T      = Temperature[iTemp];
@@ -673,16 +660,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
             b2t_[b2Type::Total][iTemp]     = Btot;
             
-            if (logFile)
+            std::string out = gmx::formatString("%11.2f", T);
+            for(const auto &b2b : b2Type2str)
             {
-                fprintf(logFile, "T = %g K. ", T);
-                for(const auto &b2b : b2Type2str)
-                {
-                    fprintf(logFile, " %s %8.1f", b2b.second.c_str(),
-                            b2t_[b2b.first][iTemp]);
-                }
-                fprintf(logFile, "\n");
+                out += gmx::formatString("  %16.2f", b2t_[b2b.first][iTemp]);
             }
+            msghandler->write(out);
         }
         if (!fnm.empty())
         {
@@ -710,33 +693,16 @@ int b2(int argc, char *argv[])
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff",      "aff",     ffREAD  },
-        { efXML, "-charges", "charges", ffOPTRD },
-        { efLOG, "-g",       "b2",      ffWRITE } 
+        { efXML, "-ff",      "aff",     ffREAD  }
     };
     gmx_output_env_t         *oenv;
     static char              *molnm      = (char *)"";
-    static char              *qqm        = (char *)"";
-    static char              *filename   = (char *)"";
-    double                    qtot       = 0;
     double                    shellToler = 1e-6;
     int                       maxdimers  = 1024;
-    bool                      verbose    = false;
-    bool                      oneH       = false;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
-        { "-f",      FALSE, etSTR,  {&filename},
-           "Input file name. Please supply a correct pdb file containing two compounds." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
-        { "-qtot",   FALSE, etREAL, {&qtot},
-          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
-        { "-qqm",    FALSE, etSTR,  {&qqm},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
-        { "-oneH", FALSE, etBOOL, {&oneH},
-          "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-maxdimer", FALSE, etINT, {&maxdimers},
           "Number of dimer orientations to generate if you do not provide a trajectory. For each of these a distance scan will be performed." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -747,9 +713,13 @@ int b2(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     DimerGenerator      gendimers;
-    gendimers.addOptions(&pa, &fnm);
+    gendimers.addOptions(&pa, &fnm, &desc);
     ReRunner            rerun(true);
     rerun.addOptions(&pa, &fnm);
+    CompoundReader      compR;
+    compR.addOptions(&pa, &fnm, &desc);
+    MsgHandler          msghandler;
+    msghandler.addOptions(&pa, &fnm, "b2");
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
                            fnm.size(), fnm.data(), pa.size(), pa.data(),
@@ -758,8 +728,17 @@ int b2(int argc, char *argv[])
         status = 1;
         return status;
     }
-    gendimers.finishOptions();
-    
+    msghandler.optionsFinished(fnm, &cr);
+    if (cr.isMaster())
+    {
+        print_header(msghandler.tw(), pa, fnm);
+    }
+    gendimers.finishOptions(fnm);
+    compR.optionsOK(&msghandler, fnm);
+    if (!msghandler.ok())
+    {
+        return 1;
+    }
     ForceField        pd;
     try
     {
@@ -768,123 +747,36 @@ int b2(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    FILE *logFile = nullptr;
-    if (cr.isMaster())
-    {
-        const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-        logFile = gmx_ffopen(logFileName, "w");
-        print_header(logFile, pa, fnm);
-    }
+
     auto  forceComp = new ForceComputer(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
-    if (verbose)
+    if (msghandler.info())
     {
         forceFieldSummary(&jtree, &pd);
     }
 
-    ACTMol    actmol;
-    chargeMap qmap;
-    auto qfn       = opt2fn_null("-charges", fnm.size(), fnm.data());
-    if (qfn)
-    {
-        qmap = fetchChargeMap(&pd, forceComp, qfn);
-        if (logFile)
-        {
-            fprintf(logFile, "\nRead %lu entries into charge map from %s\n", qmap.size(), qfn);
-        }
-    }
-    if (strlen(molnm) == 0)
-    {
-        molnm = (char *)"MOL";
-    }
-    {
-        std::vector<MolProp>  mps;
-        double qtot_babel = qtot;
-        int maxpot = 100;
-        int nsymm  = 1;
-        std::string method, basis;
-        const char *conf = "";
-        const char *jobtype = (char *)"Opt";
-        matrix box;
-        bool   userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-        if (readBabel(&pd, filename, &mps, molnm, molnm, conf, &method, &basis,
-                      maxpot, nsymm, jobtype, userqtot, &qtot_babel, false, box, oneH))
-        {
-            if (mps.size() > 1)
-            {
-                fprintf(stderr, "Warning: will only use the first dimer in %s\n", filename);
-            }
-            actmol.Merge(&mps[0]);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "No input file has been specified.");
-        }
-    }
-    
-    immStatus imm = immStatus::OK;
-    if (status == 0)
-    {
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
-    }
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    auto &actmol = actmols[0];
     std::vector<gmx::RVec> coords = actmol.xOriginal();
-    if (immStatus::OK == imm && status == 0)
-    {
-        auto fragments  = actmol.fragmentHandler();
-        if (fragments->setCharges(qmap))
-        {
-            // Copy charges to the high-level topology as well
-            fragments->fetchCharges(actmol.atoms());
-        }
-        else
-        {
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
 
-            std::vector<double> myq;
-            auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            if (strlen(qqm) > 0)
-            {
-                alg   = ChargeGenerationAlgorithm::Read;
-                qtype = stringToQtype(qqm);
-            }
-            if (logFile)
-            {
-                fprintf(logFile, "WARNING: No information in charge map. Will generate charges using %s algorithm\n",
-                        chargeGenerationAlgorithmName(alg).c_str());
-            }
-            imm    = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
-        }
-    }
-    if (immStatus::OK == imm && status == 0)
+    if (msghandler.ok() && status == 0)
     {
         if (debug)
         {
             actmol.topology()->dump(debug);
         }
         rerun.setFunctions(forceComp, &gendimers, oenv);
-        if (rerun.doRerun())
-        {
-            bool userqtot = opt2parg_bSet("-qtot", pa.size(), pa.data());
-            rerun.rerun(logFile, &pd, &actmol, userqtot, qtot, verbose, oneH);
-        }
-        else
-        {
-            rerun.runB2(&cr, logFile, &pd, &actmol, maxdimers, verbose, fnm);
-        }
+        rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
     if (json && cr.isMaster())
     {
         jtree.write("simulate.json", json);
     }
-    else if (logFile)
+    else 
     {
-        jtree.fwrite(logFile, json);
-    }
-    if (logFile)
-    {
-        gmx_ffclose(logFile);
+        int indent = 0;
+        msghandler.write(jtree.writeString(json, &indent));
     }
     return status;
 }

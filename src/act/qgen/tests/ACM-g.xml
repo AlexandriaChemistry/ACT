@@ -3383,6 +3383,7 @@
     <combinationrule parameter="epsilon" rule="Geometric"/>
     <combinationrule parameter="gamma" rule="Geometric"/>
     <combinationrule parameter="sigma" rule="Geometric"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Ar">
       <parameter type="epsilon" unit="kJ/mol" value="0.515" uncertainty="0" minimum="0.03" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="15" uncertainty="0" minimum="10" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -3571,6 +3572,7 @@
   </interaction>
   <interaction type="COULOMB" function="COULOMB_GAUSSIAN" canswap="true">
     <option key="reference" value="Ghahremanpour2022a"/>
+    <option key="nexcl" value="0"/>
     <parameterlist identifier="Be2+_z">
       <parameter type="zeta" unit="1/nm" value="13" uncertainty="0" minimum="6" maximum="20" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>

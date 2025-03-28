@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -46,6 +46,7 @@
 #include "act/alexandria/gromacs_top.h"
 #include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/symmetrize_charges.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/molprop/experiment.h"
@@ -165,9 +166,9 @@ void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
     }
 }
 
-immStatus ACTMol::checkAtoms(const ForceField *pd)
+void ACTMol::checkAtoms(MsgHandler       *msghandler,
+                        const ForceField *pd)
 {
-    int nmissing        = 0;
     int atomnumberTotal = 0;
     auto myatoms = topology_->atoms();
     for (size_t i = 0; i < myatoms.size(); i++)
@@ -175,35 +176,38 @@ immStatus ACTMol::checkAtoms(const ForceField *pd)
         auto atype = myatoms[i].ffType();
         if (!pd->hasParticleType(atype))
         {
-            printf("Could not find a force field entry for atomtype %s atom %zu in compound '%s'\n",
-                   atype.c_str(), i+1, getMolname().c_str());
-            nmissing++;
+            msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
+                            gmx::formatString("Could not find a force field entry for atomtype %s atom %zu in compound '%s'", atype.c_str(), i+1, getMolname().c_str()).c_str());
         }
         else
         {
             atomnumberTotal += pd->findParticleType(atype)->atomnumber();
         }
     }
-    if (nmissing > 0)
+    if (!msghandler->ok())
     {
-        return immStatus::AtomTypes;
+        return;
     }
     // Check multiplicity
     int multOk = atomnumberTotal + totalMultiplicity() + totalCharge();
     if (multOk % 2 == 0)
     {
-        fprintf(stderr, "WARNING: atomnumberTotal %d, totalMultiplicity %d, totalCharge %d for %s\n",
-                atomnumberTotal, totalMultiplicity(), totalCharge(),
-                getMolname().c_str());
-        return immStatus::Multiplicity;
+        msghandler->msg(ACTStatus::Warning, ACTMessage::Multiplicity,
+                        gmx::formatString("AtomnumberTotal %d, totalMultiplicity %d, totalCharge %d for %s", atomnumberTotal, totalMultiplicity(), totalCharge(),
+                                          getMolname().c_str()));
+        return;
     }
-    return immStatus::OK;
 }
 
 static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
                                           const Topology               *topology)
 {
     auto myatoms = topology->atoms();
+    if (myatoms.empty())
+    {
+        // Called this function too early?
+        return xxx;
+    }
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
@@ -244,6 +248,16 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
     return coords;
 }
 
+bool ACTMol::hasMolPropObservable(MolPropObservable mpo) const
+{
+    bool hasMPO = false;
+    for(const auto &exper : experimentConst())
+    {
+        hasMPO = hasMPO || exper.hasProperty(mpo);
+    }
+    return hasMPO;
+}
+
 std::vector<gmx::RVec> ACTMol::xOriginal() const
 {
     auto exper = findExperimentConst(JobType::OPT);
@@ -256,19 +270,20 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
         exper = findExperimentConst(JobType::SP);
         if (nullptr == exper)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No structure at all for %s", getMolname().c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No structure at all for '%s'", getMolname().c_str()).c_str()));
         }
     }
 
     return experCoords(exper->getCoordinates(), topology_);
 }
 
-void ACTMol::forceEnergyMaps(const ForceField                                      *pd,
-                             const ForceComputer                                   *forceComp,
-                             std::vector<std::vector<std::pair<double, double> > > *forceMap,
-                             std::vector<ACTEnergy>                                *energyMap,
-                             ACTEnergyMapVector                                    *interactionEnergyMap,
-                             std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap) const
+void ACTMol::forceEnergyMaps(const ForceField                                                  *pd,
+                             const ForceComputer                                               *forceComp,
+                             std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                             std::vector<ACTEnergy>                                            *energyMap,
+                             ACTEnergyMapVector                                                *interactionEnergyMap,
+                             std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                             bool                                                               separateInductionCorrection) const
 {
     auto       myatoms = topology_->atoms();
     forceMap->clear();
@@ -314,7 +329,8 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
-            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords);
+            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords,
+                                       separateInductionCorrection);
             ACTEnergyMap aemap;
             for (auto &ener : einter)
             {
@@ -358,13 +374,14 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     }
                 }
                 // TODO Store the interaction forces
-                if (foundQM == mpos.size())
+                ACTEnergy my_all(exper.id());
+                my_all.setACT(ener.second);
+                if (foundQM == mpos.size() ||
+                    (foundQM == mpos.size()-1 && !separateInductionCorrection))
                 {
-                    ACTEnergy my_all(exper.id());
-                    my_all.setACT(ener.second);
                     my_all.setQM(my_qm);
-                    aemap.insert({ener.first, my_all});
                 }
+                aemap.insert({ener.first, my_all});
             }
             if (aemap.size() > 0)
             {
@@ -445,62 +462,73 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
     return linear;
 }
 
-immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
-                                   ForceField        *pd,
-                                   missingParameters  missing)
+void ACTMol::GenerateTopology(MsgHandler        *msghandler,
+                              ForceField        *pd,
+                              missingParameters  missing)
 {
-    immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
 
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
-    }
+    msghandler->msg(ACTStatus::Debug,
+                    gmx::formatString("Generating topology for %s",
+                                      getMolname().c_str()));
+
     generateComposition();
     if (NAtom() <= 0)
     {
-        imm = immStatus::AtomTypes;
+        msghandler->msg(ACTStatus::Warning, ACTMessage::AtomTypes, "No atoms");
     }
     /* Store bonds in harmonic potential list first, update type later */
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
         topology_ = new Topology(*bonds());
     }
     // Get the coordinates.
-    std::vector<gmx::RVec> coords = xOriginal();
+    std::vector<gmx::RVec> coords;// = xOriginal();
 
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
-        imm = topology_->GenerateAtoms(pd, this,  &coords);
+        topology_->GenerateAtoms(msghandler, pd, this,  &coords);
     }
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
-        imm = checkAtoms(pd);
+        checkAtoms(msghandler, pd);
     }
     // Create fragments before adding shells!
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
-        fraghandler_ = new FragmentHandler(pd, coords, topology_->atoms(),
-                                           bondsConst(), fragmentPtr(), missing);
-        if (fraghandler_->topologies().empty())
+        auto fptr = fragmentPtr();
+        if (fptr->size() > 0)
         {
-            delete fraghandler_;
-            imm = immStatus::FragmentHandler;
+            fraghandler_ = new FragmentHandler(msghandler,
+                                               pd, coords, topology_->atoms(),
+                                               bondsConst(), fptr, missing);
+
+            if (fraghandler_->topologies().empty())
+            {
+                msghandler->msg(ACTStatus::Error, ACTMessage::FragmentHandler,
+                                getMolname());
+                delete fraghandler_;
+            }
+            else
+            {
+                // Finally, extract frequencies etc.
+                getHarmonics();
+            }
         }
         else
         {
-            // Finally, extract frequencies etc.
-            getHarmonics();
+            msghandler->msg(ACTStatus::Error, ACTMessage::FragmentHandler,
+                            "No fragments");
         }
     }
     
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
-        topology_->build(pd, &coords, 175.0, 5.0, missing);
+        topology_->build(msghandler, pd, &coords, 175.0, 5.0, missing);
     }
-    auto myatoms = topology()->atoms();
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
+        auto myatoms = topology()->atoms();
         realAtoms_.clear();
         for(size_t i = 0; i < myatoms.size(); i++)
         {
@@ -510,7 +538,7 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             }
         }
     }
-    if (immStatus::OK == imm && missing != missingParameters::Generate)
+    if (msghandler->ok() && missing != missingParameters::Generate)
     {
         std::vector<InteractionType> itUpdate;
         for(auto &entry : *(topology_->entries()))
@@ -518,24 +546,16 @@ immStatus ACTMol::GenerateTopology(gmx_unused FILE   *fp,
             itUpdate.push_back(entry.first);
         }
     }
-    if (immStatus::OK == imm)
+    if (msghandler->ok())
     {
-        imm = checkAtoms(pd);
+        checkAtoms(msghandler, pd);
     }
-    if (immStatus::OK != imm && debug)
+    if (msghandler->ok())
     {
-        for(const auto &emsg : error_messages_)
-        {
-            fprintf(debug, "%s\n", emsg.c_str());
-        }
-    }
-    if (immStatus::OK == imm)
-    {
-        isLinear_ = isLinearMolecule(myatoms, coords);
+        isLinear_ = isLinearMolecule(topology_->atoms(), coords);
         // Symmetrize the atoms
         get_symmetrized_charges(topology_, pd, nullptr, &symmetric_charges_);
     }
-    return imm;
 }
 
 double ACTMol::bondOrder(int ai, int aj) const
@@ -552,11 +572,43 @@ static void printEmap(FILE *fp, const std::map<InteractionType, double> *e)
     fprintf(fp, "\n");
 }
 
+static void checkEnergies(const char                              *info,
+                          const std::map<InteractionType, double> &einter)
+{
+    // Do this kind of check in debug mode only.
+    if (nullptr == debug)
+    {
+        return;
+    }
+    std::set<InteractionType> ignore = { InteractionType::ALLELEC, InteractionType::EXCHIND, InteractionType::EPOT };
+    double esum = 0;
+    for(const auto &e : einter)
+    {
+        if (ignore.end() == ignore.find(e.first))
+        {
+            esum += e.second;
+        }
+    }
+    double toler = 1e-3;
+    double epot  = einter.find(InteractionType::EPOT)->second;
+    double diff  = std::abs(esum - epot);
+    double denom = std::abs(esum + epot);
+    // Try relative tolerance if the denominator not small,
+    // otherwise try absolute tolerance.
+    if ((denom > toler && (diff >= toler*denom)) ||
+        (denom <= toler && diff >= toler))
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("%s: found einter %g but sum of terms is %g",
+                                                       info, epot, esum).c_str()));
+    }
+}
+
 void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                                         const ForceComputer               *forceComputer,
                                         std::map<InteractionType, double> *einter,
                                         std::vector<gmx::RVec>            *interactionForces,
-                                        std::vector<gmx::RVec>            *coords) const
+                                        std::vector<gmx::RVec>            *coords,
+                                        bool                               separateInductionCorrection) const
 {
     auto &tops = fraghandler_->topologies();
     einter->clear();
@@ -571,10 +623,11 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     {
         fprintf(debug, "Will compute interaction energy\n");
     }
-    // First compute the monomer energies
+    // First compute the relaxed monomer energies
     std::map<InteractionType, double> e_monomer[2];
     auto &astart = fraghandler_->atomStart();
     auto itInduc = InteractionType::INDUCTION;
+    auto itICorr = InteractionType::INDUCTIONCORRECTION;
     auto itElec  = InteractionType::ELECTROSTATICS;
     auto itPolar = InteractionType::POLARIZATION;
     for(size_t ff = 0; ff < tops.size(); ff++)
@@ -589,12 +642,12 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             j++;
         }
         (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &e_monomer[ff]);
-        
         j = 0;
         for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
             // Copy back coordinates to original array to store relaxed shell positions
             copy_rvec(myx[j], (*coords)[i]);
+            // Store interaction forces
             for(int m = 0; m < DIM; m++)
             {
                 (*interactionForces)[i][m] -= forces[j][m];
@@ -606,7 +659,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             fprintf(debug, "%s monomer[%zu]:", getMolname().c_str(), ff);
             printEmap(debug, &e_monomer[ff]);
         }
-        // Move induction in monomer to electrostatics if present
+        // If present, move induction in monomer to electrostatics
         auto ei = e_monomer[ff].find(itInduc);
         if (e_monomer[ff].end() != ei)
         {
@@ -618,6 +671,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 printEmap(debug, &e_monomer[ff]);
             }
         }
+        checkEnergies("Monomer", e_monomer[ff]);
     }
     // TODO forces are overwritten, not trustable!
     std::vector<gmx::RVec> forces(topology_->atoms().size(), fzero);
@@ -625,18 +679,25 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     auto myatoms = topology_->atoms();
     // Now compute the total relaxed energy
     {
-        // Make a copy of the content
+        // Make a copy of the coordinates, since shell positions will change
         std::vector<gmx::RVec> mycoords = *coords;
+        // Note that here the shells start in the position of the relaxed
+        // monomers such as to only measure the induction due to the dimer
         (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_total, fzero, false);
-        // Move remaining polarisation energy to the electrostatics
+        // Move remaining polarisation energy to the electrostatics.
+        // Since we started with the shells in the relaxed monomer position,
+        // not the entire polarization will have been moved to induction.
         if (e_total.end() != e_total.find(itPolar) &&
             e_total.end() != e_total.find(itElec))
         {
             e_total.find(itElec)->second += e_total.find(itPolar)->second;
             e_total.find(itPolar)->second = 0;
         }
+        checkEnergies("Total", e_total);
     }
-    // Now time to compute mutual induction for the dimer
+    // Now time to compute mutual induction for the dimer.
+    // This means, that the shells of one molecule are allowed
+    // to relax, but not the other.
     std::map<InteractionType, double> e_dimer[2];
     for(size_t ff = 0; ff < tops.size(); ff++)
     { 
@@ -650,24 +711,17 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 myshells.insert(i);
             }
         }
-        // Make a copy of the content
+        // Make a fresh copy of the coordinates
         std::vector<gmx::RVec> mycoords = *coords;
         // Eqn 6
         (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_dimer[ff],
                                       fzero, false, myshells);
-                                      
-        // Move remaining polarisation energy to the electrostatics
-        if (e_dimer[ff].end() != e_dimer[ff].find(itPolar) &&
-            e_dimer[ff].end() != e_dimer[ff].find(itElec))
-        {
-            e_dimer[ff].find(itElec)->second += e_dimer[ff].find(itPolar)->second;
-            e_dimer[ff].find(itPolar)->second = 0;
-        }
         if (debug)
         {
             fprintf(debug, "%s dimer[%lu]:", getMolname().c_str(), ff);
             printEmap(debug, &e_dimer[ff]);
         }
+        checkEnergies("Dimer", e_dimer[ff]);
     }
     // Now compute interaction energy terms
     *einter = e_total;
@@ -688,6 +742,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         fprintf(debug, "%s einter:", getMolname().c_str());
         printEmap(debug, einter);
     }
+    checkEnergies("Inter 0", *einter);
     {
         // Now compute the induction energy to the second order, Eqn. 6
         double delta_einduc2 = 0;
@@ -704,23 +759,39 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
                 }
             }
         }
-        einter->insert_or_assign(itInduc, delta_einduc2);
-
         // Finally, compute the remaining (garbage bin) terms, Eqn. 7
-        auto eic = einter->find(InteractionType::INDUCTIONCORRECTION);
-        if (einter->end() != eic && e_total.end() != e_total.find(itInduc))
+        // by moving induction energy from the induction term to the
+        // induction correction term.
+        auto eit = einter->find(itInduc);
+        if (einter->end() == eit)
         {
-            double delta_einduc3 = e_total[itInduc] - delta_einduc2;
-            eic->second += delta_einduc3;
+            einter->insert({ itInduc, 0 });
+            eit = einter->find(itInduc);
+        }
+        eit->second -= delta_einduc2;
+
+        auto eic = einter->find(itICorr);
+        if (einter->end() == eic)
+        {
+            einter->insert({ itICorr, 0 });
+            eic = einter->find(itICorr);
+        }
+        eic->second += delta_einduc2;
+        // Final check, to see whether induction needs to be summed or not.
+        if (!separateInductionCorrection)
+        {
+            eit->second += eic->second;
+            eic->second  = 0;
         }
     }
+    checkEnergies("Inter 1", *einter);
     {
         // Gather the terms for ALLELEC output.
         auto eall = einter->find(InteractionType::ALLELEC);
         eall->second = 0;
         if (einter->end() != eall)
         {
-            for(auto itype : { itElec, itInduc, InteractionType::INDUCTIONCORRECTION })
+            for(auto itype : { itElec, itInduc, itICorr })
             {
                 auto ee = einter->find(itype);
                 if (einter->end() != ee)
@@ -730,13 +801,14 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             }
         }
     }
+    checkEnergies("Inter 2", *einter);
     {
         // Gather the terms for EXCHIND output.
         auto eall = einter->find(InteractionType::EXCHIND);
         eall->second = 0;
         if (einter->end() != eall)
         {
-            for(auto itype : { InteractionType::EXCHANGE, itInduc, InteractionType::INDUCTIONCORRECTION })
+            for(auto itype : { InteractionType::EXCHANGE, itInduc, itICorr })
             {
                 auto ee = einter->find(itype);
                 if (einter->end() != ee)
@@ -746,6 +818,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             }
         }
     }
+    checkEnergies("Inter 3", *einter);
     // Add dimer forces to the interaction forces
     // TODO this is not correct anymore, see above.
     for(size_t i = 0; i < topology_->atoms().size(); i++)
@@ -762,7 +835,7 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     }
 }
 
-immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
+ACTMessage ACTMol::GenerateAcmCharges(const ForceField       *pd,
                                      const ForceComputer    *forceComp,
                                      std::vector<gmx::RVec> *coords,
                                      std::vector<gmx::RVec> *forces)
@@ -774,7 +847,7 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
                                                        getMolname().c_str(), atomsConst().size(), qold.size()).c_str()));
     }
-    immStatus imm       = immStatus::OK;
+    ACTMessage imm       = ACTMessage::OK;
     if (fraghandler_->fixedCharges())
     {
         // We do not need to derive charges again, since they were set once already.
@@ -789,13 +862,13 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     {
         EemRms = 0;
         auto eqgen = fraghandler_->generateCharges(debug, getMolname(),
-                                                   *coords, pd, atoms());
+                                                   *coords, pd, atoms(),
+                                                   symmetric_charges_);
         if (eQgen::OK == eqgen)
         {
             (void) forceComp->compute(pd, topology_, coords, forces, &energies);
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
-            apply_symmetrized_charges(&qnew, symmetric_charges_);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
             for (size_t i = 0; i < qnew.size(); i++)
             {
@@ -807,16 +880,16 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
         }
         else if (eQgen::NOSUPPORT == eqgen)
         {
-            imm = immStatus::MissingChargeGenerationParameters;
+            imm = ACTMessage::MissingChargeGenerationParameters;
         }
         else
         {
-            imm = immStatus::ChargeGeneration;
+            imm = ACTMessage::ChargeGeneration;
         }
         iter++;
     }
-    while (imm == immStatus::OK && (!converged) && (iter < maxQiter_));
-    if (immStatus::OK == imm)
+    while (imm == ACTMessage::OK && (!converged) && (iter < maxQiter_));
+    if (ACTMessage::OK == imm)
     {
         if (!converged)
         {
@@ -839,17 +912,17 @@ immStatus ACTMol::GenerateAcmCharges(const ForceField       *pd,
     return imm;
 }
 
-immStatus ACTMol::GenerateCharges(const ForceField          *pd,
-                                  const ForceComputer       *forceComp,
-                                  ChargeGenerationAlgorithm  algorithm,
-                                  qType                      qtype,
-                                  const std::vector<double> &qcustom,
-                                  std::vector<gmx::RVec>    *coords,
-                                  std::vector<gmx::RVec>    *forces,
-                                  bool                       updateQprops)
+void ACTMol::GenerateCharges(MsgHandler                *msghandler,
+                             const ForceField          *pd,
+                             const ForceComputer       *forceComp,
+                             ChargeGenerationAlgorithm  algorithm,
+                             qType                      qtype,
+                             const std::vector<double> &qcustom,
+                             std::vector<gmx::RVec>    *coords,
+                             std::vector<gmx::RVec>    *forces,
+                             bool                       updateQprops)
 {
-    immStatus imm         = immStatus::OK;
-    bool      converged   = false;
+    bool converged   = false;
 
     // TODO check whether this needed
     std::map<InteractionType, double> energies;
@@ -913,8 +986,6 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
             }
             fraghandler_->setCharges(*myatoms);
-            
-            return immStatus::OK;
         }
         break;
     case ChargeGenerationAlgorithm::Read:
@@ -941,7 +1012,9 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
             }
             if (qread.empty())
             {
-                return immStatus::NoMolpropCharges;
+                msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                                getMolname());
+                return;
             }
             size_t j = 0;
             for(size_t i = 0; i < myatoms->size(); i++)
@@ -955,7 +1028,9 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                     const auto &pId = (*myatoms)[i].ffType();
                     if (!pd->hasParticleType(pId))
                     {
-                        return immStatus::AtomTypes;
+                        msghandler->msg(ACTStatus::Error, ACTMessage::AtomTypes,
+                                        getMolname());
+                        return;
                     }
                     auto piter = pd->findParticleType(pId);
                     auto q = piter->charge();
@@ -965,8 +1040,8 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
             }
             fraghandler_->setCharges(*myatoms);
-            return immStatus::OK;
         }
+        break;
     case ChargeGenerationAlgorithm::Custom:
         {
             for (size_t i = 0; i < myatoms->size(); i++)
@@ -974,7 +1049,7 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 (*myatoms)[i].setCharge(qcustom[i]);
             }
             fraghandler_->setCharges(*myatoms);
-            return immStatus::OK;
+            return;
         }
     case ChargeGenerationAlgorithm::ESP:
         {
@@ -1041,7 +1116,9 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
                 }
                 else
                 {
-                    imm = immStatus::ChargeGeneration;
+                    msghandler->msg(ACTStatus::Error, ACTMessage::ChargeGeneration,
+                                    getMolname());
+                    return;
                 }
             }
         }
@@ -1049,11 +1126,10 @@ immStatus ACTMol::GenerateCharges(const ForceField          *pd,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            imm = GenerateAcmCharges(pd, forceComp, coords, forces);
+            (void) GenerateAcmCharges(pd, forceComp, coords, forces);
         }
         break;
     }
-    return imm;
 }
 
 void ACTMol::PrintConformation(const char                   *fn,
@@ -1401,20 +1477,24 @@ void ACTMol::getHarmonics()
     }
 }
 
-immStatus ACTMol::getExpProps(const ForceField                           *pd,
-                              const std::map<MolPropObservable, iqmType> &iqm,
-                              real                                        watoms,
-                              int                                         maxESP)
+void ACTMol::getExpProps(MsgHandler                                 *msghandler,
+                         const ForceField                           *pd,
+                         const std::map<MolPropObservable, iqmType> &iqm,
+                         real                                        watoms,
+                         int                                         maxESP)
 {
     std::vector<double> vec;
     std::string         myref;
     std::string         mylot;
-    immStatus           imm        = immStatus::OK;
     
     auto &myatoms = atomsConst();
     GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
     
     bool foundNothing = true;
+    msghandler->msg(ACTStatus::Debug,
+                    gmx::formatString("Found %zu data items for %s",
+                                      experimentConst().size(),
+                                      getMolname().c_str()));
     for (const auto &myexp : experimentConst())
     {
         bool     qprop = false;
@@ -1434,6 +1514,11 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             }
             // Fetch the property from this experiment
             auto gp = myexp.propertyConst(prop.first);
+            msghandler->msg(ACTStatus::Debug,
+                            gmx::formatString("Found %zu %s values for %s",
+                                              gp.size(),
+                                              mpo_name(prop.first),
+                                              getMolname().c_str()));
             switch (prop.first)
             {
             case MolPropObservable::CHARGE:
@@ -1444,6 +1529,9 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                     {
                         qprop = true;
                     }
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Found %zu charges for %s",
+                                                      q.size(), getMolname().c_str()));
                     break;
                 }
             case MolPropObservable::POTENTIAL:
@@ -1477,6 +1565,9 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                             }
                         }
                     }
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Found %zu potential points for %s",
+                                                      eee.size(), getMolname().c_str()));
                     qprop = true;
                 }
                 break;
@@ -1501,6 +1592,10 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                         qelec->setPolarizabilityTensor(polprop->getTensor());
                         qprop = true;
                     }
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Found %s for %s",
+                                                      mpo_name(prop.first),
+                                                      getMolname().c_str()));
                 }
                 break;
             case MolPropObservable::INTERACTIONENERGY:
@@ -1511,6 +1606,10 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, ieprop->getValue()));
                         foundNothing = false;
                     }
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Found %s for %s",
+                                                      mpo_name(prop.first),
+                                                      getMolname().c_str()));
                 }
                 break;
             case MolPropObservable::ELECTROSTATICS:
@@ -1530,6 +1629,10 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, eprop->getValue()));
                         foundNothing = false;
                     }
+                    msghandler->msg(ACTStatus::Debug,
+                                    gmx::formatString("Found %s for %s",
+                                                      mpo_name(prop.first),
+                                                      getMolname().c_str()));
                 }
                 break;
             case MolPropObservable::FREQUENCY:
@@ -1543,7 +1646,9 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
             case MolPropObservable::SVIB:
             case MolPropObservable::CP:
             case MolPropObservable::CV:
+                break;
             case MolPropObservable::COORDINATES:
+                foundNothing = false;
                 break;
             }
         }
@@ -1570,9 +1675,9 @@ immStatus ACTMol::getExpProps(const ForceField                           *pd,
     {
         ACTQprop actq(topology()->atoms(), xOriginal());
         qProps_.push_back(std::move(actq));
-        imm = immStatus::NoData;
+        msghandler->msg(ACTStatus::Warning, ACTMessage::NoData, 
+                        gmx::formatString("Did not find any data for %s", getMolname().c_str()));
     }
-    return imm;
 }
 
 CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const

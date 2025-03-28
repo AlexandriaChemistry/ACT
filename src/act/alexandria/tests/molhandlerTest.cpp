@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,6 +44,7 @@
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/alexandria/thermochemistry.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
@@ -109,8 +110,7 @@ static void add_energies(const ForceField                        *pd,
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    void test(const char *molname, const char *forcefield, bool nma, int maxretry=1,
-              double ftoler=1e-15)
+    void test(const char *molname, const char *forcefield, bool nma, double ftoler=1e-15)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -141,6 +141,7 @@ protected:
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
+        MsgHandler msghandler;
         if (readOK)
         {
             for(auto &molprop: molprops)
@@ -148,19 +149,20 @@ protected:
                 ACTMol mm;
                 mm.Merge(&molprop);
                 // Generate charges and topology
-                auto imm = mm.GenerateTopology(stdout, pd,
-                                               missingParameters::Error);
-                EXPECT_TRUE(immStatus::OK == imm);
-                if (immStatus::OK != imm)
+                mm.GenerateTopology(&msghandler, pd,
+                                    missingParameters::Ignore);
+                EXPECT_TRUE(msghandler.ok());
+                if (!msghandler.ok())
                 {
-                    fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
-                            immsg(imm), basis.c_str(), method.c_str());
                     return;
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
-                mps.push_back(mm);
+                mm.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+                if (msghandler.ok())
+                {
+                    mps.push_back(mm);
+                }
             }
         }
         
@@ -181,9 +183,9 @@ protected:
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(ftoler);
-            simConfig.setRetries(maxretry);
-            auto eMin = mh.minimizeCoordinates(pd, &mp, forceComp, simConfig,
-                                               &xmin, &eAfter, nullptr, {});
+            // Change nullptr to stdout for debugging.
+            auto eMin = mh.minimizeCoordinates(&msghandler, pd, &mp, forceComp,
+                                               simConfig, &xmin, &eAfter, {});
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             if (eMinimizeStatus::OK != eMin)
             {
@@ -276,12 +278,12 @@ protected:
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
-    test("methanethiol.sdf", "ACS-g", false);
+    test("methanethiol.sdf", "ACS-g", false, 1e-13);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false, 1, 1e-6);
+    test("carbon-dioxide.sdf", "ACS-g", false, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
@@ -301,7 +303,7 @@ TEST_F (MolHandlerTest, AcetoneNoFreq)
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false, 1, 1e-14);
+    test("uracil.sdf", "ACS-g", false, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
@@ -312,28 +314,28 @@ TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-pg", false);
+    test("hydrogen-chloride.sdf", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false, 1, 1e-8);
+    test("water-3-oep.log.pdb", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false);
+    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
 {
-    test("uracil.sdf", "ACS-pg", false);
+    test("uracil.sdf", "ACS-pg", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true, 1, 1e-8);
+    test("carbon-dioxide.sdf", "ACS-g", true, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
@@ -355,7 +357,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true, 1, 1e-14);
+    test("uracil.sdf", "ACS-g", true, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
@@ -365,22 +367,22 @@ TEST_F (MolHandlerTest, CarbonDioxidePol)
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true);
+    test("hydrogen-chloride.sdf", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", true, 1, 1e-8);
+    test("water-3-oep.log.pdb", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1, 1e-15);
+    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilPol)
 {
-    test("uracil.sdf", "ACS-pg", true);
+    test("uracil.sdf", "ACS-pg", true, 1e-12);
 }
 
 } // namespace

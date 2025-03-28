@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
 
@@ -46,6 +46,11 @@
 #include "act/utility/communicationrecord.h"
 #include "act/basics/mutability.h"
 #include "molgen.h"
+
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace alexandria
 {
@@ -150,11 +155,11 @@ public:
 
     /*!
      * \brief Fill the ForceField attribute by reading from a file
-     * \param[in] fp        File pointer for printing information
+     * \param[in] tw        TextWriter
      * \param[in] pd_fn     name of the gentop (Force Field) file
      */
-    void fillForceField(FILE       *fp,
-                        const char *pd_fn);
+    void fillForceField(gmx::TextWriter *tw,
+                        const char      *pd_fn);
 
     /*!
      * \brief Copy the Force Field parameters to the ForceField structure
@@ -287,11 +292,11 @@ public:
     /*!
      * \brief Generate the vector of OptimizationIndex instances
      * This is done on middlemen, who then distribute it to their helpers.
-     * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] tw TextWriter
      * \param[in] mg MolGen pointer
      * \param[in] cr Communication Information
      */
-    void generateOptimizationIndex(FILE                      *fp,
+    void generateOptimizationIndex(gmx::TextWriter           *tw,
                                    const MolGen              *mg,
                                    const CommunicationRecord *cr);
 
@@ -309,7 +314,7 @@ public:
      * Dev: Fills \p defaultParam_ \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
      * \param[in] mindata mininum number of existing datapoints to consider a parameter for optimization
      */
-    void fillVectors(const int mindata);
+    void fillVectors(unsigned int mindata);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Vector stuff                      *

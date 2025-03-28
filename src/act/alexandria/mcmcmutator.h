@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -74,19 +74,13 @@ private:
     //! Standard deviation of each parameter
     std::vector<double>        pSigma_;
     //! Internal counter for generation number
-    int                        myGeneration_ = 0;
+    int                        myGeneration_   = 0;
+    //! Copy of max generations from GA config handler
+    int                        maxGenerations_ = 1;
     //! Convergence file for each parameter type
     std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
     gmx::FilePtr               fpe_;
-    //! Pointer to log file (may be nullptr)
-    FILE                      *logfile_ = nullptr;
-    /*! Flush output immediately rather than letting the OS buffer it.
-     * Don't use for production simulations.
-     */
-    bool                  flush_ = false;
-    //! Print information to the log file as we optimize
-    bool                  verbose_ = false;
     //! Evaluate the test set at each iteration?
     bool                  evaluateTestSet_ = false;
     // Random number generation
@@ -103,10 +97,12 @@ private:
 
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
+     * \param[in] msghandler        The message handler, what else?
      * \param[in] chi2              the new minimum
      * \param[in] xiter             fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void printNewMinimum(const std::map<iMolSelect, double> &chi2,
+    void printNewMinimum(MsgHandler                         *msghandler,
+                         const std::map<iMolSelect, double> &chi2,
                          double                              xiter);
 
     /*!
@@ -140,6 +136,7 @@ private:
 
     /*!
      * \brief Take a step of MCMC by attempting to alter a parameter
+     * \param[in]  msghandler The message and status handler
      * \param[inout] genome         pointer to a genome
      * \param[out] bestGenome       pointer to the best genome, to be filled
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
@@ -149,7 +146,8 @@ private:
      * \param[in] checkPoint        whether or not to checkpoint during optimization
      * \param[in] beta0             pointer to beta for annealing
      */
-    void stepMCMC(ga::Genome                   *genome,
+    void stepMCMC(MsgHandler                   *msghandler,
+                  ga::Genome                   *genome,
                   ga::Genome                   *bestGenome,
                   std::map<iMolSelect, double> *prevEval,
                   size_t                        pp,
@@ -172,24 +170,25 @@ public:
      * \param[in] nParam          size of the force field parameter vector
      * \param[in] evaluateTestSet Whether or not to evaluate the test set
      *                            every once in a while
+     * \param[in] maxGenerations  If this is part of the HYBRID training this may be needed for annealing
      */
-    MCMCMutator(FILE                 *logfile,
-                bool                  verbose,
-                bool                  flush,
-                int                   seed,
+    MCMCMutator(int                   seed,
                 BayesConfigHandler   *bch,
                 ACMFitnessComputer   *fitComp,
                 StaticIndividualInfo *sii,
-                bool                  evaluateTestSet);
+                bool                  evaluateTestSet,
+                int                   maxGenerations);
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
+     * \param[in]  msghandler The message and status handler
      * \param[in]  genome     pointer to the genome
      * \param[out] bestGenome pointer to the best genome
      * \param[in]  prMut      Probability for mutation. 
      *                   Abused as a boolean for evaluating the test set here, if > 0.
      */
-    virtual void mutate(ga::Genome *genome,
+    virtual void mutate(MsgHandler *msghandler,
+                        ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
 
@@ -204,20 +203,23 @@ public:
 
     /*!
      * \brief Print the MC statistics to a file.
-     * \param[in] fp            File pointer to print to
+     * \param[in] tw            TextWriter
      * \param[in] initialGenome The initial genome
      * \param[in] bestGenome    The genome with highest fitness
      */
-    void printMonteCarloStatistics(FILE             *fp,
+    void printMonteCarloStatistics(gmx::TextWriter  *tw,
                                    const ga::Genome &initialGenome,
                                    const ga::Genome &bestGenome);
 
     /*!
-     * \brief Perform a sensitivity analysis by systematically changing all parameters and re-evaluating the \f$ \chi^2 \f$.
+     * \brief Perform a sensitivity analysis by systematically changing all parameters and
+     * re-evaluating the \f$ \chi^2 \f$.
+     * \param[in]  msghandler The message and status handler
      * \param[in] genome Pointer to genome
      * \param[in] ims    Dataset to perform sensitivity analysis on
      */
-    void sensitivityAnalysis(ga::Genome *genome,
+    void sensitivityAnalysis(MsgHandler *msghandler,
+                             ga::Genome *genome,
                              iMolSelect  ims);
 
     /*!

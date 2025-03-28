@@ -49,16 +49,29 @@ namespace alexandria
 //! Map to convert a std::string to an InteractionType
 static std::map<std::string, InteractionType> stringToItype =
     {
-        { "acmtype",     InteractionType::ELECTRONEGATIVITYEQUALIZATION },
-        { "zetatype",    InteractionType::ELECTROSTATICS },
-        { "poltype",     InteractionType::POLARIZATION },
-        { "bondtype",    InteractionType::BONDS },
-        { "vdwtype",     InteractionType::VDW },
-        { "vdwcorrtype", InteractionType::VDWCORRECTION },
+        { "acmtype",       InteractionType::ELECTRONEGATIVITYEQUALIZATION },
+        { "zetatype",      InteractionType::ELECTROSTATICS },
+        { "poltype",       InteractionType::POLARIZATION },
+        { "bondtype",      InteractionType::BONDS },
+        { "vdwtype",       InteractionType::VDW },
+        { "vdwcorrtype",   InteractionType::VDWCORRECTION },
         { "induccorrtype", InteractionType::INDUCTIONCORRECTION },
-        { "qttype",      InteractionType::CHARGETRANSFER }
+        { "qttype",        InteractionType::CHARGETRANSFER }
     };
     
+const std::string &interactionTypeToParticleSubtype(InteractionType itype)
+{
+    for(const auto &s2i : stringToItype)
+    {
+        if (s2i.second == itype)
+        {
+            return s2i.first;
+        }
+    }
+    GMX_THROW(gmx::InternalError(gmx::formatString("No particle subtype corresponding to interaction type %s found",
+                                                   interactionTypeToString(itype).c_str()).c_str()));
+}
+
 //! List of potential options for a particle
 static std::list<std::string> particleOptions = 
     { "element", "atomnumber", "row" };

@@ -174,6 +174,8 @@ class TextOutputFile : public TextOutputStream
         void write(const char *text) override;
         void close() override;
 
+        // To flush the output
+        void flush() override;
         /*! \brief
          * Returns a stream for accessing `stdout`.
          *

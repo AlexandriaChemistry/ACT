@@ -41,6 +41,7 @@ target_sources(actLib
            b2data.cpp
            babel_io.cpp
            bayes.cpp
+           compound_reader.cpp
            confighandler.cpp
            devcomputer.cpp
            dimergenerator.cpp

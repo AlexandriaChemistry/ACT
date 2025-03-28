@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -78,10 +78,26 @@ protected:
     }
     
     void test(const char *molname, const char *forcefield, 
-              bool testPolarizability, double stretch = 1)
+              bool testPolarizability, double stretch = 1, int nexcl = 0)
     {
         // Get forcefield
-        auto pd  = getForceField(forcefield);
+        auto qd  = getForceField(forcefield);
+        // Copy FF to prevent that changes mess up opther tests
+        ForceField qqd = *qd;
+        ForceField *pd = &qqd;
+        if (nexcl > 2)
+        {
+            auto fff = pd->forces();
+            for (auto ffpl = fff->begin(); ffpl != fff->end(); ++ffpl)
+            {
+                std::string exclstr("nexcl");
+                if (ffpl->second.optionExists(exclstr))
+                {
+                    ffpl->second.removeOption(exclstr);
+                    ffpl->second.addOption(exclstr, gmx::formatString("%d", nexcl));
+                }
+            }
+        }
         
         double rmsToler = 1e-12;
         auto fcomp = new ForceComputer(rmsToler, 25);
@@ -373,6 +389,23 @@ TEST_F (ForceComputerTest, UracilPolarizability)
 {
     test("uracil.sdf", "ACS-pg", true);
 }
+
+// These have to be last since they modify the force field that is shared,
+TEST_F (ForceComputerTest, MethaneThiolNexcl3)
+{
+    test("methanethiol.sdf", "ACS-g", false, 1, 3);
+}
+
+TEST_F (ForceComputerTest, UracilPolNexcl3)
+{
+    test("uracil.sdf", "ACS-pg", false, 1, 3);
+}
+
+TEST_F (ForceComputerTest, AcetonePolarizabilityGbhamNexcl3)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg-gbham", true, 1, 3);
+}
+
 
 }  // namespace
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -45,6 +45,11 @@
 #include "devcomputer.h"
 #include "molgen.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -56,8 +61,6 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-    //! \brief The filepointer to the log file.
-    FILE *logfile_;
     //! \brief A pointer to the BoundsDevComputer.
     BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
@@ -82,40 +85,43 @@ private:
 
     /*!
      * \brief Fill the devComputers vector according to the needs of the user
-     * \param[in] verbose whether the DevComputers write stuff to the logfile or not
+     * \param[in] msghandler                  Message Handler
+     * \param[in] zetadiff                    Allowed difference in zeta between cores and shells (if both have distributed charges)
+     * \param[in] haveInductionCorrectionData Whether or not this energy term is present in the input data
      */
-    void fillDevComputers(const bool verbose, double zetaDiff);
+    void fillDevComputers(MsgHandler *msghandler,
+                          double      zetaDiff,
+                          bool        haveInductionCorrectionData);
 
 public:
 
     /*!
      * Constructor
-     * \param[in] logfile           pointer to logfile
-     * \param[in] verbose           print more stuff to the logfile. Used by the DevComputers
-     * \param[in] sii               pointer to StaticIndividualInfo
-     * \param[in] mg                pointer to molgen
-     * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
+     * \param[in] msghandler Message Handler
+     * \param[in] sii        pointer to StaticIndividualInfo
+     * \param[in] mg         pointer to molgen
+     * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
      */
-    ACMFitnessComputer(      FILE                  *logfile,
-                       const bool                   verbose,
-                             StaticIndividualInfo  *sii,
-                             MolGen                *molgen,
-                       const bool                   removeMol,
-                             ForceComputer         *forceComp)
-        : logfile_(logfile), sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
+    ACMFitnessComputer(MsgHandler            *msghandler,
+                       StaticIndividualInfo  *sii,
+                       MolGen                *molgen,
+                       const bool             removeMol,
+                       ForceComputer         *forceComp)
+        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
     {
-        fillDevComputers(verbose, molgen->zetaDiff());
+        fillDevComputers(msghandler, molgen->zetaDiff(),
+                         molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }
 
     /*! \brief Do the actual computation
+     * \param[in] msghandler Message Handler
      * \param[in] genome    The genome
      * \param[in] trgtFit   The selection to compute
      * \param[in] forceComp The force computer
-     * \param[in] verbose   Whether to print stuff
      */
-    void compute(ga::Genome    *genome,
-                 iMolSelect     trgtFit,
-                 bool           verbose = false) override;  // Does not inherit the default value, damn C++ ...
+    void compute(MsgHandler *msghandler,
+                 ga::Genome *genome,
+                 iMolSelect  trgtFit);
 
     /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] params   The force field parameters
@@ -133,11 +139,14 @@ public:
     CalcDev distributeTasks(CalcDev task);
     
     /*! \brief Computes deviation from target
-     * \param[in] ims      The dataset to do computations on
+     * \param[in] msghandler Message Handler
+     * \param[in] task       The task at hand
+     * \param[in] ims        The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(CalcDev    task,
-                         iMolSelect ims);
+    double calcDeviation(MsgHandler *msghandler,
+                         CalcDev     task,
+                         iMolSelect  ims);
 
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }

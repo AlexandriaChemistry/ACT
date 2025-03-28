@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/alexandria/symmetrize_charges.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 #include "act/utility/stringutil.h"
@@ -37,7 +38,8 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(ForceField                   *pd,
+FragmentHandler::FragmentHandler(MsgHandler                   *msghandler,
+                                 ForceField                   *pd,
                                  const std::vector<gmx::RVec> &coordinates,
                                  const std::vector<ActAtom>   &atoms,
                                  const std::vector<Bond>      &bonds,
@@ -48,7 +50,13 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
-
+    if (atoms.size() != coordinates.size())
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Received %zu atoms and %zu coordinates in fragmenthandler. Giving up.",
+                                          atoms.size(), coordinates.size()));
+        return;
+    }
     bonds_.resize(fragments->size());
     std::vector<bool> atomFound(coordinates.size(), false);
     // Total number of atoms
@@ -73,7 +81,7 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             offset = std::min(offset, i);
             if (atomFound[i])
             {
-                fprintf(stderr, "Atom %d occurs multiple times, most recently in fragment %s", i, f->formula().c_str());
+                fprintf(stderr, "Atom %d (%s) occurs multiple times, most recently in fragment %s\n", i, atoms[i].name().c_str(), f->formula().c_str());
                 allWell = false;
                 break;
             }
@@ -114,17 +122,22 @@ FragmentHandler::FragmentHandler(ForceField                   *pd,
             copy_rvec(x[i], xfrag[j++]);
         }
         // Now build the rest of the topology
-        top->build(pd, &xfrag, 175.0, 5.0, missing);
-        // Array of total charges
-        qtotal_.push_back(f->charge());
-        // ID
-        ids_.push_back(f->id());
-        // Structure for charge generation
-        QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
-        // Total number of atoms
-        natoms_ += top->atoms().size();
-        // Extend topologies_ array
-        topologies_.push_back(std::move(top));
+        top->build(msghandler, pd, &xfrag, 175.0, 5.0, missing);
+        allWell = allWell && msghandler->ok();
+        if (allWell)
+        {
+            // Array of total charges
+            qtotal_.push_back(f->charge());
+            // ID copied from Fragment ID.
+            ids_.push_back(f->inchi());
+            // Structure for charge generation
+            QgenAcm_.push_back(QgenAcm(pd, top->atoms(), bonds_[ff], f->charge()));
+            // Total number of atoms
+            natoms_ += top->atoms().size();
+            // Extend topologies_ array
+            topologies_.push_back(std::move(top));
+        }
+
         // Increase counter
         ff += 1;
     }
@@ -157,32 +170,18 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        for (size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
+        auto myatoms = topologies_[ff]->atoms();
+        for (size_t a = 0; a < myatoms.size(); a++)
         {
             // TODO: Check whether this works for polarizable models
-            switch (algorithm_)
+            size_t index = atomStart_[ff] + a;
+            GMX_RELEASE_ASSERT(index < natoms_, 
+                               gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
+            (*qq)[index] = myatoms[a].charge();
+            if (debug)
             {
-            case ChargeGenerationAlgorithm::EEM:
-            case ChargeGenerationAlgorithm::SQE:
-                {
-                    size_t index = atomStart_[ff] + a;
-                    GMX_RELEASE_ASSERT(index < natoms_, 
-                                       gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
-                    (*qq)[index] = QgenAcm_[ff].getQ(a);
-                    if (debug)
-                    {
-                        fprintf(debug, "Charge %ld = %g\n", index,
-                                (*qq)[index]);
-                    }
-                }
-                break;
-            case ChargeGenerationAlgorithm::Read:
-                (*qq)[atomStart_[ff] + a] = topologies_[ff]->atoms()[a].charge();
-                break;
-            default: // throws
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
-                                                                   chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
-                break;
+                fprintf(debug, "Charge %ld = %g\n", index,
+                        (*qq)[index]);
             }
         }
     }
@@ -192,7 +191,8 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
                                        const ForceField             *pd,
-                                       std::vector<ActAtom>         *atoms)
+                                       std::vector<ActAtom>         *atoms,
+                                       const std::vector<int>       &symmetric_charges)
 {
     auto   eqgen = eQgen::OK;
     switch (algorithm_)
@@ -219,6 +219,11 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                             molname.c_str(), QgenAcm_[ff].status());
                     break;
                 }
+                // Fetch charges to one vector, then symmetrize them
+                std::vector<double> qnew;
+                fetchCharges(&qnew);
+                apply_symmetrized_charges(&qnew, symmetric_charges);
+                setCharges(qnew);
                 for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
                     (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff]->atoms()[a].charge());
@@ -253,55 +258,55 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
     return true;
 }
 
-bool FragmentHandler::setCharges(const chargeMap &qmap)
+void FragmentHandler::setCharges(MsgHandler      *msghandler,
+                                 const chargeMap &qmap)
 {
-    bool success = true;
-    for(size_t i = 0; i < ids_.size() && success; i++)
+    for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {
         auto qptr = qmap.find(ids_[i]);
         if (qmap.end() != qptr)
         {
             auto aptr = topologies_[i]->atomsPtr();
-            if (aptr->size() == qptr->second.size())
+            // Complicated loop since model in topology may contain shells or vsites
+            // but at least the atoms should match.
+            size_t q = 0;
+            for(size_t a = 0; msghandler->ok() && a < aptr->size(); a++)
             {
-                for(size_t a = 0; success && a < aptr->size(); a++)
+                if ((*aptr)[a].pType() == ActParticle::Atom)
                 {
-                    if (!((*aptr)[a].id() == qptr->second[a].first))
+                    if (!((*aptr)[a].id() == qptr->second[q].first))
                     {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
-                                                                           ids_[i].c_str(), (*aptr)[a].id().id().c_str(), qptr->second[a].first.id().c_str()).c_str()));
-                        // Program will throw before this, but success there was not.
-                        success = false;
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Atom mismatch when reading charges from chargemap for %s. Expected %s but found %s. Make sure the atoms in your chargemap match those in your molprop file.\n",
+                                                          ids_[i].c_str(), (*aptr)[a].id().id().c_str(),
+                                                          qptr->second[a].first.id().c_str()));
                     }
-                    (*aptr)[a].setCharge(qptr->second[a].second);
-                    if (debug)
+                    if (msghandler->ok())
                     {
-                        fprintf(debug, "qmap Charge %zu = %g\n", a,
-                                (*aptr)[a].charge());
+                        (*aptr)[a].setCharge(qptr->second[q].second);
+                        msghandler->msg(ACTStatus::Debug,
+                                        gmx::formatString("qmap Charge %zu = %g\n", a,
+                                                          (*aptr)[a].charge()));
                     }
                 }
-            }
-            else
-            {
-                success = false;
+                q += 1;
             }
         }
         else
         {
-            success = false;
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Cannot find compound '%s' in the charge map\n",
+                                              ids_[i].c_str()));
         }
     }
-    fixedQ_ = success;
+    fixedQ_ = msghandler->ok();
     // Set algorithm to reading charges for the future
-    if (debug)
-    {
-        fprintf(debug, "Copied charges from chargemap to fragments\n");
-    }
-    if (success)
+    msghandler->msg(ACTStatus::Debug,
+                    "Copied charges from chargemap to fragments\n");
+    if (msghandler->ok())
     {
         algorithm_ = ChargeGenerationAlgorithm::Read;
     }
-    return success;
 }
 
 void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
@@ -312,6 +317,20 @@ void FragmentHandler::setCharges(const std::vector<ActAtom> &atoms)
         for(size_t a = 0; a < aptr->size(); a++)
         {
             (*aptr)[a].setCharge(atoms[atomStart_[ff]+a].charge());
+        }
+    }
+}
+
+void FragmentHandler::setCharges(const std::vector<double> &q)
+{
+    int j = 0;
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto aptr = topologies_[ff]->atomsPtr();
+        for(size_t a = 0; a < aptr->size(); a++)
+        {
+            (*aptr)[a].setCharge(q[j]);
+            j += 1;
         }
     }
 }

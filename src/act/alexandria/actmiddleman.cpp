@@ -1,16 +1,9 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
- * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Julian Marrades,
- *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
- *             David van der Spoel (Project leader)
- *
- * This program is free software; you can redistribute it and/or
+ * this program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
@@ -27,22 +20,22 @@
  */
 #include "actmiddleman.h" 
 
-#include "gromacs/utility/gmxassert.h"
-
-#include "acminitializer.h"
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/percentmutator.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/utility/communicationrecord.h"
-#include "mcmcmutator.h"
-#include "percentmutator.h"
-#include "staticindividualinfo.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
  
-ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
+ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
+                           MolGen               *mg,
                            StaticIndividualInfo *sii,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
-                           bool                  flush,
                            gmx_output_env_t     *oenv,
                            bool                  openConvFiles)
 : gach_(gach), id_(sii->commRec()->middleManOrdinal())
@@ -64,20 +57,19 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg,
-                                      false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_);
     
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, dis(gen),
-                                                  gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, dis(gen), gach->percent());
     }
     else
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
-        auto mut = new alexandria::MCMCMutator(nullptr, false, flush, dis(gen),
+        auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, fitComp_, sii,
-                                               bch->evaluateTestset());
+                                               bch->evaluateTestset(),
+                                               gach->maxGenerations());
         if (openConvFiles)
         {
             mut->openParamConvFiles(oenv);
@@ -87,7 +79,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     }
 }
     
-void ACTMiddleMan::run()
+void ACTMiddleMan::run(MsgHandler *msghandler)
 {
     auto cr = ind_->sii()->commRec();
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
@@ -100,10 +92,10 @@ void ACTMiddleMan::run()
         cr->recv(master, ind_->genomePtr()->basesPtr());
     }
     // Start by computing my own fitness
-    fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
+    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
     {
-        fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+        fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
     }
     // I.
     // Send my initial genome and fitness to the master if needed
@@ -132,11 +124,11 @@ void ACTMiddleMan::run()
         cr->recv(master, &mode);
         if (mode == TrainFFMiddlemanMode::MUTATION)
         {
-            mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
+            mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
             
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
-                fitComp_->compute(ind_->genomePtr(), ims);
+                fitComp_->compute(msghandler, ind_->genomePtr(), ims);
                 // IV.
                 // Send the mutated vector
                 cr->send(master, *ind_->genomePtr()->basesPtr());
@@ -146,7 +138,7 @@ void ACTMiddleMan::run()
                 cr->send(master, ind_->genome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+                    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->genome().fitness(iMolSelect::Test));
                 }
             }
@@ -162,14 +154,14 @@ void ACTMiddleMan::run()
                 cr->send(master, ind_->bestGenome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(ind_->bestGenomePtr(), iMolSelect::Test);
+                    fitComp_->compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->bestGenome().fitness(iMolSelect::Test));
                 }
             }
         }
         else if (mode == TrainFFMiddlemanMode::FITNESS)
         {
-            fitComp_->compute(ind_->genomePtr(), ims);
+            fitComp_->compute(msghandler, ind_->genomePtr(), ims);
             cr->send(master, ind_->genome().fitness(ims));
         }
         cont = cr->recv_data(master);
@@ -179,12 +171,12 @@ void ACTMiddleMan::run()
     stopHelpers();
 }
 
-void ACTMiddleMan::printStatistics(FILE *logFile)
+void ACTMiddleMan::printStatistics(gmx::TextWriter *tw)
 {
-   if (gach_->optimizer() == OptimizerAlg::MCMC && logFile)
+   if (gach_->optimizer() == OptimizerAlg::MCMC && tw)
    {       
-       fprintf(logFile, "Middle man %i\n", id_);
-       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile, ind_->initialGenome(),
+       tw->writeStringFormatted("Middle man %i\n", id_);
+       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(tw, ind_->initialGenome(),
                                                                        ind_->bestGenome());
    }
 }

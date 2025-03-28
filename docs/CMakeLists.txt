@@ -121,25 +121,25 @@ if (SPHINX_FOUND)
     # into the manual, plain string + some wrapping
     # for release builds, and dummy string for non-release
     # builds
-    if("${GMX_MANUAL_DOI}" STREQUAL "")
+    if("${ACT_MANUAL_DOI}" STREQUAL "")
       # empty string means no doi, set dummy text
-      set(GMX_MANUAL_DOI_STRING "This is not a release build of GROMACS, so please reference")
-      set(GMX_MANUAL_DOI_STRING "${GMX_MANUAL_DOI_STRING} one of the GROMACS papers and the base release of the manual.")
+      set(ACT_MANUAL_DOI_STRING "This is not a release build of ACT, so please reference")
+      set(ACT_MANUAL_DOI_STRING "${ACT_MANUAL_DOI_STRING} one of the ACT papers and the base release of the manual.")
     else()
       # release version, set plain old boring string
-      set(GMX_MANUAL_DOI_STRING "Please reference this documentation as https://doi.org/${GMX_MANUAL_DOI}.")
+      set(ACT_MANUAL_DOI_STRING "Please reference this documentation as https://doi.org/${ACT_MANUAL_DOI}.")
     endif()
     # same for source doi, but modify the text
-    if("${GMX_SOURCE_DOI}" STREQUAL "")
+    if("${ACT_SOURCE_DOI}" STREQUAL "")
       # empty string means no release build
-      set(GMX_SOURCE_DOI_STRING "This is not a release build of GROMACS. Please reference one of the")
-      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} GROMACS papers, as well as the base release that this version is built from.")
-      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} Also, please state what modifcations have been performed or where the version")
-      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} was sourced from.")
+      set(ACT_SOURCE_DOI_STRING "This is not a release build of GROMACS. Please reference one of the")
+      set(ACT_SOURCE_DOI_STRING "${ACT_SOURCE_DOI_STRING} GROMACS papers, as well as the base release that this version is built from.")
+      set(ACT_SOURCE_DOI_STRING "${ACT_SOURCE_DOI_STRING} Also, please state what modifcations have been performed or where the version")
+      set(ACT_SOURCE_DOI_STRING "${ACT_SOURCE_DOI_STRING} was sourced from.")
     else()
       # release version, give them a doi url string
-      set(GMX_SOURCE_DOI_STRING "To cite the source code for this release, please cite")
-      set(GMX_SOURCE_DOI_STRING "${GMX_SOURCE_DOI_STRING} https://doi.org/${GMX_SOURCE_DOI}.")
+      set(ACT_SOURCE_DOI_STRING "To cite the source code for this release, please cite")
+      set(ACT_SOURCE_DOI_STRING "${ACT_SOURCE_DOI_STRING} https://doi.org/${ACT_SOURCE_DOI}.")
     endif()
 
     if(IMAGE_CONVERT_POSSIBLE)
@@ -161,8 +161,8 @@ if (SPHINX_FOUND)
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION
             GMX_LMFIT_REQUIRED_VERSION
-            GMX_MANUAL_DOI_STRING
-            GMX_SOURCE_DOI_STRING
+            ACT_MANUAL_DOI_STRING
+            ACT_SOURCE_DOI_STRING
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})

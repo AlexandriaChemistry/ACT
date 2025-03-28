@@ -6,9 +6,9 @@
   <Real Name="ALLELEC_act">0</Real>
   <Real Name="EXCHIND_act">0</Real>
   <Real Name="EPOT_act">0.55994035938589426</Real>
-  <Real Name="o3-1_act fX">0</Real>
-  <Real Name="o3-1_act fY">0</Real>
-  <Real Name="o3-1_act fZ">-251.16496956577922</Real>
+  <Real Name="ow-1_act fX">0</Real>
+  <Real Name="ow-1_act fY">0</Real>
+  <Real Name="ow-1_act fZ">-251.16496956577922</Real>
   <Real Name="h-2_act fX">0</Real>
   <Real Name="h-2_act fY">140.65432822664658</Real>
   <Real Name="h-2_act fZ">125.58248478288961</Real>

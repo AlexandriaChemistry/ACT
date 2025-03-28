@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,6 +42,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -166,11 +167,11 @@ protected:
                 (*fptr)[i].setCharge(qtotal[i]);
             }
             mp_.Merge(&molprop);
+            MsgHandler msghandler;
             // Generate charges and topology
-            auto imm = mp_.GenerateTopology(stdout, pd, missingParameters::Error);
-            if (immStatus::OK != imm)
+            mp_.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+            if (!msghandler.ok())
             {
-                fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
             
@@ -183,7 +184,7 @@ protected:
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
-            mp_.GenerateCharges(pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
             
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
@@ -226,12 +227,16 @@ protected:
                 std::vector<gmx::RVec> forces;
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
                 std::map<InteractionType, double> einter;
-                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords);
-                checker_.checkReal(einter[InteractionType::EPOT], "InteractionEnergy");
-                checker_.checkReal(einter[InteractionType::ELECTROSTATICS], "Coulomb");
-                checker_.checkReal(einter[InteractionType::INDUCTION], "Induction");
-                checker_.checkReal(einter[InteractionType::DISPERSION], "Dispersion");
-                checker_.checkReal(einter[InteractionType::EXCHANGE], "Repulsion");
+                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords, true);
+                for(const auto &e : einter)
+                {
+                    checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
+                }
+                double esum = (einter[InteractionType::ELECTROSTATICS] + einter[InteractionType::INDUCTION] +
+                               einter[InteractionType::INDUCTIONCORRECTION] +
+                               einter[InteractionType::DISPERSION] + einter[InteractionType::EXCHANGE]);
+                double toler = 1e-3;
+                EXPECT_TRUE(std::abs(esum - einter[InteractionType::EPOT]) <= toler);
             }
         }
     }

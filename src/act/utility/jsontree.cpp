@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,7 +35,7 @@
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
-    
+
 namespace alexandria
 {
 
@@ -129,18 +129,12 @@ const std::string JsonTree::writeString(bool json, int *indent) const
     return str;
 }
         
-void JsonTree::fwrite(FILE *fp,
-                      bool  json)
-{
-    int indent = 0;
-    fprintf(fp, "%s\n", writeString(json, &indent).c_str());
-}
-        
 void JsonTree::write(const std::string &fileName,
                      bool               json)
 {
-    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
-    fwrite(fp, json);
+    FILE *fp   = gmx_ffopen(fileName.c_str(), "w");
+    int indent = 0;
+    fprintf(fp, "%s", writeString(json, &indent).c_str());
     gmx_ffclose(fp);
 }
         

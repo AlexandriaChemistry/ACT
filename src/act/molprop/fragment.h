@@ -39,6 +39,11 @@
 
 #include "act/utility/communicationrecord.h"
 
+namespace gmx
+{
+class TextWriter;
+}
+
 namespace alexandria
 {
 
@@ -52,7 +57,7 @@ class Fragment
 {
  private:
     //! Identifier for this fragment
-    std::string      id_;
+    std::string      inchi_;
     //! Iupac name
     std::string      iupac_;
     //! Mass of this fragment
@@ -84,14 +89,14 @@ class Fragment
     
     /*! \brief Constructor with initiation
      */
-    Fragment(const std::string      &id,
+    Fragment(const std::string      &inchi,
              double                  mass,
              int                     charge,
              int                     multiplicity,
              int                     symmetryNumber,
              const std::string      &formula,
              const std::vector<int> &atoms) : 
-        id_(id), mass_(mass), charge_(charge),
+        inchi_(inchi), mass_(mass), charge_(charge),
         multiplicity_(multiplicity),
         formula_(formula), atoms_(atoms)
     {
@@ -100,16 +105,16 @@ class Fragment
         symmetryNumber_ = std::max(1, symmetryNumber);
     }
 
-    //! Return the id
-    const std::string &id() const { return id_; }
+    //! Return the inchi
+    const std::string &inchi() const { return inchi_; }
 
     //! Return the iupac
     const std::string &iupac() const { return iupac_; }
 
     /*! Set the identifier
-     * \param[in] id The new identifier
+     * \param[in] inchi The new identifier
      */
-    void setId(const std::string &id) { id_ = id; }
+    void setInchi(const std::string &inchi) { inchi_ = inchi; }
 
     /*! Set the iupac name
      * \param[in] iupac The new iupac name
@@ -164,10 +169,9 @@ class Fragment
     //! Return a string containing the atom numbers
     const std::string &atomString() const { return atomString_; }
     
-    /*! Write the content of this fragment to a file
-     * \param[in] fp The file pointer, if nullptr function will do nothing
+    /*! \return the content of this fragment to a tw
      */
-    void dump(FILE *fp) const;
+    void dump(gmx::TextWriter *tw) const;
     
     /*! \brief
      * Sends this object over an MPI connection

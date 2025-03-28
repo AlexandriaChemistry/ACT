@@ -34,17 +34,15 @@
 
 #include "act/molprop/molprop_util.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <vector>
-
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/futil.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "act/alexandria/actmol.h"
 #include "act/molprop/molprop_xml.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
@@ -61,86 +59,61 @@ void generate_index(std::vector<MolProp> *mp)
     }
 }
 
-#ifdef OLD
-void generate_composition(std::vector<MolProp> &mp)
-{
-    int              nOK = 0;
-    CompositionSpecs cs;
-
-    for (auto &mpi : mp)
-    {
-        for (auto csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
-        {
-            mpi.DeleteComposition(csi->name());
-        }
-        if (true == mpi.GenerateComposition())
-        {
-            nOK++;
-        }
-        else if (debug)
-        {
-            fprintf(debug, "Failed to make composition for %s\n",
-                    mpi.getMolname().c_str());
-        }
-    }
-    if (mp.size() > 1)
-    {
-        printf("Generated composition for %d out of %d molecules.\n",
-               nOK, (int)mp.size());
-    }
-}
-#endif
-
-int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
-                        char                             *doubles,
-                        bool                              bForceMerge)
+/*! \brief
+ * Merge multiple molprops for molecules into one, e.g. one molprop for water
+ * one for methane etc.
+ *
+ * \param[inout]  mp        The vector of MolProps
+ * \param[in]     doubles   File name for dumping output, can be nullptr
+ * \param[in]     bForceMerge If true all molprops for a compound are merged
+ * \return the number of remaining molprops
+ * \ingroup module_alexandria
+ */
+static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
+                                std::vector<std::string>         *warnings)
 {
     alexandria::MolPropIterator mpi, mmm[2];
     std::string                 molname[2];
     std::string                 form[2];
-
-    FILE *fp;
     int   i, ndouble = 0;
-    bool  bForm, bName, bDouble;
-    int   nwarn = 0;
+    bool  bDouble;
     int   cur   = 0;
 #define prev (1-cur)
-
-    if (nullptr != doubles)
+    gmx::TextWriter *tw = nullptr;
+    if (debug)
     {
-        fp = fopen(doubles, "w");
-    }
-    else
-    {
-        fp = nullptr;
+        tw = new gmx::TextWriter(debug);
     }
     i = 0;
     for (mpi = mp->begin(); (mpi < mp->end()); )
     {
         bDouble = false;
-        mpi->Dump(debug);
+        mpi->Dump(tw);
         mmm[cur]     = mpi;
         molname[cur] = mpi->getMolname();
         form[cur]    = mpi->formula();
         if (i > 0)
         {
-            bForm = (form[prev] == form[cur]);
-            bName = (molname[prev] == molname[cur]);
-            if (bName)
+            if (molname[prev] == molname[cur])
             {
-                if (!bForm)
+                auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
+                if (!warn.empty())
                 {
-                    fprintf(stderr, "%s %s with different formulae %s - %s\n",
-                            bForceMerge ? "Merging molecules" : "Found molecules",
-                            molname[prev].c_str(), form[prev].c_str(), form[cur].c_str());
-                }
-                if (bForceMerge || bForm)
-                {
-                    if (fp)
+                    for(const auto &w : warn)
                     {
-                        fprintf(fp, "%5d  %s\n", ndouble+1, molname[prev].c_str());
+                        warnings->push_back(w);
                     }
-                    nwarn += mmm[prev]->Merge(&(*mmm[cur]));
+                }
+                else
+                {
+                    auto warn = mmm[prev]->Merge(&(*mmm[cur]));
+                    if (!warn.empty())
+                    {
+                        for(const auto &w : warn)
+                        {
+                            warnings->push_back(w);
+                        }
+                    }
                     mpi    = mp->erase(mmm[cur]);
 
                     bDouble = true;
@@ -163,39 +136,20 @@ int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     }
     for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
-        mpi->Dump(debug);
-    }
-    if (fp)
-    {
-        fclose(fp);
+        mpi->Dump(tw);
     }
     printf("There were %d double entries, leaving %d after merging.\n",
            ndouble, (int)mp->size());
-    return nwarn;
-}
-
-static void dump_mp(std::vector<alexandria::MolProp> *mp)
-{
-    alexandria::MolPropIterator mpi;
-    FILE *fp;
-
-    fp = fopen("dump_mp.dat", "w");
-
-    for (mpi = mp->begin(); (mpi < mp->end()); mpi++)
+    if (tw)
     {
-        fprintf(fp, "%-20s  %s\n", mpi->formula().c_str(),
-                mpi->getMolname().c_str());
+        delete tw;
     }
-
-    fclose(fp);
 }
 
-int merge_xml(gmx::ArrayRef<const std::string> filens,
-              std::vector<alexandria::MolProp> *mpout,
-              char *outf, char *sorted, char *doubles,
-              bool bForceMerge)
+std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &filens,
+                                   std::vector<alexandria::MolProp>       *mpout)
 {
-    int npout = 0, tmp;
+    int tmp;
 
     for (auto &fn : filens)
     {
@@ -211,32 +165,24 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
         }
     }
     tmp = mpout->size();
+    auto tw = gmx::TextWriter(debug);
     if (nullptr != debug)
     {
-        fprintf(debug, "mpout->size() = %u mpout->max_size() = %u\n",
-                (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
+        tw.writeStringFormatted("mpout->size() = %u mpout->max_size() = %u\n",
+                                (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
         for (auto mpi = mpout->begin(); mpi < mpout->end(); ++mpi)
         {
-            mpi->Dump(debug);
+            mpi->Dump(&tw);
         }
     }
     MolSelect gms;
     MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
-    int       nwarn = MergeDoubleMolprops(mpout, doubles, bForceMerge);
+    std::vector<std::string> warnings;
+    MergeDoubleMolprops(mpout, &warnings);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout->size());
-    if (outf)
-    {
-        printf("There are %d entries to store in output file %s\n", npout, outf);
-        MolPropWrite(outf, *mpout, false);
-    }
-    if (sorted)
-    {
-        MolPropSort(mpout, MPSA_FORMULA, nullptr, gms);
-        MolPropWrite(sorted, *mpout, false);
-        dump_mp(mpout);
-    }
-    return nwarn;
+
+    return warnings;
 }
 
 static bool comp_mp_molname(alexandria::MolProp ma,
@@ -333,12 +279,13 @@ void MolPropSort(std::vector<alexandria::MolProp> *mp,
                  MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
                  const MolSelect &gms)
 {
+    auto tw = gmx::TextWriter(debug);
     printf("There are %d molprops. Will now sort them.\n", (int)mp->size());
     for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         if (nullptr != debug)
         {
-            mpi->Dump(debug);
+            mpi->Dump(&tw);
         }
     }
     switch (mpsa)

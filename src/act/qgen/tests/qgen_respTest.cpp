@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,6 +42,7 @@
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -120,9 +121,13 @@ protected:
         std::string   basis("Gen");
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
-        auto imm = mp.GenerateTopology(nullptr, pd, missingParameters::Error);
-        EXPECT_TRUE(immStatus::OK == imm);
-        
+        MsgHandler msghandler;
+        mp.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+        EXPECT_TRUE(msghandler.ok());
+        if (!msghandler.ok())
+        {
+            return;
+        }
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
         auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
@@ -137,11 +142,11 @@ protected:
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::POTENTIAL, iqmType::QM }
         };
-        mp.getExpProps(pd, iqm, 0, 100);
+        mp.getExpProps(&msghandler, pd, iqm, 0, 100);
 
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
-        mp.GenerateCharges(pd, forceComp, ChargeGenerationAlgorithm::ESP,
+        mp.GenerateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
                            qType::ESP, qcustom, &coords, &forces, true);
         
         std::vector<double> qtotValues;

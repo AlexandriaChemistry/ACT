@@ -87,6 +87,7 @@ static std::array<BondedInteractions, F_NRE> s_bondedInteractionFunctions
     BondedInteractions {bonds, eNR_BONDS },                       // F_BONDS
     BondedInteractions {g96bonds, eNR_BONDS },                    // F_G96BONDS
     BondedInteractions {morse_bonds, eNR_MORSE },                 // F_MORSE
+    BondedInteractions {unimplemented, -1 },                      // F_HUA
     BondedInteractions {cubic_bonds, eNR_CUBICBONDS },            // F_CUBICBONDS
     BondedInteractions {unimplemented, -1 },                      // F_CONNBONDS
     BondedInteractions {bonds, eNR_BONDS },                       // F_HARMONIC
@@ -729,7 +730,10 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
                 int                         *global_atom_index,
                 int                          flags)
 {
-    t_pbc pbc_full; /* Full PBC is needed for position restraints */
+    /* Full PBC is needed for position restraints */
+    // However the code is wrong!
+    // t_pbc pbc_full;
+    t_pbc pbc_full = *pbc;
 
     if (!(flags & GMX_FORCE_LISTED))
     {

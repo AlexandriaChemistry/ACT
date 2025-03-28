@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
@@ -57,6 +58,24 @@ private:
     matrix         box_;
     //! Virtual site handler
     VsiteHandler  *vsiteHandler_;
+
+ public:
+    /*! \brief Constructor
+     * \param[in] msForce The tolerance for the mean square force on shells
+     * \param[in] maxiter The maximum number of iterations for shell minimization
+     */
+    ForceComputer(double   msForce = 1e-6,
+                  int      maxiter = 25);
+
+    //! \brief Destructor
+    ~ForceComputer();
+
+    void constructVsiteCoordinates(const Topology         *top,
+                                   std::vector<gmx::RVec> *coordinates) const;
+    void spreadVsiteForces(const Topology         *top,
+                           std::vector<gmx::RVec> *coordinates,
+                           std::vector<gmx::RVec> *forces) const;
+
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  pd          The force field structure
@@ -73,18 +92,6 @@ private:
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
                      const gmx::RVec                   &field) const;
-
- public:
-    /*! \brief Constructor
-     * \param[in] msForce The tolerance for the mean square force on shells
-     * \param[in] maxiter The maximum number of iterations for shell minimization
-     */
-    ForceComputer(double   msForce = 1e-6,
-                  int      maxiter = 25);
-
-    //! \brief Destructor
-    ~ForceComputer();
-
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
      * \param[in]  pd          Pointer to force field structure
@@ -129,11 +136,13 @@ private:
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.
+     * \param[in] msghandler Message handler
      * \param[in] pd    Pointer to force field structure
      * \param[in] itype The interaction type
      */
-    void plot(const ForceField   *pd,
-              InteractionType  itype) const;
+    void plot(MsgHandler       *msghandler,
+              const ForceField *pd,
+              InteractionType   itype) const;
 
     /*! \brief Generate vsites
      * \param[in] top         Topology

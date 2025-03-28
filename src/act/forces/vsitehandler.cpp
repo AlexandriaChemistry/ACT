@@ -107,18 +107,12 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     /* TOTAL: 10 flops */
 }
 
-static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
+static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a)
 {
     rvec dx;
 
-    if (pbc)
-    {
-        pbc_dx_aiuc(pbc, xj, xi, dx);
-    }
-    else
-    {
-        rvec_sub(xj, xi, dx);
-    }
+    rvec_sub(xj, xi, dx);
+
     real factor = a*gmx::invsqrt(iprod(dx, dx));
     x[XX] = xi[XX] + factor*dx[XX];
     x[YY] = xi[YY] + factor*dx[YY];
@@ -137,21 +131,6 @@ static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk
     /* 15 Flops */
 
     /* TOTAL: 17 flops */
-}
-
-static gmx_unused void constr_vsite3s(const rvec xi, const rvec xj, const rvec xk, rvec x, real a)
-{
-    real c = 1 - a;
-    for(int m = 0; m < DIM; m++)
-    {
-        // Point half-way the two substituents
-        real half = 0.5*(xi[m] + xk[m]);
-        // Point on bisector between half and the central atom
-        x[m]      = a*half + c*xj[m];
-    }
-    /* 15 Flops */
-
-    /* TOTAL: 16 flops */
 }
 
 static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
@@ -211,16 +190,17 @@ static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x
 static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x,
                              real a, real b, real c, const t_pbc *pbc)
 {
-    rvec xij, xkj, temp;
+    rvec xij, xik, temp;
 
+    /* For water-like compounds this assumes O H H as the order of atoms */
     pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xj, xk, xkj);
-    cprod(xij, xkj, temp);
+    pbc_rvec_sub(pbc, xk, xi, xik);
+    cprod(xij, xik, temp);
     /* 15 Flops */
 
-    x[XX] = xj[XX] + a*xij[XX] + b*xkj[XX] + c*temp[XX];
-    x[YY] = xj[YY] + a*xij[YY] + b*xkj[YY] + c*temp[YY];
-    x[ZZ] = xj[ZZ] + a*xij[ZZ] + b*xkj[ZZ] + c*temp[ZZ];
+    x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];
+    x[YY] = xi[YY] + a*xij[YY] + b*xik[YY] + c*temp[YY];
+    x[ZZ] = xi[ZZ] + a*xij[ZZ] + b*xik[ZZ] + c*temp[ZZ];
     /* 18 Flops */
 
     /* TOTAL: 33 flops */
@@ -394,126 +374,59 @@ static void spread_vsite2(const std::vector<int> &ia, real a,
     /* TOTAL: 13 flops */
 }
 
-static void spread_vsite2fd(const t_iatom ia[], real a,
-                            const rvec x[],
-                            rvec f[], const t_pbc *pbc)
+static void spread_vsite2fd(const rvec xi,
+                            const rvec xj,
+                            real       a,
+                            rvec       fi,
+                            rvec       fj,
+                            rvec       fav)
 {
     rvec    dx;
-    t_iatom av, ai, aj;
 
-    av = ia[3];
-    ai = ia[1];
-    aj = ia[2];
-
-    if (pbc)
+    rvec_sub(xj, xi, dx);
+    if (norm(dx) == 0)
     {
-        pbc_rvec_sub(pbc, x[aj], x[ai], dx);
-    }
-    else
-    {
-        rvec_sub(x[aj], x[ai], dx);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Distance between atoms is zero").c_str()));
     }
     real gamma = a*gmx::invsqrt(iprod(dx, dx));
     rvec xis;
     for (int m = 0; m < DIM; m++)
     {
-        xis[m] = x[ai][m] + gamma*dx[m];
+        xis[m] = xi[m] + gamma*dx[m];
     }
     rvec p;
-    svmul(iprod(xis, f[av])/iprod(xis, xis), xis, p);
+    svmul(iprod(xis, fav)/iprod(xis, xis), xis, p);
     rvec df;
     for(int m = 0; m < DIM; m++)
     {
-        df[m] = gamma*(f[av][m]-p[m]);
+        df[m] = gamma*(fav[m]-p[m]);
     }
     
-    rvec_inc(f[ai], df);
-    rvec_dec(f[aj], df);
+    rvec_inc(fi, df);
+    rvec_dec(fj, df);
     
     /* 6 Flops */
-    clear_rvec(f[av]);
+    clear_rvec(fav);
 }
 
-static void spread_vsite3(const std::vector<int> &indices,
-                          real a, real b,
-                          const rvec x[], rvec f[], rvec fshift[],
-                          const t_pbc *pbc, const t_graph *g)
+static void spread_vsite3(rvec ffi,
+                          rvec ffj,
+                          rvec ffk,
+                          rvec fav,
+                          real a, real b)
 {
-    rvec    fi, fj, fk, dx;
-    int     av, ai, aj, ak;
-    ivec    di;
-    int     siv, sij, sik;
-
-    ai = indices[0];
-    aj = indices[1];
-    ak = indices[2];
-    av = indices[3];
-
-    svmul(1 - a - b, f[av], fj);
-    svmul(        a, f[av], fi);
-    svmul(        b, f[av], fk);
+    rvec fi, fj, fk;
+    svmul(1 - a - b, fav, fj);
+    svmul(        a, fav, fi);
+    svmul(        b, fav, fk);
     /* 11 flops */
 
-    rvec_inc(f[ai], fi);
-    rvec_inc(f[aj], fj);
-    rvec_inc(f[ak], fk);
+    rvec_inc(ffi, fi);
+    rvec_inc(ffj, fj);
+    rvec_inc(ffk, fk);
     /* 9 Flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, av), di);
-        siv = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), di);
-        sij = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), di);
-        sik = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        siv = pbc_dx_aiuc(pbc, x[ai], x[av], dx);
-        sij = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
-        sik = pbc_dx_aiuc(pbc, x[ai], x[ak], dx);
-    }
-    else
-    {
-        siv = CENTRAL;
-        sij = CENTRAL;
-        sik = CENTRAL;
-    }
-
-    if (fshift && (siv != CENTRAL || sij != CENTRAL || sik != CENTRAL))
-    {
-        rvec_inc(fshift[siv], f[av]);
-        rvec_dec(fshift[CENTRAL], fi);
-        rvec_dec(fshift[sij], fj);
-        rvec_dec(fshift[sik], fk);
-    }
-    clear_rvec(f[av]);
-    /* TOTAL: 20 flops */
-}
-
-static void spread_vsite3s(const std::vector<int> &indices,
-                           real a, rvec f[])
-{
-    rvec    fi, fj, fk;
-    int     av, ai, aj, ak;
-
-    ai = indices[0];
-    aj = indices[1];
-    ak = indices[2];
-    av = indices[3];
-
-    svmul(1 - a, f[av], fj);
-    svmul(0.5*a, f[av], fi);
-    svmul(0.5*a, f[av], fk);
-    /* 11 flops */
-
-    rvec_inc(f[ai], fi);
-    rvec_inc(f[aj], fj);
-    rvec_inc(f[ak], fk);
-    /* 9 Flops */
-
-    clear_rvec(f[av]);
+    clear_rvec(fav);
     /* TOTAL: 20 flops */
 }
 
@@ -760,9 +673,11 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     ivec    di;
     int     svi, sji, ski;
 
+    // ACT uses H O H but the code below needs
+    // O H H so renumber the atoms.
     av = ia[4];
-    ai = ia[1];
-    aj = ia[2];
+    ai = ia[2];
+    aj = ia[1];
     ak = ia[3];
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
@@ -834,7 +749,7 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
             }
         }
     }
-
+    clear_rvec(f[av]);
     /* TOTAL: 54 flops */
 }
 
@@ -1154,7 +1069,7 @@ VsiteHandler::VsiteHandler(matrix &box,
     // TODO More checking.
     if (pbc_.ePBC != epbcNONE)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundara conditions").c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundary conditions").c_str()));
     }
     dt_ = dt;
 }
@@ -1165,21 +1080,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
 {
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
-    std::set<InteractionType>  vsites = {
-        InteractionType::VSITE1,
-        InteractionType::VSITE2,
-        InteractionType::VSITE2FD,
-        InteractionType::VSITE3,
-        InteractionType::VSITE3S,
-        InteractionType::VSITE3FD,
-        InteractionType::VSITE3FAD,
-        InteractionType::VSITE3OUT,
-        InteractionType::VSITE3OUTS
-    };
     for (const auto &entry: top->entries())
     {
         // Only construct positions for vsites.
-        if (vsites.find(entry.first) == vsites.end())
+        if (!isVsite(entry.first))
         {
             continue;
         }
@@ -1214,10 +1118,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 break;
             case InteractionType::VSITE2FD:
                 ak = atomIndices[2];
-                constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
+                constr_vsite2fd(x[ai], x[aj], x[ak], params[vsite2fdA]);
                 if (debug)
                 {
-                    fprintf(debug, "vsite a = %g\n", params[vsite2A]);
+                    fprintf(debug, "vsite a = %g\n", params[vsite2fdA]);
                 }
                 break;
             case InteractionType::VSITE3:
@@ -1229,7 +1133,8 @@ void VsiteHandler::constructPositions(const Topology          *top,
             case InteractionType::VSITE3S:
                 ak = atomIndices[2];
                 al = atomIndices[3];
-                constr_vsite3s(x[ai], x[aj],  x[ak], x[al], params[vsite3sA]);
+                constr_vsite3(x[ai], x[aj],  x[ak], x[al],
+                              params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
                 ak = atomIndices[2];
@@ -1249,7 +1154,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     ak                 = atomIndices[2];
                     al                 = atomIndices[3];
-                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                    constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC], &pbc_);
                     if (debug)
@@ -1265,7 +1170,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     auto  vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     ak                 = atomIndices[2];
                     al                 = atomIndices[3];
-                    constr_vsite3OUT(x[ai], x[aj], x[ak], x[al],
+                    constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outsA], params[vsite3outsA],
                                      vsite3out_vs->sign() * params[vsite3outsC], &pbc_);
                     if (debug)
@@ -1321,6 +1226,10 @@ void VsiteHandler::distributeForces(const Topology               *top,
     rvec       *f    = as_rvec_array((*forces).data());
     for (const auto &entry: top->entries())
     {
+        if (!isVsite(entry.first))
+        {
+            continue;
+        }
         for (const auto &vs : entry.second)
         {
             auto &atomIndices = vs->atomIndices();
@@ -1340,13 +1249,18 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite2(atomIndices, params[vsite2A], x, f, fshift, &pbc_, g);
                 break;
             case InteractionType::VSITE2FD:
-                spread_vsite2fd(ia.data(), params[vsite2A], x, f, &pbc_);
+                spread_vsite2fd(x[atomIndices[0]], x[atomIndices[1]], params[vsite2fdA],
+                                f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]]);
                 break;
             case InteractionType::VSITE3:
-                spread_vsite3(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift, &pbc_, g);
+                spread_vsite3(f[atomIndices[0]], f[atomIndices[1]],
+                              f[atomIndices[2]], f[atomIndices[3]],
+                              params[vsite3A], params[vsite3B]);
                 break;
             case InteractionType::VSITE3S:
-                spread_vsite3s(atomIndices, params[vsite3sA], f);
+                spread_vsite3(f[atomIndices[0]], f[atomIndices[1]],
+                              f[atomIndices[2]], f[atomIndices[3]],
+                              params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
                 spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,

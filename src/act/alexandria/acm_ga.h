@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -29,7 +29,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #ifndef ALEXANDRIA_ACM_GA_H
 #define ALEXANDRIA_ACM_GA_H
@@ -54,6 +54,8 @@ struct gmx_output_env;
 namespace ga
 {
 
+class MsgHandler;
+
 class HybridGAMC : public GeneticAlgorithm
 {
 private:
@@ -63,8 +65,6 @@ private:
     alexandria::GAConfigHandler      *gach_;
     //! The force computer
     alexandria::ForceComputer        *forceComp_;
-    //! logFile
-    FILE                             *logFile_;
     //! Output filename for fitness files
     const char                       *fitnessFile_;
     //! Gene pool input (may be null pointer)
@@ -77,8 +77,7 @@ public:
     /*!
      * \brief Constructor for self-building
      */
-    HybridGAMC(FILE                                *logFile,
-               Initializer                         *initializer,
+    HybridGAMC(Initializer                         *initializer,
                FitnessComputer                     *fitnessComputer,
                ProbabilityComputer                 *probComputer,
                Selector                            *selector,
@@ -94,14 +93,15 @@ public:
                int                                  seed)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
                        mutator, terminators, penalizers, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), fitnessFile_(fitnessFileName),
+      sii_(sii), gach_(gach), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {
         forceComp_ = new alexandria::ForceComputer();
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome);
 
 };
 
@@ -114,27 +114,25 @@ private:
     alexandria::GAConfigHandler      *gach_;
     //! The force computer
     alexandria::ForceComputer        *forceComp_;
-    //! logFile
-    FILE                             *logFile_;
 public:
     /*!
      * \brief Constructor for self-building
      */
-    MCMC(FILE                                *logFile,
-         Initializer                         *initializer,
+    MCMC(Initializer                         *initializer,
          FitnessComputer                     *fitnessComputer,
          Mutator                             *mutator,
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
                        mutator, nullptr, nullptr, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile)
+      sii_(sii), gach_(gach)
     {
         forceComp_ = new alexandria::ForceComputer();
     }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
+    virtual bool evolve(alexandria::MsgHandler       *msghandler,
+                        std::map<iMolSelect, Genome> *bestGenome);
 
 };
 

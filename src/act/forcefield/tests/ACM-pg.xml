@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
 <alexandria_chemistry>
-  <version checksum="3e71514b1280250ebf15814ec611cc8c" timestamp="2024-06-17 11:36:31"/>
+  <version checksum="90e6377990ccb010a4ac787c5859f413" timestamp="2024-11-22 21:37:51"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -14801,47 +14801,47 @@
     </parameterlist>
     <parameterlist identifier="Br-_s">
       <parameter type="alpha" unit="Angstrom3" value="4.6" uncertainty="0" minimum="3.68" maximum="5.75" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="1.38758e+06" uncertainty="0" minimum="1.38758e+06" maximum="1.38758e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="1387580" uncertainty="0" minimum="1387580" maximum="1387580" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Ca2+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.1" uncertainty="0" minimum="0.08" maximum="0.12" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="1.38935e+06" uncertainty="0" minimum="1.38935e+06" maximum="1.38935e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="1389350" uncertainty="0" minimum="1389350" maximum="1389350" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cl-_s">
       <parameter type="alpha" unit="Angstrom3" value="3.5" uncertainty="0" minimum="2.8" maximum="4.38" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="1.78887e+06" uncertainty="0" minimum="1.78887e+06" maximum="1.78887e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="1788870" uncertainty="0" minimum="1788870" maximum="1788870" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Cs+_s">
       <parameter type="alpha" unit="Angstrom3" value="2.02" uncertainty="0" minimum="1.62" maximum="2.52" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="3.91232e+06" uncertainty="0" minimum="3.91232e+06" maximum="3.91232e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="3912320" uncertainty="0" minimum="3912320" maximum="3912320" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="F-_s">
       <parameter type="alpha" unit="Angstrom3" value="1.3" uncertainty="0" minimum="1.04" maximum="1.62" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="4.64131e+06" uncertainty="0" minimum="4.64131e+06" maximum="4.64131e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="4641310" uncertainty="0" minimum="4641310" maximum="4641310" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-_s">
       <parameter type="alpha" unit="Angstrom3" value="7.5" uncertainty="0" minimum="6" maximum="9.38" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="1.37423e+06" uncertainty="0" minimum="1.37423e+06" maximum="1.37423e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="1374230" uncertainty="0" minimum="1374230" maximum="1374230" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="K+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.81" uncertainty="0" minimum="0.65" maximum="1.01" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="3.41803e+06" uncertainty="0" minimum="3.41803e+06" maximum="3.41803e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="3418030" uncertainty="0" minimum="3418030" maximum="3418030" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Li+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.029" uncertainty="0" minimum="0.02" maximum="0.04" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="2.73889e+07" uncertainty="0" minimum="2.73889e+07" maximum="2.73889e+07" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="27388900" uncertainty="0" minimum="27388900" maximum="27388900" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Mg2+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.1" uncertainty="0" minimum="0.08" maximum="0.12" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="1.38935e+06" uncertainty="0" minimum="1.38935e+06" maximum="1.38935e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="1389350" uncertainty="0" minimum="1389350" maximum="1389350" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Na+_s">
       <parameter type="alpha" unit="Angstrom3" value="0.18" uncertainty="0" minimum="0.14" maximum="0.22" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="6.97923e+06" uncertainty="0" minimum="6.97923e+06" maximum="6.97923e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="6979230" uncertainty="0" minimum="6979230" maximum="6979230" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="Rb+_s">
       <parameter type="alpha" unit="Angstrom3" value="1.32" uncertainty="0" minimum="1.06" maximum="1.65" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="kshell" unit="kJ/mol nm2" value="3.07148e+06" uncertainty="0" minimum="3.07148e+06" maximum="3.07148e+06" ntrain="1" mutability="Dependent" nonnegative="yes"/>
+      <parameter type="kshell" unit="kJ/mol nm2" value="3071480" uncertainty="0" minimum="3071480" maximum="3071480" ntrain="1" mutability="Dependent" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br_s">
       <parameter type="alpha" unit="Angstrom3" value="2.5" uncertainty="0" minimum="2" maximum="3.12" ntrain="0" mutability="Bounded" nonnegative="yes"/>

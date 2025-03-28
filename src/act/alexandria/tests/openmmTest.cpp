@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,6 +39,7 @@
 #include "actmol_util.h"
 
 #include "act/alexandria/openmm_xml.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -68,7 +69,8 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         gmx::test::TestReferenceChecker checker(this->rootChecker());
         //gmx::test::TextBlockMatcherPointer exact = ;
         auto ifm   = gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher();
-        gmx::test::TestFileManager      tfm;
+        gmx::test::TestFileManager tfm;
+        MsgHandler                 msghandler; 
         auto ff         = getForceField(forceField);
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
@@ -76,8 +78,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         initACTMol(fileName.c_str(), ff, fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
-        auto tmpDat   = tfm.getTemporaryFilePath("dat");
-        writeOpenMM(tmpFile, tmpDat, ff, mps, mDrude, numberAtypes);
+        writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, numberAtypes);
         ifm->checkFile(tmpFile, &checker);
     }
 };

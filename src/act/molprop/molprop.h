@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -96,24 +96,34 @@ public:
      * \todo Implement this
      */
     void checkConsistency() {};
+
+    //! \return myself
+    MolProp *self() { return this; }
     
     //! Set the index number for sorting
     void setIndex(int index) { index_ = index; }
     
     //! Return the index number for sorting
     int getIndex() const { return index_; }
-    
+
+    /*! \brief Evaluate whether two compounds are the same.
+     * The routine will return a list of warnings
+     * \param[in] other The MolProp to compare to
+     * \return list of warnings, if empty the molprops are the same
+     */
+    std::vector<std::string> sameCompound(const MolProp *other);
+
     /*! \brief
      * Merge the content of another MolProp into this one
      *
      * \param[in] mpi The object to be merged into the present one
-     * \return Number of warnings
+     * \return List of warnings, if empty the molprops are merged fine
      * \todo Check and double check
      */
-    int Merge(const MolProp *mpi);
+    std::vector<std::string> Merge(const MolProp *mpi);
     
-    //! Dump the contents of this object to a file
-    void Dump(FILE *fp) const;
+    //! Dump the contents of this object to a text writer
+    void Dump(gmx::TextWriter *tw) const;
     
     //! \return the LaTeX formula
     std::string texFormula() const;

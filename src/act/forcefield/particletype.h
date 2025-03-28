@@ -46,6 +46,12 @@
 namespace alexandria
 {
 
+/*! \brief Produce a string. Will crash if there is no corresponding string.
+ * \param[in] itype The interaction type
+ * \return a topology option corresponding to the input. 
+ */
+const std::string &interactionTypeToParticleSubtype(InteractionType itype);
+
 /*! \brief
  * Contains all the information realted to
  * alexandria force field partice types.

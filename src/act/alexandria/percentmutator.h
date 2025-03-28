@@ -27,11 +27,12 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 #ifndef ALEXANDRIA_PERCENT_MUTATOR
 #define ALEXANDRIA_PERCENT_MUTATOR
 
+#include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
 #include "act/ga/mutator.h"
 
@@ -70,11 +71,14 @@ public:
      * \param[out]   bestGenome The best genome found
      * \param[in]    prMut      Probability for mutation
      */
-    virtual void mutate(ga::Genome *genome,
+    virtual void mutate(MsgHandler *msghandler,
+                        ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
 
-    virtual void sensitivityAnalysis(ga::Genome *, iMolSelect) {}
+    virtual void sensitivityAnalysis(MsgHandler *,
+                                     ga::Genome *,
+                                     iMolSelect) {}
     
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }

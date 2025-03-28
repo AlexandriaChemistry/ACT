@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2024
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,16 +36,16 @@
 
 #include <cstdlib>
 
-//#include "mpi.h"
-
+#include "act/alexandria/alex_modules.h"
+#include "act/basics/version.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
+//#include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/init.h"
-
-#include "alex_modules.h"
 
 int
 main(int argc, char *argv[])
@@ -60,20 +60,13 @@ main(int argc, char *argv[])
         setenv("GMX_NB_GENERIC", "1", 1);
         if (MASTER(cr))
         {
-            printf("\n     Welcome to the Alexandria Chemistry Toolkit\n\n");
-            printf("              Copyright (c) 2014-2024\n\n");
-            printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
-            printf("See https://github.com/dspoel/ACT for details.\n\n");
-            printf("Alexandria Chemistry Toolkit is free software under the Gnu Public License v 2.\n");
-            printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
-            printf("Parts of ACT are under the Gnu Lesser Public License 2.1 as indicated\n");
-            printf("in the individual files.\n\n");
+            printf("%s", act_welcome().c_str());
         }
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
         if (MASTER(cr))
         {
-            printf("\nThanks for using the Alexandria Chemistry Toolkit.\n");
+            printf("%s", act_goodbye().c_str());
         }
         return rc;
     }

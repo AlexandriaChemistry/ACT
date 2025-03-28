@@ -111,7 +111,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
 }
 
-void ForceFieldParameter::setNtrain(int ntrain)
+void ForceFieldParameter::setNtrain(unsigned int ntrain)
 { 
     if (mutability_ != Mutability::Fixed)
     {

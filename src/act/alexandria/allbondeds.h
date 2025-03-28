@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2022
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,6 +43,11 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
+
+namespace gmx
+{
+class TextWriter;
+}
 
 namespace alexandria
 {
@@ -121,6 +126,10 @@ namespace alexandria
         real                                               angle_tol_ = 5;
         //! Scaling factor for setting min and max for force parameters
         real                                               factor_    = 0.5;
+        //! Scaling factor for setting min and max for bond lengths
+        real                                               bfactor_   = 0.95;
+        //! Scaling factor for setting min and max for bond angles
+        real                                               afactor_   = 0.95;
         //! Spacing for bond histograms in pm
         real                                               bspacing_  = 1;
         //! Spacing for angle histograms in degrees
@@ -130,17 +139,17 @@ namespace alexandria
         //! Spacing for dihedrals in degrees
         real                                               dspacing_  = 1;
         /*! \brief Add bonds etc. for one molecule and list of atoms
-         * \param[in] fplog   File to print information
+         * \param[in] msghandler Message handler
          * \param[in] iType   InteractionType
          * \param[in] mmi     Molecule structure
          * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
           */
-        void addBonded(FILE                           *fplog, 
-                       InteractionType                 iType,
-                       const ACTMol                    &mmi,
-                       const Identifier               &bondId,         
-                       const std::vector<int>         &atomid);
+        void addBonded(MsgHandler             *msghandler,
+                       InteractionType         iType,
+                       const ACTMol           &mmi,
+                       const Identifier       &bondId,         
+                       const std::vector<int> &atomid);
 
     public:
         //! Constructor
@@ -157,20 +166,20 @@ namespace alexandria
         void writeHistogram(const gmx_output_env_t *oenv);
             
         /*! \brief Store the bond lengths etc. in the force field
-         * \param[in]  fp  A file to print information to
+         * \param[in]  tw  To print information to
          * \param[out] pd  The force field structure to update
          */
-        void updateForceField(FILE       *fp,
-                              ForceField *pd);
+        void updateForceField(gmx::TextWriter *tw,
+                              ForceField      *pd);
              
         /*! \brief Extract bond lengths, angles etc. from molecules
-         * \param[in]  fp     File pointer for information
+         * \param[in]  msghandler Message handler
          * \param[in]  mp     MolProp array
          * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
-        void extractGeometries(FILE                       *fp,
+        void extractGeometries(MsgHandler                 *msghandler,
                                const std::vector<MolProp> &mp,
                                std::vector<ACTMol>        *actmols,
                                ForceField                 *pd,
@@ -179,7 +188,7 @@ namespace alexandria
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to
          */
-        void writeSummary(FILE *fp);
+        void writeSummary(gmx::TextWriter *tw);
 
     };
     

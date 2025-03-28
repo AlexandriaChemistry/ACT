@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,7 @@
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/train_utility.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -61,12 +62,10 @@ int min_complex(int argc, char *argv[])
     };
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "aff",      ffREAD  },
-        { efXML, "-mp", "molprop",  ffREAD  },
-        { efLOG, "-g",  "gen_scan", ffWRITE }
+        { efXML, "-mp", "molprop",  ffREAD  }
     };
     gmx_output_env_t *oenv;
     double shellToler = 1e-6;
-    bool   verbose    = false;
     double minfrac    = 0.9;
     double maxfrac    = 1.5;
     int    nfrac      = 5;
@@ -77,14 +76,14 @@ int min_complex(int argc, char *argv[])
           "Fraction of center of mass distance to end the scan on" },
         { "-nfrac", FALSE, etINT, {&nfrac},
           "Number of distances within the range from minfrac to maxfrac" },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more information to the log file." },
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)" }
     };
+    MsgHandler               msghandler;
     SimulationConfigHandler  sch;
     sch.add_options(&pa, &fnm);
     sch.add_MD_options(&pa);
+    msghandler.addOptions(&pa, &fnm, "min_complex");
 
     int status = 0;
     if (!parse_common_args(&argc, argv, 0, 
@@ -94,7 +93,11 @@ int min_complex(int argc, char *argv[])
         status = 1;
         return status;
     }
-    sch.check_pargs();
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
+    auto tw = msghandler.tw();
+    sch.check_pargs(&msghandler);
 
     ForceField        pd;
     try
@@ -104,15 +107,13 @@ int min_complex(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(stderr);
-    const char *logFileName = opt2fn("-g", fnm.size(),fnm.data());
-    FILE *logFile   = gmx_ffopen(logFileName, "w");
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;
-        fprintf(logFile, "Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
+        tw->writeStringFormatted("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
     auto  forceComp = new ForceComputer(shellToler, 100);
-    print_header(logFile, pa, fnm);
+    print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;
     MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
@@ -120,7 +121,7 @@ int min_complex(int argc, char *argv[])
     {
         if (mp->fragments().size() != 2)
         {
-            fprintf(logFile, "Ignoring '%s' with %zu fragments\n",
+            tw->writeStringFormatted("Ignoring '%s' with %zu fragments\n",
                     mp->getMolname().c_str(), mp->fragments().size());
             continue;
         }
@@ -129,36 +130,37 @@ int min_complex(int argc, char *argv[])
         clear_mat(box);
         actmol.Merge(&(*mp));
     
-        immStatus imm = immStatus::OK;
-        imm = actmol.GenerateTopology(logFile, &pd, missingParameters::Error);
+        actmol.GenerateTopology(&msghandler, &pd, missingParameters::Error);
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-        if (immStatus::OK == imm)
+        if (msghandler.ok())
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             
             std::vector<double> myq;
             auto alg   = pd.chargeGenerationAlgorithm();
             auto qtype = qType::Calc;
-            imm        = actmol.GenerateCharges(&pd, forceComp, alg, qtype, myq, &coords, &forces);
+            actmol.GenerateCharges(&msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
         }
-        if (immStatus::OK == imm)
+        if (msghandler.ok())
         {
             auto eMin = eMinimizeStatus::OK;
             /* Generate output file for debugging if requested */
             MolHandler molhandler;
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
-            eMin = molhandler.minimizeCoordinates(&pd, &actmol, forceComp, sch,
+            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol,
+                                                  forceComp, sch,
                                                   &xmin, &energies, 
-                                                  verbose ? logFile : nullptr, {});
+                                                  {});
     
             if (eMinimizeStatus::OK == eMin)
             {
                 std::vector<gmx::RVec> interactionForces;
                 std::map<InteractionType, double> einter;
-                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin);
+                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin, true);
+
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
-                fprintf(logFile, "%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
+                tw->writeStringFormatted("%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
                         actmol.getMolname().c_str(),
                         energies[InteractionType::EPOT], 
                         einter[InteractionType::EPOT], rmsd);
@@ -171,11 +173,10 @@ int min_complex(int argc, char *argv[])
                 fprintf(stderr, "Minimization failed for %s: %s, check log file %s\n",
                         actmol.getMolname().c_str(),
                         eMinimizeStatusToString(eMin).c_str(),
-                        logFileName);
+                        msghandler.filename().c_str());
             }
         }
     }
-    gmx_ffclose(logFile);
     return status;
 }
 

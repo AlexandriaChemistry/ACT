@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -57,45 +57,6 @@
 
 namespace alexandria
 {
-
-std::map<immStatus, const char *> immMessages = {
-    { immStatus::Unknown,                  "Unknown status" },
-    { immStatus::OK,                       "OK" },
-    { immStatus::NoAtoms,                  "No Atoms" },
-    { immStatus::ZeroDip,                  "Zero Dipole" },
-    { immStatus::NoQuad,                   "No Quadrupole" },
-    { immStatus::Charged,                  "Charged" },
-    { immStatus::AtomTypes,                "Atom type problem" },
-    { immStatus::AtomNumber,               "Atom number problem" },
-    { immStatus::MolpropConv,              "Converting from molprop" },
-    { immStatus::Multiplicity,             "Number of electrons does not match the multiplicity. Is the total charge correct?" },
-    { immStatus::BondOrder,                "Determining bond order" },
-    { immStatus::RespInit,                 "RESP Initialization" },
-    { immStatus::ChargeGeneration,         "Charge generation" },
-    { immStatus::MissingChargeGenerationParameters, "Parameters for charge generation missing" },
-    { immStatus::ShellMinimization,        "Shell minimization" },
-    { immStatus::Topology,                 "No input to generate a topology" },
-    { immStatus::FragmentHandler,          "Fragment Handler could not make topologies" },
-    { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
-    { immStatus::Test,                     "Compound not in training set" },
-    { immStatus::NoData,                   "No experimental data" },
-    { immStatus::NoMolpropCharges,         "No charges in the molprop file" },
-    { immStatus::GenShells,                "Generating shells" },
-    { immStatus::GenBonds,                 "Generating bonds" },
-    { immStatus::CommProblem,              "Communicating MolProp" },
-    { immStatus::ZeroZeta,                 "Charge distribution width zeta is zero unexpectedly" },
-    { immStatus::InsufficientDATA,         "The number of data is lower than mindata" },
-    { immStatus::NoDipole,                 "No Dipole moment" },
-    { immStatus::NotSupportedBond,         "NotSupportedBond" },
-    { immStatus::NotSupportedAngle,        "NotSupportedAngle" },
-    { immStatus::NotSupportedLinearAngle,  "NotSupportedLinearAngle" },
-    { immStatus::NotSupportedDihedral,     "NotSupportedDihedral" }
-};
-
-const char *immsg(immStatus imm)
-{
-    return immMessages[imm];
-}
 
 bool is_planar(const rvec xi,  const rvec xj, const rvec xk,
                const rvec xl, const t_pbc *pbc,

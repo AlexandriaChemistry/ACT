@@ -183,6 +183,31 @@ TEST(ForceFieldParameterSimpleTest, NameToMutability) {
     EXPECT_FALSE(nameToMutability("spples", &m));
 }
 
+TEST(ForceFieldParameterSimpleTest, ACMMutable) {
+    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::ACM, true, true);
+    EXPECT_FALSE(fp.isMutable());
+}
+
+TEST(ForceFieldParameterSimpleTest, FixedMutable) {
+    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, true);
+    EXPECT_FALSE(fp.isMutable());
+}
+
+TEST(ForceFieldParameterSimpleTest, DependentMutable) {
+    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Dependent, true, true);
+    EXPECT_FALSE(fp.isMutable());
+}
+
+TEST(ForceFieldParameterSimpleTest, BoundedMutable) {
+    ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Bounded, true, true);
+    EXPECT_TRUE(fp.isMutable());
+}
+
+TEST(ForceFieldParameterSimpleTest, BoundedMutableZeroRange) {
+    ForceFieldParameter    fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
+    EXPECT_FALSE(fp.isMutable());
+}
+
 }
 
 }

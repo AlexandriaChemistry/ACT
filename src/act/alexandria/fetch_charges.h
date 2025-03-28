@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -28,16 +28,17 @@
 
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef FETCH_CHARGES_H
 #define FETCH_CHARGES_H
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
@@ -46,6 +47,10 @@
 namespace alexandria
 {
 
+/*! \brief chargeMap definition.
+ * First string is the molecule identifier, which should be the InChi.
+ * Vector contains pairs of identifier and charge.
+ */
 typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > chargeMap;
 
 /*! \brief Generate charges for all compounds in a molprop file.
@@ -54,28 +59,36 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > char
  * For polarizable models the charge of the shell are added explicitly in the list, and the same
  * goes for virtual sites. The fragment id (InChi) is used as the string in the returned map.
  *
+ * \param[in] msghandler The message handler
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
  * \param[in] charge_fn The name of a molprop file
+ * \param[in] lookup    Set of compounds to look up. If empty charges for all compounds will be determined.
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map.
  */
-chargeMap fetchChargeMap(ForceField    *pd,
-                         ForceComputer *forceComp,
-                         const char    *charge_fn,
-                         qType          qt = qType::ACM);
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
+                         ForceField                  *pd,
+                         const ForceComputer         *forceComp,
+                         const char                  *charge_fn,
+                         const std::set<std::string> &lookup,
+                         qType                        qt = qType::ACM);
 
 /*! \brief Generate charges for all compounds in a molprop file.
+ * \param[in] msghandler The message handler
  * \param[in] pd        The force field structure
  * \param[in] forceComp A force computer
- * \param[in] mps       Vector of molprops
+ * \param[in] mps       Vector of molprops read previously
+ * \param[in] lookup    Set of compounds to look up. If empty charges for all compounds will be determined.
  * \param[in] qt        Charge type, by default ACM charges will be generated.
  * \return the map, see above.
  */
-chargeMap fetchChargeMap(ForceField                 *pd,
-                         ForceComputer              *forceComp,
-                         const std::vector<MolProp> &mps,
-                         qType                       qt = qType::ACM);
+chargeMap fetchChargeMap(MsgHandler                  *msghandler,
+                         ForceField                  *pd,
+                         const ForceComputer         *forceComp,
+                         const std::vector<MolProp>  &mps,
+                         const std::set<std::string> &lookup,
+                         qType                        qt = qType::ACM);
 
 /*! \brief Broadcast a charge map to processors
  * \param[in]    cr   The communication data structure

@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64>1</Int64>
+  <Int64 Name="Unknown status">1</Int64>
+  <Int64 Name="OK">1</Int64>
+  <Int64 Name="No Atoms">1</Int64>
+  <Int64 Name="Zero Dipole">1</Int64>
+  <Int64 Name="No Quadrupole">1</Int64>
+  <Int64 Name="Charged">1</Int64>
+  <Int64 Name="Atom type problem">1</Int64>
+  <Int64 Name="Atom number problem">1</Int64>
+  <Int64 Name="Number of electrons does not match the multiplicity. Is the total charge correct?">1</Int64>
+  <Int64 Name="Converting from molprop">1</Int64>
+  <Int64 Name="Determining bond order">1</Int64>
+  <Int64 Name="RESP Initialization">1</Int64>
+  <Int64 Name="No charges in the molprop file">1</Int64>
+  <Int64 Name="Charge generation">1</Int64>
+  <Int64 Name="Parameters for charge generation missing">1</Int64>
+  <Int64 Name="Shell minimization">1</Int64>
+  <Int64 Name="QM Inconsistency (ESP dipole does not match Electronic)">1</Int64>
+  <Int64 Name="No input to generate a topology">1</Int64>
+  <Int64 Name="Fragment Handler could not make topologies">1</Int64>
+  <Int64 Name="Compound not in training set">1</Int64>
+  <Int64 Name="No data">1</Int64>
+  <Int64 Name="Generating shells">1</Int64>
+  <Int64 Name="Generating bonds">1</Int64>
+  <Int64 Name="Communicating MolProp">1</Int64>
+  <Int64 Name="Charge distribution width zeta is zero unexpectedly">1</Int64>
+  <Int64 Name="The number of data is lower than mindata">1</Int64>
+  <Int64 Name="No Dipole moment">1</Int64>
+  <Int64 Name="NotSupportedBond">1</Int64>
+  <Int64 Name="NotSupportedAngle">1</Int64>
+  <Int64 Name="NotSupportedLinearAngle">1</Int64>
+  <Int64 Name="NotSupportedDihedral">1</Int64>
+  <Int64 Name="Missing parameter in force field">1</Int64>
+  <Int64 Name="Minimization failed">1</Int64>
+</ReferenceData>
