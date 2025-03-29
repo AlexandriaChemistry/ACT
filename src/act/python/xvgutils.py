@@ -94,7 +94,7 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                     if len(dataset) == 0:
                         if debugXvgUtils:
                             print("Found data but no dataset yet")
-                        dataset.append(xvgDataSet())
+                        dataset.append(xvgDataSet(""))
                     try:
                         xx = float(w[0])
                         yy = float(w[1])
@@ -119,7 +119,7 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                     else:
                         if len(dataset) < numwords-1:
                             for i in range(len(dataset), numwords-1):
-                                dataset.append(xvgDataSet())
+                                dataset.append(xvgDataSet(""))
                         for i in range(numwords-1):
                             try:
                                 xx = float(w[0])
