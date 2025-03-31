@@ -556,6 +556,10 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
         // Symmetrize the atoms
         get_symmetrized_charges(topology_, pd, nullptr, &symmetric_charges_);
     }
+    else
+    {
+        msghandler->msg(ACTStatus::Error, gmx::formatString("Cannot make topology for %s", getMolname().c_str()));
+    }
 }
 
 double ACTMol::bondOrder(int ai, int aj) const
@@ -1507,8 +1511,13 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     std::string         mylot;
     
     auto &myatoms = atomsConst();
-    GMX_RELEASE_ASSERT(myatoms.size() > 0, "No atoms!");
-    
+    if (myatoms.size() == 0)
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("No atoms to fetch experimental properties for %s.",
+                                          getMolname().c_str()));
+        return;
+    }
     bool foundNothing = true;
     msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Found %zu experiments for %s",
