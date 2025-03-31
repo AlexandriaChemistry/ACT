@@ -557,9 +557,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = (*bestGenome)[imstr];
-        time_t my_time = std::time(nullptr);
+        time_t my_time     = std::time(nullptr);
         time_t diff_time   = my_time - start_time;
-        time_t finish_time = my_time + (diff_time / (generation+1)) * (gach_->maxGenerations() - generation);
+        time_t finish_time = my_time + (diff_time / generation) * (gach_->maxGenerations() - generation);
         std::string t_now(std::ctime(&my_time));
         std::string t_finish(std::ctime(&finish_time));
         // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
@@ -580,6 +580,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             {
                 pool[pold]->write(gpout_);
             }
+        }
+        else
+        {
+            msghandler->write(mess_start);
         }
         if (gach_->evaluateTestset())
         {
