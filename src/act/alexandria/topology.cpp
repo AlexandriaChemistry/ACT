@@ -1238,7 +1238,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
             }
             else
             {
-                msghandler->msg(ACTStatus::Warning,
+                msghandler->msg(ACTStatus::Error,
                                 ACTMessage::AtomTypes,
                                 gmx::formatString("Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.",
                                                   cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes()).c_str());
@@ -1250,7 +1250,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
     else
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
-                        "Could not make topology");
+                        "No structure to make topology for.");
     }
     msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",

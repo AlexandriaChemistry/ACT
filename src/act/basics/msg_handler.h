@@ -164,7 +164,7 @@ class MsgHandler
         //! ACTStatus level, messages at this or lower level are printed
         ACTStatus        printLevel_  = ACTStatus::Fatal;
         //! Level integer for command line selection of print level
-        int              ilevel_      = 2;
+        int              ilevel_      = 3;
         //! Lowest level of error encountered (lower is more severe)
         ACTStatus        status_      = ACTStatus::Debug;
         //! Last message reported

@@ -317,15 +317,16 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         {
             for(auto mp = mps.begin(); mp < mps.end(); )
             {
-                if (lookup.find(mp->getMolname()) == lookup.end() &&
-                    lookup.find(mp->getIupac()) == lookup.end())
+                if ((lookup.find(mp->getMolname()) == lookup.end() &&
+                     lookup.find(mp->getIupac()) == lookup.end()) ||
+                    (qmap.find(mp->getInchi()) == qmap.end()))
                 {
                     mp = mps.erase(mp);
                 }
                 else
                 {
                     msghandler->msg(ACTStatus::Info,
-                                    gmx::formatString("Keeping %s (%s) from molprop file %s\n",
+                                    gmx::formatString("Successfully read %s (%s) from molprop file %s\n",
                                                       mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str()));
                     ++mp;
                 }
@@ -354,8 +355,11 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
             setCharges(msghandler, pd, &(*mol), qmap, forceComp, warnQtot);
-            // Load all the other properties of the compounds as well
-            mol->getExpProps(msghandler, &pd, {});
+            if (msghandler->ok())
+            {
+                // Load all the other properties of the compounds as well
+                mol->getExpProps(msghandler, &pd, {});
+            }
             if (!msghandler->ok())
             {
                 msghandler->msg(ACTStatus::Warning,
