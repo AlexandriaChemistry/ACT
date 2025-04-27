@@ -28,7 +28,9 @@ jobs:
           cd openbabel-openbabel-alexandria-0.91
           mkdir build
           cd build
-          cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools ..
+          export MPICXX=`which mpicxx`
+          export MPICC=`which mpicc`
+          cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install
       - name: Install ACT
         run: |
