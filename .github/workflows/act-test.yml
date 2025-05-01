@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install libopenmpi3 openmpi-bin libeigen3-dev swig libxml2 sqlite3 libfftw3-dev #package ssh dependency
+          sudo apt-get -y install gcc libopenmpi3 openmpi-bin libeigen3-dev swig libxml2 sqlite3 libfftw3-dev #package ssh dependency
       - name: Install openbabel
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.91.tar.gz
