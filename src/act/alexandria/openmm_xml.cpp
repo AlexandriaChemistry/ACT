@@ -534,9 +534,9 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
             setNexcl(std::stoi(fs.optionValue(nnn)));
         }
         add_global(specPtr, "nexcl", nexcl());
-        // Bondcutoff should be zero for all CustomNobonded forces since we determine exclusions
-        // ourselves in the Python interface.
-        add_xml_int(specPtr, "bondCutoff", 0);
+        // Bondcutoff should be the same for all NonBonded and CustomNobonded forces
+        // even though  we determine exclusions ourselves in the Python interface.
+        add_xml_int(specPtr, "bondCutoff", nexcl());
         if (itVC == itype)
         {
             // Implement xor function for Kronecker combination rule
