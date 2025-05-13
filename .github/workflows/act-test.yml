@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc libopenmpi3 openmpi-bin libeigen3-dev swig libxml2 sqlite3 libfftw3-dev #package ssh dependency
+          sudo apt-get -y install gcc libopenmpi3 openmpi-bin libeigen3-dev swig libxml2  #package ssh dependency
       - name: Install openbabel
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.91.tar.gz
@@ -28,8 +28,10 @@ jobs:
           cd openbabel-openbabel-alexandria-0.91
           mkdir build
           cd build
-          export MPICXX=`which mpicxx`
-          export MPICC=`which mpicc`
+#          export MPICXX=`which mpicxx`
+#          export MPICC=`which mpicc`
+          export MPICXX=/usr/bin/g++
+          export MPICC=/usr/bin/gcc
           cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install
       - name: Install ACT
