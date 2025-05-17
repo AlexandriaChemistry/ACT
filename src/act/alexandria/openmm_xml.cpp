@@ -333,7 +333,8 @@ private:
                           const ForceField          *pd,
                           const std::vector<ACTMol> &actmols);
                           
-    void addTopologyEntries(const ForceField                                  *pd,
+    void addTopologyEntries(MsgHandler                                        *msghandler,
+                            const ForceField                                  *pd,
                             std::map<InteractionType, std::set<std::string> > *BondClassUsed,
                             const Topology                                    *topology);
 
@@ -978,7 +979,8 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
     }
 }
 
-void OpenMMWriter::addTopologyEntries(const ForceField                                  *pd,
+void OpenMMWriter::addTopologyEntries(MsgHandler                                        *msghandler,
+                                      const ForceField                                  *pd,
                                       std::map<InteractionType, std::set<std::string> > *BondClassUsed,
                                       const Topology                                    *topology)
 {
@@ -1079,8 +1081,9 @@ void OpenMMWriter::addTopologyEntries(const ForceField                          
                 case Potential::VSITE1:
                     break;
                 default:
-                    fprintf(stderr, "Warning: no OpenMM support for %s is present or implemented.\n",
-                            interactionTypeToString(fs.first).c_str());
+                    msghandler->msg(ACTStatus::Error,
+                                    gmx::formatString("Warning: no OpenMM support for %s is present or implemented.",
+                                                      interactionTypeToString(fs.first).c_str()));
                 }
             }
         }
@@ -1400,12 +1403,18 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
             // Add bonds
             addXmlResidueBonds(residuePtr, pd, topologies[fff]);
             // Add bond types.
-            addTopologyEntries(pd, &BondClassUsed, actmol.topology());
+            addTopologyEntries(msghandler, pd, &BondClassUsed, actmol.topology());
         }
     }
-    addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);
-    addXmlSpecial(parent, pd, fftypeGlobalMap);
-    addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
+    if (msghandler->ok())
+    {
+        addXmlNonbonded(msghandler, parent, pd, fftypeGlobalMap);
+    }
+    if (msghandler->ok())
+    {
+        addXmlSpecial(parent, pd, fftypeGlobalMap);
+        addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
+    }
 }
 
 void OpenMMWriter::writeXml(MsgHandler                *msghandler,
@@ -1434,20 +1443,31 @@ void OpenMMWriter::writeXml(MsgHandler                *msghandler,
 
     if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
-        gmx_fatal(FARGS, "Creating root element for %s", fileName.c_str());
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Problem creating XML root element for file %s", fileName.c_str()));
     }
-    dtd->next    = myroot;
-    myroot->prev = (xmlNodePtr) dtd;
-
-    /* Add molecule definitions */
-    addXmlForceField(msghandler, myroot, pd, actmols);
-
-    // Do not compress the OpenMM file.
-    xmlSetDocCompressMode(doc, 0);
-    xmlIndentTreeOutput = 1;
-    if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
+    if (msghandler->ok())
     {
-        gmx_fatal(FARGS, "Saving file %s", fileName.c_str());
+        dtd->next    = myroot;
+        myroot->prev = (xmlNodePtr) dtd;
+        
+        /* Add molecule definitions */
+        addXmlForceField(msghandler, myroot, pd, actmols);
+    }
+    // Do not compress the OpenMM file.
+    if (msghandler->ok())
+    {
+        xmlSetDocCompressMode(doc, 0);
+        xmlIndentTreeOutput = 1;
+        if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Problem saving file %s", fileName.c_str()));
+        }
+    }
+    else
+    {
+        msghandler->msg(ACTStatus::Info, "Not writing OpenMM file because of errors");
     }
     xmlFreeDoc(doc);
 }

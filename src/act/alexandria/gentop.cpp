@@ -273,7 +273,6 @@ int gentop(int argc, char *argv[])
                         &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
         }
     }
-    printf("\nPlease check the %s file for warnings and error messages.\n", msghandler.filename().c_str());
     if (!msghandler.ok())
     {
         status = 1;
