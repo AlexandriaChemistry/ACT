@@ -931,6 +931,22 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 }
             }
             break;
+        case Potential::HUA_BONDS:
+            {
+                fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+                // The Hua bonds potential is written as a string here:
+                auto energy = gmx::formatString("(%s*(((1-myexp)/(1-%s*myexp))^2 -1));myexp=exp(-%s*(r-%s))", 
+                                                hua_name[huaDE], hua_name[huaC],
+                                                hua_name[huaB], hua_name[huaLENGTH]);
+                add_xml_char(fsPtr, "energy", energy.c_str());
+                // Specify the per bond parameters
+                for(int i = 0; i < huaNR; i++)
+                {
+                    auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), hua_name[i]);
+                }
+            }
+            break;
         case Potential::CUBIC_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
@@ -1029,6 +1045,10 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::MORSE_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                atoms, morse_name, entry->params());
+                    break;
+                case Potential::HUA_BONDS:
+                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
+                               atoms, hua_name, entry->params());
                     break;
                 case Potential::HARMONIC_ANGLES:
                     {
