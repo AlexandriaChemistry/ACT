@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2021,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -85,28 +85,29 @@ void LongTable::setColumns(int nColumns)
 void LongTable::printLine(const std::string &line)
 {
     std::string myline;
-    bool underscore = false;
+    int underscore = 0;
     for(auto &c : line)
     {
         if (c == '_' || c == '#')
         {
             myline.append("\\_{");
-            underscore = true;
+            underscore += 1;
         }
-        else if (underscore && !std::isalnum(c) )
+        else if (underscore > 0 && !std::isalnum(c) )
         {
             myline += "}";
             myline += c;
-            underscore = false;
+            underscore -= 1;
         }
         else
         {
             myline += c;
         }
     }
-    if (underscore)
+    while (underscore > 0)
     {
         myline += "}";
+        underscore -= 1;
     }
     fprintf(fp_, "%s\\\\\n", myline.c_str());
 }
