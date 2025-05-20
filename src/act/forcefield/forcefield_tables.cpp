@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -164,7 +164,14 @@ void ForceFieldTable::itype_table(InteractionType    itype,
             ntrain += ffp.second.ntrain();
             if (first)
             {
-                header   += gmx::formatString(" & %s (N, $\\sigma$)", ffp.first.c_str());
+                if (printSigma_)
+                {
+                    header   += gmx::formatString(" & %s (N, $\\sigma$)", ffp.first.c_str());
+                }
+                else
+                {
+                    header   += gmx::formatString(" & %s ", ffp.first.c_str());
+                }
                 ncolumns += 1;
             }
         }
@@ -181,28 +188,6 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         }
     }
     lt.printFooter();
-}
-
-void ForceFieldTable::eemprops_table(const std::string &info)
-{
-    std::vector<InteractionType> itypes = {
-        InteractionType::ELECTRONEGATIVITYEQUALIZATION,
-        InteractionType::ELECTROSTATICS,
-        InteractionType::POLARIZATION,
-        InteractionType::INDUCTIONCORRECTION,
-        InteractionType::BONDCORRECTIONS
-    };
-    for (const auto &my_itype : itypes)
-    { 
-        if (pd_->interactionPresent(my_itype))
-        {
-            auto fs = pd_->findForcesConst(my_itype);
-            if (fs.numberOfParameters() > 0)
-            {
-                itype_table(my_itype, info);
-            }
-        }
-    }
 }
 
 } //namespace
