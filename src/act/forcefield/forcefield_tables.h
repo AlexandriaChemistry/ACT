@@ -54,6 +54,8 @@ class ForceFieldTable
     //! Minimum number of training points to print
     unsigned int ntrain_  = 1;
 
+    //! Whether to print sigma
+    bool printSigma_      = true;
  public:
     /*! \brief
      * Generates a LaTeX tables containing force field data.
@@ -64,16 +66,9 @@ class ForceFieldTable
      */
     ForceFieldTable(FILE              *fp, 
                     const ForceField  *pd,
-                    int                ntrain) : fp_(fp), pd_(pd), ntrain_(ntrain) {}
+                    int                ntrain,
+                    bool               printSigma = true) : fp_(fp), pd_(pd), ntrain_(ntrain), printSigma_(printSigma) {}
 
-    /*! \brief
-     * Generates a LaTeX table containing the zeta values 
-     * for gaussian and/or slater charge models
-     *
-     * \param[in] info   Text to add to the caption of the table
-     */
-    void zeta_table(const std::string &info);
-                               
     /*! \brief
      * Generates a LaTeX table containing the chi and eta values 
      * for Alexandria Charge Models

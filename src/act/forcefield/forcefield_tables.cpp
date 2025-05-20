@@ -95,14 +95,35 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         return;
     }
     auto eep = pd_->findForcesConst(itype);
-    if (eep.parametersConst().empty())
+    // Check whether there is anything to print.
+    int nparam = 0;
+    for (const auto &p : eep.parametersConst())
+    {
+        for (const auto &pp : p.second)
+        {
+            if (pp.second.ntrain() > ntrain_)
+            {
+                nparam += 1;
+            }
+        }
+    }
+    if (nparam == 0)
     {
         return;
     }
     LongTable  lt(fp_, false, nullptr);
-    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s",
-                                    interactionTypeToDescription(itype).c_str(),
-                                    info.c_str()).c_str());
+    if (printSigma_)
+    {
+        lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s",
+                                        interactionTypeToDescription(itype).c_str(),
+                                        info.c_str()).c_str());
+    }
+    else
+    {
+        lt.setCaption(gmx::formatString("Parameters for %s. %s",
+                                        interactionTypeToDescription(itype).c_str(),
+                                        info.c_str()).c_str());
+    }
     lt.setLabel(interactionTypeToString(itype).c_str());
     bool        first    = true;
     std::string header;
@@ -124,10 +145,17 @@ void ForceFieldTable::itype_table(InteractionType    itype,
             // Round upwards the sigma values.
             if (ffp.second.ntrain() >= ntrain_)
             {
-                line += gmx::formatString(" & %.3f(%d, %.3f)",
-                                          ffp.second.value(),
-                                          ffp.second.ntrain(),
-                                          ffp.second.uncertainty()+0.005);
+                if (printSigma_)
+                {
+                    line += gmx::formatString(" & %.3f(%d, %.3f)",
+                                              ffp.second.value(),
+                                              ffp.second.ntrain(),
+                                              ffp.second.uncertainty()+0.005);
+                }
+                else
+                {
+                    line += gmx::formatString(" & %.3f", ffp.second.value());
+                }
             }
             else
             {
@@ -175,36 +203,6 @@ void ForceFieldTable::eemprops_table(const std::string &info)
             }
         }
     }
-}
-
-void ForceFieldTable::zeta_table(const std::string &info)
-{
-    LongTable   lt(fp_, false, nullptr);
-    std::string qq("charge");
-    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$. %s", qq.c_str(), info.c_str()).c_str());
-    lt.setLabel(qq.c_str());
-    lt.setColumns(4);
-    lt.addHeadLine("Particle type & q & $\\Delta$q & N");
-    lt.printHeader();
-    for (const auto &ptype : pd_->particleTypesConst())
-    {
-
-        if (ptype.second.hasParameter(qq))
-        {
-            auto pp = ptype.second.parameterConst(qq);
-            if ((pp.mutability() == Mutability::Free ||
-                 pp.mutability() == Mutability::Bounded) &&
-                pp.ntrain() >= ntrain_)
-            {
-                auto line = gmx::formatString("%s & %.4f & %.4f & %d",
-                                              ptype.second.id().id().c_str(),
-                                              pp.value(), pp.uncertainty(),
-                                              pp.ntrain());
-                lt.printLine(line);
-            }
-        }
-    }
-    lt.printFooter();
 }
 
 } //namespace
