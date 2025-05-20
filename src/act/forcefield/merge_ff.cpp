@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -252,10 +252,6 @@ int merge_ff(int argc, char *argv[])
     }
     /* Read all the gentop files. */
     auto filenames = opt2fns("-ff", NFILE, fnm);
-    if (filenames.size() < 2)
-    {
-        gmx_fatal(FARGS, "At least two gentop files are needed for merging!\n");
-    }
     
     for (auto &i : filenames)
     {
@@ -303,11 +299,12 @@ int merge_ff(int argc, char *argv[])
         }
     }
 
+    bool printSigma = filenames.size() > 1;
     writeForceField(opt2fn("-o", NFILE, fnm), &pdout, bcompress);
     if (opt2bSet("-latex", NFILE, fnm))
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-        ForceFieldTable fft(tp, &pdout, ntrain);
+        ForceFieldTable fft(tp, &pdout, ntrain, printSigma);
         std::string myinfo;
         if (info != nullptr)
         {
@@ -317,8 +314,6 @@ int merge_ff(int argc, char *argv[])
         {
             fft.subtype_table(myinfo);
         }
-        //fft.zeta_table(myinfo);
-        //fft.eemprops_table(myinfo);
         for(auto itype : itypes)
         {
             fft.itype_table(itype, myinfo);
