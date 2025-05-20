@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -247,6 +247,50 @@ static void modifyInteraction(ForceField *pd,
                                      bLimit,  factor);
                     }
                 }
+            }
+        }
+    }
+}
+
+static void removeParticles(ForceField *pd,
+                            const std::string &particle)
+{
+    for (const auto &s : gmx::splitString(particle))
+    {
+        // First remove all the forces involving s
+        auto forces = pd->forces();
+        for (auto f = forces->begin(); f != forces->end(); ++f)
+        {
+            auto params = f->second.parameters();
+            for (auto fp = params->begin(); fp != params->end(); )
+            {
+                auto myatoms = fp->first.atoms();
+                bool found = false;
+                for (const auto &mya : myatoms)
+                {
+                    found = found || mya == s;
+                }
+                if (found)
+                {
+                    fp = params->erase(fp);
+                }
+                else
+                {
+                    ++fp;
+                }
+            }
+        }
+        // Then remove s itself
+        auto ptypes = pd->particleTypes();
+        for (auto p = ptypes->begin(); p != ptypes->end(); )
+        {
+            if (s == p->first.id())
+            {
+                p = ptypes->erase(p);
+            }
+            else
+            {
+                ++p;
             }
         }
     }
@@ -745,6 +789,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     bcast      = false;
     gmx_bool     bounds     = false;
     gmx_bool     verbose    = false;
+    gmx_bool     remove     = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -765,6 +810,8 @@ int edit_ff(int argc, char*argv[])
           "Maximum value of parameter." },
         { "-mut",    FALSE, etSTR,  {&mutability},
           "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
+        { "-del",    FALSE, etBOOL,  {&remove},
+          "Together with the -a flag, will remove all interactions containing this particle" },
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" },
         { "-stretch", FALSE, etBOOL, {&stretch},
@@ -862,6 +909,10 @@ int edit_ff(int argc, char*argv[])
         else if (bondenergy)
         {
             addBondEnergy(&pd);
+        }
+        else if (remove)
+        {
+            removeParticles(&pd, particle);
         }
         else
         {
