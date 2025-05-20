@@ -1017,11 +1017,8 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
         {
             if (entry->id().atoms().empty())
             {
-                if (debug)
-                {
-                    fprintf(debug, "Skipping interaction %s\n",
-                           interactionTypeToString(fs.first).c_str());
-                }
+                msghandler->msg(ACTStatus::Debug, gmx::formatString("Skipping interaction %s",
+                                                                    interactionTypeToString(fs.first).c_str()));
                 continue;
             }
             const auto &bondId = entry->id().id();
@@ -1102,8 +1099,9 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     break;
                 default:
                     msghandler->msg(ACTStatus::Error,
-                                    gmx::formatString("Warning: no OpenMM support for %s is present or implemented.",
-                                                      interactionTypeToString(fs.first).c_str()));
+                                    gmx::formatString("Warning: no OpenMM support for %s (%s) is present or implemented.",
+                                                      interactionTypeToString(fs.first).c_str(),
+                                                      potentialToString(fs.second.potential()).c_str()));
                 }
             }
         }
@@ -1236,10 +1234,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                 if (addNumbersToAtomTypes_)
                 {
                     openMMtype += gmx::formatString("_%d", localIndex);
-                    if (debug)
-                    {
-                        fprintf(debug, "Adding openMMtype %s counter %d\n", openMMtype.c_str(), localIndex);
-                    }
+                    msghandler->writeDebug(gmx::formatString("Adding openMMtype %s counter %d", openMMtype.c_str(), localIndex));
                 }
                 // Now check whether this type is in the global map
                 bool addGlobalAtomType = false;
@@ -1344,6 +1339,11 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                         // We have to swap cores 0 and 1
                                         std::swap(cores[0], cores[1]);
                                     }
+                                    if (itp.first ==  InteractionType::VSITE1)
+                                    {
+                                        // Add a second copy of the parent
+                                        cores.push_back(cores[0]);
+                                    }
                                     int ppp = 1;
                                     for(const auto &parent : cores)
                                     {
@@ -1354,8 +1354,13 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                             // Add an (artificial) bond such that OpenMM will generate
                                             // exclusions for this. See
                                             // https://github.com/openmm/openmm/issues/811
-                                            addXmlResidueBond(residuePtr,
-                                                              inames[i].c_str(), inames[parent].c_str());
+                                            // However do not add two bonds for a VSITE1 just because we need to
+                                            // add the same atomName twice. Puh, nasty hacks.
+                                            if (ppp == 1 || itp.first !=  InteractionType::VSITE1)
+                                            {
+                                                addXmlResidueBond(residuePtr,
+                                                                  inames[i].c_str(), inames[parent].c_str());
+                                            }
                                         }
                                         else
                                         {
@@ -1365,6 +1370,12 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                     }
                                     switch (itp.first)
                                     {
+                                    case InteractionType::VSITE1:
+                                        {
+                                            add_xml_weight(baby, "weight1", 1);
+                                            add_xml_weight(baby, "weight2", 0);
+                                        }
+                                        break;
                                     case InteractionType::VSITE2:
                                         {
                                             auto p = ee->params()[0];

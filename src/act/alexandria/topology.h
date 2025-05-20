@@ -198,26 +198,32 @@ private:
     std::vector<int>                                          realAtoms_;
 
     /*! Generate virtual sites for atoms.
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite1s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite1s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
     /*! Generate virtual sites for bonds.
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite2s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite2s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
 
     /*! \brief Generate three body vsites
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The linked list of particles
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite3s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite3s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
@@ -299,7 +305,7 @@ private:
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
 
     //! Debugging stuff
-    void dumpPairlist(FILE *fp, InteractionType itype) const;
+    void dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const;
 
     //! \return the array of real atoms
     const std::vector<int> &realAtoms() const { return realAtoms_; }

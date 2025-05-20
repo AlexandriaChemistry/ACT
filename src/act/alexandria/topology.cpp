@@ -38,6 +38,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
@@ -91,22 +92,23 @@ Topology::Topology(const std::vector<Bond> &bonds)
     }
 }
 
-static void dump_entry(FILE                      *fp,
+static void dump_entry(MsgHandler                *msghandler,
                        const TopologyEntryVector &entries,
                        const std::string         &label)
 {
-    if (nullptr == fp)
+    if (msghandler->printLevel() != ACTStatus::Debug)
     {
         return;
     }
+    auto tw = msghandler->tw();
     for(auto &entry : entries)
     {
-        fprintf(fp, "%s", label.c_str());
+        std::string str = label;
         for (auto &ai : entry->atomIndices())
         {
-            fprintf(fp, " %d", ai);
+            str.append(" " + std::to_string(ai));
         }
-        fprintf(fp, "\n");
+        tw->writeLine(str);
     }
 }
 
@@ -190,7 +192,7 @@ void Topology::addShells(MsgHandler       *msghandler,
     if (!pols.empty())
     {
         addEntry(InteractionType::POLARIZATION, pols);
-        dump_entry(debug, pols, "The pols");
+        dump_entry(msghandler, pols, "The pols");
     }
 }
 
@@ -205,9 +207,7 @@ void Topology::addBond(const Bond &bond)
     {
         entries_.insert({ itb, TopologyEntryVector{} });
     }
-       entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
-
-
+    entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
 }
 
 double Topology::mass() const
@@ -707,7 +707,8 @@ void Topology::makePropers(const ForceField *pd)
     }
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -749,11 +750,8 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
                 atomList->insert(std::next(atom), ActAtomListItem(newatom, vs1, vzero));
                 // Create new topology entry
                 Vsite1 vsnew(atom->index(), vs1);
-                if (debug)
-                {
-                    fprintf(debug, "Adding vs1 %s-%lu %d\n",
-                            aa.element().c_str(), atom->index(), vs1);
-                }
+                msghandler->writeDebug(gmx::formatString("Adding vs1 %s-%lu %d\n",
+                                                         aa.element().c_str(), atom->index(), vs1));
                 // Special bond order for vsites
                 vsnew.addBondOrder(9);
                 v1top.push_back(std::any_cast<Vsite1>(std::move(vsnew)));
@@ -774,7 +772,8 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
     return num_v1;
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -796,26 +795,22 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
             }
         }
     }
-    if (debug)
+    if (ffvs.empty())
     {
-        if (ffvs.empty())
-        {
-            fprintf(debug, "Force field does not contain any two particle virtual sites.\n");
-            return {};
-        }
-        else
-        {
-            fprintf(debug, "There are %zu non-empty two particle vsite entries in the force field.\n",
-                    ffvs.size());
-        }
+        msghandler->msg(ACTStatus::Verbose,
+                        "Force field does not contain any two particle virtual sites.");
+        return {};
+    }
+    else
+    {
+        msghandler->msg(ACTStatus::Verbose,
+                        gmx::formatString("There are %zu non-empty two particle vsite entries in the force field.",
+                                          ffvs.size()));
     }
     auto itype_bonds = InteractionType::BONDS;
     if (entries_.find(itype_bonds) == entries_.end())
     {
-        if (debug)
-        {
-            fprintf(debug, "There are no bonds to generate vsites3 from.\n");
-        }
+        msghandler->writeDebug("There are no bonds to generate vsites3 from.");
         return {};
     }
     auto &bonds     = entry(itype_bonds);
@@ -861,10 +856,8 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                 auto bai    = pti->optionValue("bondtype");
                 auto baj    = ptj->optionValue("bondtype");
                 
-                if (debug)
-                {
-                    fprintf(debug, "Found bond %s %s\n", bai.c_str(), baj.c_str());
-                }
+                msghandler->writeDebug(gmx::formatString("Found bond %s %s", bai.c_str(), baj.c_str()));
+
                 bool found   = false;
                 if (border[0] == vsbo[0])
                 {
@@ -912,12 +905,10 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
                         // Create new topology entry
                         Vsite2 vsnew(ai, aj, vs2);
-                        if (debug)
-                        {
-                            fprintf(debug, "Adding vs2 %s-%d %s-%d %d\n",
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj, vs2);
-                        }
+                        msghandler->writeDebug(gmx::formatString("Adding vs2 %s-%d %s-%d %d",
+                                                                 atoms_[ai].element().c_str(), ai,
+                                                                 atoms_[aj].element().c_str(), aj, vs2));
+
                         // Add bond orders, copied from the bond.
                         for (auto b : border)
                         {
@@ -943,7 +934,8 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
     return num_v2;
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -968,26 +960,19 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
             }
         }
     }
-    if (debug)
+    if (ffvs.empty())
     {
-        if (ffvs.empty())
-        {
-            fprintf(debug, "Force field does not contain any three particle virtual sites.\n");
-            return {};
-        }
-        else
-        {
-            fprintf(debug, "There are %zu non-empty three particle vsite entries in the force field.\n",
-                    ffvs.size());
-        }
+        msghandler->writeDebug("Force field does not contain any three particle virtual sites.");
+        return {};
+    }
+    else
+    {
+        msghandler->writeDebug(gmx::formatString("There are %zu non-empty three particle vsite entries in the force field.", ffvs.size()));
     }
     auto itype_angles = InteractionType::ANGLES;
     if (entries_.find(itype_angles) == entries_.end())
     {
-        if (debug)
-        {
-            fprintf(debug, "There are no angles to generate vsites3 from.\n");
-        }
+        msghandler->writeDebug("There are no angles to generate vsites3 from.");
         return {};
     }
     // Count the number of interactions of each type that we find
@@ -997,10 +982,8 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
         TopologyEntryVector v3top;
         for (const auto &fvs : myffvs.second.parametersConst())
         {
-            if (debug)
-            {
-                fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
-            }
+            msghandler->writeDebug(gmx::formatString("Checking vsite %s", fvs.first.id().c_str()));
+
             auto vsatoms = fvs.first.atoms();
             auto vsbo    = fvs.first.bondOrders();
             auto &angles     = entry(itype_angles);
@@ -1018,10 +1001,8 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                 auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
                 auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
                 auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
-                if (debug)
-                {
-                    fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
-                }
+                msghandler->writeDebug(gmx::formatString("Found angle %s %s %s", bai.c_str(), baj.c_str(), bak.c_str()));
+
 
                 bool found   = false;
                 if (border[0] == vsbo[0] && border[1] == vsbo[1] &&
@@ -1068,14 +1049,11 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                         newatom.addCore(aj);
                         newatom.addCore(ak);
                         newatom.setResidueNumber(atoms_[ai].residueNumber());
-                        if (debug)
-                        {
-                            fprintf(debug, "Adding %s %s%d %s%d %s%d %d\n",
-                                    interactionTypeToString(myffvs.first).c_str(),
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj,
-                                    atoms_[ak].element().c_str(), ak, vs3);
-                        }
+                        msghandler->writeDebug(gmx::formatString("Adding %s %s%d %s%d %s%d %d",
+                                                                 interactionTypeToString(myffvs.first).c_str(),
+                                                                 atoms_[ai].element().c_str(), ai,
+                                                                 atoms_[aj].element().c_str(), aj,
+                                                                 atoms_[ak].element().c_str(), ak, vs3));
 
                         gmx::RVec vzero = {0, 0, 0};
                         size_t after = std::max({ai, aj, ak});
@@ -1160,9 +1138,9 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
+void Topology::dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const
 {
-    if (nullptr == fp)
+    if (nullptr == tw)
     {
         return;
     }
@@ -1172,8 +1150,9 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     }
     for(const auto &pl : entry(itype))
     {
-        fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
-                pl->atomIndex(0), pl->atomIndex(1));
+        tw->writeLine(gmx::formatString("PAIRLIST %s %d %d",
+                                        interactionTypeToString(itype).c_str(),
+                                        pl->atomIndex(0), pl->atomIndex(1)));
     }
 }
 
@@ -1252,12 +1231,11 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
         msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
                         "No structure to make topology for.");
     }
-    msghandler->msg(ACTStatus::Debug,
-                    gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
-                                      mol->getMolname().c_str(),
-                                      ci->getMethod().c_str(),
-                                      ci->getBasisset().c_str(), atoms_.size(),
-                                      actMessage(imm)).c_str());
+    msghandler->writeDebug(gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
+                                             mol->getMolname().c_str(),
+                                             ci->getMethod().c_str(),
+                                             ci->getBasisset().c_str(), atoms_.size(),
+                                             actMessage(imm)).c_str());
 }
 
 void Topology::build(MsgHandler             *msghandler,
@@ -1284,29 +1262,24 @@ void Topology::build(MsgHandler             *msghandler,
     setEntryIdentifiers(pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
-    auto nv1 = makeVsite1s(pd, &atomList);
-    auto nv2 = makeVsite2s(pd, &atomList);
+    auto nv1 = makeVsite1s(msghandler, pd, &atomList);
+    auto nv2 = makeVsite2s(msghandler, pd, &atomList);
 
     // Before we can make three-particle vsites, we need to create
     // angles, but only temporarily.
     makeAngles(pd, *x, LinearAngleMin);
-    auto nv3 = makeVsite3s(pd, &atomList);
-    if (debug && (nv2.size() > 0 || nv3.size() > 0))
+    auto nv3 = makeVsite3s(msghandler, pd, &atomList);
+    if (msghandler->debug() && (nv2.size() > 0 || nv3.size() > 0))
     {
-        fprintf(debug, "Added");
-        for(const auto nn : nv1)
+        std::string str = "Added";
+        for(const auto &mm : { nv1, nv2, nv3 })
         {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
+            for(const auto &nn : mm)
+            {
+                str += " " + std::to_string(nn.second) + " " + interactionTypeToString(nn.first);
+            }
         }
-        for(const auto nn : nv2)
-        {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
-        }
-        for(const auto nn : nv3)
-        {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
-        }
-        fprintf(debug, "\n");
+        msghandler->writeDebug(str);
     }
     // Now throw away the angles again since we need to reorder the
     // lists of atoms and vsites.
@@ -1322,18 +1295,17 @@ void Topology::build(MsgHandler             *msghandler,
     {
         return;
     }
-    if (debug)
+    if (msghandler->debug())
     {
         auto nshell = atomList.size()-nRealAtoms;
-        for(const auto nn : nv2)
+        for(const auto &mm : { nv1, nv2, nv3 })
         {
-            nshell -= nn.second;
+            for(const auto &nn : mm)
+            {
+                nshell -= nn.second;
+            }
         }
-        for(const auto nn : nv3)
-        {
-            nshell -= nn.second;
-        }
-        fprintf(debug, "Added %zu shells\n", nshell);
+        msghandler->writeDebug(gmx::formatString("Added %zu shells", nshell));
     }
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
@@ -1412,12 +1384,12 @@ void Topology::build(MsgHandler             *msghandler,
     {
         fillParameters(msghandler, pd, missing);
     }
-    if (debug)
+    if (msghandler->debug())
     {
-        dumpPairlist(debug, InteractionType::ELECTROSTATICS);
-        dumpPairlist(debug, InteractionType::VDW);
-        dumpPairlist(debug, InteractionType::VDWCORRECTION);
-        dumpPairlist(debug, InteractionType::INDUCTIONCORRECTION);
+        dumpPairlist(msghandler->twDebug(), InteractionType::ELECTROSTATICS);
+        dumpPairlist(msghandler->twDebug(), InteractionType::VDW);
+        dumpPairlist(msghandler->twDebug(), InteractionType::VDWCORRECTION);
+        dumpPairlist(msghandler->twDebug(), InteractionType::INDUCTIONCORRECTION);
     }
 }
 
