@@ -70,22 +70,6 @@ class ForceFieldTable
                     bool               printSigma = true) : fp_(fp), pd_(pd), ntrain_(ntrain), printSigma_(printSigma) {}
 
     /*! \brief
-     * Generates a LaTeX table containing the chi and eta values 
-     * for Alexandria Charge Models
-     *
-     * \param[in] info   Text to add to the caption of the table
-     */
-    void eemprops_table(const std::string &info);  
-
-    /*! \brief
-     * Generates a LaTeX table containing the delta_chi and 
-     * bond hardness values for Alexandria Charge Models
-     *
-     * \param[in] info   Text to add to the caption of the table
-     */
-    void eemprops_corr_table(const std::string &info);
-
-    /*! \brief
      * Generates a LaTeX table containing the subtypes
      * for particle types
      *
