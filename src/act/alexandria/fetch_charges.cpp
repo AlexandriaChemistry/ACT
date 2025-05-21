@@ -78,6 +78,11 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                         addThisMol = addThisMol || (lookup.find(syn) != lookup.end());
                     }
                 }
+                else
+                {
+                    amol = amols.findInChi(mp->getInchi());
+                    addThisMol = amol != nullptr;
+                }
             }
             if (!addThisMol)
             {

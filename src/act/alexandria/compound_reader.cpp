@@ -261,7 +261,14 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             {
                 for(auto ic = fp->begin(); ic < fp->end(); ++ic)
                 {
-                    lookup.insert(ic->iupac());
+                    if (!ic->iupac().empty())
+                    {
+                        lookup.insert(ic->iupac());
+                    }
+                    else
+                    {
+                        lookup.insert(ic->inchi());
+                    }
                 }
             }
             else
@@ -289,7 +296,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         std::string msg("CompoundReader found the following compounds:");
         for(const auto &lu : lookup)
         {
-            msg += " " + lu;
+            msg += gmx::formatString(" '%s'", lu.c_str());
         }
         if (strlen(dbname_) > 0)
         {
