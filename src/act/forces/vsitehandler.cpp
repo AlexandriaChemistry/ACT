@@ -276,7 +276,8 @@ static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec
 }
 
 
-static gmx_unused int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
+static gmx_unused int constr_vsiten(const std::vector<int> &ia,
+                                    const t_iparams ip[],
                                     rvec *x, const t_pbc *pbc)
 {
     gmx_fatal(FARGS, "Fix code in constr_vsiten before using");
@@ -315,10 +316,10 @@ static gmx_unused int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
     return n3;
 }
 
-static void spread_vsite1(const t_iatom ia[], rvec f[])
+static void spread_vsite1(const std::vector<int> &ia, rvec f[])
 {
-    t_iatom ai = ia[0];
-    t_iatom av = ia[1];
+    int ai = ia[0];
+    int av = ia[1];
     rvec_inc(f[ai], f[av]);
     clear_rvec(f[av]);
 }
@@ -328,10 +329,10 @@ static void spread_vsite2(const std::vector<int> &ia, real a,
                           rvec f[], rvec fshift[],
                           const t_pbc *pbc, const t_graph *g)
 {
-    rvec    fi, fj, dx;
-    t_iatom av, ai, aj;
-    ivec    di;
-    int     siv, sij;
+    rvec fi, fj, dx;
+    int  av, ai, aj;
+    ivec di;
+    int  siv, sij;
 
     av = ia[2];
     ai = ia[0];
@@ -430,14 +431,14 @@ static void spread_vsite3(rvec ffi,
     /* TOTAL: 20 flops */
 }
 
-static void spread_vsite3FD(const t_iatom ia[], real a, real b,
+static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
                             const rvec x[], rvec f[], rvec fshift[],
                             gmx_bool VirCorr, matrix dxdf,
                             const t_pbc *pbc, const t_graph *g)
 {
     real    c, invl, fproj, a1;
     rvec    xvi, xij, xjk, xix, fv, temp;
-    t_iatom av, ai, aj, ak;
+    int     av, ai, aj, ak;
     int     svi, sji, skj;
     ivec    di;
 
@@ -542,7 +543,7 @@ static void spread_vsite3FD(const t_iatom ia[], real a, real b,
     /* TOTAL: 61 flops */
 }
 
-static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
+static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
                              const rvec x[],
                              rvec f[], rvec fshift[],
                              gmx_bool VirCorr, matrix dxdf,
@@ -550,7 +551,7 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
 {
     rvec    xvi, xij, xjk, xperp, Fpij, Fppp, fv, f1, f2, f3;
     real    a1, b1, c1, c2, invdij, invdij2, invdp, fproj;
-    t_iatom av, ai, aj, ak;
+    int     av, ai, aj, ak;
     int     svi, sji, skj, d;
     ivec    di;
 
@@ -661,7 +662,7 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
     /* TOTAL: 113 flops */
 }
 
-static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
+static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
                              const rvec x[],
                              rvec f[], rvec fshift[],
                              gmx_bool VirCorr, matrix dxdf,
@@ -753,7 +754,7 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     /* TOTAL: 54 flops */
 }
 
-static gmx_unused void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
+static gmx_unused void spread_vsite4FD(const std::vector<int> &ia, real a, real b, real c,
                                        const rvec x[], rvec f[], rvec fshift[],
                                        gmx_bool VirCorr, matrix dxdf,
                                        const t_pbc *pbc, const t_graph *g)
@@ -862,7 +863,7 @@ static gmx_unused void spread_vsite4FD(const t_iatom ia[], real a, real b, real 
 }
 
 
-static gmx_unused void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
+static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real b, real c,
                                         const rvec x[], rvec f[], rvec fshift[],
                                         gmx_bool VirCorr, matrix dxdf,
                                         const t_pbc *pbc, const t_graph *g)
@@ -1014,7 +1015,8 @@ static gmx_unused void spread_vsite4FDN(const t_iatom ia[], real a, real b, real
 }
 
 
-static gmx_unused int spread_vsiten(const t_iatom ia[], const t_iparams ip[],
+static gmx_unused int spread_vsiten(const std::vector<int> &ia,
+                                    const t_iparams ip[],
                                     const rvec x[], rvec f[], rvec fshift[],
                                     const t_pbc *pbc, const t_graph *g)
 {
@@ -1234,16 +1236,11 @@ void VsiteHandler::distributeForces(const Topology               *top,
         {
             auto &atomIndices = vs->atomIndices();
             auto &params      = vs->params();
-            // Ugly hack to minimize change in underlying gromacs code
-            std::vector<t_iatom> ia = { -1 };
-            for(auto &ai : atomIndices)
-            {
-                ia.push_back(ai);
-            }
+
             switch(entry.first)
             {
             case InteractionType::VSITE1:
-                spread_vsite1(ia.data(), f);
+                spread_vsite1(atomIndices, f);
                 break;
             case InteractionType::VSITE2:
                 spread_vsite2(atomIndices, params[vsite2A], x, f, fshift, &pbc_, g);
@@ -1263,16 +1260,16 @@ void VsiteHandler::distributeForces(const Topology               *top,
                               params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
-                spread_vsite3FD(ia.data(), params[vsite3A], params[vsite3B], x, f, fshift,
+                spread_vsite3FD(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift,
                                 VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3FAD:
-                spread_vsite3FAD(ia.data(), params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                spread_vsite3FAD(atomIndices, params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3OUT:
                 {
                     auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
-                    spread_vsite3OUT(ia.data(), params[vsite3outA], params[vsite3outB],
+                    spread_vsite3OUT(atomIndices, params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC],
                                      x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 }
@@ -1280,7 +1277,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
             case InteractionType::VSITE3OUTS:
                 {
                     auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
-                    spread_vsite3OUT(ia.data(), params[vsite3outsA], params[vsite3outsA], 
+                    spread_vsite3OUT(atomIndices, params[vsite3outsA], params[vsite3outsA], 
                                      vsite3out_vs->sign() * params[vsite3outsC],
                                      x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 }
