@@ -78,7 +78,7 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
         { "-qtot",   FALSE, etREAL, {&qtot_},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
         { "-qqm",    FALSE, etSTR,  {&qqm_},
-          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
+          "Use a method from quantum mechanics that needs to be present in the input file. For instance, ESP, Hirshfeld, CM5 or Mulliken may be available but check your input." },
         { "-qcustom", FALSE, etSTR, {&qcustom_}, 
           "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." }
     };
@@ -108,7 +108,7 @@ void CompoundReader::optionsOK(MsgHandler                  *msghandler,
     {
         qmapfn_.assign(qfn);
     }
-    if (!qmapfn_.empty() && (strlen(qcustom_) > 0 || strlen(qqm_) > 0 || genCharges_))
+    if (!qmapfn_.empty() && (strlen(qcustom_) > 0 || genCharges_))
     {
         msghandler->msg(ACTStatus::Error,
                         "If you provide a charge map please do not provide a custom charge string or a QM charge selection or the generateCharges flag at the same time.");
@@ -314,7 +314,12 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     {
         std::vector<MolProp> mps;
         MolPropRead(qmapfn_.c_str(), &mps);
-        qmap = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup);
+        auto qtype = qType::ACM;
+        if (strlen(qqm_) > 0)
+        {
+            qtype = stringToQtype(qqm_);
+        }
+        qmap = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup, qtype);
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
                                           qmap.size(), lookup.size(), qmapfn_.c_str()));

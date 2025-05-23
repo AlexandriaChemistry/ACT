@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -128,6 +128,10 @@ AlexandriaMols::AlexandriaMols()
       
 const AlexandriaMol *AlexandriaMols::findInChi(const std::string &inchi) const
 {
+    if (inchi.size() == 0)
+    {
+        return nullptr;
+    }
     auto mptr = mols_.find(inchi);
     if (mols_.end() == mptr)
     {

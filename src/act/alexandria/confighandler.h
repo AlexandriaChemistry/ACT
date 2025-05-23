@@ -440,6 +440,8 @@ private:
     bool               writeShells_          = false;
     //! Minmize (before MD)
     bool               minimize_             = false;
+    //! Compute energies and quit
+    bool               singlePoint_          = false;
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
@@ -500,6 +502,9 @@ public:
     //! \return whether or not to minimize the energy with respect to input coordinates
     bool minimize() const { return minimize_; }
     
+    //! \return whether or not to do a single point energy calculation
+    bool singlePoint() const { return singlePoint_; }
+
     //! Set the minimize option
     void setMinimize(bool minimize) { minimize_ = minimize; }
 

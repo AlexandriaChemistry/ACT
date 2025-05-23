@@ -193,7 +193,39 @@ int simulate(int argc, char *argv[])
         MolHandler molhandler;
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         std::vector<gmx::RVec> xmin   = coords;
-        if (sch.minimize())
+        auto nfrag = actmol.fragmentHandler()->topologies().size();
+        msghandler.msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
+        if (sch.singlePoint())
+        {
+            std::map<InteractionType, double> energies;
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+            JsonTree jtener("Energies before");
+            std::string unit("kJ/mol");
+            for (const auto &ener : energies)
+            {
+                auto val = gmx::formatString("%.4f", ener.second);
+                jtener.addValueUnit(interactionTypeToString(ener.first),
+                                    val.c_str(), unit);
+            }
+            jtree.addObject(jtener);
+            if (nfrag == 2)
+            {
+                // Make a copy to keep the correct shell coordinates when saving the structure.
+                auto newxmin = xmin;
+                std::map<InteractionType, double> einter;
+                std::vector<gmx::RVec>            interactionForces;
+                actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
+                                                  &interactionForces, &newxmin, true);
+                for(const auto &ei : einter)
+                {
+                    msghandler.msg(ACTStatus::Info,
+                                   gmx::formatString("Interaction energy %s: %g",
+                                                     interactionTypeToString(ei.first).c_str(), ei.second));
+                }
+            }
+        }
+        else if (sch.minimize())
         {
             std::vector<int> freeze;
             auto freezeName = opt2fn_null("-freeze", fnm.size(),fnm.data());
@@ -235,8 +267,6 @@ int simulate(int argc, char *argv[])
                 msghandler.msg(ACTStatus::Info,
                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
                                                  energies[InteractionType::EPOT], rmsd));
-                auto nfrag = actmol.fragmentHandler()->topologies().size();
-                printf("There are %lu fragments\n", nfrag);
                 if (nfrag == 2)
                 {
                     // Make a copy to keep the correct shell coordinates when saving the structure.
