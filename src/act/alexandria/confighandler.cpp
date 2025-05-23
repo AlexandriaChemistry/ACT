@@ -386,6 +386,8 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
                                           gmx_unused std::vector<t_filenm> *fnms)
 {
     std::vector<t_pargs> extra = {
+        { "-sp", FALSE, etBOOL, {&singlePoint_},
+          "Do a single point energy calculation and call it a day." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
           "Minimize the energy with respect to input coordinates." },
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
