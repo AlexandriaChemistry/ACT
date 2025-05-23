@@ -676,10 +676,10 @@ static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
 
     // ACT uses H O H but the code below needs
     // O H H so renumber the atoms.
-    av = ia[4];
-    ai = ia[2];
-    aj = ia[1];
-    ak = ia[3];
+    av = ia[3];
+    ai = ia[1];
+    aj = ia[0];
+    ak = ia[2];
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     ski = pbc_rvec_sub(pbc, x[ak], x[ai], xik);
