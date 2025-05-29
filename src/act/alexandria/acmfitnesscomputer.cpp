@@ -393,13 +393,12 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
         };
         // Not a nice place to check stuff and throw but we have to pass the information
         // needed to the devComputer.
-        double dhfWeight = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
-        if (!((dhfWeight >  0 && haveInductionCorrectionData) ||
-              (dhfWeight == 0 && !haveInductionCorrectionData)))
+        double dhfWeight   = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
+        if (dhfWeight > 0 && !haveInductionCorrectionData)
         {
-            std::string msg = gmx::formatString("Inconstent input. Induction correction energies%s present but -fc_deltaHF is %g",
-                                                haveInductionCorrectionData ? "" : " not", dhfWeight);
-            GMX_THROW(gmx::InvalidInputError(msg.c_str()));
+            std::string msg = gmx::formatString("Inconstent input. No induction correction energies present but -fc_deltaHF is %g",
+                                                dhfWeight);
+            msghandler->msg(ACTStatus::Error, msg);
         }
         auto devcomp     = new ForceEnergyDevComputer(boltzmann);
         if (msghandler->info())
