@@ -242,18 +242,6 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     auto *selector = new ga::RouletteSelector(dis(gen));
 
     auto tw = msghandler_.tw();
-    // Crossover
-    if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
-    {
-        tw->writeStringFormatted("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
-                gach_.nCrossovers(), sii_->nParam());
-        gach_.setCrossovers(1);
-    }
-
-    auto *crossover = new ga::NPointCrossover(sii_->nParam(),
-                                              gach_.nCrossovers(),
-                                              dis(gen));
-
     // Penalizer(s)
     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
@@ -317,6 +305,18 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
     else
     {
+        // Crossover
+        if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
+        {
+            tw->writeStringFormatted("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
+                                     gach_.nCrossovers(), sii_->nParam());
+            gach_.setCrossovers(1);
+        }
+
+        auto *crossover = new ga::NPointCrossover(sii_->nParam(),
+                                                  gach_.nCrossovers(),
+                                                  dis(gen));
+
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(initializer, fitComp_, probComputer, selector, crossover,
                                  mutator_, terminators, penalizers, sii_, &gach_,
