@@ -239,6 +239,8 @@ void MsgHandler::fatal(ACTMessage  actm,
     if (tw_)
     {
         tw_->close();
+        delete tw_;
+        tw_ = nullptr;
     }
     GMX_THROW(gmx::InvalidInputError("See message above"));
 }

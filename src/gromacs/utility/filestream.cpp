@@ -129,8 +129,10 @@ class FileStreamImpl
 
         FILE *handle()
         {
-            GMX_RELEASE_ASSERT(fp_ != nullptr,
-                               "Attempted to access a file object that is not open");
+            if (fp_ == nullptr)
+            {
+                GMX_THROW(gmx::InternalError("Attempted to access a file object that is not open"));
+            }
             return fp_;
         }
 
