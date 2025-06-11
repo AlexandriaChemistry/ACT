@@ -163,10 +163,8 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
                                          CalcDev     task,
                                          iMolSelect  ims)
 {
-    if (debug)
-    {
-        fprintf(debug, "CalcDev starting\n");
-    }
+    msghandler->writeDebug("CalcDev starting");
+
     auto cr = sii_->commRec();
     // Send / receive molselect group.ks
     if (cr->isHelper())
@@ -182,19 +180,14 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             cr->send(dest, ims);
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "CalcDev Going to compute dataset %s\n",
-                iMolSelectName(ims));
-    }
+    msghandler->writeDebug(gmx::formatString("CalcDev Going to compute dataset %s\n",
+                                             iMolSelectName(ims)));
+
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
     if (nullptr == targets)
     {
-        if (debug)
-        {
-            fprintf(debug, "Cannot find targets for %s\n", iMolSelectName(ims));
-        }
+        msghandler->writeDebug(gmx::formatString("Cannot find targets for %s\n", iMolSelectName(ims)));
         return 0;
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
@@ -212,13 +205,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
     auto mymols = molgen_->actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
-        if (debug)
-        {
-            fprintf(debug, "CalcDev: mol %s dataset %s\n",
-                    actmol->getMolname().c_str(),
-                    iMolSelectName(actmol->datasetType()));
-            fflush(debug);
-        }
+        msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
+                                                 actmol->getMolname().c_str(),
+                                                 iMolSelectName(actmol->datasetType())));
         if (ims != actmol->datasetType())
         {
             continue;
@@ -265,13 +254,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             {
                 mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
             }
-            if (debug)
-            {
-                fprintf(debug, "CalcDev: rank %d mol %s #energies %zu tw %g\n",
-                        cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
-                        targets->find(eRMS::EPOT)->second.totalWeight());
-                fflush(debug);
-            }
+            msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
+                                                     cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
+                                                     targets->find(eRMS::EPOT)->second.totalWeight()));
             nlocal++;
         }
     }
@@ -282,8 +267,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
     auto etot = targets->find(erms);
     if (targets->end() == etot)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in targets.",
-                                                       rmsName(erms)).c_str()));
+        msghandler->msg(ACTStatus::Error, 
+                        gmx::formatString("Cannot find %s in targets.",
+                                          rmsName(erms)).c_str());
     }
     numberCalcDevCalled_ += 1;
     if (etot->second.chiSquared() == 0 && ntrain > 0)
@@ -306,7 +292,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
                                          ttt.second.weight());
             }
         }
-        GMX_THROW(gmx::InvalidInputError(msg.c_str()));
+        msghandler->msg(ACTStatus::Fatal, msg);
     }
     
     return etot->second.chiSquared();

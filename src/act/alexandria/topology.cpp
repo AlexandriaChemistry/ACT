@@ -100,7 +100,6 @@ static void dump_entry(MsgHandler                *msghandler,
     {
         return;
     }
-    auto tw = msghandler->tw();
     for(auto &entry : entries)
     {
         std::string str = label;
@@ -108,7 +107,7 @@ static void dump_entry(MsgHandler                *msghandler,
         {
             str.append(" " + std::to_string(ai));
         }
-        tw->writeLine(str);
+        msghandler->writeDebug(str);
     }
 }
 

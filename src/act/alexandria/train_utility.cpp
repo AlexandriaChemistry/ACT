@@ -1123,8 +1123,12 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             auto result = std::find_if(interE.begin(), interE.end(),
                                        [val](const auto& mo) {return mo.second == val; });
 
+            if (interE.end() == result)
+            {
+                continue;
+            }
             auto tt = targets.find(result->first);
-            if (interE.end() != result && (printAll || ( tt != targets.end() && tt->second.weight() > 0)))
+            if ((printAll || ( tt != targets.end() && tt->second.weight() > 0)))
             {
                 if (ie.second.haveQM() && ie.second.haveACT())
                 {

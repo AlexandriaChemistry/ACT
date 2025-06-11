@@ -602,6 +602,11 @@ static void checkEnergies(const char                              *info,
     if ((denom > toler && (diff >= toler*denom)) ||
         (denom <= toler && diff >= toler))
     {
+        for(const auto &e : einter)
+        {
+            fprintf(stderr, "InteractionType %s energy %g\n",
+                    interactionTypeToString(e.first).c_str(), e.second);
+        }
         GMX_THROW(gmx::InternalError(gmx::formatString("%s: found einter %g but sum of terms is %g",
                                                        info, epot, esum).c_str()));
     }
