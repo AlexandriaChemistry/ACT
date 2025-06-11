@@ -286,10 +286,11 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
         msg += "\n";
         for(const auto &ttt: *targets)
         {
-            if (ttt.second.weight() > 0)
+            if (ttt.second.weight() > 0 || ttt.second.totalWeight() > 0 )
             {
-                msg += gmx::formatString("Weight for %s is %g\n", rmsName(ttt.second.erms()),
-                                         ttt.second.weight());
+                msg += gmx::formatString("Weight for %s %g, totalWeight %g chiSquared %g\n", rmsName(ttt.second.erms()),
+                                         ttt.second.weight(), ttt.second.totalWeight(),
+                                         ttt.second.chiSquared());
             }
         }
         msghandler->msg(ACTStatus::Fatal, msg);

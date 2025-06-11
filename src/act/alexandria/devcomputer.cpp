@@ -44,7 +44,11 @@
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/textwriter.h"
+
+// Precompute max argument for exp function at compile time.
+static const double DOUBLE_MAX_LOG = std::log(GMX_DOUBLE_MAX);
 
 namespace alexandria
 {
@@ -652,7 +656,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             }
             for(const auto &ff : energyMap)
             {
-                if (std::isnan(ff.eact()))
+                // std::isfinite checks for both Inf and NaN values.
+                if (std::isfinite(ff.eact()))
                 {
                     msghandler->msg(ACTStatus::Warning,
                                     gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
@@ -710,7 +715,22 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                     if (iem.end() != ff && ff->second.haveQM())
                     {
                         auto eqm =  ff->second.eqm();
-                        weight = exp(-beta*(eqm-eqmMin));
+                        if (beta > 0)
+                        {
+                            // Argument should always be positive
+                            double earg = beta*(eqm-eqmMin);
+                            // Check whether exponentiating will work
+                            if (earg < DOUBLE_MAX_LOG)
+                            {
+                                weight = exp(-earg);
+                            }
+                            else
+                            {
+                                // Otherwise the weight is (close to) zero.
+                                // Totally zero will not work due to checks later.
+                                weight = 1e-8;
+                            }
+                        }
                     }
                 }
                 for(const auto &rms: rmsE)
@@ -753,7 +773,17 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                         {
                             auto eqm  = ff.eqm();
                             auto eact = ff.eact();
-                            ti->second.increase(weight, gmx::square(eqm-eact));
+                            if (std::isfinite(eact))
+                            {
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
+                            else
+                            {
+                                // We do not want to deal with infinite numbers but it should
+                                // be clear that this is a very bad parameter set.
+                                eact = 1e16;
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
                         }
                     }
                 }
