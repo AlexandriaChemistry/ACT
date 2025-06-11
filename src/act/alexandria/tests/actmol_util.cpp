@@ -71,6 +71,7 @@ void initACTMol(const char          *molname,
                                 &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         // Uncomment in case of issues
         // msghandler.setACTStatus(ACTStatus::Debug);
 

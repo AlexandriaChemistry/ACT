@@ -142,6 +142,7 @@ protected:
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
         MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         if (readOK)
         {
             for(auto &molprop: molprops)

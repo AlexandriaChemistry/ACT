@@ -168,6 +168,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.Merge(&molprop);
             MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
             // Uncomment in case of issues
             // msghandler.setACTStatus(ACTStatus::Debug);
             // Generate charges and topology

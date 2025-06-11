@@ -63,10 +63,11 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
         {
             continue;
         }
+        bool addThisMol = false;
         // Check lookup table of compounds
         if (!lookup.empty())
         {
-            bool addThisMol = lookup.find(mp->getIupac()) != lookup.end();
+            addThisMol = lookup.find(mp->getIupac()) != lookup.end();
             if (!addThisMol)
             {
                 // Look for synonyms
@@ -78,16 +79,11 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                         addThisMol = addThisMol || (lookup.find(syn) != lookup.end());
                     }
                 }
-                else
-                {
-                    amol = amols.findInChi(mp->getInchi());
-                    addThisMol = amol != nullptr;
-                }
             }
-            if (!addThisMol)
-            {
-                continue;
-            }
+        }
+        if (!addThisMol)
+        {
+            continue;
         }
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
