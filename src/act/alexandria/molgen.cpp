@@ -367,7 +367,8 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
             // parameters. That means that if there is no support in the
             // training set for a compound, we can not compute charges
             // or other parameters for the Test or Ignore set either.
-            if (mol.datasetType() != iMolSelect::Train)
+            if (mol.datasetType() != iMolSelect::Train ||
+                !mol.topology())
             {
                 continue;
             }
@@ -560,34 +561,60 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
         {
             // Now we check all molecules, including the Test and Ignore
             // set.
-            bool keep = true;
-            auto myatoms = mol.topology()->atoms();
-            for(size_t i = 0; i < myatoms.size(); i++)
+            bool keep = mol.topology() != nullptr;
+            if (keep)
             {
-                auto atype = pd->findParticleType(myatoms[i].ffType());
-                for(auto &itype : atomicItypes)
+                auto myatoms = mol.topology()->atoms();
+                for(size_t i = 0; i < myatoms.size(); i++)
                 {
-                    if (optimize(itype))
+                    auto atype = pd->findParticleType(myatoms[i].ffType());
+                    for(auto &itype : atomicItypes)
                     {
-                        if (atype->hasInteractionType(itype))
+                        if (optimize(itype))
                         {
-                            auto fplist = pd->findForces(itype);
-                            auto ztype  = atype->interactionTypeToIdentifier(itype);
-                            if (!ztype.id().empty())
+                            if (atype->hasInteractionType(itype))
                             {
-                                for(auto &force : fplist->findParametersConst(ztype))
+                                auto fplist = pd->findForces(itype);
+                                auto ztype  = atype->interactionTypeToIdentifier(itype);
+                                if (!ztype.id().empty())
                                 {
-                                    if (force.second.isMutable() &&
-                                        force.second.ntrain() < mindata_)
+                                    for(auto &force : fplist->findParametersConst(ztype))
+                                    {
+                                        if (force.second.isMutable() &&
+                                            force.second.ntrain() < mindata_)
+                                        {
+                                            if (msghandler->debug())
+                                            {
+                                                msghandler->msg(ACTStatus::Debug,
+                                                                gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                                                  ztype.id().c_str(),
+                                                                                  interactionTypeToString(itype).c_str(),
+                                                                                  mol.getMolname().c_str(),
+                                                                                  force.second.ntrain(),
+                                                                                  mindata_));
+                                            }
+                                            keep = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (itype == InteractionType::CHARGE)
+                            {
+                                std::string ccc("charge");
+                                if (atype->hasParameter(ccc))
+                                {
+                                    auto p = atype->parameter(ccc);
+                                    if (p->isMutable() && p->ntrain() < mindata_)
                                     {
                                         if (msghandler->debug())
                                         {
                                             msghandler->msg(ACTStatus::Debug,
                                                             gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                                              ztype.id().c_str(),
+                                                                              ccc.c_str(),
                                                                               interactionTypeToString(itype).c_str(),
                                                                               mol.getMolname().c_str(),
-                                                                              force.second.ntrain(),
+                                                                              p->ntrain(),
                                                                               mindata_));
                                         }
                                         keep = false;
@@ -596,38 +623,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                 }
                             }
                         }
-                        else if (itype == InteractionType::CHARGE)
+                        if (!keep)
                         {
-                            std::string ccc("charge");
-                            if (atype->hasParameter(ccc))
-                            {
-                                auto p = atype->parameter(ccc);
-                                if (p->isMutable() && p->ntrain() < mindata_)
-                                {
-                                    if (msghandler->debug())
-                                    {
-                                        msghandler->msg(ACTStatus::Debug,
-                                                        gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                                          ccc.c_str(),
-                                                                          interactionTypeToString(itype).c_str(),
-                                                                          mol.getMolname().c_str(),
-                                                                          p->ntrain(),
-                                                                          mindata_));
-                                    }
-                                    keep = false;
-                                    break;
-                                }
-                            }
+                            break;
                         }
                     }
                     if (!keep)
                     {
                         break;
                     }
-                }
-                if (!keep)
-                {
-                    break;
                 }
             }
             if (!keep)
@@ -1091,9 +1095,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             }
             actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
 
-            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            std::vector<gmx::RVec> coords;
             if (msghandler->ok())
             {
+                coords = actmol.xOriginal();
                 actmol.getExpProps(msghandler, pd, iqmMap, watoms_, maxpot_);
             }
             if (msghandler->ok())

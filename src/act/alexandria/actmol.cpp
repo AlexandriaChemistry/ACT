@@ -176,7 +176,7 @@ void ACTMol::checkAtoms(MsgHandler       *msghandler,
         auto atype = myatoms[i].ffType();
         if (!pd->hasParticleType(atype))
         {
-            msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
+            msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
                             gmx::formatString("Could not find a force field entry for atomtype %s atom %zu in compound '%s'", atype.c_str(), i+1, getMolname().c_str()).c_str());
         }
         else

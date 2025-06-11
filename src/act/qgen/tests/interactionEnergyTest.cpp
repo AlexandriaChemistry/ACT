@@ -168,6 +168,7 @@ protected:
             }
             mp_.Merge(&molprop);
             MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
             // Generate charges and topology
             mp_.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
             if (!msghandler.ok())

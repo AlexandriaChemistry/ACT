@@ -122,6 +122,7 @@ protected:
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
         MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         mp.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
         EXPECT_TRUE(msghandler.ok());
         if (!msghandler.ok())
@@ -160,7 +161,7 @@ protected:
         EXPECT_TRUE(std::abs(qtotal) < 1e-3);
         char buf[256];
         snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                 chargeTypeName(ct).c_str());
+                  chargeTypeName(ct).c_str());
         checker_.checkSequence(qtotValues.begin(),
                                qtotValues.end(), buf);
     }

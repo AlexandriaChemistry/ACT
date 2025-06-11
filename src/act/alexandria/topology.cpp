@@ -1370,12 +1370,14 @@ void Topology::build(MsgHandler             *msghandler,
     makePairs(pd, InteractionType::VDW);
     makePairs(pd, InteractionType::ELECTROSTATICS);
     auto itqt = InteractionType::VDWCORRECTION;
-    if (pd->interactionPresent(itqt))
+    // If the interaction has no parameters even though it is present, ignore
+    if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
     {
         makePairs(pd, itqt);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
-    if (pd->interactionPresent(itic))
+    // If the interaction has no parameters even though it is present, ignore
+    if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
         makePairs(pd, itic);
     }
@@ -1588,7 +1590,7 @@ static void fillParams(MsgHandler                    *msghandler,
     std::string msg = potentialToString(fs.potential()) + " " + btype.id();
     if (ff.empty())
     {
-        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
         return;
     }
     if (param->empty())
@@ -1610,7 +1612,7 @@ static void fillParams(MsgHandler                    *msghandler,
     if (found != independent)
     {
         msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
-        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
     }
 }
 
@@ -1693,7 +1695,7 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             {
                 if (!msghandler->ok() && missing == missingParameters::Error)
                 {
-                    msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
+                    msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
                                     gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str()));
                 }
                 topentry->setParams(param);
