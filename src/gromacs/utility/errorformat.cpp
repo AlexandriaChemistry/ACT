@@ -116,7 +116,7 @@ void printFatalErrorFooter(FILE *fp)
 {
     std::fprintf(fp, "\n");
     std::fprintf(fp, "For more information and tips for troubleshooting, please check\n"
-                 "the ACT website at https://github.com/dspoel/ACT/wiki");
+                 "the ACT website at https://github.com/AlexandriaChemistry/ACT/");
     std::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 
