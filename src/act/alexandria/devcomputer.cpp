@@ -632,11 +632,15 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             {
                 for(const auto &ff : fstruct)
                 {
-                    if (std::isnan(ff.second))
+                    if (!std::isfinite(ff.second))
                     {
-                        printf("Force for %s is NaN\n", actmol->getMolname().c_str());
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Force for %s is NaN\n", actmol->getMolname().c_str()));
                     }
-                    tf->second.increase(1, gmx::square(ff.first-ff.second));
+                    else
+                    {
+                        tf->second.increase(1, gmx::square(ff.first-ff.second));
+                    }
                 }
             }
         }
@@ -657,7 +661,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             for(const auto &ff : energyMap)
             {
                 // std::isfinite checks for both Inf and NaN values.
-                if (std::isfinite(ff.eact()))
+                if (!std::isfinite(ff.eact()))
                 {
                     msghandler->msg(ACTStatus::Warning,
                                     gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
