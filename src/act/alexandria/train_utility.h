@@ -139,7 +139,8 @@ private:
      * \param[in]    forceComp The force computer
      * \param[inout] mols      Vector of molecules, will be modified
      */
-    void writeMolpropsEnergies(const char          *mpout,
+    void writeMolpropsEnergies(MsgHandler          *msghandler,
+                               const char          *mpout,
                                const ForceField    *pd,
                                const ForceComputer *forceComp,
                                std::vector<ACTMol> *mols);

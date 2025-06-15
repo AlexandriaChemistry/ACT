@@ -986,7 +986,8 @@ static void print_diatomics(const alexandria::ACTMol                            
     xvgrclose(fp);
 }
 
-void TrainForceFieldPrinter::writeMolpropsEnergies(const char          *mpout,
+void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandler,
+                                                   const char          *mpout,
                                                    const ForceField    *pd,
                                                    const ForceComputer *forceComp,
                                                    std::vector<ACTMol> *mols)
@@ -1000,8 +1001,8 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(const char          *mpout,
         std::vector<std::vector<std::pair<double, double> > >               forceMap;
         std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
         ACTEnergyMapVector                                                  interactionEnergyMap;
-        mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
-                             &energyComponentMap,
+        mol->forceEnergyMaps(msghandler, pd, forceComp, &forceMap,
+                             &energyMap, &interactionEnergyMap, &energyComponentMap,
                              mol->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
         // TODO: This is copied from actmol.cpp, store in one place instead?
         std::map<MolPropObservable, InteractionType> interE = {
@@ -1075,7 +1076,8 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
     std::vector<std::pair<double, std::map<InteractionType, double> > > energyComponentMap;
     ACTEnergyMapVector                                                  interactionEnergyMap;
-    mol->forceEnergyMaps(pd, forceComp, &forceMap, &energyMap, &interactionEnergyMap,
+    mol->forceEnergyMaps(msghandler, pd, forceComp, &forceMap,
+                         &energyMap, &interactionEnergyMap,
                          &energyComponentMap,
                          mol->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     molEnergyMap_.insert({mol->getMolname(), energyMap});
@@ -1832,7 +1834,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     const char *mpout = opt2fn_null("-mpout", filenm.size(), filenm.data());
     if (mpout)
     {
-        writeMolpropsEnergies(mpout, pd, forceComp, actmol);
+        writeMolpropsEnergies(msghandler, mpout, pd, forceComp, actmol);
     }
 }
 
