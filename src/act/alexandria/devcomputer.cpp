@@ -624,7 +624,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
     }
     if (doForce2 || doEpot || doInter)
     {
-        actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
+        actmol->forceEnergyMaps(msghandler, forcefield,
+                                forceComputer, &forceMap, &energyMap,
                                 &interactionEnergyMap, &enerComponentMap, separateInductionCorrection_);
         if (doForce2 && !forceMap.empty())
         {

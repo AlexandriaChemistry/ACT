@@ -478,7 +478,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
+            actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
+                                               &einter, &forces, &coords, true);
 
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };

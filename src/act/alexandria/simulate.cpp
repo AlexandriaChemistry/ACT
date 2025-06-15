@@ -215,7 +215,7 @@ int simulate(int argc, char *argv[])
                 auto newxmin = xmin;
                 std::map<InteractionType, double> einter;
                 std::vector<gmx::RVec>            interactionForces;
-                actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
+                actmol.calculateInteractionEnergy(&msghandler, &pd, forceComp, &einter,
                                                   &interactionForces, &newxmin, true);
                 for(const auto &ei : einter)
                 {
@@ -273,7 +273,7 @@ int simulate(int argc, char *argv[])
                     auto newxmin = xmin;
                     std::map<InteractionType, double> einter;
                     std::vector<gmx::RVec>            interactionForces;
-                    actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
+                    actmol.calculateInteractionEnergy(&msghandler, &pd, forceComp, &einter,
                                                       &interactionForces, &newxmin, true);
                     for(const auto &ei : einter)
                     {

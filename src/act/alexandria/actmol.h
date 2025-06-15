@@ -374,6 +374,7 @@ public:
      * reference energies paired with a map of ACT energy components. The 
      * InteractionType index points to the energy type in the
      * energyComponentsMap.
+     * \param[in]  msghandler                 A message handler
      * \param[in]  pd                         The force field structure
      * \param[in]  forceComp                  The force computer utility
      * \param[out] forceMap                   The forces
@@ -382,7 +383,8 @@ public:
      * \param[out] energyComponentsMap        The energy components
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
-    void forceEnergyMaps(const ForceField                                                  *pd,
+    void forceEnergyMaps(MsgHandler                                                        *msghandler,
+                         const ForceField                                                  *pd,
                          const ForceComputer                                               *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >             *forceMap,
                          std::vector<ACTEnergy>                                            *energyMap,
@@ -582,6 +584,7 @@ public:
      * where f are the fragments. Importantly the individual components
      * of the energy are stored.
      * For a polarizable model the shell positions are minimized.
+     * \param[in] msghandler                  A message handler
      * \param[in] pd                          The force field
      * \param[in] forceComputer               The code to run the calculations.
      * \param[out] einter                     The interaction energy components
@@ -589,7 +592,8 @@ public:
      * \param[inout] coords                   Atomic coordinates (shell positions can be updated)
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
-    void calculateInteractionEnergy(const ForceField                  *pd,
+    void calculateInteractionEnergy(MsgHandler                        *msghandler,
+                                    const ForceField                  *pd,
                                     const ForceComputer               *forceComputer,
                                     std::map<InteractionType, double> *einter,
                                     std::vector<gmx::RVec>            *interactionForces,

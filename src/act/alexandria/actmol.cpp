@@ -277,7 +277,8 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return experCoords(exper->getCoordinates(), topology_);
 }
 
-void ACTMol::forceEnergyMaps(const ForceField                                                  *pd,
+void ACTMol::forceEnergyMaps(MsgHandler                                                        *msghandler,
+                             const ForceField                                                  *pd,
                              const ForceComputer                                               *forceComp,
                              std::vector<std::vector<std::pair<double, double> > >             *forceMap,
                              std::vector<ACTEnergy>                                            *energyMap,
@@ -329,7 +330,8 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             
             std::map<InteractionType, double> einter;
-            calculateInteractionEnergy(pd, forceComp, &einter, &interactionForces, &coords,
+            calculateInteractionEnergy(msghandler,
+                                       pd, forceComp, &einter, &interactionForces, &coords,
                                        separateInductionCorrection);
             ACTEnergyMap aemap;
             for (auto &ener : einter)
@@ -367,7 +369,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                         auto propvec = exper.propertyConst(mpo);
                         if (propvec.size() != 1)
                         {
-                            GMX_THROW(gmx::InternalError(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str()));
+                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str());
                         }
                         my_qm += propvec[0]->getValue();
                         foundQM    += 1;
@@ -396,7 +398,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
             auto eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
-                gmx_fatal(FARGS, "Multiple energies for this experiment");
+                msghandler->fatal("Multiple energies for this experiment");
             }
             else if (eprops.size() == 1)
             {
@@ -416,7 +418,7 @@ void ACTMol::forceEnergyMaps(const ForceField                                   
                     {
                         if (ifff >= fff.size())
                         {
-                            GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %lu atoms and shells, but only %zu forces", myatoms.size(), fff.size())));
+                            msghandler->fatal(gmx::formatString("Inconsistency: there are %lu atoms and shells, but only %zu forces", myatoms.size(), fff.size()));
                         }
                         for(int m = 0; m < DIM; m++)
                         {
@@ -567,13 +569,22 @@ double ACTMol::bondOrder(int ai, int aj) const
     return topology_->findBond(ai, aj).bondOrder();
 }
 
-static void printEmap(FILE *fp, const std::map<InteractionType, double> *e)
+static void printEmap(MsgHandler *msghandler,
+                      const std::map<InteractionType, double> *e)
 {
+    if (ACTStatus::Debug != msghandler->printLevel())
+    {
+        return;
+    }
+    std::string str;
     for(auto ee = e->begin(); ee != e->end(); ee++)
     {
-        fprintf(fp, " %s %g", interactionTypeToString(ee->first).c_str(), ee->second);
+        str += " ";
+        str += interactionTypeToString(ee->first);
+        str += " ";
+        str += gmx_ftoa(ee->second);
     }
-    fprintf(fp, "\n");
+    msghandler->writeDebug(str);
 }
 
 static void checkEnergies(const char                              *info,
@@ -612,7 +623,8 @@ static void checkEnergies(const char                              *info,
     }
 }
 
-void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
+void ACTMol::calculateInteractionEnergy(MsgHandler                        *msghandler,
+                                        const ForceField                  *pd,
                                         const ForceComputer               *forceComputer,
                                         std::map<InteractionType, double> *einter,
                                         std::vector<gmx::RVec>            *interactionForces,
@@ -628,10 +640,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
     // First, compute the total energy
     gmx::RVec fzero = { 0, 0, 0 };
     interactionForces->resize(coords->size(), fzero);
-    if (debug)
-    {
-        fprintf(debug, "Will compute interaction energy\n");
-    }
+    msghandler->writeDebug("Will compute interaction energy\n");
+
     // First compute the relaxed monomer energies
     std::map<InteractionType, double> e_monomer[2];
     auto &astart = fraghandler_->atomStart();
@@ -663,22 +673,17 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             }
             j++;
         }
-        if (debug)
-        {
-            fprintf(debug, "%s monomer[%zu]:", getMolname().c_str(), ff);
-            printEmap(debug, &e_monomer[ff]);
-        }
+        msghandler->writeDebug(gmx::formatString("%s monomer[%zu]:", getMolname().c_str(), ff));
+        printEmap(msghandler, &e_monomer[ff]);
+        
         // If present, move induction in monomer to electrostatics
         auto ei = e_monomer[ff].find(itInduc);
         if (e_monomer[ff].end() != ei)
         {
             e_monomer[ff][itElec] += ei->second;
             ei->second = 0;
-            if (debug)
-            {
-                fprintf(debug, "%s 'corrected' monomer[%zu]:", getMolname().c_str(), ff);
-                printEmap(debug, &e_monomer[ff]);
-            }
+            msghandler->writeDebug(gmx::formatString("%s 'corrected' monomer[%zu]:", getMolname().c_str(), ff));
+            printEmap(msghandler, &e_monomer[ff]);
         }
         checkEnergies("Monomer", e_monomer[ff]);
     }
@@ -725,11 +730,9 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
         // Eqn 6
         (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_dimer[ff],
                                       fzero, false, myshells);
-        if (debug)
-        {
-            fprintf(debug, "%s dimer[%lu]:", getMolname().c_str(), ff);
-            printEmap(debug, &e_dimer[ff]);
-        }
+        msghandler->writeDebug(gmx::formatString("%s dimer[%lu]:", getMolname().c_str(), ff));
+        printEmap(msghandler, &e_dimer[ff]);
+
         checkEnergies("Dimer", e_dimer[ff]);
     }
     // Now compute interaction energy terms
@@ -744,13 +747,11 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             einter->find(ee.first)->second -= ee.second;
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "%s total:", getMolname().c_str());
-        printEmap(debug, &e_total);
-        fprintf(debug, "%s einter:", getMolname().c_str());
-        printEmap(debug, einter);
-    }
+    msghandler->writeDebug(gmx::formatString("%s total:", getMolname().c_str()));
+    printEmap(msghandler, &e_total);
+    msghandler->writeDebug(gmx::formatString("%s einter:", getMolname().c_str()));
+    printEmap(msghandler, einter);
+
     checkEnergies("Inter 0", *einter);
     {
         // Now compute the induction energy to the second order, Eqn. 6
@@ -837,11 +838,8 @@ void ACTMol::calculateInteractionEnergy(const ForceField                  *pd,
             (*interactionForces)[i][m] += forces[i][m];
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "%s result:", getMolname().c_str());
-        printEmap(debug, einter);
-    }
+    msghandler->writeDebug(gmx::formatString("%s result:", getMolname().c_str()));
+    printEmap(msghandler, einter);
 }
 
 ACTMessage ACTMol::GenerateAcmCharges(const ForceField       *pd,
