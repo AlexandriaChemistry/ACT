@@ -120,11 +120,7 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     msghandler_.optionsFinished(filenames, &commRec_);
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
-    if (debug)
-    {
-        fprintf(debug, "nmiddlemen = %d\n", nmiddlemen);
-        fflush(debug);
-    }
+    msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_
@@ -792,9 +788,8 @@ int train_ff(int argc, char *argv[])
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
                             opt.sii()->fittingTargetsConst(iMolSelect::Train)))
     {
-        GMX_THROW(gmx::InvalidInputError("Training set is empty, check your input. Rerun with -v option or -debug 1"));
+        opt.msgHandler()->fatal("Training set is empty, check your input. Rerun with -v 5 flag");
     }
-
 
     // StaticIndividualInfo things
     {

@@ -227,10 +227,12 @@ private:
                                                   AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
+     * \param[in] msghandler Message handler
      * \param[in] pd The force field structure
      * \param[in] itype The interaction type for which to do this
      */
-    void setEntryIdentifiers(const ForceField *pd,
+    void setEntryIdentifiers(MsgHandler       *msghandler,
+                             const ForceField *pd,
                              InteractionType   itype);
 
     /*! Add polarizabilities to the topology if needed
@@ -369,29 +371,34 @@ private:
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
+     * \param[in] msghandler Message handler
      * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      */
-    void makeAngles(const ForceField             *pd,
+    void makeAngles(MsgHandler                   *msghandler,
+                    const ForceField             *pd,
                     const std::vector<gmx::RVec> &x,
                     double                        LinearAngleMin);
 
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
      * there is a planar geometry.
+     * \param[in] msghandler Message handler
      * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
       */
-    void makeImpropers(const ForceField             *pd,
+    void makeImpropers(MsgHandler                   *msghandler,
+                       const ForceField             *pd,
                        const std::vector<gmx::RVec> &x,
                        double                        PlanarAngleMax);
 
     /*! Generate the proper dihedrals
      * \param[in] pd The force field
      */
-    void makePropers(const ForceField *pd);
+    void makePropers(MsgHandler       *msghandler,
+                     const ForceField *pd);
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
@@ -404,10 +411,12 @@ private:
     size_t nAtoms() const { return atoms_.size(); }
 
     /*! Generate the non-bonded pair list based on just the atoms
+     * \param[in] msghandler Message handler
      * \param[in] pd     Force field needed to set identifiers.
      * \param[in] natoms The number of atoms
      */
-    void makePairs(const ForceField *pd,
+    void makePairs(MsgHandler       *msghandler,
+                   const ForceField *pd,
                    InteractionType   itype);
 
     /*! Add shell pairs

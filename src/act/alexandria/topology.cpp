@@ -308,7 +308,8 @@ const TopologyEntry *Topology::findTopologyEntry(const TopologyEntryVector &entr
     }
 }
 
-void Topology::makeAngles(const ForceField             *pd,
+void Topology::makeAngles(MsgHandler                   *msghandler,
+                          const ForceField             *pd,
                           const std::vector<gmx::RVec> &x,
                           double                        LinearAngleMin)
 {
@@ -380,7 +381,7 @@ void Topology::makeAngles(const ForceField             *pd,
         entries_.insert({ InteractionType::ANGLES, std::move(angles) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::ANGLES);
+            setEntryIdentifiers(msghandler, pd, InteractionType::ANGLES);
         }
     }
     if (!linangles.empty())
@@ -388,12 +389,13 @@ void Topology::makeAngles(const ForceField             *pd,
         entries_.insert({ InteractionType::LINEAR_ANGLES, std::move(linangles) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::LINEAR_ANGLES);
+            setEntryIdentifiers(msghandler, pd, InteractionType::LINEAR_ANGLES);
         }
     }
 }
 
-void Topology::makeImpropers(const ForceField             *pd,
+void Topology::makeImpropers(MsgHandler                   *msghandler,
+                             const ForceField             *pd,
                              const std::vector<gmx::RVec> &x,
                              double                        PlanarAngleMax)
 {
@@ -450,12 +452,13 @@ void Topology::makeImpropers(const ForceField             *pd,
         entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, std::move(impropers) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::IMPROPER_DIHEDRALS);
+            setEntryIdentifiers(msghandler, pd, InteractionType::IMPROPER_DIHEDRALS);
         }
     }
 }
 
-void Topology::makePairs(const ForceField *pd,
+void Topology::makePairs(MsgHandler       *msghandler,
+                         const ForceField *pd,
                          InteractionType   itype)
 {
     TopologyEntryVector pairs{};
@@ -484,7 +487,7 @@ void Topology::makePairs(const ForceField *pd,
             entries_.insert({itype, std::move(pairs) });
             if (pd)
             {
-                setEntryIdentifiers(pd, itype);
+                setEntryIdentifiers(msghandler, pd, itype);
             }
         }
     }
@@ -645,7 +648,8 @@ void  Topology::addShellPairs()
     }
 }
 
-void Topology::makePropers(const ForceField *pd)
+void Topology::makePropers(MsgHandler       *msghandler,
+                           const ForceField *pd)
 {
     auto ia = InteractionType::ANGLES;
     if (entries_.find(ia) == entries_.end())
@@ -701,7 +705,7 @@ void Topology::makePropers(const ForceField *pd)
         entries_.insert({ InteractionType::PROPER_DIHEDRALS, std::move(propers) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::PROPER_DIHEDRALS);
+            setEntryIdentifiers(msghandler, pd, InteractionType::PROPER_DIHEDRALS);
         }
     }
 }
@@ -1272,7 +1276,7 @@ void Topology::build(MsgHandler             *msghandler,
     }
 
     // Before we can do anything we need to "identify" the bonds
-    setEntryIdentifiers(pd, InteractionType::BONDS);
+    setEntryIdentifiers(msghandler, pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
     auto nv1 = makeVsite1s(msghandler, pd, &atomList);
@@ -1280,7 +1284,7 @@ void Topology::build(MsgHandler             *msghandler,
 
     // Before we can make three-particle vsites, we need to create
     // angles, but only temporarily.
-    makeAngles(pd, *x, LinearAngleMin);
+    makeAngles(msghandler, pd, *x, LinearAngleMin);
     auto nv3 = makeVsite3s(msghandler, pd, &atomList);
     if (msghandler->debug() && (nv2.size() > 0 || nv3.size() > 0))
     {
@@ -1352,25 +1356,25 @@ void Topology::build(MsgHandler             *msghandler,
     }
     // Renumber the atoms in the TopologyEntries that have been created so far.
     renumberAtoms(renumber);
-    setEntryIdentifiers(pd, InteractionType::POLARIZATION);
+    setEntryIdentifiers(msghandler, pd, InteractionType::POLARIZATION);
     for(const auto nn : nv1)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     for(const auto nn : nv2)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     for(const auto nn : nv3)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     // Add vsite ids to cores
     addVsitesToCores();
 
     // Now make angles etc.
-    makeAngles(pd, *x, LinearAngleMin);
-    makeImpropers(pd, *x, PlanarAngleMax);
+    makeAngles(msghandler, pd, *x, LinearAngleMin);
+    makeImpropers(msghandler, pd, *x, PlanarAngleMax);
     // Check whether we have dihedrals in the force field.
     if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
     {
@@ -1378,22 +1382,22 @@ void Topology::build(MsgHandler             *msghandler,
         auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
         if (!fs.empty() || missingParameters::Generate == missing)
         {
-            makePropers(pd);
+            makePropers(msghandler, pd);
         }
     }
-    makePairs(pd, InteractionType::VDW);
-    makePairs(pd, InteractionType::ELECTROSTATICS);
+    makePairs(msghandler, pd, InteractionType::VDW);
+    makePairs(msghandler, pd, InteractionType::ELECTROSTATICS);
     auto itqt = InteractionType::VDWCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
     {
-        makePairs(pd, itqt);
+        makePairs(msghandler, pd, itqt);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
-        makePairs(pd, itic);
+        makePairs(msghandler, pd, itic);
     }
     if (missing != missingParameters::Generate)
     {
@@ -1719,7 +1723,8 @@ void Topology::fillParameters(MsgHandler        *msghandler,
     }
 }
 
-void Topology::setEntryIdentifiers(const ForceField *pd,
+void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
+                                   const ForceField *pd,
                                    InteractionType   itype)
 {
     if (!hasEntry(itype) || !pd->interactionPresent(itype))
@@ -1791,10 +1796,10 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                                                 fs.canSwap()) });
             }
         }
-        else if (debug)
+        else if (msghandler->debug())
         {
-            fprintf(debug, "Could not find identifier for %s for atomtype '%s'\n",
-                    interactionTypeToString(itype).c_str(), atypes.c_str());
+            msghandler->writeDebug(gmx::formatString("Could not find identifier for %s for atomtype '%s'",
+                                                     interactionTypeToString(itype).c_str(), atypes.c_str()));
         }
     }
 }
