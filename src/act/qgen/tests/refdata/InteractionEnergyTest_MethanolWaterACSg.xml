@@ -4,15 +4,15 @@
   <Int Name="qtotSize">9</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">9</Int>
-    <Real>-0.30432725929156479</Real>
-    <Real>0.19457282486245672</Real>
-    <Real>-0.29718737611564083</Real>
-    <Real>0.13564727018158299</Real>
-    <Real>0.13564727018158299</Real>
-    <Real>0.13564727018158299</Real>
-    <Real>0.24475684320169355</Real>
-    <Real>-0.4895136864033871</Real>
-    <Real>0.24475684320169355</Real>
+    <Real>-0.30432727025685524</Real>
+    <Real>0.19457283662566668</Real>
+    <Real>-0.29718741367751406</Real>
+    <Real>0.13564728243623422</Real>
+    <Real>0.13564728243623422</Real>
+    <Real>0.13564728243623422</Real>
+    <Real>0.2447568690616983</Real>
+    <Real>-0.4895137381233966</Real>
+    <Real>0.2447568690616983</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">5.5511151231257827e-17</Real>
   <Real Name="Molecule 2 charge">0</Real>
@@ -21,10 +21,10 @@
   <Real Name="PROPER_DIHEDRALS">0</Real>
   <Real Name="DISPERSION">-3.2051297045727551</Real>
   <Real Name="EXCHANGE">10.062256527660098</Real>
-  <Real Name="COULOMB">-7.9131608834917984</Real>
+  <Real Name="COULOMB">-7.9131629283876919</Real>
   <Real Name="INDUCTION">0</Real>
   <Real Name="INDUCTIONCORRECTION">0</Real>
-  <Real Name="ALLELEC">-7.9131608834917984</Real>
+  <Real Name="ALLELEC">-7.9131629283876919</Real>
   <Real Name="EXCHIND">10.062256527660098</Real>
-  <Real Name="EPOT">-1.0560340604049543</Real>
+  <Real Name="EPOT">-1.056036105300791</Real>
 </ReferenceData>

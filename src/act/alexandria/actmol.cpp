@@ -741,7 +741,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     *einter = e_total;
 
     // First subtract everything from the monomers.
-    // This gives us correct electrostatics to get Eqn. 5
+    // This gives us correct electrostatics to get Eqn. 8.2 in the manual
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
         for(const auto &ee : e_monomer[ff])
@@ -755,8 +755,10 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     printEmap(msghandler, einter);
 
     checkEnergies(msghandler, "Inter 0", *einter);
+    // Check, to see whether induction needs to be summed or split
+    if (separateInductionCorrection)
     {
-        // Now compute the induction energy to the second order, Eqn. 6
+        // Compute the induction energy to the second order, Eqn. 8.3 in the manual
         double delta_einduc2 = 0;
         
         for(size_t ff = 0; ff < tops.size(); ff++)
@@ -771,7 +773,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
                 }
             }
         }
-        // Finally, compute the remaining (garbage bin) terms, Eqn. 7
+        // Finally, compute the remaining (garbage bin) terms, Eqn. 8.4 in the manual
         // by moving induction energy from the induction term to the
         // induction correction term.
         auto eit = einter->find(itInduc);
@@ -780,21 +782,13 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             einter->insert({ itInduc, 0 });
             eit = einter->find(itInduc);
         }
-        eit->second -= delta_einduc2;
 
-        auto eic = einter->find(itICorr);
-        if (einter->end() == eic)
-        {
-            einter->insert({ itICorr, 0 });
-            eic = einter->find(itICorr);
-        }
-        eic->second += delta_einduc2;
-        // Final check, to see whether induction needs to be summed or not.
-        if (!separateInductionCorrection)
-        {
-            eit->second += eic->second;
-            eic->second  = 0;
-        }
+        // Compute higher order induction
+        double induc3 = eit->second -  delta_einduc2;
+        // Store higher order induction in einter
+        einter->insert_or_assign(itICorr, induc3);
+        // Correct total induction for this
+        eit->second -= induc3;
     }
     checkEnergies(msghandler, "Inter 1", *einter);
     {

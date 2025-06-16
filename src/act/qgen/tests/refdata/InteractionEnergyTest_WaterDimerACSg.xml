@@ -4,12 +4,12 @@
   <Int Name="qtotSize">6</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">6</Int>
-    <Real>-0.50559232407200072</Real>
-    <Real>0.25279616203600036</Real>
-    <Real>0.25279616203600036</Real>
-    <Real>-0.50831442941729699</Real>
-    <Real>0.25415721470864849</Real>
-    <Real>0.25415721470864849</Real>
+    <Real>-0.50559237996920303</Real>
+    <Real>0.25279618998460152</Real>
+    <Real>0.25279618998460152</Real>
+    <Real>-0.50831448603643059</Real>
+    <Real>0.2541572430182153</Real>
+    <Real>0.2541572430182153</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">0</Real>
   <Real Name="Molecule 2 charge">0</Real>
@@ -17,10 +17,10 @@
   <Real Name="ANGLES">-5.6843418860808015e-14</Real>
   <Real Name="DISPERSION">-2.1944513792800686</Real>
   <Real Name="EXCHANGE">3.7186110723623882</Real>
-  <Real Name="COULOMB">-9.9088364061950642</Real>
+  <Real Name="COULOMB">-9.9088394635775785</Real>
   <Real Name="INDUCTION">0</Real>
   <Real Name="INDUCTIONCORRECTION">0</Real>
-  <Real Name="ALLELEC">-9.9088364061950642</Real>
+  <Real Name="ALLELEC">-9.9088394635775785</Real>
   <Real Name="EXCHIND">3.7186110723623882</Real>
-  <Real Name="EPOT">-8.3846767131125262</Real>
+  <Real Name="EPOT">-8.3846797704952678</Real>
 </ReferenceData>
