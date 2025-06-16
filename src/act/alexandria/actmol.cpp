@@ -587,11 +587,12 @@ static void printEmap(MsgHandler *msghandler,
     msghandler->writeDebug(str);
 }
 
-static void checkEnergies(const char                              *info,
+static void checkEnergies(MsgHandler                              *msghandler,
+                          const char                              *info,
                           const std::map<InteractionType, double> &einter)
 {
     // Do this kind of check in debug mode only.
-    if (nullptr == debug)
+    if (ACTStatus::Debug != msghandler->printLevel())
     {
         return;
     }
@@ -615,11 +616,12 @@ static void checkEnergies(const char                              *info,
     {
         for(const auto &e : einter)
         {
-            fprintf(stderr, "InteractionType %s energy %g\n",
-                    interactionTypeToString(e.first).c_str(), e.second);
+            msghandler->msg(ACTStatus::Info,
+                            gmx::formatString("InteractionType %s energy %g\n",
+                                              interactionTypeToString(e.first).c_str(), e.second));
         }
-        GMX_THROW(gmx::InternalError(gmx::formatString("%s: found einter %g but sum of terms is %g",
-                                                       info, epot, esum).c_str()));
+        msghandler->fatal(gmx::formatString("%s: found einter %g but sum of terms is %g",
+                                            info, epot, esum).c_str());
     }
 }
 
@@ -685,7 +687,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             msghandler->writeDebug(gmx::formatString("%s 'corrected' monomer[%zu]:", getMolname().c_str(), ff));
             printEmap(msghandler, &e_monomer[ff]);
         }
-        checkEnergies("Monomer", e_monomer[ff]);
+        checkEnergies(msghandler, "Monomer", e_monomer[ff]);
     }
     // TODO forces are overwritten, not trustable!
     std::vector<gmx::RVec> forces(topology_->atoms().size(), fzero);
@@ -707,7 +709,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             e_total.find(itElec)->second += e_total.find(itPolar)->second;
             e_total.find(itPolar)->second = 0;
         }
-        checkEnergies("Total", e_total);
+        checkEnergies(msghandler, "Total", e_total);
     }
     // Now time to compute mutual induction for the dimer.
     // This means, that the shells of one molecule are allowed
@@ -733,7 +735,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         msghandler->writeDebug(gmx::formatString("%s dimer[%lu]:", getMolname().c_str(), ff));
         printEmap(msghandler, &e_dimer[ff]);
 
-        checkEnergies("Dimer", e_dimer[ff]);
+        checkEnergies(msghandler, "Dimer", e_dimer[ff]);
     }
     // Now compute interaction energy terms
     *einter = e_total;
@@ -752,7 +754,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     msghandler->writeDebug(gmx::formatString("%s einter:", getMolname().c_str()));
     printEmap(msghandler, einter);
 
-    checkEnergies("Inter 0", *einter);
+    checkEnergies(msghandler, "Inter 0", *einter);
     {
         // Now compute the induction energy to the second order, Eqn. 6
         double delta_einduc2 = 0;
@@ -794,7 +796,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             eic->second  = 0;
         }
     }
-    checkEnergies("Inter 1", *einter);
+    checkEnergies(msghandler, "Inter 1", *einter);
     {
         // Gather the terms for ALLELEC output.
         auto eall = einter->find(InteractionType::ALLELEC);
@@ -811,7 +813,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             }
         }
     }
-    checkEnergies("Inter 2", *einter);
+    checkEnergies(msghandler, "Inter 2", *einter);
     {
         // Gather the terms for EXCHIND output.
         auto eall = einter->find(InteractionType::EXCHIND);
@@ -828,7 +830,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             }
         }
     }
-    checkEnergies("Inter 3", *einter);
+    checkEnergies(msghandler, "Inter 3", *einter);
     // Add dimer forces to the interaction forces
     // TODO this is not correct anymore, see above.
     for(size_t i = 0; i < topology_->atoms().size(); i++)
@@ -843,9 +845,9 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
 }
 
 ACTMessage ACTMol::GenerateAcmCharges(const ForceField       *pd,
-                                     const ForceComputer    *forceComp,
-                                     std::vector<gmx::RVec> *coords,
-                                     std::vector<gmx::RVec> *forces)
+                                      const ForceComputer    *forceComp,
+                                      std::vector<gmx::RVec> *coords,
+                                      std::vector<gmx::RVec> *forces)
 {
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
@@ -981,11 +983,8 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
     {
     case ChargeGenerationAlgorithm::NONE:
         {
-            if (debug)
-            {
-                fprintf(debug, "WARNING! Using fixed charges for %s!\n",
-                        getMolname().c_str());
-            }
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("WARNING! Using fixed charges for %s!\n", getMolname().c_str()));
             for (size_t i = 0; i < myatoms->size(); i++)
             {
                 auto atype = (*myatoms)[i].ffType();
