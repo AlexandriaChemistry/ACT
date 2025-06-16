@@ -871,7 +871,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
         auto aType = pd->findParticleType(fft.first);
         for(int i = 1; i <= fft.second; i++)
         {
-            if (ActParticle::Atom == aType->apType())
+            if (ActParticle::Shell != aType->apType())
             {
                 if (aType->hasOption("poltype"))
                 {
