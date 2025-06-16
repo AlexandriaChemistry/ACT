@@ -53,6 +53,7 @@ namespace alexandria
 class TopologyTest : public gmx::test::CommandLineTestBase
 {
 protected:
+    MsgHandler             msghandler_;
     std::vector<Bond>      bonds_;
     std::vector<gmx::RVec> x_, y_;
     //! Constructor that does initialization and reads an input file
@@ -101,7 +102,7 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(nullptr, xx, 175.0);
+        top.makeAngles(&msghandler_, nullptr, xx, 175.0);
         auto &angles = top.entry(InteractionType::ANGLES);
         myCheck.checkInteger(angles.size(), "#angles");
         std::vector<std::string> astrings;
@@ -118,7 +119,7 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(nullptr, xx, 175.0);
+        top.makeAngles(&msghandler_, nullptr, xx, 175.0);
         {
             auto &angles = top.entry(InteractionType::ANGLES);
             myCheck.checkInteger(angles.size(), "#angles");
@@ -147,7 +148,7 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeImpropers(nullptr, x_, PlanarAngleMax);
+        top.makeImpropers(&msghandler_, nullptr, x_, PlanarAngleMax);
         auto &imps = top.entry(InteractionType::IMPROPER_DIHEDRALS);
         myCheck.checkInteger(imps.size(), "#impropers");
         std::vector<std::string> astrings;
@@ -164,8 +165,8 @@ protected:
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
-        top.makeAngles(nullptr, xx, 175.0);
-        top.makePropers(nullptr);
+        top.makeAngles(&msghandler_, nullptr, xx, 175.0);
+        top.makePropers(&msghandler_, nullptr);
         auto &imps = top.entry(InteractionType::PROPER_DIHEDRALS);
         myCheck.checkInteger(imps.size(), "#propers");
         std::vector<std::string> astrings;
