@@ -1711,13 +1711,25 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             }
             else
             {
-                if (!msghandler->ok() && missing == missingParameters::Error)
+                if (!msghandler->ok())
                 {
-                    msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
-                                    gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str()));
+                    auto msg = gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str());
+                    if (missing == missingParameters::Error)
+                    {
+                        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+                        return;
+                    }
+                    else
+                    {
+                        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+                    }
+                    tp = entry.second.erase(tp);
                 }
-                topentry->setParams(param);
-                ++tp;
+                else
+                {
+                    topentry->setParams(param);
+                    ++tp;
+                }
             }
         }
     }
