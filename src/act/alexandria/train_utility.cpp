@@ -294,7 +294,7 @@ void TrainForceFieldPrinter::analyse_multipoles(gmx::TextWriter                 
                 Telec = qelec.getMultipole(mpo);
                 for(const auto &pm : formatMultipole(mpo, Telec))
                 {
-                    tw->writeString(pm);
+                    tw->writeLine(pm);
                 }
             }
             real delta = 0;
@@ -302,7 +302,7 @@ void TrainForceFieldPrinter::analyse_multipoles(gmx::TextWriter                 
             tw->writeStringFormatted("Calc %s (%s):\n", name, unit);
             for(const auto &pm : formatMultipole(mpo, Tcalc))
             {
-                tw->writeString(pm);
+                tw->writeLine(pm);
             }
 
             std::vector<double> diff;
@@ -327,7 +327,7 @@ void TrainForceFieldPrinter::analyse_multipoles(gmx::TextWriter                 
                         qTypeName(qt).c_str(), factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
                 for(const auto &pm : formatMultipole(mpo, diff))
                 {
-                    tw->writeString(pm);
+                    tw->writeLine(pm);
                 }
             }
         }
