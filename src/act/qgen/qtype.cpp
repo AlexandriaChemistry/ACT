@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -328,7 +328,7 @@ void QtypeProps::calcMoments()
             {
                 if (hasMultipole(quad))
                 {
-                    multipoles_[quad][qindex++] += q_[i]*(r[m]*r[n]);
+                    multipoles_[quad][qindex++] += 1.5*q_[i]*(r[m]*r[n]);
                 }
                 for (int o = n; o < DIM; o++)
                 {

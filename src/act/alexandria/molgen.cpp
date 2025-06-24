@@ -923,6 +923,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     {
                         msghandler->msg(ACTStatus::Warning, ACTMessage::NoMolpropCharges, actmol.getMolname());
                     }
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    actmol.updateQprops(pd, forceComp, &forces);
                 }
                 else
                 {
