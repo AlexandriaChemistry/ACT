@@ -48,6 +48,8 @@ const char *bh_name[bhNR] = { "Abh", "bbh", "c6bh", "Abh_ij", "bbh_ij", "c6bh_ij
 
 const char *tt_name[ttNR] = { "Att", "btt", "c6tt", "c8tt", "c10tt", "Att_ij", "btt_ij", "c6tt_ij", "c8tt_ij", "c10tt_ij" };
 
+const char *tt2b_name[tt2bNR] = { "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b", "Att2b_ij", "bExchtt2b_ij", "bDisptt2b_ij", "c6tt2b_ij", "c8tt2b_ij", "c10tt2b_ij" };
+
 const char *gbh_name[gbhNR] = { "rmin", "epsilon", "gamma", "delta", "rmin_ij", "epsilon_ij", "gamma_ij", "delta_ij" };
 
 const char *coul_name[coulNR] = { "zeta", "zeta_i", "zeta_j" };

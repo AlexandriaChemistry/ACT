@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,7 +44,7 @@ namespace alexandria
         NONE,
             LJ8_6, LJ12_6, LJ14_7,
             GENERALIZED_BUCKINGHAM, WANG_BUCKINGHAM,
-            EXPONENTIAL, DOUBLEEXPONENTIAL, BUCKINGHAM, TANG_TOENNIES,
+            EXPONENTIAL, DOUBLEEXPONENTIAL, BUCKINGHAM, TANG_TOENNIES, TT2b,
             COULOMB_POINT, COULOMB_GAUSSIAN, COULOMB_SLATER,
             HARMONIC_BONDS, MORSE_BONDS, CUBIC_BONDS, HUA_BONDS,
             HARMONIC_ANGLES, LINEAR_ANGLES, UREY_BRADLEY_ANGLES,

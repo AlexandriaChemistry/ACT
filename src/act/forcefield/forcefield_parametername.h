@@ -53,9 +53,13 @@ namespace alexandria
 
     extern const char *bh_name[bhNR];
 
-    enum { ttA = 0, ttB = 1, ttC6 = 2, ttC8 = 3, ttC10 = 4, ttA_IJ = 5, ttB_IJ = 6, ttC6_IJ = 7, ttC8_IJ = 8, ttC10_IJ = 9, ttNR = 10 };
+    enum { ttA, ttB, ttC6, ttC8, ttC10, ttA_IJ, ttB_IJ, ttC6_IJ, ttC8_IJ, ttC10_IJ, ttNR };
 
     extern const char *tt_name[ttNR];
+
+    enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bA_IJ, tt2bBexch_IJ, tt2bBdisp_IJ, tt2bC6_IJ, tt2bC8_IJ, tt2bC10_IJ, tt2bNR };
+
+    extern const char *tt2b_name[tt2bNR];
 
     enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3,
            lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };

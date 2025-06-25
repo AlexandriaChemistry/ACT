@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -51,6 +51,7 @@ static const std::map<Potential, const std::string> pot2str =
         { Potential::WANG_BUCKINGHAM,        "WANG_BUCKINGHAM" },
         { Potential::BUCKINGHAM,             "BUCKINGHAM" },
         { Potential::TANG_TOENNIES,          "TANG_TOENNIES" },
+        { Potential::TT2b,                   "TT2b" },
         { Potential::EXPONENTIAL,            "EXPONENTIAL" },
         { Potential::DOUBLEEXPONENTIAL,      "DOUBLEEXPONENTIAL" },
         { Potential::COULOMB_POINT,          "COULOMB_POINT" },
