@@ -3,24 +3,24 @@
 <ReferenceData>
   <Sequence Name="Charge">
     <Int Name="Length">3</Int>
-    <Real>0.25254503607712897</Real>
-    <Real>-0.50509007215425794</Real>
-    <Real>0.25254503607712897</Real>
+    <Real>0.25254506395893622</Real>
+    <Real>-0.50509012791787244</Real>
+    <Real>0.25254506395893622</Real>
   </Sequence>
   <Sequence Name="dipole">
     <Int Name="Length">3</Int>
     <Real>0</Real>
-    <Real>3.6521823753218581e-17</Real>
-    <Real>-1.419239782562046</Real>
+    <Real>-8.1595889380025572e-17</Real>
+    <Real>-1.4192400003723877</Real>
   </Sequence>
   <Sequence Name="quadrupole">
     <Int Name="Length">6</Int>
-    <Real>-0.6380764586180705</Real>
+    <Real>-0.9571148348152354</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0.77799975355686291</Real>
-    <Real>4.4018129662037457e-18</Real>
-    <Real>-0.1399232949387923</Real>
+    <Real>1.1669998094344087</Real>
+    <Real>-5.7924418612998568e-18</Real>
+    <Real>-0.20988497461917319</Real>
   </Sequence>
   <Sequence Name="octupole">
     <Int Name="Length">10</Int>
@@ -30,10 +30,10 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>3.6503548035555731e-18</Real>
-    <Real>-0.6627236672978688</Real>
-    <Real>-3.079066970733753e-18</Real>
-    <Real>-0.25256365398539404</Real>
+    <Real>3.1973334031681333e-17</Real>
+    <Real>-0.66272376900588903</Real>
+    <Real>-9.1279703195728947e-18</Real>
+    <Real>-0.252563692746269</Real>
   </Sequence>
   <Sequence Name="hexadecapole">
     <Int Name="Length">15</Int>
@@ -47,10 +47,10 @@
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0.82655802074165985</Real>
-    <Real>1.1495582320293174e-17</Real>
-    <Real>0.31015467629540261</Real>
-    <Real>-5.7767279283654082e-18</Real>
-    <Real>0.11592671717929587</Real>
+    <Real>0.82655814759329349</Real>
+    <Real>1.028310680864952e-17</Real>
+    <Real>0.31015472389475607</Real>
+    <Real>-1.0138900663605821e-17</Real>
+    <Real>0.1159267349705375</Real>
   </Sequence>
 </ReferenceData>
