@@ -374,6 +374,7 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     energies->insert({InteractionType::DISPERSION, edisp});
 }
 
+
 static void computeTangToennies(const TopologyEntryVector             &pairs,
                                 gmx_unused const std::vector<ActAtom> &atoms,
                                 const std::vector<gmx::RVec>          *coordinates,
@@ -424,6 +425,67 @@ static void computeTangToennies(const TopologyEntryVector             &pairs,
         {
             fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
                     indices[0], indices[1], 1/rinv, Att, btt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
+        }
+        real fbond = frep+fdisp;
+        pairforces(fbond, dx, indices, forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+}
+
+static void computeTT2b(const TopologyEntryVector             &pairs,
+                        gmx_unused const std::vector<ActAtom> &atoms,
+                        const std::vector<gmx::RVec>          *coordinates,
+                        std::vector<gmx::RVec>                *forces,
+                        std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    auto   x     = *coordinates;
+    int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto Att     = params[tt2bA_IJ];
+        auto bExchtt = params[tt2bBexch_IJ];
+        auto bDisptt = params[tt2bBdisp_IJ];
+        double ctt[3] = { params[tt2bC6_IJ], params[tt2bC8_IJ], params[tt2bC10_IJ] };
+
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2    = iprod(dx, dx);
+        auto rinv   = gmx::invsqrt(dr2);
+        auto rinv2  = rinv*rinv;
+        real bExchr = bExchtt*dr2*rinv;
+        real ebrExch= std::exp(-bExchr);
+        real eerep  = Att*ebrExch;
+        real frep   = bExchtt*eerep;
+        real bDispr = bDisptt*dr2*rinv;
+        real ebrDisp= std::exp(-bDispr);
+        real eedisp = 0;
+        real fdisp  = 0;
+        real rinvn  = rinv2*rinv2*rinv2;
+        for (int m = 0; m < 3; m++)
+        {
+            real fk = 0;
+            real pp = 1;
+            for (int k = 0; k < 2*(m+3); k++)
+            {
+                fk += pp/fac[k];
+                pp  = pp*bDispr;
+            }
+            eedisp -= ctt[0]*rinvn*(1-ebrDisp*fk);
+            rinvn  *= rinv2;
+        }
+        erep     += eerep;
+        edisp    += eedisp;
+        if (debug)
+        {
+            fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
+                    indices[0], indices[1], 1/rinv, Att, bExchtt, bDisptt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
         }
         real fbond = frep+fdisp;
         pairforces(fbond, dx, indices, forces);
@@ -1322,6 +1384,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::BUCKINGHAM,             computeBuckingham      },
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::TANG_TOENNIES,          computeTangToennies    },
+    { Potential::TT2b,                   computeTT2b            },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::EXPONENTIAL,            computeExponential     },
     { Potential::DOUBLEEXPONENTIAL,      computeDoubleExponential },

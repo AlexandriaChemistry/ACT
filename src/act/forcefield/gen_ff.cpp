@@ -323,7 +323,7 @@ int gen_ff(int argc, char*argv[])
     std::vector<Potential> nbpot = {
         Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
-        Potential::BUCKINGHAM, Potential::TANG_TOENNIES };
+        Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b };
     std::vector<const char *> vdwfn = { nullptr };
     for(const auto &nbp : nbpot)
     {
@@ -407,9 +407,15 @@ int gen_ff(int argc, char*argv[])
         { bh_name[bhC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
         { tt_name[ttA],   ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
         { tt_name[ttB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
-        { tt_name[ttC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
-        { tt_name[ttC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 1e3, Mutability::Bounded, true, true) },
-        { tt_name[ttC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) }
+        { tt_name[ttC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 0.02, Mutability::Bounded, true, true) },
+        { tt_name[ttC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 0.01, Mutability::Bounded, true, true) },
+        { tt_name[ttC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 0.005, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bA],   ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bBexch],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bBdisp],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 0.02, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 0.01, Mutability::Bounded, true, true) },
+        { tt2b_name[tt2bC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 0.005, Mutability::Bounded, true, true) }
     };
     for(const auto &entry : table)
     {
@@ -550,6 +556,14 @@ int gen_ff(int argc, char*argv[])
                             { tt_name[ttC6], "kJ/mol nm^6" },
                             { tt_name[ttC8], "kJ/mol nm^8" },
                             { tt_name[ttC10], "kJ/mol nm^10" } };
+                break;
+            case Potential::TT2b:
+                vdwlist = { { tt2b_name[tt2bA], "kJ/mol" }, 
+                            { tt2b_name[tt2bBexch], "1/nm" },
+                            { tt2b_name[tt2bBdisp], "1/nm" },
+                            { tt2b_name[tt2bC6], "kJ/mol nm^6" },
+                            { tt2b_name[tt2bC8], "kJ/mol nm^8" },
+                            { tt2b_name[tt2bC10], "kJ/mol nm^10" } };
                 break;
             default: // throws
                 GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -246,7 +246,8 @@ void evalCombinationRule(Potential                                    ftype,
         if (Potential::EXPONENTIAL == ftype ||
             Potential::DOUBLEEXPONENTIAL == ftype ||
             Potential::BUCKINGHAM == ftype ||
-            Potential::TANG_TOENNIES == ftype)
+            Potential::TANG_TOENNIES == ftype ||
+            Potential::TT2b == ftype)
         {
             if (CombRule::Kronecker == crule)
             {
