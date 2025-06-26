@@ -1,7 +1,7 @@
 Alexandria Chemistry Toolkit
 ============================
 
-A preprint describing this software is available at [ChemRxiv](https://chemrxiv.org/engage/chemrxiv/article-details/67d7e5126dde43c908181f5f)
+The paper describing this software is available at [Digtial Disovery](https://doi.org/10.1039/D5DD00178A)
 
 All documentation is in the [ACT Manual](https://github.com/dspoel/ACT/blob/main/docs/ACT_Manual_latest.pdf).
 To install the ACT, please download the [install_act](https://github.com/dspoel/ACT/blob/main/src/act/python/install_act) script and run it according to instructions in the manual.
