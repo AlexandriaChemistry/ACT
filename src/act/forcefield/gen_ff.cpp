@@ -330,6 +330,14 @@ int gen_ff(int argc, char*argv[])
         vdwfn.push_back(potentialToString(nbp).c_str());
     }
     vdwfn.push_back(nullptr);
+    std::vector<Potential> icfunc = { Potential::DOUBLEEXPONENTIAL, Potential::MORSE_BONDS };
+    std::vector<const char *> icfn = { nullptr };
+    for(const auto &nbp : icfunc)
+    {
+        icfn.push_back(potentialToString(nbp).c_str());
+    }
+    icfn.push_back(nullptr);
+
     
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
@@ -355,7 +363,9 @@ int gen_ff(int argc, char*argv[])
         { "-dihfn", FALSE, etENUM, {dihfn},
           "Function to use for proper dihedrals, can be either" },
         { "-vdwfn", FALSE, etENUM, {vdwfn.data()},
-          "Function to use for Van der Waals interactions, can be either" }
+          "Function to use for Van der Waals interactions, can be either" },
+        { "-icfn", FALSE, etENUM, {icfn.data()},
+          "Function to use for induction correction interactions, can be either" }
     };
     crule.addPargs(&pa);
 
@@ -386,7 +396,7 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
     ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
-    ForceFieldParameterList induccorr(potentialToString(Potential::DOUBLEEXPONENTIAL), CanSwap::Yes);
+    ForceFieldParameterList induccorr(icfn[0], CanSwap::Yes);
     induccorr.addOption("nexcl", gmx_itoa(nexclqq));
     // Combination rules
     crule.extract(pa, &vdw, &vdwcorr, &induccorr);
@@ -400,7 +410,7 @@ int gen_ff(int argc, char*argv[])
     {
         printf("You selected point charges. Oh dear...\n");
     }
-    // Default VDW params
+    // Default params
     std::map<std::string, ForceFieldParameter> DP = {
         { bh_name[bhA],   ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e6, Mutability::Bounded, true, true) },
         { bh_name[bhB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
@@ -415,7 +425,14 @@ int gen_ff(int argc, char*argv[])
         { tt2b_name[tt2bBdisp],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
         { tt2b_name[tt2bC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 0.02, Mutability::Bounded, true, true) },
         { tt2b_name[tt2bC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 0.01, Mutability::Bounded, true, true) },
-        { tt2b_name[tt2bC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 0.005, Mutability::Bounded, true, true) }
+        { tt2b_name[tt2bC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 0.005, Mutability::Bounded, true, true) },
+        { morse_name[morseBETA], ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
+        { morse_name[morseDE], ForceFieldParameter("kJ/mol", 30, 0, 0, 0, 100, Mutability::Bounded, true, true) },
+        { morse_name[morseD0], ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 0, Mutability::Fixed, true, true) },
+        { morse_name[morseLENGTH], ForceFieldParameter("nm", 0.3, 0, 0, 0.1, 0.5, Mutability::Bounded, true, true) },
+        { dexp_name[dexpA1], ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) },
+        { dexp_name[dexpA2], ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) },
+        { dexp_name[dexpB], ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) }
     };
     for(const auto &entry : table)
     {
@@ -500,15 +517,34 @@ int gen_ff(int argc, char*argv[])
             }
         }
         // Induction correction
-        std::map<std::string, std::string> iccorrparm = { { dexp_name[dexpA1], "kJ/mol" },
-                                                          { dexp_name[dexpA2], "kJ/mol" },
-                                                          { dexp_name[dexpB], "1/nm"} };
-        for(const auto &iccorrp : iccorrparm)
         {
-            if (minmaxmut(entry.first, myatype, iccorrp.first, &vmin, &vmax, &vmut))
+            std::map<std::string, std::string> iclist;
+            
+            switch(induccorr.potential())
             {
-                induccorr.addParameter(entry.first, iccorrp.first,
-                                       ForceFieldParameter(iccorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            case Potential::DOUBLEEXPONENTIAL:
+                iclist = { { dexp_name[dexpA1], "kJ/mol" },
+                           { dexp_name[dexpA2], "kJ/mol" },
+                           { dexp_name[dexpB], "1/nm"} };
+                break;
+            case Potential::MORSE_BONDS:
+                iclist = { { morse_name[morseBETA], "1/nm" },
+                           { morse_name[morseDE], "kJ/mol" },
+                           { morse_name[morseD0], "kJ/mol" },
+                           { morse_name[morseLENGTH], "nm" } };
+                break;
+            default: // throws
+                GMX_THROW(gmx::InvalidInputError("Unknown function for induction correction interactions"));
+                break;
+            }
+            for(const auto &icl : iclist)
+            {
+                // Use default values
+                auto dp = DP.find(icl.first);
+                if (DP.end() != dp)
+                {
+                    induccorr.addParameter(entry.first, icl.first, dp->second);
+                }
             }
         }
         // Charge distribution
