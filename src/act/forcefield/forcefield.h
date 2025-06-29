@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "gromacs/utility/stringutil.h"
@@ -388,12 +389,12 @@ class ForceField
     void checkConsistency(FILE *fplog) const;
     
     //! \return a constant \p type2Itype_ reference
-    const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
+    const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }
     
 private:
     std::string                           checkSum_;
     std::string                           timeStamp_;
-    std::map<std::string, InteractionType> type2Itype_;
+    std::map<InteractionType, std::set<std::string>> type2Itype_;
     std::string                           filename_;
     std::map<Identifier, ParticleType>    alexandria_;
     std::map<InteractionType, ForceFieldParameterList> forces_;
