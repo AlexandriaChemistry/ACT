@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/combinationrules.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
@@ -81,15 +82,19 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
         },
         {
             InteractionType::VDWCORRECTION, {
-                { "-cr_aexp",  "aexp", 5 },
-                { "-cr_bexp",  "bexp", 6 }
+                { "-cr_aexp",  "aexp", 19 },
+                { "-cr_bexp",  "bexp", 20 }
             }
         },
         {
             InteractionType::INDUCTIONCORRECTION, {
-                { "-cr_a1dexp",  "a1dexp", 7 },
-                { "-cr_a2dexp",  "a2dexp", 8 },
-                { "-cr_bdexp",  "bdexp",  9 },
+                { "-cr_a1dexp",  "a1dexp", 21 },
+                { "-cr_a2dexp",  "a2dexp", 22 },
+                { "-cr_bdexp",  "bdexp",  23 },
+                { "-cr_De", morse_name[morseDE], 24 },
+                { "-cr_D0", morse_name[morseD0], 25 },
+                { "-cr_beta", morse_name[morseBETA], 26 },
+                { "-cr_length", morse_name[morseLENGTH], 27 },
             }
         }
     };
