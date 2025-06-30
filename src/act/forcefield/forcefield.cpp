@@ -185,7 +185,7 @@ bool ForceField::typeToInteractionType(const std::string &type,
     size_t colon = type.find(":");
     if (colon != std::string::npos)
     {
-        auto ittt = type.substr(0, colon-1);
+        auto ittt = type.substr(0, colon);
         auto itp  = stringToInteractionType(ittt);
         auto iii  = type2Itype_.find(itp);
         if (iii == type2Itype_.end())

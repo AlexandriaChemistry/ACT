@@ -348,7 +348,8 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                 {
                     for(auto &param : fpl.second)
                     {
-                        if (mg->fit(param.first))
+                        std::string pf2 = interactionTypeToString(fs.first) + ":" + param.first;
+                        if (mg->fit(param.first) || mg->fit(pf2))
                         {
                             if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
                             {

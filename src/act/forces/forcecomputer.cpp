@@ -263,16 +263,23 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
-            bfc(entry.second, atoms, coordinates, forces, &my_energy);
-            for(const auto &me : my_energy)
+            auto ener = bfc(entry.second, atoms, coordinates, forces, &my_energy);
+            if (my_energy.size() > 1)
             {
-                if (energies->find(me.first) != energies->end())
+                for(const auto &me : my_energy)
                 {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
-                                                                   interactionTypeToString(me.first).c_str()).c_str()));
+                    if (energies->find(me.first) != energies->end())
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
+                                                                       interactionTypeToString(me.first).c_str()).c_str()));
+                    }
+                    energies->insert_or_assign( me.first, me.second );
+                    epot += me.second;
                 }
-                energies->insert_or_assign( me.first, me.second );
-                epot += me.second;
+            }
+            else
+            {
+                energies->insert_or_assign( entry.first, ener );
             }
         }
         else if (debug && !isVsite(entry.first))
