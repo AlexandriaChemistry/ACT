@@ -212,6 +212,9 @@ bool MolGen::checkOptions(MsgHandler                  *msghandler,
         InteractionType itype;
         if (pd->typeToInteractionType(toFit->first, &itype))
         {
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Found parameter '%s' to train, interactiontype '%s'",
+                                              toFit->first.c_str(), interactionTypeToString(itype).c_str()));
             Electrostatics = Electrostatics || isVsite(itype) || (iTypeElec.end() != iTypeElec.find(itype));
             toFit++;
         }
@@ -262,7 +265,7 @@ void MolGen::fillIopt(ForceField *pd,
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
-            msghandler->msg(ACTStatus::Debug,
+            msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Adding parameter %s to fitting\n", fit.first.c_str()));
         }
         else

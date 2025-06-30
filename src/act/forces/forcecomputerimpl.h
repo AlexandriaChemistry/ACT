@@ -35,11 +35,11 @@
 namespace alexandria
 {
 
-typedef void (*bondForceComputer)(const TopologyEntryVector          &bonds,
-                                  const std::vector<ActAtom>         &atoms,
-                                  const std::vector<gmx::RVec>       *coordinates,
-                                  std::vector<gmx::RVec>             *forces,
-                                  std::map<InteractionType, double>  *energies);
+typedef double (*bondForceComputer)(const TopologyEntryVector          &bonds,
+                                    const std::vector<ActAtom>         &atoms,
+                                    const std::vector<gmx::RVec>       *coordinates,
+                                    std::vector<gmx::RVec>             *forces,
+                                    std::map<InteractionType, double>  *energies);
 
 /*! \brief Return a bonded force computer according to typedef.
  * \param[in] pot    The ACT potential type
