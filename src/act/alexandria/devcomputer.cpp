@@ -34,6 +34,7 @@
  */
 #include "devcomputer.h"
 
+#include <map>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -703,13 +704,16 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             }
             // Check whether we should sum the induction terms
             bool sumInductionTerms = false;
-            if (targets->find(eRMS::DeltaHF) == targets->end())
+            auto tdhf = targets->find(eRMS::DeltaHF);
+            if (tdhf == targets->end() || tdhf->second.weight() == 0)
             {
                 // No -fc_deltahf option was passed
                 if (targets->find(eRMS::Induction) != targets->end())
                 {
                     sumInductionTerms = true;
                 }
+                std::map<bool, const char *> bool_names = { { false, "False" }, { true, "True" } };
+                msghandler->msg(ACTStatus::Debug, gmx::formatString("Sum induction terms: %s", bool_names[sumInductionTerms]));
             }
             for(auto &iem : interactionEnergyMap)
             {
@@ -756,17 +760,27 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                         {
                             auto &find = iem.find(InteractionType::INDUCTION)->second;
                             auto &fic  = iem.find(InteractionType::INDUCTIONCORRECTION)->second;
+                            msghandler->msg(ACTStatus::Debug,
+                                            gmx::formatString("Energy Induction = %g, InductionCorrection = %g",
+                                                              find.eact(), fic.eact()));
+                            find.setACT(find.eact() + fic.eact());
+                            fic.setACT(0);
                             if (find.haveQM() && find.haveACT())
                             {
                                 // Difficult to make this fool-proof. If the data is not consistent
                                 // with the command-line options used, things may break.
                                 auto eqm  = find.eqm();
                                 auto eact = find.eact();
-                                if (fic.haveQM() && fic.haveACT())
+#ifdef KKK
+                                if (fic.haveQM())
                                 {
                                     eqm  += fic.eqm();
+                                }
+                                if (fic.haveACT())
+                                {
                                     eact += fic.eact();
                                 }
+#endif
                                 ti->second.increase(weight, gmx::square(eqm-eact));
                             }
                         }

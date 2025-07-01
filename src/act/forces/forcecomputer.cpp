@@ -280,7 +280,8 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
             else
             {
                 energies->insert_or_assign( entry.first, ener );
-		epot += ener;
+
+                epot += ener;
             }
         }
         else if (debug && !isVsite(entry.first))
