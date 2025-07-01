@@ -500,7 +500,7 @@ static double computeTT2b(const TopologyEntryVector             &pairs,
         edisp    += eedisp;
         if (debug)
         {
-            fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
+            fprintf(debug, "Tang-Toennies2b ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
                     indices[0], indices[1], 1/rinv, Att, bExchtt, bDisptt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
         }
         real fbond = frep+fdisp;
