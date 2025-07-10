@@ -790,6 +790,16 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         // Correct total induction for this
         eit->second -= induc3;
     }
+    else
+    {
+        // Sum Induction Correction into total Induction
+        auto eic = einter->find(itICorr);
+        if (einter->end() != eic)
+        {
+            einter->find(itInduc)->second += eic->second;
+            eic->second = 0;
+        }
+    }
     checkEnergies(msghandler, "Inter 1", *einter);
     {
         // Gather the terms for ALLELEC output.
