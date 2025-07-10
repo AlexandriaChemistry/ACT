@@ -663,23 +663,26 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             for(const auto &ff : energyMap)
             {
                 // std::isfinite checks for both Inf and NaN values.
-                if (!std::isfinite(ff.eact()))
+                if (ff.haveACT())
                 {
-                    msghandler->msg(ACTStatus::Warning,
-                                    gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
-                }
-                else
-                {
-                    if (ff.haveQM() && ff.haveACT())
+                    if (!std::isfinite(ff.eact()))
                     {
-                        double eqm    = ff.eqm();
-                        double mydev2 = gmx::square(eqm-ff.eact());
-                        double weight = 1;
-                        if (beta > 0)
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
+                    }
+                    else
+                    {
+                        if (ff.haveQM())
                         {
-                            weight = exp(-beta*(eqm-eqmMin));
+                            double eqm    = ff.eqm();
+                            double mydev2 = gmx::square(eqm-ff.eact());
+                            double weight = 1;
+                            if (beta > 0)
+                            {
+                                weight = exp(-beta*(eqm-eqmMin));
+                            }
+                            te->second.increase(weight, mydev2);
                         }
-                        te->second.increase(weight, mydev2);
                     }
                 }
             }
@@ -760,11 +763,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                         {
                             auto &find = iem.find(InteractionType::INDUCTION)->second;
                             auto &fic  = iem.find(InteractionType::INDUCTIONCORRECTION)->second;
-                            msghandler->msg(ACTStatus::Debug,
-                                            gmx::formatString("Energy Induction = %g, InductionCorrection = %g",
-                                                              find.eact(), fic.eact()));
-                            find.setACT(find.eact() + fic.eact());
-                            fic.setACT(0);
+                            if (fic.haveACT())
+                            {
+                                msghandler->msg(ACTStatus::Debug,
+                                                gmx::formatString("Energy Induction = %g, InductionCorrection = %g",
+                                                                  find.eact(), fic.eact()));
+                                find.setACT(find.eact() + fic.eact());
+                                fic.setACT(0);
+                            }
                             if (find.haveQM() && find.haveACT())
                             {
                                 // Difficult to make this fool-proof. If the data is not consistent
