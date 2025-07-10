@@ -703,11 +703,14 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         // Move remaining polarisation energy to the electrostatics.
         // Since we started with the shells in the relaxed monomer position,
         // not the entire polarization will have been moved to induction.
-        if (e_total.end() != e_total.find(itPolar) &&
-            e_total.end() != e_total.find(itElec))
+        auto eip = e_total.find(itPolar);
+        auto eie = e_total.find(itElec);
+        if (e_total.end() != eip &&
+            e_total.end() != eie)
         {
-            e_total.find(itElec)->second += e_total.find(itPolar)->second;
-            e_total.find(itPolar)->second = 0;
+            eie->second += eip->second;
+            // Erase polarization term!
+            e_total.erase(eip);
         }
         checkEnergies(msghandler, "Total", e_total);
     }
@@ -797,7 +800,8 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         if (einter->end() != eic)
         {
             einter->find(itInduc)->second += eic->second;
-            eic->second = 0;
+            // Erase induction correction term.
+            einter->erase(eic);
         }
     }
     checkEnergies(msghandler, "Inter 1", *einter);
