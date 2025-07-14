@@ -237,7 +237,12 @@ protected:
                                einter[InteractionType::INDUCTIONCORRECTION] +
                                einter[InteractionType::DISPERSION] + einter[InteractionType::EXCHANGE]);
                 double toler = 1e-3;
-                EXPECT_TRUE(std::abs(esum - einter[InteractionType::EPOT]) <= toler);
+                auto iepot = InteractionType::EPOT;
+                EXPECT_TRUE(std::abs(esum - einter[iepot]) <= toler);
+                // Check what happens when we sum induction correction into induction
+                std::map<InteractionType, double> einter2;
+                mp_.calculateInteractionEnergy(&msghandler, pd, fcomp, &einter2, &forces, &coords, true);
+                EXPECT_TRUE(std::abs(einter2[iepot]-einter[iepot]) <= toler);
             }
         }
     }
