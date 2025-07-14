@@ -789,7 +789,15 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         // Compute higher order induction
         double induc3 = eit->second -  delta_einduc2;
         // Store higher order induction in einter
-        einter->insert_or_assign(itICorr, induc3);
+        auto eee = einter->find(itICorr);
+        if (eee == einter->end())
+        {
+            einter->insert({itICorr, induc3});
+        }
+        else
+        {
+            eee->second += induc3;
+        }
         // Correct total induction for this
         eit->second -= induc3;
     }
