@@ -59,6 +59,18 @@ namespace alexandria
      */
     const std::string &potentialToString(Potential p);
 
+    /*! \brief Convert potential into energy expression
+     * \param[in] p The potential type
+     * \return A string
+     */
+    const std::string &potentialToEnergy(Potential p);
+
+    /*! \brief Get parameter names for potential
+     * \param[in] p The potential type
+     * \return A vector of strings
+     */
+    const std::vector<const char *> potentialToParameterName(Potential p);
+
     /*!\brief Convert a string to a Potential type
      * \param[in]  pname The string
      * \param[out] p     The potential
