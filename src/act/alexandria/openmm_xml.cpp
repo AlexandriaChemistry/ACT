@@ -535,40 +535,26 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
             setNexcl(std::stoi(fs.optionValue(nnn)));
         }
         add_global(specPtr, "nexcl", nexcl());
+        add_combrules(specPtr, fs);
         // Bondcutoff should be the same for all NonBonded and CustomNobonded forces
         // even though  we determine exclusions ourselves in the Python interface.
         add_xml_int(specPtr, "bondCutoff", nexcl());
-        if (itVC == itype)
+        auto energy = potentialToEnergy(fs.potential());
+        add_xml_char(specPtr, "energy", energy.c_str());
+        auto pname = potentialToParameterName(fs.potential());
+        if (itype == itVC || itype == itIC)
         {
-            // Implement xor function for Kronecker combination rule
-            add_xml_char(specPtr, "energy", "-A*exp(-b*r); b=0.5*(bexp1+bexp2); A=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,sqrt(aexp1*aexp2))");
-        }
-        else if (itIC == itype)
-        {
-            add_xml_char(specPtr, "energy", "(Ab-Aa)*exp(-b*r); b=0.5*(bdexp1+bdexp2); Aa=sqrt(a1dexp1*a1dexp2); Ab=sqrt(a2dexp1*a2dexp2)");
+            for(size_t i = 0; i < pname.size(); i++)
+            {
+                auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+                add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), pname[i]);
+            }
         }
         else
         {
-            gmx_fatal(FARGS, "Forgot to implement something");
-        }
-        const char *vsite = "vsite";
-        if (itype == itVC)
-        {
-            auto vsParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(vsParam, exml_names(xmlEntryOpenMM::NAME), vsite);
-            for(int i = 0; i < expA_IJ; i++)
-            {
-                auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-                add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), exp_name[i]);
-            }
-        }
-        else if (itype == itIC)
-        {
-            for(int i = 0; i < dexpA1_IJ; i++)
-            {
-                auto specParam = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-                add_xml_char(specParam, exml_names(xmlEntryOpenMM::NAME), dexp_name[i]);
-            }
+            gmx_fatal(FARGS, "Please implement support for potential %s in interaction %s",
+                      potentialToString(fs.potential()).c_str(),
+                      interactionTypeToString(itIC).c_str());
         }
         size_t count = 0;
         for(const auto &fft: ffTypeMap)
@@ -600,20 +586,18 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
                 {
                     auto nbParamPtr = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
                     add_xml_char(nbParamPtr, exml_names(xmlEntryOpenMM::TYPE_RES), type1.c_str());
-                    if (itype == itVC)
+                    auto pname = potentialToParameterName(fs.potential());
+                    const char *vsite = "vsite";
+                    for(size_t j = 0; j < pname.size(); j++)
                     {
-                        int val = aType->apType() == ActParticle::Vsite ? 1: 0;
-                        add_xml_int(nbParamPtr, vsite, val);
-                    }
-                    for(size_t j = 0; j < param.size(); j++)
-                    {
-                        if (itype == itVC && (Mutability::Dependent != param[exp_name[j]].mutability()))
+                        if ((Mutability::Dependent != param[pname[j]].mutability()))
                         {
-                            add_xml_double(nbParamPtr, exp_name[j], param[exp_name[j]].internalValue());
+                            add_xml_double(nbParamPtr, pname[j], param[pname[j]].internalValue());
                         }
-                        else if (itype == itIC && (Mutability::Dependent != param[dexp_name[j]].mutability()))
+                        if (itype == itVC && std::strncmp(vsite, pname[j], strlen(vsite)) == 0)
                         {
-                            add_xml_double(nbParamPtr, dexp_name[j], param[dexp_name[j]].internalValue());
+                            int val = aType->apType() == ActParticle::Vsite ? 1: 0;
+                            add_xml_int(nbParamPtr, vsite, val);
                         }
                     }
                     count += 1;
@@ -688,31 +672,11 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");
         
         // This order is important!
-        // Do not change the order of these parameters, otherwise the force field is not working
-        auto grandchild2 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        if (fs.potential() == Potential::WANG_BUCKINGHAM ||
-            fs.potential() == Potential::LJ14_7 ||
-            fs.potential() == Potential::LJ12_6)
+        // Do not change the order of these parameters, otherwise the force field will not work
+        for(const auto &pname : potentialToParameterName(fs.potential()))
         {
-            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
-        }
-        else
-        {
-            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "rmin");
-        }
-        auto grandchild3 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-        add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::NAME), "epsilon");
-        if (fs.potential() == Potential::GENERALIZED_BUCKINGHAM || 
-            fs.potential() == Potential::WANG_BUCKINGHAM ||
-            fs.potential() == Potential::LJ14_7)
-        {
-            auto grandchild4 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild4, exml_names(xmlEntryOpenMM::NAME), "gamma");
-        }
-        if (fs.potential() == Potential::GENERALIZED_BUCKINGHAM || fs.potential() == Potential::LJ14_7)
-        {
-            auto grandchild9 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
-            add_xml_char(grandchild9, exml_names(xmlEntryOpenMM::NAME), "delta");
+            auto grandchild2 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), pname);
         }
         
         auto grandchild5 = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -818,10 +782,22 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                     }
                 }
                 break;
+            case Potential::TT2b:
+                // TODO Get better values
+                sigma   = 0.3;
+                epsilon = 0.1;
+                scaleSigma = 1.0;
+                for(size_t j = 0; j < param.size(); j++)
+                {
+                    if (Mutability::Dependent != param[tt2b_name[j]].mutability())
+                    {
+                        add_xml_double(nbParamPtr, tt2b_name[j], param[tt2b_name[j]].internalValue());
+                    }
+                }
+                break;
             default:
-                fprintf(stderr, "Unknown non-bonded force type %d %s\n", 
-                        static_cast<int>(fs.potential()),
-                        potentialToString(fs.potential()).c_str());
+                gmx_fatal(FARGS, "Unknown non-bonded force type %s\n", 
+                          potentialToString(fs.potential()).c_str());
             }
             if (nullptr != customNBPtr)
             {
@@ -908,7 +884,8 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
     for(const auto &fs: pd->forcesConst())
     {
         xmlNodePtr fsPtr = nullptr;
-        switch(fs.second.potential())
+        auto energy = potentialToEnergy(fs.second.potential());
+        switch (fs.second.potential())
         {
         case Potential::HARMONIC_BONDS:
             {
@@ -918,10 +895,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case Potential::MORSE_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-                // The Morse bonds potential is written as a string here:
-                auto energy = gmx::formatString("(%s*((1 - exp(-%s*(r-%s)))^2-1)+%s);", 
-                                                morse_name[morseDE], morse_name[morseBETA],
-                                                morse_name[morseLENGTH], morse_name[morseD0]);
                 add_xml_char(fsPtr, "energy", energy.c_str());
                 // Specify the per bond parameters
                 for(int i = 0; i < morseNR; i++)
@@ -934,10 +907,6 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case Potential::HUA_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-                // The Hua bonds potential is written as a string here:
-                auto energy = gmx::formatString("(%s*(((1-myexp)/(1-%s*myexp))^2 -1));myexp=exp(-%s*(r-%s))", 
-                                                hua_name[huaDE], hua_name[huaC],
-                                                hua_name[huaB], hua_name[huaLENGTH]);
                 add_xml_char(fsPtr, "energy", energy.c_str());
                 // Specify the per bond parameters
                 for(int i = 0; i < huaNR; i++)
@@ -950,8 +919,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
         case Potential::CUBIC_BONDS:
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
-                // The cubic bonds potential is written as a string here:
-                add_xml_char(fsPtr, "energy", "(kb*(r-bondlength)^2 * (rmax-r) - D_e)*step(2*rmax+bondlength-3*r) + step(3*r-2*rmax-bondlength)*(-D_e - (4*kb/27)*(bondlength-rmax)^2);");
+                add_xml_char(fsPtr, "energy", energy.c_str());
                 // Specify the per bond parameters
                 for(int i = 0; i < cubicNR; i++)
                 {
