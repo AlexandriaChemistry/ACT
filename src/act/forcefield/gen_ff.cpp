@@ -388,7 +388,7 @@ int gen_ff(int argc, char*argv[])
     std::vector<std::string> options = {
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
     };
-    ForceFieldParameterList pols("Polarization", CanSwap::No);
+    ForceFieldParameterList pols("POLARIZATION", CanSwap::No);
     auto qdist = name2ChargeType(qdn2[0]);
     auto qpot  = chargeTypeToPotential(qdist);
     ForceFieldParameterList coulomb(potentialToString(qpot), CanSwap::Yes);

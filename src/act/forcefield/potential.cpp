@@ -144,7 +144,8 @@ bool stringToPotential(const std::string &pname, Potential *p)
     {
         if (ps.second.ftype >= 0 && ps.second.ftype < F_NRE)
         {
-            if (pname.compare(interaction_function[ps.second.ftype].name) == 0)
+            if (pname.compare(interaction_function[ps.second.ftype].name) == 0 ||
+                pname.compare(interaction_function[ps.second.ftype].longname) == 0)
             {
                 *p = ps.first;
                 return true;
