@@ -73,8 +73,8 @@ static double computeLJ12_6(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sig_ij     = params[lj12_6SIGMA_IJ];
-        auto eps_ij     = params[lj12_6EPSILON_IJ];
+        auto sig_ij     = params[lj12_6SIGMA];
+        auto eps_ij     = params[lj12_6EPSILON];
         auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
         auto c6         = 4*eps_ij*sig6;
         auto c12        = c6*sig6;
@@ -123,8 +123,8 @@ static double computeLJ8_6(const TopologyEntryVector             &pairs,
     {   
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sig_ij     = params[lj8_6SIGMA_IJ];
-        auto eps_ij     = params[lj8_6EPSILON_IJ];
+        auto sig_ij     = params[lj8_6SIGMA];
+        auto eps_ij     = params[lj8_6EPSILON];
         auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
         auto c6         = 4*eps_ij*sig6;
         auto c8         = 0.75*c6*sig_ij*sig_ij;
@@ -173,8 +173,8 @@ static double computeLJ14_7(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[lj14_7SIGMA_IJ];
-        auto epsilon    = params[lj14_7EPSILON_IJ];
+        auto sigma      = params[lj14_7SIGMA];
+        auto epsilon    = params[lj14_7EPSILON];
         real f147       = 0;
         // Get the atom indices
         auto &indices   = b->atomIndices();
@@ -187,8 +187,8 @@ static double computeLJ14_7(const TopologyEntryVector             &pairs,
         real eerep = 0, eedisp = 0;
         if (epsilon > 0)
         {
-            auto gamma      = params[lj14_7GAMMA_IJ];
-            auto delta      = params[lj14_7DELTA_IJ];
+            auto gamma      = params[lj14_7GAMMA];
+            auto delta      = params[lj14_7DELTA];
             real rstar      = dr2*rinv/sigma;
             real delta1     = delta + 1;
             real gamma1     = gamma + 1;
@@ -238,10 +238,10 @@ static double computeExponential(const TopologyEntryVector             &pairs,
         auto rinv       = gmx::invsqrt(dr2);
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
-        real aexp       = params[expA_IJ];
+        real aexp       = params[expA];
         if (aexp > 0)
         {
-            real bexp   = params[expB_IJ];
+            real bexp   = params[expB];
             auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
             if (debug)
             {
@@ -271,12 +271,12 @@ static double computeDoubleExponential(const TopologyEntryVector             &pa
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
+        real aexp       = params[dexpA1] - params[dexpA2];
         if (aexp == 0)
         {
             continue;
         }
-        real bexp       = params[dexpB_IJ];
+        real bexp       = params[dexpB];
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -314,9 +314,9 @@ static double computeWBH(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[wbhSIGMA_IJ];
-        auto epsilon    = params[wbhEPSILON_IJ];
-        auto gamma      = params[wbhGAMMA_IJ];
+        auto sigma      = params[wbhSIGMA];
+        auto epsilon    = params[wbhEPSILON];
+        auto gamma      = params[wbhGAMMA];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
             // Get the atom indices
@@ -357,9 +357,9 @@ static double computeBuckingham(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Abh  = params[bhA_IJ];
-        auto bbh  = params[bhB_IJ];
-        auto c6bh = params[bhC6_IJ];
+        auto Abh  = params[bhA];
+        auto bbh  = params[bhB];
+        auto c6bh = params[bhC6];
         if (Abh > 0 && bbh > 0 && c6bh > 0)
         {
             // Get the atom indices
@@ -460,8 +460,8 @@ static double computeTangToennies(const TopologyEntryVector             &pairs,
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routine
-        lowTT(b->atomIndices(), *coordinates, params[ttA_IJ], params[ttB_IJ], params[ttB_IJ],
-              { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] },
+        lowTT(b->atomIndices(), *coordinates, params[ttA], params[ttB], params[ttB],
+              { params[ttC6], params[ttC8], params[ttC10] },
               forces, &erep, &edisp);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -483,9 +483,9 @@ static double computeTT2b(const TopologyEntryVector             &pairs,
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routine
-        lowTT(b->atomIndices(), *coordinates, params[tt2bA_IJ],
-              params[tt2bBdisp_IJ], params[tt2bBexch_IJ],
-              { params[tt2bC6_IJ], params[tt2bC8_IJ], params[tt2bC10_IJ] },
+        lowTT(b->atomIndices(), *coordinates, params[tt2bA],
+              params[tt2bBdisp], params[tt2bBexch],
+              { params[tt2bC6], params[tt2bC8], params[tt2bC10] },
               forces, &erep, &edisp);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
@@ -507,10 +507,10 @@ static double computeNonBonded(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto rmin       = params[gbhRMIN_IJ];
-        auto epsilon    = params[gbhEPSILON_IJ];
-        auto gamma      = params[gbhGAMMA_IJ];
-        auto delta      = params[gbhDELTA_IJ];
+        auto rmin       = params[gbhRMIN];
+        auto epsilon    = params[gbhEPSILON];
+        auto gamma      = params[gbhGAMMA];
+        auto delta      = params[gbhDELTA];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
@@ -562,10 +562,10 @@ static double gmx_unused computeNonBondedTest(const TopologyEntryVector         
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto rmin       = params[gbhRMIN_IJ];
-        auto epsilon    = params[gbhEPSILON_IJ];
-        auto gamma      = params[gbhGAMMA_IJ];
-        auto delta      = params[gbhDELTA_IJ];
+        auto rmin       = params[gbhRMIN];
+        auto epsilon    = params[gbhEPSILON];
+        auto gamma      = params[gbhGAMMA];
+        auto delta      = params[gbhDELTA];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
