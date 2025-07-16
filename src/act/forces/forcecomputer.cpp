@@ -417,7 +417,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                               pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     // First atom is zero, second must be the other particle
-                    size_t jatom = 1+top.atoms()[0].shells().size();
+                    size_t jatom = 1+top.atoms()[0].shells().size()+top.atoms()[0].vsites().size();
                     if (jatom == 0)
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
