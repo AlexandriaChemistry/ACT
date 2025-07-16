@@ -312,12 +312,8 @@ void evalCombinationRule(Potential                                    ftype,
                 break;
             }
         }
-        std::string pij = param.first;
-        if (ftype != Potential::MORSE_BONDS)
-        {
-            pij += "_ij";
-        }
-        pmap->insert_or_assign(pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
+        pmap->insert_or_assign(param.first,
+                               ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
     }
 }
 

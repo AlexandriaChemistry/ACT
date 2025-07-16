@@ -37,44 +37,44 @@
 namespace alexandria
 {
 
-    enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6SIGMA_IJ = 2, lj12_6EPSILON_IJ = 3, lj12_6NR = 4 };
+    enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6NR = 2 };
 
     extern const char *lj12_6_name[lj12_6NR];
 
-    enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6SIGMA_IJ = 2, lj8_6EPSILON_IJ = 3, lj8_6NR = 4 };
+    enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6NR = 2 };
 
     extern const char *lj8_6_name[lj8_6NR];
 
-    enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
+    enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhNR = 3 };
 
     extern const char *wbh_name[wbhNR];
 
-    enum { bhA = 0, bhB = 1, bhC6 = 2, bhA_IJ = 3, bhB_IJ = 4, bhC6_IJ = 5, bhNR = 6 };
+    enum { bhA = 0, bhB = 1, bhC6 = 2, bhNR = 3 };
 
     extern const char *bh_name[bhNR];
 
-    enum { ttA, ttB, ttC6, ttC8, ttC10, ttA_IJ, ttB_IJ, ttC6_IJ, ttC8_IJ, ttC10_IJ, ttNR };
+    enum { ttA, ttB, ttC6, ttC8, ttC10, ttNR };
 
     extern const char *tt_name[ttNR];
 
-    enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bA_IJ, tt2bBexch_IJ, tt2bBdisp_IJ, tt2bC6_IJ, tt2bC8_IJ, tt2bC10_IJ, tt2bNR };
+    enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bNR };
 
     extern const char *tt2b_name[tt2bNR];
 
     enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3,
-           lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };
+           lj14_7NR = 4 };
 
     extern const char *lj14_7_name[lj14_7NR];
 
-    enum { expA = 0, expB = 1, expA_IJ = 2, expB_IJ = 3, expNR = 4 };
+    enum { expA = 0, expB = 1, expNR = 2 };
 
     extern const char *exp_name[expNR];
 
-    enum { dexpA1 = 0, dexpA2 = 1, dexpB = 2, dexpA1_IJ = 3, dexpA2_IJ = 4, dexpB_IJ = 5, dexpNR = 6 };
+    enum { dexpA1 = 0, dexpA2 = 1, dexpB = 2, dexpNR = 3 };
 
     extern const char *dexp_name[dexpNR];
 
-    enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
+    enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhNR = 4 };
 
     extern const char *gbh_name[gbhNR];
 
