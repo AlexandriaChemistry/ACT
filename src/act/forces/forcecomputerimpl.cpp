@@ -388,6 +388,64 @@ static double computeBuckingham(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+static void lowTT(const std::vector<int>       &indices,
+                  const std::vector<gmx::RVec> &x,
+                  double                        Att,
+                  double                        bDisp,
+                  double                        bExch,
+                  const std::vector<double>    &ctt,
+                  std::vector<gmx::RVec>       *forces,
+                  double                       *erep,
+                  double                       *edisp)
+{
+    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+    std::vector<double> br(11);
+    rvec dx;
+    rvec_sub(x[indices[0]], x[indices[1]], dx);
+    auto dr2     = iprod(dx, dx);
+    auto rinv1   = gmx::invsqrt(dr2);
+    auto rinv2   = rinv1*rinv1;
+    real eerep   = Att*std::exp(-bExch*dr2*rinv1);
+    real frep    = bExch*eerep;
+    real bDispr  = bDisp*dr2*rinv1;
+    real ebrDisp = std::exp(-bDispr);
+    real eedisp  = 0;
+    real fdisp   = 0;
+    real rinvn   = rinv2*rinv2*rinv2;
+    br[0] = 1;
+    for(int k = 1; k < 11; k++)
+    {
+        br[k] = br[k-1]*bDispr;
+    }
+    for (int m = 3; m <= 5; m++)
+    {
+        real fk  = 0;
+        real dfk = 0;
+        int  nn  = 2*m;
+        for (int k = 0; k <= nn; k++)
+        {
+            fk  += br[k]/fac[k];
+            if (k > 0)
+            {
+                dfk += k*bDisp*br[k-1]/fac[k];
+            }
+        }
+        real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
+        eedisp += ed;
+        fdisp  += ed*nn*rinv1;
+        fdisp  += ctt[m-3]*rinvn*(bDisp*ebrDisp*fk - ebrDisp*dfk);
+        rinvn  *= rinv2;
+    }
+    *erep     += eerep;
+    *edisp    += eedisp;
+    if (debug)
+    {
+        fprintf(debug, "lowTT ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g frep: %g fdisp: %g\n",
+                indices[0], indices[1], 1/rinv1, Att, bExch, bDisp, ctt[0], ctt[1], ctt[2], eerep, eedisp, frep, fdisp);
+    }
+    real fbond = (frep+fdisp)*rinv1;
+    pairforces(fbond, dx, indices, forces);
+}
 
 static double computeTangToennies(const TopologyEntryVector             &pairs,
                                   gmx_unused const std::vector<ActAtom> &atoms,
@@ -397,51 +455,14 @@ static double computeTangToennies(const TopologyEntryVector             &pairs,
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
-    int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Att   = params[ttA_IJ];
-        auto btt   = params[ttB_IJ];
-        double ctt[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
-
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2    = iprod(dx, dx);
-        auto rinv   = gmx::invsqrt(dr2);
-        auto rinv2  = rinv*rinv;
-        real br     = btt*dr2*rinv;
-        real ebr    = std::exp(-br);
-        real eerep  = Att*ebr;
-        real frep   = btt*eerep;
-        real eedisp = 0;
-        real fdisp  = 0;
-        real rinvn  = rinv2*rinv2*rinv2;
-        for (int m = 0; m < 3; m++)
-        {
-            real fk = 0;
-            real pp = 1;
-            for (int k = 0; k < 2*(m+3); k++)
-            {
-                fk += pp/fac[k];
-                pp  = pp*br;
-            }
-            eedisp -= ctt[0]*rinvn*(1-ebr*fk);
-            rinvn  *= rinv2;
-        }
-        erep     += eerep;
-        edisp    += eedisp;
-        if (debug)
-        {
-            fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
-                    indices[0], indices[1], 1/rinv, Att, btt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
-        }
-        real fbond = frep+fdisp;
-        pairforces(fbond, dx, indices, forces);
+        // Call low level routine
+        lowTT(b->atomIndices(), *coordinates, params[ttA_IJ], params[ttB_IJ], params[ttB_IJ],
+              { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] },
+              forces, &erep, &edisp);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -457,54 +478,15 @@ static double computeTT2b(const TopologyEntryVector             &pairs,
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
-    int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Att     = params[tt2bA_IJ];
-        auto bExchtt = params[tt2bBexch_IJ];
-        auto bDisptt = params[tt2bBdisp_IJ];
-        double ctt[3] = { params[tt2bC6_IJ], params[tt2bC8_IJ], params[tt2bC10_IJ] };
-
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2    = iprod(dx, dx);
-        auto rinv   = gmx::invsqrt(dr2);
-        auto rinv2  = rinv*rinv;
-        real bExchr = bExchtt*dr2*rinv;
-        real ebrExch= std::exp(-bExchr);
-        real eerep  = Att*ebrExch;
-        real frep   = bExchtt*eerep;
-        real bDispr = bDisptt*dr2*rinv;
-        real ebrDisp= std::exp(-bDispr);
-        real eedisp = 0;
-        real fdisp  = 0;
-        real rinvn  = rinv2*rinv2*rinv2;
-        for (int m = 0; m < 3; m++)
-        {
-            real fk = 0;
-            real pp = 1;
-            for (int k = 0; k < 2*(m+3); k++)
-            {
-                fk += pp/fac[k];
-                pp  = pp*bDispr;
-            }
-            eedisp -= ctt[0]*rinvn*(1-ebrDisp*fk);
-            rinvn  *= rinv2;
-        }
-        erep     += eerep;
-        edisp    += eedisp;
-        if (debug)
-        {
-            fprintf(debug, "Tang-Toennies2b ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
-                    indices[0], indices[1], 1/rinv, Att, bExchtt, bDisptt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
-        }
-        real fbond = frep+fdisp;
-        pairforces(fbond, dx, indices, forces);
+        // Call low level routine
+        lowTT(b->atomIndices(), *coordinates, params[tt2bA_IJ],
+              params[tt2bBdisp_IJ], params[tt2bBexch_IJ],
+              { params[tt2bC6_IJ], params[tt2bC8_IJ], params[tt2bC10_IJ] },
+              forces, &erep, &edisp);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
