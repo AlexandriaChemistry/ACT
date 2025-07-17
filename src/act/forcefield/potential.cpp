@@ -48,8 +48,8 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::LJ12_6, { "LJ12_6" , F_LJ, { "sigma", "epsilon" }, "0" } },
     { Potential::LJ8_6, {  "LJ8_6", -1, { "sigma", "epsilon" }, "0" } },
     { Potential::LJ14_7, { "LJ14_7", -1, { "sigma", "epsilon", "gamma", "delta" }, "0" } },
-    { Potential::EXPONENTIAL,
-      { "EXPONENTIAL", -1, { "aexp", "bexp", "vsite" },
+    { Potential::BORN_MAYER,
+      { "BORN_MAYER", -1, { "aexp", "bexp", "vsite" },
         // Implement xor function for Kronecker combination rule
         "-A*exp(-b*r); b=0.5*(bexp1+bexp2); A=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,sqrt(aexp1*aexp2))" } },
     { Potential::MACDANIEL_SCHMIDT,

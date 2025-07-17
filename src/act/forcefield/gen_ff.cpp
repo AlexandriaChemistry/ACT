@@ -403,7 +403,7 @@ int gen_ff(int argc, char*argv[])
     coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
     coulomb.addOption("nexcl", gmx_itoa(nexclqq));
     ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
-    ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
+    ForceFieldParameterList vdwcorr(potentialToString(Potential::BORN_MAYER), CanSwap::Yes);
     ForceFieldParameterList induccorr(icfn[0], CanSwap::Yes);
     induccorr.addOption("nexcl", gmx_itoa(nexclqq));
     // Combination rules
@@ -422,7 +422,7 @@ int gen_ff(int argc, char*argv[])
     auto bh_name    = potentialToParameterName(Potential::BUCKINGHAM);
     auto tt_name    = potentialToParameterName(Potential::TANG_TOENNIES);
     auto tt2b_name  = potentialToParameterName(Potential::TT2b);
-    auto exp_name   = potentialToParameterName(Potential::EXPONENTIAL);
+    auto exp_name   = potentialToParameterName(Potential::BORN_MAYER);
     auto dexp_name  = potentialToParameterName(Potential::MACDANIEL_SCHMIDT);
     auto bond_name  = potentialToParameterName(Potential::HARMONIC_BONDS);
     auto cubic_name = potentialToParameterName(Potential::CUBIC_BONDS);

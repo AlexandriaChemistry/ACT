@@ -230,7 +230,7 @@ void evalCombinationRule(Potential                                    ftype,
         }
         auto   crule = combrule.find(param.first)->second;
         double value = 0;
-        if (Potential::EXPONENTIAL == ftype ||
+        if (Potential::BORN_MAYER == ftype ||
             Potential::MACDANIEL_SCHMIDT == ftype ||
             Potential::BUCKINGHAM == ftype ||
             Potential::TANG_TOENNIES == ftype ||
@@ -378,7 +378,7 @@ static void generateParameterPairs(ForceField      *pd,
             // Test whether or not to include this pair.
             // This will only be used in case the potential is exponential.
             bool includePair = true;
-            if (Potential::EXPONENTIAL == forcesVdw->potential())
+            if (Potential::BORN_MAYER == forcesVdw->potential())
             {
                 auto ai = iid.atoms()[0];
                 auto aj = jid.atoms()[0];
