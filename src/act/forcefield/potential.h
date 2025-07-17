@@ -39,68 +39,79 @@
 
 namespace alexandria
 {
-    enum class Potential
+
+enum class Potential
     { 
         NONE,
-            LJ8_6, LJ12_6, LJ14_7,
-            GENERALIZED_BUCKINGHAM, WANG_BUCKINGHAM,
-            EXPONENTIAL, DOUBLEEXPONENTIAL, BUCKINGHAM, TANG_TOENNIES, TT2b,
-            COULOMB_POINT, COULOMB_GAUSSIAN, COULOMB_SLATER,
-            HARMONIC_BONDS, MORSE_BONDS, CUBIC_BONDS, HUA_BONDS,
-            HARMONIC_ANGLES, LINEAR_ANGLES, UREY_BRADLEY_ANGLES,
-            HARMONIC_DIHEDRALS, FOURIER_DIHEDRALS, PROPER_DIHEDRALS,
-            POLARIZATION,
-            VSITE1, VSITE2, VSITE2FD, VSITE3, VSITE3S, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE3OUTS
-            };
+        LJ8_6, LJ12_6, LJ14_7,
+        GENERALIZED_BUCKINGHAM, WANG_BUCKINGHAM,
+        EXPONENTIAL, DOUBLEEXPONENTIAL, BUCKINGHAM, TANG_TOENNIES, TT2b,
+        COULOMB_POINT, COULOMB_GAUSSIAN, COULOMB_SLATER,
+        HARMONIC_BONDS, MORSE_BONDS, CUBIC_BONDS, HUA_BONDS,
+        HARMONIC_ANGLES, LINEAR_ANGLES, UREY_BRADLEY_ANGLES,
+        HARMONIC_DIHEDRALS, FOURIER_DIHEDRALS, PROPER_DIHEDRALS,
+        POLARIZATION,
+        VSITE1, VSITE2, VSITE2FD, VSITE3, VSITE3S, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE3OUTS
+    };
 
-    /*! \brief Convert potential into string
-     * \param[in] p The potential type
-     * \return A string
-     */
-    const std::string &potentialToString(Potential p);
+typedef struct {
+    const std::string         name;
+    int                       ftype;
+    std::vector<const char *> param;
+    const std::string         energy;
+} PotentialProperties;
 
-    /*! \brief Convert potential into energy expression
-     * \param[in] p The potential type
-     * \return A string
-     */
-    const std::string &potentialToEnergy(Potential p);
+extern std::map<Potential, PotentialProperties> potprops;
 
-    /*! \brief Get parameter names for potential
-     * \param[in] p The potential type
-     * \return A vector of strings
-     */
-    const std::vector<const char *> potentialToParameterName(Potential p);
+/*! \brief Convert potential into string
+ * \param[in] p The potential type
+ * \return A string
+ */
+const std::string &potentialToString(Potential p);
 
-    /*!\brief Convert a string to a Potential type
-     * \param[in]  pname The string
-     * \param[out] p     The potential
-     * \return true if successfull, false if the string did not match a known potential
-     */
-    bool stringToPotential(const std::string &pname, Potential *p);
+/*! \brief Convert potential into energy expression
+ * \param[in] p The potential type
+ * \return A string
+ */
+const std::string &potentialToEnergy(Potential p);
 
-    /*! \brief Backward compatability routine
-     * \param[in] p  The potential
-     * \return The gromacs type or -1 if not found
-     */
+/*! \brief Get parameter names for potential
+ * \param[in] p The potential type
+ * \return A vector of strings
+ */
+const std::vector<const char *> potentialToParameterName(Potential p);
 
-    int potentialToGromacsType(Potential p);
-    /*! \brief Convenience function
-     * \param[in] p  The potential
-     * \return The gromacs name or nulltpr if not found
-     */
-    const char *potentialToGromacsString(Potential p);
+/*!\brief Convert a string to a Potential type
+ * \param[in]  pname The string
+ * \param[out] p     The potential
+ * \return true if successfull, false if the string did not match a known potential
+ */
+bool stringToPotential(const std::string &pname, Potential *p);
 
-    /*! \brief Convenience function
-     * \param[in] c The charge type
-     * \return Corresponding Coulomb potential
-     */
-    Potential chargeTypeToPotential(ChargeType c);
+/*! \brief Backward compatability routine
+ * \param[in] p  The potential
+ * \return The gromacs type or -1 if not found
+ */
 
-    /*! \brief Convenience function
-     * \param[in] p The potential
-     * \return Corresponding charge type
-     */
-    ChargeType potentialToChargeType(Potential p);
+int potentialToGromacsType(Potential p);
+/*! \brief Convenience function
+ * \param[in] p  The potential
+ * \return The gromacs name or nulltpr if not found
+ */
+const char *potentialToGromacsString(Potential p);
+
+/*! \brief Convenience function
+ * \param[in] c The charge type
+ * \return Corresponding Coulomb potential
+ */
+Potential chargeTypeToPotential(ChargeType c);
+
+/*! \brief Convenience function
+ * \param[in] p The potential
+ * \return Corresponding charge type
+ */
+ChargeType potentialToChargeType(Potential p);
+
 } // namespace alexandria
 
 #endif

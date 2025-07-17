@@ -214,6 +214,7 @@ TEST(Vsite1, HF)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(fh));
+    auto vsite1_name = potentialToParameterName(Potential::VSITE1);
     auto param_fh = fs.findParameterType(fh, vsite1_name[vsite1A]);
     EXPECT_TRUE(param_fh->internalValue() == 1);
     auto fh2 = Identifier({ "g", "v2f1" }, { 9 }, CanSwap::Yes);
@@ -236,6 +237,7 @@ TEST(Vsite2, HF)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(fh));
+    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
     auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
     if (fs.parameterExists(hf))
@@ -260,6 +262,7 @@ TEST(Vsite2FD, HF)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(fh));
+    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
     auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
     if (fs.parameterExists(hf))
@@ -284,6 +287,7 @@ TEST(Vsite2, HFCanSwapVsite2)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(fh));
+    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
     auto param_fh = fs.findParameterType(fh, vsite2_name[vsite2A]);
     EXPECT_TRUE(param_fh->internalValue() == 1.05);
     EXPECT_TRUE(fs.parameterExists(hf));
@@ -303,6 +307,7 @@ TEST(Vsite3, hoh)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
+    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
     EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     if (fs.parameterExists(hoh))
@@ -328,6 +333,7 @@ TEST(VSite3, hohCanSwapVsite3)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
+    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
     auto param_hoh = fs.findParameterType(hoh, vsite3_name[vsite3A]);
     EXPECT_TRUE(param_hoh->internalValue() == -0.2);
     EXPECT_FALSE(fs.parameterExists(coh));
@@ -349,6 +355,7 @@ TEST(VSite3fd, hohCanSwapNo)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
+    auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
     auto param_hoh = fs.findParameterType(hoh, vsite3fd_name[vsite3fdB]);
     EXPECT_TRUE(param_hoh->internalValue() == 0.15);
     EXPECT_FALSE(fs.parameterExists(coh));
@@ -371,6 +378,7 @@ TEST(VSite3OUT, hohCanSwapNo)
     auto fs = pd->findForcesConst(itype);
     // Compare values
     EXPECT_TRUE(fs.parameterExists(hoh));
+    auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
     auto param_hoh = fs.findParameterType(hoh, vsite3out_name[vsite3outA]);
     EXPECT_TRUE(param_hoh->internalValue() == -0.35);
     EXPECT_FALSE(fs.parameterExists(coh));

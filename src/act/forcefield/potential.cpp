@@ -43,14 +43,7 @@
 namespace alexandria
 {
 
-typedef struct {
-    const std::string         name;
-    int                       ftype;
-    std::vector<const char *> param;
-    const std::string         energy;
-} PotentialProperties;
-
-static std::map<Potential, PotentialProperties> potprops = {
+std::map<Potential, PotentialProperties> potprops = {
     { Potential::NONE, { "", -1, { }, "0" } },
     { Potential::LJ12_6, { "LJ12_6" , F_LJ, { "sigma", "epsilon" }, "0" } },
     { Potential::LJ8_6, {  "LJ8_6", -1, { "sigma", "epsilon" }, "0" } },
@@ -67,9 +60,9 @@ static std::map<Potential, PotentialProperties> potprops = {
     { Potential::TANG_TOENNIES, { "TANG_TOENNIES", -1, { "Att", "btt", "c6tt", "c8tt", "c10tt" }, "0" } },
     { Potential::TT2b, { "TT2b", -1, { "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" }, "0" } },
     { Potential::GENERALIZED_BUCKINGHAM, { "GENERALIZED_BUCKINGHAM", F_GBHAM, { "rmin", "epsilon", "gamma", "delta" }, "0" } },
-    { Potential::COULOMB_GAUSSIAN, { "COULOMB_GAUSSIAN", -1, { "zeta", "zeta_i", "zeta_j" }, "0" } },
-    { Potential::COULOMB_POINT, { "COULOMB_POINT", F_COUL_SR, { }, "0" } },
-    { Potential::COULOMB_SLATER, { "COULOMB_SLATER", -1, { "zeta", "zeta_i", "zeta_j" }, "0" } },
+    { Potential::COULOMB_GAUSSIAN, { "COULOMB_GAUSSIAN", -1, { "zeta", "zeta2" }, "0" } },
+    { Potential::COULOMB_POINT, { "COULOMB_POINT", F_COUL_SR, { "zeta", "zeta2" }, "0" } },
+    { Potential::COULOMB_SLATER, { "COULOMB_SLATER", -1, { "zeta", "zeta2" }, "0" } },
     { Potential::HARMONIC_BONDS, { "HARMONIC_BONDS", F_BONDS, { "kb", "bondlength", "bondenergy" }, "0" } },
     { Potential::CUBIC_BONDS,
       { "CUBIC_BONDS", F_CUBICBONDS, { "bondlength", "rmax", "kb", "De" },

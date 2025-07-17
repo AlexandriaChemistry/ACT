@@ -209,19 +209,6 @@ void evalCombinationRule(Potential                                    ftype,
 {
     // Fudge unit
     std::string unit("kJ/mol");
-    // Defining some strings that we may or may not need
-    const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
-    const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
-
-    std::string       cdist;
-    if (ftype == Potential::GENERALIZED_BUCKINGHAM)
-    {
-        cdist = gbh_name[gbhRMIN];
-    }
-    else
-    {
-        cdist = lj14_7_name[lj14_7SIGMA];
-    }
 
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
@@ -239,7 +226,7 @@ void evalCombinationRule(Potential                                    ftype,
             {
                 allrules += " " + c.first;
             }
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for: %s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
         auto   crule = combrule.find(param.first)->second;
         double value = 0;
@@ -272,6 +259,38 @@ void evalCombinationRule(Potential                                    ftype,
         }
         else
         {
+            // Defining some strings that we may or may not need
+            auto vdwname = potentialToParameterName(ftype);
+            std::string cdist, cepsilon, cgamma;
+            switch (ftype)
+            {
+            case Potential::GENERALIZED_BUCKINGHAM:
+                cdist    = vdwname[gbhRMIN];
+                cepsilon = vdwname[gbhEPSILON];
+                cgamma   = vdwname[gbhGAMMA];
+                break;
+            case Potential::WANG_BUCKINGHAM:
+                cdist    = vdwname[wbhSIGMA];
+                cepsilon = vdwname[wbhEPSILON];
+                cgamma   = vdwname[wbhGAMMA];
+                break;
+            case Potential::LJ14_7:
+                cdist    = vdwname[lj14_7SIGMA];
+                cepsilon = vdwname[lj14_7EPSILON];
+                cgamma   = vdwname[lj14_7GAMMA];
+                break;
+            case Potential::LJ12_6:
+                cdist    = vdwname[lj12_6SIGMA];
+                cepsilon = vdwname[lj12_6EPSILON];
+                break;
+            case Potential::LJ8_6:
+                cdist    = vdwname[lj8_6SIGMA];
+                cepsilon = vdwname[lj8_6EPSILON];
+                break;
+            default:
+                gmx_fatal(FARGS, "Please implement support for potential %s",
+                          potentialToString(ftype).c_str());             
+            }
             auto ieps = ivdw.find(cepsilon)->second.value();
             auto jeps = jvdw.find(cepsilon)->second.value();
             double igam = 0;
@@ -404,7 +423,8 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-    auto zeta = coul_name[coulZETA];
+    auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
+    auto zeta = cname[coulZETA];
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parameters();
     // Now do the double loop
@@ -435,18 +455,18 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             if (oldfp == fold->end())
             {
                 ForceFieldParameterMap ffpm = {
-                    { coul_name[coulZETAI], 
+                    { cname[coulZETA], 
                       ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
-                    { coul_name[coulZETAJ],
+                    { cname[coulZETA2],
                       ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
                 };
                 fold->insert({pairID, ffpm});
             }
             else
             {
-                auto &pi = oldfp->second.find(coul_name[coulZETAI])->second;
+                auto &pi = oldfp->second.find(cname[coulZETA])->second;
                 pi.forceSetValue(izeta);
-                auto &pj = oldfp->second.find(coul_name[coulZETAJ])->second;
+                auto &pj = oldfp->second.find(cname[coulZETA2])->second;
                 pj.forceSetValue(jzeta);
             }
         }

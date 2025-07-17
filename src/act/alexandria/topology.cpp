@@ -135,7 +135,7 @@ void Topology::addShells(MsgHandler       *msghandler,
     /* Add Polarization to the plist. */
     TopologyEntryVector pols;
     auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
-
+    auto pol_name = potentialToParameterName(fs.potential());
     // Loop through the atomList.
     for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {
@@ -1596,13 +1596,12 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(MsgHandler                    *msghandler,
-                       const ForceFieldParameterList &fs,
-                       const Identifier              &btype,
-                       int                            nr,
-                       int                            independent,
-                       const char                    *param_names[],
-                       std::vector<double>           *param)
+static void fillParams(MsgHandler                      *msghandler,
+                       const ForceFieldParameterList   &fs,
+                       const Identifier                &btype,
+                       int                              independent,
+                       const std::vector<const char *> &param_names,
+                       std::vector<double>             *param)
 {
     auto ff = fs.findParameterMapConst(btype);
     std::string msg = potentialToString(fs.potential()) + " " + btype.id();
@@ -1613,10 +1612,10 @@ static void fillParams(MsgHandler                    *msghandler,
     }
     if (param->empty())
     {
-        param->resize(nr, 0);
+        param->resize(param_names.size(), 0);
     }
     int found = 0;
-    for (int i = 0; i < nr; i++)
+    for (size_t i = 0; i < param_names.size(); i++)
     {
         auto fp      = ff.find(param_names[i]);
         double value = 0;
@@ -1653,53 +1652,19 @@ void Topology::fillParameters(MsgHandler        *msghandler,
 
             const auto          &topID = topentry->id();
             std::vector<double>  param;
-            struct ppp
-            {
-                int nr;
-                int independent;
-                const char **names;
-            };
-            std::map<Potential, ppp> allPot = {
-                { Potential::LJ12_6, { lj12_6NR, lj12_6NR, lj12_6_name } },
-                { Potential::LJ8_6, { lj8_6NR, lj8_6NR, lj8_6_name } },
-                { Potential::LJ14_7, { lj14_7NR, lj14_7NR, lj14_7_name } },
-                { Potential::BUCKINGHAM, { bhNR,  bhNR, bh_name } },
-                { Potential::TANG_TOENNIES, { ttNR, ttNR, tt_name } },
-                { Potential::TT2b, { tt2bNR, tt2bNR, tt2b_name } },
-                { Potential::WANG_BUCKINGHAM, { wbhNR, wbhNR, wbh_name } },
-                { Potential::GENERALIZED_BUCKINGHAM, { gbhNR, gbhNR, gbh_name } },
-                { Potential::EXPONENTIAL, { expNR, expNR, exp_name } },
-                { Potential::DOUBLEEXPONENTIAL, { dexpNR, dexpNR, dexp_name } },
-                // TODO remove hardcoded number of independent parameters
-                { Potential::COULOMB_GAUSSIAN, { coulNR, 2, coul_name } },
-                { Potential::COULOMB_SLATER, { coulNR, 2, coul_name } },
-                { Potential::COULOMB_POINT, { coulNR, 2, coul_name } },
-                { Potential::MORSE_BONDS, { morseNR, morseNR, morse_name } },
-                { Potential::HUA_BONDS, { huaNR, huaNR, hua_name } },
-                { Potential::CUBIC_BONDS, { cubicNR, cubicNR, cubic_name } },
-                { Potential::HARMONIC_BONDS, { bondNR, bondNR, bond_name } },
-                { Potential::HARMONIC_ANGLES, { angleNR, angleNR, angle_name } },
-                { Potential::UREY_BRADLEY_ANGLES, { ubNR, ubNR, ub_name } },
-                { Potential::LINEAR_ANGLES, { linangNR, linangNR, linang_name } },
-                { Potential::HARMONIC_DIHEDRALS, { idihNR, idihNR, idih_name } },
-                { Potential::FOURIER_DIHEDRALS, { fdihNR, fdihNR, fdih_name } },
-                { Potential::POLARIZATION, { polNR, polNR, pol_name } },
-                { Potential::PROPER_DIHEDRALS, { pdihNR, pdihNR, pdih_name } },
-                { Potential::VSITE1, { vsite1NR, vsite1NR, vsite1_name } },
-                { Potential::VSITE2, { vsite2NR, vsite2NR, vsite2_name } },
-                { Potential::VSITE2FD, { vsite2fdNR, vsite2fdNR, vsite2fd_name } },
-                { Potential::VSITE3, { vsite3NR, vsite3NR, vsite3_name } },
-                { Potential::VSITE3S, { vsite3sNR, vsite3sNR, vsite3s_name } },
-                { Potential::VSITE3FD, { vsite3fdNR, vsite3fdNR, vsite3fd_name } },
-                { Potential::VSITE3OUT, { vsite3outNR, vsite3outNR, vsite3out_name } },
-                { Potential::VSITE3OUTS, { vsite3outsNR, vsite3outsNR, vsite3outs_name } }
-            };
 
-            auto pp = allPot.find(fs.potential());
-            if (allPot.end() != pp)
+            auto pp = potprops.find(fs.potential());
+            if (potprops.end() != pp)
             {
-                fillParams(msghandler, fs, topID, pp->second.nr,
-                           pp->second.independent, pp->second.names, &param);
+                int independent = pp->second.param.size();
+                if (fs.potential() == Potential::COULOMB_GAUSSIAN ||
+                    fs.potential() == Potential::COULOMB_SLATER ||
+                    fs.potential() == Potential::COULOMB_POINT)
+                {
+                    independent = 2;
+                }
+                fillParams(msghandler, fs, topID, 
+                           independent, pp->second.param, &param);
             }
             else
             {

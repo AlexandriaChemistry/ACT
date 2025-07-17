@@ -317,11 +317,11 @@ private:
                        const ForceField                *pd,
                        const std::map<std::string, int> &ffTypeMap);
 
-    void addXmlBond(xmlNodePtr                      parent,
-                    xmlEntryOpenMM                  xmlEntry,
-                    const std::vector<std::string> &atoms,
-                    const char                     *param_names[],
-                    const std::vector<double>      &params);
+    void addXmlBond(xmlNodePtr                       parent,
+                    xmlEntryOpenMM                   xmlEntry,
+                    const std::vector<std::string>  &atoms,
+                    const std::vector<const char *> &param_names,
+                    const std::vector<double>       &params);
 
     void addXmlPolarization(xmlNodePtr                        parent,
                             const ForceField                 *pd,
@@ -457,11 +457,11 @@ void OpenMMWriter::addBondAtoms(xmlNodePtr                      parent,
     }
 }
 
-void OpenMMWriter::addXmlBond(xmlNodePtr                      parent,
-                              xmlEntryOpenMM                  xmlEntry,
-                              const std::vector<std::string> &atoms,
-                              const char                     *param_names[],
-                              const std::vector<double>      &params)
+void OpenMMWriter::addXmlBond(xmlNodePtr                       parent,
+                              xmlEntryOpenMM                   xmlEntry,
+                              const std::vector<std::string>  &atoms,
+                              const std::vector<const char *> &param_names,
+                              const std::vector<double>       &params)
 {
     // Add some bond parameters
     auto grandchild3 = add_xml_child(parent, exml_names(xmlEntry));
@@ -732,53 +732,54 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
             
             double scaleSigma = std::pow(2.0, -1.0/6.0);
             double sigma = 0, epsilon = 0;
+            auto pnames = potentialToParameterName(fs.potential());
             switch (fs.potential())
             {
             case Potential::WANG_BUCKINGHAM:
                 // TODO: optimize values
-                sigma   = param[wbh_name[wbhSIGMA]].internalValue();
-                epsilon = param[wbh_name[wbhEPSILON]].internalValue();
+                sigma   = param[pnames[wbhSIGMA]].internalValue();
+                epsilon = param[pnames[wbhEPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[wbh_name[j]].mutability())
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
                     {
-                        add_xml_double(nbParamPtr, wbh_name[j], param[wbh_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
                     }
                 }
                 break;
             case Potential::GENERALIZED_BUCKINGHAM:
                 // TODO: optimize values
-                sigma   = param[gbh_name[gbhRMIN]].internalValue()/std::pow(2,1.0/6.0);
-                epsilon = param[gbh_name[gbhEPSILON]].internalValue();
+                sigma   = param[pnames[gbhRMIN]].internalValue()/std::pow(2,1.0/6.0);
+                epsilon = param[pnames[gbhEPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[gbh_name[j]].mutability())
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
                     {
-                        add_xml_double(nbParamPtr, gbh_name[j], param[gbh_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
                     }
                 }
                 break;
             case Potential::LJ14_7:
                 // TODO: optimize values
-                sigma   = param[lj14_7_name[lj14_7SIGMA]].internalValue();
-                epsilon = param[lj14_7_name[lj14_7EPSILON]].internalValue();
+                sigma   = param[pnames[lj14_7SIGMA]].internalValue();
+                epsilon = param[pnames[lj14_7EPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[lj14_7_name[j]].mutability())
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
                     {
-                        add_xml_double(nbParamPtr, lj14_7_name[j], param[lj14_7_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
                     }
                 }
                 break;		
             case Potential::LJ12_6:
-                sigma   = param[lj12_6_name[lj12_6SIGMA]].internalValue();
-                epsilon = param[lj12_6_name[lj12_6EPSILON]].internalValue();
+                sigma   = param[pnames[lj12_6SIGMA]].internalValue();
+                epsilon = param[pnames[lj12_6EPSILON]].internalValue();
                 scaleSigma = 1.0;
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[lj12_6_name[j]].mutability())
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
                     {
-                        add_xml_double(nbParamPtr, lj12_6_name[j], param[lj12_6_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
                     }
                 }
                 break;
@@ -789,9 +790,9 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 scaleSigma = 1.0;
                 for(size_t j = 0; j < param.size(); j++)
                 {
-                    if (Mutability::Dependent != param[tt2b_name[j]].mutability())
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
                     {
-                        add_xml_double(nbParamPtr, tt2b_name[j], param[tt2b_name[j]].internalValue());
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
                     }
                 }
                 break;
@@ -841,6 +842,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
     }
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
     auto fs         = pd->findForcesConst(InteractionType::POLARIZATION);
+    auto pol_name   = potentialToParameterName(fs.potential());
     auto polPtr     = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
     for(const auto &fft: ffTypeMap)
     {
@@ -856,7 +858,8 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
                     auto param        = fs.findParametersConst(Identifier(type1));
                     if (minTrain(param) >= ntrain_)
                     {
-                        auto alpha        = fs.findParameterTypeConst(Identifier({type1}), pol_name[polALPHA]);
+                        auto alpha        = fs.findParameterTypeConst(Identifier({type1}),
+                                                                      pol_name[polALPHA]);
                         auto stp          = pd->findParticleType(type1);
 
                         std::string type2 = fft.first;                    
@@ -885,6 +888,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
     {
         xmlNodePtr fsPtr = nullptr;
         auto energy = potentialToEnergy(fs.second.potential());
+        auto pname  = potentialToParameterName(fs.second.potential());
         switch (fs.second.potential())
         {
         case Potential::HARMONIC_BONDS:
@@ -900,7 +904,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 for(int i = 0; i < morseNR; i++)
                 {
                     auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), morse_name[i]);
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pname[i]);
                 }
             }
             break;
@@ -912,7 +916,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 for(int i = 0; i < huaNR; i++)
                 {
                     auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), hua_name[i]);
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pname[i]);
                 }
             }
             break;
@@ -924,7 +928,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                 for(int i = 0; i < cubicNR; i++)
                 {
                     auto grandchild0 = add_xml_child(fsPtr, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
-                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), cubic_name[i]);
+                    add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), pname[i]);
                 }
             }
             break;
@@ -974,6 +978,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
         {
             continue;
         }
+        auto pname = potentialToParameterName(fs.second.potential());
         if (BondClassUsed->end() == BondClassUsed->find(fs.first))
         {
             // Add empty set
@@ -998,53 +1003,53 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 {
                 case Potential::HARMONIC_BONDS:
                     {
-                        const char *omm_bonds[] = { "k", "length", nullptr };
+                        std::vector<const char *> omm_bonds = { "k", "length", nullptr };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                    atoms, omm_bonds, entry->params());
                     }
                     break;
                 case Potential::CUBIC_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, cubic_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                 case Potential::MORSE_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, morse_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                 case Potential::HUA_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, hua_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                 case Potential::HARMONIC_ANGLES:
                     {
-                        const char *omm_angles[] = { "k", "angle" };
+                        std::vector<const char *> omm_angles = { "k", "angle" };
                         addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                    atoms, omm_angles, entry->params());
                     }
                     break;
                 case Potential::UREY_BRADLEY_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, ub_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                     
                 case Potential::LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, linang_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                     
                 case Potential::FOURIER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
-                               atoms, fdih_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                     
                 case Potential::PROPER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
-                               atoms, pdih_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                     
                 case Potential::HARMONIC_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::IMPROPER,
-                               atoms, idih_name, entry->params());
+                               atoms, pname, entry->params());
                     break;
                     
                 case Potential::COULOMB_POINT:
