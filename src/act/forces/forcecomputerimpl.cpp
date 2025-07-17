@@ -1417,7 +1417,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::TT2b,                   computeTT2b            },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::EXPONENTIAL,            computeExponential     },
-    { Potential::DOUBLEEXPONENTIAL,      computeDoubleExponential },
+    { Potential::MACDANIEL_SCHMIDT,      computeDoubleExponential },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
     { Potential::COULOMB_SLATER,         computeCoulombSlater   },

@@ -63,7 +63,7 @@ dictQdist = {}
 for key in qdistDict:
     dictQdist[qdistDict[key]] = key
 
-SpecialDict = { "EXPONENTIAL": 0, "DOUBLEEXPONENTIAL": 0 }
+SpecialDict = { "EXPONENTIAL": 0, "MACDANIEL_SCHMIDT": 0 }
 
 nbmethod = {
     'LJPME':          LJPME,

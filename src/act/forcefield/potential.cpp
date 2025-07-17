@@ -52,8 +52,8 @@ std::map<Potential, PotentialProperties> potprops = {
       { "EXPONENTIAL", -1, { "aexp", "bexp", "vsite" },
         // Implement xor function for Kronecker combination rule
         "-A*exp(-b*r); b=0.5*(bexp1+bexp2); A=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,sqrt(aexp1*aexp2))" } },
-    { Potential::DOUBLEEXPONENTIAL,
-      { "DOUBLEEXPONENTIAL", -1, { "a1dexp", "a2dexp", "bdexp" },
+    { Potential::MACDANIEL_SCHMIDT,
+      { "MACDANIEL_SCHMIDT", -1, { "a1dexp", "a2dexp", "bdexp" },
         "(Ab-Aa)*exp(-b*r); b=0.5*(bdexp1+bdexp2); Aa=sqrt(a1dexp1*a1dexp2); Ab=sqrt(a2dexp1*a2dexp2)" } },
     { Potential::WANG_BUCKINGHAM, { "WANG_BUCKINGHAM", F_WBHAM, { "sigma", "epsilon", "gamma" }, "0" } },
     { Potential::BUCKINGHAM, { "BUCKINGHAM", -1, { "Abh", "bbh", "c6bh" }, "0" } },

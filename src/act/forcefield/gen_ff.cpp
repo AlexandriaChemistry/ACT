@@ -338,7 +338,7 @@ int gen_ff(int argc, char*argv[])
         vdwfn.push_back(potentialToString(nbp).c_str());
     }
     vdwfn.push_back(nullptr);
-    std::vector<Potential> icfunc = { Potential::DOUBLEEXPONENTIAL, Potential::MORSE_BONDS };
+    std::vector<Potential> icfunc = { Potential::MACDANIEL_SCHMIDT, Potential::MORSE_BONDS };
     std::vector<const char *> icfn = { nullptr };
     for(const auto &nbp : icfunc)
     {
@@ -423,7 +423,7 @@ int gen_ff(int argc, char*argv[])
     auto tt_name    = potentialToParameterName(Potential::TANG_TOENNIES);
     auto tt2b_name  = potentialToParameterName(Potential::TT2b);
     auto exp_name   = potentialToParameterName(Potential::EXPONENTIAL);
-    auto dexp_name  = potentialToParameterName(Potential::DOUBLEEXPONENTIAL);
+    auto dexp_name  = potentialToParameterName(Potential::MACDANIEL_SCHMIDT);
     auto bond_name  = potentialToParameterName(Potential::HARMONIC_BONDS);
     auto cubic_name = potentialToParameterName(Potential::CUBIC_BONDS);
     auto morse_name = potentialToParameterName(Potential::MORSE_BONDS);
@@ -538,7 +538,7 @@ int gen_ff(int argc, char*argv[])
             
             switch(induccorr.potential())
             {
-            case Potential::DOUBLEEXPONENTIAL:
+            case Potential::MACDANIEL_SCHMIDT:
                 iclist = { { dexp_name[dexpA1], "kJ/mol" },
                            { dexp_name[dexpA2], "kJ/mol" },
                            { dexp_name[dexpB], "1/nm"} };

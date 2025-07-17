@@ -231,7 +231,7 @@ void evalCombinationRule(Potential                                    ftype,
         auto   crule = combrule.find(param.first)->second;
         double value = 0;
         if (Potential::EXPONENTIAL == ftype ||
-            Potential::DOUBLEEXPONENTIAL == ftype ||
+            Potential::MACDANIEL_SCHMIDT == ftype ||
             Potential::BUCKINGHAM == ftype ||
             Potential::TANG_TOENNIES == ftype ||
             Potential::TT2b == ftype ||
