@@ -37,70 +37,70 @@
 namespace alexandria
 {
 
-    enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6NR = 2 };
+    enum { lj12_6SIGMA, lj12_6EPSILON, lj12_6NR };
 
-    enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6NR = 2 };
+    enum { lj8_6SIGMA, lj8_6EPSILON, lj8_6NR };
 
-    enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhNR = 3 };
+    enum { wbhSIGMA, wbhEPSILON, wbhGAMMA, wbhNR };
 
-    enum { bhA = 0, bhB = 1, bhC6 = 2, bhNR = 3 };
+    enum { bhA, bhB, bhC6, bhNR };
 
     enum { ttA, ttB, ttC6, ttC8, ttC10, ttNR };
 
     enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bNR };
 
-    enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3,
-           lj14_7NR = 4 };
+    enum { lj14_7SIGMA, lj14_7EPSILON, lj14_7GAMMA, lj14_7DELTA,
+           lj14_7NR };
 
-    enum { expA = 0, expB = 1, expNR = 2 };
+    enum { expA, expB, expNR };
 
-    enum { dexpA1 = 0, dexpA2 = 1, dexpB = 2, dexpNR = 3 };
+    enum { dexpA1, dexpA2, dexpB, dexpNR };
 
-    enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhNR = 4 };
+    enum { gbhRMIN, gbhEPSILON, gbhGAMMA, gbhDELTA, gbhNR };
 
     enum { coulZETA, coulZETA2, coulNR };
 
-    enum { bondKB = 0, bondLENGTH = 1, bondENERGY = 2, bondNR = 3 };
+    enum { bondKB, bondLENGTH, bondENERGY, bondNR };
 
-    enum { cubicLENGTH = 0, cubicRMAX = 1, cubicKB = 2, cubicDE = 3, cubicNR = 4 };
+    enum { cubicLENGTH, cubicRMAX, cubicKB, cubicDE, cubicNR };
 
-    enum { angleKT = 0, angleANGLE = 1, angleNR = 2 };
+    enum { angleKT, angleANGLE, angleNR };
 
-    enum { ubKT = 0, ubANGLE = 1, ubR13 = 2, ubKUB = 3, ubNR = 4 };
+    enum { ubKT, ubANGLE, ubR13, ubKUB, ubNR };
 
-    enum { psANGLE = 0, psRIJ0 = 1, psRJK0 = 2, psNR = 3 };
+    enum { psANGLE, psRIJ0, psRJK0, psNR };
 
-    enum { polALPHA = 0, polRHYPER = 1, polFCHYPER = 2, polNR = 3 };
+    enum { polALPHA, polRHYPER, polFCHYPER, polNR };
 
-    enum { morseBETA = 0, morseDE = 1, morseD0 = 2, morseLENGTH = 3, morseNR = 4 };
+    enum { morseBETA, morseDE, morseD0, morseLENGTH, morseNR };
 
-    enum { huaLENGTH = 0, huaDE = 1, huaB = 2, huaC = 3, huaNR = 4 };
+    enum { huaLENGTH, huaDE, huaB, huaC, huaNR };
 
-    enum { linangA = 0, linangKLIN = 1, linangNR = 2 };
+    enum { linangA, linangKLIN, linangNR };
 
-    enum { idihKPHI = 0, idihNR = 1 };
+    enum { idihKPHI, idihNR };
 
-    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihNR = 6 };
+    enum { fdihC0, fdihC1, fdihC2, fdihC3, fdihC4, fdihC5, fdihNR };
 
-    enum { pdihANGLE = 0, pdihKP = 1, pdihMULT = 2, pdihNR = 3 };
+    enum { pdihANGLE, pdihKP, pdihMULT, pdihNR };
 
-    enum { vsite1A = 0, vsite1NR = 1 };
+    enum { vsite1A, vsite1NR };
 
-    enum { vsite2A = 0, vsite2NR = 1 };
+    enum { vsite2A, vsite2NR };
 
-    enum { vsite2fdA = 0, vsite2fdNR = 1 };
+    enum { vsite2fdA, vsite2fdNR };
 
-    enum { vsite3A = 0,vsite3B = 1, vsite3NR = 2 };
+    enum { vsite3A,vsite3B, vsite3NR };
 
-    enum { vsite3sA = 0, vsite3sNR = 1 };
+    enum { vsite3sA, vsite3sNR };
 
-    enum { vsite3fdA = 0, vsite3fdB = 1, vsite3fdNR = 2 };
+    enum { vsite3fdA, vsite3fdB, vsite3fdNR };
 
-    enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };
+    enum { vsite3fadA, vsite3fadB, vsite3fadNR };
 
-    enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 2,  vsite3outNR = 3 };
+    enum { vsite3outA, vsite3outB, vsite3outC,  vsite3outNR };
 
-    enum { vsite3outsA = 0, vsite3outsC = 1,  vsite3outsNR = 2 };
+    enum { vsite3outsA, vsite3outsC,  vsite3outsNR };
 
 } // namespace alexandria
 
