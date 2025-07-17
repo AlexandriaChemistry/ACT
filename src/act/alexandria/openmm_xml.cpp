@@ -1060,7 +1060,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::LJ8_6:
                 case Potential::WANG_BUCKINGHAM:
                 case Potential::GENERALIZED_BUCKINGHAM:
-                case Potential::EXPONENTIAL:
+                case Potential::BORN_MAYER:
                 case Potential::MACDANIEL_SCHMIDT:
                 case Potential::POLARIZATION:
                 case Potential::VSITE3OUTS:

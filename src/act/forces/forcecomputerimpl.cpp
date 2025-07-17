@@ -216,11 +216,11 @@ static double computeLJ14_7(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
-static double computeExponential(const TopologyEntryVector             &pairs,
-                                 gmx_unused const std::vector<ActAtom> &atoms,
-                                 const std::vector<gmx::RVec>          *coordinates,
-                                 std::vector<gmx::RVec>                *forces,
-                                 std::map<InteractionType, double>     *energies)
+static double computeBornMayer(const TopologyEntryVector             &pairs,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
 {
     double eexp  = 0;
     auto   x     = *coordinates;
@@ -1416,7 +1416,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::TANG_TOENNIES,          computeTangToennies    },
     { Potential::TT2b,                   computeTT2b            },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
-    { Potential::EXPONENTIAL,            computeExponential     },
+    { Potential::BORN_MAYER,             computeBornMayer       },
     { Potential::MACDANIEL_SCHMIDT,      computeDoubleExponential },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
