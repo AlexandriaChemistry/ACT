@@ -128,6 +128,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         // One over force constant for this particle
         std::vector<double> fcShell_1;
         auto &ffpl  = pd->findForcesConst(itype);
+        auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
         for(auto &aa : top->atoms())
         {

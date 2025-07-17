@@ -191,6 +191,7 @@ static void add_vsites(const char *vsfile,
                 Identifier vs(itype, myId, CanSwap::Yes);
                 // Not a lot of information here, but we need something for downstream processing.
                 ForceFieldParameter vs1param("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false);
+                auto vsite1_name = potentialToParameterName(Potential::VSITE1);
                 i2f[itype].addParameter(vs, vsite1_name[vsite1A], vs1param);
             }
             break;
@@ -205,10 +206,12 @@ static void add_vsites(const char *vsfile,
                                              Mutability::Bounded, false, false);
                 if (InteractionType::VSITE2 == itype)
                 {
+                    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
                     i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
                 }
                 else
                 {
+                    auto vsite2fd_name = potentialToParameterName(Potential::VSITE2FD);
                     i2f[itype].addParameter(vs, vsite2fd_name[vsite2fdA], vs2param);
                 }
             }
@@ -230,15 +233,18 @@ static void add_vsites(const char *vsfile,
                                                Mutability::Bounded, false, false);
                 if (itype == InteractionType::VSITE3)
                 {
+                    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
                 }
                 else if (itype == InteractionType::VSITE3S)
                 {
+                    auto vsite3s_name = potentialToParameterName(Potential::VSITE3S);
                     i2f[itype].addParameter(vs, vsite3s_name[vsite3sA], vs3param_a);
                 }
                 else
                 {
+                    auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
                 }
@@ -264,6 +270,7 @@ static void add_vsites(const char *vsfile,
                                                       Mutability::Bounded, false, false);
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
+                    auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
@@ -274,6 +281,7 @@ static void add_vsites(const char *vsfile,
                     double cmax = my_atof(ptr[6], "vsite_parameter_max");
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
+                    auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
                 }
@@ -411,6 +419,14 @@ int gen_ff(int argc, char*argv[])
         printf("You selected point charges. Oh dear...\n");
     }
     // Default params
+    auto bh_name    = potentialToParameterName(Potential::BUCKINGHAM);
+    auto tt_name    = potentialToParameterName(Potential::TANG_TOENNIES);
+    auto tt2b_name  = potentialToParameterName(Potential::TT2b);
+    auto exp_name   = potentialToParameterName(Potential::EXPONENTIAL);
+    auto dexp_name  = potentialToParameterName(Potential::DOUBLEEXPONENTIAL);
+    auto bond_name  = potentialToParameterName(Potential::HARMONIC_BONDS);
+    auto cubic_name = potentialToParameterName(Potential::CUBIC_BONDS);
+    auto morse_name = potentialToParameterName(Potential::MORSE_BONDS);
     std::map<std::string, ForceFieldParameter> DP = {
         { bh_name[bhA],   ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e6, Mutability::Bounded, true, true) },
         { bh_name[bhB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },

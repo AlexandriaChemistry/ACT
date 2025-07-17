@@ -618,8 +618,8 @@ static double computeCoulombGaussian(const TopologyEntryVector         &pairs,
         auto ai       = indices[0];
         auto aj       = indices[1];
         auto &params= b->params();
-        auto izeta  = params[coulZETAI];
-        auto jzeta  = params[coulZETAJ];
+        auto izeta  = params[coulZETA];
+        auto jzeta  = params[coulZETA2];
         // Get the atom indices
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
@@ -669,8 +669,8 @@ static double computeCoulombSlater(const TopologyEntryVector         &pairs,
         auto aj       = indices[1];
         // Get the parameters. We have to know their names to do this.
         auto &params= b->params();
-        auto izeta  = params[coulZETAI];
-        auto jzeta  = params[coulZETAJ];
+        auto izeta  = params[coulZETA];
+        auto jzeta  = params[coulZETA2];
         auto irow   = atoms[ai].row();
         auto jrow   = atoms[aj].row();
         real qq     = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();

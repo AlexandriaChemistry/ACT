@@ -155,6 +155,7 @@ void BoundsDevComputer::calcDeviation(MsgHandler                        *msghand
             auto &fs = forcefield->findForcesConst(itype);
             if (fs.potential() == Potential::CUBIC_BONDS)
             {
+                auto cubic_name = potentialToParameterName(fs.potential());
                 for(const auto &ffp : fs.parametersConst())
                 {
                     auto param = ffp.second;

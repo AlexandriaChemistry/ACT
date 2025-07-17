@@ -91,10 +91,10 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
                 { "-cr_a1dexp",  "a1dexp", 21 },
                 { "-cr_a2dexp",  "a2dexp", 22 },
                 { "-cr_bdexp",  "bdexp",  23 },
-                { "-cr_De", morse_name[morseDE], 24 },
-                { "-cr_D0", morse_name[morseD0], 25 },
-                { "-cr_beta", morse_name[morseBETA], 26 },
-                { "-cr_length", morse_name[morseLENGTH], 27 },
+                { "-cr_De", "De", 24 },
+                { "-cr_D0", "D0", 25 },
+                { "-cr_beta", "beta", 26 },
+                { "-cr_length", "bondlength", 27 },
             }
         }
     };

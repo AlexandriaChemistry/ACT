@@ -698,27 +698,6 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
-static void copyDeToD0(ForceField *pd)
-{
-    auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->potential() != Potential::MORSE_BONDS)
-    {
-        printf("Not using Morse in force field file %s\n", pd->filename().c_str());
-        return;
-    }
-    auto ppp = fs->parameters();
-    for (auto &p : (*ppp))
-    {
-        auto &param = p.second;
-        if (param.find(morse_name[morseDE]) != param.end() && 
-            param.find(morse_name[morseD0]) != param.end())
-        {
-            double De = param.find(morse_name[morseDE])->second.value();
-            param.find(morse_name[morseD0])->second.setValue(-De);
-        }
-    }
-}
-
 static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
@@ -729,6 +708,7 @@ static void addBondEnergy(ForceField *pd)
         return;
     }
     auto ppp = fs->parameters();
+    auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
     for (auto &p : (*ppp))
     {
         auto &param = p.second;
@@ -783,7 +763,6 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
-    gmx_bool     De2D0      = false;
     gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
@@ -828,8 +807,6 @@ int edit_ff(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
-        { "-de2d0", FALSE, etBOOL, {&De2D0},
-          "This is a hack to copy -De to D0 in the Morse potential" },
         { "-bondenergy", FALSE, etBOOL, {&bondenergy},
           "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
@@ -901,10 +878,6 @@ int edit_ff(int argc, char*argv[])
             {
                 plotInteractions(&pd, analyze);
             }
-        }
-        else if (De2D0)
-        {
-            copyDeToD0(&pd);
         }
         else if (bondenergy)
         {
