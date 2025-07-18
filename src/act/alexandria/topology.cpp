@@ -1629,7 +1629,7 @@ static void fillParams(MsgHandler                      *msghandler,
     if (found != independent)
     {
         msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
-        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Info, ACTMessage::MissingFFParameter, msg);
     }
 }
 
@@ -1656,15 +1656,8 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             auto pp = potprops.find(fs.potential());
             if (potprops.end() != pp)
             {
-                int independent = pp->second.param.size();
-                if (fs.potential() == Potential::COULOMB_GAUSSIAN ||
-                    fs.potential() == Potential::COULOMB_SLATER ||
-                    fs.potential() == Potential::COULOMB_POINT)
-                {
-                    independent = 2;
-                }
                 fillParams(msghandler, fs, topID, 
-                           independent, pp->second.param, &param);
+                           pp->second.param.size(), pp->second.param, &param);
             }
             else
             {

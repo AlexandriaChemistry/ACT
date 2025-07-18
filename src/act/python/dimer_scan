@@ -353,7 +353,7 @@ def plot_curves(xmls: dict):
         os.chdir("..")
 
     for dimer, plots_list in plots.items():
-        cmd = f"viewxvg -mk -pdf {dimer} -title {dimer} -noshow -legend_x 0.7 -legend_y 0.5 -alfs 14 -lfs 14 -tickfs 14 -f "
+        cmd = f"viewxvg -mk o x + -pdf {dimer} -title {dimer} -noshow -legend_x 0.7 -legend_y 0.5 -alfs 14 -lfs 14 -tickfs 14 -f "
         cmd += " ".join(p["xvg"] for p in plots_list)
         cmd += " -label " + " ".join(p["legend"] for p in plots_list)
         os.system(cmd)
