@@ -32,6 +32,7 @@ class VdW(Enum):
     LJ14_7 = 3
     WBHAM  = 4
     GBHAM  = 5
+    TT2b   = 6
 
 # Map strings to VdW entries.
 VdWDict = {
@@ -44,7 +45,11 @@ VdWDict = {
     'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
                 "expression": ('select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)') },
     'GENERALIZED_BUCKINGHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
-                "expression": ('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0)') }
+                                 "expression": ('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0)') },
+    'TT2b': { "func": VdW.TT2b, "params": [ "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" ],
+              "expression": "Att2b*exp(-bExchtt2b*r) - ((1-ebDr*sum6)*c6n + (1-ebDr*sum8)*c8n + (1-ebDr*sum10)*c10n); sum10=sum8+br9/362880+br10/3628800; sum8=sum6+br7/5040+br8/40320; sum6=br0+br1+br2/2+br3/6+br4/24+br5/120+br6/720 ; ebDr=exp(-br1); c6n=c6tt2b/(r^6); c8n=c8tt2b/(r^8); c10n=c10tt2b/(r^10); br10=br5*br5; br9=br5*br4; br8=br4*br4; br7=br4*br3; br6=br3*br3; br5=br3*br2; br4=br2*br2; br3=br1*br2; br2=br1*br1; br1=(bDisptt2b*r); br0=1;"
+              # Att2b=sqrt(Att2b1*Att2b2); bExchtt2b=0.5*(bExchtt2b1+bExchtt2b2); bDisptt2b=0.5*(bDisptt2b1+bDisptt2b2); c6tt2b=sqrt(c6tt2b1*c6tt2b2); c8tt2b=sqrt(c8tt2b*c8tt2b); c10tt2b=sqrt(c10tt2b1*c10tt2b2);"
+             }
 }
 
 # Make reverse map as well.
@@ -278,7 +283,8 @@ class CombinationRules:
         elif "hogervorstepsilon" == myrule:
             return ("select(%s*%s,((2.0 * %s * %s)/( %s + %s )),0)" %  ( vara, varb, vara, varb, vara, varb ))
         else:
-            sys.exit("Unknown combination rule '%s'" % rule)
+            print("Ignoring unknown combination rule '%s'" % rule)
+            return ""
 
     def combTwoFloats(self, param:str, vara:float, varb:float)->float:
         myrule = self.comb[param].lower()
@@ -1113,7 +1119,7 @@ class ActOpenMMSim:
                 if self.debug:
                     self.txt.write(f" default nonbonded force i {', '.join([f'{parameter}={iparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
                     self.txt.write(f" default nonbonded force j {', '.join([f'{parameter}={jparameters[idx]._value}' for parameter, idx in self.parameter_indices['NonbondedForce'].items()])}\n")
-            elif (VdWDict[self.vdw]["func"] == VdW.LJ12_6 and qdistDict[self.qdist] == qDist.Gaussian) or VdWDict[self.vdw]["func"] in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7]:
+            elif (VdWDict[self.vdw]["func"] == VdW.LJ12_6 and qdistDict[self.qdist] == qDist.Gaussian) or VdWDict[self.vdw]["func"] in [VdW.WBHAM, VdW.GBHAM, VdW.LJ14_7, VdW.TT2b]:
                 # or get the parameters from the Custom NB force
                 for cnb in self.customnbs:
                     if cnb["vdw"]:
@@ -1127,7 +1133,7 @@ class ActOpenMMSim:
                             self.txt.write(f" custom nonbonded force j {', '.join([f'{parameter}={jparameters[idx]}' for parameter, idx in self.parameter_indices[fname].items()])}\n")
             else:
                 sys.exit("Unsupported combination of VdW (%s) and ChargeDistribution (%s)" %
-                         ( dictVdW[self.vdw], dictQdist[self.qdist] ) )
+                         ( self.vdw, self.qdist ) )
 
             self.nb_excl[cexcl] = allParam
 
