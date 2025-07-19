@@ -881,18 +881,23 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
     }
 }
 
-void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
-                              const ForceField *pd)
+static bool isNB(InteractionType itype)
 {
     std::set<InteractionType> NB = { InteractionType::ELECTROSTATICS,
                                      InteractionType::POLARIZATION,
                                      InteractionType::VDW,
                                      InteractionType::VDWCORRECTION,
                                      InteractionType::INDUCTIONCORRECTION };
+    return (NB.find(itype) != NB.end());
+}
+
+void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
+                              const ForceField *pd)
+{
     for(const auto &fs: pd->forcesConst())
     {
         // Only bonded forces here.
-        if (NB.find(fs.first) != NB.end())
+        if (isNB(fs.first))
         {
             continue;
         }
@@ -985,6 +990,11 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
     for (auto &fs : pd->forcesConst())
     {
         if (!topology->hasEntry(fs.first))
+        {
+            continue;
+        }
+        // Only bonded forces here.
+        if (isNB(fs.first))
         {
             continue;
         }
