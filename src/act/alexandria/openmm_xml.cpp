@@ -884,8 +884,18 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
 void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
                               const ForceField *pd)
 {
+    std::set<InteractionType> NB = { InteractionType::ELECTROSTATICS,
+                                     InteractionType::POLARIZATION,
+                                     InteractionType::VDW,
+                                     InteractionType::VDWCORRECTION,
+                                     InteractionType::INDUCTIONCORRECTION };
     for(const auto &fs: pd->forcesConst())
     {
+        // Only bonded forces here.
+        if (NB.find(fs.first) != NB.end())
+        {
+            continue;
+        }
         xmlNodePtr fsPtr = nullptr;
         auto energy = potentialToEnergy(fs.second.potential());
         auto pname  = potentialToParameterName(fs.second.potential());
@@ -1009,13 +1019,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     }
                     break;
                 case Potential::CUBIC_BONDS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, pname, entry->params());
-                    break;
                 case Potential::MORSE_BONDS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
-                               atoms, pname, entry->params());
-                    break;
                 case Potential::HUA_BONDS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::BOND_RES,
                                atoms, pname, entry->params());
@@ -1028,20 +1032,11 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     }
                     break;
                 case Potential::UREY_BRADLEY_ANGLES:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
-                               atoms, pname, entry->params());
-                    break;
-                    
                 case Potential::LINEAR_ANGLES:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::ANGLE_CLASS,
                                atoms, pname, entry->params());
                     break;
-                    
                 case Potential::FOURIER_DIHEDRALS:
-                    addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
-                               atoms, pname, entry->params());
-                    break;
-                    
                 case Potential::PROPER_DIHEDRALS:
                     addXmlBond(xmlMap_[fs.first], xmlEntryOpenMM::PROPER,
                                atoms, pname, entry->params());
