@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 install(FILES 
+         ACTlogo2.png
          alexandria.csv
          atomization-energies-dft.csv
          atomization-energies.csv
@@ -41,6 +42,7 @@ install(FILES
          atomtype_mapping.csv
          atomtypes_pol.csv
          atomtypes_nonpol.csv
+         atomtypes_gui.csv
          bondvsites.csv
          excluded_molecules.csv
          ffnames.csv

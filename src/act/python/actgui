@@ -1,0 +1,543 @@
+#!/usr/bin/env python3
+
+import os, sys, tempfile
+import tkinter as tk
+from tkinter import filedialog
+from PIL import ImageTk, Image
+
+# Some global variables
+Atom     = "Atom"
+VSite    = "VSite"
+Shell    = "Shell"
+Point    = "Point"
+Gaussian = "Gaussian"
+Slater   = "Slater"
+PG       = "P+G"
+
+def labelFont():
+    return ('Helvetica', 18, 'bold')
+
+def library_file(filenm:str)->str:
+    if os.path.exists(filenm):
+        return filenm
+    actdata = "ACTDATA"
+    if actdata in os.environ:
+        filenm2 = ( "%s/%s" % ( os.environ[actdata], filenm ))
+    if os.path.exists(filenm2):
+        return filenm2
+    print("Cannot find file '%s'" % filenm)
+    return None
+    
+def saveasfile(mytitle:str, defext:str)->str:
+    # Get file name
+    # Loop to make sure we get a file name with the correct extension
+    ext    = ""
+    file_path = True
+    while file_path and not ext == defext:
+        file_path = filedialog.asksaveasfilename(title=mytitle, defaultextension=defext)
+        _,ext = os.path.splitext(file_path)
+    return file_path
+
+class VdwSel:
+    def __init__(self, frame, myrow:int, mycol:int):
+        self.vdws = { 
+            "TT2b": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+                      "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0 },
+            "WANG_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+                                 "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0 },
+            "LJ14_7": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
+                        "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2 }, 
+            "LJ12_6": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+                        "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0 },
+            "GENERALIZED_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+                                        "gam_min":0, "gam_max": 0, "del_min": 3, "del_max": 12 },
+        }
+        self.vdwPot = tk.StringVar(frame, "WANG_BUCKINGHAM")
+        labPot = tk.Label(frame, text=f"Van der Waals potential",
+                          anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+        myrow += 1
+        for vdw in self.vdws.keys():
+            item = tk.Radiobutton(frame, text=vdw, variable=self.vdwPot,
+                                  value=vdw, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+        labParticle = tk.Label(frame, text=f"Use VdW on", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        self.vdwPart = {}
+        ptypes = { Atom: 1, VSite: 0, Shell: 0 }
+        for ptype in ptypes.keys():
+            self.vdwPart[ptype] = tk.IntVar()
+            self.vdwPart[ptype].set(ptypes[ptype])
+            item = tk.Checkbutton(frame, text=ptype, command=None,
+                                  variable=self.vdwPart[ptype]).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+        labParticle = tk.Label(frame, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        self.exchcorr = tk.IntVar()
+        item = tk.Checkbutton(frame, text="Exchange correction on vsites", command=None,
+                              variable=self.exchcorr).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        self.myrow = myrow
+
+    def potential(self):
+        return self.vdwPot.get()
+
+    def exchCorr(self):
+        return self.exchcorr.get()
+
+    def vdwParticles(self):
+        vdwP = {}
+        for vdw in self.vdwPart.keys():
+            vdwP[vdw] = self.vdwPart[vdw].get()
+        return vdwP
+
+    def nrows(self)->int:
+        return self.myrow
+        
+    def bounds(self)->dict:
+        return self.vdws[self.potential()]
+
+class QSel:
+    def __init__(self, root, myrow:int, mycol:int):
+        self.qs = [ Point, Gaussian, Slater, PG ]
+        self.qmodel = tk.StringVar(root, f"{self.qs[0]}")
+        labPot = tk.Label(root, text=f"Charge model",
+                          anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        for q in self.qs:
+            item = tk.Radiobutton(root, text=q, variable=self.qmodel,
+                                  value=q, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+        # Epsilon R
+        labPot = tk.Label(root, text=f"Relative dielectric constant",
+                          anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        self.epsr = tk.StringVar()
+        self.epsr.set("1")
+        item = tk.Entry(root, textvariable=self.epsr).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        labParticle = tk.Label(root, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        # Charge symmetrization for CH3 groups etc. 
+        self.qsymm = tk.IntVar()
+        self.qsymm.set(1)
+        item = tk.Checkbutton(root, text="Enforce charge symmetry", command=None,
+                              variable=self.qsymm).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        
+        # Polarization
+        self.pol = tk.IntVar()
+        self.pol.set(0)
+        item = tk.Checkbutton(root, text="Polarizability", command=None,
+                              variable=self.pol).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+        self.myrow = myrow
+
+    def symm(self):
+        return self.qsymm.get()
+
+    def qModel(self):
+        return self.qmodel.get()
+
+    def polarizable(self):
+        return self.pol.get()
+
+    def nrows(self)->int:
+        return self.myrow
+
+    def epsilonR(self)->float:
+        try:
+            eee = float(self.epsr.get())
+            return eee
+        except ValueError:
+            print("Value entered for dielectric constant incomprehensible, using 1")
+            return 1
+
+class BondSel:
+    def __init__(self, root, myrow:int, mycol:int):
+        self.bonds = ["BONDS", "CUBIC", "HUA", "MORSE" ]
+        self.bondPot = tk.StringVar(root, f"{self.bonds[0]}")
+        labPot = tk.Label(root, text=f"Bond potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        for bond in self.bonds:
+            item = tk.Radiobutton(root, text=bond, variable=self.bondPot,
+                                  value=bond, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+    def potential(self):
+        return self.bondPot.get()
+
+    def nrows(self)->int:
+        return len(self.bonds)+1
+
+class AngleSel:
+    def __init__(self, root, myrow:int, mycol:int):
+        self.angles = ["ANGLES", "UREY_BRADLEY" ]
+        self.anglePot = tk.StringVar(root, f"{self.angles[0]}")
+        labPot = tk.Label(root, text=f"Angle potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        for angle in self.angles:
+            item = tk.Radiobutton(root, text=angle, variable=self.anglePot,
+                                  value=angle, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+    def potential(self):
+        return self.anglePot.get()
+
+    def nrows(self)->int:
+        return len(self.angles)+1
+
+class DihSel:
+    def __init__(self, root, myrow:int, mycol:int):
+        self.dihs = ["PDIHS", "FOUR_DIHS" ]
+        self.dihPot = tk.StringVar(root, f"{self.dihs[0]}")
+        labPot = tk.Label(root, text=f"Dihedral potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        for dih in self.dihs:
+            item = tk.Radiobutton(root, text=dih, variable=self.dihPot,
+                                  value=dih, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+    def potential(self):
+        return self.dihPot.get()
+
+    def nrows(self)->int:
+        return len(self.dihs)+1
+
+class ICSel:
+    def __init__(self, root, myrow:int, mycol:int):
+        self.ics = [ "NONE", "MACDANIEL_SCHMIDT", "MORSE_BONDS" ]
+        self.icPot = tk.StringVar(root, f"{self.ics[1]}")
+        labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        for ic in self.ics:
+            item = tk.Radiobutton(root, text=ic, variable=self.icPot,
+                                  value=ic, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
+    def potential(self):
+        return self.icPot.get()
+
+    def nrows(self)->int:
+        return len(self.ics)+1
+
+class AtomTypes():
+    def __init__(self, frame, myrow, mycol):
+        atype_gui = library_file("atomtypes_gui.csv")
+        if not atype_gui:
+            sys.exit("No atom type definitions")
+        self.atype_props = {}
+        with open(atype_gui, "r") as inf:
+            lineno = 0
+            for line in inf:
+                lineno += 1
+                if line.startswith("#"):
+                    continue
+                words = line.strip().split("|")
+                if len(words) == 8:
+                    try:
+                        self.atype_props[words[0]] = { "Element": words[1],
+                                                       "Default": int(words[2]),
+                                                       "Bonds": int(words[3]),
+                                                       "Radius": float(words[4]),
+                                                       "Row": int(words[5]),
+                                                       "Charge": int(words[6]),
+                                                       "Comment": words[7] }
+                    except ValueError:
+                        sys.exit(f"Error in file {atype_gui} on line {lineno}")
+
+        maxrow = 5
+        ncol = int(len(self.atype_props.keys())/maxrow)+1
+        labParticle = tk.Label(frame, text=f"Select atomtypes", anchor="w", font=labelFont()).grid(row=myrow, columnspan=ncol, sticky=tk.N+tk.S+tk.W+tk.E)
+        myrow += 1
+        self.atypes = {}
+        for at in self.atype_props.keys():
+            self.atypes[at] = tk.IntVar()
+            self.atypes[at].set(self.atype_props[at]["Default"])
+            item = tk.Checkbutton(frame, text=at, command=None,
+                                  variable=self.atypes[at]).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+            myrow += 1
+            if myrow == maxrow+1:
+                myrow = 1
+                mycol += 1
+        
+    def getAtypes(self)->dict:
+        for at in self.atypes:
+            self.atype_props[at]["Default"] = self.atypes[at].get()
+        return self.atype_props
+
+class Runner():
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Alexandria Chemistry Toolkit - Force Field Generator")
+        self.root.configure()
+        self.root.minsize(300, 300)
+        self.width = 750
+        self.root.maxsize(self.width, 750)
+        self.doRun = True
+
+    def rootW(self):
+        return self.root
+
+    def doit(self):
+        self.root.quit()
+
+    def stop(self):
+        self.doRun = False
+        self.root.quit()
+
+    def top(self):
+        logo_size = 150
+        self.logo_frame = tk.Frame(self.root, width=logo_size,
+                                   height=logo_size, pady=3)
+        actlogo = library_file("ACTlogo2.png")
+        if actlogo:
+            self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
+            mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W+tk.E)
+        else:
+            # TODO: build in alternative if the logo image is not present
+            sys.exit("Cannot find %s" % actlogo)
+        self.atom_frame = tk.Frame(self.root, width=self.width-logo_size,
+                                   height=logo_size, pady=3, padx=3, bd=1, relief=tk.SOLID)
+        self.atoms    = AtomTypes(self.atom_frame, myrow=0, mycol=0)
+
+    def makePots(self):
+        self.mid_frame = tk.Frame(self.root, width=self.width,
+                                  height=500, pady=3, bd=1, relief=tk.SOLID)
+        self.vdwSel   = VdwSel(self.mid_frame, myrow=0, mycol=0)
+        self.qSel     = QSel(self.mid_frame, myrow=0, mycol=1)
+        self.bondSel  = BondSel(self.mid_frame, myrow=0, mycol=2)
+        self.angleSel = AngleSel(self.mid_frame, myrow=self.bondSel.nrows(), mycol=2)
+        self.dihSel   = DihSel(self.mid_frame, myrow=self.bondSel.nrows()+self.angleSel.nrows(), mycol=2)
+        self.icSel    = ICSel(self.mid_frame, myrow=self.qSel.nrows(), mycol=1)
+
+    def makeButtons(self):
+        self.bot_frame = tk.Frame(self.root, width=self.width, height=60, pady=3, bd=1, relief=tk.SOLID)
+        bwidth = int(self.width/4)
+        self.saveIntermediates = tk.IntVar()
+        self.saveIntermediates.set(1)
+        item = tk.Checkbutton(self.bot_frame, width=bwidth, text="Save intermediate files", command=None,
+                              variable=self.saveIntermediates).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W)
+        self.verbose = tk.IntVar()
+        self.verbose.set(0)
+        item = tk.Checkbutton(self.bot_frame, width=bwidth,  text="Verbose mode", command=None,
+                              variable=self.verbose).grid(row=0, column=1, sticky=tk.N+tk.S+tk.W)
+        tk.Button(self.bot_frame,  width=bwidth, text="Run", default="active", command=self.doit).grid(row=0, column=2, sticky=tk.W)
+        tk.Button(self.bot_frame,  width=bwidth, text="Cancel", default="normal", command=self.stop).grid(row=0, column=3, sticky=tk.E)
+
+    def makeSelections(self):
+        self.top()
+        self.makePots()
+        self.makeButtons()
+
+    def run(self):
+        # layout all of the main containers
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        # create top widgets
+        self.logo_frame.grid(row=0, column=0, sticky="ewn")
+        self.atom_frame.grid(row=0, column=1, sticky="ewn")
+        # create the center widgets
+        self.mid_frame.grid_rowconfigure(0, weight=1)
+        self.mid_frame.grid_columnconfigure(1, weight=1)
+        self.mid_frame.grid(row=1, columnspan=2, sticky="ew")
+        # create the bottom widgets
+        self.bot_frame.grid_rowconfigure(1, weight=1)
+        for c in range(4):
+            self.bot_frame.grid_columnconfigure(c, weight=1)
+        self.bot_frame.grid(row=2, columnspan=4, sticky="ews")
+        self.root.mainloop()
+
+    def print(self):
+        print(f"VDW potential selected: {self.vdwSel.potential()}")
+        vdwPart = self.vdwSel.vdwParticles()
+        for ptype in vdwPart.keys():
+            print(f"VDW on {ptype}: {vdwPart[ptype]}")
+        print(f"Use exchange correction: {self.vdwSel.exchCorr()}")
+        print(f"Charge model selected: {self.qSel.qModel()}")
+        print(f"Polarizable: {self.qSel.polarizable()}")
+        print(f"Bond potential selected: {self.bondSel.potential()}")
+        print(f"Angle potential selected: {self.angleSel.potential()}")
+        print(f"Dihedral potential selected: {self.dihSel.potential()}")
+        print(f"Induction correction potential selected: {self.icSel.potential()}")
+        print(f"Selection of atomtypes {self.atoms.getAtypes()}")
+
+    def generateCSV(self)->str:
+        self.csv_file = None
+        if self.saveIntermediates.get():
+            # Let user decide what file to save atomtypes in
+            self.csv_file = saveasfile("File to save atomtypes", ".csv")
+            if self.csv_file:
+                self.tf = open(self.csv_file, "w")
+        else:
+            # Open a temporary file
+            self.tf = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
+            self.csv_file = self.tf.name
+        if not self.csv_file:
+            sys.exit("No correct csv file name received or temp file opening failed.")
+        # Do we need to generate vsite1 definitions
+        self.vs1_file = None
+        qdist         = self.qSel.qModel()
+        if qdist == PG:
+            # Yes!
+            if self.saveIntermediates.get():
+                # Let user decide what file to save atomtypes in
+                self.vs1_file = saveasfile("File to save vsite definitions", ".csv")
+                if self.vs1_file:
+                    self.vs1f = open(self.vs1_file, "w")
+            else:
+                # Open a temporary file
+                self.vs1f = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
+                self.vs1_file = self.vs1f.name
+                
+                
+        self.tf.write("#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aexp_min|aexp_max|aexp_mutability|bexp_min|bexp_max|bexp_mutability|a1dexp_min|a1dexp_max|a1dexp_mutability|a2dexp_min|a2dexp_max|a2dexp_mutability|bdexp_min|bdexp_max|bdexp_mutability|comment|reference\n")
+        # Fetch the atom types selected by the user
+        atype_props = self.atoms.getAtypes()
+        # Set some shortcuts
+        Bounded     = "Bounded"
+        Fixed       = "Fixed"
+        vdwPart     = self.vdwSel.vdwParticles()
+        polarizable = self.qSel.polarizable()
+        # Defaults for potentials
+        for atp in atype_props:
+            if atype_props[atp]["Default"] > 0:
+                for vdwtp in vdwPart:
+                    if vdwtp == Shell and not polarizable:
+                        continue
+                    if vdwtp == VSite and not qdist == PG:
+                        continue
+                    btype = ""
+                    if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
+                        btype = atp + "_b"
+                    atype_name = atp
+                    if vdwtp == Shell:
+                        atype_name = atp + "_s"
+                    elif vdwtp == VSite:
+                        atype_name = "v1" + atp
+                        self.vs1f.write(f"{atype_name}|VSITE1|{atp}_b|0|1||||\n")
+                    stype = ""
+                    alpha = { "min": 0, "max": 0, "mut": Fixed }
+                    if polarizable:
+                        if vdwtp == Atom:
+                            stype = atp + "_s"
+                        elif vdwtp == Shell:
+                            alpha["max"] = 12
+                            alpha["mut"] = Bounded
+                    ztype   = atype_name + "_z"
+                    acmtype = ""
+                    if vdwtp == Atom:
+                        acmtype = ztype
+                    # Determine whether to use VDW
+                    bounds = { "sig_min": 0, "sig_max": 0,
+                               "eps_min": 0, "eps_max": 0,
+                               "gam_min":0, "gam_max": 0,
+                               "del_min": 0, "del_max": 0 }
+                    vdw_mut = Fixed
+                    if vdwPart[vdwtp]:
+                        bounds = self.vdwSel.bounds()
+                        vdw_mut = Bounded
+                    zeta = { 'min': 0, "max": 0, "mut": Fixed }
+                    if qdist != Point:
+                        if (qdist == PG and vdwtp != Atom) or qdist in [ Gaussian, Slater ]:
+                            zeta = { "min": 4, "max": 20, "mut": Bounded }
+                    aexp = { "min": 0, "max": 0 }
+                    vdwcorr_mut = Fixed
+                    bexp = { "min": 10, "max": 50 }
+                    if self.vdwSel.exchCorr() and vdwtp == Atom:
+                        aexp["max"] = 50000
+                        vdwcorr_mut = Bounded
+                    radius     = ""
+                    row        = 0
+                    element    = "X"
+                    eta = { "min": "", "max": "", "mut": "" }
+                    chi = { "min": "", "max": "", "mut": "" }
+                    if vdwtp == Atom:
+                        radius  = str(atype_props[atp]['Radius'])
+                        row     = atype_props[atp]['Row']
+                        element = atype_props[atp]['Element']
+                        eta     = { "min": "4", "max": "20", "mut": Bounded }
+                        chi     = { "min": "4", "max": "12", "mut": Bounded }
+                    a1dexp = { "min": 0, "max": 0 }
+                    MS_mut = Fixed
+                    a2dexp = { "min": 0, "max": 0 }
+                    bdexp  = { "min": 10, "max": 50 }
+                    comment    = ""
+                    if vdwtp == Atom:
+                        comment = atype_props[atp]['Comment']
+                    reference  = ""
+                    self.tf.write(f"{atype_name}|{element}|0|0|Bounded|{btype}|" +
+                                  f"{stype}|{ztype}|{acmtype}|" +
+                                  f"{bounds['eps_min']}|{bounds['eps_max']}|{vdw_mut}|" +
+                                  f"{bounds['gam_min']}|{bounds['gam_max']}|{vdw_mut}|" +
+                                  f"{bounds['sig_min']}|{bounds['sig_max']}|{vdw_mut}|" +
+                                  f"{bounds['del_min']}|{bounds['del_max']}|{vdw_mut}|" +
+                                  f"{radius}|" +
+                                  f"{row}|" +
+                                  f"{alpha['min']}|{alpha['max']}|{alpha['mut']}|" +
+                                  f"{zeta['min']}|{zeta['max']}|{zeta['mut']}|"
+                                  f"{eta['min']}|{eta['max']}|{eta['mut']}|" +
+                                  f"{chi['min']}|{chi['max']}|{chi['mut']}|" +
+                                  f"{aexp['min']}|{aexp['max']}|{vdwcorr_mut}|" +
+                                  f"{bexp['min']}|{bexp['max']}|{vdwcorr_mut}|" +
+                                  f"{a1dexp['min']}|{a1dexp['max']}|{MS_mut}|" +
+                                  f"{a2dexp['min']}|{a2dexp['max']}|{MS_mut}|" +
+                                  f"{bdexp['min']}|{bdexp['max']}|{MS_mut}|" +
+                                  f"{comment}|{reference}|\n")
+
+        if self.verbose.get():
+            print("Generated file %s" % self.csv_file)
+        return self.csv_file
+
+    def closeCSV(self):
+        # Close atomtypes file
+        self.tf.close()
+        # Close vsite1 only when needed
+        if self.vs1_file:
+            self.vs1f.close()
+
+    def runACT(self):
+        epsr  = self.qSel.epsilonR()
+        nexcl = 2
+        qsymm = ""
+        if self.qSel.symm():
+            qsymm = "-qsymm"
+        csv = self.generateCSV()
+        # Get file name
+        defext = ".xml"
+        # Loop to make sure we get a file name with the correct extension
+        ext    = ""
+        file_path = True
+        while file_path and not ext == defext:
+            file_path = filedialog.asksaveasfilename(title="Force Field filename to save", defaultextension=defext)
+            _,ext = os.path.splitext(file_path)
+        if file_path:
+            # Workaround since alexandria gen_ff does not yet know about the P+G charge distribution
+            qdist = self.qSel.qModel()
+            if qdist == PG:
+                qdist = Gaussian
+            cmd = f"alexandria gen_ff -f {csv} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -icfn {self.icSel.potential()} -o {file_path}"
+            if self.vs1_file:
+                cmd += f" -vs {self.vs1_file}"
+            os.system(cmd)
+            if os.path.exists(file_path):
+                print("\nSuccesfully generated a force field in %s" % file_path)
+        runner.closeCSV()
+    
+if __name__ == "__main__":
+    runner    = Runner()
+    runner.makeSelections()
+    runner.run()
+    if runner.doRun:
+        if runner.verbose.get():
+            runner.print()
+        runner.runACT()
+    
