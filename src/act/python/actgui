@@ -15,7 +15,7 @@ Slater   = "Slater"
 PG       = "P+G"
 
 def labelFont():
-    return ('Helvetica', 18, 'bold')
+    return ('Helvetica', 16, 'bold')
 
 def library_file(filenm:str)->str:
     if os.path.exists(filenm):
@@ -78,15 +78,31 @@ class VdwSel:
         item = tk.Checkbutton(frame, text="Exchange correction on vsites", command=None,
                               variable=self.exchcorr).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
+
+        labPot = tk.Label(frame, text=f"Number of exclusions",
+                          anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+        myrow += 1
+        
+        self.nexcl = tk.IntVar()
+        self.nexcl.set(2)
+        excl = [ 1, 2 ]
+        for ie in excl:
+            item = tk.Radiobutton(frame, text=str(ie), variable=self.nexcl,
+                                  value=ie, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            myrow += 1
+
         self.myrow = myrow
 
-    def potential(self):
+    def potential(self)->str:
         return self.vdwPot.get()
 
-    def exchCorr(self):
+    def exchCorr(self)->int:
         return self.exchcorr.get()
 
-    def vdwParticles(self):
+    def nExcl(self)->int:
+        return self.nexcl.get()
+
+    def vdwParticles(self)->dict:
         vdwP = {}
         for vdw in self.vdwPart.keys():
             vdwP[vdw] = self.vdwPart[vdw].get()
@@ -214,7 +230,7 @@ class DihSel:
 class ICSel:
     def __init__(self, root, myrow:int, mycol:int):
         self.ics = [ "NONE", "MACDANIEL_SCHMIDT", "MORSE_BONDS" ]
-        self.icPot = tk.StringVar(root, f"{self.ics[1]}")
+        self.icPot = tk.StringVar(root, f"{self.ics[0]}")
         labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
 
@@ -506,10 +522,10 @@ class Runner():
 
     def runACT(self):
         epsr  = self.qSel.epsilonR()
-        nexcl = 2
-        qsymm = ""
+        nexcl = self.vdwSel.nExcl()
+        qsymm = " -noqsymm "
         if self.qSel.symm():
-            qsymm = "-qsymm"
+            qsymm = " -qsymm "
         csv = self.generateCSV()
         # Get file name
         defext = ".xml"
@@ -518,15 +534,21 @@ class Runner():
         file_path = True
         while file_path and not ext == defext:
             file_path = filedialog.asksaveasfilename(title="Force Field filename to save", defaultextension=defext)
-            _,ext = os.path.splitext(file_path)
+            if file_path:
+                _,ext = os.path.splitext(file_path)
         if file_path:
             # Workaround since alexandria gen_ff does not yet know about the P+G charge distribution
             qdist = self.qSel.qModel()
             if qdist == PG:
                 qdist = Gaussian
-            cmd = f"alexandria gen_ff -f {csv} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -icfn {self.icSel.potential()} -o {file_path}"
+            cmd = f"alexandria gen_ff -f {csv} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
             if self.vs1_file:
-                cmd += f" -vs {self.vs1_file}"
+                cmd += f" -vs {self.vs1_file} "
+            icpot = self.icSel.potential()
+            if icpot != "NONE":
+                cmd += f" -icfn {icpot} "
+            if self.vdwSel.exchCorr():
+                cmd += " -vdwcorr "
             os.system(cmd)
             if os.path.exists(file_path):
                 print("\nSuccesfully generated a force field in %s" % file_path)
