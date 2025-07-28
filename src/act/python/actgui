@@ -38,19 +38,79 @@ def saveasfile(mytitle:str, defext:str)->str:
         _,ext = os.path.splitext(file_path)
     return file_path
 
+# Code for ToolTips taken from
+# https://stackoverflow.com/questions/3221956/how-do-i-display-tooltips-in-tkinter
+class CreateToolTip(object):
+    """
+    create a tooltip for a given widget
+    """
+    def __init__(self, widget, text='widget info'):
+        self.waittime = 500     #miliseconds
+        self.wraplength = 180   #pixels
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.showtip)
+
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+
+    def showtip(self, event=None):
+        x = y = 0
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = tk.Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tw, text=self.text, justify='left',
+                       background="#ffffff", relief='solid', borderwidth=1,
+                       wraplength = self.wraplength)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tw
+        self.tw= None
+        if tw:
+            tw.destroy()
+
 class VdwSel:
     def __init__(self, frame, myrow:int, mycol:int):
         self.vdws = { 
             "TT2b": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                      "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0 },
+                      "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
+                      "comment": "Tang-Toennies with separate b\nSheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
             "WANG_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                                 "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0 },
+                                 "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0,
+                                 "comment": "Bucking variant without singularity\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
             "LJ14_7": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
-                        "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2 }, 
+                        "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2,
+                        "comment": "Buffered 14-7 potential\nHalgren, J. Amer. Chem. Soc. 114 (1992) 7827" }, 
             "LJ12_6": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                        "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0 },
+                        "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
+                        "comment": "Lennard-Jones potential\nJones, Proc. Royal Soc. A 106 (1924) 463" },
             "GENERALIZED_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                                        "gam_min":0, "gam_max": 0, "del_min": 3, "del_max": 12 },
+                                        "gam_min":0, "gam_max": 0, "del_min": 3, "del_max": 12,
+                                        "comment": "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
         }
         self.vdwPot = tk.StringVar(frame, "WANG_BUCKINGHAM")
         labPot = tk.Label(frame, text=f"Van der Waals potential",
@@ -58,7 +118,9 @@ class VdwSel:
         myrow += 1
         for vdw in self.vdws.keys():
             item = tk.Radiobutton(frame, text=vdw, variable=self.vdwPot,
-                                  value=vdw, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+                                  value=vdw, command=None)
+            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            tpp = CreateToolTip(item, self.vdws[vdw]["comment"])
             myrow += 1
 
         labParticle = tk.Label(frame, text=f"Use VdW on", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
@@ -69,14 +131,17 @@ class VdwSel:
             self.vdwPart[ptype] = tk.IntVar()
             self.vdwPart[ptype].set(ptypes[ptype])
             item = tk.Checkbutton(frame, text=ptype, command=None,
-                                  variable=self.vdwPart[ptype]).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+                                  variable=self.vdwPart[ptype])
+            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
             myrow += 1
 
         labParticle = tk.Label(frame, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
         self.exchcorr = tk.IntVar()
         item = tk.Checkbutton(frame, text="Exchange correction on vsites", command=None,
-                              variable=self.exchcorr).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+                              variable=self.exchcorr)
+        item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        ttp = CreateToolTip(item, "For sigma-holes\nKriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974")
         myrow += 1
 
         labPot = tk.Label(frame, text=f"Number of exclusions",
@@ -116,14 +181,19 @@ class VdwSel:
 
 class QSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.qs = [ Point, Gaussian, Slater, PG ]
-        self.qmodel = tk.StringVar(root, f"{self.qs[0]}")
+        gharemanpour2018b = "Distributed charges\nGhahremanpour et al. J. Chem. Theory Comput. 14 (2018) 5553"
+        self.qs = { Point: "Point charges", 
+                    Gaussian: gharemanpour2018b, 
+                    Slater: gharemanpour2018b, 
+                    PG: "Point+Gaussian\nVan der Spoel & Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817" }
+        self.qmodel = tk.StringVar(root, f"{self.qs[Gaussian]}")
         labPot = tk.Label(root, text=f"Charge model",
                           anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
-        for q in self.qs:
-            item = tk.Radiobutton(root, text=q, variable=self.qmodel,
-                                  value=q, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        for q in self.qs.keys():
+            item = tk.Radiobutton(root, text=q, variable=self.qmodel, value=q, command=None)
+            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            ttp = CreateToolTip(item, self.qs[q])
             myrow += 1
 
         # Epsilon R
@@ -229,14 +299,18 @@ class DihSel:
 
 class ICSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.ics = [ "NONE", "MACDANIEL_SCHMIDT", "MORSE_BONDS" ]
-        self.icPot = tk.StringVar(root, f"{self.ics[0]}")
+        self.ics = { "NONE": "No corrections", 
+                     "MACDANIEL_SCHMIDT": "Negative exponential correction\nMcDaniel & Schmidt, J. Phys. Chem. 117 (2013) 2053",
+                     "MORSE_BONDS": "Correction with repulsive and attractive part\nHosseini & Van der Spoel, in preparation" }
+        self.icPot = tk.StringVar(root, f"{self.ics['NONE']}")
         labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
 
-        for ic in self.ics:
+        for ic in self.ics.keys():
             item = tk.Radiobutton(root, text=ic, variable=self.icPot,
-                                  value=ic, command=None).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+                                  value=ic, command=None)
+            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+            ttp = CreateToolTip(item, self.ics[ic])
             myrow += 1
 
     def potential(self):
@@ -279,7 +353,9 @@ class AtomTypes():
             self.atypes[at] = tk.IntVar()
             self.atypes[at].set(self.atype_props[at]["Default"])
             item = tk.Checkbutton(frame, text=at, command=None,
-                                  variable=self.atypes[at]).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+                                  variable=self.atypes[at])
+            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+            ttp = CreateToolTip(item, text=self.atype_props[at]["Comment"])
             myrow += 1
             if myrow == maxrow+1:
                 myrow = 1
