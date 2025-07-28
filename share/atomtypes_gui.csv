@@ -1,0 +1,56 @@
+#atomtype|element|default|bonds|radius|row|charge|comment
+hc|H|1|1|0.031|1|0|hydrogen
+h1|H|1|1|0.031|1|0|hydrogen
+h2|H|1|1|0.031|1|0|hydrogen
+h3|H|1|1|0.031|1|0|hydrogen
+h4|H|1|1|0.031|1|0|hydrogen
+h5|H|1|1|0.031|1|0|hydrogen
+ha|H|1|1|0.031|1|0|hydrogen
+hn|H|1|1|0.031|1|0|hydrogen
+ho|H|1|1|0.031|1|0|hydrogen
+hf|H|1|1|0.031|1|0|hydrogen
+hp|H|1|1|0.031|1|0|hydrogen
+hs|H|1|1|0.031|1|0|hydrogen
+hcl|H|1|1|0.031|1|0|hydrogen
+hbr|H|1|1|0.031|1|0|hydrogen
+hi|H|1|1|0.031|1|0|hydrogen
+hw|H|1|1|0.031|2|0|Water hydrogen
+b|B|0|1|0.098|2|0|boron
+c1|C|1|1|0.069|2|0|sp carbon
+c2|C|1|1|0.073|2|0|sp2 carbon
+c3|C|1|1|0.076|2|0|sp3 carbon
+n1|N|1|1|0.071|2|0|sp1 nitrogen
+n2|N|1|1|0.071|2|0|sp2 nitrogen
+n3|N|1|1|0.071|2|0|sp3 nitrogen
+n4|N|1|1|0.071|2|0|positively charged sp3 nitrogen
+o1|O|1|1|0.066|2|0|sp oxygen
+o2|O|1|1|0.066|2|0|sp2 oxygen
+o3|O|1|1|0.066|2|0|sp3 oxygen
+ow|O|1|1|0.066|2|0|sp3 oxygen
+f|F|1|1|0.057|2|0|fluorine
+p1|P|1|1|0.107|3|0|sp phosphor
+p2|P|1|1|0.107|3|0|sp2 phosphor
+p3|P|1|1|0.107|3|0|sp3 phosphor
+s1|S|1|1|0.105|3|0|sp sulfur
+s2|S|1|1|0.105|3|0|sp2 sulfur
+s3|S|1|1|0.105|3|0|sp3 sulfur
+cl|Cl|1|1|0.102|3|0|chlorine
+br|Br|1|1|0.12|4|0|bromine
+i|I|1|1|0.139|5|0|iodine
+Be2+|Be|0|0|0|2|2|Beryllium cation
+Ca2+|Ca|0|0|0|4|2|Calcium cation
+Mg2+|Mg|0|0|0|3|2|Magnesium cation
+Na+|Na|1|0|0|3|1|Sodium cation
+Cl-|Cl|1|0|0|3|-1|Chloride anion
+I-|I|1|0|0|5|-1|Iodide anion
+F-|F|1|0|0|2|-1|Fluoride anion
+Rb+|Rb|1|0|0|5|1|Rubidium cation
+Li+|Li|1|0|0|2|1|Lithium cation
+Br-|Br|1|0|0|4|-1|Bromide anion
+Cs+|Cs|1|0|0|6|1|Cesium cation
+K+|K|1|0|0|3|1|Potassium cation
+He|He|1|0|0|1|0|Helium
+Ne|Ne|1|0|0|2|0|Neon
+Ar|Ar|1|0|0|3|0|Argon
+Kr|Kr|1|0|0|4|0|Krypton
+Xe|Xe|1|0|0|5|0|Xenon
