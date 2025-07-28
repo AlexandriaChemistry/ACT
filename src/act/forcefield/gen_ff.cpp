@@ -346,12 +346,12 @@ int gen_ff(int argc, char*argv[])
     }
     icfn.push_back(nullptr);
 
-    
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
         { efCSV, "-vs",  "vsites",    ffOPTRD },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
+    gmx_bool useVdwCorr = false;
     std::vector<t_pargs> pa =
     {
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
@@ -372,6 +372,8 @@ int gen_ff(int argc, char*argv[])
           "Function to use for proper dihedrals, can be either" },
         { "-vdwfn", FALSE, etENUM, {vdwfn.data()},
           "Function to use for Van der Waals interactions, can be either" },
+        { "-vdwcorr", FALSE, etBOOL, {&useVdwCorr},
+          "Add exchange correction to vsites" },
         { "-icfn", FALSE, etENUM, {icfn.data()},
           "Function to use for induction correction interactions, can be either" }
     };
@@ -406,6 +408,7 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList vdwcorr(potentialToString(Potential::BORN_MAYER), CanSwap::Yes);
     ForceFieldParameterList induccorr(icfn[0], CanSwap::Yes);
     induccorr.addOption("nexcl", gmx_itoa(nexclqq));
+
     // Combination rules
     crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
@@ -672,8 +675,14 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::PROPER_DIHEDRALS, pdihs);
     pd.addForces(InteractionType::VDW, vdw);
-    pd.addForces(InteractionType::VDWCORRECTION, vdwcorr);
-    pd.addForces(InteractionType::INDUCTIONCORRECTION, induccorr);
+    if (useVdwCorr)
+    {
+        pd.addForces(InteractionType::VDWCORRECTION, vdwcorr);
+    }
+    if (opt2parg_bSet("-icfn", pa.size(), pa.data()))
+    {
+        pd.addForces(InteractionType::INDUCTIONCORRECTION, induccorr);
+    }
     pd.addForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION, eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
