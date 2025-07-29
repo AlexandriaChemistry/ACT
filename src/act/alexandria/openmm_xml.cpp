@@ -541,6 +541,9 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
         add_xml_int(specPtr, "bondCutoff", nexcl());
         auto energy = potentialToEnergy(fs.potential());
         add_xml_char(specPtr, "energy", energy.c_str());
+        std::string prefactor("prefactor-");
+        prefactor += potentialToPreFactor(fs.potential());
+        add_global(specPtr, prefactor, 1);
         auto pname = potentialToParameterName(fs.potential());
         if (itype == itVC || itype == itIC)
         {
@@ -658,7 +661,8 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
     else
     {
         customNBPtr  = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMNONBONDEDFORCE));
-        add_xml_double(customNBPtr, "energy", 0.0);
+        auto energy = potentialToEnergy(fs.potential());
+        add_xml_char(customNBPtr, "energy", energy.c_str());
         // Bondcutoff should be zero for CustomNobondedForce since we determine exclusions
         // ourselves in the Python interface.
         add_xml_int(customNBPtr, "bondCutoff", 0);
@@ -667,6 +671,9 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
         add_potential(customNBPtr, fsCoul.potential());
         add_combrules(customNBPtr, fs);
         add_global(customNBPtr, "nexcl", nexcl());
+        std::string prefactor("prefactor-");
+        prefactor += potentialToPreFactor(fs.potential());
+        add_global(customNBPtr, prefactor, 1);
 
         auto uafr = add_xml_child(customNBPtr, exml_names(xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE));
         add_xml_char(uafr, exml_names(xmlEntryOpenMM::NAME), "charge");

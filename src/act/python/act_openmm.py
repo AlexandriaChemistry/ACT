@@ -36,20 +36,12 @@ class VdW(Enum):
 
 # Map strings to VdW entries.
 VdWDict = {
-    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ],
-                "expression": "epsilon*(3*(sigma/r)^8 - 4*(sigma/r)^6)" },
-    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ],
-                "expression": "4*epsilon*((sigma/r)^12 - (sigma/r)^6)" },
-    'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ],
-                "expression": ( 'select(epsilon*sigma,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2       ) ),0)') },
-    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ],
-                "expression": ('select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)') },
-    'GENERALIZED_BUCKINGHAM':  { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ],
-                                 "expression": ('select(epsilon*rmin*gamma,(        epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta))           ),0)') },
-    'TT2b': { "func": VdW.TT2b, "params": [ "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" ],
-              "expression": "Att2b*exp(-bExchtt2b*r) - ((1-ebDr*sum6)*c6n + (1-ebDr*sum8)*c8n + (1-ebDr*sum10)*c10n); sum10=sum8+br9/362880+br10/3628800; sum8=sum6+br7/5040+br8/40320; sum6=br0+br1+br2/2+br3/6+br4/24+br5/120+br6/720 ; ebDr=exp(-br1); c6n=c6tt2b/(r^6); c8n=c8tt2b/(r^8); c10n=c10tt2b/(r^10); br10=br5*br5; br9=br5*br4; br8=br4*br4; br7=br4*br3; br6=br3*br3; br5=br3*br2; br4=br2*br2; br3=br1*br2; br2=br1*br1; br1=(bDisptt2b*r); br0=1;"
-              # Att2b=sqrt(Att2b1*Att2b2); bExchtt2b=0.5*(bExchtt2b1+bExchtt2b2); bDisptt2b=0.5*(bDisptt2b1+bDisptt2b2); c6tt2b=sqrt(c6tt2b1*c6tt2b2); c8tt2b=sqrt(c8tt2b*c8tt2b); c10tt2b=sqrt(c10tt2b1*c10tt2b2);"
-             }
+    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
+    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
+    'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
+    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
+    'GENERALIZED_BUCKINGHAM': { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] },
+    'TT2b': { "func": VdW.TT2b, "params": [ "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" ] }
 }
 
 # Make reverse map as well.
@@ -807,6 +799,7 @@ class ActOpenMMSim:
                     potname = param[4:]
                     force.setName(param[4:])
                     self.vdw = potname
+                    VdWDict[self.vdw]["expression"] = force.getEnergyFunction()
                     isVdw    = True
                     self.comb.vdw = self.vdw
                 elif param[4:].startswith("COULOMB_"):
@@ -829,6 +822,8 @@ class ActOpenMMSim:
                     self.comb.add_rule(cparm, crule)
                 except:
                     sys.exit("Invalid combination rule '%s'" % ( param[3:] ) )
+            elif param.startswith("prefactor-"):
+                VdWDict[self.vdw]["prefactor"] = param[10:]
             elif param.startswith("nexcl"):
                 if not self.nexcl:
                     self.nexcl = value
@@ -897,9 +892,14 @@ class ActOpenMMSim:
             self.txt.write(f"Number of particles (incl. vsites and drudes):  {self.system.getNumParticles()}\n")
         self.count_forces("Direct space 3")
 
-    def makeVdWFunc(self):
+    def makeVdWFunc(self)->bool:
         vdwParamNames       = VdWDict[self.vdw]["params"]
-        self.vdw_expression = ( "%s" % VdWDict[self.vdw]["expression"] )
+        expr = "expression"
+        if not expr in VdWDict[self.vdw]:
+            if not self.vdw == dictVdW[VdW.LJ12_6]:
+                print("No energy expression provided for potential %s" % self.vdw)
+            return False
+        self.vdw_expression = ( "%s" % VdWDict[self.vdw][expr] )
         # Not a whole lot of documentation around, but this seems OK.
         # Have to verify that it is the same in OpenMM though.
         # https://manual.gromacs.org/documentation/2019/reference-manual/functions/long-range-vdw.html
@@ -914,18 +914,21 @@ class ActOpenMMSim:
             self.vdw_expression += self.vdw_pme_excl_corr_expression
             self.vdw_pme_excl_corr_expression += ";"
         if self.useOpenMMForce:
-            return
+            return True
 
         # close energy expressions
         self.vdw_expression           += ";"
-
+        pref = "prefactor"
+        if pref in VdWDict[self.vdw] and len(VdWDict[self.vdw][pref]) > 0:
+            self.vdw_expression += ";" + VdWDict[self.vdw][pref] + "; "
         # The statements have to be in this order! They are evaluated in the reverse order apparently.
         combdict = self.comb.combStrings()
         for pp in vdwParamNames:
             self.vdw_expression += ('%s = %s;' % ( pp, combdict[pp] ))
         if self.nonbondedMethod == LJPME:
             self.vdw_expression += ('c6 = sqrt(c61*c62);')
-
+        self.txt.write("vdw_expression = '%s'\n" % self.vdw_expression)
+ 
         # custom van der Waals
         self.custom_vdw = None
         if not self.custom_vdw:
@@ -963,6 +966,7 @@ class ActOpenMMSim:
                     self.txt.write(" %s %g" % ( self.custom_vdw.getPerParticleParameterName(mypp),
                                                 myparm[mypp] ) )
                 self.txt.write("\n")
+        return True
 
     def set_nb_method(self, force):
         if self.nonbondedMethod == NoCutoff:
@@ -1073,19 +1077,18 @@ class ActOpenMMSim:
             self.charges.append(charge)
 
         # Van der Waals, is our custom potential
-        self.makeVdWFunc()
-
-        # General settings for custom non-bonded potentials, if they are present!
-        self.do_force_settings(self.nonbondedforce)
-        for forcenm in [ "custom_vdw", "custom_coulomb" ]:
-            if hasattr(self, forcenm):
-                # This is now extremely ugly code
-                force = getattr(self, forcenm)
-                self.set_nb_method(force)
-                self.do_force_settings(force)
-                # Finally add it to the system forces. Well done!
-                self.add_force_group(force, True)
-                self.system.addForce(force)
+        if self.makeVdWFunc():
+            # General settings for custom non-bonded potentials, if they are present!
+            self.do_force_settings(self.nonbondedforce)
+            for forcenm in [ "custom_vdw", "custom_coulomb" ]:
+                if hasattr(self, forcenm):
+                    # This is now extremely ugly code
+                    force = getattr(self, forcenm)
+                    self.set_nb_method(force)
+                    self.do_force_settings(force)
+                    # Finally add it to the system forces. Well done!
+                    self.add_force_group(force, True)
+                    self.system.addForce(force)
 
     #################################################
 

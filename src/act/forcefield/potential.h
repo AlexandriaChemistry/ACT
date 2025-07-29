@@ -59,6 +59,7 @@ typedef struct {
     int                       ftype;
     std::vector<const char *> param;
     const std::string         energy;
+    const std::string         prefactor;
 } PotentialProperties;
 
 extern std::map<Potential, PotentialProperties> potprops;
@@ -74,6 +75,12 @@ const std::string &potentialToString(Potential p);
  * \return A string
  */
 const std::string &potentialToEnergy(Potential p);
+
+/*! \brief Convert potential into prefactors for the energy expression
+ * \param[in] p The potential type
+ * \return A string
+ */
+const std::string &potentialToPreFactor(Potential p);
 
 /*! \brief Get parameter names for potential
  * \param[in] p The potential type

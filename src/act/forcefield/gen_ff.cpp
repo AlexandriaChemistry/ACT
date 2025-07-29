@@ -523,13 +523,19 @@ int gen_ff(int argc, char*argv[])
         }
         // Charge transfer / Van der waals correction
         std::map<std::string, std::string> vdwcorrparm = { { exp_name[expA], "kJ/mol" },
-                                                           { exp_name[expB], "1/nm"} };
+                                                           { exp_name[expB], "1/nm"},
+                                                           { exp_name[expVSite], "" } };
         for(const auto &vdwcorrp : vdwcorrparm)
         {
             if (minmaxmut(entry.first, myatype, vdwcorrp.first, &vmin, &vmax, &vmut))
             {
                 vdwcorr.addParameter(entry.first, vdwcorrp.first,
                                      ForceFieldParameter(vdwcorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+            }
+            else
+            {
+                vdwcorr.addParameter(entry.first, vdwcorrp.first,
+                                     ForceFieldParameter(vdwcorrp.second, 0, 0, 0, 0, 1, Mutability::Bounded, true, true));
             }
         }
         // Induction correction

@@ -56,7 +56,7 @@
       <Bond atomName1="C_7" atomName2="O_9"/>
     </Residue>
   </Residues>
-  <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0);">
+  <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)">
     <PerBondParameter name="beta"/>
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>
@@ -79,13 +79,14 @@
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="0">
+  <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
     <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-gamma_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
     <GlobalParameter name="nexcl" defaultValue="0"/>
+    <GlobalParameter name="prefactor-" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
