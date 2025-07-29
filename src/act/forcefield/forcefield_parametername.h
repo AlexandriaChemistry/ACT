@@ -52,7 +52,7 @@ namespace alexandria
     enum { lj14_7SIGMA, lj14_7EPSILON, lj14_7GAMMA, lj14_7DELTA,
            lj14_7NR };
 
-    enum { expA, expB, expNR };
+    enum { expA, expB, expVSite, expNR };
 
     enum { dexpA1, dexpA2, dexpB, dexpNR };
 

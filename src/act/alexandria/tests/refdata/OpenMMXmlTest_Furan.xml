@@ -65,12 +65,13 @@
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="c2_b" kimp="1"/>
     <Improper class1="c2_b" class2="c2_b" class3="h_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
-  <CustomNonbondedForce energy="0" bondCutoff="0">
+  <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
     <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>
     <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
     <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
     <GlobalParameter name="cr-sigma_Geometric" defaultValue="1"/>
     <GlobalParameter name="nexcl" defaultValue="2"/>
+    <GlobalParameter name="prefactor-" defaultValue="1"/>
     <UseAttributeFromResidue name="charge"/>
     <PerParticleParameter name="sigma"/>
     <PerParticleParameter name="epsilon"/>
