@@ -474,7 +474,7 @@ class Runner():
         print(f"Induction correction potential selected: {self.icSel.potential()}")
         print(f"Selection of atomtypes {self.atoms.getAtypes()}")
 
-    def generateCSV(self)->str:
+    def generateCSV(self)->bool:
         self.csv_file = None
         if self.saveIntermediates.get():
             # Let user decide what file to save atomtypes in
@@ -485,8 +485,10 @@ class Runner():
             # Open a temporary file
             self.tf = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
             self.csv_file = self.tf.name
-        if not self.csv_file:
-            sys.exit("No correct csv file name received or temp file opening failed.")
+        if not self.csv_file or len(self.csv_file) == 0:
+            print("No correct csv file name received or temp file opening failed.")
+            return False
+
         # Do we need to generate vsite1 definitions
         self.vs1_file = None
         qdist         = self.qSel.qModel()
@@ -497,12 +499,15 @@ class Runner():
                 self.vs1_file = saveasfile("File to save vsite definitions", ".csv")
                 if self.vs1_file:
                     self.vs1f = open(self.vs1_file, "w")
+                else:
+                    return False
             else:
                 # Open a temporary file
                 self.vs1f = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
                 self.vs1_file = self.vs1f.name
-                
-                
+                if not self.vs1_file:
+                    return False
+
         self.tf.write("#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aexp_min|aexp_max|aexp_mutability|bexp_min|bexp_max|bexp_mutability|a1dexp_min|a1dexp_max|a1dexp_mutability|a2dexp_min|a2dexp_max|a2dexp_mutability|bdexp_min|bdexp_max|bdexp_mutability|comment|reference\n")
         # Fetch the atom types selected by the user
         atype_props = self.atoms.getAtypes()
@@ -599,7 +604,7 @@ class Runner():
 
         if self.verbose.get():
             print("Generated file %s" % self.csv_file)
-        return self.csv_file
+        return True
 
     def closeCSV(self):
         # Close atomtypes file
@@ -614,21 +619,21 @@ class Runner():
         qsymm = " -noqsymm "
         if self.qSel.symm():
             qsymm = " -qsymm "
-        csv = self.generateCSV()
-        # Workaround since alexandria gen_ff does not yet know about the P+G charge distribution
-        qdist = self.qSel.qModel()
-        if qdist == PG:
-            qdist = Gaussian
-        cmd = f"alexandria gen_ff -f {csv} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
-        if self.vs1_file:
-            cmd += f" -vs {self.vs1_file} "
-        icpot = self.icSel.potential()
-        if icpot != "NONE":
-            cmd += f" -icfn {icpot} "
-        if self.vdwSel.exchCorr():
-            cmd += " -vdwcorr "
-        os.system(cmd)
-        runner.closeCSV()
+        if self.generateCSV():
+            # Workaround since alexandria gen_ff does not yet know about the P+G charge distribution
+            qdist = self.qSel.qModel()
+            if qdist == PG:
+                qdist = Gaussian
+            cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
+            if self.vs1_file:
+                cmd += f" -vs {self.vs1_file} "
+            icpot = self.icSel.potential()
+            if icpot != "NONE":
+                cmd += f" -icfn {icpot} "
+            if self.vdwSel.exchCorr():
+                cmd += " -vdwcorr "
+            os.system(cmd)
+            runner.closeCSV()
     
 if __name__ == "__main__":
     runner    = Runner()

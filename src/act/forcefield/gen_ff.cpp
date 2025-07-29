@@ -315,7 +315,7 @@ int gen_ff(int argc, char*argv[])
         "In order to work the ACTDATA environment variable should point to",
         "the directory where some input files are located, namely:[BR]",
         "atomprops.csv - containing properties for atoms.[BR]",
-        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges.",
+        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges (optional).",
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
