@@ -4,6 +4,7 @@ import copy, os, sys, tempfile
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import ttk
 from PIL import ImageTk, Image
 
 # Some global variables
@@ -392,14 +393,92 @@ class AtomTypes:
                 atprops[at]["Default"] = 1
         return atprops
 
-class Runner:
+class ACTLogo:
+    def __init__(self, size:int, root):
+        self.logo_size  = size
+        actlogo = library_file("ACTlogo2.png")
+        if actlogo:
+            self.icon = ImageTk.PhotoImage(Image.open(actlogo))
+            self.logo = ttk.Label(root, image=self.icon,
+                                  width = self.logo_size)
+        else:
+            # TODO: build in alternative if the logo image is not present
+            sys.exit("Cannot find %s" % actlogo)
+
+    def set_icon(self, root):
+        root.tk.call('wm', 'iconphoto', root._w, self.icon)
+
+    def size(self):
+        return self.logo_size
+
+    def set_grid(self, myrow=0, mycol=0):
+        self.logo.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+
+class Manager:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Alexandria Chemistry Toolkit - Force Field Generator")
+        self.root.title("ACT - GUI")
         self.root.configure()
-        self.root.minsize(300, 300)
+        logo_size = 150
+        self.width = 2*logo_size
+        self.root.minsize(self.width, logo_size)
+        self.root.maxsize(2*self.width, 2*logo_size)
+        self.content = ttk.Frame(self.root, padding=(3,3,3,3))
+        self.content.grid(row=0, column=0, rowspan=1, columnspan=2, sticky="ewns")
+        self.logo_frame = ttk.Frame(self.content, width=logo_size,height=logo_size)
+        self.logo_frame.grid(row=0, column=0, sticky="nsw")
+        self.logo = ACTLogo(logo_size, self.logo_frame)
+        self.logo.set_grid()
+        self.logo.set_icon(self.root)
+        self.addButtons(self.content, 1)
+        
+    def run(self):
+        # layout all of the main containers
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
+        for c in range(2):
+            self.content.grid_columnconfigure(c, weight=1)
+        
+        self.logo_frame.grid_rowconfigure(0, weight=1)
+        for r in range(3):
+            self.bframe.grid_rowconfigure(r, weight=1)
+        self.root.mainloop()
+
+    def genff(self):
+        ffgen = FFGenerator(self.root)
+        ffgen.makeSelections()
+        ffgen.run()
+
+    def geometry(self):
+        print("Please implement geometry_ff")
+        
+    def stop(self):
+        self.root.quit()
+
+    def addButtons(self, parent, mycol:int):
+        bwidth = int(self.width/2)
+        self.bframe = ttk.Frame(parent, width=bwidth,
+                                height=bwidth, border=1, relief=tk.SOLID)
+        self.bframe.grid(row=0, column=mycol, sticky="wens")
+        myrow = 0
+        bdict = { "Generate force field": self.genff,
+                  "Add bonded parameters": self.geometry,
+                  "Quit": self.stop }
+        deft = "active"
+        for bd in bdict:
+            mybut = ttk.Button(self.bframe, text=bd, default=deft, command=bdict[bd])
+            mybut.grid(row=myrow, column=mycol, sticky="ew")
+            deft   = "normal"
+            myrow += 1
+                
+class FFGenerator:
+    def __init__(self, root):
         self.width = 800
-        self.root.maxsize(self.width, 750)
+        self.height= 750
+        self.root = tk.Toplevel(root)
+        self.root.geometry(f"{self.width}x{self.height}")
+        self.root.title("ACT - Force Field Generator")
+#        self.root.configure()
 
     def rootW(self):
         return self.root
@@ -407,23 +486,19 @@ class Runner:
     def show_info(self, msg:str):
         messagebox.showinfo("ACT GUI", msg)
 
-    def doit(self):
+    def doGenFF(self):
         if self.verbose.get():
             self.print()
         # Get file name
         file_path = saveasfile("Force Field filename to save", ".xml")
         if file_path:
-            status = runner.runACT(file_path)
-            self.closeCSV()
+            status = self.runACT(file_path)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
                 self.show_info(msg)
             else:
                 self.show_info("Force field generation failed")
-            self.root.quit()
-
-    def stop(self):
-        self.root.quit()
+            self.root.destroy()
 
     def top(self):
         logo_size = 150
@@ -462,8 +537,11 @@ class Runner:
         self.verbose.set(0)
         item = tk.Checkbutton(self.bot_frame, width=bwidth,  text="Verbose mode", command=None,
                               variable=self.verbose).grid(row=0, column=1, sticky=tk.N+tk.S+tk.W)
-        tk.Button(self.bot_frame,  width=bwidth, text="Run", default="active", command=self.doit).grid(row=0, column=2, sticky=tk.W)
-        tk.Button(self.bot_frame,  width=bwidth, text="Cancel", default="normal", command=self.stop).grid(row=0, column=3, sticky=tk.E)
+        tk.Button(self.bot_frame,  width=bwidth, text="Run", default="active", command=self.doGenFF).grid(row=0, column=2, sticky=tk.W)
+        tk.Button(self.bot_frame,  width=bwidth, text="Cancel", default="normal", command=self.close).grid(row=0, column=3, sticky=tk.E)
+
+    def close(self):
+        self.root.destroy()
 
     def makeSelections(self):
         self.top()
@@ -487,7 +565,6 @@ class Runner:
         for c in range(4):
             self.bot_frame.grid_columnconfigure(c, weight=1)
         self.bot_frame.grid(row=2, columnspan=4, sticky="ews")
-        self.root.mainloop()
 
     def print(self):
         print(f"VDW potential selected: {self.vdwSel.potential()}")
@@ -667,11 +744,9 @@ class Runner:
             if self.vdwSel.exchCorr():
                 cmd += " -vdwcorr "
             status = os.system(cmd)
-            runner.closeCSV()
+            self.closeCSV()
         return status
     
 if __name__ == "__main__":
-    runner    = Runner()
-    runner.makeSelections()
-    runner.run()
-    
+    manager = Manager()
+    manager.run()
