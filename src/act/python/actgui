@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, sys, tempfile
+import copy, os, sys, tempfile
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -350,10 +350,17 @@ class AtomTypes:
                     except ValueError:
                         sys.exit(f"Error in file {atype_gui} on line {lineno}")
 
-        maxrow = 5
+        maxrow = 6
         ncol = int(len(self.atype_props.keys())/maxrow)+1
-        labParticle = tk.Label(frame, text=f"Select atomtypes", anchor="w", font=labelFont()).grid(row=myrow, columnspan=ncol, sticky=tk.N+tk.S+tk.W+tk.E)
+        labParticle = tk.Label(frame, text=f"Select atomtypes", anchor="w", font=labelFont())
+        labParticle.grid(row=myrow, columnspan=ncol, sticky=tk.N+tk.S+tk.W+tk.E)
+        ttp = CreateToolTip(labParticle, "Atomtype definitions based on GAFF\nWang et al. J. Comp. Chem. 25 (2004) 1157")
         myrow += 1
+        btnOn  = tk.Button(frame, text="Select all", anchor="w", font=labelFont(), command=self.allOn)
+        btnOn.grid(row=myrow+2, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+        btnOff = tk.Button(frame, text="Deselect all", anchor="w", font=labelFont(), command=self.allOff)
+        btnOff.grid(row=myrow+4, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
+        mycol += 1
         self.atypes = {}
         for at in self.atype_props.keys():
             self.atypes[at] = tk.IntVar()
@@ -366,11 +373,24 @@ class AtomTypes:
             if myrow == maxrow+1:
                 myrow = 1
                 mycol += 1
-        
-    def getAtypes(self)->dict:
+
+    def allOn(self):
         for at in self.atypes:
-            self.atype_props[at]["Default"] = self.atypes[at].get()
-        return self.atype_props
+            self.atypes[at].set(1)
+            self.atype_props[at]["Default"] = 1
+            
+    def allOff(self):
+        for at in self.atypes:
+            self.atypes[at].set(0)
+            self.atype_props[at]["Default"] = 0
+            
+    def getAtypes(self)->dict:
+        atprops = {}
+        for at in self.atypes:
+            if self.atypes[at].get():
+                atprops[at] = copy.deepcopy(self.atype_props[at])
+                atprops[at]["Default"] = 1
+        return atprops
 
 class Runner:
     def __init__(self):
@@ -378,7 +398,7 @@ class Runner:
         self.root.title("Alexandria Chemistry Toolkit - Force Field Generator")
         self.root.configure()
         self.root.minsize(300, 300)
-        self.width = 750
+        self.width = 800
         self.root.maxsize(self.width, 750)
 
     def rootW(self):
@@ -393,12 +413,14 @@ class Runner:
         # Get file name
         file_path = saveasfile("Force Field filename to save", ".xml")
         if file_path:
-            runner.runACT(file_path)
+            status = runner.runACT(file_path)
             self.closeCSV()
-            if os.path.exists(file_path):
+            if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
                 self.show_info(msg)
-                self.root.quit()
+            else:
+                self.show_info("Force field generation failed")
+            self.root.quit()
 
     def stop(self):
         self.root.quit()
@@ -451,14 +473,15 @@ class Runner:
     def run(self):
         # layout all of the main containers
         self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
         # create top widgets
         self.logo_frame.grid(row=0, column=0, sticky="ewn")
         self.atom_frame.grid(row=0, column=1, sticky="ewn")
         # create the center widgets
         self.mid_frame.grid_rowconfigure(0, weight=1)
-        self.mid_frame.grid_columnconfigure(1, weight=1)
-        self.mid_frame.grid(row=1, columnspan=2, sticky="ew")
+        for c in range(3):
+            self.mid_frame.grid_columnconfigure(c, weight=1)
+        self.mid_frame.grid(row=1, columnspan=3, sticky="ew")
         # create the bottom widgets
         self.bot_frame.grid_rowconfigure(1, weight=1)
         for c in range(4):
@@ -517,6 +540,9 @@ class Runner:
         self.tf.write("#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aexp_min|aexp_max|aexp_mutability|bexp_min|bexp_max|bexp_mutability|a1dexp_min|a1dexp_max|a1dexp_mutability|a2dexp_min|a2dexp_max|a2dexp_mutability|bdexp_min|bdexp_max|bdexp_mutability|comment|reference\n")
         # Fetch the atom types selected by the user
         atype_props = self.atoms.getAtypes()
+        if len(atype_props) == 0:
+            self.show_info("No atom types selected!")
+            return False
         # Set some shortcuts
         Bounded     = "Bounded"
         Fixed       = "Fixed"
@@ -619,10 +645,12 @@ class Runner:
         if self.vs1_file:
             self.vs1f.close()
 
-    def runACT(self, file_path:str):
+    def runACT(self, file_path:str)->int:
         epsr  = self.qSel.epsilonR()
         nexcl = self.vdwSel.nExcl()
         qsymm = " -noqsymm "
+        # status = 0 corresponds to everything was fine under Linux / MacOS.
+        status = 1
         if self.qSel.symm():
             qsymm = " -qsymm "
         if self.generateCSV():
@@ -638,8 +666,9 @@ class Runner:
                 cmd += f" -icfn {icpot} "
             if self.vdwSel.exchCorr():
                 cmd += " -vdwcorr "
-            os.system(cmd)
+            status = os.system(cmd)
             runner.closeCSV()
+        return status
     
 if __name__ == "__main__":
     runner    = Runner()
