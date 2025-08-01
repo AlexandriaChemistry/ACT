@@ -3,6 +3,7 @@
 import os, sys, tempfile
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 from PIL import ImageTk, Image
 
 # Some global variables
@@ -324,7 +325,7 @@ class ICSel:
     def nrows(self)->int:
         return len(self.ics)+1
 
-class AtomTypes():
+class AtomTypes:
     def __init__(self, frame, myrow, mycol):
         atype_gui = library_file("atomtypes_gui.csv")
         if not atype_gui:
@@ -371,7 +372,7 @@ class AtomTypes():
             self.atype_props[at]["Default"] = self.atypes[at].get()
         return self.atype_props
 
-class Runner():
+class Runner:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Alexandria Chemistry Toolkit - Force Field Generator")
@@ -383,6 +384,9 @@ class Runner():
     def rootW(self):
         return self.root
 
+    def show_info(self, msg:str):
+        messagebox.showinfo("ACT GUI", msg)
+
     def doit(self):
         if self.verbose.get():
             self.print()
@@ -390,9 +394,10 @@ class Runner():
         file_path = saveasfile("Force Field filename to save", ".xml")
         if file_path:
             runner.runACT(file_path)
+            self.closeCSV()
             if os.path.exists(file_path):
-                print("\nSuccesfully generated a force field in %s" % file_path)
-                self.closeCSV()
+                msg = ("Succesfully generated a force field in %s" % file_path)
+                self.show_info(msg)
                 self.root.quit()
 
     def stop(self):
@@ -405,6 +410,7 @@ class Runner():
         actlogo = library_file("ACTlogo2.png")
         if actlogo:
             self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
+            self.root.tk.call('wm', 'iconphoto', self.root._w, self.logo)
             mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W+tk.E)
         else:
             # TODO: build in alternative if the logo image is not present
