@@ -1,19 +1,19 @@
 #atomtype|element|default|bonds|radius|row|charge|comment
-hc|H|1|1|0.031|1|0|hydrogen
-h1|H|1|1|0.031|1|0|hydrogen
-h2|H|1|1|0.031|1|0|hydrogen
-h3|H|1|1|0.031|1|0|hydrogen
-h4|H|1|1|0.031|1|0|hydrogen
-h5|H|1|1|0.031|1|0|hydrogen
-ha|H|1|1|0.031|1|0|hydrogen
-hn|H|1|1|0.031|1|0|hydrogen
-ho|H|1|1|0.031|1|0|hydrogen
-hf|H|1|1|0.031|1|0|hydrogen
-hp|H|1|1|0.031|1|0|hydrogen
-hs|H|1|1|0.031|1|0|hydrogen
-hcl|H|1|1|0.031|1|0|hydrogen
-hbr|H|1|1|0.031|1|0|hydrogen
-hi|H|1|1|0.031|1|0|hydrogen
+hc|H|1|1|0.031|1|0|Hydrogen on carbon
+h1|H|1|1|0.031|1|0|Hydrogen on carbon with 1 electron-withdrawing group
+h2|H|1|1|0.031|1|0|Hydrogen on carbon with 2 electron-withdrawing groups
+h3|H|1|1|0.031|1|0|Hydrogen on carbon with 3 electron-withdrawing groups
+h4|H|1|1|0.031|1|0|Hydrogen on aromatic carbon with 1 electron-withdrawing group
+h5|H|1|1|0.031|1|0|Hydrogen on aromatic carbon with 1 electron-withdrawing group
+ha|H|1|1|0.031|1|0|Hydrogen on aromatic carbon
+hn|H|1|1|0.031|1|0|Hydrogen on nitrogen
+ho|H|1|1|0.031|1|0|Hydrogen on oxygen
+hf|H|1|1|0.031|1|0|Hydrogen on fluorine
+hp|H|1|1|0.031|1|0|Hydrogen on phosphor
+hs|H|1|1|0.031|1|0|Hydrogen on sulfur
+hcl|H|1|1|0.031|1|0|Hydrogen on chlorine
+hbr|H|1|1|0.031|1|0|Hydrogen on bromine
+hi|H|1|1|0.031|1|0|Hydrogen on iodine
 hw|H|1|1|0.031|2|0|Water hydrogen
 b|B|0|1|0.098|2|0|boron
 c1|C|1|1|0.069|2|0|sp carbon
@@ -26,7 +26,7 @@ n4|N|1|1|0.071|2|0|positively charged sp3 nitrogen
 o1|O|1|1|0.066|2|0|sp oxygen
 o2|O|1|1|0.066|2|0|sp2 oxygen
 o3|O|1|1|0.066|2|0|sp3 oxygen
-ow|O|1|1|0.066|2|0|sp3 oxygen
+ow|O|1|1|0.066|2|0|Water oxygen
 f|F|1|1|0.057|2|0|fluorine
 p1|P|1|1|0.107|3|0|sp phosphor
 p2|P|1|1|0.107|3|0|sp2 phosphor
@@ -37,20 +37,20 @@ s3|S|1|1|0.105|3|0|sp3 sulfur
 cl|Cl|1|1|0.102|3|0|chlorine
 br|Br|1|1|0.12|4|0|bromine
 i|I|1|1|0.139|5|0|iodine
-Be2+|Be|0|0|0|2|2|Beryllium cation
-Ca2+|Ca|0|0|0|4|2|Calcium cation
-Mg2+|Mg|0|0|0|3|2|Magnesium cation
-Na+|Na|1|0|0|3|1|Sodium cation
-Cl-|Cl|1|0|0|3|-1|Chloride anion
-I-|I|1|0|0|5|-1|Iodide anion
-F-|F|1|0|0|2|-1|Fluoride anion
-Rb+|Rb|1|0|0|5|1|Rubidium cation
-Li+|Li|1|0|0|2|1|Lithium cation
-Br-|Br|1|0|0|4|-1|Bromide anion
-Cs+|Cs|1|0|0|6|1|Cesium cation
-K+|K|1|0|0|3|1|Potassium cation
 He|He|1|0|0|1|0|Helium
+Li+|Li|1|0|0|2|1|Lithium cation
+Be2+|Be|0|0|0|2|2|Beryllium cation
+F-|F|1|0|0|2|-1|Fluoride anion
 Ne|Ne|1|0|0|2|0|Neon
+Na+|Na|1|0|0|3|1|Sodium cation
+Mg2+|Mg|0|0|0|3|2|Magnesium cation
+Cl-|Cl|1|0|0|3|-1|Chloride anion
 Ar|Ar|1|0|0|3|0|Argon
+K+|K|1|0|0|3|1|Potassium cation
+Ca2+|Ca|0|0|0|4|2|Calcium cation
+Br-|Br|1|0|0|4|-1|Bromide anion
 Kr|Kr|1|0|0|4|0|Krypton
+Rb+|Rb|1|0|0|5|1|Rubidium cation
+I-|I|1|0|0|5|-1|Iodide anion
 Xe|Xe|1|0|0|5|0|Xenon
+Cs+|Cs|1|0|0|6|1|Cesium cation
