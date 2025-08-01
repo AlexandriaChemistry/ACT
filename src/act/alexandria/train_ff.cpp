@@ -407,9 +407,9 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     std::vector<std::string> headerNames{ "CLASS", "NAME" };
     for (const auto &pair : genome)
     {
-        headerNames.push_back(gmx::formatString("BEST (%s)", iMolSelectName(pair.first)));
+        headerNames.push_back(gmx::formatString("BEST (%s)      ", iMolSelectName(pair.first)));
     }
-    const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN", "COMMENT"};
+    const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
     headerNames.insert(headerNames.end(), tmpHeaderNames.begin(), tmpHeaderNames.end());
     // Get header sizes
     const int FLOAT_SIZE = 14;  // Adjusted for the %g formatting plus negative numbers
@@ -418,7 +418,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     {
         sizes.push_back(FLOAT_SIZE);
     }
-    std::vector<int> tmpSizes{FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    std::vector<int> tmpSizes{FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE };
     sizes.insert(sizes.end(), tmpSizes.begin(), tmpSizes.end());
     // Adjust size for class field
     const auto paramClass = sii_->paramClass();
@@ -439,7 +439,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
             sizes[1] = pName.size();
         }
     }
-    const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4;
+    const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4 + 4;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
     tw->writeStringFormatted("%s\n|", HLINE.c_str());
@@ -457,6 +457,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     auto optIndex = *sii_->optIndexPtr();
 
     // Print the parameter information
+    bool hitWall = false;
     for (size_t i = 0; i < paramClass.size(); i++)
     {
         for (size_t j = 0; j < paramNames.size(); j++)
@@ -470,27 +471,33 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                                      sizes[1], paramNames[j].c_str());
             size_t k = 2;
             double value = 0;
+            auto ffp = optIndex[j].forceFieldParameter();
             for (const auto &pair : genome)
             {
                 value = pair.second.base(j);
-                tw->writeStringFormatted(" %-*g |", sizes[k], value);
+                if (ffp->minimum() == value || ffp->maximum() == value)
+                {
+                    tw->writeStringFormatted(" %-*g (W) |", sizes[k], value);
+                    hitWall = true;
+                }
+                else
+                {
+                    tw->writeStringFormatted(" %-*g     |", sizes[k], value);
+                }
                 k++;
             }
-            auto ffp = optIndex[j].forceFieldParameter();
-            std::string comment;
-            if (ffp->minimum() == value || ffp->maximum() == value)
-            {
-                comment.assign("WALL");
-            }
-            tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g | %-*s |\n%s\n",
+            tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
                                      sizes[k], min[j],
                                      sizes[k+1], max[j],
                                      sizes[k+2], mean[j],
                                      sizes[k+3], stdev[j],
                                      sizes[k+4], median[j],
-                                     sizes[k+5], comment.c_str(),
                                      HLINE.c_str());
         }
+    }
+    if (hitWall)
+    {
+        tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n");
     }
 }
 
