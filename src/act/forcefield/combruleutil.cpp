@@ -52,6 +52,7 @@ namespace alexandria
 typedef struct {
     const char *flag;
     const char *var;
+    const std::string deft;
     size_t index;
 } cr_param;
 
@@ -59,42 +60,42 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
     {
         {
             InteractionType::VDW, {
-                { "-cr_eps",  "epsilon", 0 },
-                { "-cr_sig",  "sigma",   1 },
-                { "-cr_rmin", "rmin",    2 },
-                { "-cr_gam",  "gamma",   3 },
-                { "-cr_del",  "delta",   4 },
-                { "-cr_abh",  "Abh",     5 },
-                { "-cr_bbh",  "bbh",     6 },
-                { "-cr_c6bh", "c6bh",    7 },
-                { "-cr_ttA",  "Att",     8 },
-                { "-cr_ttB",  "btt",     9 },
-                { "-cr_ttC6", "c6tt",    10 },
-                { "-cr_ttC8", "c8tt",    11 },
-                { "-cr_ttC10","c10tt",   12 },
-                { "-cr_tt2bA",  "Att2b", 13 },
-                { "-cr_tt2bBexch", "bExchtt2b", 14 },
-                { "-cr_tt2bBdisp", "bDisptt2b", 15 },
-                { "-cr_tt2bC6", "c6tt2b", 16 },
-                { "-cr_tt2bC8", "c8tt2b", 17 },
-                { "-cr_tt2bC10","c10tt2b", 18 }
+                { "-cr_eps",  "epsilon", combinationRuleName(CombRule::Geometric), 0 },
+                { "-cr_sig",  "sigma",   combinationRuleName(CombRule::Arithmetic), 1 },
+                { "-cr_rmin", "rmin",    combinationRuleName(CombRule::Arithmetic), 2 },
+                { "-cr_gam",  "gamma",   combinationRuleName(CombRule::Geometric), 3 },
+                { "-cr_del",  "delta",   combinationRuleName(CombRule::Geometric), 4 },
+                { "-cr_abh",  "Abh",     combinationRuleName(CombRule::Geometric), 5 },
+                { "-cr_bbh",  "bbh",     combinationRuleName(CombRule::Arithmetic), 6 },
+                { "-cr_c6bh", "c6bh",    combinationRuleName(CombRule::Geometric), 7 },
+                { "-cr_ttA",  "Att",     combinationRuleName(CombRule::Geometric), 8 },
+                { "-cr_ttB",  "btt",     combinationRuleName(CombRule::Arithmetic), 9 },
+                { "-cr_ttC6", "c6tt",    combinationRuleName(CombRule::Geometric), 10 },
+                { "-cr_ttC8", "c8tt",    combinationRuleName(CombRule::Geometric), 11 },
+                { "-cr_ttC10","c10tt",   combinationRuleName(CombRule::Geometric), 12 },
+                { "-cr_tt2bA",  "Att2b", combinationRuleName(CombRule::Geometric), 13 },
+                { "-cr_tt2bBexch", "bExchtt2b", combinationRuleName(CombRule::Arithmetic), 14 },
+                { "-cr_tt2bBdisp", "bDisptt2b", combinationRuleName(CombRule::Arithmetic), 15 },
+                { "-cr_tt2bC6", "c6tt2b", combinationRuleName(CombRule::Geometric), 16 },
+                { "-cr_tt2bC8", "c8tt2b", combinationRuleName(CombRule::Geometric), 17 },
+                { "-cr_tt2bC10","c10tt2b", combinationRuleName(CombRule::Geometric), 18 }
             },
         },
         {
             InteractionType::VDWCORRECTION, {
-                { "-cr_aexp",  "aexp", 19 },
-                { "-cr_bexp",  "bexp", 20 }
+                { "-cr_aexp",  "aexp", combinationRuleName(CombRule::Geometric), 19 },
+                { "-cr_bexp",  "bexp", combinationRuleName(CombRule::Arithmetic), 20 }
             }
         },
         {
             InteractionType::INDUCTIONCORRECTION, {
-                { "-cr_a1dexp",  "a1dexp", 21 },
-                { "-cr_a2dexp",  "a2dexp", 22 },
-                { "-cr_bdexp",  "bdexp",  23 },
-                { "-cr_De", "De", 24 },
-                { "-cr_D0", "D0", 25 },
-                { "-cr_beta", "beta", 26 },
-                { "-cr_length", "bondlength", 27 },
+                { "-cr_a1dexp",  "a1dexp", combinationRuleName(CombRule::Geometric), 21 },
+                { "-cr_a2dexp",  "a2dexp", combinationRuleName(CombRule::Geometric), 22 },
+                { "-cr_bdexp",  "bdexp",  combinationRuleName(CombRule::Arithmetic), 23 },
+                { "-cr_De", "De", combinationRuleName(CombRule::Geometric), 24 },
+                { "-cr_D0", "D0", combinationRuleName(CombRule::Geometric), 25 },
+                { "-cr_beta", "beta", combinationRuleName(CombRule::Arithmetic), 26 },
+                { "-cr_length", "bondlength", combinationRuleName(CombRule::Arithmetic), 27 },
             }
         }
     };
@@ -133,6 +134,22 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
     }
 }
 
+static bool hasParameter(const ForceFieldParameterList *ffpl,
+                         const char                    *param)
+{
+    for (auto &ffp : ffpl->parametersConst())
+    {
+        for (auto &pp : ffp.second)
+        {
+            if (pp.first.compare(param) == 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                           ForceFieldParameterList    *vdw,
                           ForceFieldParameterList    *vdwcorr,
@@ -145,12 +162,16 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
     {
         for(const auto &mm : mcr.second)
         {
+            const char *value;
             // If this has not been touched on the command line, do nothing.
             if (!opt2parg_bSet(mm.flag, pa.size(), pa.data()))
             {
-                continue;
+                value = mm.deft.c_str();
             }
-            auto value = cr_flag_[mm.index];
+            else
+            {
+                value = cr_flag_[mm.index];
+            }
             if (!value || strlen(value) == 0)
             {
                 // Check whether we have existing values
@@ -191,21 +212,24 @@ int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
                     }
                     if (doChange)
                     {
-                        vdw->addCombinationRule(mm.var, value);
-                        changed += 1;
+                        if (hasParameter(vdw, mm.var))
+                        {
+                            vdw->addCombinationRule(mm.var, value);
+                            changed += 1;
+                        }
                     }
                 }
             }
             else if (mcr.first == InteractionType::VDWCORRECTION)
             {
-                if (vdwcorr)
+                if (vdwcorr && hasParameter(vdwcorr, mm.var))
                 {
                     vdwcorr->addCombinationRule(mm.var, value);
                 }
             }
             else if (mcr.first == InteractionType::INDUCTIONCORRECTION)
             {
-                if (induccorr)
+                if (induccorr && hasParameter(induccorr, mm.var))
                 {
                     induccorr->addCombinationRule(mm.var, value);
                 }

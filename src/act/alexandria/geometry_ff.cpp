@@ -144,7 +144,7 @@ int geometry_ff(int argc, char *argv[])
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "aff_out",      ffWRITE },
-        { efDAT, "-sel", "molselect",    ffREAD },
+        { efDAT, "-sel", "molselect",    ffOPTRD },
         { efCSV, "-de",  "dissociation", ffOPTWR }
     };
 
@@ -207,13 +207,19 @@ int geometry_ff(int argc, char *argv[])
     tw->writeStringFormatted("# This file was created %s", ctime(&my_t));
     tw->writeStringFormatted("# The Alexandria Chemistry Toolkit.\n#\n");
 
-    auto selfile = opt2fn("-sel", fnm.size(), fnm.data());
-    gms.read(selfile);
-    print_memory_usage(debug);
-    printf("There are %d molecules in the selection file %s.\n",
-           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
-    tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
-
+    auto selfile = opt2fn_null("-sel", fnm.size(), fnm.data());
+    if (selfile)
+    {
+        gms.read(selfile);
+        print_memory_usage(debug);
+        printf("There are %d molecules in the selection file %s.\n",
+               (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
+        tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
+    }
+    else
+    {
+        printf("Will use all molecules in the molprop file(s) as the selection.\n");
+    }
     /* Read standard atom properties */
     print_memory_usage(debug);
 
@@ -232,7 +238,15 @@ int geometry_ff(int argc, char *argv[])
     /* Read Molprops */
     auto warnings = merge_xml(opt2fns("-mp", fnm.size(), fnm.data()), &mp);
     print_memory_usage(debug);
-
+    if (!selfile)
+    {
+        // Extract molecule names from the molprops
+        int index = 0;
+        for (const auto &m : mp)
+        {
+            gms.addOne(m.getIupac(), index++, iMolSelect::Train);
+        }
+    }
     if (warnings.size() > static_cast<size_t>(maxwarn))
     {
         fprintf(stderr, "Too many warnings. Terminating.\n");

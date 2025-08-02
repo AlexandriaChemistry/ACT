@@ -409,8 +409,6 @@ int gen_ff(int argc, char*argv[])
     ForceFieldParameterList induccorr(icfn[0], CanSwap::Yes);
     induccorr.addOption("nexcl", gmx_itoa(nexclqq));
 
-    // Combination rules
-    crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     vdw.addOption("nexcl", gmx_itoa(nexclvdw));
     vdwcorr.addOption("nexcl", gmx_itoa(nexclvdw));
     ForceFieldParameterList eem("", CanSwap::No);
@@ -668,6 +666,9 @@ int gen_ff(int argc, char*argv[])
             }
         }
     }
+    // Combination rules after adding the parameters only, since it will look them up.
+    crule.extract(pa, &vdw, &vdwcorr, &induccorr);
+    // Now add the necessary terms to the final force field.
     pd.addForces(InteractionType::POLARIZATION, pols);
     pd.addForces(InteractionType::ELECTROSTATICS, coulomb);
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
