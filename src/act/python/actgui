@@ -438,25 +438,6 @@ class ACTLogo:
         # The sticky stuff is incomprehensible...
         self.logo.grid(row=myrow, column=mycol, sticky="ns")
 
-class GeometryFF:
-    def __init__(self, root):
-        self.root = root
-
-    def run(self)->int:
-        molprop = openasfile("Molecule Property File (molprop)", ".xml")
-        if not molprop:
-            return 1
-        ffin = openasfile("Input/output force field file", ".xml")
-        if not ffin:
-            return 1
-        #ffout = openasfile("Output force field file", ".xml")
-        #if not ffout:
-        #    return 1
-        status = os.system(f"alexandria geometry_ff -ff {ffin} -mp {molprop} -o {ffin}")
-        if status == 0:
-            show_info(f"Updated bond information in {ffin}")
-        return status
-
 def callback(url:str):
     webbrowser.open_new(url)
 
