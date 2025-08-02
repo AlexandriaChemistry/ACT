@@ -43,6 +43,23 @@ def saveasfile(mytitle:str, defext:str)->str:
             return None
     return file_path
 
+def openasfile(mytitle:str, defext:str)->str:
+    # Get file name
+    # Loop to make sure we get a file name with the correct extension
+    ext    = ""
+    file_path = True
+    while file_path and not ext == defext:
+        file_path = filedialog.askopenfilename(title=mytitle, defaultextension=defext)
+        if file_path:
+            _,ext = os.path.splitext(file_path)
+        else:
+            return None
+    return file_path
+
+def show_info(msg:str):
+    messagebox.showinfo("ACT GUI", msg)
+
+
 # Code for ToolTips taken from
 # https://stackoverflow.com/questions/3221956/how-do-i-display-tooltips-in-tkinter
 class CreateToolTip(object):
@@ -414,6 +431,25 @@ class ACTLogo:
     def set_grid(self, myrow=0, mycol=0):
         self.logo.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
 
+class GeometryFF:
+    def __init__(self, root):
+        self.root = root
+
+    def run(self)->int:
+        molprop = openasfile("Molecule Property File (molprop)", ".xml")
+        if not molprop:
+            return 1
+        ffin = openasfile("Input/output force field file", ".xml")
+        if not ffin:
+            return 1
+        #ffout = openasfile("Output force field file", ".xml")
+        #if not ffout:
+        #    return 1
+        status = os.system(f"alexandria geometry_ff -ff {ffin} -mp {molprop} -o {ffin}")
+        if status == 0:
+            show_info(f"Updated bond information in {ffin}")
+        return status
+
 class Manager:
     def __init__(self):
         self.root = tk.Tk()
@@ -450,7 +486,8 @@ class Manager:
         ffgen.run()
 
     def geometry(self):
-        print("Please implement geometry_ff")
+        geomff = GeometryFF(self.root)
+        geomff.run()
         
     def stop(self):
         self.root.quit()
@@ -483,9 +520,6 @@ class FFGenerator:
     def rootW(self):
         return self.root
 
-    def show_info(self, msg:str):
-        messagebox.showinfo("ACT GUI", msg)
-
     def doGenFF(self):
         if self.verbose.get():
             self.print()
@@ -495,9 +529,9 @@ class FFGenerator:
             status = self.runACT(file_path)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
-                self.show_info(msg)
+                show_info(msg)
             else:
-                self.show_info("Force field generation failed")
+                show_info("Force field generation failed")
             self.root.destroy()
 
     def top(self):
@@ -618,7 +652,7 @@ class FFGenerator:
         # Fetch the atom types selected by the user
         atype_props = self.atoms.getAtypes()
         if len(atype_props) == 0:
-            self.show_info("No atom types selected!")
+            show_info("No atom types selected!")
             return False
         # Set some shortcuts
         Bounded     = "Bounded"
