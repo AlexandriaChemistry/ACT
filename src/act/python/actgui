@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
-import copy, os, sys, tempfile
+# This script is part of the Alexandria Chemistry Toolkit
+# https://github.com/AlexandriaChemistry/ACT
+# License is GPL v. 2
+
+import copy, os, sys, tempfile, webbrowser
 import tkinter as tk
+import tkinter.font as tkFont
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
@@ -17,7 +22,7 @@ Slater   = "Slater"
 PG       = "P+G"
 
 def labelFont():
-    return ('Helvetica', 16, 'bold')
+    return ('Helvetica', 20, 'bold')
 
 def library_file(filenm:str)->str:
     if os.path.exists(filenm):
@@ -268,7 +273,7 @@ class QSel:
 class BondSel:
     def __init__(self, root, myrow:int, mycol:int):
         self.bonds = ["BONDS", "CUBIC", "HUA", "MORSE" ]
-        self.bondPot = tk.StringVar(root, f"{self.bonds[0]}")
+        self.bondPot = tk.StringVar(root, f"{self.bonds[2]}")
         labPot = tk.Label(root, text=f"Bond potential", anchor="w", font=labelFont())
         labPot.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         tpp = CreateToolTip(labPot, "Van Maaren & Van der Spoel\nDigit. Discov. 4 (2025) 824")
@@ -306,7 +311,7 @@ class AngleSel:
 class DihSel:
     def __init__(self, root, myrow:int, mycol:int):
         self.dihs = ["PDIHS", "FOUR_DIHS" ]
-        self.dihPot = tk.StringVar(root, f"{self.dihs[0]}")
+        self.dihPot = tk.StringVar(root, f"{self.dihs[1]}")
         labPot = tk.Label(root, text=f"Dihedral potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
 
@@ -412,12 +417,11 @@ class AtomTypes:
 
 class ACTLogo:
     def __init__(self, size:int, root):
-        self.logo_size  = size
         actlogo = library_file("ACTlogo2.png")
         if actlogo:
             self.icon = ImageTk.PhotoImage(Image.open(actlogo))
-            self.logo = ttk.Label(root, image=self.icon,
-                                  width = self.logo_size)
+            self.logo = ttk.Label(root, image=self.icon, justify="center",
+                                  width=size)
         else:
             # TODO: build in alternative if the logo image is not present
             sys.exit("Cannot find %s" % actlogo)
@@ -425,11 +429,9 @@ class ACTLogo:
     def set_icon(self, root):
         root.tk.call('wm', 'iconphoto', root._w, self.icon)
 
-    def size(self):
-        return self.logo_size
-
     def set_grid(self, myrow=0, mycol=0):
-        self.logo.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        # The sticky stuff is incomprehensible...
+        self.logo.grid(row=myrow, column=mycol, sticky="ns")
 
 class GeometryFF:
     def __init__(self, root):
@@ -450,24 +452,45 @@ class GeometryFF:
             show_info(f"Updated bond information in {ffin}")
         return status
 
+def callback(url:str):
+    webbrowser.open_new(url)
+
 class Manager:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("ACT - GUI")
         self.root.configure()
+        
+        default_font = tkFont.nametofont("TkDefaultFont")
+        default_font.configure(size=16)
+        
+        # TODO: get this number from the image size
         logo_size = 150
-        self.width = 2*logo_size
-        self.root.minsize(self.width, logo_size)
-        self.root.maxsize(2*self.width, 2*logo_size)
-        self.content = ttk.Frame(self.root, padding=(3,3,3,3))
+        self.pad = 5
+        self.height = logo_size+2*self.pad
+        self.width = 2*self.height
+        self.root.minsize(self.width, self.height)
+        self.root.maxsize(2*self.width, 2*self.height)
+        self.content = ttk.Frame(self.root, padding=(self.pad,self.pad,self.pad,self.pad))
         self.content.grid(row=0, column=0, rowspan=1, columnspan=2, sticky="ewns")
-        self.logo_frame = ttk.Frame(self.content, width=logo_size,height=logo_size)
-        self.logo_frame.grid(row=0, column=0, sticky="nsw")
+        self.logoStuff(self.content, logo_size)
+        self.addButtons(self.content, 1)
+    
+    def logoStuff(self, root, logo_size:int):
+        self.logo_frame = ttk.Frame(root, width=self.height, height=self.height)
+        self.logo_frame.grid(row=0, column=0, rowspan=3, sticky="ew")
         self.logo = ACTLogo(logo_size, self.logo_frame)
         self.logo.set_grid()
         self.logo.set_icon(self.root)
-        self.addButtons(self.content, 1)
-        
+        label = tk.Label(self.logo_frame, text="Alexandria Chemistry\nToolkit",
+                         justify='center', relief='solid', borderwidth=0,
+                         font=labelFont(), fg="blue", cursor="hand2")
+        label.grid(row=1, column=0, sticky="ew")
+        label.bind("<Button-1>", lambda e: callback("http://github.com/AlexandriaChemistry"))
+        lab2 = tk.Label(self.logo_frame, text="(c) 2025 David van der Spoel",
+                         justify='center', relief='solid', borderwidth=0)
+        lab2.grid(row=2, column=0, sticky="ew")
+    
     def run(self):
         # layout all of the main containers
         self.root.rowconfigure(0, weight=1)
@@ -475,8 +498,9 @@ class Manager:
         for c in range(2):
             self.content.grid_columnconfigure(c, weight=1)
         
-        self.logo_frame.grid_rowconfigure(0, weight=1)
-        for r in range(3):
+        for r in range(2):
+            self.logo_frame.grid_rowconfigure(r, weight=1)
+        for r in range(len(self.mybuttons)):
             self.bframe.grid_rowconfigure(r, weight=1)
         self.root.mainloop()
 
@@ -488,30 +512,37 @@ class Manager:
     def geometry(self):
         geomff = GeometryFF(self.root)
         geomff.run()
-        
+
+    def help(self):
+        helpstr = ("This is a simple frontend to some the commands available in the Alexandria Chemistry Toolkit.\n\nYou can generate a force field template, pressing the button will pop-up another window where you can make selections of atom types, potentials and some algorithmic options.\n\nThen you can add parameters for bonded functions if you provide a molecule property (molprop) file that will be analysed for bond-lengths, angles, etc. after which the information will be added to your force field file.")
+        show_info(helpstr)
+
     def stop(self):
         self.root.quit()
 
     def addButtons(self, parent, mycol:int):
-        bwidth = int(self.width/2)
+        bwidth = int(self.width/2) - self.pad
         self.bframe = ttk.Frame(parent, width=bwidth,
-                                height=bwidth, border=1, relief=tk.SOLID)
-        self.bframe.grid(row=0, column=mycol, sticky="wens")
+                                height=bwidth, border=0, relief=tk.SOLID)
+        self.bframe.grid(row=0, column=mycol, rowspan=3, sticky="wens")
         myrow = 0
         bdict = { "Generate force field": self.genff,
                   "Add bonded parameters": self.geometry,
+                  "Help": self.help,
                   "Quit": self.stop }
-        deft = "active"
+        deft      = "normal"
+        self.mybuttons = []
         for bd in bdict:
             mybut = ttk.Button(self.bframe, text=bd, default=deft, command=bdict[bd])
-            mybut.grid(row=myrow, column=mycol, sticky="ew")
+            mybut.grid(row=myrow, column=mycol, sticky="ew", padx=self.pad, pady=self.pad)
+            self.mybuttons.append(mybut)
             deft   = "normal"
             myrow += 1
                 
 class FFGenerator:
     def __init__(self, root):
-        self.width = 800
-        self.height= 750
+        self.width = 900
+        self.height= 800
         self.root = tk.Toplevel(root)
         self.root.geometry(f"{self.width}x{self.height}")
         self.root.title("ACT - Force Field Generator")
