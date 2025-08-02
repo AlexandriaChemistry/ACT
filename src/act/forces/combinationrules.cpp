@@ -378,7 +378,8 @@ static void generateParameterPairs(ForceField      *pd,
             // Test whether or not to include this pair.
             // This will only be used in case the potential is exponential.
             bool includePair = true;
-            if (Potential::BORN_MAYER == forcesVdw->potential())
+            if (Potential::BORN_MAYER == forcesVdw->potential() || 
+                Potential::MORSE_BONDS == forcesVdw->potential())
             {
                 auto ai = iid.atoms()[0];
                 auto aj = jid.atoms()[0];
@@ -388,8 +389,8 @@ static void generateParameterPairs(ForceField      *pd,
                     auto ptj = pd->findParticleType(aj)->apType();
                     // The pair will be included only if one particle is a vsite
                     // and the other an atom.
-                    includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
-                                   (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
+                    includePair = ((ActParticle::Atom != pti && ActParticle::Atom == ptj) ||
+                                   (ActParticle::Atom != ptj && ActParticle::Atom == pti));
                 }
             }
             auto &jparam = jvdw.second;
