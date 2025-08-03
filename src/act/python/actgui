@@ -4,7 +4,7 @@
 # https://github.com/AlexandriaChemistry/ACT
 # License is GPL v. 2
 
-import copy, os, sys, tempfile, webbrowser
+import copy, os, sys, tempfile, webbrowser, time
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import filedialog
@@ -110,8 +110,8 @@ class CreateToolTip(object):
         self.tw.wm_overrideredirect(True)
         self.tw.wm_geometry("+%d+%d" % (x, y))
         label = tk.Label(self.tw, text=self.text, justify='left',
-                       background="#ffffff", relief='solid', borderwidth=1,
-                       wraplength = self.wraplength)
+                         background="#ffffff", relief='solid', borderwidth=1,
+                         wraplength = self.wraplength)
         label.pack(ipadx=1)
 
     def hidetip(self):
@@ -123,21 +123,26 @@ class CreateToolTip(object):
 class VdwSel:
     def __init__(self, frame, myrow:int, mycol:int):
         self.vdws = { 
-            "TT2b": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                      "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
-                      "comment": "Tang-Toennies with separate b\nSheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
-            "WANG_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                                 "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0,
-                                 "comment": "Bucking variant without singularity\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
-            "LJ14_7": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
-                        "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2,
-                        "comment": "Buffered 14-7 potential\nHalgren, J. Amer. Chem. Soc. 114 (1992) 7827" }, 
-            "LJ12_6": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                        "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
-                        "comment": "Lennard-Jones potential\nJones, Proc. Royal Soc. A 106 (1924) 463" },
-            "GENERALIZED_BUCKINGHAM": { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-                                        "gam_min":0, "gam_max": 0, "del_min": 3, "del_max": 12,
-                                        "comment": "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
+            "TT2b": 
+            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+              "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
+              "comment": "Tang-Toennies with separate b\nSheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
+            "WANG_BUCKINGHAM":
+            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+              "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0,
+              "comment": "Bucking variant without singularity\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
+            "LJ14_7":
+            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
+              "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2,
+              "comment": "Buffered 14-7 potential\nHalgren, J. Amer. Chem. Soc. 114 (1992) 7827" }, 
+            "LJ12_6":
+            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+              "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
+              "comment": "Lennard-Jones potential\nJones, Proc. Royal Soc. A 106 (1924) 463" },
+            "GENERALIZED_BUCKINGHAM":
+            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
+              "gam_min":1, "gam_max": 25, "del_min": 3, "del_max": 12,
+              "comment": "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
         }
         self.vdwPot = tk.StringVar(frame, "WANG_BUCKINGHAM")
         labPot = tk.Label(frame, text=f"Van der Waals potential",
@@ -310,7 +315,7 @@ class AngleSel:
 
 class DihSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.dihs = ["PDIHS", "FOUR_DIHS" ]
+        self.dihs = ["PDIHS", "FOURDIHS" ]
         self.dihPot = tk.StringVar(root, f"{self.dihs[1]}")
         labPot = tk.Label(root, text=f"Dihedral potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
@@ -455,6 +460,25 @@ class GeometryFF:
 def callback(url:str):
     webbrowser.open_new(url)
 
+class GeometryFF:
+    def __init__(self, root):
+        self.root = root
+
+    def run(self)->int:
+        molprop = openasfile("Molecule Property File (molprop)", ".xml")
+        if not molprop:
+            return 1
+        ffin = openasfile("Input/output force field file", ".xml")
+        if not ffin:
+            return 1
+        #ffout = openasfile("Output force field file", ".xml")
+        #if not ffout:
+        #    return 1
+        status = os.system(f"alexandria geometry_ff -ff {ffin} -mp {molprop} -o {ffin}")
+        if status == 0:
+            show_info(f"Updated bond information in {ffin}")
+        return status
+
 class Manager:
     def __init__(self):
         self.root = tk.Tk()
@@ -506,7 +530,6 @@ class Manager:
 
     def genff(self):
         ffgen = FFGenerator(self.root)
-        ffgen.makeSelections()
         ffgen.run()
 
     def geometry(self):
@@ -538,7 +561,75 @@ class Manager:
             self.mybuttons.append(mybut)
             deft   = "normal"
             myrow += 1
-                
+
+class CombRule:
+    def __init__(self, root):
+        self.parent = root
+        self.width = 300
+        self.height= 200
+        self.root = tk.Toplevel(root)
+        self.root.geometry(f"{self.width}x{self.height}")
+        self.root.title("Combination Rule Selector")
+        self.all_rules = [ "Geometric", "Arithmetic", "Volumetric",
+                           "InverseSquare", "Kronecker",
+                           "HogervorstEpsilon", "HogervorstSigma", 
+                           "WaldmanSigma", "WaldmanEpsilon",
+                           "HalgrenEpsilon", "QiSigma", "QiEpsilon",
+                           "Yang", "MasonGamma" ]
+        self.crules = None
+        self.ready = False
+
+    def run(self, potential:str):
+        all_params = { "WANG_BUCKINGHAM": { "sigma", "epsilon", "gamma" },
+                       "LJ14_7": { "sigma", "epsilon", "gamma", "delta" },
+                       "LJ12_6": { "sigma", "epsilon" },
+                       "LJ8_6": { "sigma", "epsilon" },
+                       "GENERALIZED_BUCKINGHAM": { "rmin", "epsilon", "gamma", "delta" },
+                       "MORSE_BONDS": { "bondlength", "De", "beta" }
+                      }
+        if potential not in all_params:
+            show_info(f"Potential {potential} is not supported yet for manual selection of combination rules. Defaults will be used.")
+            #self.done()
+            return
+        myparam = all_params[potential]
+        self.content = ttk.Frame(self.root)
+        self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+2)
+        self.content.grid_rowconfigure(1, weight=1)
+        self.content.grid_columnconfigure(1, weight=1)
+        lab = ttk.Label(self.content, text=f"Parameters for {potential}")
+        lab.grid(row=0, column=0, columnspan=2)
+        self.crules = {}
+        myrow = 1
+        for p in myparam:
+            self.crules[p] = tk.StringVar(self.content, self.all_rules[0])
+            lab = ttk.Label(self.content, text=p)
+            lab.grid(row=myrow, column=0, sticky="wns")
+            menu = ttk.OptionMenu(self.content, self.crules[p], *self.all_rules)
+            menu.grid(row=myrow, column=1, sticky="news")
+            myrow += 1
+        hh = ttk.Button(self.content, text="Help", command=self.help)
+        hh.grid(column=0, row=myrow, sticky="nwes")
+        bb = ttk.Button(self.content, text="OK", command=self.done)
+        bb.grid(column=1, row=myrow, sticky="nwes")
+        myrow += 1
+        while not self.ready:
+            self.parent.update()
+            time.sleep(0.1)
+
+    def help(self):
+        helpstr = "Choose the combination rule for each parameter in the potential of your choice. Please be aware that combination rules represent an approximation of the potential between atoms. The choice of rules has a large impact on the accuracy of your model. For more detailed information, please refer to Kriz et al. J. Chem. Theory Comput. 20 (2024) 2362."
+        show_info(helpstr)
+
+    def done(self):
+        self.root.destroy()
+        self.ready = True
+
+    def rules(self)->dict:
+        myrules = {}
+        for c in self.crules:
+            myrules[c] = self.crules[c].get()
+        return myrules
+
 class FFGenerator:
     def __init__(self, root):
         self.width = 900
@@ -557,7 +648,10 @@ class FFGenerator:
         # Get file name
         file_path = saveasfile("Force Field filename to save", ".xml")
         if file_path:
-            status = self.runACT(file_path)
+            comb_rules = CombRule(self.root)
+            comb_rules.run(self.vdwSel.potential())
+            print(f"Here are the combination rules you selected {comb_rules.rules()}")
+            status = self.runACT(file_path, comb_rules.rules())
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
                 show_info(msg)
@@ -608,12 +702,11 @@ class FFGenerator:
     def close(self):
         self.root.destroy()
 
-    def makeSelections(self):
+    def run(self):
+        # Build the elements of the window
         self.top()
         self.makePots()
         self.makeButtons()
-
-    def run(self):
         # layout all of the main containers
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(1, weight=1)
@@ -787,7 +880,7 @@ class FFGenerator:
         if self.vs1_file:
             self.vs1f.close()
 
-    def runACT(self, file_path:str)->int:
+    def runACT(self, file_path:str, comb_rules:dict)->int:
         epsr  = self.qSel.epsilonR()
         nexcl = self.vdwSel.nExcl()
         qsymm = " -noqsymm "
@@ -808,6 +901,11 @@ class FFGenerator:
                 cmd += f" -icfn {icpot} "
             if self.vdwSel.exchCorr():
                 cmd += " -vdwcorr "
+            if len(comb_rules.keys()) > 0:
+                for cr in comb_rules:
+                    cmd += f" -cr_{cr[:3]} {comb_rules[cr]} "
+            if self.verbose:
+                print(f"Command line: {cmd}")
             status = os.system(cmd)
             self.closeCSV()
         return status
