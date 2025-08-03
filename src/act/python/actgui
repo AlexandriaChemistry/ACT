@@ -580,6 +580,10 @@ class CombRule:
         myparam = all_params[potential]
         self.content = ttk.Frame(self.root)
         self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+3)
+        for r in range(len(myparam)+3):
+            self.content.grid_rowconfigure(r, weight=1)
+        for c in range(2):
+            self.content.grid_columnconfigure(c, weight=1)
         lab = ttk.Label(self.content, text=f"Interaction: {itype}")
         lab.grid(row=0, column=0, columnspan=2)
         lab = ttk.Label(self.content, text=f"Potential: {potential}")
