@@ -2,6 +2,7 @@
 
 # This script is part of the Alexandria Chemistry Toolkit
 # https://github.com/AlexandriaChemistry/ACT
+# Author: David van der Spoel
 # License is GPL v. 2
 
 import copy, os, sys, tempfile, webbrowser, time
