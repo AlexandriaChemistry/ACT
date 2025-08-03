@@ -130,7 +130,7 @@ class VdwSel:
             "WANG_BUCKINGHAM":
             { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
               "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0,
-              "comment": "Bucking variant without singularity\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
+              "comment": "Buckingham variant without singularity at r=0\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
             "LJ14_7":
             { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
               "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2,
@@ -551,7 +551,7 @@ class CombRule:
 
     def makeWindow(self):
         self.width = 300
-        self.height= 200
+        self.height= 300
         self.root = tk.Toplevel(self.parent)
         self.root.geometry(f"{self.width}x{self.height}")
         self.root.title("Combination Rule Selector")
@@ -578,10 +578,7 @@ class CombRule:
         self.makeWindow()
         myparam = all_params[potential]
         self.content = ttk.Frame(self.root)
-        self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+2)
-        self.content.grid_rowconfigure(1, weight=1)
-        for c in range(2):
-            self.content.grid_columnconfigure(c, weight=1)
+        self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+3)
         lab = ttk.Label(self.content, text=f"Interaction: {itype}")
         lab.grid(row=0, column=0, columnspan=2)
         lab = ttk.Label(self.content, text=f"Potential: {potential}")
@@ -600,6 +597,10 @@ class CombRule:
         bb = ttk.Button(self.content, text="OK", command=self.done)
         bb.grid(column=1, row=myrow, sticky="nwes")
         myrow += 1
+        for r in range(myrow):
+            self.content.grid_rowconfigure(r, weight=1)
+        for c in range(2):
+            self.content.grid_columnconfigure(c, weight=1)
         while not self.ready:
             self.parent.update()
             time.sleep(0.1)
