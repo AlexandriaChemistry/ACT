@@ -924,10 +924,7 @@ int edit_ff(int argc, char*argv[])
             fst.second = pd.findForces(fst.first);
         }
     }
-    int nRuleChanged = crule.extract(pa,
-                                     its[InteractionType::VDW],
-                                     its[InteractionType::VDWCORRECTION],
-                                     its[InteractionType::INDUCTIONCORRECTION]);
+    int nRuleChanged = crule.extract(&pd);
     if (nRuleChanged > 0)
     {
         printf("Inserted %d new style combination rules from command line.\n",

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -121,10 +121,11 @@ const std::string &interactionTypeToDescription(InteractionType iType);
 /*! \brief
  * Convert string to interaction type.
  * \param[in] name Name of the interaction
- * \return The corresponding interaction type
+ * \param[out] itype The interaction if a correct name was provided
+ * \return true if a correct name was provided, false otherwise
  * \throws if there is no corresponding interaction type
  */
-InteractionType stringToInteractionType(const std::string &name);
+bool stringToInteractionType(const std::string &name, InteractionType *itype);
 
 /*! \brief
  * Return number of atoms involved with this interaction type

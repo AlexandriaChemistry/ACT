@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -328,7 +328,10 @@ static void processAttr(FILE       *fp,
             CanSwap canSwap      = stringToCanSwap(xbufString(xmlEntry::CANSWAP));
             std::string function = xbufString(xmlEntry::FUNCTION);
             std::string inter    = xbufString(xmlEntry::TYPE);
-            currentItype = stringToInteractionType(inter.c_str());
+            if (!stringToInteractionType(inter, &currentItype))
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s'", inter.c_str()).c_str()));
+            }
             // TODO This is a hack to be able to read "old" force field files.
             std::map<InteractionType, CanSwap> csUpdate = {
                 { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,6 +35,7 @@
 
 #include <vector>
 
+#include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "gromacs/commandline/pargs.h"
 
@@ -46,6 +47,8 @@ namespace alexandria
     private:
         // Storage for the command line options
         std::vector<const char *> cr_flag_;
+        // Storage the the combination rule
+        char *rules_;
     public:
         /*! \brief Utility to make command line information about combrules
          * \param[inout] crinfo Array of strings to be edited
@@ -58,16 +61,10 @@ namespace alexandria
         void addPargs(std::vector<t_pargs> *pa);
 
         /*! \brief Utility to convert strings to combination rules in the FF
-         * \param[inout] pa        Command line arguments after processing  
-         * \param[inout] vdw       The parameter list for Van der Waals (may be nullptr)
-         * \param[inout] vdwcorr   The parameter list for VdW correction (may be nullptr)
-         * \param[inout] induccorr The parameter list for Induction correction (may be nullptr)
+         * \param[inout] pd  The force field
          * \return the number of rules that were changed.
          */
-        int extract(const std::vector<t_pargs> &pa,
-                    ForceFieldParameterList    *vdw,
-                    ForceFieldParameterList    *vdwcorr,
-                    ForceFieldParameterList    *iccorr);
+        int extract(ForceField *pd);
 
         /*! \brief Utility to convert old-style combination rule to new
          * \param[inout] vdw     The parameter list

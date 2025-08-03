@@ -181,7 +181,12 @@ static void add_vsites(const char *vsfile,
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown vsite type %s on line %d in file %s",
                                                                ptr[0].c_str(), lineno, vsfile).c_str()));
         }
-        auto itype = stringToInteractionType(ptr[1]);
+        InteractionType itype;
+        if (!stringToInteractionType(ptr[1], &itype))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s' on line %d in file %s",
+                                                               ptr[1].c_str(), lineno, vsfile).c_str()));
+        }
 
         switch (itype)
         {
@@ -666,8 +671,6 @@ int gen_ff(int argc, char*argv[])
             }
         }
     }
-    // Combination rules after adding the parameters only, since it will look them up.
-    crule.extract(pa, &vdw, &vdwcorr, &induccorr);
     // Now add the necessary terms to the final force field.
     pd.addForces(InteractionType::POLARIZATION, pols);
     pd.addForces(InteractionType::ELECTROSTATICS, coulomb);
@@ -690,6 +693,8 @@ int gen_ff(int argc, char*argv[])
     {
         pd.addForces(InteractionType::INDUCTIONCORRECTION, induccorr);
     }
+    // Combination rules after adding the forces and parameters only, since it will look them up.
+    crule.extract(&pd);
     pd.addForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION, eem);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);

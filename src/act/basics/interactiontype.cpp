@@ -103,18 +103,17 @@ const std::string &interactionTypeToDescription(InteractionType iType)
     return en->second.description;
 }
 
-InteractionType stringToInteractionType(const std::string &name)
+bool stringToInteractionType(const std::string &name, InteractionType *itype)
 {
     for (auto &eit : eitNames)
     {
         if (name == eit.second.name)
         {
-            return eit.first;
+            *itype = eit.first;
+            return true;
         }
     }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s'",
-                                                       name.c_str()).c_str()));
-    return InteractionType::BONDS;
+    return false;
 }
 
 int interactionTypeToNatoms(InteractionType iType)
