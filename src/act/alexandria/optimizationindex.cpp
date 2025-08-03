@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -89,7 +89,10 @@ CommunicationStatus OptimizationIndex::receive(const CommunicationRecord *cr,
     cr->recv(src, &particleType_);
     std::string itype;
     cr->recv(src, &itype);
-    iType_ = stringToInteractionType(itype);
+    if (!stringToInteractionType(itype, &iType_))
+    {
+        GMX_THROW(gmx::InternalError("Incorrect InteractionType"));
+    }
     parameterId_.Receive(cr, src);
     cr->recv(src, &parameterType_);
 

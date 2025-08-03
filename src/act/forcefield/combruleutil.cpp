@@ -102,7 +102,7 @@ const std::map<InteractionType, std::vector<cr_param> > mycr =
 
 void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
 {
-    crinfo->push_back("[PAR]Combination rules can be specified for all Van der Waals parameters separately, depending");
+    crinfo->push_back("[PAR]Combination rules can be specified for all parameters, depending");
     crinfo->push_back("on the potential chosen. You can choose from:[BR]");
     for (auto cr : combRuleName)
     {
@@ -112,11 +112,17 @@ void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
     crinfo->push_back("[PAR]Make sure to use the exact strings above including capitalization.");
     crinfo->push_back("Some of the rules that include parameter names should only be used for that parameter.");
     std::string last = gmx::formatString("If not specified, the %s rule will be selected.", combinationRuleName(CombRule::Geometric).c_str());
+    crinfo->push_back("[PAR]Combination rules should all be passed in one long string containing first the interaction type, then the parameter name and finally the combination rule. For instance:");
+    crinfo->push_back("[PAR]  -cr 'VANDERWAALS:epsilon:Geometric VANDERWAALS:sigma:Volumetric INDUCTIONCORRECTION:beta:Arithmetic VDWCORRECTION:A:Geometric'");
     crinfo->push_back(strdup(last.c_str()));
 }
 
 void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
+    pa->push_back( {"-cr", FALSE, etSTR, {&rules_},
+            "Specify all combination rules on one line according to the format specified in the help text."} );
+    if (false)
+    {
     for(const auto &cr : mycr)
     {
         cr_flag_.resize(cr_flag_.size() + cr.second.size(), nullptr);
@@ -132,108 +138,46 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
                     strdup(desc.c_str()) });
         }
     }
-}
-
-static bool hasParameter(const ForceFieldParameterList *ffpl,
-                         const char                    *param)
-{
-    for (auto &ffp : ffpl->parametersConst())
-    {
-        for (auto &pp : ffp.second)
-        {
-            if (pp.first.compare(param) == 0)
-            {
-                return true;
-            }
-        }
     }
-    return false;
 }
 
-int CombRuleUtil::extract(const std::vector<t_pargs> &pa,
-                          ForceFieldParameterList    *vdw,
-                          ForceFieldParameterList    *vdwcorr,
-                          ForceFieldParameterList    *induccorr)
+int CombRuleUtil::extract(ForceField *pd)
 {
-    // This will crash if there is no geometric combrule in the map...
-    const char *defval = combRuleName.find(CombRule::Geometric)->second.c_str();
     int changed = 0;
-    for(const auto &mcr : mycr)
+    
+    auto rules = split(rules_, ' ');
+    printf("There are %zu combination rules\n", rules.size());
+    for (const auto &r : rules)
     {
-        for(const auto &mm : mcr.second)
+        auto elements = split(r, ':');
+        if (elements.size() == 3)
         {
-            const char *value;
-            // If this has not been touched on the command line, do nothing.
-            if (!opt2parg_bSet(mm.flag, pa.size(), pa.data()))
+            InteractionType itype;
+            if (stringToInteractionType(elements[0], &itype))
             {
-                value = mm.deft.c_str();
+                if (pd->interactionPresent(itype))
+                {
+                    auto fs = pd->findForces(itype);
+                    if (fs->combinationRuleExists(elements[1]) &&
+                        (fs->combinationRule(elements[1]) == elements[2]))
+                    {
+                        changed += 1;
+                    }
+                    fs->addCombinationRule(elements[1], elements[2]);
+                }
+                else
+                {
+                    fprintf(stderr, "No such interaction '%s' in force field\n", elements[0].c_str());
+                }
             }
             else
             {
-                value = cr_flag_[mm.index];
+                fprintf(stderr, "Do not understand InteractionType '%s'\n", elements[0].c_str());
             }
-            if (!value || strlen(value) == 0)
-            {
-                // Check whether we have existing values
-                if ((mcr.first == InteractionType::VDW && vdw && 
-                     vdw->combinationRuleExists(mm.var)) ||
-                    (mcr.first == InteractionType::VDWCORRECTION && vdwcorr && 
-                     vdwcorr->combinationRuleExists(mm.var)) ||
-                    (mcr.first == InteractionType::INDUCTIONCORRECTION && induccorr && 
-                     induccorr->combinationRuleExists(mm.var)))
-                {
-                    continue;
-                }
-                value = defval;
-            }
-            // Will throw if incorrect string
-            CombRule cr;
-            if (!combinationRuleRule(value, &cr))
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", value, mm.var).c_str()));
-            }
-            bool doChange = true;
-            if (mcr.first == InteractionType::VDW)
-            {
-                if (vdw)
-                {
-                    if (vdw->combinationRuleExists(mm.var))
-                    {
-                        auto oldRule = vdw->combinationRule(mm.var);
-                        if (oldRule != value)
-                        {
-                            printf("Changing combination rule for %s from %s to %s\n",
-                                   mm.var, oldRule.c_str(), value);
-                        }
-                        else
-                        {
-                            doChange = false;
-                        }
-                    }
-                    if (doChange)
-                    {
-                        if (hasParameter(vdw, mm.var))
-                        {
-                            vdw->addCombinationRule(mm.var, value);
-                            changed += 1;
-                        }
-                    }
-                }
-            }
-            else if (mcr.first == InteractionType::VDWCORRECTION)
-            {
-                if (vdwcorr && hasParameter(vdwcorr, mm.var))
-                {
-                    vdwcorr->addCombinationRule(mm.var, value);
-                }
-            }
-            else if (mcr.first == InteractionType::INDUCTIONCORRECTION)
-            {
-                if (induccorr && hasParameter(induccorr, mm.var))
-                {
-                    induccorr->addCombinationRule(mm.var, value);
-                }
-            }
+        }
+        else
+        {
+            fprintf(stderr, "Ignoring incomprehensible combination rule '%s'\n", r.c_str());
         }
     }
     return changed;

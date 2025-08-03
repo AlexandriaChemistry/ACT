@@ -547,9 +547,13 @@ class Manager:
 class CombRule:
     def __init__(self, root):
         self.parent = root
+        self.crules = None
+        self.ready = False
+
+    def makeWindow(self):
         self.width = 300
         self.height= 200
-        self.root = tk.Toplevel(root)
+        self.root = tk.Toplevel(self.parent)
         self.root.geometry(f"{self.width}x{self.height}")
         self.root.title("Combination Rule Selector")
         self.all_rules = [ "Geometric", "Arithmetic", "Volumetric",
@@ -558,30 +562,33 @@ class CombRule:
                            "WaldmanSigma", "WaldmanEpsilon",
                            "HalgrenEpsilon", "QiSigma", "QiEpsilon",
                            "Yang", "MasonGamma" ]
-        self.crules = None
-        self.ready = False
 
-    def run(self, potential:str):
-        all_params = { "WANG_BUCKINGHAM": { "sigma", "epsilon", "gamma" },
+    def run(self, itype:str, potential:str):
+        all_params = { "TT2b": { "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" },
+                       "GENERALIZED_BUCKINGHAM": { "rmin", "epsilon", "gamma", "delta" },
+                       "WANG_BUCKINGHAM": { "sigma", "epsilon", "gamma" },
                        "LJ14_7": { "sigma", "epsilon", "gamma", "delta" },
                        "LJ12_6": { "sigma", "epsilon" },
                        "LJ8_6": { "sigma", "epsilon" },
-                       "GENERALIZED_BUCKINGHAM": { "rmin", "epsilon", "gamma", "delta" },
+                       "MACDANIEL_SCHMIDT": { "a1dexp", "a2dexp", "bdexp" },
                        "MORSE_BONDS": { "bondlength", "De", "beta" }
                       }
         if potential not in all_params:
             show_info(f"Potential {potential} is not supported yet for manual selection of combination rules. Defaults will be used.")
-            #self.done()
             return
+        self.makeWindow()
         myparam = all_params[potential]
         self.content = ttk.Frame(self.root)
         self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+2)
         self.content.grid_rowconfigure(1, weight=1)
-        self.content.grid_columnconfigure(1, weight=1)
-        lab = ttk.Label(self.content, text=f"Parameters for {potential}")
+        for c in range(2):
+            self.content.grid_columnconfigure(c, weight=1)
+        lab = ttk.Label(self.content, text=f"Interaction: {itype}")
         lab.grid(row=0, column=0, columnspan=2)
+        lab = ttk.Label(self.content, text=f"Potential: {potential}")
+        lab.grid(row=1, column=0, columnspan=2)
         self.crules = {}
-        myrow = 1
+        myrow = 2
         for p in myparam:
             self.crules[p] = tk.StringVar(self.content, self.all_rules[0])
             lab = ttk.Label(self.content, text=p)
@@ -608,8 +615,9 @@ class CombRule:
 
     def rules(self)->dict:
         myrules = {}
-        for c in self.crules:
-            myrules[c] = self.crules[c].get()
+        if self.crules:
+            for c in self.crules:
+                myrules[c] = self.crules[c].get()
         return myrules
 
 class FFGenerator:
@@ -630,10 +638,18 @@ class FFGenerator:
         # Get file name
         file_path = saveasfile("Force Field filename to save", ".xml")
         if file_path:
-            comb_rules = CombRule(self.root)
-            comb_rules.run(self.vdwSel.potential())
-            print(f"Here are the combination rules you selected {comb_rules.rules()}")
-            status = self.runACT(file_path, comb_rules.rules())
+            comb_rules = {}
+            itype = "VANDERWAALS"
+            comb_rules[itype] = CombRule(self.root)
+            comb_rules[itype].run(itype, self.vdwSel.potential())
+            if self.verbose:
+                print(f"Here are the combination rules you selected {comb_rules[itype].rules()}")
+            if self.icSel.potential() != "NONE":
+                itype = "INDUCTIONCORRECTION"
+                comb_rules[itype] = CombRule(self.root)
+                comb_rules[itype].run(itype, self.icSel.potential())
+
+            status = self.runACT(file_path, comb_rules)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
                 show_info(msg)
@@ -884,8 +900,12 @@ class FFGenerator:
             if self.vdwSel.exchCorr():
                 cmd += " -vdwcorr "
             if len(comb_rules.keys()) > 0:
-                for cr in comb_rules:
-                    cmd += f" -cr_{cr[:3]} {comb_rules[cr]} "
+                cmd += " -cr '"
+                for itype in comb_rules.keys():
+                    rules = comb_rules[itype].rules()
+                    for rule in rules:
+                        cmd += f" {itype}:{rule}:{rules[rule]}"
+                cmd += " '"
             if self.verbose:
                 print(f"Command line: {cmd}")
             status = os.system(cmd)
