@@ -550,28 +550,33 @@ void StaticIndividualInfo::assignParamClassIndex()
     {
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
-            const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], '-');
+            const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], ' ');
             if (std::find(tokenizedName.begin(), tokenizedName.end(), paramClass_[i]) != tokenizedName.end())
             {
                 paramClassIndex_[j] = i;
             }
+            else
+            {
+                const auto pclass = gmx::splitDelimitedString(paramClass_[i], ':');
+                if (pclass.size() == 2)
+                {
+                    // We found a paramclass with interactiontype prepended.
+                    if (std::find(tokenizedName.begin(), tokenizedName.end(), pclass[1]) != tokenizedName.end())
+                    {
+                        paramClassIndex_[j] = i;
+                    }
+                }
+            }
         }
     }
 
-    // Now check for params which were not assigned a class and give them class "Other"
-    bool restClass = false;
+    // Now check for params which were not assigned a class and generate an error
     for (size_t i = 0; i < paramClassIndex_.size(); i++)
     {
         if (paramClassIndex_[i] == notFound)
         {
-            if (!restClass)  // If <i> is the first parameter without a class
-            {
-                // Append "Other" to the list of classes
-                paramClass_.push_back("Other");
-                restClass = true;
-            }
-            // Give class "Other" to parameter <i>
-            paramClassIndex_[i] = paramClass_.size() - 1;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter class %s was not found",
+                                                               paramClass_[i].c_str())));
         }
     }
 }
