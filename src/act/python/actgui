@@ -20,10 +20,11 @@ Shell    = "Shell"
 Point    = "Point"
 Gaussian = "Gaussian"
 Slater   = "Slater"
-PG       = "P+G"
+Bounded  = "Bounded"
+Fixed    = "Fixed"
 
-def labelFont():
-    return ('Helvetica', 20, 'bold')
+def labelFont(size:int=20):
+    return ('Helvetica', size, 'bold')
 
 def library_file(filenm:str)->str:
     if os.path.exists(filenm):
@@ -168,13 +169,13 @@ class VdwSel:
             item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
             myrow += 1
 
-        labParticle = tk.Label(frame, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        labParticle = tk.Label(frame, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky="nsw")
         myrow += 1
         self.exchcorr = tk.IntVar()
         item = tk.Checkbutton(frame, text="Exchange correction on vsites", command=None,
                               variable=self.exchcorr)
-        item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
-        ttp = CreateToolTip(item, "For sigma-holes\nKriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974")
+        item.grid(row=myrow, column=mycol, sticky="nsw")
+        ttp = CreateToolTip(item, "For sigma-holes\nKriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974, https://doi.org/10.1021/acs.jpclett.4c02034")
         myrow += 1
 
         labPot = tk.Label(frame, text=f"Number of exclusions",
@@ -217,8 +218,7 @@ class QSel:
         gharemanpour2018b = "Distributed charges\nGhahremanpour et al. J. Chem. Theory Comput. 14 (2018) 5553"
         self.qs = { Point: "Point charges", 
                     Gaussian: gharemanpour2018b, 
-                    Slater: gharemanpour2018b, 
-                    PG: "Point+Gaussian\nVan der Spoel & Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817" }
+                    Slater: gharemanpour2018b }
         self.qmodel = tk.StringVar(root, Gaussian)
         labPot = tk.Label(root, text=f"Charge model",
                           anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
@@ -248,12 +248,6 @@ class QSel:
                               variable=self.qsymm).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
         
-        # Polarization
-        self.pol = tk.IntVar()
-        self.pol.set(0)
-        item = tk.Checkbutton(root, text="Polarizability", command=None,
-                              variable=self.pol).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
-        myrow += 1
         self.myrow = myrow
 
     def symm(self):
@@ -261,9 +255,6 @@ class QSel:
 
     def qModel(self):
         return self.qmodel.get()
-
-    def polarizable(self):
-        return self.pol.get()
 
     def nrows(self)->int:
         return self.myrow
@@ -338,15 +329,46 @@ class ICSel:
                      "MACDANIEL_SCHMIDT": "Negative exponential correction\nMcDaniel & Schmidt, J. Phys. Chem. 117 (2013) 2053",
                      "MORSE_BONDS": "Correction with repulsive and attractive part\nHosseini & Van der Spoel, in preparation" }
         self.icPot = tk.StringVar(root, "NONE")
-        labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky="nsw")
         myrow += 1
 
         for ic in self.ics.keys():
+            if ic == "NONE":
+                mycmd = self.disable
+            else:
+                mycmd = self.enable
             item = tk.Radiobutton(root, text=ic, variable=self.icPot,
-                                  value=ic, command=None)
-            item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+                                  value=ic, command=mycmd)
+            item.grid(row=myrow, column=mycol, sticky="nsw")
             ttp = CreateToolTip(item, self.ics[ic])
             myrow += 1
+        labParticle = tk.Label(root, text=f"Use Induction correction on", anchor="w", font=labelFont())
+        labParticle.grid(row=myrow, column=mycol, sticky="nsw")
+        myrow += 1
+        self.icPart = {}
+        ptypes = { Atom: 1, Shell: 0 }
+        self.cb = {}
+        for ptype in ptypes.keys():
+            self.icPart[ptype] = tk.IntVar()
+            self.icPart[ptype].set(ptypes[ptype])
+            self.cb[ptype] = tk.Checkbutton(root, text=ptype, command=None, state=tk.DISABLED,
+                                            variable=self.icPart[ptype])
+            self.cb[ptype].grid(row=myrow, column=mycol, sticky="nsw")
+            myrow += 1
+
+    def disable(self):
+        self.cb[Atom]['state'] = tk.DISABLED
+        self.cb[Shell]['state'] = tk.DISABLED
+        
+    def enable(self):
+        self.cb[Atom]['state'] = tk.NORMAL
+        self.cb[Shell]['state'] = tk.NORMAL
+        
+    def icParticles(self):
+        icp = {}
+        for pt in self.icPart:
+            icp[pt] = self.icPart[pt].get()
+        return icp
 
     def potential(self):
         return self.icPot.get()
@@ -367,15 +389,18 @@ class AtomTypes:
                 if line.startswith("#"):
                     continue
                 words = line.strip().split("|")
-                if len(words) == 8:
+                if len(words) == 10:
                     try:
-                        self.atype_props[words[0]] = { "Element": words[1],
-                                                       "Default": int(words[2]),
-                                                       "Bonds": int(words[3]),
-                                                       "Radius": float(words[4]),
-                                                       "Row": int(words[5]),
-                                                       "Charge": int(words[6]),
-                                                       "Comment": words[7] }
+                        self.atype_props[words[0]] = {
+                            "Element": words[1],
+                            "Default": int(words[2]),
+                            "Bonds": int(words[3]),
+                            "Radius": float(words[4]),
+                            "Row": int(words[5]),
+                            "Charge": int(words[6]),
+                            VSite: int(words[7]),
+                            Shell: int(words[8]),
+                            "Comment": words[9] }
                     except ValueError:
                         sys.exit(f"Error in file {atype_gui} on line {lineno}")
 
@@ -412,8 +437,106 @@ class AtomTypes:
         for at in self.atypes:
             self.atypes[at].set(0)
             self.atype_props[at]["Default"] = 0
-            
+
+    def allVsite(self):
+        status = self.selAll[VSite].get()
+        for at in self.atype_props.keys():
+            if self.atype_props[at]["Default"]:
+                self.newProps[at][VSite].set(status)
+
+    def allShell(self):
+        status = self.selAll[Shell].get()
+        for at in self.atype_props.keys():
+            if self.atype_props[at]["Default"]:
+                self.newProps[at][Shell].set(status)
+
+    def selectProps(self, root):
+        self.parent = root
+        self.root   = tk.Toplevel(self.parent)
+        self.root.title("Atomtype properties selector")
+        self.updateAtypeProps()
+        ndef     = 0
+        for at in self.atype_props.keys():
+            if self.atype_props[at]["Default"]:
+                ndef += 1
+        maxrow = 15
+        ncol   = int(ndef/maxrow)
+        if ndef % maxrow > 0:
+            ncol += 1
+        nrow   = min(ndef, maxrow)+2+1
+        self.content = tk.Frame(self.root)
+        self.content.grid(rowspan=nrow, columnspan=3*ncol, sticky="news")
+        # Column headers
+        myrow = 0
+        headers = [ "Type", VSite, Shell ]
+        myfont = labelFont(16)
+        for c in range(ncol):
+            for lll in range(len(headers)):
+                lab = tk.Label(self.content, text=headers[lll], font=myfont)
+                lab.grid(row=myrow, column=3*c+lll, sticky="news")
+        myrow += 1
+        self.selAll = {}
+        lab = tk.Label(self.content, text="All")
+        lab.grid(row=myrow, column=0, sticky="nsw")
+        for c in range(1):
+            for lll in range(1, len(headers)):
+                self.selAll[headers[lll]] = tk.IntVar()
+                if headers[lll] == Shell:
+                    mycmd = self.allShell
+                elif headers[lll] == VSite:
+                    mycmd = self.allVsite
+                box = tk.Checkbutton(self.content, variable=self.selAll[headers[lll]], command=mycmd)
+                box.grid(row=myrow, column=3*c+lll, sticky="news")
+        myrow += 1
+        mycol  = 0
+        self.newProps = {}
+        for at in self.atype_props.keys():
+            if not self.atype_props[at]["Default"]:
+                continue
+            self.newProps[at] = {}
+            lab = tk.Label(self.content, text=at)
+            lab.grid(row=myrow, column=3*mycol, sticky="nsw")
+            for lll in range(1, len(headers)):
+                self.newProps[at][headers[lll]] = tk.IntVar()
+                item = tk.Checkbutton(self.content, command=None,
+                                      variable=self.newProps[at][headers[lll]])
+                item.grid(row=myrow, column=3*mycol+lll, sticky="news")
+            myrow += 1
+            if myrow == maxrow+2:
+                myrow = 2
+                mycol += 1
+        bwidth = int(3*ncol/2)
+        buthelp = tk.Button(self.content, text="Help", command=self.help)
+        buthelp.grid(row=nrow-1, column=0, columnspan=bwidth, sticky="news")
+        butok   = tk.Button(self.content, text="OK", command=self.doneSelect)
+        butok.grid(row=nrow-1, column=bwidth, columnspan=bwidth, sticky="news")
+        for r in range(nrow):
+            self.content.grid_rowconfigure(r, weight=1)
+        for c in range(4*ncol):
+            self.content.grid_columnconfigure(c, weight=1)
+        self.ready = False
+        while not self.ready:
+            self.parent.update()
+            time.sleep(0.1)
+
+    def help(self):
+        helpstr = "Select VSite for all atomtypes that you want to use an on-atom virtual site - this only makes sense for Gaussian or Slater distributed Coulomb though. In this case a force field will be created with a point charge on the core and a distributed charge virtual site. See Van der Spoel and Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817. https://doi.org/10.1039/D5CP01254F\n\nSelect a Shell for all particles that you would like to be polarizable."
+        show_info(helpstr)
+
+    def doneSelect(self):
+        self.ready = True
+        self.root.destroy()
+
+    def updateAtypeProps(self):
+        for at in self.atypes:
+            if self.atypes[at].get():
+                self.atype_props[at]["Default"] = 1
+
     def getAtypes(self)->dict:
+        for at in self.newProps:
+            for head in [ VSite, Shell ]:
+                self.atype_props[at][head] = self.newProps[at][head].get() 
+
         atprops = {}
         for at in self.atypes:
             if self.atypes[at].get():
@@ -551,10 +674,7 @@ class CombRule:
         self.ready = False
 
     def makeWindow(self):
-        self.width = 300
-        self.height= 300
         self.root = tk.Toplevel(self.parent)
-        self.root.geometry(f"{self.width}x{self.height}")
         self.root.title("Combination Rule Selector")
         self.all_rules = [ "Geometric", "Arithmetic", "Volumetric",
                            "InverseSquare", "Kronecker",
@@ -580,9 +700,13 @@ class CombRule:
         myparam = all_params[potential]
         self.content = ttk.Frame(self.root)
         self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+3)
-        lab = ttk.Label(self.content, text=f"Interaction: {itype}")
+        for r in range(len(myparam)+3):
+            self.content.grid_rowconfigure(r, weight=1)
+        for c in range(2):
+            self.content.grid_columnconfigure(c, weight=1)
+        lab = ttk.Label(self.content, text=f"Interaction: {itype}", font=labelFont(16))
         lab.grid(row=0, column=0, columnspan=2)
-        lab = ttk.Label(self.content, text=f"Potential: {potential}")
+        lab = ttk.Label(self.content, text=f"Potential: {potential}", font=labelFont(16))
         lab.grid(row=1, column=0, columnspan=2)
         self.crules = {}
         myrow = 2
@@ -607,7 +731,7 @@ class CombRule:
             time.sleep(0.1)
 
     def help(self):
-        helpstr = "Choose the combination rule for each parameter in the potential of your choice. Please be aware that combination rules represent an approximation of the potential between atoms. The choice of rules has a large impact on the accuracy of your model. For more detailed information, please refer to Kriz et al. J. Chem. Theory Comput. 20 (2024) 2362."
+        helpstr = "Choose the combination rule for each parameter in the potential of your choice. Please be aware that combination rules represent an approximation of the potential between atoms.\n\nThe choice of rules has a large impact on the accuracy of your model. For more detailed information, please refer to Kriz et al. J. Chem. Theory Comput. 20 (2024) 2362. https://doi.org/10.1021/acs.jctc.3c01257"
         show_info(helpstr)
 
     def done(self):
@@ -626,9 +750,7 @@ class FFGenerator:
         self.width = 900
         self.height= 800
         self.root = tk.Toplevel(root)
-        self.root.geometry(f"{self.width}x{self.height}")
         self.root.title("ACT - Force Field Generator")
-#        self.root.configure()
 
     def rootW(self):
         return self.root
@@ -650,6 +772,7 @@ class FFGenerator:
                 comb_rules[itype] = CombRule(self.root)
                 comb_rules[itype].run(itype, self.icSel.potential())
 
+            self.atoms.selectProps(self.root)
             status = self.runACT(file_path, comb_rules)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
@@ -670,13 +793,12 @@ class FFGenerator:
         else:
             # TODO: build in alternative if the logo image is not present
             sys.exit("Cannot find %s" % actlogo)
-        self.atom_frame = tk.Frame(self.root, width=self.width-logo_size,
-                                   height=logo_size, pady=3, padx=3, bd=1, relief=tk.SOLID)
+        self.atom_frame = tk.Frame(self.root, pady=3, padx=3, bd=1, relief=tk.SOLID)
         self.atoms    = AtomTypes(self.atom_frame, myrow=0, mycol=0)
 
     def makePots(self):
-        self.mid_frame = tk.Frame(self.root, width=self.width,
-                                  height=500, pady=3, bd=1, relief=tk.SOLID)
+        self.mid_frame = tk.Frame(self.root, #width=self.width, height=500, 
+                                  pady=3, bd=1, relief=tk.SOLID)
         self.vdwSel   = VdwSel(self.mid_frame, myrow=0, mycol=0)
         self.qSel     = QSel(self.mid_frame, myrow=0, mycol=1)
         self.bondSel  = BondSel(self.mid_frame, myrow=0, mycol=2)
@@ -685,18 +807,23 @@ class FFGenerator:
         self.icSel    = ICSel(self.mid_frame, myrow=self.qSel.nrows(), mycol=1)
 
     def makeButtons(self):
-        self.bot_frame = tk.Frame(self.root, width=self.width, height=60, pady=3, bd=1, relief=tk.SOLID)
+        self.bot_frame = tk.Frame(self.root, 
+                                  #width=self.width, height=60,
+                                  pady=3, bd=1, relief=tk.SOLID)
         bwidth = int(self.width/4)
         self.saveIntermediates = tk.IntVar()
         self.saveIntermediates.set(1)
-        item = tk.Checkbutton(self.bot_frame, width=bwidth, text="Save intermediate files", command=None,
-                              variable=self.saveIntermediates).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W)
+        item = tk.Checkbutton(self.bot_frame,
+                              text="Save intermediate files", command=None,
+                              variable=self.saveIntermediates).grid(row=0, column=0, sticky="nsw")
         self.verbose = tk.IntVar()
         self.verbose.set(0)
-        item = tk.Checkbutton(self.bot_frame, width=bwidth,  text="Verbose mode", command=None,
-                              variable=self.verbose).grid(row=0, column=1, sticky=tk.N+tk.S+tk.W)
-        tk.Button(self.bot_frame,  width=bwidth, text="Run", default="active", command=self.doGenFF).grid(row=0, column=2, sticky=tk.W)
-        tk.Button(self.bot_frame,  width=bwidth, text="Cancel", default="normal", command=self.close).grid(row=0, column=3, sticky=tk.E)
+        item = tk.Checkbutton(self.bot_frame,text="Verbose mode", command=None,
+                              variable=self.verbose).grid(row=0, column=1, sticky="nsw")
+        tk.Button(self.bot_frame,
+                  text="Run", default="active", command=self.doGenFF).grid(row=0, column=2, sticky="nsew")
+        tk.Button(self.bot_frame,
+                  text="Cancel", default="normal", command=self.close).grid(row=0, column=3, sticky="nsew")
 
     def close(self):
         self.root.destroy()
@@ -730,7 +857,6 @@ class FFGenerator:
             print(f"VDW on {ptype}: {vdwPart[ptype]}")
         print(f"Use exchange correction: {self.vdwSel.exchCorr()}")
         print(f"Charge model selected: {self.qSel.qModel()}")
-        print(f"Polarizable: {self.qSel.polarizable()}")
         print(f"Bond potential selected: {self.bondSel.potential()}")
         print(f"Angle potential selected: {self.angleSel.potential()}")
         print(f"Dihedral potential selected: {self.dihSel.potential()}")
@@ -752,10 +878,19 @@ class FFGenerator:
             print("No correct csv file name received or temp file opening failed.")
             return False
 
-        # Do we need to generate vsite1 definitions
+        # Fetch the atom types selected by the user
+        atype_props = self.atoms.getAtypes()
+        if len(atype_props) == 0:
+            show_info("No atom types selected!")
+            return False
+
+        # Do we need to generate vsite1 definitions?
         self.vs1_file = None
-        qdist         = self.qSel.qModel()
-        if qdist == PG:
+        needVS1 = False
+        for atp in atype_props:
+            if atype_props[atp][VSite] > 0:
+                needVS1 = True
+        if needVS1:
             # Yes!
             if self.saveIntermediates.get():
                 # Let user decide what file to save atomtypes in
@@ -772,23 +907,18 @@ class FFGenerator:
                     return False
 
         self.tf.write("#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aexp_min|aexp_max|aexp_mutability|bexp_min|bexp_max|bexp_mutability|a1dexp_min|a1dexp_max|a1dexp_mutability|a2dexp_min|a2dexp_max|a2dexp_mutability|bdexp_min|bdexp_max|bdexp_mutability|comment|reference\n")
-        # Fetch the atom types selected by the user
-        atype_props = self.atoms.getAtypes()
-        if len(atype_props) == 0:
-            show_info("No atom types selected!")
-            return False
         # Set some shortcuts
-        Bounded     = "Bounded"
-        Fixed       = "Fixed"
-        vdwPart     = self.vdwSel.vdwParticles()
-        polarizable = self.qSel.polarizable()
+        vdwPart = self.vdwSel.vdwParticles()
+        qdist   = self.qSel.qModel()
         # Defaults for potentials
         for atp in atype_props:
             if atype_props[atp]["Default"] > 0:
                 for vdwtp in vdwPart:
-                    if vdwtp == Shell and not polarizable:
+                    polarizable = atype_props[atp][Shell] > 0
+                    haveVS1     = atype_props[atp][VSite] > 0
+                    if vdwtp == VSite and not haveVS1:
                         continue
-                    if vdwtp == VSite and not qdist == PG:
+                    if vdwtp == Shell and not polarizable:
                         continue
                     btype = ""
                     if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
@@ -820,10 +950,11 @@ class FFGenerator:
                     if vdwPart[vdwtp]:
                         bounds = self.vdwSel.bounds()
                         vdw_mut = Bounded
-                    zeta = { 'min': 0, "max": 0, "mut": Fixed }
-                    if qdist != Point:
-                        if (qdist == PG and vdwtp != Atom) or qdist in [ Gaussian, Slater ]:
-                            zeta = { "min": 4, "max": 20, "mut": Bounded }
+                    
+                    if qdist == Point or (vdwtp == Atom and haveVS1):
+                        zeta = { 'min': 0, "max": 0, "mut": Fixed }
+                    else:
+                        zeta = { "min": 4, "max": 20, "mut": Bounded }
                     aexp = { "min": 0, "max": 0 }
                     vdwcorr_mut = Fixed
                     bexp = { "min": 10, "max": 50 }
@@ -841,6 +972,8 @@ class FFGenerator:
                         element = atype_props[atp]['Element']
                         eta     = { "min": "4", "max": "20", "mut": Bounded }
                         chi     = { "min": "4", "max": "12", "mut": Bounded }
+                    elif vdwtp == VSite:
+                        element = "VS"
                     a1dexp = { "min": 0, "max": 0 }
                     MS_mut = Fixed
                     a2dexp = { "min": 0, "max": 0 }
@@ -888,10 +1021,7 @@ class FFGenerator:
         if self.qSel.symm():
             qsymm = " -qsymm "
         if self.generateCSV():
-            # Workaround since alexandria gen_ff does not yet know about the P+G charge distribution
             qdist = self.qSel.qModel()
-            if qdist == PG:
-                qdist = Gaussian
             cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
             if self.vs1_file:
                 cmd += f" -vs {self.vs1_file} "
@@ -909,6 +1039,10 @@ class FFGenerator:
                 cmd += " '"
             if self.verbose:
                 print(f"Command line: {cmd}")
+            # Make sure all info is in the files!
+            self.tf.flush()
+            if self.vs1_file:
+                self.vs1f.flush()
             status = os.system(cmd)
             self.closeCSV()
         return status

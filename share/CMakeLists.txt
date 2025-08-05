@@ -1,37 +1,11 @@
 #
-# This file is part of the GROMACS molecular simulation package.
+# This file is part of the Alexandria Chemistry Toolkit
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2018, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright (c) 2014-2025, by the Alexandria Chemistry team, led by
+# David van der Spoel, Paul J. van Maaren and Mohamman M. Ghahremanpour. 
 #
-# GROMACS is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public License
-# as published by the Free Software Foundation; either version 2.1
-# of the License, or (at your option) any later version.
+# See License file in top level directory for license info. 
 #
-# GROMACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
-#
-# If you want to redistribute modifications to GROMACS, please
-# consider that scientific software is very special. Version
-# control is crucial - bugs must be traceable. We will be happy to
-# consider code for inclusion in the official distribution, but
-# derived work must not be called official GROMACS. Details are found
-# in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
-#
-# To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
-
 install(FILES 
          ACTlogo2.png
          alexandria.csv
@@ -40,13 +14,10 @@ install(FILES
          atomprops.csv
          atomprops.csv
          atomtype_mapping.csv
-         atomtypes_pol.csv
-         atomtypes_nonpol.csv
          atomtypes_gui.csv
          bondvsites.csv
          excluded_molecules.csv
-         ffnames.csv
          residuetypes.dat 
          symmetric_charges.csv
-    DESTINATION ${GMX_INSTALL_GMXDATADIR}
+    DESTINATION ${ACT_INSTALL_ACTDATADIR}
     COMPONENT data)

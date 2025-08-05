@@ -66,8 +66,8 @@
 /** Binary directory for the build */
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
 
-/** Location of GROMACS-specific data files */
-#define GMX_INSTALL_GMXDATADIR  "@GMX_INSTALL_GMXDATADIR@"
+/** Location of ACT-specific data files */
+#define ACT_INSTALL_ACTDATADIR  "@ACT_INSTALL_ACTDATADIR@"
 
 /** HWLOC version information */
 #define HWLOC_VERSION "@HWLOC_VERSION@"

@@ -186,7 +186,7 @@ bool isAcceptableLibraryPath(const std::string &path)
  */
 bool isAcceptableLibraryPathPrefix(const std::string &path)
 {
-    std::string testPath = Path::join(path, GMX_INSTALL_GMXDATADIR, "top");
+    std::string testPath = Path::join(path, ACT_INSTALL_ACTDATADIR, "top");
     return isAcceptableLibraryPath(testPath);
 }
 

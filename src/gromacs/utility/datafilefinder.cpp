@@ -83,7 +83,7 @@ std::string DataFileFinder::Impl::getDefaultPath()
     if (!isNullOrEmpty(installPrefix.path))
     {
         const char *const dataPath
-            = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
+            = installPrefix.bSourceLayout ? "share" : ACT_INSTALL_ACTDATADIR;
         return Path::join(installPrefix.path, dataPath, "");
     }
     return std::string();
