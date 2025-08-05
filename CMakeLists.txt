@@ -751,10 +751,10 @@ endif()
 include(GNUInstallDirs)
 
 set(GMX_INSTALL_DATASUBDIR "act" CACHE STRING "Subdirectory for ACT data under CMAKE_INSTALL_DATADIR")
-mark_as_advanced(GMX_INSTALL_DATASUBDIR)
+mark_as_advanced(ACT_INSTALL_DATASUBDIR)
 
 # Internal convenience so we do not have to join two path segments in the code
-set(GMX_INSTALL_GMXDATADIR ${CMAKE_INSTALL_DATADIR}/${GMX_INSTALL_DATASUBDIR})
+set(ACT_INSTALL_ACTDATADIR ${CMAKE_INSTALL_DATADIR}/${ACT_INSTALL_DATASUBDIR})
 
 # If the nesting level wrt. the installation root is changed,
 # gromacs-config.cmake.cmakein needs to be adapted.
@@ -762,7 +762,7 @@ set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
 
 # TODO: Make GMXRC adapt if this is changed
 set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-set(GMX_INSTALL_OCLDIR       ${GMX_INSTALL_GMXDATADIR}/opencl)
+set(GMX_INSTALL_OCLDIR       ${ACT_INSTALL_ACTDATADIR}/opencl)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
 
@@ -803,7 +803,7 @@ endif()
 
 #COPYING file: Only necessary for binary distributions.
 #Simpler to always install.
-install(FILES COPYING DESTINATION ${GMX_INSTALL_GMXDATADIR} COMPONENT data)
+install(FILES COPYING DESTINATION ${ACT_INSTALL_ACTDATADIR} COMPONENT data)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
