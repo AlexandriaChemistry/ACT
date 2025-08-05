@@ -59,13 +59,13 @@ std::string OptimizationIndex::name() const
 {
     if (InteractionType::CHARGE == iType_)
     {
-        return gmx::formatString("%s-%s",
+        return gmx::formatString("%s %s",
                                  particleType_.c_str(),
                                  parameterType_.c_str());
     }
     else
     {
-        return gmx::formatString("%s-%s",
+        return gmx::formatString("%s %s",
                                  parameterId_.id().c_str(),
                                  parameterType_.c_str());
     }
