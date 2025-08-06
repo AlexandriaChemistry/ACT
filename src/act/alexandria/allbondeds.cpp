@@ -573,6 +573,9 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
             mmi.GenerateTopology(msghandler, pd, missingParameters::Generate);
             if (!msghandler->ok())
             {
+                // If one molecule does not work, it should not ruin the
+                // party for the others.
+                msghandler->resetStatus();
                 continue;
             }
             {

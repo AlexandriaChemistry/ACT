@@ -22,6 +22,9 @@ Gaussian = "Gaussian"
 Slater   = "Slater"
 Bounded  = "Bounded"
 Fixed    = "Fixed"
+defnm    = "DefaultName"
+pad1     = 5
+mypad    = ( pad1, pad1, pad1, pad1 )
 
 def labelFont(size:int=20):
     return ('Helvetica', size, 'bold')
@@ -464,7 +467,7 @@ class AtomTypes:
         if ndef % maxrow > 0:
             ncol += 1
         nrow   = min(ndef, maxrow)+2+1
-        self.content = tk.Frame(self.root)
+        self.content = ttk.Frame(self.root, padding=mypad)
         self.content.grid(rowspan=nrow, columnspan=3*ncol, sticky="news")
         # Column headers
         myrow = 0
@@ -569,44 +572,164 @@ class GeometryFF:
     def __init__(self, root):
         self.root = root
 
-    def run(self)->int:
-        molprop = openasfile("Molecule Property File (molprop)", ".xml")
-        if not molprop:
+    def run(self, ffName:str)->int:
+        self.tl = tk.Toplevel(self.root)
+        self.tl.title("Molecular geometry options")
+        tlc = ttk.Frame(self.tl, padding=mypad)
+        myrow = 0
+        l1  = ttk.Label(tlc, text="Charge algorithm")
+        l1.grid(row=myrow, column=0,  sticky="nws")
+        myrow += 1
+        mycol  = 0
+        # Radiobuttons for the charge algorithm
+        qalg = tk.StringVar(tlc, "SQE")
+        qalgs = { "SQE": "Split charge equilibration\nVerstraelen et al., J. Chem. Phys. 131 (2009) 044127",
+                  "EEM": "Electronegativity equilibration\nRappe & Goddard, J. Phys. Chem. 95 (1991) 3358" }
+        for qq in qalgs.keys():
+            item = tk.Radiobutton(tlc, text=qq, variable=qalg,
+                                  value=qq, command=None)
+            item.grid(row=myrow, column=mycol, sticky="nsw")
+            tpp = CreateToolTip(item, qalgs[qq])
+            myrow += 1
+        # Options for boundaries
+        myrow = 0
+        l1  = ttk.Label(tlc, text="Parameter variation")
+        l1.grid(row=myrow, column=1,  sticky="nws")
+        myrow += 1
+        mycol  = 1
+        label = "label"
+        var   = "variable"
+        cmd   = "command"
+        fff = { "-bfactor": { label:"Bond length", var:tk.DoubleVar(tlc, 0.95) },
+                "-afactor": { label:"Angle", var:tk.DoubleVar(tlc, 0.95) },
+                "-factor": { label:"Other", var:tk.DoubleVar(tlc, 0.5) } }
+        for ff in fff.keys():
+            ll = ttk.Label(tlc, text=fff[ff][label])
+            ll.grid(row=myrow, column=mycol, sticky="nws")
+            ss = ttk.Entry(tlc, textvariable=fff[ff][var])
+            ss.grid(row=myrow, column=mycol+1, sticky="nws")
+            myrow += 1
+
+        # File buttons
+        select = "Select..."
+        if not ffName:
+            ffName = select
+        self.fnms = { "-mp": { label: "Molprop file",  defnm:select, cmd:self.mpfile },
+                      "-ff": { label: "Input FF file", defnm:ffName, cmd:self.input_ff },
+                      "-o":  { label: "Output FF file", defnm:ffName, cmd:self.output_ff } }
+        mycol = 0
+        self.fnbut = {}
+        for fn in self.fnms.keys():
+            ll = ttk.Label(tlc, text=self.fnms[fn][label])
+            ll.grid(row=myrow, column=mycol, sticky="nws")
+            # Check whether we have a real file name here or not
+            mytext = self.fnms[fn][defnm]
+            if mytext != select:
+                mytext = os.path.basename(mytext)
+            self.fnbut[fn] = ttk.Button(tlc, text=mytext, command=self.fnms[fn][cmd])
+            self.fnbut[fn].grid(row=myrow+1, column=mycol, sticky="news")
+            mycol += 1
+        myrow += 2
+        
+        # Final OK button
+        self.ok     = False
+        self.cancel = False
+        but = ttk.Button(tlc, text="OK", command=self.done)
+        but.grid(row=myrow, column=0, sticky="news")
+        but = ttk.Button(tlc, text="Cancel", command=self.stop)
+        but.grid(row=myrow, column=2, sticky="news")
+        myrow += 1
+
+        tlc.grid(row=0, column=0, rowspan=myrow, sticky="news")
+        for r in range(myrow):
+            tlc.grid_rowconfigure(r, weight=1)
+        for c in range(3):
+            tlc.grid_columnconfigure(c, weight=1)
+        # Wait for the user to press ok
+        while not self.ok and not self.cancel:
+            self.root.update()
+            time.sleep(0.1)
+        if self.cancel:
             return 1
-        ffin = openasfile("Input/output force field file", ".xml")
-        if not ffin:
+
+        if not os.path.exists(self.fnms["-ff"][defnm]):
+            show_info(f"Force field file {self.fnms['-ff'][defnm]} does not exist")
             return 1
-        #ffout = openasfile("Output force field file", ".xml")
-        #if not ffout:
-        #    return 1
-        status = os.system(f"alexandria geometry_ff -ff {ffin} -mp {molprop} -o {ffin}")
+        elif not os.path.exists(self.fnms["-mp"][defnm]):
+            show_info(f"Molprop file {self.fnms['-mp'][defnm]} does not exist")
+            return 1
+        mycmd = f"alexandria geometry_ff "
+        for fn in self.fnms:
+            mycmd += f" {fn} {self.fnms[fn][defnm]} "
+        if qalg.get() == "EEM":
+            mycmd += " -nogen_bcc "
+        for ff in fff:
+            mycmd += f" {ff} {fff[ff][var].get()} "
+        print(f"Will run '{mycmd}'")
+        status = os.system(mycmd)
+
         if status == 0:
-            show_info(f"Updated bond information in {ffin}")
+            show_info(f"Updated bond information and saved {self.fnms['-o'][defnm]}")
+        else:
+            show_info(f"Something went wrong when updating bond information in {self.fnms['-ff'][defnm]}")
         return status
+
+    def mpfile(self):
+        # Get file name
+        molprop = openasfile("Molecule Property File", ".xml")
+        if molprop:
+            # Update button text
+            self.fnbut["-mp"].configure(text=os.path.basename(molprop))
+            # and filename
+            self.fnms["-mp"][defnm] = molprop
+
+    def input_ff(self):
+        # Get file name
+        inff = openasfile("Input FF File", ".xml")
+        if inff:
+            # Update button text
+            self.fnbut["-ff"].configure(text=os.path.basename(inff))
+            self.fnms["-ff"][defnm] = inff
+
+    def output_ff(self):
+        # Get file name
+        outff = openasfile("Output FF File", ".xml")
+        if outff:
+            # Update button text
+            self.fnbut["-o"].configure(text=os.path.basename(outff))
+            self.fnms["-o"][defnm] = outff
+
+    def stop(self):
+        self.cancel = True
+        self.tl.destroy()
+
+    def done(self):
+        self.ok = True
+        self.tl.destroy()
 
 class Manager:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("ACT - GUI")
         self.root.configure()
-        
+        self.ffName = None
+
         default_font = tkFont.nametofont("TkDefaultFont")
         default_font.configure(size=16)
         
         # TODO: get this number from the image size
         logo_size = 150
-        self.pad = 5
-        self.height = logo_size+2*self.pad
+        self.height = logo_size+2*pad1
         self.width = 2*self.height
         self.root.minsize(self.width, self.height)
         self.root.maxsize(2*self.width, 2*self.height)
-        self.content = ttk.Frame(self.root, padding=(self.pad,self.pad,self.pad,self.pad))
+        self.content = ttk.Frame(self.root, padding=mypad)
         self.content.grid(row=0, column=0, rowspan=1, columnspan=2, sticky="ewns")
         self.logoStuff(self.content, logo_size)
         self.addButtons(self.content, 1)
     
     def logoStuff(self, root, logo_size:int):
-        self.logo_frame = ttk.Frame(root, width=self.height, height=self.height)
+        self.logo_frame = ttk.Frame(root, width=self.height, height=self.height, padding=mypad)
         self.logo_frame.grid(row=0, column=0, rowspan=3, sticky="ew")
         self.logo = ACTLogo(logo_size, self.logo_frame)
         self.logo.set_grid()
@@ -636,10 +759,11 @@ class Manager:
     def genff(self):
         ffgen = FFGenerator(self.root)
         ffgen.run()
+        self.ffName = ffgen.forceFieldName()
 
     def geometry(self):
         geomff = GeometryFF(self.root)
-        geomff.run()
+        geomff.run(self.ffName)
 
     def help(self):
         helpstr = ("This is a simple frontend to some the commands available in the Alexandria Chemistry Toolkit.\n\nYou can generate a force field template, pressing the button will pop-up another window where you can make selections of atom types, potentials and some algorithmic options.\n\nThen you can add parameters for bonded functions if you provide a molecule property (molprop) file that will be analysed for bond-lengths, angles, etc. after which the information will be added to your force field file.")
@@ -649,9 +773,9 @@ class Manager:
         self.root.quit()
 
     def addButtons(self, parent, mycol:int):
-        bwidth = int(self.width/2) - self.pad
+        bwidth = int(self.width/2) - pad1
         self.bframe = ttk.Frame(parent, width=bwidth,
-                                height=bwidth, border=0, relief=tk.SOLID)
+                                height=bwidth, border=0, relief=tk.SOLID, padding=mypad)
         self.bframe.grid(row=0, column=mycol, rowspan=3, sticky="wens")
         myrow = 0
         bdict = { "Generate force field": self.genff,
@@ -662,7 +786,7 @@ class Manager:
         self.mybuttons = []
         for bd in bdict:
             mybut = ttk.Button(self.bframe, text=bd, default=deft, command=bdict[bd])
-            mybut.grid(row=myrow, column=mycol, sticky="ew", padx=self.pad, pady=self.pad)
+            mybut.grid(row=myrow, column=mycol, sticky="ew", padx=pad1, pady=pad1)
             self.mybuttons.append(mybut)
             deft   = "normal"
             myrow += 1
@@ -691,23 +815,23 @@ class CombRule:
                        "LJ12_6": { "sigma", "epsilon" },
                        "LJ8_6": { "sigma", "epsilon" },
                        "MACDANIEL_SCHMIDT": { "a1dexp", "a2dexp", "bdexp" },
-                       "MORSE_BONDS": { "bondlength", "De", "beta" }
+                       "MORSE_BONDS": { "bondlength", "De", "beta", "D0" }
                       }
         if potential not in all_params:
             show_info(f"Potential {potential} is not supported yet for manual selection of combination rules. Defaults will be used.")
             return
         self.makeWindow()
         myparam = all_params[potential]
-        self.content = ttk.Frame(self.root)
+        self.content = ttk.Frame(self.root, padding=mypad)
         self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+3)
         for r in range(len(myparam)+3):
             self.content.grid_rowconfigure(r, weight=1)
         for c in range(2):
             self.content.grid_columnconfigure(c, weight=1)
         lab = ttk.Label(self.content, text=f"Interaction: {itype}", font=labelFont(16))
-        lab.grid(row=0, column=0, columnspan=2)
+        lab.grid(row=0, column=0, columnspan=2, sticky="nws")
         lab = ttk.Label(self.content, text=f"Potential: {potential}", font=labelFont(16))
-        lab.grid(row=1, column=0, columnspan=2)
+        lab.grid(row=1, column=0, columnspan=2, sticky="nws")
         self.crules = {}
         myrow = 2
         for p in myparam:
@@ -747,10 +871,12 @@ class CombRule:
 
 class FFGenerator:
     def __init__(self, root):
-        self.width = 900
-        self.height= 800
-        self.root = tk.Toplevel(root)
+        self.width  = 900
+        self.height = 800
+        self.parent = root
+        self.root   = tk.Toplevel(root)
         self.root.title("ACT - Force Field Generator")
+        self.ffName = None
 
     def rootW(self):
         return self.root
@@ -776,15 +902,19 @@ class FFGenerator:
             status = self.runACT(file_path, comb_rules)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
+                self.ffName = file_path
                 show_info(msg)
             else:
                 show_info("Force field generation failed")
-            self.root.destroy()
+            self.close()
+
+    def forceFieldName(self):
+        return self.ffName
 
     def top(self):
         logo_size = 150
-        self.logo_frame = tk.Frame(self.root, width=logo_size,
-                                   height=logo_size, pady=3)
+        self.logo_frame = ttk.Frame(self.root, width=logo_size,
+                                    height=logo_size, padding=mypad)
         actlogo = library_file("ACTlogo2.png")
         if actlogo:
             self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
@@ -793,12 +923,12 @@ class FFGenerator:
         else:
             # TODO: build in alternative if the logo image is not present
             sys.exit("Cannot find %s" % actlogo)
-        self.atom_frame = tk.Frame(self.root, pady=3, padx=3, bd=1, relief=tk.SOLID)
+        self.atom_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
         self.atoms    = AtomTypes(self.atom_frame, myrow=0, mycol=0)
 
     def makePots(self):
-        self.mid_frame = tk.Frame(self.root, #width=self.width, height=500, 
-                                  pady=3, bd=1, relief=tk.SOLID)
+        self.mid_frame = ttk.Frame(self.root,
+                                   border=1, relief=tk.SOLID, padding=mypad)
         self.vdwSel   = VdwSel(self.mid_frame, myrow=0, mycol=0)
         self.qSel     = QSel(self.mid_frame, myrow=0, mycol=1)
         self.bondSel  = BondSel(self.mid_frame, myrow=0, mycol=2)
@@ -807,9 +937,7 @@ class FFGenerator:
         self.icSel    = ICSel(self.mid_frame, myrow=self.qSel.nrows(), mycol=1)
 
     def makeButtons(self):
-        self.bot_frame = tk.Frame(self.root, 
-                                  #width=self.width, height=60,
-                                  pady=3, bd=1, relief=tk.SOLID)
+        self.bot_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
         bwidth = int(self.width/4)
         self.saveIntermediates = tk.IntVar()
         self.saveIntermediates.set(1)
@@ -826,6 +954,7 @@ class FFGenerator:
                   text="Cancel", default="normal", command=self.close).grid(row=0, column=3, sticky="nsew")
 
     def close(self):
+        self.done = True
         self.root.destroy()
 
     def run(self):
@@ -849,6 +978,10 @@ class FFGenerator:
         for c in range(4):
             self.bot_frame.grid_columnconfigure(c, weight=1)
         self.bot_frame.grid(row=2, columnspan=4, sticky="ews")
+        self.done = False
+        while not self.done:
+            time.sleep(0.1)
+            self.parent.update()
 
     def print(self):
         print(f"VDW potential selected: {self.vdwSel.potential()}")
@@ -920,7 +1053,7 @@ class FFGenerator:
                         continue
                     if vdwtp == Shell and not polarizable:
                         continue
-                    btype = ""
+                    btype = atp
                     if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
                         btype = atp + "_b"
                     atype_name = atp
