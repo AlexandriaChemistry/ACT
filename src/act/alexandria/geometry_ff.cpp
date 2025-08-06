@@ -103,6 +103,12 @@ static void generate_bcc(ForceField *pd,
                 if (bonds.parameterExists(bondId))
                 {
                     auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                    // Only mkae bcc entries if needed.
+                    if (!ai.second.hasInteractionType(entype) ||
+                        !aj.second.hasInteractionType(entype))
+                    {
+                        continue;
+                    }
                     auto zi = ai.second.interactionTypeToIdentifier(entype).id();
                     auto zj = aj.second.interactionTypeToIdentifier(entype).id();
                     if (!zi.empty() && !zj.empty())
