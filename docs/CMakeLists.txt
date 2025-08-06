@@ -64,7 +64,7 @@ if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 2.7)
+find_package(Python3)
 
 
 if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
