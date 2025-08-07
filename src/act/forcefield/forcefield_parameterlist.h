@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -74,6 +74,9 @@ class ForceFieldParameterList
    
     //! \brief Return the function name
     Potential potential() const { return pot_; }
+
+    //! \brief Set the function name
+    void setFunction(const std::string &function);
 
     //! \brief Return whether or not identifiers can be swapped
     CanSwap canSwap() const { return canSwap_; }

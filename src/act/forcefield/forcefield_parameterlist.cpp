@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -36,6 +36,7 @@
 #include <map>
 
 #include "act/basics/chargemodel.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -46,6 +47,11 @@ namespace alexandria
 
 ForceFieldParameterList::ForceFieldParameterList(const std::string &function,
                                                  CanSwap            canSwap) : canSwap_(canSwap)
+{
+    setFunction(function);
+}
+
+void ForceFieldParameterList::setFunction(const std::string &function)
 {
     if (!stringToPotential(function, &pot_))
     {
