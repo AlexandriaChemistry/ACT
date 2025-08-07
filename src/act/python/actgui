@@ -20,6 +20,7 @@ Shell    = "Shell"
 Point    = "Point"
 Gaussian = "Gaussian"
 Slater   = "Slater"
+PG       = "P+G"
 Bounded  = "Bounded"
 Fixed    = "Fixed"
 defnm    = "DefaultName"
@@ -218,10 +219,11 @@ class VdwSel:
 
 class QSel:
     def __init__(self, root, myrow:int, mycol:int):
-        gharemanpour2018b = "Distributed charges\nGhahremanpour et al. J. Chem. Theory Comput. 14 (2018) 5553"
+        gharemanpour2018b = "Distributed charges\nGhahremanpour et al., J. Chem. Theory Comput. 14 (2018) 5553"
         self.qs = { Point: "Point charges", 
                     Gaussian: gharemanpour2018b, 
-                    Slater: gharemanpour2018b }
+                    Slater: gharemanpour2018b,
+                    PG: "Point+Gaussian charges\nVan der Spoel & Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817" }
         self.qmodel = tk.StringVar(root, Gaussian)
         labPot = tk.Label(root, text=f"Charge model",
                           anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
@@ -392,18 +394,19 @@ class AtomTypes:
                 if line.startswith("#"):
                     continue
                 words = line.strip().split("|")
-                if len(words) == 10:
+                if len(words) == 11:
                     try:
                         self.atype_props[words[0]] = {
                             "Element": words[1],
-                            "Default": int(words[2]),
-                            "Bonds": int(words[3]),
-                            "Radius": float(words[4]),
-                            "Row": int(words[5]),
-                            "Charge": int(words[6]),
-                            VSite: int(words[7]),
-                            Shell: int(words[8]),
-                            "Comment": words[9] }
+                            "AtomNR": int(words[2]),
+                            "Default": int(words[3]),
+                            "Bonds": int(words[4]),
+                            "Radius": float(words[5]),
+                            "Row": int(words[6]),
+                            "Charge": int(words[7]),
+                            VSite: int(words[8]),
+                            Shell: int(words[9]),
+                            "Comment": words[10] }
                     except ValueError:
                         sys.exit(f"Error in file {atype_gui} on line {lineno}")
 
@@ -453,7 +456,7 @@ class AtomTypes:
             if self.atype_props[at]["Default"]:
                 self.newProps[at][Shell].set(status)
 
-    def selectProps(self, root):
+    def selectProps(self, root, qdist:str):
         self.parent = root
         self.root   = tk.Toplevel(self.parent)
         self.root.title("Atomtype properties selector")
@@ -508,6 +511,11 @@ class AtomTypes:
             if myrow == maxrow+2:
                 myrow = 2
                 mycol += 1
+        # Check whether we have to turn on the vsites at once
+        if qdist == PG:
+            self.selAll[VSite].set(1)
+            self.allVsite()
+        # Final buttons
         bwidth = int(3*ncol/2)
         buthelp = tk.Button(self.content, text="Help", command=self.help)
         buthelp.grid(row=nrow-1, column=0, columnspan=bwidth, sticky="news")
@@ -898,7 +906,7 @@ class FFGenerator:
                 comb_rules[itype] = CombRule(self.root)
                 comb_rules[itype].run(itype, self.icSel.potential())
 
-            self.atoms.selectProps(self.root)
+            self.atoms.selectProps(self.root, self.qSel.qModel())
             status = self.runACT(file_path, comb_rules)
             if status == 0:
                 msg = ("Succesfully generated a force field in %s" % file_path)
@@ -1043,16 +1051,38 @@ class FFGenerator:
         # Set some shortcuts
         vdwPart = self.vdwSel.vdwParticles()
         qdist   = self.qSel.qModel()
+        # Convenience function
+        def param(min:float, max:float, mut:str)->dict:
+            return { "min": min, "max": max, "mut": mut }
         # Defaults for potentials
         for atp in atype_props:
             if atype_props[atp]["Default"] > 0:
+                polarizable = atype_props[atp][Shell] > 0
+                haveVS1     = atype_props[atp][VSite] > 0
                 for vdwtp in vdwPart:
-                    polarizable = atype_props[atp][Shell] > 0
-                    haveVS1     = atype_props[atp][VSite] > 0
                     if vdwtp == VSite and not haveVS1:
                         continue
                     if vdwtp == Shell and not polarizable:
                         continue
+                    # Atomic number
+                    atomNR = atype_props[atp]["AtomNR"]
+                    # Highest charge for vsite1 and shells
+                    qmaxVS = -0.5
+                    if haveVS1:
+                        if vdwtp == Atom:
+                            qq = param(0, atomNR, "ACM")
+                        else:
+                            qq = param(-atomNR, qmaxVS, Bounded)
+                    elif polarizable:
+                        if vdwtp == Atom:
+                            qq = param(0, atomNR, "ACM")
+                        else:
+                            qq = param(-atomNR, qmaxVS, Bounded)
+                    if qdist == Point or (vdwtp == Atom and haveVS1):
+                        zeta = param(0, 0, Fixed)
+                    else:
+                        zeta = param(4, 20, Bounded)
+
                     btype = atp
                     if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
                         btype = atp + "_b"
@@ -1063,7 +1093,7 @@ class FFGenerator:
                         atype_name = "v1" + atp
                         self.vs1f.write(f"{atype_name}|VSITE1|{atp}_b|0|1||||\n")
                     stype = ""
-                    alpha = { "min": 0, "max": 0, "mut": Fixed }
+                    alpha = param(0, 0, Fixed)
                     if polarizable:
                         if vdwtp == Atom:
                             stype = atp + "_s"
@@ -1084,10 +1114,6 @@ class FFGenerator:
                         bounds = self.vdwSel.bounds()
                         vdw_mut = Bounded
                     
-                    if qdist == Point or (vdwtp == Atom and haveVS1):
-                        zeta = { 'min': 0, "max": 0, "mut": Fixed }
-                    else:
-                        zeta = { "min": 4, "max": 20, "mut": Bounded }
                     aexp = { "min": 0, "max": 0 }
                     vdwcorr_mut = Fixed
                     bexp = { "min": 10, "max": 50 }
@@ -1115,8 +1141,9 @@ class FFGenerator:
                     if vdwtp == Atom:
                         comment = atype_props[atp]['Comment']
                     reference  = ""
-                    self.tf.write(f"{atype_name}|{element}|0|0|Bounded|{btype}|" +
-                                  f"{stype}|{ztype}|{acmtype}|" +
+                    self.tf.write(f"{atype_name}|{element}|" +
+                                  f"{qq['min']}|{qq['max']}|{qq['mut']}|" +
+                                  f"{btype}|{stype}|{ztype}|{acmtype}|" +
                                   f"{bounds['eps_min']}|{bounds['eps_max']}|{vdw_mut}|" +
                                   f"{bounds['gam_min']}|{bounds['gam_max']}|{vdw_mut}|" +
                                   f"{bounds['sig_min']}|{bounds['sig_max']}|{vdw_mut}|" +
@@ -1155,6 +1182,8 @@ class FFGenerator:
             qsymm = " -qsymm "
         if self.generateCSV():
             qdist = self.qSel.qModel()
+            if qdist == PG:
+                qdist = Gaussian
             cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
             if self.vs1_file:
                 cmd += f" -vs {self.vs1_file} "

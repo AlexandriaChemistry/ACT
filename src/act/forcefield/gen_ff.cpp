@@ -492,7 +492,7 @@ int gen_ff(int argc, char*argv[])
         ptp.setOption("vdwcorrtype", entry.first);
         ptp.setOption("induccorrtype", entry.first);
         // Now "parameters"
-        auto mass       = aprops.find(elem)->second.mass();
+        auto mass       = apropsptr->second.mass();
         ptp.addForceFieldParameter("mass",
                                    ForceFieldParameter("Da", mass, 0, 1, mass,
                                                        mass, Mutability::Fixed,
