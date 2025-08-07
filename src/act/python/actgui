@@ -17,13 +17,14 @@ from PIL import ImageTk, Image
 Atom     = "Atom"
 VSite    = "VSite"
 Shell    = "Shell"
-Point    = "Point"
-Gaussian = "Gaussian"
-Slater   = "Slater"
+Point    = "POINT"
+Gaussian = "GAUSSIAN"
+Slater   = "SLATER"
 PG       = "P+G"
 Bounded  = "Bounded"
 Fixed    = "Fixed"
 defnm    = "DefaultName"
+comment  = "Comment"
 pad1     = 5
 mypad    = ( pad1, pad1, pad1, pad1 )
 
@@ -130,25 +131,34 @@ class VdwSel:
     def __init__(self, frame, myrow:int, mycol:int):
         self.vdws = { 
             "TT2b": 
-            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-              "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
-              "comment": "Tang-Toennies with separate b\nSheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
+            { "Att2b": ( 0, 100000, "kJ/mol" ),
+              "bDisptt2b": ( 5, 50, "1/nm" ),
+              "bExchtt2b": ( 5, 50, "1/nm" ),
+              "c6tt2b": ( 0, 0.005, "kJ/mol nm6" ), 
+              "c8tt2b": ( 0, 0.002, "kJ/mol nm8" ),
+              "c10tt2b": ( 0, 0.001, "kJ/mol nm10" ),
+              comment: "Tang-Toennies with separate b\nSheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
             "WANG_BUCKINGHAM":
-            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-              "gam_min":1, "gam_max": 25, "del_min": 0, "del_max": 0,
-              "comment": "Buckingham variant without singularity at r=0\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
+            { "sigma": ( 0, 1, "nm"),
+              "epsilon": ( 0, 5, "kJ/mol" ),
+              "gamma": ( 1, 25, "" ),
+              comment: "Buckingham variant without singularity at r=0\nWang et al. J. Chem. Theory Comput. 9 (2013) 452" },
             "LJ14_7":
-            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5, 
-              "gam_min":0, "gam_max": 0.8, "del_min": 0, "del_max": 2,
-              "comment": "Buffered 14-7 potential\nHalgren, J. Amer. Chem. Soc. 114 (1992) 7827" }, 
+            { "sigma": ( 0, 1, "nm"),
+              "epsilon": ( 0, 5, "kJ/mol" ),
+              "gamma": ( 0, 0.8, "" ),
+              "delta": ( 0, 2, "" ),
+              comment: "Buffered 14-7 potential\nHalgren, J. Amer. Chem. Soc. 114 (1992) 7827" }, 
             "LJ12_6":
-            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-              "gam_min":0, "gam_max": 0, "del_min": 0, "del_max": 0,
-              "comment": "Lennard-Jones potential\nJones, Proc. Royal Soc. A 106 (1924) 463" },
+            { "sigma": ( 0, 1, "nm"),
+              "epsilon": ( 0, 5, "kJ/mol" ),
+              comment: "Lennard-Jones potential\nJones, Proc. Royal Soc. A 106 (1924) 463" },
             "GENERALIZED_BUCKINGHAM":
-            { "sig_min": 0, "sig_max": 1, "eps_min": 0, "eps_max": 5,
-              "gam_min":1, "gam_max": 25, "del_min": 3, "del_max": 12,
-              "comment": "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
+            { "rmin": ( 0, 1, "nm"),
+              "epsilon": ( 0, 5, "kJ/mol" ),
+              "gamma": ( 1, 25, ""),
+              "delta": ( 3, 12, "" ),
+              comment: "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
         }
         self.vdwPot = tk.StringVar(frame, "WANG_BUCKINGHAM")
         labPot = tk.Label(frame, text=f"Van der Waals potential",
@@ -158,7 +168,7 @@ class VdwSel:
             item = tk.Radiobutton(frame, text=vdw, variable=self.vdwPot,
                                   value=vdw, command=None)
             item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
-            tpp = CreateToolTip(item, self.vdws[vdw]["comment"])
+            tpp = CreateToolTip(item, self.vdws[vdw][comment])
             myrow += 1
 
         labParticle = tk.Label(frame, text=f"Use VdW on", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
@@ -330,9 +340,21 @@ class DihSel:
 
 class ICSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.ics = { "NONE": "No corrections", 
-                     "MACDANIEL_SCHMIDT": "Negative exponential correction\nMcDaniel & Schmidt, J. Phys. Chem. 117 (2013) 2053",
-                     "MORSE_BONDS": "Correction with repulsive and attractive part\nHosseini & Van der Spoel, in preparation" }
+        self.ics = { 
+            "NONE": {
+                comment: "No corrections" },
+            "MACDANIEL_SCHMIDT": {
+                "a1dexp": ( 0, 100000, "kJ/mol"),
+                "a2dexp": ( 0, 100000, "kJ/mol"),
+                "bdexp": ( 5, 50, "1/nm" ),
+                comment: "Negative exponential correction\nMcDaniel & Schmidt, J. Phys. Chem. 117 (2013) 2053" },
+            "MORSE_BONDS": {
+                "D0": ( 0, 0, "kJ/mol"),
+                "De": ( 200, 800, "kJ/mol" ),
+                "bondlength": ( 0, 0.5, "nm" ),
+                "beta": ( 5, 50, "1/nm" ),
+                comment: "Correction with repulsive and attractive part\nHosseini & Van der Spoel, in preparation" }
+        }
         self.icPot = tk.StringVar(root, "NONE")
         labPot = tk.Label(root, text=f"Induction correction potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky="nsw")
         myrow += 1
@@ -345,9 +367,9 @@ class ICSel:
             item = tk.Radiobutton(root, text=ic, variable=self.icPot,
                                   value=ic, command=mycmd)
             item.grid(row=myrow, column=mycol, sticky="nsw")
-            ttp = CreateToolTip(item, self.ics[ic])
+            ttp = CreateToolTip(item, self.ics[ic][comment])
             myrow += 1
-        labParticle = tk.Label(root, text=f"Use Induction correction on", anchor="w", font=labelFont())
+        labParticle = tk.Label(root, text=f"Use induction correction on", anchor="w", font=labelFont())
         labParticle.grid(row=myrow, column=mycol, sticky="nsw")
         myrow += 1
         self.icPart = {}
@@ -368,7 +390,10 @@ class ICSel:
     def enable(self):
         self.cb[Atom]['state'] = tk.NORMAL
         self.cb[Shell]['state'] = tk.NORMAL
-        
+
+    def bounds(self):
+        return self.ics[self.potential()]
+
     def icParticles(self):
         icp = {}
         for pt in self.icPart:
@@ -406,7 +431,7 @@ class AtomTypes:
                             "Charge": int(words[7]),
                             VSite: int(words[8]),
                             Shell: int(words[9]),
-                            "Comment": words[10] }
+                            comment: words[10] }
                     except ValueError:
                         sys.exit(f"Error in file {atype_gui} on line {lineno}")
 
@@ -428,7 +453,7 @@ class AtomTypes:
             item = tk.Checkbutton(frame, text=at, command=None,
                                   variable=self.atypes[at])
             item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
-            ttp = CreateToolTip(item, text=self.atype_props[at]["Comment"])
+            ttp = CreateToolTip(item, text=self.atype_props[at][comment])
             myrow += 1
             if myrow == maxrow+1:
                 myrow = 1
@@ -1047,14 +1072,22 @@ class FFGenerator:
                 if not self.vs1_file:
                     return False
 
-        self.tf.write("#atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|delta_min|delta_max|delta_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|aexp_min|aexp_max|aexp_mutability|bexp_min|bexp_max|bexp_mutability|a1dexp_min|a1dexp_max|a1dexp_mutability|a2dexp_min|a2dexp_max|a2dexp_mutability|bdexp_min|bdexp_max|bdexp_mutability|comment|reference\n")
+        allData = {}
         # Set some shortcuts
         vdwPart = self.vdwSel.vdwParticles()
         qdist   = self.qSel.qModel()
         # Convenience function
-        def param(min:float, max:float, mut:str)->dict:
-            return { "min": min, "max": max, "mut": mut }
+        def setParam(atp:str, inter:str, pname:str, mymin:float, mymax:float, mymut:str, unit:str,
+                     nonNegative=True):
+            prefix = f"{inter}:{pname}:"
+            allData[atp][prefix+"min"]    = mymin
+            allData[atp][prefix+"max"]    = mymax
+            allData[atp][prefix+"mut"]    = mymut
+            allData[atp][prefix+"unit"]   = unit
+            allData[atp][prefix+"nonneg"] = str(nonNegative)
+
         # Defaults for potentials
+        firstatp = None
         for atp in atype_props:
             if atype_props[atp]["Default"] > 0:
                 polarizable = atype_props[atp][Shell] > 0
@@ -1064,102 +1097,103 @@ class FFGenerator:
                         continue
                     if vdwtp == Shell and not polarizable:
                         continue
-                    # Atomic number
-                    atomNR = atype_props[atp]["AtomNR"]
-                    # Highest charge for vsite1 and shells
-                    qmaxVS = -0.5
-                    if haveVS1:
-                        if vdwtp == Atom:
-                            qq = param(0, atomNR, "ACM")
-                        else:
-                            qq = param(-atomNR, qmaxVS, Bounded)
-                    elif polarizable:
-                        if vdwtp == Atom:
-                            qq = param(0, atomNR, "ACM")
-                        else:
-                            qq = param(-atomNR, qmaxVS, Bounded)
-                    if qdist == Point or (vdwtp == Atom and haveVS1):
-                        zeta = param(0, 0, Fixed)
-                    else:
-                        zeta = param(4, 20, Bounded)
-
+                    atype_name = atp
+                    element = atype_props[atp]['Element']
                     btype = atp
                     if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
                         btype = atp + "_b"
-                    atype_name = atp
                     if vdwtp == Shell:
                         atype_name = atp + "_s"
+                        element    = "X"
                     elif vdwtp == VSite:
                         atype_name = "v1" + atp
-                        self.vs1f.write(f"{atype_name}|VSITE1|{atp}_b|0|1||||\n")
-                    stype = ""
-                    alpha = param(0, 0, Fixed)
-                    if polarizable:
-                        if vdwtp == Atom:
-                            stype = atp + "_s"
-                        elif vdwtp == Shell:
-                            alpha["max"] = 12
-                            alpha["mut"] = Bounded
+                        element = "VS"
+                        self.vs1f.write(f"{atype_name}|VSITE1|{btype}|0|1||||\n")
+                    if not firstatp:
+                        firstatp = atype_name
+                    radius  = ""
+                    row     = 0
                     ztype   = atype_name + "_z"
                     acmtype = ""
+                    stype   = ""
                     if vdwtp == Atom:
                         acmtype = ztype
-                    # Determine whether to use VDW
-                    bounds = { "sig_min": 0, "sig_max": 0,
-                               "eps_min": 0, "eps_max": 0,
-                               "gam_min":0, "gam_max": 0,
-                               "del_min": 0, "del_max": 0 }
-                    vdw_mut = Fixed
-                    if vdwPart[vdwtp]:
-                        bounds = self.vdwSel.bounds()
-                        vdw_mut = Bounded
-                    
-                    aexp = { "min": 0, "max": 0 }
-                    vdwcorr_mut = Fixed
-                    bexp = { "min": 10, "max": 50 }
-                    if self.vdwSel.exchCorr() and vdwtp == Atom:
-                        aexp["max"] = 50000
-                        vdwcorr_mut = Bounded
-                    radius     = ""
-                    row        = 0
-                    element    = "X"
-                    eta = { "min": "", "max": "", "mut": "" }
-                    chi = { "min": "", "max": "", "mut": "" }
-                    if vdwtp == Atom:
                         radius  = str(atype_props[atp]['Radius'])
                         row     = atype_props[atp]['Row']
-                        element = atype_props[atp]['Element']
-                        eta     = { "min": "4", "max": "20", "mut": Bounded }
-                        chi     = { "min": "4", "max": "12", "mut": Bounded }
-                    elif vdwtp == VSite:
-                        element = "VS"
-                    a1dexp = { "min": 0, "max": 0 }
-                    MS_mut = Fixed
-                    a2dexp = { "min": 0, "max": 0 }
-                    bdexp  = { "min": 10, "max": 50 }
-                    comment    = ""
+                        if polarizable:
+                            stype = atp + "_s"
+                    atomNR = atype_props[atp]["AtomNR"]
+                    # New atomtype, set element and atomic number and subtypes
+                    allData[atype_name] = { "element": element, "atomicnumber": atomNR,
+                                            "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
+                                            "poltype": stype, "radius": radius, "row": row }
+                    # Highest charge for vsite1 and shells
+                    qmaxVS = -0.5
+                    if haveVS1 or polarizable:
+                        if vdwtp == Atom:
+                            setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
+                        else:
+                            setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
+                    else:
+                        setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
+
+                    coul = "COULOMB"
+                    if qdist == Point or (vdwtp == Atom and haveVS1):
+                        setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
+                    else:
+                        setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
+
+                    if polarizable and vdwtp == Shell:
+                        setParam(atype_name, "POLARIZATION", "alpha", 0, 12, Bounded, "Angstrom^3")
+                        setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
+                        setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
+
+                    # Determine whether to use VDW
+                    bounds = self.vdwSel.bounds()
+                    vdw_mut = Fixed
+                    if vdwPart[vdwtp]:
+                        vdw_mut = Bounded
+                    for b in bounds:
+                        if not b == comment:
+                            setParam(atype_name, "VANDERWAALS", b, bounds[b][0], bounds[b][1], vdw_mut, bounds[b][2])
+                    # TODO: Check whether we need this on Vsites (vsite 2 only!)
+                    if self.vdwSel.exchCorr() and vdwtp == Atom:
+                        setParam(atype_name, "VDWCORRECTION", "aexp", 0, 50000, Bounded, "kJ/mol")
+                        setParam(atype_name, "VDWCORRECTION", "bexp", 10, 50, Bounded, "1/nm")
+
                     if vdwtp == Atom:
-                        comment = atype_props[atp]['Comment']
-                    reference  = ""
-                    self.tf.write(f"{atype_name}|{element}|" +
-                                  f"{qq['min']}|{qq['max']}|{qq['mut']}|" +
-                                  f"{btype}|{stype}|{ztype}|{acmtype}|" +
-                                  f"{bounds['eps_min']}|{bounds['eps_max']}|{vdw_mut}|" +
-                                  f"{bounds['gam_min']}|{bounds['gam_max']}|{vdw_mut}|" +
-                                  f"{bounds['sig_min']}|{bounds['sig_max']}|{vdw_mut}|" +
-                                  f"{bounds['del_min']}|{bounds['del_max']}|{vdw_mut}|" +
-                                  f"{radius}|" +
-                                  f"{row}|" +
-                                  f"{alpha['min']}|{alpha['max']}|{alpha['mut']}|" +
-                                  f"{zeta['min']}|{zeta['max']}|{zeta['mut']}|"
-                                  f"{eta['min']}|{eta['max']}|{eta['mut']}|" +
-                                  f"{chi['min']}|{chi['max']}|{chi['mut']}|" +
-                                  f"{aexp['min']}|{aexp['max']}|{vdwcorr_mut}|" +
-                                  f"{bexp['min']}|{bexp['max']}|{vdwcorr_mut}|" +
-                                  f"{a1dexp['min']}|{a1dexp['max']}|{MS_mut}|" +
-                                  f"{a2dexp['min']}|{a2dexp['max']}|{MS_mut}|" +
-                                  f"{bdexp['min']}|{bdexp['max']}|{MS_mut}|" +
-                                  f"{comment}|{reference}|\n")
+                        setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
+                        setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
+
+                    if self.icSel.potential() != "NONE":
+                        bounds = self.icSel.bounds()
+                        icp    = self.icSel.icParticles()
+                        ic_mut = Fixed
+                        if vdwtp in icp:
+                            if icp[vdwtp]:
+                                ic_mut = Bounded
+                            for b in bounds:
+                                if not b == comment:
+                                    setParam(atype_name, "INDUCTIONCORRECTION", b, bounds[b][0], bounds[b][1], ic_mut, bounds[b][2])
+                    if vdwtp == Atom:
+                        allData[atype_name][comment] = atype_props[atp][comment]
+
+        # Done with building the data structure, now store it to a file
+        if not firstatp:
+            sys.exit("Did not find any atomtypes")
+        self.tf.write("#atomtype")
+        mykeys = list(allData[firstatp].keys())
+        for mk in mykeys:
+            self.tf.write(f"|{mk}")
+        self.tf.write("\n")
+        for ad in allData.keys():
+            self.tf.write(f"{ad}")
+            for mk in mykeys:
+                value = ""
+                if mk in allData[ad]:
+                    value = allData[ad][mk]
+                self.tf.write(f"|{value}")
+            self.tf.write("\n")
 
         if self.verbose.get():
             print("Generated file %s" % self.csv_file)

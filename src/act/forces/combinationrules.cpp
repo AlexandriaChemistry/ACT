@@ -288,8 +288,9 @@ void evalCombinationRule(Potential                                    ftype,
                 cepsilon = vdwname[lj8_6EPSILON];
                 break;
             default:
-                gmx_fatal(FARGS, "Please implement support for potential %s",
-                          potentialToString(ftype).c_str());             
+                gmx_fatal(FARGS, "Please implement support for potential '%s' ftype %d",
+                          potentialToString(ftype).c_str(),
+                          static_cast<int>(ftype));   
             }
             auto ieps = ivdw.find(cepsilon)->second.value();
             auto jeps = jvdw.find(cepsilon)->second.value();

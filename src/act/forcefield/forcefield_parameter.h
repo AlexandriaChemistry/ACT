@@ -136,6 +136,9 @@ class ForceFieldParameter
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
     
+    //! \brief Set unit of parameter
+    void setUnit(const std::string &unit) { unit_ = unit; }
+    
     //! \brief Return index (an externally determined identifier)
     size_t index() const { return index_; }
 
