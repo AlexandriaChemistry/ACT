@@ -1099,16 +1099,18 @@ class FFGenerator:
                         continue
                     atype_name = atp
                     element = atype_props[atp]['Element']
-                    btype = atp
-                    if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
-                        btype = atp + "_b"
+                    btype = atype_name
+                    if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
+                        btype = atype_name + "_b"
+
                     if vdwtp == Shell:
                         atype_name = atp + "_s"
                         element    = "X"
                     elif vdwtp == VSite:
                         atype_name = "v1" + atp
                         element = "VS"
-                        self.vs1f.write(f"{atype_name}|VSITE1|{btype}|0|1||||\n")
+                        vs1btype = atp
+                        self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
                     if not firstatp:
                         firstatp = atype_name
                     radius  = ""

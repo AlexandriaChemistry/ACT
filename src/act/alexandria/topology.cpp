@@ -1672,7 +1672,10 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             {
                 if (!msghandler->ok())
                 {
-                    auto msg = gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str());
+                    auto msg = gmx::formatString("Force field only contains %zu/%zu %s parameters for %s, using zero's.", 
+                                                 param.size(),
+                                                 pp->second.param.size(),
+                                                 potentialToString(fs.potential()).c_str(), topID.id().c_str());
                     if (missing == missingParameters::Error)
                     {
                         msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
