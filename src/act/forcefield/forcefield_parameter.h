@@ -314,7 +314,7 @@ class ForceFieldParameter
     //! Maximum allowed value for the parameter
     double       maximum_             = 0;
     //! In what way this parameter is mutable
-    Mutability   mutability_          = Mutability::Free;
+    Mutability   mutability_          = Mutability::Fixed;
     /*! Whether or not to throw an exception in case value or
      * uncertainty is set incorrectly
      */

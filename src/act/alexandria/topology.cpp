@@ -136,6 +136,11 @@ void Topology::addShells(MsgHandler       *msghandler,
     TopologyEntryVector pols;
     auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
     auto pol_name = potentialToParameterName(fs.potential());
+    if (pol_name.empty())
+    {
+        msghandler->msg(ACTStatus::Fatal, "Polarization function not defined in FF file");
+        return;
+    }
     // Loop through the atomList.
     for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {

@@ -565,6 +565,13 @@ int gen_ff(int argc, char*argv[])
         } 
         pd.addForces(fp.first, fp.second);
     }
+    // Polarization function
+    auto itPol = InteractionType::POLARIZATION;
+    if (pd.interactionPresent(itPol))
+    {
+        auto fsp = pd.findForces(itPol);
+        fsp->setFunction(potentialToString(Potential::POLARIZATION));
+    }
     // Bonded functions need to be added
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::BONDS, bonds);
