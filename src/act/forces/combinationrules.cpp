@@ -69,7 +69,8 @@ const std::string &combinationRuleName(CombRule c)
     auto crfind = combRuleName.find(c);
     if (crfind == combRuleName.end())
     {
-        GMX_THROW(gmx::InternalError("Unsupported combination rule"));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported combination rule %d",
+                                                       static_cast<int>(c)).c_str()));
     }
     return crfind->second;
 }
