@@ -563,6 +563,15 @@ int gen_ff(int argc, char*argv[])
         {
             fp.second.setFunction(vdwfn[0]);
         } 
+        else if (fp.first == InteractionType::VDWCORRECTION && useVdwCorr)
+        {
+            fp.second.setFunction(potentialToString(Potential::BORN_MAYER));
+        } 
+        else if (fp.first == InteractionType::INDUCTIONCORRECTION &&
+                 icfn[0])
+        {
+            fp.second.setFunction(icfn[0]);
+        } 
         pd.addForces(fp.first, fp.second);
     }
     // Polarization function
