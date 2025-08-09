@@ -49,57 +49,6 @@
 namespace alexandria
 {
 
-typedef struct {
-    const char *flag;
-    const char *var;
-    const std::string deft;
-    size_t index;
-} cr_param;
-
-const std::map<InteractionType, std::vector<cr_param> > mycr =
-    {
-        {
-            InteractionType::VDW, {
-                { "-cr_eps",  "epsilon", combinationRuleName(CombRule::Geometric), 0 },
-                { "-cr_sig",  "sigma",   combinationRuleName(CombRule::Arithmetic), 1 },
-                { "-cr_rmin", "rmin",    combinationRuleName(CombRule::Arithmetic), 2 },
-                { "-cr_gam",  "gamma",   combinationRuleName(CombRule::Geometric), 3 },
-                { "-cr_del",  "delta",   combinationRuleName(CombRule::Geometric), 4 },
-                { "-cr_abh",  "Abh",     combinationRuleName(CombRule::Geometric), 5 },
-                { "-cr_bbh",  "bbh",     combinationRuleName(CombRule::Arithmetic), 6 },
-                { "-cr_c6bh", "c6bh",    combinationRuleName(CombRule::Geometric), 7 },
-                { "-cr_ttA",  "Att",     combinationRuleName(CombRule::Geometric), 8 },
-                { "-cr_ttB",  "btt",     combinationRuleName(CombRule::Arithmetic), 9 },
-                { "-cr_ttC6", "c6tt",    combinationRuleName(CombRule::Geometric), 10 },
-                { "-cr_ttC8", "c8tt",    combinationRuleName(CombRule::Geometric), 11 },
-                { "-cr_ttC10","c10tt",   combinationRuleName(CombRule::Geometric), 12 },
-                { "-cr_tt2bA",  "Att2b", combinationRuleName(CombRule::Geometric), 13 },
-                { "-cr_tt2bBexch", "bExchtt2b", combinationRuleName(CombRule::Arithmetic), 14 },
-                { "-cr_tt2bBdisp", "bDisptt2b", combinationRuleName(CombRule::Arithmetic), 15 },
-                { "-cr_tt2bC6", "c6tt2b", combinationRuleName(CombRule::Geometric), 16 },
-                { "-cr_tt2bC8", "c8tt2b", combinationRuleName(CombRule::Geometric), 17 },
-                { "-cr_tt2bC10","c10tt2b", combinationRuleName(CombRule::Geometric), 18 }
-            },
-        },
-        {
-            InteractionType::VDWCORRECTION, {
-                { "-cr_aexp",  "aexp", combinationRuleName(CombRule::Geometric), 19 },
-                { "-cr_bexp",  "bexp", combinationRuleName(CombRule::Arithmetic), 20 }
-            }
-        },
-        {
-            InteractionType::INDUCTIONCORRECTION, {
-                { "-cr_a1dexp",  "a1dexp", combinationRuleName(CombRule::Geometric), 21 },
-                { "-cr_a2dexp",  "a2dexp", combinationRuleName(CombRule::Geometric), 22 },
-                { "-cr_bdexp",  "bdexp",  combinationRuleName(CombRule::Arithmetic), 23 },
-                { "-cr_De", "De", combinationRuleName(CombRule::Geometric), 24 },
-                { "-cr_D0", "D0", combinationRuleName(CombRule::Geometric), 25 },
-                { "-cr_beta", "beta", combinationRuleName(CombRule::Arithmetic), 26 },
-                { "-cr_length", "bondlength", combinationRuleName(CombRule::Arithmetic), 27 },
-            }
-        }
-    };
-
 void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
 {
     crinfo->push_back("[PAR]Combination rules can be specified for all parameters, depending");
@@ -121,24 +70,6 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 {
     pa->push_back( {"-cr", FALSE, etSTR, {&rules_},
             "Specify all combination rules on one line according to the format specified in the help text."} );
-    if (false)
-    {
-    for(const auto &cr : mycr)
-    {
-        cr_flag_.resize(cr_flag_.size() + cr.second.size(), nullptr);
-    }
-    for(const auto &cr : mycr)
-    {
-        for (const auto &mm : cr.second)
-        {
-            auto desc = gmx::formatString("Combination rule to use for %s parameter %s",
-                                          interactionTypeToString(cr.first).c_str(),
-                                          mm.var);
-            pa->push_back({ mm.flag, FALSE, etSTR, {&cr_flag_[mm.index]},
-                    strdup(desc.c_str()) });
-        }
-    }
-    }
 }
 
 int CombRuleUtil::extract(ForceField *pd)

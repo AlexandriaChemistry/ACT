@@ -48,7 +48,7 @@ namespace alexandria
         // Storage for the command line options
         std::vector<const char *> cr_flag_;
         // Storage the the combination rule
-        char *rules_;
+        char *rules_ = nullptr;
     public:
         /*! \brief Utility to make command line information about combrules
          * \param[inout] crinfo Array of strings to be edited
