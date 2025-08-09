@@ -357,8 +357,10 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                             }
                             else if (debug)
                             {
-                                fprintf(debug, "WARNING: Not enough data to train %s-%s\n",
-                                        fpl.first.id().c_str(), param.first.c_str());
+                                fprintf(debug, "WARNING: Not enough data (%d/%d) to train %s-%s (mut %s)\n",
+                                        param.second.ntrain(), mg->mindata(),
+                                        fpl.first.id().c_str(), param.first.c_str(),
+                                        mutabilityName(param.second.mutability()).c_str());
                             }
                         }
                     }
@@ -477,7 +479,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata)
                 defaultParam_.push_back(p.value());
                 paramNames_.push_back(optIndex.name());
                 paramNamesWOClass_.push_back(
-                                             optIndex.name().substr(0, optIndex.name().rfind("-"))
+                                             optIndex.name().substr(0, optIndex.name().rfind(" "))
                                              );
                 mutability_.push_back(p.mutability());
                 lowerBound_.push_back(p.minimum());

@@ -497,7 +497,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     }
     if (hitWall)
     {
-        tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n");
+        tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n\n");
     }
 }
 
@@ -522,7 +522,7 @@ bool OptACM::runMaster(bool        optimize,
         bMinimum = ga_->evolve(&msghandler_, &bestGenome);
         if (tw)
         {
-            tw->writeStringFormatted("\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
+            tw->writeStringFormatted("\nHere are the best parameters found, together with some summary statistics of the last population:\n");
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
     }

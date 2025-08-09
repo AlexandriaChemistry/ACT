@@ -353,6 +353,7 @@ static void generateParameterPairs(ForceField      *pd,
     ForceFieldParameterListMap *parm = forcesVdw->parameters();;
     
     // Now do the double loop
+    int nid = 0;
     for (auto &ivdw : *forcesVdw->parameters())
     {
         auto &iid    = ivdw.first;
@@ -377,7 +378,7 @@ static void generateParameterPairs(ForceField      *pd,
                 continue;
             }
             // Test whether or not to include this pair.
-            // This will only be used in case the potential is exponential.
+            // This will only be used with the Kronecker combination rule.
             bool includePair = true;
             if (Potential::BORN_MAYER == forcesVdw->potential() || 
                 Potential::MORSE_BONDS == forcesVdw->potential())
@@ -411,7 +412,14 @@ static void generateParameterPairs(ForceField      *pd,
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
+            nid += 1;
         }
+    }
+    if (debug)
+    {
+        int np = forcesVdw->parameters()->size();
+        fprintf(debug, "Made %d/%d identifiers for %s in generateParameterPairs\n", nid, np,
+                interactionTypeToString(itype).c_str());
     }
     // Phew, we're done!
 }

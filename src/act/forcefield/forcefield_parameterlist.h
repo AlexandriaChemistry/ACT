@@ -81,6 +81,9 @@ class ForceFieldParameterList
     //! \brief Return whether or not identifiers can be swapped
     CanSwap canSwap() const { return canSwap_; }
 
+    //! \brief Set whether or not identifiers can be swapped
+    void setCanSwap(CanSwap cs) { canSwap_ = cs; }
+
     /*! \brief Add function specific options
      *
      * \param[in] option  Name of the option

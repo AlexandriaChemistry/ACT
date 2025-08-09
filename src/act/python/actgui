@@ -474,12 +474,14 @@ class AtomTypes:
         for at in self.atype_props.keys():
             if self.atype_props[at]["Default"]:
                 self.newProps[at][VSite].set(status)
+                self.atype_props[at][VSite] = status
 
     def allShell(self):
         status = self.selAll[Shell].get()
         for at in self.atype_props.keys():
             if self.atype_props[at]["Default"]:
                 self.newProps[at][Shell].set(status)
+                self.atype_props[at][Shell] = status
 
     def selectProps(self, root, qdist:str):
         self.parent = root
@@ -561,7 +563,6 @@ class AtomTypes:
 
     def doneSelect(self):
         self.ready = True
-        self.root.destroy()
 
     def updateAtypeProps(self):
         for at in self.atypes:
@@ -569,10 +570,11 @@ class AtomTypes:
                 self.atype_props[at]["Default"] = 1
 
     def getAtypes(self)->dict:
+        # Not sure whether this does what it is supposed to
         for at in self.newProps:
             for head in [ VSite, Shell ]:
-                self.atype_props[at][head] = self.newProps[at][head].get() 
-
+                self.atype_props[at][head] = self.newProps[at][head].get()
+        self.root.destroy()
         atprops = {}
         for at in self.atypes:
             if self.atypes[at].get():
@@ -1086,103 +1088,103 @@ class FFGenerator:
             allData[atp][prefix+"unit"]   = unit
             allData[atp][prefix+"nonneg"] = str(nonNegative)
 
-        # Defaults for potentials
-        firstatp = None
         for atp in atype_props:
-            if atype_props[atp]["Default"] > 0:
-                polarizable = atype_props[atp][Shell] > 0
-                haveVS1     = atype_props[atp][VSite] > 0
-                for vdwtp in vdwPart:
-                    if vdwtp == VSite and not haveVS1:
-                        continue
-                    if vdwtp == Shell and not polarizable:
-                        continue
-                    atype_name = atp
-                    element = atype_props[atp]['Element']
-                    btype = atp
-                    if atype_props[atp]["Bonds"] > 0 and vdwtp == Atom:
-                        btype = atp + "_b"
-                    if vdwtp == Shell:
-                        atype_name = atp + "_s"
-                        element    = "X"
-                    elif vdwtp == VSite:
-                        atype_name = "v1" + atp
-                        element = "VS"
-                        self.vs1f.write(f"{atype_name}|VSITE1|{btype}|0|1||||\n")
-                    if not firstatp:
-                        firstatp = atype_name
-                    radius  = ""
-                    row     = 0
-                    ztype   = atype_name + "_z"
-                    acmtype = ""
-                    stype   = ""
+            polarizable = atype_props[atp][Shell] > 0
+            haveVS1     = atype_props[atp][VSite] > 0
+            for vdwtp in [ Atom, Shell, VSite ]:
+                if vdwtp == VSite and not haveVS1:
+                    continue
+                if vdwtp == Shell and not polarizable:
+                    continue
+                atype_name = atp
+                element = atype_props[atp]['Element']
+
+                if vdwtp == Shell:
+                    atype_name = atp + "_s"
+                    element    = "X"
+                elif vdwtp == VSite:
+                    atype_name = "v1" + atp
+                    element = "VS"
+                    vs1btype = atp
+                    self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
+                btype = atype_name
+                if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
+                    btype = atype_name + "_b"
+                radius  = ""
+                row     = 0
+                ztype   = atype_name + "_z"
+                acmtype = ""
+                stype   = ""
+                if vdwtp == Atom:
+                    acmtype = ztype
+                    radius  = str(atype_props[atp]['Radius'])
+                    row     = atype_props[atp]['Row']
+                    if polarizable:
+                        stype = atp + "_s"
+                atomNR = atype_props[atp]["AtomNR"]
+                # New atomtype, set element and atomic number and subtypes
+                allData[atype_name] = { "element": element, "atomicnumber": atomNR,
+                                        "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
+                                        "poltype": stype, "radius": radius, "row": row }
+                # Highest charge for vsite1 and shells
+                qmaxVS = -0.5
+                if haveVS1 or polarizable:
                     if vdwtp == Atom:
-                        acmtype = ztype
-                        radius  = str(atype_props[atp]['Radius'])
-                        row     = atype_props[atp]['Row']
-                        if polarizable:
-                            stype = atp + "_s"
-                    atomNR = atype_props[atp]["AtomNR"]
-                    # New atomtype, set element and atomic number and subtypes
-                    allData[atype_name] = { "element": element, "atomicnumber": atomNR,
-                                            "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
-                                            "poltype": stype, "radius": radius, "row": row }
-                    # Highest charge for vsite1 and shells
-                    qmaxVS = -0.5
-                    if haveVS1 or polarizable:
-                        if vdwtp == Atom:
-                            setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
-                        else:
-                            setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
+                        setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
                     else:
-                        setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
+                        setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
+                else:
+                    setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
 
-                    coul = "COULOMB"
-                    if qdist == Point or (vdwtp == Atom and haveVS1):
-                        setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
-                    else:
-                        setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
+                coul = "COULOMB"
+                if qdist == Point or (vdwtp == Atom and haveVS1):
+                    setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
+                else:
+                    setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
 
-                    if polarizable and vdwtp == Shell:
-                        setParam(atype_name, "POLARIZATION", "alpha", 0, 12, Bounded, "Angstrom^3")
-                        setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
-                        setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
+                if polarizable and vdwtp == Shell:
+                    setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")
+                    setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
+                    setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
 
-                    # Determine whether to use VDW
-                    bounds = self.vdwSel.bounds()
-                    vdw_mut = Fixed
-                    if vdwPart[vdwtp]:
-                        vdw_mut = Bounded
-                    for b in bounds:
-                        if not b == comment:
-                            setParam(atype_name, "VANDERWAALS", b, bounds[b][0], bounds[b][1], vdw_mut, bounds[b][2])
-                    # TODO: Check whether we need this on Vsites (vsite 2 only!)
-                    if self.vdwSel.exchCorr() and vdwtp == Atom:
-                        setParam(atype_name, "VDWCORRECTION", "aexp", 0, 50000, Bounded, "kJ/mol")
-                        setParam(atype_name, "VDWCORRECTION", "bexp", 10, 50, Bounded, "1/nm")
+                # Determine whether to use VDW
+                bounds = self.vdwSel.bounds()
+                vdw_mut = Fixed
+                if vdwPart[vdwtp]:
+                    vdw_mut = Bounded
+                for b in bounds:
+                    if not b == comment:
+                        setParam(atype_name, "VANDERWAALS", b, bounds[b][0], bounds[b][1], vdw_mut, bounds[b][2])
+                # TODO: Check whether we need this on Vsites (vsite 2 only!)
+                if self.vdwSel.exchCorr() and vdwtp == Atom:
+                    setParam(atype_name, "VDWCORRECTION", "aexp", 0, 50000, Bounded, "kJ/mol")
+                    setParam(atype_name, "VDWCORRECTION", "bexp", 10, 50, Bounded, "1/nm")
 
-                    if vdwtp == Atom:
-                        setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
-                        setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
+                if vdwtp == Atom:
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
 
-                    if self.icSel.potential() != "NONE":
-                        bounds = self.icSel.bounds()
-                        icp    = self.icSel.icParticles()
-                        ic_mut = Fixed
-                        if vdwtp in icp:
-                            if icp[vdwtp]:
-                                ic_mut = Bounded
-                            for b in bounds:
-                                if not b == comment:
-                                    setParam(atype_name, "INDUCTIONCORRECTION", b, bounds[b][0], bounds[b][1], ic_mut, bounds[b][2])
-                    if vdwtp == Atom:
-                        allData[atype_name][comment] = atype_props[atp][comment]
+                if self.icSel.potential() != "NONE":
+                    bounds = self.icSel.bounds()
+                    icp    = self.icSel.icParticles()
+                    ic_mut = Fixed
+                    if vdwtp in icp:
+                        if icp[vdwtp]:
+                            ic_mut = Bounded
+                        for b in bounds:
+                            if not b == comment:
+                                setParam(atype_name, "INDUCTIONCORRECTION", b, bounds[b][0], bounds[b][1], ic_mut, bounds[b][2])
+                if vdwtp == Atom:
+                    allData[atype_name][comment] = atype_props[atp][comment]
 
         # Done with building the data structure, now store it to a file
-        if not firstatp:
+        if len(allData.keys()) == 0:
             sys.exit("Did not find any atomtypes")
         self.tf.write("#atomtype")
-        mykeys = list(allData[firstatp].keys())
+        mykeys = {}
+        for atp in allData:
+            for param in allData[atp]:
+                mykeys[param] = 1
         for mk in mykeys:
             self.tf.write(f"|{mk}")
         self.tf.write("\n")

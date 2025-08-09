@@ -136,6 +136,11 @@ void Topology::addShells(MsgHandler       *msghandler,
     TopologyEntryVector pols;
     auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
     auto pol_name = potentialToParameterName(fs.potential());
+    if (pol_name.empty())
+    {
+        msghandler->msg(ACTStatus::Fatal, "Polarization function not defined in FF file");
+        return;
+    }
     // Loop through the atomList.
     for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {
@@ -1672,7 +1677,10 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             {
                 if (!msghandler->ok())
                 {
-                    auto msg = gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str());
+                    auto msg = gmx::formatString("Force field only contains %zu/%zu %s parameters for %s, using zero's.", 
+                                                 param.size(),
+                                                 pp->second.param.size(),
+                                                 potentialToString(fs.potential()).c_str(), topID.id().c_str());
                     if (missing == missingParameters::Error)
                     {
                         msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);

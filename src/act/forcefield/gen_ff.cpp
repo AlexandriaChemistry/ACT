@@ -307,11 +307,11 @@ int gen_ff(int argc, char*argv[])
     int               nexclvdw = 2;
     double            epsilonr = 1;
     bool              qsymm    = true;
-    const char *qdn2[]    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
-    const char *bondfn[]  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
-    const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
-    const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    std::vector<Potential> nbpot = {
+    std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
+    std::vector<const char *>bondfn  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
+    std::vector<const char *>anglefn = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
+    std::vector<const char *>dihfn   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
+    std::vector<Potential> nbpot     = {
         Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
         Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b };
@@ -345,13 +345,13 @@ int gen_ff(int argc, char*argv[])
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-qsymm", FALSE, etBOOL, {&qsymm},
           "Implement symmetrization of charges in the force field" },
-        { "-qdist", FALSE, etENUM, {qdn2},
-          "Charge distribution type, can be either" },
-        { "-bondfn", FALSE, etENUM, {bondfn},
+        { "-qdist", FALSE, etENUM, {qdn2.data()},
+         "Charge distribution type, can be either" },
+        { "-bondfn", FALSE, etENUM, {bondfn.data()},
           "Function to use for covalent bonds, can be either" },
-        { "-anglefn", FALSE, etENUM, {anglefn},
+        { "-anglefn", FALSE, etENUM, {anglefn.data()},
           "Function to use for covalent angles, can be either" },
-        { "-dihfn", FALSE, etENUM, {dihfn},
+        { "-dihfn", FALSE, etENUM, {dihfn.data()},
           "Function to use for proper dihedrals, can be either" },
         { "-vdwfn", FALSE, etENUM, {vdwfn.data()},
           "Function to use for Van der Waals interactions, can be either" },
@@ -461,7 +461,11 @@ int gen_ff(int argc, char*argv[])
             InteractionType iType;
             if (!stringToInteractionType(content[0], &iType))
             {
-                //fprintf(stderr, "Unknown interaction type '%s' ignored\n", content[0].c_str());
+                if (!content[0].empty())
+                {
+                    fprintf(stderr, "Unknown interaction type '%s' ignored\n",
+                            content[0].c_str());
+                }
                 continue;
             }
             auto value = myatype[key.first];
@@ -493,9 +497,9 @@ int gen_ff(int argc, char*argv[])
                 {
                     atomparams[iType][pName].setMutability(mut);
                 }
-                else
+                else if (!value.empty())
                 {
-                    fprintf(stderr, "Incomprehensible Mutability '%s'\n", value.c_str());
+                    fprintf(stderr, "Incomprehensible Mutability '%s' for atype '%s' parameter %s\n", value.c_str(), entry.first.c_str(), pName.c_str());
                 }
             }
             else
@@ -546,6 +550,7 @@ int gen_ff(int argc, char*argv[])
         if (nonbond.find(fp.first) != nonbond.end())
         {
             fp.second.addOption("nexcl", gmx_itoa(nexclqq));
+            fp.second.setCanSwap(CanSwap::Yes);
         }
         if (fp.first == InteractionType::ELECTROSTATICS)
         {
@@ -559,6 +564,13 @@ int gen_ff(int argc, char*argv[])
             fp.second.setFunction(vdwfn[0]);
         } 
         pd.addForces(fp.first, fp.second);
+    }
+    // Polarization function
+    auto itPol = InteractionType::POLARIZATION;
+    if (pd.interactionPresent(itPol))
+    {
+        auto fsp = pd.findForces(itPol);
+        fsp->setFunction(potentialToString(Potential::POLARIZATION));
     }
     // Bonded functions need to be added
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
