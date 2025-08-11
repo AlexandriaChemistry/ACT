@@ -75,8 +75,11 @@ void CombRuleUtil::addPargs(std::vector<t_pargs> *pa)
 int CombRuleUtil::extract(ForceField *pd)
 {
     int changed = 0;
-    
-    auto rules = split(rules_, ' ');
+    std::vector<std::string> rules;
+    if (rules_ != nullptr)
+    {
+        rules = split(rules_, ' ');
+    }
     printf("There are %zu combination rules\n", rules.size());
     for (const auto &r : rules)
     {

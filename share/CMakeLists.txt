@@ -15,9 +15,14 @@ install(FILES
          atomprops.csv
          atomtype_mapping.csv
          atomtypes_gui.csv
-         bondvsites.csv
          excluded_molecules.csv
          residuetypes.dat 
          symmetric_charges.csv
+         vsite2_halogen_sigma_holes.csv
+         vsite2_water_sigma_holes.csv
+         vsite3_water_bisector.csv
+         vsite3_water_lone_pairs.csv
+         vsite3_alcohol_bisector.csv
+         vsite3_alcohol_lone_pairs.csv
     DESTINATION ${ACT_INSTALL_ACTDATADIR}
     COMPONENT data)

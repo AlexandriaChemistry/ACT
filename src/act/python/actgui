@@ -23,8 +23,11 @@ Slater   = "SLATER"
 PG       = "P+G"
 Bounded  = "Bounded"
 Fixed    = "Fixed"
+coul     = "COULOMB"
 defnm    = "DefaultName"
 comment  = "Comment"
+geom     = "Geometric"
+arith    = "Arithmetic"
 pad1     = 5
 mypad    = ( pad1, pad1, pad1, pad1 )
 
@@ -183,15 +186,6 @@ class VdwSel:
             item.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
             myrow += 1
 
-        labParticle = tk.Label(frame, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky="nsw")
-        myrow += 1
-        self.exchcorr = tk.IntVar()
-        item = tk.Checkbutton(frame, text="Exchange correction on vsites", command=None,
-                              variable=self.exchcorr)
-        item.grid(row=myrow, column=mycol, sticky="nsw")
-        ttp = CreateToolTip(item, "For sigma-holes\nKriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974, https://doi.org/10.1021/acs.jpclett.4c02034")
-        myrow += 1
-
         labPot = tk.Label(frame, text=f"Number of exclusions",
                           anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W+tk.E)
         myrow += 1
@@ -208,9 +202,6 @@ class VdwSel:
 
     def potential(self)->str:
         return self.vdwPot.get()
-
-    def exchCorr(self)->int:
-        return self.exchcorr.get()
 
     def nExcl(self)->int:
         return self.nexcl.get()
@@ -350,7 +341,7 @@ class ICSel:
                 comment: "Negative exponential correction\nMcDaniel & Schmidt, J. Phys. Chem. 117 (2013) 2053" },
             "MORSE_BONDS": {
                 "D0": ( 0, 0, "kJ/mol"),
-                "De": ( 200, 800, "kJ/mol" ),
+                "De": ( 0, 800, "kJ/mol" ),
                 "bondlength": ( 0, 0.5, "nm" ),
                 "beta": ( 5, 50, "1/nm" ),
                 comment: "Correction with repulsive and attractive part\nHosseini & Van der Spoel, in preparation" }
@@ -406,11 +397,146 @@ class ICSel:
     def nrows(self)->int:
         return len(self.ics)+1
 
+class FFOptions:
+    def __init__(self):
+        self.shole = '\u03C3-holes'
+        self.vsinfo = {
+            self.shole+" on halogen atoms": "vsite2_halogen_sigma_holes.csv",
+            self.shole+" on water": "vsite2_water_sigma_holes.csv",
+            "Site on water bisector": "vsite3_water_bisector.csv",
+            "Site on alcohol COH bisector": "vsite3_alcohol_bisector.csv",
+            "Lone pairs on water": "vsite3_water_lone_pairs.csv",
+            "Lone pairs on alcohol oxygen": "vsite3_alcohol_lone_pairs.csv"
+        }
+        self.user_vs     = []
+        self.user_params = []
+    
+    def select(self, root):
+        self.parent = root
+        self.root   = tk.Toplevel(self.parent)
+        self.root.title("Force field options")
+        content = ttk.Frame(self.root, padding=mypad)
+        nrows = 1 + len(self.vsinfo) + 1
+        ncolumns = 2
+        content.grid(rowspan=nrows, columnspan=ncolumns, sticky="news")
+        mylab = ttk.Label(content, text="Select virtual sites", anchor="w", font=labelFont())
+        myrow = 0
+        mylab.grid(row=myrow, column=0, sticky="nws")
+        myrow += 1
+        self.vsite_sel = {}
+        for vs in self.vsinfo:
+            self.vsite_sel[vs] = tk.IntVar()
+            cb = ttk.Checkbutton(content, text=vs, command=None,
+                                 variable=self.vsite_sel[vs])
+            cb.grid(row=myrow, column=0, sticky="nws")
+            myrow += 1
+        
+        but = ttk.Button(content, text="OK", command=self.done)
+        but.grid(row=myrow, column=0, sticky="news")
+        but = ttk.Button(content, text="Help", command=self.help)
+        but.grid(row=myrow, column=1, sticky="news")
+        # Second column
+        myrow = 0
+        mylab = ttk.Label(content, text="Vsite options", anchor="w", font=labelFont())
+        mylab.grid(row=myrow, column=1, sticky="nws")
+        myrow += 1
+        self.exchcorr = tk.IntVar()
+        item = tk.Checkbutton(content, text="Exchange correction on "+self.shole, command=None,
+                              variable=self.exchcorr)
+        item.grid(row=myrow, column=1, sticky="nsw")
+        ttp = CreateToolTip(item, "For sigma-holes\nKriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974, https://doi.org/10.1021/acs.jpclett.4c02034")
+        myrow += 1
+        mylab = ttk.Label(content, text="User files", anchor="w", font=labelFont())
+        mylab.grid(row=myrow, column=1, sticky="nws")
+        myrow += 1
+        but1 = ttk.Button(content, text="Virtual sites", command=self.addUserVsites)
+        but1.grid(row=myrow, column=1, sticky="news")
+        myrow += 1
+        ttp1 = CreateToolTip(but1, "Add your own definitions of virtual sites, see ACT manual for details.") 
+        but2 = ttk.Button(content, text="Parameters", command=self.addUserParams)
+        but2.grid(row=myrow, column=1, sticky="news")
+        myrow += 1
+        ttp2 = CreateToolTip(but2, "Add your own parameters for selected particles, see ACT manual for details.") 
+        for r in range(nrows):
+            content.grid_rowconfigure(r, weight=1)
+        for c in range(ncolumns):
+            content.grid_columnconfigure(c, weight=1)
+        self.ready = False
+        while not self.ready:
+            time.sleep(0.1)
+            self.parent.update()
+
+    def done(self):
+        self.ready=True
+        self.root.destroy()
+
+    def help(self):
+        helpstr = f"Virtual sites can be used to make your force field more realistic by spreading charges and other interactions such as exchange over multiple sites. In this manner better correlation with quantum chemistry results can be obtained. You can select some of the predefined virtual site definitions or prepare your own file. See ACT manual for details.\n\nYou can also add a file specifying particular values for parameters that you want to be fixed during training, for instance when you have additional data from experiments or quantum chemistry. See ACT manual for specification of the parameter files.\n\nNote that you can add multiple vsite files and multiple parameter files.\n\nFor more information on handling {self.shole} see Kriz & Van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974, https://doi.org/10.1021/acs.jpclett.4c02034"
+        show_info(helpstr)
+
+    def addUserVsites(self):
+        newfn = openasfile("Virtual site definitions", ".csv")
+        if newfn:
+            self.user_vs.append(newfn)
+        
+    def addUserParams(self):
+        newfn = openasfile("Parameter definitions", ".csv")
+        if newfn:
+            self.user_params.append(newfn)
+
+    def getParams(self)->dict:
+        mydict = {}
+        for fn in self.user_params:
+            with open(fn, "r") as inf:
+                for line in inf:
+                    if line.startswith("#"):
+                        continue
+                    words = line.strip().split("|")
+                    if len(words) == 6:
+                        interaction = words[0]
+                        if not interaction in mydict:
+                            mydict[interaction] = {}
+                        atp = words[2]
+                        param = words[3]
+                        if atp in mydict[interaction] and mydict[interaction][atp]["param"] == param:
+                            sys.exit("Atomtype '%s' with parameter '%s' is defined multiple times in user specified parameter files for interaction '%s'" % ( atp, param, inter ))
+                        mydict[interaction][atp] = { "potential": words[1], "parameter": param,
+                                                     "value": float(words[4]), "unit": words[5] }
+        return mydict
+
+    def getVsites(self):
+        vsites    = []
+        atomtypes = {}
+        def read_vs(filenm:str):
+            if not os.path.exists(filenm):
+                print("File %s does not exist, ignoring it." % filenm)
+                return
+            with open(filenm, "r") as inf:
+                for line in inf:
+                    if not line.startswith("#"):
+                        www = line.strip().split("|")
+                        if len(www) > 7:
+                            vsites.append(line.strip())
+                            exchcorr = False
+                            if self.exchcorr.get() and "sigma" in filenm:
+                                exchcorr = True
+                            atomtypes[www[0]] = { "exchcorr": exchcorr }
+            
+        for vs in self.vsinfo:
+            if self.vsite_sel[vs].get():
+                vsfn = library_file(self.vsinfo[vs])
+                read_vs(vsfn)
+        for vs in self.user_vs:
+            read_vs(vs)
+
+        return atomtypes, vsites
+        
 class AtomTypes:
     def __init__(self, frame, myrow, mycol):
-        atype_gui = library_file("atomtypes_gui.csv")
+        atguifn = "atomtypes_gui.csv"
+        atype_gui = library_file(atguifn)
         if not atype_gui:
-            sys.exit("No atom type definitions")
+            sys.exit("Cannot find atom type definitions file '%s'" % atguifn)
         self.atype_props = {}
         with open(atype_gui, "r") as inf:
             lineno = 0
@@ -458,6 +584,8 @@ class AtomTypes:
             if myrow == maxrow+1:
                 myrow = 1
                 mycol += 1
+        self.newProps = {}
+        self.select   = None
 
     def allOn(self):
         for at in self.atypes:
@@ -473,20 +601,21 @@ class AtomTypes:
         status = self.selAll[VSite].get()
         for at in self.atype_props.keys():
             if self.atype_props[at]["Default"]:
-                self.newProps[at][VSite].set(status)
-                self.atype_props[at][VSite] = status
+                if at in self.newProps and VSite in self.newProps[at]:
+                    self.newProps[at][VSite].set(status)
+                    self.atype_props[at][VSite] = status
 
     def allShell(self):
         status = self.selAll[Shell].get()
         for at in self.atype_props.keys():
             if self.atype_props[at]["Default"]:
-                self.newProps[at][Shell].set(status)
-                self.atype_props[at][Shell] = status
+                if at in self.newProps and Shell in self.newProps[at]:
+                    self.newProps[at][Shell].set(status)
+                    self.atype_props[at][Shell] = status
 
-    def selectProps(self, root, qdist:str):
-        self.parent = root
-        self.root   = tk.Toplevel(self.parent)
-        self.root.title("Atomtype properties selector")
+    def selectProps(self, parent, qdist:str):
+        self.select   = tk.Toplevel(parent)
+        self.select.title("Atomtype properties selector")
         self.updateAtypeProps()
         ndef     = 0
         for at in self.atype_props.keys():
@@ -497,7 +626,7 @@ class AtomTypes:
         if ndef % maxrow > 0:
             ncol += 1
         nrow   = min(ndef, maxrow)+2+1
-        self.content = ttk.Frame(self.root, padding=mypad)
+        self.content = ttk.Frame(self.select, padding=mypad)
         self.content.grid(rowspan=nrow, columnspan=3*ncol, sticky="news")
         # Column headers
         myrow = 0
@@ -522,7 +651,6 @@ class AtomTypes:
                 box.grid(row=myrow, column=3*c+lll, sticky="news")
         myrow += 1
         mycol  = 0
-        self.newProps = {}
         for at in self.atype_props.keys():
             if not self.atype_props[at]["Default"]:
                 continue
@@ -554,7 +682,7 @@ class AtomTypes:
             self.content.grid_columnconfigure(c, weight=1)
         self.ready = False
         while not self.ready:
-            self.parent.update()
+            parent.update()
             time.sleep(0.1)
 
     def help(self):
@@ -574,7 +702,9 @@ class AtomTypes:
         for at in self.newProps:
             for head in [ VSite, Shell ]:
                 self.atype_props[at][head] = self.newProps[at][head].get()
-        self.root.destroy()
+        # We should not try to destroy a window we did not (yet) create
+        if self.select:
+            self.select.destroy()
         atprops = {}
         for at in self.atypes:
             if self.atypes[at].get():
@@ -603,6 +733,511 @@ class ACTLogo:
 def callback(url:str):
     webbrowser.open_new(url)
 
+class CombRule:
+    def __init__(self, verbose:bool):
+        self.crules  = {}
+        self.ready   = False
+        self.verbose = True
+
+    def run(self, parent, functions:list):
+        self.root = tk.Toplevel(parent)
+        self.root.title("Combination Rule Selector")
+        self.all_rules = [ geom, arith, "Volumetric", "InverseSquare", "Kronecker",
+                           "HogervorstEpsilon", "HogervorstSigma", 
+                           "WaldmanSigma", "WaldmanEpsilon",
+                           "HalgrenEpsilon", "QiSigma", "QiEpsilon",
+                           "Yang", "MasonGamma" ]
+
+        # Default values according to Kriz et al. J. Chem. Theory Comput. 2024, 20, 2362-2376
+        all_params = { "TT2b": { "Att2b": geom, "bExchtt2b": arith, "bDisptt2b": arith,
+                                 "c6tt2b": geom, "c8tt2b": geom, "c10tt2b": geom },
+                       "GENERALIZED_BUCKINGHAM": { "rmin": "WaldmanSigma", "epsilon": "HalgrenEpsilon",
+                                                   "gamma": "HogervorstSigma", "delta": arith },
+                       "WANG_BUCKINGHAM": { "sigma": "InverseSquare", "epsilon": "HogervorstEpsilon",
+                                            "gamma": "MasonGamma" },
+                       "LJ14_7": { "sigma": geom, "epsilon": "Volumetric",
+                                   "gamma": arith, "delta": arith },
+                       "LJ12_6": { "sigma": geom, "epsilon": geom },
+                       "LJ8_6": { "sigma": arith, "epsilon": "Volumetric" },
+                       "MACDANIEL_SCHMIDT": { "a1dexp": geom, "a2dexp": geom, "bdexp": arith },
+                       "MORSE_BONDS": { "bondlength": arith, "De": "Kronecker", "beta": arith, "D0": geom }
+                      }
+        nfunc     = len(functions)
+        nparammax = 0
+        for f in range(nfunc):
+            potential = functions[f]["potential"]
+            if potential not in all_params:
+                show_info(f"Potential {potential} is not supported yet for manual selection of combination rules. Defaults will be used.")
+                return
+            else:
+                nparammax = max(nparammax, len(all_params[potential].keys()))
+        if self.verbose:
+            print(f"There are {nfunc} functions and {nparammax} parameters at most")
+        self.content = tk.Frame(self.root)
+        ncol = 2*nfunc
+        nrow = nparammax+3
+        self.content.grid(row=0, column=0, columnspan=ncol, rowspan=nrow, sticky="news")
+        mycol = 0
+        for ff in range(nfunc):
+            myrow     = 0
+            itype     = functions[ff]["itype"]
+            potential = functions[ff]["potential"]
+            lab = ttk.Label(self.content, text=f"Interaction: {itype}", font=labelFont(16))
+            lab.grid(row=myrow, column=mycol, columnspan=2, sticky="nws")
+            myrow += 1
+            lab = ttk.Label(self.content, text=f"Potential: {potential}", font=labelFont(16))
+            lab.grid(row=myrow, column=mycol, columnspan=2, sticky="nws")
+            myrow += 1
+            # Variable to store data for this interaction
+            self.crules[itype] = {}
+            myparam = all_params[potential]
+            for p in myparam:
+                if self.verbose:
+                    print(f"p {p} myparam[p] {myparam[p]}")
+                self.crules[itype][p] = tk.StringVar(self.content)
+                self.crules[itype][p].set(myparam[p])
+                lab = ttk.Label(self.content, text=p)
+                lab.grid(row=myrow, column=mycol, sticky="wns")
+                menu = tk.OptionMenu(self.content, self.crules[itype][p], *self.all_rules)
+                menu.grid(row=myrow, column=mycol+1, sticky="news")
+                myrow += 1
+            mycol += 2
+        # Final two buttons
+        myrow = nrow - 1
+        hh = ttk.Button(self.content, text="Help", command=self.help)
+        hh.grid(column=0, row=myrow, columnspan=nfunc, sticky="nwes")
+        bb = ttk.Button(self.content, text="OK", command=self.done)
+        bb.grid(column=nfunc, row=myrow, columnspan=nfunc, sticky="nwes")
+        myrow += 1
+        for r in range(nrow):
+            self.content.grid_rowconfigure(r, weight=1)
+        for c in range(ncol):
+            self.content.grid_columnconfigure(c, weight=1)
+        while not self.ready:
+            parent.update()
+            time.sleep(0.1)
+
+    def help(self):
+        helpstr = "Choose the combination rule for each parameter in the potential of your choice. Please be aware that combination rules represent an approximation of the potential between atoms.\n\nThe choice of rules has a large impact on the accuracy of your model. For more detailed information, please refer to Kriz et al. J. Chem. Theory Comput. 20 (2024) 2362. https://doi.org/10.1021/acs.jctc.3c01257. Default values for Van der Waals potentials suggested here come from that paper."
+        show_info(helpstr)
+
+    def done(self):
+        self.ready = True
+
+    def rules(self)->dict:
+        myrules = {}
+        if self.crules:
+            for itype in self.crules:
+                myrules[itype] = {}
+                for c in self.crules[itype]:
+                    myrules[itype][c] = self.crules[itype][c].get()
+        self.root.destroy()
+        return myrules
+
+class FFGenerator:
+    def __init__(self, root):
+        self.width  = 900
+        self.height = 800
+        self.parent = root
+        self.root   = tk.Toplevel(root)
+        self.root.title("ACT - Force Field Generator")
+        self.ffName        = None
+        # User specified things
+        self.opt_atomtypes = None
+        self.opt_vsites    = None
+        self.opt_params    = None
+
+    def rootW(self):
+        return self.root
+
+    def doGenFF(self):
+        if self.verbose.get():
+            self.print()
+        # Get file name
+        file_path = saveasfile("Force Field filename to save", ".xml")
+        if file_path:
+            comb_rules = {}
+            functions = [ { "itype": "VANDERWAALS", "potential": self.vdwSel.potential() } ]
+            if self.icSel.potential() != "NONE":
+                functions.append( { "itype": "INDUCTIONCORRECTION", "potential": self.icSel.potential() } )
+            comb_rules = CombRule(self.verbose.get())
+            comb_rules.run(self.root, functions)
+            allrules = comb_rules.rules()
+            if self.verbose:
+                for itype in allrules:
+                    print(f"Here are the combination rules you selected {allrules[itype]}")
+
+            self.atoms.selectProps(self.root, self.qSel.qModel())
+            status = self.runACT(file_path, allrules)
+            if status == 0:
+                msg = ("Succesfully generated a force field in %s" % file_path)
+                self.ffName = file_path
+                show_info(msg)
+            else:
+                show_info("Force field generation failed")
+            self.close()
+
+    def forceFieldName(self):
+        return self.ffName
+
+    def top(self):
+        logo_size = 150
+        self.logo_frame = ttk.Frame(self.root, width=logo_size,
+                                    height=logo_size, padding=mypad)
+        actlogo = library_file("ACTlogo2.png")
+        if actlogo:
+            self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
+            self.root.tk.call('wm', 'iconphoto', self.root._w, self.logo)
+            mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W+tk.E)
+        else:
+            # TODO: build in alternative if the logo image is not present
+            sys.exit("Cannot find %s" % actlogo)
+        self.atom_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
+        self.atoms    = AtomTypes(self.atom_frame, myrow=0, mycol=0)
+
+    def makePots(self):
+        self.mid_frame = ttk.Frame(self.root,
+                                   border=1, relief=tk.SOLID, padding=mypad)
+        self.vdwSel   = VdwSel(self.mid_frame, myrow=0, mycol=0)
+        self.qSel     = QSel(self.mid_frame, myrow=0, mycol=1)
+        self.bondSel  = BondSel(self.mid_frame, myrow=0, mycol=2)
+        self.angleSel = AngleSel(self.mid_frame, myrow=self.bondSel.nrows(), mycol=2)
+        self.dihSel   = DihSel(self.mid_frame, myrow=self.bondSel.nrows()+self.angleSel.nrows(), mycol=2)
+        self.icSel    = ICSel(self.mid_frame, myrow=self.qSel.nrows(), mycol=1)
+
+    def makeButtons(self):
+        self.bot_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
+        self.saveIntermediates = tk.IntVar()
+        self.saveIntermediates.set(1)
+        item = tk.Checkbutton(self.bot_frame,
+                              text="Save intermediate files", command=None,
+                              variable=self.saveIntermediates).grid(row=0, column=0, sticky="nsw")
+        self.verbose = tk.IntVar()
+        self.verbose.set(0)
+        item = tk.Checkbutton(self.bot_frame,text="Verbose mode", command=None,
+                              variable=self.verbose).grid(row=0, column=1, sticky="nsw")
+        tk.Button(self.bot_frame,
+                  text="Options", default="active", command=self.doOptions).grid(row=0, column=2, sticky="nsew")
+        tk.Button(self.bot_frame,
+                  text="Run", default="active", command=self.doGenFF).grid(row=0, column=3, sticky="nsew")
+        tk.Button(self.bot_frame,
+                  text="Cancel", default="normal", command=self.close).grid(row=0, column=4, sticky="nsew")
+
+    def close(self):
+        self.done = True
+        self.root.destroy()
+
+    def doOptions(self):
+        myopts = FFOptions()
+        myopts.select(self.root)
+        self.opt_atomtypes, self.opt_vsites = myopts.getVsites()
+        self.opt_params = myopts.getParams()
+        
+    def run(self):
+        # Build the elements of the window
+        self.top()
+        self.makePots()
+        self.makeButtons()
+        # layout all of the main containers
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
+        # create top widgets
+        self.logo_frame.grid(row=0, column=0, sticky="ewn")
+        self.atom_frame.grid(row=0, column=1, sticky="ewn")
+        # create the center widgets
+        self.mid_frame.grid_rowconfigure(0, weight=1)
+        for c in range(3):
+            self.mid_frame.grid_columnconfigure(c, weight=1)
+        self.mid_frame.grid(row=1, columnspan=3, sticky="ew")
+        # create the bottom widgets
+        self.bot_frame.grid_rowconfigure(1, weight=1)
+        for c in range(5):
+            self.bot_frame.grid_columnconfigure(c, weight=1)
+        self.bot_frame.grid(row=2, columnspan=5, sticky="ews")
+        self.done = False
+        while not self.done:
+            time.sleep(0.1)
+            self.parent.update()
+
+    def print(self):
+        print(f"VDW potential selected: {self.vdwSel.potential()}")
+        vdwPart = self.vdwSel.vdwParticles()
+        for ptype in vdwPart.keys():
+            print(f"VDW on {ptype}: {vdwPart[ptype]}")
+        print(f"Charge model selected: {self.qSel.qModel()}")
+        print(f"Bond potential selected: {self.bondSel.potential()}")
+        print(f"Angle potential selected: {self.angleSel.potential()}")
+        print(f"Dihedral potential selected: {self.dihSel.potential()}")
+        print(f"Induction correction potential selected: {self.icSel.potential()}")
+        print(f"Selection of atomtypes {self.atoms.getAtypes()}")
+
+    def generateCSV(self)->bool:
+        self.csv_file = None
+        if self.saveIntermediates.get():
+            # Let user decide what file to save atomtypes in
+            self.csv_file = saveasfile("File to save atomtypes", ".csv")
+            if self.csv_file:
+                self.tf = open(self.csv_file, "w")
+        else:
+            # Open a temporary file
+            self.tf = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
+            self.csv_file = self.tf.name
+        if not self.csv_file or len(self.csv_file) == 0:
+            print("No correct csv file name received or temp file opening failed.")
+            return False
+
+        # Fetch the atom types selected by the user
+        atype_props = self.atoms.getAtypes()
+        if len(atype_props) == 0:
+            show_info("No atom types selected!")
+            return False
+
+        # Do we need to generate vsite1 definitions?
+        self.vsite_file = None
+        needVS1 = False
+        for atp in atype_props:
+            if atype_props[atp][VSite] > 0:
+                needVS1 = True
+        if needVS1 or (self.opt_vsites and len(self.opt_vsites) > 0):
+            # Yes!
+            if self.saveIntermediates.get():
+                # Let user decide what file to save atomtypes in
+                self.vsite_file = saveasfile("File to save vsite definitions", ".csv")
+                if self.vsite_file:
+                    self.vs1f = open(self.vsite_file, "w")
+                else:
+                    return False
+            else:
+                # Open a temporary file
+                self.vs1f = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
+                self.vsite_file = self.vs1f.name
+                if not self.vsite_file:
+                    return False
+            # Copy all the vsite info that user selected to a new file.
+            # If the user selected vsite1 as well, they will be added later.
+            if self.opt_vsites and len(self.opt_vsites) > 0:
+                for line in self.opt_vsites:
+                    self.vs1f.write("%s\n" % line)
+
+        allData = {}
+        # Set some shortcuts
+        vdwPart = self.vdwSel.vdwParticles()
+        qdist   = self.qSel.qModel()
+        # Convenience function
+        def setParam(atp:str, inter:str, pname:str, mymin:float, mymax:float, mymut:str, unit:str,
+                     nonNegative=True):
+            prefix = f"{inter}:{pname}:"
+            if (inter in self.opt_params and
+                atp in self.opt_params[inter] and
+                pname == self.opt_params[inter][atp]["parameter"]):
+                value = self.opt_params[inter][atp]["value"]
+                mymin = value
+                mymax = value
+                mymut = Fixed
+                unit  = self.opt_params[inter][atp]["unit"]
+                nonNegative = value >= 0
+                if self.verbose:
+                    print("Applying user determined value %g for %s/%s/%s" % ( value, inter, atp, pname ) )
+            allData[atp][prefix+"min"]    = mymin
+            allData[atp][prefix+"max"]    = mymax
+            allData[atp][prefix+"mut"]    = mymut
+            allData[atp][prefix+"unit"]   = unit
+            allData[atp][prefix+"nonneg"] = str(nonNegative)
+
+        # And another one
+        def setVDW(atype_name:str, vdwtp:str):
+            bounds = self.vdwSel.bounds()
+            vdw_mut = Fixed
+            if vdwPart[vdwtp]:
+                vdw_mut = Bounded
+            for b in bounds:
+                if not b == comment:
+                    setParam(atype_name, "VANDERWAALS", b, bounds[b][0], bounds[b][1], vdw_mut, bounds[b][2])
+
+        # and a third one
+        def setVDWcorr(atp:str, turnOn:bool):
+            if self.needVDWcorr:
+                vdwcorr = "VDWCORRECTION"
+                if turnOn:
+                    setParam(atp, vdwcorr, "aexp", 0, 50000, Bounded, "kJ/mol")
+                    setParam(atp, vdwcorr, "bexp", 10, 50, Bounded, "1/nm")
+                else:
+                    setParam(atp, vdwcorr, "aexp", 0, 0, Fixed, "kJ/mol")
+                    setParam(atp, vdwcorr, "bexp", 10, 50, Fixed, "1/nm")
+            
+        # Atomtypes corresponding to virtual sites
+        # First check whether we need any VDWCORRECTION at all
+        self.needVDWcorr = False
+        if self.opt_atomtypes:
+            for atp in self.opt_atomtypes.keys():
+                if self.opt_atomtypes[atp]["exchcorr"]:
+                    self.needVDWcorr = True
+            for atp in self.opt_atomtypes.keys():
+                allData[atp] = { "element": "VS", "mass": 0,
+                                 "bondtype": atp, "poltype": "",
+                                 "acmtype": "", "vdwtype": atp,
+                                 "atomicnumber": 0, "zetatype": atp+"_z",
+                                 "radius": 0, "row": 0 }
+                setParam(atp, "", "q", -2, 2, Bounded, "e", False)
+                if qdist:
+                    setParam(atp, coul, "zeta", 0, 0, Fixed, "1/nm")
+                else:
+                    setParam(atp, coul, "zeta", 4, 20, Bounded, "1/nm")
+                # Determine whether to use VDW
+                setVDW(atp, VSite)
+                # Some of the vsites may get the van der waals correction
+                setVDWcorr(atp, self.opt_atomtypes[atp]["exchcorr"])
+            
+        # Normal atomtypes
+        for atp in atype_props:
+            polarizable = atype_props[atp][Shell] > 0
+            haveVS1     = atype_props[atp][VSite] > 0
+            for vdwtp in [ Atom, Shell, VSite ]:
+                if vdwtp == VSite and not haveVS1:
+                    continue
+                if vdwtp == Shell and not polarizable:
+                    continue
+                atype_name = atp
+                element = atype_props[atp]['Element']
+
+                if vdwtp == Shell:
+                    atype_name = atp + "_s"
+                    element    = "X"
+                elif vdwtp == VSite:
+                    atype_name = "v1" + atp
+                    element = "VS"
+                    vs1btype = atp
+                    self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
+                btype = atype_name
+                if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
+                    btype = atype_name + "_b"
+                radius  = ""
+                row     = 0
+                ztype   = atype_name + "_z"
+                acmtype = ""
+                stype   = ""
+                if vdwtp == Atom:
+                    acmtype = ztype
+                    radius  = str(atype_props[atp]['Radius'])
+                    row     = atype_props[atp]['Row']
+                    if polarizable:
+                        stype = atp + "_s"
+                atomNR = atype_props[atp]["AtomNR"]
+                # New atomtype, set element and atomic number and subtypes
+                allData[atype_name] = { "element": element, "atomicnumber": atomNR,
+                                        "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
+                                        "poltype": stype, "radius": radius, "row": row }
+                # Highest charge for vsite1 and shells
+                qmaxVS = -0.5
+                if haveVS1 or polarizable:
+                    if vdwtp == Atom:
+                        setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
+                    else:
+                        setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
+                else:
+                    setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
+
+                if qdist == Point or (vdwtp == Atom and haveVS1):
+                    setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
+                else:
+                    setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
+
+                if polarizable and vdwtp == Shell:
+                    setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")
+                    setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
+                    setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
+
+                # Determine whether to use VDW
+                setVDW(atype_name, vdwtp)
+                # And van der waals corrections if needed.
+                setVDWcorr(atype_name, False)
+
+                if vdwtp == Atom:
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
+
+                if self.icSel.potential() != "NONE":
+                    bounds = self.icSel.bounds()
+                    icp    = self.icSel.icParticles()
+                    ic_mut = Fixed
+                    if vdwtp in icp:
+                        if icp[vdwtp]:
+                            ic_mut = Bounded
+                        for b in bounds:
+                            if not b == comment:
+                                setParam(atype_name, "INDUCTIONCORRECTION", b, bounds[b][0], bounds[b][1], ic_mut, bounds[b][2])
+                if vdwtp == Atom:
+                    allData[atype_name][comment] = atype_props[atp][comment]
+
+        # Done with building the data structure, now store it to a file
+        if len(allData.keys()) == 0:
+            sys.exit("Did not find any atomtypes")
+        self.tf.write("#atomtype")
+        mykeys = {}
+        for atp in allData:
+            for param in allData[atp]:
+                mykeys[param] = 1
+        for mk in mykeys:
+            self.tf.write(f"|{mk}")
+        self.tf.write("\n")
+        for ad in allData.keys():
+            self.tf.write(f"{ad}")
+            for mk in mykeys:
+                value = ""
+                if mk in allData[ad]:
+                    value = allData[ad][mk]
+                self.tf.write(f"|{value}")
+            self.tf.write("\n")
+
+        if self.verbose.get():
+            print("Generated file %s" % self.csv_file)
+        return True
+
+    def closeCSV(self):
+        # Close atomtypes file
+        self.tf.close()
+        # Close vsite1 only when needed
+        if self.vsite_file:
+            self.vs1f.close()
+
+    def runACT(self, file_path:str, comb_rules:dict)->int:
+        epsr  = self.qSel.epsilonR()
+        nexcl = self.vdwSel.nExcl()
+        qsymm = " -noqsymm "
+        # status = 0 corresponds to everything was fine under Linux / MacOS.
+        status = 1
+        if self.qSel.symm():
+            qsymm = " -qsymm "
+        if self.generateCSV():
+            qdist = self.qSel.qModel()
+            if qdist == PG:
+                qdist = Gaussian
+            cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
+            if self.vsite_file:
+                cmd += f" -vs {self.vsite_file} "
+            icpot = self.icSel.potential()
+            if icpot != "NONE":
+                cmd += f" -icfn {icpot} "
+            if self.needVDWcorr:
+                cmd += " -vdwcorr "
+            if len(comb_rules.keys()) > 0:
+                cmd += " -cr '"
+                for itype in comb_rules:
+                    for param in comb_rules[itype]:
+                        cmd += f" {itype}:{param}:{comb_rules[itype][param]}"
+                if self.needVDWcorr:
+                    cmd += " VDWCORRECTION:aexp:Arithmetic VDWCORRECTION:bexp:Arithmetic "
+                cmd += " '"
+            if self.verbose:
+                print(f"Command line: {cmd}")
+            # Make sure all info is in the files!
+            self.tf.flush()
+            if self.vsite_file:
+                self.vs1f.flush()
+            status = os.system(cmd)
+            self.closeCSV()
+        return status
+    
 class GeometryFF:
     def __init__(self, root):
         self.root = root
@@ -826,425 +1461,6 @@ class Manager:
             deft   = "normal"
             myrow += 1
 
-class CombRule:
-    def __init__(self, root):
-        self.parent = root
-        self.crules = None
-        self.ready = False
-
-    def makeWindow(self):
-        self.root = tk.Toplevel(self.parent)
-        self.root.title("Combination Rule Selector")
-        self.all_rules = [ "Geometric", "Arithmetic", "Volumetric",
-                           "InverseSquare", "Kronecker",
-                           "HogervorstEpsilon", "HogervorstSigma", 
-                           "WaldmanSigma", "WaldmanEpsilon",
-                           "HalgrenEpsilon", "QiSigma", "QiEpsilon",
-                           "Yang", "MasonGamma" ]
-
-    def run(self, itype:str, potential:str):
-        all_params = { "TT2b": { "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" },
-                       "GENERALIZED_BUCKINGHAM": { "rmin", "epsilon", "gamma", "delta" },
-                       "WANG_BUCKINGHAM": { "sigma", "epsilon", "gamma" },
-                       "LJ14_7": { "sigma", "epsilon", "gamma", "delta" },
-                       "LJ12_6": { "sigma", "epsilon" },
-                       "LJ8_6": { "sigma", "epsilon" },
-                       "MACDANIEL_SCHMIDT": { "a1dexp", "a2dexp", "bdexp" },
-                       "MORSE_BONDS": { "bondlength", "De", "beta", "D0" }
-                      }
-        if potential not in all_params:
-            show_info(f"Potential {potential} is not supported yet for manual selection of combination rules. Defaults will be used.")
-            return
-        self.makeWindow()
-        myparam = all_params[potential]
-        self.content = ttk.Frame(self.root, padding=mypad)
-        self.content.grid(row=0, column=0, columnspan=2, rowspan=len(myparam)+3)
-        for r in range(len(myparam)+3):
-            self.content.grid_rowconfigure(r, weight=1)
-        for c in range(2):
-            self.content.grid_columnconfigure(c, weight=1)
-        lab = ttk.Label(self.content, text=f"Interaction: {itype}", font=labelFont(16))
-        lab.grid(row=0, column=0, columnspan=2, sticky="nws")
-        lab = ttk.Label(self.content, text=f"Potential: {potential}", font=labelFont(16))
-        lab.grid(row=1, column=0, columnspan=2, sticky="nws")
-        self.crules = {}
-        myrow = 2
-        for p in myparam:
-            self.crules[p] = tk.StringVar(self.content, self.all_rules[0])
-            lab = ttk.Label(self.content, text=p)
-            lab.grid(row=myrow, column=0, sticky="wns")
-            menu = ttk.OptionMenu(self.content, self.crules[p], *self.all_rules)
-            menu.grid(row=myrow, column=1, sticky="news")
-            myrow += 1
-        hh = ttk.Button(self.content, text="Help", command=self.help)
-        hh.grid(column=0, row=myrow, sticky="nwes")
-        bb = ttk.Button(self.content, text="OK", command=self.done)
-        bb.grid(column=1, row=myrow, sticky="nwes")
-        myrow += 1
-        for r in range(myrow):
-            self.content.grid_rowconfigure(r, weight=1)
-        for c in range(2):
-            self.content.grid_columnconfigure(c, weight=1)
-        while not self.ready:
-            self.parent.update()
-            time.sleep(0.1)
-
-    def help(self):
-        helpstr = "Choose the combination rule for each parameter in the potential of your choice. Please be aware that combination rules represent an approximation of the potential between atoms.\n\nThe choice of rules has a large impact on the accuracy of your model. For more detailed information, please refer to Kriz et al. J. Chem. Theory Comput. 20 (2024) 2362. https://doi.org/10.1021/acs.jctc.3c01257"
-        show_info(helpstr)
-
-    def done(self):
-        self.root.destroy()
-        self.ready = True
-
-    def rules(self)->dict:
-        myrules = {}
-        if self.crules:
-            for c in self.crules:
-                myrules[c] = self.crules[c].get()
-        return myrules
-
-class FFGenerator:
-    def __init__(self, root):
-        self.width  = 900
-        self.height = 800
-        self.parent = root
-        self.root   = tk.Toplevel(root)
-        self.root.title("ACT - Force Field Generator")
-        self.ffName = None
-
-    def rootW(self):
-        return self.root
-
-    def doGenFF(self):
-        if self.verbose.get():
-            self.print()
-        # Get file name
-        file_path = saveasfile("Force Field filename to save", ".xml")
-        if file_path:
-            comb_rules = {}
-            itype = "VANDERWAALS"
-            comb_rules[itype] = CombRule(self.root)
-            comb_rules[itype].run(itype, self.vdwSel.potential())
-            if self.verbose:
-                print(f"Here are the combination rules you selected {comb_rules[itype].rules()}")
-            if self.icSel.potential() != "NONE":
-                itype = "INDUCTIONCORRECTION"
-                comb_rules[itype] = CombRule(self.root)
-                comb_rules[itype].run(itype, self.icSel.potential())
-
-            self.atoms.selectProps(self.root, self.qSel.qModel())
-            status = self.runACT(file_path, comb_rules)
-            if status == 0:
-                msg = ("Succesfully generated a force field in %s" % file_path)
-                self.ffName = file_path
-                show_info(msg)
-            else:
-                show_info("Force field generation failed")
-            self.close()
-
-    def forceFieldName(self):
-        return self.ffName
-
-    def top(self):
-        logo_size = 150
-        self.logo_frame = ttk.Frame(self.root, width=logo_size,
-                                    height=logo_size, padding=mypad)
-        actlogo = library_file("ACTlogo2.png")
-        if actlogo:
-            self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
-            self.root.tk.call('wm', 'iconphoto', self.root._w, self.logo)
-            mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W+tk.E)
-        else:
-            # TODO: build in alternative if the logo image is not present
-            sys.exit("Cannot find %s" % actlogo)
-        self.atom_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
-        self.atoms    = AtomTypes(self.atom_frame, myrow=0, mycol=0)
-
-    def makePots(self):
-        self.mid_frame = ttk.Frame(self.root,
-                                   border=1, relief=tk.SOLID, padding=mypad)
-        self.vdwSel   = VdwSel(self.mid_frame, myrow=0, mycol=0)
-        self.qSel     = QSel(self.mid_frame, myrow=0, mycol=1)
-        self.bondSel  = BondSel(self.mid_frame, myrow=0, mycol=2)
-        self.angleSel = AngleSel(self.mid_frame, myrow=self.bondSel.nrows(), mycol=2)
-        self.dihSel   = DihSel(self.mid_frame, myrow=self.bondSel.nrows()+self.angleSel.nrows(), mycol=2)
-        self.icSel    = ICSel(self.mid_frame, myrow=self.qSel.nrows(), mycol=1)
-
-    def makeButtons(self):
-        self.bot_frame = ttk.Frame(self.root, padding=mypad, border=1, relief=tk.SOLID)
-        bwidth = int(self.width/4)
-        self.saveIntermediates = tk.IntVar()
-        self.saveIntermediates.set(1)
-        item = tk.Checkbutton(self.bot_frame,
-                              text="Save intermediate files", command=None,
-                              variable=self.saveIntermediates).grid(row=0, column=0, sticky="nsw")
-        self.verbose = tk.IntVar()
-        self.verbose.set(0)
-        item = tk.Checkbutton(self.bot_frame,text="Verbose mode", command=None,
-                              variable=self.verbose).grid(row=0, column=1, sticky="nsw")
-        tk.Button(self.bot_frame,
-                  text="Run", default="active", command=self.doGenFF).grid(row=0, column=2, sticky="nsew")
-        tk.Button(self.bot_frame,
-                  text="Cancel", default="normal", command=self.close).grid(row=0, column=3, sticky="nsew")
-
-    def close(self):
-        self.done = True
-        self.root.destroy()
-
-    def run(self):
-        # Build the elements of the window
-        self.top()
-        self.makePots()
-        self.makeButtons()
-        # layout all of the main containers
-        self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_columnconfigure(1, weight=1)
-        # create top widgets
-        self.logo_frame.grid(row=0, column=0, sticky="ewn")
-        self.atom_frame.grid(row=0, column=1, sticky="ewn")
-        # create the center widgets
-        self.mid_frame.grid_rowconfigure(0, weight=1)
-        for c in range(3):
-            self.mid_frame.grid_columnconfigure(c, weight=1)
-        self.mid_frame.grid(row=1, columnspan=3, sticky="ew")
-        # create the bottom widgets
-        self.bot_frame.grid_rowconfigure(1, weight=1)
-        for c in range(4):
-            self.bot_frame.grid_columnconfigure(c, weight=1)
-        self.bot_frame.grid(row=2, columnspan=4, sticky="ews")
-        self.done = False
-        while not self.done:
-            time.sleep(0.1)
-            self.parent.update()
-
-    def print(self):
-        print(f"VDW potential selected: {self.vdwSel.potential()}")
-        vdwPart = self.vdwSel.vdwParticles()
-        for ptype in vdwPart.keys():
-            print(f"VDW on {ptype}: {vdwPart[ptype]}")
-        print(f"Use exchange correction: {self.vdwSel.exchCorr()}")
-        print(f"Charge model selected: {self.qSel.qModel()}")
-        print(f"Bond potential selected: {self.bondSel.potential()}")
-        print(f"Angle potential selected: {self.angleSel.potential()}")
-        print(f"Dihedral potential selected: {self.dihSel.potential()}")
-        print(f"Induction correction potential selected: {self.icSel.potential()}")
-        print(f"Selection of atomtypes {self.atoms.getAtypes()}")
-
-    def generateCSV(self)->bool:
-        self.csv_file = None
-        if self.saveIntermediates.get():
-            # Let user decide what file to save atomtypes in
-            self.csv_file = saveasfile("File to save atomtypes", ".csv")
-            if self.csv_file:
-                self.tf = open(self.csv_file, "w")
-        else:
-            # Open a temporary file
-            self.tf = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
-            self.csv_file = self.tf.name
-        if not self.csv_file or len(self.csv_file) == 0:
-            print("No correct csv file name received or temp file opening failed.")
-            return False
-
-        # Fetch the atom types selected by the user
-        atype_props = self.atoms.getAtypes()
-        if len(atype_props) == 0:
-            show_info("No atom types selected!")
-            return False
-
-        # Do we need to generate vsite1 definitions?
-        self.vs1_file = None
-        needVS1 = False
-        for atp in atype_props:
-            if atype_props[atp][VSite] > 0:
-                needVS1 = True
-        if needVS1:
-            # Yes!
-            if self.saveIntermediates.get():
-                # Let user decide what file to save atomtypes in
-                self.vs1_file = saveasfile("File to save vsite definitions", ".csv")
-                if self.vs1_file:
-                    self.vs1f = open(self.vs1_file, "w")
-                else:
-                    return False
-            else:
-                # Open a temporary file
-                self.vs1f = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
-                self.vs1_file = self.vs1f.name
-                if not self.vs1_file:
-                    return False
-
-        allData = {}
-        # Set some shortcuts
-        vdwPart = self.vdwSel.vdwParticles()
-        qdist   = self.qSel.qModel()
-        # Convenience function
-        def setParam(atp:str, inter:str, pname:str, mymin:float, mymax:float, mymut:str, unit:str,
-                     nonNegative=True):
-            prefix = f"{inter}:{pname}:"
-            allData[atp][prefix+"min"]    = mymin
-            allData[atp][prefix+"max"]    = mymax
-            allData[atp][prefix+"mut"]    = mymut
-            allData[atp][prefix+"unit"]   = unit
-            allData[atp][prefix+"nonneg"] = str(nonNegative)
-
-        for atp in atype_props:
-            polarizable = atype_props[atp][Shell] > 0
-            haveVS1     = atype_props[atp][VSite] > 0
-            for vdwtp in [ Atom, Shell, VSite ]:
-                if vdwtp == VSite and not haveVS1:
-                    continue
-                if vdwtp == Shell and not polarizable:
-                    continue
-                atype_name = atp
-                element = atype_props[atp]['Element']
-
-                if vdwtp == Shell:
-                    atype_name = atp + "_s"
-                    element    = "X"
-                elif vdwtp == VSite:
-                    atype_name = "v1" + atp
-                    element = "VS"
-                    vs1btype = atp
-                    self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
-                btype = atype_name
-                if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
-                    btype = atype_name + "_b"
-                radius  = ""
-                row     = 0
-                ztype   = atype_name + "_z"
-                acmtype = ""
-                stype   = ""
-                if vdwtp == Atom:
-                    acmtype = ztype
-                    radius  = str(atype_props[atp]['Radius'])
-                    row     = atype_props[atp]['Row']
-                    if polarizable:
-                        stype = atp + "_s"
-                atomNR = atype_props[atp]["AtomNR"]
-                # New atomtype, set element and atomic number and subtypes
-                allData[atype_name] = { "element": element, "atomicnumber": atomNR,
-                                        "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
-                                        "poltype": stype, "radius": radius, "row": row }
-                # Highest charge for vsite1 and shells
-                qmaxVS = -0.5
-                if haveVS1 or polarizable:
-                    if vdwtp == Atom:
-                        setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
-                    else:
-                        setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
-                else:
-                    setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
-
-                coul = "COULOMB"
-                if qdist == Point or (vdwtp == Atom and haveVS1):
-                    setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
-                else:
-                    setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
-
-                if polarizable and vdwtp == Shell:
-                    setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")
-                    setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
-                    setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
-
-                # Determine whether to use VDW
-                bounds = self.vdwSel.bounds()
-                vdw_mut = Fixed
-                if vdwPart[vdwtp]:
-                    vdw_mut = Bounded
-                for b in bounds:
-                    if not b == comment:
-                        setParam(atype_name, "VANDERWAALS", b, bounds[b][0], bounds[b][1], vdw_mut, bounds[b][2])
-                # TODO: Check whether we need this on Vsites (vsite 2 only!)
-                if self.vdwSel.exchCorr() and vdwtp == Atom:
-                    setParam(atype_name, "VDWCORRECTION", "aexp", 0, 50000, Bounded, "kJ/mol")
-                    setParam(atype_name, "VDWCORRECTION", "bexp", 10, 50, Bounded, "1/nm")
-
-                if vdwtp == Atom:
-                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
-                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
-
-                if self.icSel.potential() != "NONE":
-                    bounds = self.icSel.bounds()
-                    icp    = self.icSel.icParticles()
-                    ic_mut = Fixed
-                    if vdwtp in icp:
-                        if icp[vdwtp]:
-                            ic_mut = Bounded
-                        for b in bounds:
-                            if not b == comment:
-                                setParam(atype_name, "INDUCTIONCORRECTION", b, bounds[b][0], bounds[b][1], ic_mut, bounds[b][2])
-                if vdwtp == Atom:
-                    allData[atype_name][comment] = atype_props[atp][comment]
-
-        # Done with building the data structure, now store it to a file
-        if len(allData.keys()) == 0:
-            sys.exit("Did not find any atomtypes")
-        self.tf.write("#atomtype")
-        mykeys = {}
-        for atp in allData:
-            for param in allData[atp]:
-                mykeys[param] = 1
-        for mk in mykeys:
-            self.tf.write(f"|{mk}")
-        self.tf.write("\n")
-        for ad in allData.keys():
-            self.tf.write(f"{ad}")
-            for mk in mykeys:
-                value = ""
-                if mk in allData[ad]:
-                    value = allData[ad][mk]
-                self.tf.write(f"|{value}")
-            self.tf.write("\n")
-
-        if self.verbose.get():
-            print("Generated file %s" % self.csv_file)
-        return True
-
-    def closeCSV(self):
-        # Close atomtypes file
-        self.tf.close()
-        # Close vsite1 only when needed
-        if self.vs1_file:
-            self.vs1f.close()
-
-    def runACT(self, file_path:str, comb_rules:dict)->int:
-        epsr  = self.qSel.epsilonR()
-        nexcl = self.vdwSel.nExcl()
-        qsymm = " -noqsymm "
-        # status = 0 corresponds to everything was fine under Linux / MacOS.
-        status = 1
-        if self.qSel.symm():
-            qsymm = " -qsymm "
-        if self.generateCSV():
-            qdist = self.qSel.qModel()
-            if qdist == PG:
-                qdist = Gaussian
-            cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
-            if self.vs1_file:
-                cmd += f" -vs {self.vs1_file} "
-            icpot = self.icSel.potential()
-            if icpot != "NONE":
-                cmd += f" -icfn {icpot} "
-            if self.vdwSel.exchCorr():
-                cmd += " -vdwcorr "
-            if len(comb_rules.keys()) > 0:
-                cmd += " -cr '"
-                for itype in comb_rules.keys():
-                    rules = comb_rules[itype].rules()
-                    for rule in rules:
-                        cmd += f" {itype}:{rule}:{rules[rule]}"
-                cmd += " '"
-            if self.verbose:
-                print(f"Command line: {cmd}")
-            # Make sure all info is in the files!
-            self.tf.flush()
-            if self.vs1_file:
-                self.vs1f.flush()
-            status = os.system(cmd)
-            self.closeCSV()
-        return status
-    
 if __name__ == "__main__":
     manager = Manager()
     manager.run()
