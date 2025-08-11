@@ -3,6 +3,7 @@
 # This script is part of the Alexandria Chemistry Toolkit
 # https://github.com/AlexandriaChemistry/ACT
 # Author: David van der Spoel
+# Copyright 2025
 # License is GPL v. 2
 
 import copy, os, sys, tempfile, webbrowser, time
@@ -773,7 +774,7 @@ class CombRule:
                 nparammax = max(nparammax, len(all_params[potential].keys()))
         if self.verbose:
             print(f"There are {nfunc} functions and {nparammax} parameters at most")
-        self.content = tk.Frame(self.root)
+        self.content = ttk.Frame(self.root, padding=mypad)
         ncol = 2*nfunc
         nrow = nparammax+3
         self.content.grid(row=0, column=0, columnspan=ncol, rowspan=nrow, sticky="news")
@@ -888,7 +889,7 @@ class FFGenerator:
         if actlogo:
             self.logo     = ImageTk.PhotoImage(Image.open(actlogo))
             self.root.tk.call('wm', 'iconphoto', self.root._w, self.logo)
-            mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky=tk.N+tk.S+tk.W+tk.E)
+            mylogo        = tk.Label(self.logo_frame, image=self.logo, width = logo_size, height = logo_size).grid(row=0, column=0, sticky="news")
         else:
             # TODO: build in alternative if the logo image is not present
             sys.exit("Cannot find %s" % actlogo)
@@ -917,9 +918,9 @@ class FFGenerator:
         item = tk.Checkbutton(self.bot_frame,text="Verbose mode", command=None,
                               variable=self.verbose).grid(row=0, column=1, sticky="nsw")
         tk.Button(self.bot_frame,
-                  text="Options", default="active", command=self.doOptions).grid(row=0, column=2, sticky="nsew")
+                  text="OK", default="active", command=self.doGenFF).grid(row=0, column=2, sticky="nsew")
         tk.Button(self.bot_frame,
-                  text="Run", default="active", command=self.doGenFF).grid(row=0, column=3, sticky="nsew")
+                  text="Options", default="active", command=self.doOptions).grid(row=0, column=3, sticky="nsew")
         tk.Button(self.bot_frame,
                   text="Cancel", default="normal", command=self.close).grid(row=0, column=4, sticky="nsew")
 
@@ -1027,7 +1028,8 @@ class FFGenerator:
         def setParam(atp:str, inter:str, pname:str, mymin:float, mymax:float, mymut:str, unit:str,
                      nonNegative=True):
             prefix = f"{inter}:{pname}:"
-            if (inter in self.opt_params and
+            if (self.opt_params and
+                inter in self.opt_params and
                 atp in self.opt_params[inter] and
                 pname == self.opt_params[inter][atp]["parameter"]):
                 value = self.opt_params[inter][atp]["value"]
@@ -1247,7 +1249,7 @@ class GeometryFF:
         self.tl.title("Molecular geometry options")
         tlc = ttk.Frame(self.tl, padding=mypad)
         myrow = 0
-        l1  = ttk.Label(tlc, text="Charge algorithm")
+        l1  = ttk.Label(tlc, text="Charge algorithm", font=labelFont())
         l1.grid(row=myrow, column=0,  sticky="nws")
         myrow += 1
         mycol  = 0
@@ -1263,7 +1265,7 @@ class GeometryFF:
             myrow += 1
         # Options for boundaries
         myrow = 0
-        l1  = ttk.Label(tlc, text="Parameter variation")
+        l1  = ttk.Label(tlc, text="Parameter variation", font=labelFont())
         l1.grid(row=myrow, column=1,  sticky="nws")
         myrow += 1
         mycol  = 1
@@ -1290,7 +1292,7 @@ class GeometryFF:
         mycol = 0
         self.fnbut = {}
         for fn in self.fnms.keys():
-            ll = ttk.Label(tlc, text=self.fnms[fn][label])
+            ll = ttk.Label(tlc, text=self.fnms[fn][label], font=labelFont())
             ll.grid(row=myrow, column=mycol, sticky="nws")
             # Check whether we have a real file name here or not
             mytext = self.fnms[fn][defnm]
