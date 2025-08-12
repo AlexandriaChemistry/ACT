@@ -1130,12 +1130,18 @@ class FFGenerator:
                                         "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
                                         "poltype": stype, "radius": radius, "row": row }
                 # Highest charge for vsite1 and shells
-                qmaxVS = -0.5
                 if haveVS1 or polarizable:
                     if vdwtp == Atom:
                         setParam(atype_name, "", "q", 0, atomNR, "ACM", "e", False)
-                    else:
-                        setParam(atype_name, "", "q", -atomNR, qmaxVS, Bounded, "e", False)
+                    elif vdwtp == VSite:
+                        # Highest charge for vsite1
+                        qmax = 0
+                        setParam(atype_name, "", "q", -atomNR, qmax, Bounded, "e", False)
+                    elif vdwtp == Shell:
+                        # Highest charge for shells. Shells with too small charges will move too far
+                        # from the core, leading to unstable simulations.
+                        qmax = -1
+                        setParam(atype_name, "", "q", -atomNR, qmax, Bounded, "e", False)
                 else:
                     setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
 
