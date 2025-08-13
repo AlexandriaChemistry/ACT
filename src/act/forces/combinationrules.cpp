@@ -242,7 +242,7 @@ void evalCombinationRule(Potential                                    ftype,
             {
                 if (includePair)
                 {
-                    value = combineTwo(CombRule::Arithmetic,
+                    value = combineTwo(CombRule::Geometric,
                                        ivdw.find(param.first)->second.value(),
                                        jvdw.find(param.first)->second.value());
                 }
