@@ -462,134 +462,29 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
     }
 }
 
-void Topology::makePairs(MsgHandler       *msghandler,
-                         const ForceField *pd,
-                         InteractionType   itype)
+void Topology::makePairs(MsgHandler                          *msghandler,
+                         const ForceField                    *pd,
+                         InteractionType                      itype,
+                         const std::vector<std::set<size_t>> &exclusions)
 {
     TopologyEntryVector pairs{};
     for(size_t i = 0; i < atoms_.size(); i++)
     {
-        // Check for exclusions is done later.
         for(size_t j = i+1; j < atoms_.size(); j++)
         {
-            pairs.push_back(AtomPair(i, j));
+            if (exclusions[i].find(j) == exclusions[i].end())
+            {
+                pairs.push_back(AtomPair(i, j));
+            }
         }
     }
+    // Finally insert the identifiers
     if (!pairs.empty())
     {
-        // Now time for exclusions
-        int nexcl;
-        if (!ffOption(*pd, itype, "nexcl", &nexcl))
+        entries_.insert({itype, std::move(pairs) });
+        if (pd)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(itype).c_str(), pd->filename().c_str())));
-        }
-        //! Non bonded exclusions, array is length of number of atoms
-        auto exclusions = generateExclusions(&pairs, nexcl);
-        fixExclusions(&pairs, exclusions);
-        // Finally insert the identifiers
-        if (!pairs.empty())
-        {
-            entries_.insert({itype, std::move(pairs) });
-            if (pd)
-            {
-                setEntryIdentifiers(msghandler, pd, itype);
-            }
-        }
-    }
-}
-
-void Topology::fixExclusions(TopologyEntryVector                 *pairs,
-                             const std::vector<std::vector<int>> &exclusions)
-{
-    // Loop over all exclusions
-    for(size_t ai = 0; ai < exclusions.size(); ++ai)
-    {
-        if (ActParticle::Atom != atoms_[ai].pType())
-        {
-            continue;
-        }
-        for(size_t jj = 0; jj < exclusions[ai].size(); ++jj)
-        {
-            size_t aj = exclusions[ai][jj];
-            if (ActParticle::Atom != atoms_[aj].pType())
-            {
-                continue;
-            }
-            // Check whether these particles have shells
-            auto sv_i = atoms_[ai].vsites();
-            for(auto si : atoms_[ai].shells())
-            {
-                sv_i.push_back(si);
-            }
-            for(size_t si : sv_i)
-            {
-                auto sv_j = atoms_[aj].vsites();
-                for(auto sj : atoms_[aj].shells())
-                {
-                    sv_j.push_back(sj);
-                }
-                for(size_t sj : sv_j)
-                {
-                    // See whether this interaction exists
-                    auto it = pairs->begin();
-                    while (pairs->end() != it)
-                    {
-                        size_t aai = (*it)->atomIndex(0);
-                        size_t aaj = (*it)->atomIndex(1);
-                        if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) ||
-                            ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
-                        {
-                            it = pairs->erase(it);
-                        }
-                        else
-                        {
-                            ++it;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Now remove interactions with vsites that are excluded
-    // from the constructing atoms.
-    for(size_t i = 0; i < atoms_.size(); i++)
-    {
-        if (ActParticle::Vsite == atoms_[i].pType())
-        {
-            // Each vsite has two or more cores
-            for (size_t core : atoms_[i].cores())
-            {
-                std::vector<int> cores_shells_vsites = atoms_[core].shells();
-                for(auto vs : atoms_[core].vsites())
-                {
-                    cores_shells_vsites.push_back(vs);
-                }
-                cores_shells_vsites.push_back(core);
-                for (size_t csv : cores_shells_vsites)
-                {
-                    // Loop over the exclusions for this itype and core or its shells
-                    for (size_t jj = 0; jj < exclusions[csv].size(); ++jj)
-                    {
-                        size_t aj = exclusions[csv][jj];
-                        // Now check the pair list
-                        auto it   = pairs->begin();
-                        while (pairs->end() != it)
-                        {
-                            size_t aai = (*it)->atomIndex(0);
-                            size_t aaj = (*it)->atomIndex(1);
-                            // If we find an interaction with the vsite, remove it.
-                            if ((aai == i && aaj == aj) || (aaj == i && aai == aj))
-                            {
-                                it = pairs->erase(it);
-                            }
-                            else
-                            {
-                                ++it;
-                            }
-                        }
-                    }
-                }
-            }
+            setEntryIdentifiers(msghandler, pd, itype);
         }
     }
 }
@@ -1390,19 +1285,26 @@ void Topology::build(MsgHandler             *msghandler,
             makePropers(msghandler, pd);
         }
     }
-    makePairs(msghandler, pd, InteractionType::VDW);
-    makePairs(msghandler, pd, InteractionType::ELECTROSTATICS);
+    int nexcl;
+    auto myItype = InteractionType::ELECTROSTATICS;
+    if (!ffOption(*pd, myItype, "nexcl", &nexcl))
+    {
+        msghandler->fatal(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(myItype).c_str(), pd->filename().c_str()));
+    }
+    auto exclusions = generateExclusions(msghandler, nexcl);
+    makePairs(msghandler, pd, InteractionType::VDW, exclusions);
+    makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
     auto itqt = InteractionType::VDWCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
     {
-        makePairs(msghandler, pd, itqt);
+        makePairs(msghandler, pd, itqt, exclusions);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
-        makePairs(msghandler, pd, itic);
+        makePairs(msghandler, pd, itic, exclusions);
     }
     if (missing != missingParameters::Generate)
     {
@@ -1458,127 +1360,123 @@ void Topology::addEntry(InteractionType            itype,
     }
 }
 
-std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *pairs,
-                                                           int                  nrexcl)
+std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandler,
+                                                           int         nrexcl)
 {
     std::vector<std::set<size_t>> exclusions;
     exclusions.resize(atoms_.size());
-    for(auto &myEntry: entries_)
+    // First directly connected shells and vsites
+    for (size_t i = 0; i < atoms_.size(); i++)
     {
-        switch (myEntry.first)
+        if (atoms_[i].pType() == ActParticle::Atom)
         {
-        case InteractionType::BONDS:
-            if (nrexcl > 0)
+            for (const auto s : atoms_[i].shells())
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].insert(a[1]);
-                    exclusions[a[1]].insert(a[0]);
-                }
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(s);
+                exclusions[s].insert(i);
             }
-            break;
-        case InteractionType::VSITE1:
-            for(auto &b : myEntry.second)
+            for (const auto v : atoms_[i].vsites())
+            {
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(v);
+                exclusions[v].insert(i);
+            }
+        }    
+    }
+    auto bonds = entries_.find(InteractionType::BONDS);
+    if (bonds != entries_.end())
+    {
+        if (nrexcl > 0)
+        {
+            // Add first neighbors, assuming these are atoms only
+            for(auto &b : bonds->second)
             {
                 auto a = b->atomIndices();
                 exclusions[a[0]].insert(a[1]);
                 exclusions[a[1]].insert(a[0]);
             }
-            break;
-        case InteractionType::VSITE2:
-        case InteractionType::VSITE2FD:
-            for(auto &b : myEntry.second)
+        }
+        if (nrexcl > 1)
+        {
+            for(const auto itype : { InteractionType::ANGLES, InteractionType::LINEAR_ANGLES })
             {
-                auto a = b->atomIndices();
-                for (int m = 0; m < 2; m++)
+                auto angles = entries_.find(itype);
+                if (angles != entries_.end())
                 {
-                    exclusions[a[m]].insert(a[2]);
-                    exclusions[a[2]].insert(a[m]);
-                }
-            }
-            break;
-        case InteractionType::POLARIZATION:
-            for(auto &b : myEntry.second)
-            {
-                auto a = b->atomIndices();
-                exclusions[a[0]].insert(a[1]);
-                exclusions[a[1]].insert(a[0]);
-            }
-            break;
-        case InteractionType::ANGLES:
-        case InteractionType::LINEAR_ANGLES:
-            if (nrexcl > 1)
-            {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].insert(a[2]);
-                    exclusions[a[2]].insert(a[0]);
-                }
-            }
-            break;
-        case InteractionType::VSITE3:
-        case InteractionType::VSITE3S:
-        case InteractionType::VSITE3OUT:
-        case InteractionType::VSITE3OUTS:
-            for(auto &b : myEntry.second)
-            {
-                auto a = b->atomIndices();
-                for (int m = 0; m < 3; m++)
-                {
-                    exclusions[a[m]].insert(a[3]);
-                        exclusions[a[3]].insert(a[m]);
-                }
-            }
-            break;
-        case InteractionType::PROPER_DIHEDRALS:
-            {
-                if (nrexcl > 2)
-                {
-                    for(auto &b : myEntry.second)
+                    // Add first neighbors, assuming these are atoms only
+                    for(auto &b : angles->second)
                     {
                         auto a = b->atomIndices();
-                        for (int m = 0; m < 3; m++)
-                        {
-                            exclusions[a[m]].insert(a[3]);
-                            exclusions[a[3]].insert(a[m]);
-                        }
+                        exclusions[a[0]].insert(a[2]);
+                        exclusions[a[2]].insert(a[0]);
                     }
                 }
             }
-            break;
-        case InteractionType::VDW:
-        case InteractionType::VDWCORRECTION:
-        case InteractionType::INDUCTIONCORRECTION:
-        case InteractionType::ELECTROSTATICS:
-        case InteractionType::IMPROPER_DIHEDRALS:
-            break;
-        default: // throws
-            GMX_THROW(gmx::InternalError(gmx::formatString("Interaction type %s not handled when making exclusions.",
-                                                           interactionTypeToString(myEntry.first).c_str()).c_str()));
-            break;
+        }
+        if (nrexcl > 2)
+        {
+            auto dihs = entries_.find(InteractionType::PROPER_DIHEDRALS);
+            if (dihs != entries_.end())
+            {
+                // Add first neighbors, assuming these are atoms only
+                for(auto &b : dihs->second)
+                {
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[3]);
+                    exclusions[a[3]].insert(a[0]);
+                }
+            }
+        }
+        if (nrexcl > 3)
+        {
+            msghandler->msg(ACTStatus::Warning, "Cannot handle more than 3 exclusions.");
         }
     }
-    std::vector<std::vector<int> > pp(exclusions.size());
-    for(size_t ai = 0; ai < exclusions.size(); ai++)
+    // Now replicate the exclusions of atoms to their vsites and shells
+    for (size_t i = 0; i < atoms_.size(); i++)
     {
-        for(auto aj : exclusions[ai])
+        if (atoms_[i].pType() == ActParticle::Atom)
         {
-            pp[ai].push_back(aj);
-            for(auto pp = pairs->begin(); pp < pairs->end(); ++pp)
+            continue;
+        }
+        for (const auto cc : atoms_[i].cores())
+        {
+            for (const auto c : exclusions[cc])
             {
-                size_t a0 = (*pp)->atomIndex(0);
-                size_t a1 = (*pp)->atomIndex(1);
-                if ((ai == a0 && aj == a1) || (ai == a1 && aj == a0))
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(c);
+                exclusions[c].insert(i);
+                // Now add the shells of c
+                for (const auto s : atoms_[c].shells())
                 {
-                    pairs->erase(pp);
-                    break;
+                    exclusions[i].insert(s);
+                    exclusions[s].insert(i);
+                }
+                // Now add the vsites of c
+                for (const auto v : atoms_[c].vsites())
+                {
+                    exclusions[i].insert(v);
+                    exclusions[v].insert(i);
                 }
             }
         }
     }
-    return pp;
+    if (msghandler->printLevel() == ACTStatus::Debug)
+    {
+        auto tw = msghandler->twDebug();
+        for(size_t i = 0; i < atoms_.size(); i++)
+        {
+            std::string str = gmx::formatString("%10s %2zu exclusions:",
+                                                actParticleToString(atoms_[i].pType()).c_str(), i);
+            for (const auto j : exclusions[i])
+            {
+                str += gmx::formatString("  %2zu", j);
+            }
+            tw->writeLine(str);
+        }
+    }
+    return exclusions;
 }
 
 void Topology::dump(FILE *fp) const

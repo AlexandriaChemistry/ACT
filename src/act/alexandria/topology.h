@@ -256,23 +256,13 @@ private:
                                            const std::vector<double> &bondOrder,
                                            CanSwap                    cs) const;
 
-    /*! \brief Remove interactions that should not be there in the first place.
-     * If two atoms are in the exclusion list, their shells should be as well.
-     * This routine checks for such interactions (Coulomb or VDW) and removes them.
-     * For vsites, they inherit the exclusions from their constructing atoms.
-     * \param[inout] pairs      The pair list
-     * \param[in]    exclusions The exclusions
-     */
-    void fixExclusions(TopologyEntryVector                 *pairs,
-                       const std::vector<std::vector<int>> &exclusions);
-
-    /*! \brief Generate exclusions and remove pairs
-     * \param[inout] pairs The list of all atom pairs
-     * \param[in] nrexcl   The number of exclusions to generate for Coulomb interactions (max 2)
+    /*! \brief Generate exclusions 
+     * \param[in] msghandler To store information and errors
+     * \param[in] nrexcl     The number of exclusions to generate (max 2)
      * \return list of exclusions
      */
-    std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
-                                                     int                  nrexcl);
+    std::vector<std::set<size_t>> generateExclusions(MsgHandler *msghandler,
+                                                     int         nrexcl);
     //! \brief Add vsite identifiers to the cores such that they can be used for exclusions
     void addVsitesToCores();
 
@@ -412,12 +402,14 @@ private:
 
     /*! Generate the non-bonded pair list based on just the atoms
      * \param[in] msghandler Message handler
-     * \param[in] pd     Force field needed to set identifiers.
-     * \param[in] natoms The number of atoms
+     * \param[in] pd         Force field needed to set identifiers.
+     * \param[in] natoms     The number of atoms
+     * \param[in] exclusion  The excluded particle pairs
      */
-    void makePairs(MsgHandler       *msghandler,
-                   const ForceField *pd,
-                   InteractionType   itype);
+    void makePairs(MsgHandler                          *msghandler,
+                   const ForceField                    *pd,
+                   InteractionType                      itype,
+                   const std::vector<std::set<size_t>> &exclusions);
 
     /*! Add shell pairs
      * Based on the atom pair list, add interaction between atoms and shell
