@@ -180,7 +180,8 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
     // Force computer
-    forceComp_ = new ForceComputer();
+    forceComp_ = new ForceComputer(gmx::square(bch_.shellToler()),
+                                   bch_.shellMaxIter(), bch_.shellMaxDistance());
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, false, forceComp_);

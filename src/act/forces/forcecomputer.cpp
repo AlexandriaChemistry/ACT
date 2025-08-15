@@ -57,11 +57,13 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-ForceComputer::ForceComputer(double   msForce,
-                             int      maxiter)
+ForceComputer::ForceComputer(double  msForce,
+                             int     maxiter,
+                             double  maxShellDistance)
 {
-    msForceToler_ = msForce;
-    maxiter_      = maxiter;
+    msForceToler_     = msForce;
+    maxiter_          = maxiter;
+    maxShellDistance_ = maxShellDistance;
     clear_mat(box_);
     real dt = 0.001;
     vsiteHandler_ = new VsiteHandler(box_, dt);
@@ -154,6 +156,8 @@ double ForceComputer::compute(const ForceField                  *pd,
         int   iter = 1;
         // Golden ratio, may be used for overrelaxation
         // double gold     = 0.5*(1+std::sqrt(5.0));
+        // Prevent shells from flying off.
+        real maxShellDistance2 = gmx::square(maxShellDistance_);
         while (msForce > msForceToler_ && iter < maxiter_)
         {
             // Loop over polarizabilities
@@ -177,12 +181,10 @@ double ForceComputer::compute(const ForceField                  *pd,
                         rvec dx;
                         rvec_sub((*coordinates)[shell], (*coordinates)[core], dx);
                         real dx2 = iprod(dx, dx);
-                        // TODO: make this an input parameter
-                        real maxDrudeDistance2 = 0.0004; // nm^2
-                        if (dx2 > maxDrudeDistance2)
+                        if (dx2 > maxShellDistance2)
                         {
                             // Move back the shell/drude to the wall distance
-                            real scale = std::sqrt(maxDrudeDistance2/dx2);
+                            real scale = std::sqrt(maxShellDistance2/dx2);
                             for (int m = 0; m < DIM; m++)
                             {
                                 (*coordinates)[shell][m] = (*coordinates)[core][m] + scale*dx[m];
