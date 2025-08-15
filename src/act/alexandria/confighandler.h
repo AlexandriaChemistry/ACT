@@ -297,9 +297,11 @@ private:
     //! Checkpointing on or not?
     bool checkPoint_         = false;
     //! Tolerance for shell
-    double shellToler_       = 1e-4;
+    double shellToler_       = 1e-3;
     //! Maxiter for shell optimization
-    int shellMaxIter_        = 10;
+    int shellMaxIter_        = 25;
+    //! Max distance between shell and core
+    double shellMaxDistance_ = 0.02;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -409,6 +411,9 @@ public:
 
     //! \return shell iterations
     int shellMaxIter() const { return shellMaxIter_; }
+
+    //! \return max shell distance from core
+    double shellMaxDistance() const { return shellMaxDistance_; }
 };
 
 enum class eMinimizeAlgorithm {

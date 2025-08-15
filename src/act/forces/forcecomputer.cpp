@@ -57,11 +57,13 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-ForceComputer::ForceComputer(double   msForce,
-                             int      maxiter)
+ForceComputer::ForceComputer(double  msForce,
+                             int     maxiter,
+                             double  maxShellDistance)
 {
-    msForceToler_ = msForce;
-    maxiter_      = maxiter;
+    msForceToler_     = msForce;
+    maxiter_          = maxiter;
+    maxShellDistance_ = maxShellDistance;
     clear_mat(box_);
     real dt = 0.001;
     vsiteHandler_ = new VsiteHandler(box_, dt);
@@ -100,10 +102,11 @@ double ForceComputer::compute(const ForceField                  *pd,
                               std::set<int>                      relax) const
 {
     constructVsiteCoordinates(top, coordinates);
+    // Short-cut
+    auto &atoms = top->atoms();
     // Reset shells if needed
     if (resetShells)
     {
-        auto &atoms = top->atoms();
         for(size_t i = 0; i < top->nAtoms(); i++)
         {
             for(int sh : atoms[i].shells())
@@ -130,7 +133,7 @@ double ForceComputer::compute(const ForceField                  *pd,
         auto &ffpl  = pd->findForcesConst(itype);
         auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
-        for(auto &aa : top->atoms())
+        for(auto &aa : atoms)
         {
             bool bIS = aa.pType() == ActParticle::Shell;
             isShell.push_back(bIS);
@@ -153,6 +156,8 @@ double ForceComputer::compute(const ForceField                  *pd,
         int   iter = 1;
         // Golden ratio, may be used for overrelaxation
         // double gold     = 0.5*(1+std::sqrt(5.0));
+        // Prevent shells from flying off.
+        real maxShellDistance2 = gmx::square(maxShellDistance_);
         while (msForce > msForceToler_ && iter < maxiter_)
         {
             // Loop over polarizabilities
@@ -168,6 +173,23 @@ double ForceComputer::compute(const ForceField                  *pd,
                     for(int m = 0; m < DIM; m++)
                     {
                         (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                    }
+                    // Check distance from core, if there is only one
+                    if (atoms[shell].cores().size() == 1)
+                    {
+                        int core = atoms[shell].cores()[0];
+                        rvec dx;
+                        rvec_sub((*coordinates)[shell], (*coordinates)[core], dx);
+                        real dx2 = iprod(dx, dx);
+                        if (dx2 > maxShellDistance2)
+                        {
+                            // Move back the shell/drude to the wall distance
+                            real scale = std::sqrt(maxShellDistance2/dx2);
+                            for (int m = 0; m < DIM; m++)
+                            {
+                                (*coordinates)[shell][m] = (*coordinates)[core][m] + scale*dx[m];
+                            } 
+                        }
                     }
                 }
             }

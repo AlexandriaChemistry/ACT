@@ -52,6 +52,8 @@ private:
     double         msForceToler_;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_;
+    //! Maximum allowed distance for shells to be away from their core
+    double         maxShellDistance_;
     //! Electric field to be optionally applied
     gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
     //! Box for periodic boundaries
@@ -61,11 +63,13 @@ private:
 
  public:
     /*! \brief Constructor
-     * \param[in] msForce The tolerance for the mean square force on shells
-     * \param[in] maxiter The maximum number of iterations for shell minimization
+     * \param[in] msForce          The tolerance for the mean square force on shells
+     * \param[in] maxiter          The maximum number of iterations for shell minimization
+     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      */
-    ForceComputer(double   msForce = 1e-6,
-                  int      maxiter = 25);
+    ForceComputer(double   msForce = 1e-6, 
+                  int      maxiter = 25,
+                  double   maxShellDistance = 0.02);
 
     //! \brief Destructor
     ~ForceComputer();
