@@ -162,7 +162,7 @@ MsgHandler::~MsgHandler()
         tw_->writeLine("Program finished, please check the output in this file.");
         tw_->writeLine();
         write(act_goodbye());
-        tw_->close();
+        gmx_ffclose(fp_);
         delete tw_;
     }
     if (twdebug_)
@@ -215,7 +215,10 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     if (cr->isMaster())
     {
         filename_.assign(opt2fn("-g", filenm.size(), filenm.data()));
-        tw_ = new gmx::TextWriter(filename_);
+        // First open file using GROMACS call to generate a backup file
+        fp_ = gmx_ffopen(filename_, "w");
+        // Then pass the filepointer to the text writer
+        tw_ = new gmx::TextWriter(fp_);
         tw_->writeLine(act_welcome());
         tw_->writeLineFormatted("Verbosity level %d (%s or more serious messages are printed).",
                                 ilevel_, statnm[printLevel_]);
@@ -238,9 +241,16 @@ void MsgHandler::fatal(ACTMessage  actm,
     print(status_, actm, msg);
     if (tw_)
     {
-        tw_->close();
+        if (fp_)
+        {
+            gmx_ffclose(fp_);
+        }
         delete tw_;
-        tw_ = nullptr;
+    }
+    if (twdebug_)
+    {
+        twdebug_->close();
+        delete twdebug_;
     }
     GMX_THROW(gmx::InvalidInputError("See message above"));
 }

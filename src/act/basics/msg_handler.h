@@ -153,6 +153,8 @@ enum class ACTStatus {
 class MsgHandler
     {
     private:
+        //! File pointer underlying the TextWriter
+        FILE            *fp_          = nullptr;
         //! TextWriter for normal output
         gmx::TextWriter *tw_          = nullptr;
         //! TextWriter for debug output
