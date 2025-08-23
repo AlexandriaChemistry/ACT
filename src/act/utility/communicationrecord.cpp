@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -79,7 +79,7 @@ static void check_return(const char *msg, int returnvalue)
     }
 }
 
-CommunicationRecord::CommunicationRecord()
+CommunicationRecord::CommunicationRecord(MsgHandler *msghandler)
 {
     cr_            = init_commrec();
     check_return("MPI_Comm_dup", MPI_Comm_dup(MPI_COMM_WORLD, &mpi_act_world_));
@@ -89,6 +89,7 @@ CommunicationRecord::CommunicationRecord()
     {
         nt_ = NodeType::Master;
     }
+    msg_handler_ = msghandler;
 }
 
 void CommunicationRecord::check_init_done() const
@@ -287,9 +288,9 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
             iranks.push_back(i);
             cgroup += gmx::formatString(" %d", i);
         }
-        if (debug)
+        if (msg_handler_)
         {
-            fprintf(debug, "Rank: %d cgroup %s\n", rank(), cgroup.c_str());
+            msg_handler_->writeDebug(gmx::formatString("Rank: %d cgroup %s\n", rank(), cgroup.c_str()));
         }
         check_return("MPI_Group_incl", MPI_Group_incl(world_group, iranks.size(), iranks.data(), &mygroup));
         check_return("MPI_Comm_create_group", MPI_Comm_create_group(MPI_COMM_WORLD, mygroup, 0, &my_comm));
@@ -396,9 +397,9 @@ template <> void CommunicationRecord::send<std::string>(int dest, const std::str
     check_init_done();
     int len = str.size();
 
-    if (nullptr != debug)
+    if (nullptr != msg_handler_)
     {
-        fprintf(debug, "Sending string '%s' to %d\n", str.c_str(), dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending string '%s' to %d\n", str.c_str(), dest));
     }
     send_low(dest, &len, sizeof(len));
     if (!str.empty())
@@ -422,18 +423,18 @@ template <> void CommunicationRecord::recv<std::string>(int src, std::string *st
         str->resize(len);
         recv_low(src, (void*)str->data(), len);
     }
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received string '%s' from %d\n", str->c_str(), src);
+        msg_handler_->writeDebug(gmx::formatString("Received string '%s' from %d\n", str->c_str(), src));
     }
 }
 
 template <> void CommunicationRecord::send<double>(int dest, const double &d) const
 {
     check_init_done();
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending double '%g' to %d\n", d, dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending double '%g' to %d\n", d, dest));
     }
     send_low(dest, &d, sizeof(d));
 }
@@ -443,18 +444,18 @@ template <> void CommunicationRecord::recv<double>(int src, double *dd) const
     check_init_done();
 
     recv_low(src, dd, sizeof(*dd));
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received double '%g' from %d\n", *dd, src);
+        msg_handler_->writeDebug(gmx::formatString("Received double '%g' from %d\n", *dd, src));
     }
 }
 
 template <> void CommunicationRecord::send<int>(int dest, const int &d) const
 {
     check_init_done();
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending int '%d' to %d\n", d, dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending int '%d' to %d\n", d, dest));
     }
     send_low(dest, &d, sizeof(d));
 }
@@ -462,9 +463,9 @@ template <> void CommunicationRecord::send<int>(int dest, const int &d) const
 template <> void CommunicationRecord::send<unsigned int>(int dest, const unsigned int &d) const
 {
     check_init_done();
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending unsigned int '%u' to %d\n", d, dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending unsigned int '%u' to %d\n", d, dest));
     }
     send_low(dest, &d, sizeof(d));
 }
@@ -472,9 +473,9 @@ template <> void CommunicationRecord::send<unsigned int>(int dest, const unsigne
 template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) const
 {
     check_init_done();
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending size_t '%zu' to %d\n", d, dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending size_t '%zu' to %d\n", d, dest));
     }
     send_low(dest, &d, sizeof(d));
 }
@@ -482,9 +483,9 @@ template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) co
 template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
 {
     check_init_done();
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending bool '%s' to %d\n", boolName[b], dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending bool '%s' to %d\n", boolName[b], dest));
     }
     int d = b ? 1 : 0;
     send_low(dest, &d, sizeof(d));
@@ -494,9 +495,9 @@ template <> void CommunicationRecord::recv<int>(int src, int *t) const
 {
     check_init_done();
     recv_low(src, t, sizeof(*t));
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received int '%d' from %d\n", *t, src);
+        msg_handler_->writeDebug(gmx::formatString("Received int '%d' from %d\n", *t, src));
     }
 }
 
@@ -504,9 +505,9 @@ template <> void CommunicationRecord::recv<unsigned int>(int src, unsigned int *
 {
     check_init_done();
     recv_low(src, t, sizeof(*t));
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received unsigned int '%u' from %d\n", *t, src);
+        msg_handler_->writeDebug(gmx::formatString("Received unsigned int '%u' from %d\n", *t, src));
     }
 }
 
@@ -514,9 +515,9 @@ template <> void CommunicationRecord::recv<size_t>(int src, size_t *t) const
 {
     check_init_done();
     recv_low(src, t, sizeof(*t));
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received size_t '%zu' from %d\n", *t, src);
+        msg_handler_->writeDebug(gmx::formatString("Received size_t '%zu' from %d\n", *t, src));
     }
 }
 
@@ -527,9 +528,9 @@ template <> void CommunicationRecord::recv<bool>(int src, bool *b) const
 
     recv_low(src, &d, sizeof(d));
     *b = d;
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Received bool '%s' from %d\n", boolName[*b], src);
+        msg_handler_->writeDebug(gmx::formatString("Received bool '%s' from %d\n", boolName[*b], src));
     }
 }
 
@@ -556,10 +557,10 @@ std::map<iMolSelect, int> imsInt =
     
 template <> void CommunicationRecord::send<iMolSelect>(int dest, const iMolSelect &ims) const
 {
-    if (nullptr != debug)
+    if (msg_handler_)
     {
-        fprintf(debug, "Sending iMolSelect '%s' to %d\n",
-                iMolSelectName(ims), dest);
+        msg_handler_->writeDebug(gmx::formatString("Sending iMolSelect '%s' to %d\n",
+                                                   iMolSelectName(ims), dest));
     }
     int d = imsInt[ims];
     send_low(dest, &d, sizeof(d));
@@ -575,10 +576,10 @@ template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) c
     {
         if (ims.second == d)
         {
-            if (nullptr != debug)
+            if (msg_handler_)
             {
-                fprintf(debug, "Received iMolSelect '%s' from %d\n",
-                        iMolSelectName(ims.first), src);
+                msg_handler_->writeDebug(gmx::formatString("Received iMolSelect '%s' from %d\n",
+                                                           iMolSelectName(ims.first), src));
             }
             *t = ims.first;
             return;
