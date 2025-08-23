@@ -258,12 +258,17 @@ TrainForceFieldPrinter::TrainForceFieldPrinter()
                InteractionType::ALLELEC };
 }
 
-void TrainForceFieldPrinter::analyse_multipoles(gmx::TextWriter                                 *tw,
+void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                                      *msg_handler,
                                                 const std::vector<alexandria::ACTMol>::iterator &mol,
                                                 std::map<MolPropObservable, double>              toler,
                                                 const ForceField                                *pd,
                                                 const ForceComputer                             *forceComputer)
 {
+    gmx::TextWriter *tw = nullptr;
+    if (msg_handler)
+    {
+        tw = msg_handler->tw();
+    }
     auto topology = mol->topology();
     bool doForce  = pd->polarizable() || topology->hasVsites();
     auto qprops = mol->qPropsConst();
@@ -280,7 +285,7 @@ void TrainForceFieldPrinter::analyse_multipoles(gmx::TextWriter                 
             forceComputer->compute(pd, topology, &myx, &forces, &energies);
             qcalc->setX(myx);
         }
-        qcalc->calcMoments();
+        qcalc->calcMoments(msg_handler);
 
         for(auto &mpo : mpoMultiPoles)
         {
@@ -1629,7 +1634,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 }
             }
             // Multipoles
-            analyse_multipoles(tw, mol, multi_toler, pd, forceComp);
+            analyse_multipoles(msghandler, mol, multi_toler, pd, forceComp);
             
             // Polarizability
             if (bPolar)

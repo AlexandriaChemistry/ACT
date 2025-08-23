@@ -1705,7 +1705,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 qcalc->setQandX(q, xatom);
             }
             qcalc->initializeMoments();
-            qcalc->calcMoments();
+            qcalc->calcMoments(msghandler);
             qProps_.push_back(std::move(actq));
             foundNothing = false;
         }

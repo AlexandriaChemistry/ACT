@@ -122,7 +122,7 @@ private:
                                const ForceComputer *forceComp);
     
     //! \brief Analyses dipoles, quadrupoles, etc.
-    void analyse_multipoles(gmx::TextWriter                                 *tw,
+    void analyse_multipoles(MsgHandler                                      *msg_handler,
                             const std::vector<alexandria::ACTMol>::iterator &mol,
                             std::map<MolPropObservable, double>              toler,
                             const ForceField                                *pd,
