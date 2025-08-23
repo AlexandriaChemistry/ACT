@@ -806,7 +806,7 @@ int train_ff(int argc, char *argv[])
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
                             opt.sii()->fittingTargetsConst(iMolSelect::Train)))
     {
-        opt.msgHandler()->fatal("Training set is empty, check your input. Rerun with -v 5 flag");
+        opt.msgHandler()->fatal("Training set is empty on one or more of the nodes, check your input and your command line flags. Rerun with -v 5 flag");
     }
 
     // StaticIndividualInfo things
