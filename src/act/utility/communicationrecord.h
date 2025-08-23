@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "act/basics/dataset.h"
+#include "act/basics/msg_handler.h"
 #include "gromacs/mdtypes/commrec.h"
 
 namespace alexandria
@@ -114,6 +115,8 @@ private:
     bool              initCalled_            = false;
     //! Check whether done has been called
     bool              doneCalled_            = false;
+    //! Pointer to MsgHandler object
+    MsgHandler       *msg_handler_           = nullptr;
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
@@ -140,7 +143,7 @@ private:
     
 public:
     //! \brief Constructor
-    CommunicationRecord();
+    CommunicationRecord(MsgHandler *msghandler=nullptr);
 
     //! \brief Destructor is needed to get rid of commrec
     ~CommunicationRecord();
@@ -229,9 +232,6 @@ public:
     //! \return whether I am the master
     bool isHelper() const { return NodeType::Helper == nt_; }
 
-    //! \return the GROMACS communication record
-    const t_commrec *commrec() const { return cr_; }
-    
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
