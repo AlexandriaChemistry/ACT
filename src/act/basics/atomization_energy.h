@@ -39,6 +39,8 @@
 #include <string>
 #include <vector>
 
+#include "msg_handler.h"
+
 namespace alexandria
 {
 
@@ -47,9 +49,14 @@ namespace alexandria
     class AtomizationEnergy
     {
     public:
-        //! Constructor, reads input file and stores it
-        AtomizationEnergy();
-        
+        //! Constructor
+        AtomizationEnergy() {}
+
+        /*! Reads input file and stores it
+         * \param[in] msg_handler Will be used for information if not nullptr
+         */
+        void read(MsgHandler *msg_handler = nullptr);
+
         //! Destructor to clean up memory
         ~AtomizationEnergy();
         

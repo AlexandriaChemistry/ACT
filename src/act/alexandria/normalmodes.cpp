@@ -190,7 +190,8 @@ int nma(int argc, char *argv[])
     }
     if (eMinimizeStatus::OK == eMin)
     {
-        AtomizationEnergy        atomenergy;
+        AtomizationEnergy atomenergy;
+        atomenergy.read(&msghandler);
         doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             opt2fn_null("-ir", fnm.size(), fnm.data()),
