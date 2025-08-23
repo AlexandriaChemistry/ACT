@@ -225,10 +225,6 @@ Identifier::Identifier(InteractionType    iType,
                        const std::string &id,
                        CanSwap            canSwap)
 {
-    if (debug)
-    {
-        fprintf(debug, "Trying to create %s identifier from '%s'\n", interactionTypeToString(iType).c_str(), id.c_str());
-    }
     ids_.push_back(id);
     canSwap_  = canSwap;
     createReverseBondOrderDelimeter();

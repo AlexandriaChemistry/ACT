@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,6 +34,7 @@
 #ifndef ACT_ALLMOLS_H
 #define ACT_ALLMOLS_H
 
+#include <cstdio>
 #include <map>
 #include <set>
 #include <string>
@@ -97,6 +98,11 @@ namespace alexandria
          * \return pointer to AlexandriaMol or nullptr if not found
          */
         const AlexandriaMol *findMol(const std::string &name) const;
+
+        /*! \brief Write all molecules to a file
+         * \param[in] fp The file pointer
+         */
+        void dump(FILE *fp);
     };
 
 } // namespace

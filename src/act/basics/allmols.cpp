@@ -36,8 +36,6 @@
 #include <string>
 
 #include "act/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -116,12 +114,16 @@ AlexandriaMols::AlexandriaMols()
             }
         }
     }
-    if (debug)
+}
+
+void AlexandriaMols::dump(FILE *fp)
+{
+    if (fp)
     {
-        fprintf(debug, "There are %zu molecules and %zu synonyms\n", mols_.size(), nameToInChi_.size());
+        fprintf(fp, "There are %zu molecules and %zu synonyms\n", mols_.size(), nameToInChi_.size());
         for(const auto &n2i : nameToInChi_)
         {
-            fprintf(debug, "%s %s\n", n2i.first.c_str(), n2i.second.c_str());
+            fprintf(fp, "%s %s\n", n2i.first.c_str(), n2i.second.c_str());
         }
     }
 }

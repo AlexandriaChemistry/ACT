@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -58,6 +58,7 @@ protected:
     {
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
+        atomenergy_.read();
     }
     void dump()
     {

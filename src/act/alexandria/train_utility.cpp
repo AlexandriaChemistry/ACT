@@ -1549,6 +1549,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     auto forceComp = new ForceComputer();
     AtomizationEnergy atomenergy;
 
+    atomenergy.read(msghandler);
     auto tw = msghandler->tw();
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
