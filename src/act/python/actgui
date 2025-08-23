@@ -522,6 +522,8 @@ class FFOptions:
                             if self.exchcorr.get() and "sigma" in filenm:
                                 exchcorr = True
                             atomtypes[www[0]] = { "exchcorr": exchcorr }
+                if len(vsites) == 0:
+                    show_info(f"No vsites in {filenm}\nCheck formatting")
             
         for vs in self.vsinfo:
             if self.vsite_sel[vs].get():
