@@ -672,7 +672,6 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                 // Special bond order for vsites
                 vsnew.addBondOrder(9);
                 v1top.push_back(std::any_cast<Vsite1>(std::move(vsnew)));
-                break;
             }
         }
     }
