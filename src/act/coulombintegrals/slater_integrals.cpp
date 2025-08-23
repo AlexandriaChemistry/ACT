@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -405,15 +405,9 @@ t_slater_NS_func *DSlater_NS[SLATER_MAX] = {
 
 double Coulomb_SS(double r, int i, int j, double xi, double xj)
 {
-#if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
-
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
-        }
+        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
     }    
     if (i > SLATER_MAX)
     {
@@ -423,6 +417,9 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
     {
         j = SLATER_MAX;
     }   
+#if HAVE_LIBCLN
+    cl_R cr, cxi, cxj, cS;
+
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
@@ -468,21 +465,6 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
 #else
     /* NOT HAVE_LIBCLN */    
     double S = 0;
-    if ((i > SLATER_MAX) || (j > SLATER_MAX))
-    {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
-        }
-    }    
-    if (i > SLATER_MAX)
-    {
-        i = SLATER_MAX;
-    }
-    if (j > SLATER_MAX)
-    {
-        j = SLATER_MAX;
-    }    
     if ((i > 0) && (j > 0))
     {
         S = Slater_SS[i-1][j-1](r, xi, xj);
@@ -587,15 +569,9 @@ double Nuclear_SS(double r, int i, double xi)
 
 double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 {
-#if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
-
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
     {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
-        }
+        fprintf(stderr, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
     }    
     if (i > SLATER_MAX)
     {
@@ -605,6 +581,9 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     {
         j = SLATER_MAX;
     }   
+#if HAVE_LIBCLN
+    cl_R cr, cxi, cxj, cS;
+
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
@@ -648,21 +627,6 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     return -double_approx(cS);
 #else
     double S = 0;    
-    if ((i > SLATER_MAX) || (j > SLATER_MAX))
-    {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Slater integral %d %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i, j);
-        }
-    }    
-    if (i > SLATER_MAX)
-    {
-        i = SLATER_MAX;
-    }
-    if (j > SLATER_MAX)
-    {
-        j = SLATER_MAX;
-    }
     if ((i > 0) && (j > 0))
     {
         S = DSlater_SS[i-1][j-1](r, xi, xj);
@@ -706,18 +670,14 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
 
 double DNuclear_SS(double r, int i, double xi)
 {
+    if (i > SLATER_MAX)
+    {
+        fprintf(stderr, "Slater-Slater integral %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i);
+        i = SLATER_MAX;
+    }      
 #if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
-    if (i > SLATER_MAX)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Slater integral %d not supported without the CLN libraray. Thus, they will reduce to the SLATER_MAX\n", i);
-        }
-        
-        i = SLATER_MAX;
-    }      
     if (r == 0)
     {
         return 0;
@@ -738,14 +698,6 @@ double DNuclear_SS(double r, int i, double xi)
     }
 #else
     double S = 0;
-    if (i > SLATER_MAX)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Slater-Nuclear integral %d not supported without the CLN libraray. Thus, it will reduce to the SLATER_MAX\n", i);
-        }
-        i = SLATER_MAX;
-    }    
     if (r == 0)
     {
         return 0;
