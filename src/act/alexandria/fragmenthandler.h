@@ -98,7 +98,7 @@ namespace alexandria
         std::vector<Topology *> &topologiesPtr() { return topologies_; }
 
         /*! \brief Generate charges for all fragments
-         * \param[in]  fp      Debug file pointer, may be nullptr
+         * \param[in]  msg_handler Debug storage, may be nullptr
          * \param[in]  molname Molecule name for printing
          * \param[in]  x       Atomic coordinates
          * \param[in]  pd      Force field file
@@ -106,7 +106,7 @@ namespace alexandria
          * \param[in]  symmetric_charges Information on which charges should be symmetrized according to FF
          * \return Error code or OK if all is fine.
          */
-        eQgen generateCharges(FILE                         *fp,
+        eQgen generateCharges(MsgHandler                   *msg_handler,
                               const std::string            &molname,
                               const std::vector<gmx::RVec> &x,
                               const ForceField             *pd,

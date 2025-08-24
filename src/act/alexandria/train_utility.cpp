@@ -1592,8 +1592,8 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                                                   &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(mol->atomsConst());
-                        qresp->calcPot(1.0);
-                        rms = qresp->getStatistics(&rrms, &cosesp, &mae, &mse);
+                        qresp->calcPot(msghandler, 1.0);
+                        rms = qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse);
                         rms = convertToGromacs(rms, "Hartree/e");
                         std::string warning;
                         if (rms > esp_toler_ || cosesp < 0.5)
@@ -1790,7 +1790,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             {
                 real rms, rrms, cosesp, mae, mse;
                 auto qresp = qp->qgenResp();
-                rms        = convertToGromacs(qresp->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
+                rms        = convertToGromacs(qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse), "Hartree/e");
                 if ((mol->support() != eSupport::No) && (rms > espMax))
                 {
                     tw->writeStringFormatted("%-40s  %12.3f", mol->getMolname().c_str(), rms);

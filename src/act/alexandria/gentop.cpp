@@ -219,7 +219,7 @@ int gentop(int argc, char *argv[])
         std::vector<gmx::RVec> coords = actmol->xOriginal();
         forceComp->generateVsites(actmol->topology(), &coords);
         actmol->updateQprops(&pd, forceComp, &forces);
-        actmol->GenerateCube(&pd, coords, forceComp,
+        actmol->GenerateCube(&msghandler, &pd, coords, forceComp,
                              spacing, border,
                              opt2fn_null("-ref",      fnm.size(), fnm.data()),
                              opt2fn_null("-pc",       fnm.size(), fnm.data()),

@@ -247,47 +247,57 @@ static double Coulomb_PP(double r)
     return 1/r;
 }
 
-void QgenAcm::dump(FILE                       *fp,
+void QgenAcm::dump(MsgHandler                 *msg_handler,
                    const std::vector<ActAtom> *atoms) const
 {
-    if (fp && eQGEN_ == eQgen::OK)
+    if (msg_handler && eQGEN_ == eQgen::OK)
     {
+        auto tw = msg_handler->tw();
+        if (!tw)
+        {
+            return;
+        }
         rvec  mu = { 0, 0, 0 };
-
-        fprintf(fp, "Jcc_ matrix:\n");
+        std::vector<std::string> msgs;
+        msgs.push_back(gmx::formatString("Jcc_ matrix:"));
         for (size_t i = 0; i < nonFixed_.size(); i++)
         {
+            std::string msg;
             for (size_t j = 0; j <= i; j++)
             {
-                fprintf(fp, "  %6.2f", Jcc_[i][j]);
+                msg += gmx::formatString("  %6.2f", Jcc_[i][j]);
             }
-            fprintf(fp, "\n");
+            msgs.push_back(msg);
         }
-        fprintf(fp, "\n");
-
-        fprintf(fp, "RHS_ matrix:\n");
+        msgs.push_back("\n");
+        msgs.push_back("RHS_ matrix:");
         for (size_t i = 0; i < nonFixed_.size(); i++)
         {
-            fprintf(fp, "%2zu RHS_ = %10g\n", i, rhs_[i]);
+            msgs.push_back(gmx::formatString("%2zu RHS_ = %10g\n", i, rhs_[i]));
         }
-        fprintf(fp, "\n");
+        msgs.push_back("\n");
 
-        fprintf(fp, "                                          Core                 Shell\n");
-        fprintf(fp, "Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
+        msgs.push_back("                                          Core                 Shell\n");
+        msgs.push_back("Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
         for (size_t i = 0; i < atoms->size(); i++)
         {
             for (auto m = 0; m < DIM; m++)
             {
                 mu[m] += (*atoms)[i].charge() * x_[i][m] * ENM2DEBYE;
             }
-            fprintf(fp, "%4s %4s%5lu %8g %8g",
-                    "",
-                    (*atoms)[i].name().c_str(), i+1, eta_[i], chi0_[i]);
-            fprintf(fp, " %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
+            auto msg = gmx::formatString("%4s %4s%5lu %8g %8g",
+                                             "",
+                                         (*atoms)[i].name().c_str(), i+1, eta_[i], chi0_[i]);
+            msg += gmx::formatString(" %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
+            msgs.push_back(msg);
         }
-        fprintf(fp, "\n");
-        fprintf(fp, "|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n\n",
-                norm(mu), mu[XX], mu[YY], mu[ZZ]);
+        msgs.push_back("\n");
+        msgs.push_back(gmx::formatString("|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n\n",
+                                         norm(mu), mu[XX], mu[YY], mu[ZZ]));
+        for (const auto &msg: msgs)
+        {
+            tw->writeLine(msg);
+        }
     }
 }
 
@@ -372,7 +382,8 @@ void QgenAcm::calcJcc(double epsilonr)
     }
 }
 
-double QgenAcm::calcJcs(int                         core_ndx,
+double QgenAcm::calcJcs(MsgHandler                 *msg_handler,
+                        int                         core_ndx,
                         const std::vector<ActAtom> &atoms,
                         double                      epsilonr)
 {
@@ -392,21 +403,22 @@ double QgenAcm::calcJcs(int                         core_ndx,
                                         row_[core_ndx],
                                         row_[fixed_ndx],
                                         epsilonr));  
-            if (debug)
+            if (msg_handler && msg_handler->debug())
             {
-                fprintf(debug, "calcJcs: core_ndx: %d fixed_ndx: %d shell_charge: %0.1f\n", 
-                        core_ndx, fixed_ndx, q_[fixed_ndx]);
+                msg_handler->writeDebug(gmx::formatString("calcJcs: core_ndx: %d fixed_ndx: %d shell_charge: %0.1f", 
+                                                          core_ndx, fixed_ndx, q_[fixed_ndx]));
             }
         }
     }
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "Jcs:%0.3f\n", Jcs);
+        msg_handler->writeDebug(gmx::formatString("Jcs:%0.3f\n", Jcs));
     }
     return Jcs;
 }
 
-void QgenAcm::calcRhs(const std::vector<ActAtom> &atoms,
+void QgenAcm::calcRhs(MsgHandler                 *msg_handler,
+                      const std::vector<ActAtom> &atoms,
                       double                      epsilonr)
 {
     // Compute total fixed charge
@@ -425,7 +437,7 @@ void QgenAcm::calcRhs(const std::vector<ActAtom> &atoms,
         if (bHaveShell_)
         {
             // Core-Shell interaction
-            rhs_[i] -= 0.5*calcJcs(nfi, atoms, epsilonr);
+            rhs_[i] -= 0.5*calcJcs(msg_handler, nfi, atoms, epsilonr);
             // Hardness of atom multiplied by charge of shell(s)
             for(auto shellId : atoms[nfi].shells())
             {
@@ -433,9 +445,9 @@ void QgenAcm::calcRhs(const std::vector<ActAtom> &atoms,
             }
         }
     }
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "QgenACM: qtotal_ = %d qfixed = %g\n", qtotal_, qfixed);
+        msg_handler->writeDebug(gmx::formatString("QgenACM: qtotal_ = %d qfixed = %g", qtotal_, qfixed));
     }
     rhs_[nonFixed_.size()] = qtotal_ - qfixed;
 }
@@ -460,7 +472,7 @@ void QgenAcm::updatePositions(const std::vector<gmx::RVec> &x)
     }
 }
 
-void QgenAcm::solveEEM(FILE *fp)
+void QgenAcm::solveEEM(MsgHandler *msg_handler)
 {
     std::vector<double> q;
     size_t              nelem = nonFixed_.size();
@@ -491,10 +503,11 @@ void QgenAcm::solveEEM(FILE *fp)
             qtot += q[i];
         }
         
-        if (fp && (fabs(qtot - qtotal_) > 1e-2))
+        if (msg_handler && (fabs(qtot - qtotal_) > 1e-2))
         {
-            fprintf(fp, "qtot = %g, it should be %d rhs[%zu] = %g\n",
-                    qtot, qtotal_, nelem, rhs_[nelem]);
+            msg_handler->msg(ACTStatus::Warning,
+                             gmx::formatString("qtot = %g, it should be %d rhs[%zu] = %g\n",
+                                               qtot, qtotal_, nelem, rhs_[nelem]));
         }
     }
     else
@@ -503,7 +516,7 @@ void QgenAcm::solveEEM(FILE *fp)
     }    
 }
 
-void QgenAcm::solveSQE(FILE                    *fp,
+void QgenAcm::solveSQE(MsgHandler              *msg_handler,
                        const std::vector<Bond> &bonds)
 {
     std::vector<double> myq(nonFixed_.size(), 0.0);
@@ -532,10 +545,10 @@ void QgenAcm::solveSQE(FILE                    *fp,
             {
                 return;
             }
-            if (debug)
+            if (msg_handler && msg_handler->debug())
             {
-                fprintf(debug, "Delta_chi %10g Delta_Eta %10g\n",
-                        delta_chi, delta_eta);
+                msg_handler->writeDebug(gmx::formatString("Delta_chi %10g Delta_Eta %10g\n",
+                                                          delta_chi, delta_eta));
             }
             // The bonds use the original numbering, to get to the ACM data
             // we have to map to numbers including shells.
@@ -554,17 +567,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
                 lhs.set(bij, bkl, J);
             }
         }
-        if (debug)
+        if (msg_handler && msg_handler->debug())
         {
-            fprintf(debug, "Jsqe\n");
+            std::string msg = "Jsqe\n";
             for(size_t i = 0; i < nbonds; i++)
             {
                 for(size_t j = 0; j <= i; j++)
                 {
-                    fprintf(debug, " %7.2f", lhs.get(i, j));
+                    msg += gmx::formatString(" %7.2f", lhs.get(i, j));
                 }
-                fprintf(debug, "\n");
+                msg += "\n";
             }
+            msg_handler->writeDebug(msg);
         }
         // Now fill the right hand side
         std::vector<double> chi_corr;
@@ -611,20 +625,23 @@ void QgenAcm::solveSQE(FILE                    *fp,
             eQGEN_ = eQgen::MATRIXSOLVER;
             return;
         }
-        if (fp)
+        if (msg_handler && msg_handler->debug())
         {
-            fprintf(fp, "rhs: ");
+            msg_handler->writeDebug("rhs: ");
+            std::string msg;
             for(auto &p: rhs)
             {
-                fprintf(fp, " %8g", p);
+                msg += gmx::formatString(" %8g", p);
             }
-            fprintf(fp, "\n");
-            fprintf(fp, "pij: ");
+            msg_handler->writeDebug(msg);
+
+            msg_handler->writeDebug("pij: ");
+            msg.clear();
             for(auto &p: pij)
             {
-                fprintf(fp, " %8g", p);
+                msg += gmx::formatString(" %8g", p);
             }
-            fprintf(fp, "\n");
+            msg_handler->writeDebug(msg);
         }
         for (size_t bij = 0; bij < nbonds; bij++)
         {
@@ -655,22 +672,25 @@ void QgenAcm::solveSQE(FILE                    *fp,
     {
         qtot += q_[i];
     }
-    if (fp)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(fp, "q: ");
+        msg_handler->writeDebug("q: ");
+        std::string msg;
         for (auto &qq : q_)
         {
-            fprintf(fp, " %9g", qq);
+            msg += gmx::formatString(" %9g", qq);
         }
-        fprintf(fp, "\n");
+        msg_handler->writeDebug(msg);
         if (fabs(qtot - qtotal_) > 1e-2)
         {
-            fprintf(fp, "qtot = %g, it should be %d\n", qtot, qtotal_);
+            msg_handler->msg(ACTStatus::Warning,
+                             gmx::formatString("qtot = %g, it should be %d\n",
+                                               qtot, qtotal_));
         }
     }
 }
 
-eQgen QgenAcm::generateCharges(FILE                         *fp,
+eQgen QgenAcm::generateCharges(MsgHandler                   *msg_handler,
                                const std::string            &molname,
                                const ForceField             *pd,
                                std::vector<ActAtom>         *atoms,
@@ -681,11 +701,12 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
     {
         return eQgen::OK;
     }
-    if (fp)
+    if (msg_handler)
     {
-        fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                molname.c_str(), 
-                chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
+        msg_handler->msg(ACTStatus::Verbose,
+                         gmx::formatString("Generating charges for %s using %s algorithm\n",
+                                           molname.c_str(), 
+                                           chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
     }
     if (eQgen::OK == eQGEN_)
     {
@@ -695,17 +716,17 @@ eQgen QgenAcm::generateCharges(FILE                         *fp,
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
-            solveSQE(fp, bonds);
+            solveSQE(msg_handler, bonds);
         }
         else
         {
-            calcRhs(*atoms, epsilonr_);
-            solveEEM(fp);
+            calcRhs(msg_handler, *atoms, epsilonr_);
+            solveEEM(msg_handler);
         }
         if (eQgen::OK == eQGEN_)
         {
             copyChargesToAtoms(atoms);
-            dump(fp, atoms);
+            dump(msg_handler, atoms);
         }
     }
     return eQGEN_;

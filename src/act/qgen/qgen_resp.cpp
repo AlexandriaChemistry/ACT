@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield.h"
@@ -137,16 +138,18 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
     }
 }
 
-void QgenResp::summary(FILE *fp)
+void QgenResp::summary(MsgHandler *msg_handler)
 {
-    if (nullptr != fp)
+    if (msg_handler)
     {
-        fprintf(fp, "There are %zu atoms for (R)ESP fitting.\n", nAtom_);
+        msg_handler->msg(ACTStatus::Info,
+                         gmx::formatString("There are %zu atoms for (R)ESP fitting.", nAtom_));
+        std::string msg;
         for (size_t i = 0; (i < nAtom_); i++)
         {
-            fprintf(fp, " %zu", symmetricAtoms_[i]);
+            msg += gmx::formatString(" %zu", symmetricAtoms_[i]);
         }
-        fprintf(fp, "\n");
+        msg_handler->msg(ACTStatus::Info, msg);
     }
 }
 
@@ -266,7 +269,7 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv,
     fprintf(fp, "&\n");
 }
 
-void QgenResp::regularizeCharges()
+void QgenResp::regularizeCharges(MsgHandler *msg_handler)
 {
     double qtot   = 0;
     for (size_t ii = 0; ii < nAtom_; ii++)
@@ -277,10 +280,10 @@ void QgenResp::regularizeCharges()
         }
     }
     double dq = (qtot_ - (qtot + qshell_))/(nAtom_-nFixed_);
-    if (debug)
+    if (msg_handler)
     {
-        fprintf(debug, "Found qtot %g, should be %d. Subtracting %g from each atom.\n",
-                qtot, qtot_, dq);
+        msg_handler->msg(ACTStatus::Warning,
+                         gmx::formatString("Found qtot %g, should be %d. Subtracting %g from each atom.", qtot, qtot_, dq));
     }
     for (size_t ii = 0; ii < nAtom_; ii++)
     {
@@ -291,7 +294,7 @@ void QgenResp::regularizeCharges()
     }
 }
 
-void QgenResp::calcStatistics()
+void QgenResp::calcStatistics(MsgHandler *msg_handler)
 {
     double pot2 = 0, sum2 = 0, ip = 0, calc2 = 0;
     mae_ = 0;
@@ -301,10 +304,10 @@ void QgenResp::calcStatistics()
         double vesp  = ep_[i].v();
         double vcalc = ep_[i].vCalc();
         double diff  = vesp - vcalc;
-        if (debug && (i < 4*nAtom_))
+        if (msg_handler && msg_handler->debug() && (i < 4*nAtom_))
         {
-            fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
-                    i, ep_[i].v(), ep_[i].vCalc(), diff);
+            msg_handler->writeDebug(gmx::formatString("ESP %zu QM: %g FIT: %g DIFF: %g\n",
+                                                      i, ep_[i].v(), ep_[i].vCalc(), diff));
         }
         mae_  += std::fabs(diff);
         mse_  += diff;
@@ -338,9 +341,13 @@ void QgenResp::calcStatistics()
     }
 }
 
-real QgenResp::getStatistics(real *rrms, real *cosangle, real *mae, real *mse)
+real QgenResp::getStatistics(MsgHandler *msg_handler,
+                             real       *rrms,
+                             real       *cosangle,
+                             real       *mae,
+                             real       *mse)
 {
-    calcStatistics();
+    calcStatistics(msg_handler);
     *rrms     = rrms_;
     *cosangle = cosangle_;
     *mse      = mse_;
@@ -387,7 +394,8 @@ static double calcJ(ChargeType  chargeType,
     return ONE_4PI_EPS0*eTot;
 }
 
-void QgenResp::calcPot(double epsilonr)
+void QgenResp::calcPot(MsgHandler *msg_handler,
+                       double      epsilonr)
 {
     double scale_factor = 1.0/epsilonr;
     
@@ -406,16 +414,17 @@ void QgenResp::calcPot(double epsilonr)
             qtot += q_[j];
             vv += (scale_factor*q_[j]*epot);
         }
-        if (debug)
+        if (msg_handler && msg_handler->debug())
         {
-            fprintf(debug, "CalcESP[%lu]: vv = %8.5f qtot = %g Vqm = %8.5f\n",
-                    i, vv, qtot, ep_[i].v());
+            msg_handler->writeDebug(gmx::formatString("CalcESP[%lu]: vv = %8.5f qtot = %g Vqm = %8.5f\n",
+                                                      i, vv, qtot, ep_[i].v()));
         }
         ep_[i].setVCalc(vv);
     }
 }
 
-void QgenResp::optimizeCharges(double epsilonr)
+void QgenResp::optimizeCharges(MsgHandler *msg_handler,
+                               double      epsilonr)
 {
     /*
        Increase number of rows for the symmetric atoms. E.g.
@@ -485,13 +494,13 @@ void QgenResp::optimizeCharges(double epsilonr)
     }
     rhs.push_back(factor * (qtot_ - qshell_)); // Add the total charge
     
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
         for (size_t j = 0; j < 4*nAtom_; j++)
         {
             auto espx = ep_[j].esp();
-            fprintf(debug, "ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
-                    j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]);
+            msg_handler->writeDebug(gmx::formatString("ESP[%zu] espx = %g espy = %g espz = %g V= %g  rhs=%g\n",
+                                                      j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), rhs[j]));
         }
     }
 
@@ -521,30 +530,31 @@ void QgenResp::optimizeCharges(double epsilonr)
     }
     GMX_RELEASE_ASSERT(j1 == rhs.size(), "Inconsistency adding equations for symmetric charges");
     GMX_RELEASE_ASSERT(j1 - nrow == 0, gmx::formatString("Something fishy adding equations for symmetric charges. j1 = %zu, nrow = %d", j1, nrow).c_str());
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %zu nUnique = %d\n",
-                ncolumn, nrow, nEsp(), fitQ_, uniqueQ_);
+        msg_handler->writeDebug(gmx::formatString("ncolumn = %d nrow = %d point = %zu nfixed = %zu nUnique = %d\n",
+                                                  ncolumn, nrow, nEsp(), fitQ_, uniqueQ_));
         for (int i = 0; i < nrow; i++)
         {
-            fprintf(debug, "ROW: %d", i);
+            std::string msg = gmx::formatString("ROW: %d", i);
             for (int j = 0; j < ncolumn; j++)
             {
-                fprintf(debug, "  %8g", lhs.get(j, i));
+                msg += gmx::formatString("  %8g", lhs.get(j, i));
             }
-            fprintf(debug, "  RHS: %8g\n", rhs[i]);
+            msg += gmx::formatString("  RHS: %8g\n", rhs[i]);
+            msg_handler->writeDebug(msg);
         }
-        fprintf(debug, "QCore in the r.h.s:%2g\n", rhs[nrow-1]);
-        fprintf(debug, "Qtot:%2d\n",   qtot_);
-        fprintf(debug, "QShell:%g\n", qshell_);
+        msg_handler->writeDebug(gmx::formatString("QCore in the r.h.s:%2g\n", rhs[nrow-1]));
+        msg_handler->writeDebug(gmx::formatString("Qtot:%2d\n",   qtot_));
+        msg_handler->writeDebug(gmx::formatString("QShell:%g\n", qshell_));
     }
     // Fit the charge
     std::vector<double> q;
     q.resize(ncolumn, -123.0);
     lhs.solve(rhs, &q);
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "Fitted Charges from optimizeCharges:\n");
+        msg_handler->writeDebug("Fitted Charges from optimizeCharges:\n");
     }
     i = 0;
     for (size_t ii = 0; ii < nAtom_; ii++)
@@ -552,14 +562,14 @@ void QgenResp::optimizeCharges(double epsilonr)
         if (mutable_[ii])
         {
             q_[ii] = q[i];
-            if (debug)
+            if (msg_handler && msg_handler->debug())
             {
-                fprintf(debug, "q[%zu] = %0.3f\n", i, q_[ii]);
+                msg_handler->writeDebug(gmx::formatString("q[%zu] = %0.3f\n", i, q_[ii]));
             }
             i++;
         }
     }
-    regularizeCharges();
+    regularizeCharges(msg_handler);
 }
 
 void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
