@@ -316,9 +316,9 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
         {
             epsilonr = 1;
         }
-        qgr->calcPot(epsilonr);
+        qgr->calcPot(msghandler, epsilonr);
         real   mae, mse;
-        real   rms   = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+        real   rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
         double myRms = convertToGromacs(rms, "Hartree/e");
         size_t nEsp  = qgr->nEsp();
         (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);

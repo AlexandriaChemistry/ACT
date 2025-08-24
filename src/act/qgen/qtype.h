@@ -49,6 +49,7 @@ class ForceField;
 class ForceComputer;
 class QgenResp;
 class Topology;
+class MsgHandler;
  
 /*! \brief Enumerated type to differentiate the charge types 
  * and properties derived from the charges.
@@ -188,8 +189,9 @@ class QtypeProps
     void setCenterOfCharge(const rvec &coc) { copy_rvec(coc, coc_); }
     
     /*! \brief Compute electric moments and store them.
+     * \param[in] msg_handler To write info to.
      */
-    void calcMoments();
+    void calcMoments(MsgHandler *msg_handler=nullptr);
     
     /*! \brief Return dipole for charge type qt.
      */

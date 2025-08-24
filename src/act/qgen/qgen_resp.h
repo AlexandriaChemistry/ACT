@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,6 +52,7 @@ namespace alexandria
 {
 
 class ForceField;
+class MsgHandler;
 
 /*! \brief Class to store one grid point and it's potential.
  * The structure store both the reference and the calculated
@@ -127,7 +128,7 @@ class QgenResp
 
         const EspPoint &espPoint(size_t index) const {return ep_[index]; }
 
-        void summary(FILE *gp);
+        void summary(MsgHandler *msg_handler);
         
         /*! \brief Set the inforamtion about atoms
          * The size of arrays in atoms and x is checked and compared 
@@ -184,9 +185,13 @@ class QgenResp
 
         void copyGrid(QgenResp &src);
 
-        void calcStatistics();
+        void calcStatistics(MsgHandler *msg_handler);
 
-        real getStatistics(real *rrms, real *cosangle, real *mse, real *mae);
+        real getStatistics(MsgHandler *msg_handler,
+                           real       *rrms,
+                           real       *cosangle,
+                           real       *mse,
+                           real       *mae);
 
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
@@ -197,7 +202,8 @@ class QgenResp
          *
          * \param[in] epsilonr  Relative dielectric constant
          */
-        void calcPot(double epsilonr);
+        void calcPot(MsgHandler *msg_handler,
+                     double      epsilonr);
 
         void calcVShell();
 
@@ -237,12 +243,16 @@ class QgenResp
          *
          * Optimizes the charges using matrix inversion. No restraints are
          * taken into account, except total charge and charge symmetries.
-         * \param[in] epsilonr Relative dielectric constant.
+         * \param[in] msg_handler For debugging and info
+         * \param[in] epsilonr    Relative dielectric constant.
          */
-        void optimizeCharges(double epsilonr);
+        void optimizeCharges(MsgHandler *msg_handler,
+                             double      epsilonr);
 
-        // Make sure the total charge is correct and that symmetry is obeyed
-        void regularizeCharges();
+        /*! \brief Make sure the total charge is correct and that symmetry is obeyed
+         * \param[in] msg_handler For debugging and info
+         */
+        void regularizeCharges(MsgHandler *msg_handler);
 
         void potcomp(const char             *potcomp,
                      const gmx_output_env_t *oenv);

@@ -235,7 +235,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();
-            ACTMessage imm = actmol->GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
+            ACTMessage imm = actmol->GenerateAcmCharges(msghandler, sii_->forcefield(), forceComp_, &coords, &forces);
 
             // Check whether we have to disable this compound
             if (ACTMessage::OK != imm && removeMol_)

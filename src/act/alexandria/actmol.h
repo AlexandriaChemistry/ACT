@@ -502,12 +502,14 @@ public:
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
      *
-     * \param[in]  pd        Data structure containing atomic properties
-     * \param[in]  forceComp The force computer
-     * \param[out] coords    The coordinates, will be updated for shells
-     * \param[out] forces    The forces
+     * \param[in]  msghandler Message and status handler 
+     * \param[in]  pd         Data structure containing atomic properties
+     * \param[in]  forceComp  The force computer
+     * \param[out] coords     The coordinates, will be updated for shells
+     * \param[out] forces     The forces
      */
-    ACTMessage GenerateAcmCharges(const ForceField       *pd,
+    ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
+                                  const ForceField       *pd,
                                   const ForceComputer    *forceComp,
                                   std::vector<gmx::RVec> *coords,
                                   std::vector<gmx::RVec> *forces);
@@ -614,6 +616,7 @@ public:
     /*! \brief
      * Generate cube
      *
+     * \param[in] msghandler  For debugging and information
      * \param[in] pd          Data structure containing atomic properties
      * \param[in] coords      Atomic coordinates
      * \param[in] spacing     The grid space
@@ -627,20 +630,21 @@ public:
      * \param[in] diffhistfn
      * \param[in] oenv
      */
-    void GenerateCube(const ForceField             *pd,
+    void GenerateCube(MsgHandler                   *msghandler,
+                      const ForceField             *pd,
                       const std::vector<gmx::RVec> &coords,
                       const ForceComputer          *forceComp,
-                      real                    spacing,
-                      real                    border,
-                      const char             *reffn,
-                      const char             *pcfn,
-                      const char             *pdbdifffn,
-                      const char             *potfn,
-                      const char             *rhofn,
-                      const char             *hisfn,
-                      const char             *difffn,
-                      const char             *diffhistfn,
-                      const gmx_output_env_t *oenv);
+                      real                          spacing,
+                      real                          border,
+                      const char                   *reffn,
+                      const char                   *pcfn,
+                      const char                   *pdbdifffn,
+                      const char                   *potfn,
+                      const char                   *rhofn,
+                      const char                   *hisfn,
+                      const char                   *difffn,
+                      const char                   *diffhistfn,
+                      const gmx_output_env_t       *oenv);
     
     /*! \brief
      * Print the coordinates corresponding to topology after adding shell particles and/or vsites.

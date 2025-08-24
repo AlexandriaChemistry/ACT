@@ -187,7 +187,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     }
 }
 
-eQgen FragmentHandler::generateCharges(FILE                         *fp,
+eQgen FragmentHandler::generateCharges(MsgHandler                 *msg_handler,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
                                        const ForceField             *pd,
@@ -210,13 +210,14 @@ eQgen FragmentHandler::generateCharges(FILE                         *fp,
                     copy_rvec(x[atomStart_[ff]+a], xx[a]);
                 }
                 QgenAcm_[ff].setQtotal(qtotal_[ff]);
-                eqgen = QgenAcm_[ff].generateCharges(fp, molname, pd, 
+                eqgen = QgenAcm_[ff].generateCharges(msg_handler, molname, pd, 
                                                      topologies_[ff]->atomsPtr(),
                                                      xx, bonds_[ff]);
                 if (eQgen::OK != eqgen)
                 {
-                    fprintf(stderr, "Failed to generate charges for %s: '%s'\n",
-                            molname.c_str(), QgenAcm_[ff].status());
+                    msg_handler->msg(ACTStatus::Warning,
+                                     gmx::formatString("Failed to generate charges for %s: '%s'\n",
+                                                       molname.c_str(), QgenAcm_[ff].status()));
                     break;
                 }
                 // Fetch charges to one vector, then symmetrize them

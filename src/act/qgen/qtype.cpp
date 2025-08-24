@@ -38,6 +38,7 @@
 #include <random>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/units.h"
@@ -291,7 +292,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     setPolarizabilityTensor(alpha);
 }
 
-void QtypeProps::calcMoments()
+void QtypeProps::calcMoments(MsgHandler *msg_handler)
 {
     GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qTypeName(qtype_).c_str()).c_str());
     GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
@@ -349,12 +350,12 @@ void QtypeProps::calcMoments()
     }
     if (hasMultipole(quad))
     {
-        if (debug)
+        if (msg_handler)
         {
-            fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", 
-                    multipoles_[quad][multipoleIndex({XX, XX})],
-                    multipoles_[quad][multipoleIndex({YY, YY})],
-                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+            msg_handler->writeDebug(gmx::formatString("Quadrupole: %7.3f %7.3f %7.3f\n", 
+                                                      multipoles_[quad][multipoleIndex({XX, XX})],
+                                                      multipoles_[quad][multipoleIndex({YY, YY})],
+                                                      multipoles_[quad][multipoleIndex({ZZ, ZZ})]));
         }
         // Compute trace divided by 3
         double tr = 0.0;
@@ -367,12 +368,12 @@ void QtypeProps::calcMoments()
         {
             multipoles_[quad][multipoleIndex({m, m})] -= tr;
         }
-        if (debug)
+        if (msg_handler)
         {
-            fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", 
-                    multipoles_[quad][multipoleIndex({XX, XX})],
-                    multipoles_[quad][multipoleIndex({YY, YY})],
-                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+            msg_handler->writeDebug(gmx::formatString("Traceless:  %7.3f %7.3f %7.3f\n", 
+                                                      multipoles_[quad][multipoleIndex({XX, XX})],
+                                                      multipoles_[quad][multipoleIndex({YY, YY})],
+                                                      multipoles_[quad][multipoleIndex({ZZ, ZZ})]));
         }
     }
 }
