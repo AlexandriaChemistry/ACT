@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 
 namespace alexandria
@@ -128,10 +129,10 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, indices_);
         cr->send(dest, bondOrder_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed sending TopologyEntry, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -169,10 +170,10 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
         }
         cr->bcast(&bondOrder_, comm);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -196,10 +197,10 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
             addBondOrder(b);
         }
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive TopologyEntry, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs)));
     }
     return cs;
 }
