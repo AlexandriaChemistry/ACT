@@ -232,6 +232,9 @@ public:
     //! \return whether I am the master
     bool isHelper() const { return NodeType::Helper == nt_; }
 
+    //! \return MsgHandler or nullptr if not available
+    MsgHandler *mh() const { return msg_handler_; }
+
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/

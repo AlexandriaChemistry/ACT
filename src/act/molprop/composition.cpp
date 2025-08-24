@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -106,9 +106,9 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
             AddCharge(stringToQtype(type), q);
         }
     }
-    if (nullptr != debug)
+    if (cr->mh())
     {
-        fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
+        cr->mh()->writeDebug(gmx::formatString("Received CalcAtom, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -157,9 +157,9 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
             }
         }
     }
-    if (nullptr != debug)
+    if (cr->mh())
     {
-        fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
+        cr->mh()->writeDebug(gmx::formatString("Received CalcAtom, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -192,9 +192,9 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
             cr->send(dest, qi.second);
         }
     }
-    if (nullptr != debug)
+    if (cr->mh())
     {
-        fprintf(debug, "Sent CalcAtom, status %s\n", cs_name(cs));
+        cr->mh()->writeDebug(gmx::formatString("Sent CalcAtom, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -207,11 +207,10 @@ CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
     {
         cr->send(dest, catom_);
         cr->send(dest, cnumber_);
-        if (nullptr != debug)
+        if (cr->mh())
         {
-            fprintf(debug, "Sent AtomNum %s %d, status %s\n",
-                    catom_.c_str(), cnumber_, cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Sent AtomNum %s %d, status %s\n",
+                                                   catom_.c_str(), cnumber_, cs_name(cs)));
         }
     }
     return cs;
@@ -225,11 +224,10 @@ CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
     {
         cr->recv(src, &catom_);
         cr->recv(src, &cnumber_);
-        if (nullptr != debug)
+        if (cr->mh())
         {
-            fprintf(debug, "Received AtomNum %s %d, status %s\n",
-                    catom_.c_str(), cnumber_, cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Received AtomNum %s %d, status %s\n",
+                                                   catom_.c_str(), cnumber_, cs_name(cs)));
         }
     }
     return cs;
@@ -334,11 +332,10 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
                 break;
             }
         }
-        if (nullptr != debug)
+        if (cr->mh())
         {
-            fprintf(debug, "Sent MolecularComposition %s, status %s\n",
-                    compname_.c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Sent MolecularComposition %s, status %s\n",
+                                                   compname_.c_str(), cs_name(cs)));
         }
     }
     return cs;
@@ -362,11 +359,10 @@ CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr,
                 AddAtom(an);
             }
         }
-        if (nullptr != debug)
+        if (cr->mh())
         {
-            fprintf(debug, "Received MolecularComposition %s, status %s\n",
-                    compname_.c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Received MolecularComposition %s, status %s\n",
+                                                   compname_.c_str(), cs_name(cs)));
         }
     }
     return cs;

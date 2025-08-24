@@ -37,6 +37,7 @@
 #include <map>
 #include <string>
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
@@ -177,10 +178,10 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
         cr->send(dest, T_);
         cr->send(dest, (int) eP_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Faile sending GenericProperty, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -213,10 +214,10 @@ CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
         eP_ = string2phase(phase);
         
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -241,10 +242,10 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
         cr->recv(src, &ep);
         eP_  = static_cast<ePhase>(ep);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -300,9 +301,9 @@ void MolecularMultipole::setValue(const std::string &myid, double value)
     {
         error_ = actValue;
     }
-    else if (debug)
+    else
     {
-        fprintf(debug, "Unknown id %s with value %g\n", myid.c_str(), value);
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown id %s with value %g\n", myid.c_str(), value).c_str()));
     }
 }
 
@@ -318,10 +319,10 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
         cr->send(dest, average_);
         cr->send(dest, error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send MolecularMultipole, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed sending MolecularMultipole, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -344,10 +345,10 @@ CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&average_, comm);
         cr->bcast(&error_, comm);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed receiving MolecularMultipole, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -364,10 +365,10 @@ CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, i
         cr->recv(src, &average_);
         cr->recv(src, &error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -411,10 +412,10 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
     {
         cr->send(dest, values_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send Harmonics, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to send Harmonics, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -435,10 +436,10 @@ CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
         }
         cr->bcast(&values_, comm);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -453,10 +454,10 @@ CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
     {
         cr->recv(src, &values_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -542,10 +543,10 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
         cr->send(dest, average_);
         cr->send(dest, error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send Polarizability, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to send Polarizability, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -568,10 +569,10 @@ CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord
         cr->bcast(&average_, comm);
         cr->bcast(&error_, comm);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to broadcast Polarizability, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -598,10 +599,10 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
         cr->recv(src, &average_);
         cr->recv(src, &error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to broadcast Polarizability, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -640,10 +641,10 @@ CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&average_, comm);
         cr->bcast(&error_, comm);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -659,10 +660,10 @@ CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int 
         cr->recv(src, &average_);
         cr->recv(src, &error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -678,10 +679,10 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
         cr->send(dest, average_);
         cr->send(dest, error_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send MolecularEnergy, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to send MolecularEnergy, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -739,10 +740,10 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
         cr->recv(src, &xyz_);
         cr->recv(src, &espID_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -777,10 +778,10 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
             cr->bcast(&V_[i], comm);
         }
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -799,10 +800,10 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
         cr->send(dest, xyz_);
         cr->send(dest, V_);
     }
-    else if (nullptr != debug)
+    else if (cr->mh())
     {
-        fprintf(debug, "Trying to send ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->msg(ACTStatus::Error,
+                      gmx::formatString("Failed to send ElectrostaticPotential, status %s\n", cs_name(cs)));
     }
     return cs;
 }
