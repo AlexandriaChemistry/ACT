@@ -40,6 +40,8 @@
 
 #include "act/molprop/molprop.h"
 
+class MsgHandler;
+
 enum BabelFileType {
     ebftPDB  = 0,
     ebftXYZ  = 1,
@@ -88,6 +90,7 @@ class BabelFiles
 /*! \brief
  * Read a Gaussian log file or other file supported by OpenBabel
  *
+ * \param[in]  msg_handler For debugging and info
  * \param[in]  pd          Alexandria force field
  * \param[in]  g98         The gaussian log file, or in case OpenBabel is used anything
  *                         that can be read by OpenBabel
@@ -111,7 +114,8 @@ class BabelFiles
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria
  */
-bool readBabel(const alexandria::ForceField     *pd,
+bool readBabel(alexandria::MsgHandler           *msg_handler,
+               const alexandria::ForceField     *pd,
                const char                       *g98,
                std::vector<alexandria::MolProp> *mp,
                const char          *molnm,

@@ -314,7 +314,7 @@ static void check_mp(MsgHandler           *msghandler,
                 }
             }
             // Check dipoles
-            if (debug)
+            if (msghandler->debug())
             {
                 for(const auto &mi : mus)
                 {
@@ -511,11 +511,12 @@ int edit_mp(int argc, char *argv[])
     int root  = 0;
     if (cr.isMaster())
     {
-        auto warnings = merge_xml(fns, &mpt);
+        auto warnings = merge_xml(&msghandler, fns, &mpt);
         int mptsize = mpt.size();
         if (warnings.size() <= static_cast<size_t>(maxwarn))
         {
-            ReadSqlite3(opt2fn_null("-db", fnm.size(), fnm.data()), &mpt, temperature);
+            ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
+                        &mpt, temperature);
 
             printf("Read %d molecules\n", mptsize);
         }

@@ -71,7 +71,7 @@ protected:
         aps_  = gmx_atomprop_init();
         
         std::string mpFile = fileManager().getInputFilePath("molprop.xml");
-        MolPropRead(mpFile.c_str(), &mp_);
+        MolPropRead(nullptr, mpFile.c_str(), &mp_);
     }
 
     //! Static initiation, only run once every test.

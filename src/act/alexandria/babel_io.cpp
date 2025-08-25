@@ -58,6 +58,7 @@
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/atype_mapping.h"
 #include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
@@ -303,7 +304,8 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
     return true;
 }
 
-static bool babel2ACT(const ForceField                         *pd,
+static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
+                      const ForceField                         *pd,
                       const std::map<std::string, std::string> &g2a,
                       const AlexandriaMols                     &amols,
                       OpenBabel::OBMol                         *mol,
@@ -668,7 +670,7 @@ static bool babel2ACT(const ForceField                         *pd,
         }
     }
     // Fragment information will be generated
-    mpt->generateFragments(pd);
+    mpt->generateFragments(msg_handler, pd);
     addInchiToFragments(amols, conv, mol, mpt->fragmentPtr());
     
     // Dipole
@@ -895,7 +897,8 @@ static void OBUnitCell2Box(OpenBabel::OBUnitCell *ob, matrix box)
     }
 }
 
-bool readBabel(const ForceField                 *pd,
+bool readBabel(alexandria::MsgHandler           *msg_handler,
+               const ForceField                 *pd,
                const char                       *g09,
                std::vector<alexandria::MolProp> *mpt,
                const char                       *molnm,
@@ -931,7 +934,8 @@ bool readBabel(const ForceField                 *pd,
     for(auto &mol : mols)
     {
         alexandria::MolProp mp;
-        if (babel2ACT(pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
+        if (babel2ACT(msg_handler,
+                      pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
                       maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, g09,
                       inputformat))
         {

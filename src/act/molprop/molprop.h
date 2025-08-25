@@ -63,6 +63,7 @@ namespace alexandria
 {
 
 class CommunicationRecord;
+class MsgHandler;
 
 /*! \brief
  * Contains molecular properties from a range of sources.
@@ -261,9 +262,11 @@ public:
     bool renumberResidues();
 
     /*! Generate fragments based on bonds
+     * \param[in] msg_handler Debugging info
      * \param[in] pd     The force field needed for looking up atom props
      */    
-    void generateFragments(const ForceField *pd);
+    void generateFragments(MsgHandler       *msg_handler,
+                           const ForceField *pd);
     
     //! Clear the fragment information
     void clearFragments() { fragment_.clear(); }

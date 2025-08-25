@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -56,6 +56,7 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "alex_modules.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/categories.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
@@ -108,7 +109,7 @@ static void add_refc(std::vector<RefCount> *rc, std::string ref)
     rc->push_back(RefCount(ref));
 }
 
-static void write_corr_xvg(FILE                             *fplog,
+static void write_corr_xvg(MsgHandler                       *msg_handler,
                            const char                       *fn,
                            std::vector<alexandria::MolProp> &mp,
                            MolPropObservable                 mpo,
@@ -118,7 +119,6 @@ static void write_corr_xvg(FILE                             *fplog,
                            const gmx_output_env_t           *oenv,
                            const alexandria::MolSelect      &gms)
 {
-    int          i         = 0;
     size_t       n         = 0;
     real         a         = 0;
     real         da        = 0;
@@ -138,29 +138,29 @@ static void write_corr_xvg(FILE                             *fplog,
     bool         bExp      = false;
     bool         bQM       = false;
 
-    FILE        *fp;
     std::vector<gmx_stats> lsq;
     
     lsq.resize(qmc.nCalc());
 
-    fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
+    int i = 0;
+    auto fpxvg  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i,
+        fprintf(fpxvg, "@s%d legend \"%s/%s-%s\"\n", i,
                 q->method().c_str(),
                 q->basis().c_str(),
                 q->type().c_str());
-        fprintf(fp, "@s%d line linestyle 0\n", i);
-        fprintf(fp, "@s%d symbol %d\n", i, i+1);
-        fprintf(fp, "@s%d symbol size %g\n", i, 0.5);
-        fprintf(fp, "@s%d symbol fill color %d\n", i, i+1);
-        fprintf(fp, "@s%d symbol fill pattern 1\n", i);
+        fprintf(fpxvg, "@s%d line linestyle 0\n", i);
+        fprintf(fpxvg, "@s%d symbol %d\n", i, i+1);
+        fprintf(fpxvg, "@s%d symbol size %g\n", i, 0.5);
+        fprintf(fpxvg, "@s%d symbol fill color %d\n", i, i+1);
+        fprintf(fpxvg, "@s%d symbol fill pattern 1\n", i);
     }
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
         int nout = 0;
-        fprintf(fp, "@type xydy\n");
+        fprintf(fpxvg, "@type xydy\n");
         for (auto &mpi : mp)
         {
             bExp      = false;
@@ -189,31 +189,32 @@ static void write_corr_xvg(FILE                             *fplog,
                 if (bExp && bQM)
                 {
                     lsq[i].add_point(exp_val, qm_val, 0, 0);
-                    fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
+                    fprintf(fpxvg, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                     diff = fabs(qm_val-exp_val);
                     if (((atoler > 0) && (diff >= atoler)) || (atoler == 0 && exp_val != 0 && (fabs(diff/exp_val) > rtoler)))
                     {
-                        fprintf(fplog, "OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
-                                mpi.getIupac().c_str(), exp_val, qm_val, qm_error, q->method().c_str());
+                        msg_handler->msg(ACTStatus::Info,
+                                         gmx::formatString("OUTLIER: %s Exp: %g, Calc: %g +/- %g Method:%s\n",
+                                                           mpi.getIupac().c_str(), exp_val, qm_val, qm_error, q->method().c_str()));
                         nout++;
                     }
                 }
-                else if (nullptr != debug)
+                else if (msg_handler->debug())
                 {
-                    fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(), bQM ? 1 : 0, bExp ? 1 : 0);
+                    msg_handler->writeDebug(gmx::formatString("%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(), bQM ? 1 : 0, bExp ? 1 : 0));
                 }
             }
         }
-        fprintf(fp, "&\n");
+        fprintf(fpxvg, "&\n");
         if (nout)
         {
             printf("There are %3d outliers for %s. Check the analyze log file for details.\n", nout, q->lot().c_str());
         }
     }
 
-    fprintf(fplog, "Fitting data to y = ax + b\n");
-    fprintf(fplog, "%-12s %5s %13s %13s %8s %8s %8s %8s\n", "Method", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
-    fprintf(fplog, "-----------------------------------------------------------------------------\n");
+    msg_handler->write("Fitting data to y = ax + b");
+    msg_handler->write(gmx::formatString("%-12s %5s %13s %13s %8s %8s %8s %8s", "Method", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE"));
+    msg_handler->write("-----------------------------------------------------------------------------\n");
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
@@ -221,14 +222,15 @@ static void write_corr_xvg(FILE                             *fplog,
         lsq[i].get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         lsq[i].get_rmsd(&rmsd);
         lsq[i].get_mse_mae(&mse, &mae);
-        fprintf(fplog, "%-12s %5d %6.3f(%.2f) %6.3f(%.2f) %7.2f %8.2f %8.2f %8.2f\n",
-                q->method().c_str(), static_cast<int>(n), a, da, b, db, Rfit*100, rmsd, mse, mae);
+        msg_handler->write(gmx::formatString("%-12s %5d %6.3f(%.2f) %6.3f(%.2f) %7.2f %8.2f %8.2f %8.2f\n",
+                                             q->method().c_str(), static_cast<int>(n), a, da, b, db, Rfit*100, rmsd, mse, mae));
+        i += 1;
     }
-    fclose(fp);
+    fclose(fpxvg);
     do_view(oenv, fn, nullptr);
 }
 
-static void alexandria_molprop_analyze(FILE                              *fplog,
+static void alexandria_molprop_analyze(MsgHandler                        *msg_handler,
                                        std::vector<alexandria::MolProp>  &mp,
                                        MolPropObservable                  mpo,
                                        real                               rtoler,
@@ -290,13 +292,13 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
-        alexandria_molprop_stats_table(fp, mpo, mp, qmc,
+        alexandria_molprop_stats_table(msg_handler, fp, mpo, mp, qmc,
                                        outlier, cList, gms, iMolSelect::Train);
-        if (0)
+        if (false)
         {
             alexandria::CategoryList cListTest;
             makeCategoryList(&cListTest, mp, gms, iMolSelect::Test);
-            alexandria_molprop_stats_table(fp, mpo, mp, qmc,
+            alexandria_molprop_stats_table(msg_handler, fp, mpo, mp, qmc,
                                            outlier, cListTest, gms, iMolSelect::Test);
         }
     }
@@ -329,7 +331,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     }
     if (nullptr != xvgfn)
     {
-        write_corr_xvg(fplog, xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms);
+        write_corr_xvg(msg_handler, xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms);
     }
 }
 
@@ -349,18 +351,15 @@ int analyze(int argc, char *argv[])
         "selection file ([TT]-selout[tt]) that contains all the molecules in the",
         "output corresponding to the [TT]-prop[tt] flag."
     };
-    t_filenm                         fnm[] = {
+    std::vector<t_filenm> fnm = {
         { efXML, "-ff",     "aff",       ffREAD   },
         { efXML, "-mp",     "allmols",   ffRDMULT },
         { efTEX, "-t",      "table",     ffWRITE  },
         { efTEX, "-cat",    "category",  ffOPTWR  },
         { efDAT, "-sel",    "molselect", ffREAD   },
         { efDAT, "-selout", "selout",    ffOPTWR  },
-        { efXVG, "-c",      "correl",    ffWRITE  },
-        { efLOG, "-g",      "analyze",   ffWRITE  }
+        { efXVG, "-c",      "correl",    ffWRITE  }
     };
-    int                              NFILE             = asize(fnm);
-
     static int                       catmin            = 1;
     static int                       maxwarn           = 0;
     static char                     *fc_str            = (char *)"";
@@ -378,7 +377,7 @@ int analyze(int argc, char *argv[])
     static char                     *sort[]            = {nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr};
     static char                     *prop[]            = {nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr};
 
-    t_pargs                          pa[]        = {
+    std::vector<t_pargs> pa = {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
         { "-rtol",    FALSE, etREAL, {&rtoler},
@@ -411,30 +410,33 @@ int analyze(int argc, char *argv[])
           "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
     };
 
-    FILE                            *fplog;
-    int                              npa;
-    int                              i;
-    alexandria::ForceField              pd;
+    alexandria::ForceField           pd;
     alexandria::MolSelect            gms;
     std::vector<alexandria::MolProp> mp;
     MolPropSortAlgorithm             mpsa;
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
     gmx_output_env_t                *oenv;
+    MsgHandler                       msghandler;
+    msghandler.addOptions(&pa, &fnm, "analyze");
 
-    npa = asize(pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           npa, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           fnm.size(), fnm.data(),
+                           pa.size(), pa.data(),
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
+    CommunicationRecord cr;
+    cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
     ap = gmx_atomprop_init();
-    gmx::ArrayRef<const std::string> mpname = opt2fns("-mp", NFILE, fnm);
-    gms.read(opt2fn("-sel", NFILE, fnm));
+    gmx::ArrayRef<const std::string> mpname = opt2fns("-mp", fnm.size(), fnm.data());
+    gms.read(opt2fn("-sel", fnm.size(), fnm.data()));
     mpsa = MPSA_NR;
-    if (opt2parg_bSet("-sort", npa, pa))
+    if (opt2parg_bSet("-sort", pa.size(), pa.data()))
     {
-        for (i = 0; (i < MPSA_NR); i++)
+        for (int i = 0; (i < MPSA_NR); i++)
         {
             if (strcasecmp(sort[0], sort[i+1]) == 0)
             {
@@ -444,7 +446,7 @@ int analyze(int argc, char *argv[])
         }
     }
     mpo = MolPropObservable::DIPOLE;    
-    if (opt2parg_bSet("-prop", npa, pa))
+    if (opt2parg_bSet("-prop", pa.size(), pa.data()))
     {
         if (!stringToMolPropObservable(prop[0], &mpo))
         {
@@ -454,13 +456,13 @@ int analyze(int argc, char *argv[])
 
     try
     {
-        alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
+        alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (bMerge)
     {
-        auto warnings = merge_xml(mpname, &mp);
+        auto warnings = merge_xml(&msghandler, mpname, &mp);
         if (warnings.size() > static_cast<size_t>(maxwarn))
         {
             fprintf(stderr, "Too many warnings. Terminating.\n");
@@ -473,14 +475,13 @@ int analyze(int argc, char *argv[])
     }
     else if (mpname.size() > 0)
     {
-        MolPropRead(mpname[0].c_str(), &mp);
+        MolPropRead(&msghandler, mpname[0].c_str(), &mp);
     }
     if (mpsa != MPSA_NR)
     {
-        MolPropSort(&mp, mpsa, ap, gms);
+        MolPropSort(&msghandler, &mp, mpsa, ap, gms);
     }
-    fplog  = opt2FILE("-g", NFILE, fnm, "w");
-    alexandria_molprop_analyze(fplog,
+    alexandria_molprop_analyze(&msghandler,
                                mp,
                                mpo,
                                rtoler,
@@ -490,16 +491,15 @@ int analyze(int argc, char *argv[])
                                bAll,
                                bStatsTable,
                                catmin,
-                               opt2fn_null("-cat", NFILE, fnm),
+                               opt2fn_null("-cat", fnm.size(), fnm.data()),
                                bPropTable,
                                bPrintBasis,
                                bPrintMultQ,
-                               opt2fn("-t", NFILE, fnm),
-                               opt2fn("-c", NFILE, fnm),
+                               opt2fn("-t", fnm.size(), fnm.data()),
+                               opt2fn("-c", fnm.size(), fnm.data()),
                                oenv,
                                gms,
-                               opt2fn_null("-selout", NFILE, fnm));
-    gmx_ffclose(fplog);
+                               opt2fn_null("-selout", fnm.size(), fnm.data()));
 
     return 0;
 }

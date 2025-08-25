@@ -129,7 +129,7 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          qType                        qt)
 {
     std::vector<MolProp> mps;
-    MolPropRead(charge_fn, &mps);
+    MolPropRead(msghandler, charge_fn, &mps);
     return fetchChargeMap(msghandler, pd, forceComp, mps, lookup, qt);
 }
 

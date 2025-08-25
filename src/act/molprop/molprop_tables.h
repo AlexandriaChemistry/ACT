@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -53,6 +53,7 @@ namespace alexandria
 /*! \brief
  * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category
  *
+ * \param[in] msg_handler For debugging info
  * \param[out] fp   File pointer to write to
  * \param[in] eprop The property of choice
  * \param[in] mp    Array of molecules
@@ -64,7 +65,8 @@ namespace alexandria
  * \todo Transform iQM to enum
  * \ingroup module_alexandria
  */
-void alexandria_molprop_stats_table(FILE                 *fp,
+void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
+                                    FILE                 *fp,
                                     MolPropObservable     eprop,
                                     std::vector<MolProp> &mp,
                                     const QmCount        &qmc,

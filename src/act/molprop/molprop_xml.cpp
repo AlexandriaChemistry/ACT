@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -46,6 +46,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/memory_check.h"
@@ -352,7 +353,7 @@ static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml i
     return 0;
 }
 
-static void get_attributes(FILE                              *fp, 
+static void get_attributes(MsgHandler                        *msg_handler,
                            xmlAttrPtr                         attr,
                            std::map<MolPropXml, std::string> *xbuf)
 {
@@ -374,10 +375,10 @@ static void get_attributes(FILE                              *fp,
                 ptr->second.assign(attrval);
             }
         }
-        if (fp)
+        if (msg_handler)
         {
-            fprintf(fp, "Property: '%s' Value: '%s'\n",
-                    attrname.c_str(), attrval.c_str());
+            msg_handler->writeDebug(gmx::formatString("Property: '%s' Value: '%s'\n",
+                                                      attrname.c_str(), attrval.c_str()));
         }
         attr = attr->next;
     }
@@ -482,7 +483,7 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                  MolPropXml::UNIT, MolPropXml::ERROR });
 }
 
-static void mp_process_tree(FILE                              *fp, 
+static void mp_process_tree(MsgHandler                        *msg_handler,
                             xmlNodePtr                         tree,
                             std::vector<MolProp>              *molprops,
                             std::map<MolPropXml, std::string> *xbuf)
@@ -491,16 +492,18 @@ static void mp_process_tree(FILE                              *fp,
     std::string exp_type("experiment");
     while (tree != nullptr)
     {
-        if (fp)
+        if (msg_handler)
         {
             if ((tree->type > 0) && ((unsigned)tree->type < NXMLTYPES))
             {
-                fprintf(fp, "Node type %s encountered with name %s\n",
-                        xmltypes[tree->type], (char *)tree->name);
+                msg_handler->msg(ACTStatus::Verbose,
+                                 gmx::formatString("Node type %s encountered with name %s\n",
+                                                   xmltypes[tree->type], (char *)tree->name));
             }
             else
             {
-                fprintf(fp, "Node type %d encountered\n", tree->type);
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Unknown node type %d encountered\n", tree->type));
             }
         }
         if (tree->type == XML_ELEMENT_NODE)
@@ -509,15 +512,15 @@ static void mp_process_tree(FILE                              *fp,
             if (iter != xmlxxx.end())
             {
                 MolPropXml elem = iter->second;
-                if (fp)
+                if (msg_handler)
                 {
-                    fprintf(fp, "Element node name %s\n", (char *)tree->name);
+                    msg_handler->writeDebug(gmx::formatString("Element node name %s\n", (char *)tree->name));
                 }
                 if (tree->children && tree->children->content)
                 {
                     xbuf->insert({ elem, (const char *)tree->children->content });
-                } 
-                get_attributes(fp, tree->properties, xbuf);
+                }
+                get_attributes(msg_handler, tree->properties, xbuf);
                 
                 MolProp *mpt = nullptr;
                 if (molprops->size() > 0)
@@ -533,7 +536,7 @@ static void mp_process_tree(FILE                              *fp,
                 {
                 case MolPropXml::MOLECULES:
                 case MolPropXml::FRAGMENTS:
-                    mp_process_tree(fp, tree->children, molprops, xbuf);
+                    mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                     clean_xbuf(xbuf, { elem });
                     break;
                 case MolPropXml::MOLECULE:
@@ -542,7 +545,7 @@ static void mp_process_tree(FILE                              *fp,
                         get_molecule_attributes(xbuf, &mp);
                         molprops->push_back(mp);
                         mpt = &(molprops->back());
-                        mp_process_tree(fp, tree->children, molprops, xbuf);
+                        mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         clean_xbuf(xbuf, { elem });
                     }
                     break;
@@ -553,7 +556,7 @@ static void mp_process_tree(FILE                              *fp,
                             MolPropXml::MASS,   MolPropXml::FRAGMENT,
                             MolPropXml::FORMULA
                         };
-                        mp_process_tree(fp, tree->children, molprops, xbuf);
+                        mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         if ((nullptr != mpt) && xmlFound(xbuf, clean1))
                         {
                             std::vector<int> atoms;
@@ -590,7 +593,7 @@ static void mp_process_tree(FILE                              *fp,
                                 auto myfreq = new Harmonics(xbuf->find(ff)->second, 0, mpo);
                                 last->addProperty(mpo, myfreq);
                             }
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         }
                         clean_xbuf(xbuf, clean1);
                         clean_xbuf(xbuf, { elem });
@@ -623,14 +626,14 @@ static void mp_process_tree(FILE                              *fp,
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean1))
                         {
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                             std::vector<MolPropXml> clean2 = {
                                 MolPropXml::AVERAGE, MolPropXml::ERROR
                             };
                             std::vector<MolPropXml> clean3 = {
                                 MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ
                             };
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                             if (xmlFound(xbuf, clean2) || xmlFound(xbuf, clean3))
                             {
                                 // This routine cleans up as well.
@@ -647,7 +650,7 @@ static void mp_process_tree(FILE                              *fp,
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean1))
                         {
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                             std::vector<MolPropXml> clean2 = {
                                 MolPropXml::dX, MolPropXml::dY, MolPropXml::dZ, MolPropXml::dV
                             };
@@ -682,7 +685,7 @@ static void mp_process_tree(FILE                              *fp,
                         NN(xbuf, MolPropXml::UNIT) &&
                         NN(xbuf, MolPropXml::TEMPERATURE))
                     {
-                        mp_process_tree(fp, tree->children, molprops, xbuf);
+                        mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         MolPropObservable mpo = xoMap.find(elem)->second;
                         auto mq = new MolecularMultipole((*xbuf)[MolPropXml::TYPE],
                                                          (*xbuf)[MolPropXml::UNIT],
@@ -721,7 +724,7 @@ static void mp_process_tree(FILE                              *fp,
                     {
                         if (!NN(xbuf, MolPropXml::AVERAGE))
                         {
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         }
                         std::vector<MolPropXml> clean1 = {
                             MolPropXml::TYPE, MolPropXml::UNIT,
@@ -745,10 +748,11 @@ static void mp_process_tree(FILE                              *fp,
                                                                xbuf_atof(xbuf, MolPropXml::ERROR, false));
                                 last->addProperty(mpo, me);
                             }
-                            else if (debug)
+                            else if (msg_handler)
                             {
-                                fprintf(debug, "Ignoring unknown property %s\n",
-                                        (*xbuf)[MolPropXml::TYPE].c_str());
+                                msg_handler->msg(ACTStatus::Warning,
+                                                 gmx::formatString("Ignoring unknown property %s\n",
+                                                                   (*xbuf)[MolPropXml::TYPE].c_str()));
                             }
                             clean_xbuf(xbuf, clean1);
                         }
@@ -767,7 +771,7 @@ static void mp_process_tree(FILE                              *fp,
                                         (*xbuf)[MolPropXml::OBTYPE],
                                         xbuf_atoi(xbuf, MolPropXml::ATOMID, true));
                             clean_xbuf(xbuf, clean0);
-                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                            mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         
                             std::vector<MolPropXml> clean1 = {
                                 MolPropXml::dX, MolPropXml::dY, 
@@ -844,7 +848,7 @@ static void mp_process_tree(FILE                              *fp,
                                 gmx_fatal(FARGS, "Experimental data without reference");
                             }
                         }
-                        mp_process_tree(fp, tree->children, molprops, xbuf);
+                        mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         clean_xbuf(xbuf, { MolPropXml::DATASOURCE });
                     }
                     clean_xbuf(xbuf, { elem });
@@ -858,7 +862,9 @@ static void mp_process_tree(FILE                              *fp,
     }
 }
 
-void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
+void MolPropRead(MsgHandler           *msg_handler,
+                 const char           *fn,
+                 std::vector<MolProp> *mpt)
 {
     xmlDocPtr     doc;
     const char   *db          = "alexandria.ff/molprops.dat";
@@ -867,9 +873,9 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     fillMaps();
     //xmlDoValidityCheckingDefaultValue = 0;
     mpfile = gmx::findLibraryFile(fn ? fn : db, true, false);
-    if (debug)
+    if (msg_handler)
     {
-        fprintf(debug, "Opening %s\n", mpfile.c_str());
+        msg_handler->msg(ACTStatus::Verbose, gmx::formatString("Opening %s\n", mpfile.c_str()));
     }
     print_memory_usage(debug);
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
@@ -878,18 +884,22 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
                   mpfile.c_str());
     }
     print_memory_usage(debug);
-    if (nullptr != debug)
+    if (msg_handler)
     {
-        fprintf(debug, "Reading library file %s\n", fn);
+        msg_handler->writeDebug(gmx::formatString("Reading library file %s\n", fn));
     }
     std::map<MolPropXml, std::string>  xbuf;
-    mp_process_tree(nullptr, doc->children, mpt, &xbuf);
+    mp_process_tree(msg_handler, doc->children, mpt, &xbuf);
     for(auto mp = mpt->begin(); mp < mpt->end(); ++mp)
     {
         if (!mp->renumberResidues())
         {
-            fprintf(stderr, "Cannot find a correct experiment for %s, removing it.\n", 
-                    mp->getMolname().c_str());
+            if (msg_handler)
+            {
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Cannot find a correct experiment for %s, removing it.\n", 
+                                                   mp->getMolname().c_str()));
+            }
             mpt->erase(mp);
         }
     }

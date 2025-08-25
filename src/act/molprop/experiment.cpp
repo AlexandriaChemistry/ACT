@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,7 +36,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/textwriter.h"
-
+#include "act/basics/msg_handler.h"
 #include "act/utility/units.h"
 
 namespace alexandria
@@ -362,10 +362,9 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if (CommunicationStatus::OK != cs && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to send Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -393,12 +392,12 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         // BroadCast number of properties
         size_t nprop = property_.size();
         cr->bcast(&nprop, comm);
-        if (debug && cr->rank() == root)
+        if (cr->rank() == root && cr->mh() && cr->mh()->debug())
         {
             for (auto &p : property_)
             {
                 std::string mpo_str(mpo_name(p.first));
-                fprintf(debug, "Will broadcast mpo_name '%s'\n", mpo_str.c_str());
+                cr->mh()->writeDebug(gmx::formatString("Will broadcast mpo_name '%s'\n", mpo_str.c_str()));
             }
         }
         auto thisProp = property_.begin();
@@ -420,9 +419,9 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                 mpo_str = mpo_name(thisProp->first);
             }
             cr->bcast(&mpo_str, comm);
-            if (debug && root != cr->rank())
+            if (root != cr->rank() && cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Received broadcast string '%s' n = %zu\n", mpo_str.c_str(), n);
+                cr->mh()->writeDebug(gmx::formatString("Received broadcast string '%s' n = %zu\n", mpo_str.c_str(), n));
             }
             MolPropObservable mpo;
             if (!stringToMolPropObservable(mpo_str, &mpo))
@@ -532,10 +531,9 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -655,10 +653,9 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }

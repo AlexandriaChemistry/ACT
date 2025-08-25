@@ -242,7 +242,7 @@ int geometry_ff(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto warnings = merge_xml(opt2fns("-mp", fnm.size(), fnm.data()), &mp);
+    auto warnings = merge_xml(&msghandler, opt2fns("-mp", fnm.size(), fnm.data()), &mp);
     print_memory_usage(debug);
     if (!selfile)
     {

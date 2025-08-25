@@ -83,7 +83,7 @@ protected:
         std::string           basis;
         std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
-        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
                               molName.c_str(), molName.c_str(),
                               conf, &method, &basis, maxpot,
                               nsymm, jobtype, userqtot ,&qtot_babel,

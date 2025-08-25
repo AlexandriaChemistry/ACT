@@ -129,8 +129,11 @@ protected:
         dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot     = 0;
         bool   userqtot = false;
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         matrix box;
-        bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
+        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
+                                molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
         EXPECT_TRUE(readOK);
@@ -141,8 +144,6 @@ protected:
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
-        MsgHandler msghandler;
-        msghandler.setPrintLevel(ACTStatus::Warning);
         if (readOK)
         {
             for(auto &molprop: molprops)
