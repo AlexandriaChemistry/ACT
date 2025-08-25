@@ -69,7 +69,8 @@ void generate_index(std::vector<MolProp> *mp)
  * \return the number of remaining molprops
  * \ingroup module_alexandria
  */
-static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
+static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
+                                std::vector<alexandria::MolProp> *mp,
                                 std::vector<std::string>         *warnings)
 {
     alexandria::MolPropIterator mpi, mmm[2];
@@ -80,9 +81,9 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     int   cur   = 0;
 #define prev (1-cur)
     gmx::TextWriter *tw = nullptr;
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        tw = new gmx::TextWriter(debug);
+        tw = msg_handler->twDebug();
     }
     i = 0;
     for (mpi = mp->begin(); (mpi < mp->end()); )
@@ -138,15 +139,15 @@ static void MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
     {
         mpi->Dump(tw);
     }
-    printf("There were %d double entries, leaving %d after merging.\n",
-           ndouble, (int)mp->size());
-    if (tw)
+    if (msg_handler)
     {
-        delete tw;
+        msg_handler->write(gmx::formatString("There were %d double entries, leaving %d after merging.\n",
+                                             ndouble, (int)mp->size()));
     }
 }
 
-std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &filens,
+std::vector<std::string> merge_xml(MsgHandler                             *msg_handler,
+                                   const gmx::ArrayRef<const std::string> &filens,
                                    std::vector<alexandria::MolProp>       *mpout)
 {
     int tmp;
@@ -158,27 +159,29 @@ std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &filen
         {
             continue;
         }
-        MolPropRead(fn.c_str(), &mp);
+        MolPropRead(msg_handler, fn.c_str(), &mp);
         for (auto mpi : mp)
         {
             mpout->push_back(std::move(mpi));
         }
     }
     tmp = mpout->size();
-    auto tw = gmx::TextWriter(debug);
-    if (nullptr != debug)
+    gmx::TextWriter *tw = nullptr;
+    if (msg_handler && msg_handler->debug())
     {
-        tw.writeStringFormatted("mpout->size() = %u mpout->max_size() = %u\n",
+        tw = msg_handler->twDebug();
+
+        tw->writeStringFormatted("mpout->size() = %u mpout->max_size() = %u\n",
                                 (unsigned int)mpout->size(), (unsigned int)mpout->max_size());
         for (auto mpi = mpout->begin(); mpi < mpout->end(); ++mpi)
         {
-            mpi->Dump(&tw);
+            mpi->Dump(tw);
         }
     }
     MolSelect gms;
-    MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
+    MolPropSort(msg_handler, mpout, MPSA_MOLNAME, nullptr, gms);
     std::vector<std::string> warnings;
-    MergeDoubleMolprops(mpout, &warnings);
+    MergeDoubleMolprops(msg_handler, mpout, &warnings);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout->size());
 
@@ -275,17 +278,25 @@ static bool comp_mp_index(alexandria::MolProp ma,
     return (ma.getIndex() < mb.getIndex());
 }
 
-void MolPropSort(std::vector<alexandria::MolProp> *mp,
-                 MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
-                 const MolSelect &gms)
+void MolPropSort(MsgHandler                                *msg_handler,
+                 std::vector<alexandria::MolProp>          *mp,
+                 MolPropSortAlgorithm mpsa, gmx_atomprop_t  apt,
+                 const MolSelect                           &gms)
 {
-    auto tw = gmx::TextWriter(debug);
-    printf("There are %d molprops. Will now sort them.\n", (int)mp->size());
-    for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
+    gmx::TextWriter *tw = nullptr;
+    if (msg_handler && msg_handler->debug())
     {
-        if (nullptr != debug)
+        tw = msg_handler->twDebug();
+    }
+    if (msg_handler)
+    {
+        msg_handler->write(gmx::formatString("There are %d molprops. Will now sort them.\n", (int)mp->size()));
+    }
+    if (tw)
+    {
+        for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
         {
-            mpi->Dump(&tw);
+            mpi->Dump(tw);
         }
     }
     switch (mpsa)

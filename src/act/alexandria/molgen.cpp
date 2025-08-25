@@ -788,7 +788,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
     if (cr_->isMaster())
     {
-        MolPropRead(molfn, &mp);
+        MolPropRead(msghandler, molfn, &mp);
         auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
         if (qmapfn && strlen(qmapfn) > 0)
         {

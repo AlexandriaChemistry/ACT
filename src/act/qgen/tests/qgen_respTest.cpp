@@ -96,8 +96,10 @@ protected:
         bool   userqtot = false;
         double qtot     = 0;
         matrix box;
-        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true));
+        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
+                              molnm, iupac, conf, &method, &basis,
+                              maxpot, nsymm, jobtype, userqtot, &qtot,
+                              false, box, true));
                     
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;

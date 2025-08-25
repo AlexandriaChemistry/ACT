@@ -218,7 +218,8 @@ void CompoundReader::readFile(MsgHandler *msghandler,
     int                  maxpot = 100;
     int                  nsymm  = 1;
     bool                 addHydrogen = false;
-    if (!readBabel(&pd, filename_, &mps, molnm_, molnm_, "", &method,
+    if (!readBabel(msghandler, &pd, filename_, &mps, molnm_, molnm_, "",
+                   &method,
                    &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
                    addHydrogen, box, oneH_))
     {
@@ -313,7 +314,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     if (!qmapfn_.empty())
     {
         std::vector<MolProp> mps;
-        MolPropRead(qmapfn_.c_str(), &mps);
+        MolPropRead(msghandler, qmapfn_.c_str(), &mps);
         auto qtype = qType::ACM;
         if (strlen(qqm_) > 0)
         {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/composition.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
@@ -267,7 +268,8 @@ bool MolProp::renumberResidues()
     return true;
 }
 
-void MolProp::generateFragments(const ForceField *pd)
+void MolProp::generateFragments(MsgHandler       *msg_handler,
+                                const ForceField *pd)
 {
     auto catom = LastExperiment()->calcAtomConst();
     int  natom = catom.size();
@@ -339,10 +341,11 @@ void MolProp::generateFragments(const ForceField *pd)
         // Add atom to set
         fragMols[fragI].insert(i);
     }
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "There are %zu distinct compounds in %d atoms and %zu bonds.\n", fragMols.size(),
-                natom, bond_.size());
+        msg_handler->writeDebug(gmx::formatString("There are %zu distinct compounds in %d atoms and %zu bonds.\n",
+                                                  fragMols.size(),
+                                                  natom, bond_.size()));
     }
     int  fi    = 0;
     for(auto &fm : fragMols)
@@ -669,7 +672,7 @@ const GenericProperty *MolProp::expProperty(MolPropObservable  mpo,
 
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus                cs = CommunicationStatus::OK;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -704,10 +707,9 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
                 {
                     std::string sii(si);
                     cr->send(dest, sii);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Sent category %s\n", si.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Sent category %s\n", si.c_str()));
                     }
                 }
             }
@@ -738,11 +740,10 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
                 }
             }
         }
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Sent MolProp %s, status %s\n",
-                    getMolname().c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Sent MolProp %s, status %s\n",
+                                                   getMolname().c_str(), cs_name(cs)));
         }
     }
     return cs;
@@ -800,10 +801,9 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                 if (!str.empty())
                 {
                     AddCategory(str);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Received a category %s\n", str.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Received a category %s\n", str.c_str()));
                     }
                 }
                 else
@@ -845,11 +845,10 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             {
                 exper_[n].BroadCast(cr, root, comm);
             }
-            if (debug)
+            if (cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Broadcast %zu experiments for mol %s\n",
-                        exper_.size(), getMolname().c_str());
-                fflush(debug);
+                cr->mh()->writeDebug(gmx::formatString("Broadcast %zu experiments for mol %s\n",
+                                                       exper_.size(), getMolname().c_str()));
             }
         }
         else
@@ -863,11 +862,10 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                     AddExperiment(ex);
                 }
             }
-            if (nullptr != debug)
+            if (cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Received %zu experiments from %d for mol %s\n",
-                        exper_.size(), root, getMolname().c_str());
-                fflush(debug);
+                cr->mh()->writeDebug(gmx::formatString("Received %zu experiments from %d for mol %s\n",
+                                                       exper_.size(), root, getMolname().c_str()));
             }
         }
     }
@@ -894,9 +892,9 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &Nexper);
         cr->recv(src, &Nfrag);
 
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Got molname %s\n", getMolname().c_str());
+            cr->mh()->writeDebug(gmx::formatString("Got molname %s\n", getMolname().c_str()));
         }
         //! Receive Bonds
         cs = CommunicationStatus::OK;
@@ -920,10 +918,9 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
                 if (!str.empty())
                 {
                     AddCategory(str);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Received a category %s\n", str.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Received a category %s\n", str.c_str()));
                     }
                 }
                 else
@@ -955,13 +952,12 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             }
         }
 
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Received %zu experiments from %d for mol %s\n",
-                    exper_.size(), src, getMolname().c_str());
-            fprintf(debug, "Received MolProp %s, status %s\n",
-                    getMolname().c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Received %zu experiments from %d for mol %s\n",
+                                                   exper_.size(), src, getMolname().c_str()));
+            cr->mh()->writeDebug(gmx::formatString("Received MolProp %s, status %s\n",
+                                                   getMolname().c_str(), cs_name(cs)));
         }
     }
     return cs;

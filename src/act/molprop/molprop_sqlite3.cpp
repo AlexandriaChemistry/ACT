@@ -45,6 +45,7 @@
 #if HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_sqlite3.h"
 
@@ -123,7 +124,8 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
     }
 }
 
-static void getSynonyms(sqlite3              *db,
+static void getSynonyms(MsgHandler           *msg_handler,
+                        sqlite3              *db,
                         std::vector<Synonym> &syn,
                         int                   nMol)
 {
@@ -135,9 +137,9 @@ static void getSynonyms(sqlite3              *db,
     snprintf(sql_str, sizeof(sql_str),
              "SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
 
-    if (nullptr != debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "sql_str = '%s'\n", sql_str);
+        msg_handler->writeDebug(gmx::formatString("sql_str = '%s'\n", sql_str));
     }
 
     check_sqlite3(db, "Preparing statement",
@@ -167,7 +169,8 @@ static void getSynonyms(sqlite3              *db,
                   sqlite3_finalize(stmt2));
 }
 
-static void getClasses(sqlite3              *db,
+static void getClasses(MsgHandler           *msg_handler,
+                       sqlite3              *db,
                        std::vector<Classes> &classes,
                        int                   nMol)
 {
@@ -179,9 +182,9 @@ static void getClasses(sqlite3              *db,
     snprintf(sql_str, sizeof(sql_str),
              "SELECT mol.iupac,class.class FROM molecules as mol,classification as class,link_mol_class as lmc WHERE (lmc.molid=mol.molid) and (lmc.classid=class.classid) ORDER by mol.iupac");
 
-    if (nullptr != debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "sql_str = '%s'\n", sql_str);
+        msg_handler->writeDebug(gmx::formatString("sql_str = '%s'\n", sql_str));
     }
 
     check_sqlite3(db, "Preparing statement",
@@ -225,7 +228,8 @@ static void getClasses(sqlite3              *db,
 }
 #endif
 
-void ReadSqlite3(gmx_unused const char           *sqlite_file,
+void ReadSqlite3(MsgHandler                      *msg_handler,
+                 gmx_unused const char           *sqlite_file,
                  gmx_unused std::vector<MolProp> *mp,
                  gmx_unused double                ref_temperature)
 {
@@ -252,10 +256,10 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
     printf("Opened SQLite3 database %s\n", sqlite_file);
 
     // First get the synonyms out.
-    getSynonyms(db, synonyms, mp->size());
+    getSynonyms(msg_handler, db, synonyms, mp->size());
 
     // Now get the classes out.
-    getClasses(db, classes, mp->size());
+    getClasses(msg_handler, db, classes, mp->size());
 
     /* Now present a query statement */
     nexp_prop = 0;
@@ -263,12 +267,12 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str.c_str(), 1+sql_str.size(), &stmt, nullptr));
 
-    if (nullptr != debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "sql_str = '%s'\nvariable = '%s'\n", sql_str.c_str(),
-                sqlite3_bind_parameter_name(stmt, 1));
+        msg_handler->writeDebug(gmx::formatString("sql_str = '%s'\nvariable = '%s'\n", sql_str.c_str(),
+                                                  sqlite3_bind_parameter_name(stmt, 1)));
         nbind = sqlite3_bind_parameter_count(stmt);
-        fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str.c_str());
+        msg_handler->writeDebug(gmx::formatString("%d binding parameter(s) in the statement\n%s\n", nbind, sql_str.c_str()));
     }
     for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
@@ -283,9 +287,9 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
         }
         else
         {
-            if (nullptr != debug)
+            if (msg_handler && msg_handler->debug())
             {
-                fprintf(debug, "Going to query for '%s'\n", keyptr->iupac().c_str());
+                msg_handler->writeDebug(gmx::formatString("Going to query for '%s'\n", keyptr->iupac().c_str()));
             }
             check_sqlite3(db, "Binding text",
                           sqlite3_bind_text(stmt, 1, keyptr->iupac().c_str(), -1, SQLITE_STATIC));
@@ -311,10 +315,10 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
                     error          = sqlite3_column_double(stmt, cidx++);
                     preferred      = sqlite3_column_int(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
-                    if (debug)
+                    if (msg_handler && msg_handler->debug())
                     {
-                        fprintf(debug, "Found: mol %s prop %s value %g temp %g theory %d preferred %d\n",
-                                molname.c_str(), prop, value, temperature, theory, preferred);
+                        msg_handler->writeDebug(gmx::formatString("Found: mol %s prop %s value %g temp %g theory %d preferred %d\n",
+                                                                  molname.c_str(), prop, value, temperature, theory, preferred));
                     }
                     if (fabs(ref_temperature-temperature) < 0.1)
                     {
@@ -326,9 +330,9 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
                         MolPropObservable mpo;
                         if (!stringToMolPropObservable(prop, &mpo))
                         {
-                            if (debug)
+                            if (msg_handler && msg_handler->debug())
                             {
-                                fprintf(debug, "Unknown property %s\n", prop);
+                                msg_handler->writeDebug(gmx::formatString("Unknown property %s\n", prop));
                             }
                         }
                         else if ((iqm == iqmType::Exp && 1==preferred) ||
@@ -416,9 +420,9 @@ void ReadSqlite3(gmx_unused const char           *sqlite_file,
                 {
                     check_sqlite3(db, "Stepping", rc);
                 }
-                else if (nullptr != debug)
+                else if (msg_handler && msg_handler->debug())
                 {
-                    fprintf(debug, "Done finding rows for %s\n", keyptr->iupac().c_str());
+                    msg_handler->writeDebug(gmx::formatString("Done finding rows for %s\n", keyptr->iupac().c_str()));
                 }
             }
             while (SQLITE_ROW == rc);

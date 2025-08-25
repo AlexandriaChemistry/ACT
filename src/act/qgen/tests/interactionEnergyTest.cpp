@@ -147,7 +147,7 @@ protected:
         bool   userqtot   = !qcustom.empty();
         double qtot_babel = myqtot;
         matrix box;
-        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
                               jobtype, userqtot, &qtot_babel, false, box, oneH));

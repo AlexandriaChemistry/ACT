@@ -116,7 +116,7 @@ int min_complex(int argc, char *argv[])
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;
-    MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
+    MolPropRead(&msghandler, opt2fn("-mp", fnm.size(), fnm.data()), &mps);
     for(auto mp = mps.begin(); mp < mps.end(); ++mp)
     {
         if (mp->fragments().size() != 2)

@@ -65,13 +65,14 @@ void initACTMol(const char          *molname,
         std::vector<double> qcustom;
         bool userqtot = false;
         matrix box;
-        bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
+                                molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, userqtot,
                                 &qtot, false, box, true);
         EXPECT_TRUE(readOK);
-        MsgHandler msghandler;
-        msghandler.setPrintLevel(ACTStatus::Warning);
         // Uncomment in case of issues
         // msghandler.setACTStatus(ACTStatus::Debug);
 
