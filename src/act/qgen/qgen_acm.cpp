@@ -35,6 +35,7 @@
 #include "qgen_acm.h"
 
 #include <cctype>
+#include <numeric>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -250,9 +251,9 @@ static double Coulomb_PP(double r)
 void QgenAcm::dump(MsgHandler                 *msg_handler,
                    const std::vector<ActAtom> *atoms) const
 {
-    if (msg_handler && eQGEN_ == eQgen::OK)
+    if (msg_handler && msg_handler->debug() && eQGEN_ == eQgen::OK)
     {
-        auto tw = msg_handler->tw();
+        auto tw = msg_handler->twDebug();
         if (!tw)
         {
             return;
@@ -496,12 +497,11 @@ void QgenAcm::solveEEM(MsgHandler *msg_handler)
 
     if (info == 0)
     {
-        double qtot    = 0;
         for (size_t i = 0; i < nelem; i++)
         {
             q_[nonFixed_[i]] = q[i];
-            qtot += q[i];
         }
+        double qtot = std::accumulate(q_.begin(), q_.end(), 0.0);
         
         if (msg_handler && (fabs(qtot - qtotal_) > 1e-2))
         {
