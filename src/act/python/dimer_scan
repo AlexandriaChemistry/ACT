@@ -37,8 +37,12 @@ def read_pdb(pdb_file: str) -> (list, list, list, str, str):
                     'x': float(line[30:38].strip()),
                     'y': float(line[38:46].strip()),
                     'z': float(line[46:54].strip()),
-                    'element': line[76:78].strip(),
+                    'element': line[76:78].strip()
                 }
+                if len(line) > 80:
+                    atomdata['charge'] = line[78:80].strip()
+                else:
+                    atomdata['charge'] = ""
                 atoms.append(atomdata)
             elif line.startswith("CONECT"):
                 conect_records.append(line)
@@ -85,9 +89,9 @@ def calculate_distance(atom1, atom2):
 def write_pdb_line(outf, atomid:int, atomname:str,
                    resname:str, resnr:int,
                    x:float, y:float, z:float,
-                   element:str):
-    outf.write("%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n" %
-               ( "ATOM", atomid, atomname, ' ', resname, ' ', resnr, ' ', x, y, z, 1.00, 0.00, element ) )
+                   element:str, charge:str):
+    outf.write("%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s%2s\n" %
+               ( "ATOM", atomid, atomname, ' ', resname, ' ', resnr, ' ', x, y, z, 1.00, 0.00, element, charge ) )
 
 def find_freeze_atoms(pdbfile:str):
     atoms, conect_records, header_lines, master_line, end_line = read_pdb(pdbfile)
@@ -137,11 +141,13 @@ def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2
         for atom in monomer1:
             write_pdb_line(outf, atom['serial'], atom['atom'], 'UNK',
                            atom['residue_seq'],
-                           atom['x'], atom['y'], atom['z'], atom['element'])
+                           atom['x'], atom['y'], atom['z'],
+                           atom['element'], atom['charge'])
         for atom in monomer2:
             write_pdb_line(outf, atom['serial'], atom['atom'], 'UNK',
                            atom['residue_seq'],
-                           atom['x'], atom['y'], atom['z'], atom['element'])
+                           atom['x'], atom['y'], atom['z'],
+                           atom['element'], atom['charge'])
         for conect in conect_records:
             outf.write(conect)
         if master_line:
