@@ -749,6 +749,10 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     {
         for(const auto &ee : e_monomer[ff])
         {
+            if (ee.second == 0)
+            {
+                continue;
+            }
             auto eif = einter->find(ee.first);
             if (einter->end() == eif)
             {

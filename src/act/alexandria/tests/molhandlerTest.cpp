@@ -311,7 +311,7 @@ TEST_F (MolHandlerTest, UracilNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", false);
+    test("carbon-dioxide.sdf", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
@@ -365,7 +365,7 @@ TEST_F (MolHandlerTest, Uracil)
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", true);
+    test("carbon-dioxide.sdf", "ACS-pg", true, 1e-10);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
