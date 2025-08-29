@@ -199,7 +199,7 @@ int simulate(int argc, char *argv[])
         {
             std::map<InteractionType, double> energies;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+            forceComp->compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
             JsonTree jtener("Energies before");
             std::string unit("kJ/mol");
             for (const auto &ener : energies)
@@ -248,7 +248,7 @@ int simulate(int argc, char *argv[])
             std::map<InteractionType, double> energies;
             {
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+                forceComp->compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
                 JsonTree jtener("Energies before");
                 std::string unit("kJ/mol");
                 for (const auto &ener : energies)

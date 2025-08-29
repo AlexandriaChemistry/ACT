@@ -258,7 +258,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     std::vector<gmx::RVec>            coords = x_;
     std::vector<gmx::RVec>            forces(x_.size());
     
-    forceComp->compute(pd, top, &coords, &forces, &energies, field);
+    forceComp->compute(nullptr, pd, top, &coords, &forces, &energies, field);
     setQ(top->atoms());
     setX(coords);
     calcMoments();
@@ -279,7 +279,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     for (int m = 0; m < DIM; m++)
     {
         field[m] = efield;
-        forceComp->compute(pd, top, &coords, &forces, &energies, field);
+        forceComp->compute(nullptr, pd, top, &coords, &forces, &energies, field);
         setX(coords);
         field[m] = 0;
         calcMoments();

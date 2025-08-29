@@ -173,7 +173,7 @@ protected:
             std::vector<gmx::RVec> forces(mp.atomsConst().size());
             std::vector<gmx::RVec> coords = mp.xOriginal();
             std::map<InteractionType, double> eBefore;
-            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
+            forceComp->compute(&msghandler, pd, mp.topology(), &coords, &forces, &eBefore);
             add_energies(pd, &checker_, eBefore, "before");
             
             MolHandler mh;

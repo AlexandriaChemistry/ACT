@@ -394,7 +394,8 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         {
             std::map<InteractionType, double> energies;
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
-            (void) forceComp->compute(pd, topology_, &coords, &forces, &energies);
+            forceComp->compute(msghandler, pd, topology_,
+                               &coords, &forces, &energies);
             auto eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
@@ -662,7 +663,8 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             copy_rvec((*coords)[i], myx[j]);
             j++;
         }
-        (void) forceComputer->compute(pd, tops[ff], &myx, &forces, &e_monomer[ff]);
+        forceComputer->compute(msghandler, pd, tops[ff],
+                               &myx, &forces, &e_monomer[ff]);
         j = 0;
         for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
         {
@@ -699,7 +701,8 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         std::vector<gmx::RVec> mycoords = *coords;
         // Note that here the shells start in the position of the relaxed
         // monomers such as to only measure the induction due to the dimer
-        (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_total, fzero, false);
+        forceComputer->compute(msghandler, pd, topology_,
+                               &mycoords, &forces, &e_total, fzero, false);
         // Move remaining polarisation energy to the electrostatics.
         // Since we started with the shells in the relaxed monomer position,
         // not the entire polarization will have been moved to induction.
@@ -733,8 +736,9 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         // Make a fresh copy of the coordinates
         std::vector<gmx::RVec> mycoords = *coords;
         // Eqn 6
-        (void) forceComputer->compute(pd, topology_, &mycoords, &forces, &e_dimer[ff],
-                                      fzero, false, myshells);
+        forceComputer->compute(msghandler, pd, topology_,
+                               &mycoords, &forces, &e_dimer[ff],
+                               fzero, false, myshells);
         msghandler->writeDebug(gmx::formatString("%s dimer[%lu]:", getMolname().c_str(), ff));
         printEmap(msghandler, &e_dimer[ff]);
 
@@ -906,7 +910,8 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                                    symmetric_charges_);
         if (eQgen::OK == eqgen)
         {
-            (void) forceComp->compute(pd, topology_, coords, forces, &energies);
+            forceComp->compute(msg_handler, pd, topology_,
+                               coords, forces, &energies);
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
@@ -963,7 +968,7 @@ void ACTMol::updateQprops(const ForceField          *pd,
         auto qcalc = qp->qPact();
         qcalc->setQ(*myatoms);
         auto myx = qcalc->x();
-        (void) forceComp->compute(pd, topology_, &myx, forces, &energies);
+        forceComp->compute(nullptr, pd, topology_, &myx, forces, &energies);
         // TODO, likely we should not change the coordinates here, just the charges
         qcalc->setX(myx);
     }
@@ -1025,8 +1030,8 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
             }
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            (void) forceComp->compute(pd, topology_, coords,
-                                      forces, &energies);
+            forceComp->compute(msghandler, pd, topology_, coords,
+                               forces, &energies);
             fraghandler_->setCharges(*myatoms);
         }
         break;
@@ -1117,7 +1122,8 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
                 }
                 // Use the coordinate belonging to this RESP data
                 auto myx = qresp->coords();
-                (void) forceComp->compute(pd, topology_, &myx, forces, &energies);
+                forceComp->compute(msghandler, pd, topology_, &myx,
+                                   forces, &energies);
                 qresp->updateAtomCoords(myx);
                 qresp->optimizeCharges(msghandler, epsilonr);
                 qresp->calcPot(msghandler, epsilonr);
@@ -1134,7 +1140,8 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
                         (*myatoms)[i].setCharge(qrq);
                     }
                     // Copy charges to topology
-                    (void) forceComp->compute(pd, topology_, &myx, forces, &energies);
+                    forceComp->compute(msghandler, pd, topology_, &myx,
+                                       forces, &energies);
                     qresp->updateAtomCoords(myx);
                     qresp->optimizeCharges(msghandler, epsilonr);
                     qresp->calcPot(msghandler, epsilonr);
@@ -1441,7 +1448,8 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                 auto myx = qresp->coords();
                 std::vector<gmx::RVec>            forces(atomsConst().size());
                 std::map<InteractionType, double> energies;
-                forceComp->compute(pd, topology(), &myx, &forces, &energies);
+                forceComp->compute(msghandler, pd, topology(),
+                                   &myx, &forces, &energies);
                 qresp->updateAtomCoords(myx);
                 qresp->updateAtomCharges(atomsConst());
                 qresp->calcPot(msghandler, epsilonr);

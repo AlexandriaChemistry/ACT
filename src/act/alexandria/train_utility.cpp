@@ -282,7 +282,7 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
             std::vector<gmx::RVec>            forces(topology->nAtoms());
             std::map<InteractionType, double> energies;
             auto                              myx = qcalc->x();
-            forceComputer->compute(pd, topology, &myx, &forces, &energies);
+            forceComputer->compute(msg_handler, pd, topology, &myx, &forces, &energies);
             qcalc->setX(myx);
         }
         qcalc->calcMoments(msg_handler);
@@ -925,7 +925,7 @@ void doFrequencyAnalysis(const ForceField         *pd,
     // Energies
     std::map<InteractionType, double> energies;
     std::vector<gmx::RVec>    forces(coords->size());
-    (void) forceComp->compute(pd, mol->topology(), coords, &forces, &energies);
+    forceComp->compute(nullptr, pd, mol->topology(), coords, &forces, &energies);
     // Now time for thermochemistry output
     JsonTree tctree("Thermochemistry");
     JsonTree ajtc("Alexandria");
@@ -1276,7 +1276,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         std::map<InteractionType, double> eBefore;
         std::vector<gmx::RVec> coords = mol->xOriginal();
         std::vector<gmx::RVec> forces(coords.size());
-        (void) forceComp->compute(pd, mol->topology(), &coords, &forces, &eBefore);
+        forceComp->compute(msghandler, pd, mol->topology(), &coords, &forces, &eBefore);
 
         msghandler->write(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
                                             "Reference EPOT", deltaE0, 
@@ -1588,8 +1588,8 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
-                        (void) forceComp->compute(pd, topology, &myx,
-                                                  &forces, &energies);
+                        forceComp->compute(msghandler, pd, topology, &myx,
+                                           &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(mol->atomsConst());
                         qresp->calcPot(msghandler, 1.0);
@@ -1646,8 +1646,8 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             std::vector<gmx::RVec> coords = mol->xOriginal();
             {
                 std::map<InteractionType, double> energies;
-                (void) forceComp->compute(pd, topology, &coords,
-                                          &forces, &energies);
+                forceComp->compute(msghandler, pd, topology, &coords,
+                                   &forces, &energies);
             }
             printAtoms(tw, &(*mol), coords, forces);
             // Energies

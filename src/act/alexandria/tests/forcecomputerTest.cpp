@@ -144,7 +144,7 @@ protected:
             else
             {
                 std::map<InteractionType, double> actEnergies;
-                fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
+                fcomp->compute(nullptr, pd, mp.topology(), &coordinates, &forces, &actEnergies);
                 for(auto &ifm : actEnergies)
                 {
                     std::string label = interactionTypeToString(ifm.first);
@@ -204,7 +204,7 @@ protected:
             }
             std::map<InteractionType, double> actEnergies;
             auto fsc = pd->forcesConst();
-            fcomp->compute(pd, mp.topology(), &coordinates, &forces, &actEnergies);
+            fcomp->compute(nullptr, pd, mp.topology(), &coordinates, &forces, &actEnergies);
             for(auto &ifm : actEnergies)
             {
                 auto actEner  = actEnergies[ifm.first];

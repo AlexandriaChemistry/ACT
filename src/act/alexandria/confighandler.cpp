@@ -132,7 +132,7 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Tolerance (RMS force) for minimizing shell positions" },
         { "-shellMaxIter", FALSE, etINT, {&shellMaxIter_},
           "Max number of iterations for minimizing shell positions" },
-        { "-shellMaxDistance", FALSE, etINT, {&shellMaxDistance_},
+        { "-shellMaxDistance", FALSE, etREAL, {&shellMaxDistance_},
           "Max distance between shell and core (nm)" }
     };
     for (size_t i = 0; i < pa.size(); i++)

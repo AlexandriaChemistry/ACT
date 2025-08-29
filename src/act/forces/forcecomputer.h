@@ -42,6 +42,7 @@ namespace alexandria
 {
 
 class QtypeProps;
+class MsgHandler;
 
 /*! \brief Class to compute all the forces in a molecule or complex
  */
@@ -69,7 +70,7 @@ private:
      */
     ForceComputer(double   msForce = 1e-6, 
                   int      maxiter = 25,
-                  double   maxShellDistance = 0.02);
+                  double   maxShellDistance = 0.04);
 
     //! \brief Destructor
     ~ForceComputer();
@@ -98,6 +99,9 @@ private:
                      const gmx::RVec                   &field) const;
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
+     * If the shell minimization does not converge a warning will
+     * be written.
+     * \param[in]  msg_handler For debugging, may be nullptr
      * \param[in]  pd          Pointer to force field structure
      * \param[in]  top         The molecular topology
      * \param[in]  charges     The charges for all particles
@@ -108,16 +112,16 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
      * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
-     * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const ForceField                  *pd,
-                   const Topology                    *top,
-                   std::vector<gmx::RVec>            *coordinates,
-                   std::vector<gmx::RVec>            *forces,
-                   std::map<InteractionType, double> *energies,
-                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
-                   bool                               resetShells = true,
-                   std::set<int>                      relax = {}) const;
+    void compute(MsgHandler                        *msg_handler,
+                 const ForceField                  *pd,
+                 const Topology                    *top,
+                 std::vector<gmx::RVec>            *coordinates,
+                 std::vector<gmx::RVec>            *forces,
+                 std::map<InteractionType, double> *energies,
+                 const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                 bool                               resetShells = true,
+                 std::set<int>                      relax = {}) const;
                  
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
