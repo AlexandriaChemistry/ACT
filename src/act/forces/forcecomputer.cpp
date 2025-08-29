@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "act/qgen/qtype.h"
@@ -92,14 +93,15 @@ void ForceComputer::spreadVsiteForces(const Topology         *top,
     vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
 }
                               
-double ForceComputer::compute(const ForceField                  *pd,
-                              const Topology                    *top,
-                              std::vector<gmx::RVec>            *coordinates,
-                              std::vector<gmx::RVec>            *forces,
-                              std::map<InteractionType, double> *energies,
-                              const gmx::RVec                   &field,
-                              bool                               resetShells,
-                              std::set<int>                      relax) const
+void ForceComputer::compute(MsgHandler                        *msg_handler,
+                            const ForceField                  *pd,
+                            const Topology                    *top,
+                            std::vector<gmx::RVec>            *coordinates,
+                            std::vector<gmx::RVec>            *forces,
+                            std::map<InteractionType, double> *energies,
+                            const gmx::RVec                   &field,
+                            bool                               resetShells,
+                            std::set<int>                      relax) const
 {
     constructVsiteCoordinates(top, coordinates);
     // Short-cut
@@ -198,6 +200,18 @@ double ForceComputer::compute(const ForceField                  *pd,
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
         }
+        if (msg_handler)
+        {
+            if (msForce > msForceToler_)
+            {
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Shell optimization did not converge. RMS force is %g", std::sqrt(msForce/pols.size())));
+            }
+            else
+            {
+                msg_handler->msg(ACTStatus::Debug, "Shell optimization converged");
+            }
+        }
     }
     {
         // Induction energy
@@ -252,7 +266,6 @@ double ForceComputer::compute(const ForceField                  *pd,
     }
     // Spread forces to atoms
     spreadVsiteForces(top, coordinates, forces);
-    return msForce;
 }
 
 void ForceComputer::computeOnce(const ForceField                  *pd,

@@ -304,7 +304,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
         // Need to call the force routine to update shells and/or vsites
         if (doForce)
         {
-            forceComputer->compute(forcefield, topology, &coords, &forces, &energies);
+            forceComputer->compute(msghandler, forcefield, topology, &coords,
+                                   &forces, &energies);
             qgr->updateAtomCoords(coords);
         }
         if (msghandler->debug())
@@ -442,7 +443,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
                 std::vector<gmx::RVec>            forces;
                 std::map<InteractionType, double> energies;
                 auto                              myx = qact.x();
-                forceComputer->compute(forcefield, topology, &myx, &forces, &energies);
+                forceComputer->compute(msghandler, forcefield, topology, &myx, &forces, &energies);
                 qact.setX(myx);
             }
             qact.calcMoments();
