@@ -40,6 +40,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
@@ -497,7 +498,8 @@ static void dumpForceField(ForceField        *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
-static void plotInteractions(ForceField           *pd,
+static void plotInteractions(MsgHandler        *msghandler,
+                             ForceField        *pd,
                              const std::string &analyze)
 {
     bool found;
@@ -506,11 +508,10 @@ static void plotInteractions(ForceField           *pd,
     {
         return;
     }
-    MsgHandler msghandler;
     ForceComputer fc;
     for(auto &m : myset)
     {
-        fc.plot(&msghandler, pd, m);
+        fc.plot(msghandler, pd, m);
     }
 }
 
@@ -745,7 +746,7 @@ int edit_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t                *oenv;
-    t_filenm                         fnm[] = {
+    std::vector<t_filenm> fnm = {
         { efXML, "-ff",   "aff_in" , ffREAD  },
         { efXML, "-ff2",  "aff_in2", ffOPTRD },
         { efXML, "-o",    "aff_out", ffOPTWR },
@@ -813,35 +814,37 @@ int edit_ff(int argc, char*argv[])
           "Plot many interactions as a function of distance or angle" },
         { "-bcast",   FALSE, etBOOL, {&bcast},
           "Use broadcast rather than send/receive to communicate force field" },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more stuff during processing" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
-    int NFILE  = asize(fnm);
     crule.addPargs(&pa);
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, pa.size(), pa.data(),
+    MsgHandler msghandler;
+    msghandler.addOptions(&pa, &fnm, "edit_ff");
+    if (!parse_common_args(&argc, argv, 0, fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }
+
     CommunicationRecord cr;
     cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
+
     ForceField pd;
     if (cr.isMaster())
     {
         try 
         {
-            alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
+            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         (void) pd.verifyCheckSum(stderr, forcefieldCheckSum(&pd));
-        if (opt2bSet("-ff2", NFILE, fnm))
+        if (opt2bSet("-ff2", fnm.size(), fnm.data()))
         {
             alexandria::ForceField pd2;
             try
             {
-                alexandria::readForceField(opt2fn("-ff2", NFILE, fnm), &pd2);
+                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             (void) pd2.verifyCheckSum(stderr, forcefieldCheckSum(&pd2));
@@ -869,14 +872,14 @@ int edit_ff(int argc, char*argv[])
         }
         else if (strlen(analyze) > 0)
         {
-            auto dumpfn = opt2fn_null("-dump", NFILE, fnm);
+            auto dumpfn = opt2fn_null("-dump", fnm.size(), fnm.data());
             if (strlen(particle) > 0 && dumpfn)
             {
                 dumpForceField(&pd, analyze, particle, dumpfn);
             }
             else if (plot)
             {
-                plotInteractions(&pd, analyze);
+                plotInteractions(&msghandler, &pd, analyze);
             }
         }
         else if (bondenergy)
@@ -939,7 +942,7 @@ int edit_ff(int argc, char*argv[])
     {
         its[InteractionType::VDW]->removeOption("combination_rule");
     }
-    if (opt2bSet("-o", NFILE, fnm))
+    if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
         if (cr.isParallel())
         {
@@ -948,7 +951,7 @@ int edit_ff(int argc, char*argv[])
             if (cr.isMaster())
             {
             
-                std::string outfile(opt2fn("-o", NFILE, fnm));
+                std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
                 printf("Will send force field to my helpers to write %s\n", outfile.c_str());
                 if (bcast)
                 {
@@ -994,7 +997,7 @@ int edit_ff(int argc, char*argv[])
             {
                 pd.updateTimeStamp();
                 pd.setCheckSum(checkSum);
-                writeForceField(opt2fn("-o", NFILE, fnm), &pd, 0);
+                writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
             }
         }
     }

@@ -896,10 +896,11 @@ static double computeMorse(const TopologyEntryVector             &bonds,
         auto D0         = params[morseD0];
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2        = iprod(dx, dx);
-        auto dr         = std::sqrt(dr2);
+        auto dr         = norm(dx);
         auto expterm    = std::exp(-beta*(dr-bondlength));
-        auto vbond      = De*expterm*(expterm - 2) + D0;
+        auto expterm_1  = 1-expterm;
+        //        auto vbond      = De*expterm*(expterm - 2) + D0;
+        auto vbond      = De*(expterm_1*expterm_1 - 1) + D0;
         auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
         ebond          += vbond;
         if (debug)
