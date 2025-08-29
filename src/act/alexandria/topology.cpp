@@ -1362,6 +1362,8 @@ void Topology::addEntry(InteractionType            itype,
 std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandler,
                                                            int         nrexcl)
 {
+    msghandler->msg(ACTStatus::Debug,
+                    gmx::formatString("Will generate %d exclusions", nrexcl));
     std::vector<std::set<size_t>> exclusions;
     exclusions.resize(atoms_.size());
     // First directly connected shells and vsites
@@ -1466,7 +1468,8 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
         auto tw = msghandler->twDebug();
         for(size_t i = 0; i < atoms_.size(); i++)
         {
-            std::string str = gmx::formatString("%10s %2zu exclusions:",
+            std::string str = gmx::formatString("%-10s  %-10s %2zu exclusions:",
+                                                atoms_[i].name().c_str(),
                                                 actParticleToString(atoms_[i].pType()).c_str(), i);
             for (const auto j : exclusions[i])
             {

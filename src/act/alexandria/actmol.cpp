@@ -749,6 +749,11 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     {
         for(const auto &ee : e_monomer[ff])
         {
+            auto eif = einter->find(ee.first);
+            if (einter->end() == eif)
+            {
+                einter->insert({ee.first, 0.0});
+            }
             einter->find(ee.first)->second -= ee.second;
         }
     }
@@ -807,6 +812,11 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         auto eic = einter->find(itICorr);
         if (einter->end() != eic)
         {
+            auto eif = einter->find(itInduc);
+            if (einter->end() == eif)
+            {
+                einter->insert({itInduc, 0});
+            }
             einter->find(itInduc)->second += eic->second;
             // Erase induction correction term.
             einter->erase(eic);
