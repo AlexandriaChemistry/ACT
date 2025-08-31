@@ -89,7 +89,8 @@ void MolHandler::computeHessian(const ForceField                  *pd,
 {
     const auto &atoms    = mol->atomsConst();
     std::vector<gmx::RVec> fzero(atoms.size());
-    (void) forceComp->compute(pd, mol->topology(), coords, &fzero, energyZero);
+    forceComp->compute(nullptr, pd, mol->topology(), coords,
+                       &fzero, energyZero);
     forceZero->clear();
     for(auto &atom : atomIndex)
     {
@@ -141,7 +142,8 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             {
                 (*coords)[atomI][atomXYZ] = xxx[delta];
                 std::map<InteractionType, double> energies;
-                (void) forceComp->compute(pd, mol->topology(), coords, &forces[delta], &energies);
+                forceComp->compute(nullptr, pd, mol->topology(), coords,
+                                   &forces[delta], &energies);
 
                 if (dpdq)
                 {
@@ -182,7 +184,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             }
         }
     }
-    (void) forceComp->compute(pd, mol->topology(), coords, &fzero, energyZero);
+    forceComp->compute(nullptr, pd, mol->topology(), coords, &fzero, energyZero);
 }
 
 static void computeFrequencies(const std::vector<double> &eigenvalues,
@@ -816,7 +818,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             if (converged)
             {
                 // Final minimization for shells.
-                lbfgs->forceComp()->compute(lbfgs->pd(), lbfgs->mol()->topology(), lbfgs->coordinates(),
+                lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), lbfgs->mol()->topology(),
+                                            lbfgs->coordinates(),
                                             lbfgs->forces(), lbfgs->energies());
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (msghandler->verbose())
@@ -931,8 +934,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         case eMinimizeAlgorithm::Steep:
             {
                 // https://en.wikipedia.org/wiki/Gradient_descent
-                msShellForce = forceComp->compute(pd, mol->topology(), &newCoords[current],
-                                                  &forces[current], &newEnergies[current]);
+                forceComp->compute(msghandler, pd, mol->topology(),
+                                   &newCoords[current],
+                                   &forces[current], &newEnergies[current]);
                 if (!firstStep)
                 {
                     double teller = 0, noemer = 0;
@@ -987,7 +991,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
             
             // Do an energy and force calculation with the new coordinates
-            msShellForce   = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+            forceComp->compute(msghandler, pd, mol->topology(), &newCoords[next],
+                               &forces[next], &newEnergies[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
             double msfNew  = msForce(theAtoms, forces[next]);
             acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
@@ -1000,7 +1005,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     printEnergies(msghandler->tw(), myIter, msfNew, 0, 0, newEnergies[next], gamma);
                 }
                 updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
-                msShellForce    = forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+                forceComp->compute(msghandler, pd, mol->topology(), &newCoords[next],
+                                   &forces[next], &newEnergies[next]);
                 if (msghandler->verbose())
                 {
                     msghandler->write("Trying line minimization, step 2.\n");
@@ -1017,7 +1023,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 {
                     gmin = -gamma*abc[1]/(2*abc[0]);
                     updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gmin, deltaX[current]);
-                    (void) forceComp->compute(pd, mol->topology(), &newCoords[next], &forces[next], &newEnergies[next]);
+                    forceComp->compute(msghandler, pd, mol->topology(), &newCoords[next],
+                                       &forces[next], &newEnergies[next]);
                     double epotGmin = newEnergies[next][InteractionType::EPOT];
                     acceptStep = (epotGmin <= epotMin);
                 }
@@ -1300,7 +1307,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
         }
         // Compute forces and energies
-        forceComp->compute(pd, mol->topology(), &coordinates,
+        forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                            &forces[cur], &energies);
         // Write energies if requested
         if (doPrintEner)

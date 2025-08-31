@@ -278,7 +278,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         if (eInter_)
         {
             std::map<InteractionType, double> energies;
-            forceComp_->compute(pd, actmol->topology(),
+            forceComp_->compute(msghandler, pd, actmol->topology(),
                                 &coords, &forces, &energies);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -315,7 +315,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         }
         else
         {
-            forceComp_->compute(pd, actmol->topology(),
+            forceComp_->compute(msghandler, pd, actmol->topology(),
                                 &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
