@@ -200,7 +200,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
         }
-        if (msg_handler)
+        if (msg_handler && msg_handler->debug())
         {
             if (msForce > msForceToler_)
             {
