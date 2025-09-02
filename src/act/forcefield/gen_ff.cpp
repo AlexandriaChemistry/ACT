@@ -314,7 +314,8 @@ int gen_ff(int argc, char*argv[])
     std::vector<Potential> nbpot     = {
         Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
-        Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b };
+        Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b,
+        Potential::SLATER_ISA_TT };
     std::vector<const char *> vdwfn = { nullptr };
     for(const auto &nbp : nbpot)
     {

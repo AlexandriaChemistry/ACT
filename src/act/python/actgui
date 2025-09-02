@@ -133,7 +133,15 @@ class CreateToolTip(object):
 
 class VdwSel:
     def __init__(self, frame, myrow:int, mycol:int):
-        self.vdws = { 
+        self.vdws = {
+            "SLATER_ISA_TT": 
+            { "A": ( 0, 100000, "kJ/mol" ),
+              "bDisp": ( 5, 50, "1/nm" ),
+              "bExch": ( 5, 50, "1/nm" ),
+              "c6": ( 0, 0.005, "kJ/mol nm6" ), 
+              "c8": ( 0, 0.002, "kJ/mol nm8" ),
+              "c10": ( 0, 0.001, "kJ/mol nm10" ),
+              comment: "Slater-ISA repulsion with Tang-Toennies dispersion\nVan Vleet et al. J. Chem. Theory. Comput. 12 (2016) 3851-3870 and Sheng et al. Phys. Rev. Lett. 125 (2020) 2534 " },
             "TT2b": 
             { "Att2b": ( 0, 100000, "kJ/mol" ),
               "bDisptt2b": ( 5, 50, "1/nm" ),
@@ -752,7 +760,9 @@ class CombRule:
                            "Yang", "MasonGamma" ]
 
         # Default values according to Kriz et al. J. Chem. Theory Comput. 2024, 20, 2362-2376
-        all_params = { "TT2b": { "Att2b": geom, "bExchtt2b": arith, "bDisptt2b": arith,
+        all_params = { "SLATER_ISA_TT": { "A": geom, "bExch": arith, "bDisp": arith,
+                                          "c6": geom, "c8": geom, "c10": geom },
+                       "TT2b": { "Att2b": geom, "bExchtt2b": arith, "bDisptt2b": arith,
                                  "c6tt2b": geom, "c8tt2b": geom, "c10tt2b": geom },
                        "GENERALIZED_BUCKINGHAM": { "rmin": "WaldmanSigma", "epsilon": "HalgrenEpsilon",
                                                    "gamma": "HogervorstSigma", "delta": arith },

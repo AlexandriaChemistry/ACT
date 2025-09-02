@@ -791,6 +791,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 }
                 break;
             case Potential::TT2b:
+            case Potential::SLATER_ISA_TT:
                 // TODO Get better values
                 sigma   = 0.3;
                 epsilon = 0.1;
@@ -1074,6 +1075,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::GENERALIZED_BUCKINGHAM:
                 case Potential::TANG_TOENNIES:
                 case Potential::TT2b:
+                case Potential::SLATER_ISA_TT:
                 case Potential::BORN_MAYER:
                 case Potential::MACDANIEL_SCHMIDT:
                 case Potential::POLARIZATION:

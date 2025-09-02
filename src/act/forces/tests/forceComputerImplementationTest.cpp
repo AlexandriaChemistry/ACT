@@ -387,6 +387,27 @@ TEST_F (ForceComputerImplementationTest, TT2bAll)
     testPot(Potential::TT2b, top, &x);
 }
 
+TEST_F (ForceComputerImplementationTest, SLATER_ISA_TT)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(6, 0.0);
+    params[tt2bA]     = 1000;
+    params[tt2bBexch] = 10;
+    params[tt2bBdisp] = 20;
+    params[tt2bC6]    = 0.001;
+    params[tt2bC8]    = 0.001;
+    params[tt2bC10]   = 0.001;
+    top[0]->setParams(params);
+
+    testPot(Potential::SLATER_ISA_TT, top, &x);
+}
+
 TEST_F (ForceComputerImplementationTest, TANG_TOENNIES)
 {
     std::vector<gmx::RVec> x = {
@@ -422,6 +443,23 @@ TEST_F (ForceComputerImplementationTest, BORN_MAYER)
     top[0]->setParams(params);
 
     testPot(Potential::BORN_MAYER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, SLATER_ISA)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[expA] = 10000;
+    params[expB] = 8;
+    top[0]->setParams(params);
+
+    testPot(Potential::SLATER_ISA, top, &x);
 }
 
 TEST_F (ForceComputerImplementationTest, MACDANIEL_SCHMIDT)
