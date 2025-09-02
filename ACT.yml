@@ -4,7 +4,7 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - Python>=3.8
+  - Python>=3.9
   - conda>=22.11.1
   - Matplotlib
   - pip>=21.0
@@ -15,5 +15,6 @@ dependencies:
   - SWIG>=4.0.2
   - Graphviz
   - openmpi>=5.0.5
+  - pillow>=11.3.0
   - pip:
     - PubChemPy
