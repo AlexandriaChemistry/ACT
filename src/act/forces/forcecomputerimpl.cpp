@@ -557,9 +557,9 @@ static double computeSlater_ISA_TT(const TopologyEntryVector             &pairs,
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routines
-        erep  += lowSlaterISA(b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
-        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[tt2bBdisp],
-                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
+        erep  += lowSlaterISA(b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[SIttBdisp],
+                               { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
