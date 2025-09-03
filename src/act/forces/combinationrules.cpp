@@ -236,6 +236,7 @@ void evalCombinationRule(Potential                                    ftype,
             Potential::BUCKINGHAM == ftype ||
             Potential::TANG_TOENNIES == ftype ||
             Potential::TT2b == ftype ||
+            Potential::SLATER_ISA_TT == ftype ||
             Potential::MORSE_BONDS == ftype)
         {
             if (CombRule::Kronecker == crule)

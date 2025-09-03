@@ -216,6 +216,31 @@ static double computeLJ14_7(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+static double lowBornMayer(const std::vector<int>       &indices,
+                           const std::vector<gmx::RVec> &x,
+                           double                        aexp,
+                           double                        bexp,
+                           std::vector<gmx::RVec>       *forces)
+{
+    // Get the atom indices
+    auto ai         = indices[0];
+    auto aj         = indices[1];
+    rvec dx;
+    rvec_sub(x[ai], x[aj], dx);
+    auto dr2        = iprod(dx, dx);
+    auto rinv       = gmx::invsqrt(dr2);
+
+    auto eeexp  = aexp*std::exp(-bexp*dr2*rinv);
+    if (debug)
+    {
+        fprintf(debug, "lowBornMayer r %g eeexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
+    }
+    real fexp  = bexp*eeexp*rinv;
+    pairforces(fexp, dx, indices, forces);
+
+    return eeexp;
+}
+
 static double computeBornMayer(const TopologyEntryVector             &pairs,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -228,33 +253,65 @@ static double computeBornMayer(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
-        rvec dx;
-        rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
-        real aexp       = params[expA];
-        if (aexp > 0)
-        {
-            real bexp   = params[expB];
-            auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
-            if (debug)
-            {
-                fprintf(debug, "vdwcorr r  %g  eeexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
-            }
-            real fexp  = bexp*eeexp;
-            eexp      += eeexp;
-
-            real fbond  = fexp*rinv;
-            pairforces(fbond, dx, indices, forces);
-        }
+        eexp += lowBornMayer(b->atomIndices(), *coordinates, -params[expA],
+                             params[expB], forces);
     }
     energies->insert({InteractionType::VDWCORRECTION, eexp});
+
+    return eexp;
+}
+
+static double lowSlaterISA(const std::vector<int>       &indices,
+                           const std::vector<gmx::RVec> &x,
+                           double                        aexp,
+                           double                        bexp,
+                           std::vector<gmx::RVec>       *forces)
+{
+    static const double third = 1.0/3.0;
+    // Get the atom indices
+    auto ai         = indices[0];
+    auto aj         = indices[1];
+    rvec dx;
+    rvec_sub(x[ai], x[aj], dx);
+    auto dr2        = iprod(dx, dx);
+    auto rinv       = gmx::invsqrt(dr2);
+    auto dr         = rinv*dr2;
+    // Beyond Born-Mayer: Improved Models for Short-Range Repulsion in ab Initio Force Fields
+    // Mary J. Van Vleet, Alston J. Misquitta, Anthony J. Stone, and J. R. Schmidt
+    // J. Chem. Theory Comput. 12 (2016) 3851-3870
+    real br    = bexp*dr;
+    real Pbr   = (br*br*third + br + 1);
+    real aterm = aexp*std::exp(-br);
+    auto eeexp = aterm*Pbr;
+    if (debug)
+    {
+        fprintf(debug, "SlaterISA r  %g  eeexp %g aexp %g bexp %g aterm %g P(br) %g\n",
+                dr, eeexp, aexp, bexp, aterm, Pbr);
+    }
+    real fexp  = bexp*eeexp - bexp*aterm*(2*br*third + 1);
+    real fbond = fexp*rinv;
+    pairforces(fbond, dx, indices, forces);
+
+    return eeexp;
+}
+
+static double computeSlaterISA(const TopologyEntryVector             &pairs,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
+{
+    double eexp  = 0;
+    auto   x     = *coordinates;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        eexp += lowSlaterISA(b->atomIndices(), *coordinates, params[expA], params[expB], forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, eexp});
 
     return eexp;
 }
@@ -388,15 +445,11 @@ static double computeBuckingham(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
-static void lowTT(const std::vector<int>       &indices,
-                  const std::vector<gmx::RVec> &x,
-                  double                        Att,
-                  double                        bDisp,
-                  double                        bExch,
-                  const std::vector<double>    &ctt,
-                  std::vector<gmx::RVec>       *forces,
-                  double                       *erep,
-                  double                       *edisp)
+static double TT_Dispersion(const std::vector<int>       &indices,
+                            const std::vector<gmx::RVec> &x,
+                            double                        bDisp,
+                            const std::vector<double>    &ctt,
+                            std::vector<gmx::RVec>       *forces)
 {
     static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
     std::vector<double> br(11);
@@ -405,8 +458,6 @@ static void lowTT(const std::vector<int>       &indices,
     auto dr2     = iprod(dx, dx);
     auto rinv1   = gmx::invsqrt(dr2);
     auto rinv2   = rinv1*rinv1;
-    real eerep   = Att*std::exp(-bExch*dr2*rinv1);
-    real frep    = bExch*eerep;
     real bDispr  = bDisp*dr2*rinv1;
     real ebrDisp = std::exp(-bDispr);
     real eedisp  = 0;
@@ -436,15 +487,15 @@ static void lowTT(const std::vector<int>       &indices,
         fdisp  += ctt[m-3]*rinvn*(bDisp*ebrDisp*fk - ebrDisp*dfk);
         rinvn  *= rinv2;
     }
-    *erep     += eerep;
-    *edisp    += eedisp;
     if (debug)
     {
-        fprintf(debug, "lowTT ai %d aj %d dr %g A %g bExch %g bDisp %g c6 %g c8 %g c10 %g erep: %g edisp: %g frep: %g fdisp: %g\n",
-                indices[0], indices[1], 1/rinv1, Att, bExch, bDisp, ctt[0], ctt[1], ctt[2], eerep, eedisp, frep, fdisp);
+        fprintf(debug, "TT_Dispersion ai %d aj %d dr %g bDisp %g c6 %g c8 %g c10 %g edisp: %g fdisp: %g\n",
+                indices[0], indices[1], 1/rinv1, bDisp, ctt[0], ctt[1], ctt[2], eedisp, fdisp);
     }
-    real fbond = (frep+fdisp)*rinv1;
+    real fbond = fdisp*rinv1;
     pairforces(fbond, dx, indices, forces);
+
+    return eedisp;
 }
 
 static double computeTangToennies(const TopologyEntryVector             &pairs,
@@ -459,10 +510,10 @@ static double computeTangToennies(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        // Call low level routine
-        lowTT(b->atomIndices(), *coordinates, params[ttA], params[ttB], params[ttB],
-              { params[ttC6], params[ttC8], params[ttC10] },
-              forces, &erep, &edisp);
+        // Call low level routines
+        erep  += lowBornMayer(b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[ttB],
+                               { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -482,11 +533,33 @@ static double computeTT2b(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        // Call low level routine
-        lowTT(b->atomIndices(), *coordinates, params[tt2bA],
-              params[tt2bBdisp], params[tt2bBexch],
-              { params[tt2bC6], params[tt2bC8], params[tt2bC10] },
-              forces, &erep, &edisp);
+        // Call low level routines
+        erep  += lowBornMayer(b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[tt2bBdisp],
+                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
+}
+
+static double computeSlater_ISA_TT(const TopologyEntryVector             &pairs,
+                                   gmx_unused const std::vector<ActAtom> &atoms,
+                                   const std::vector<gmx::RVec>          *coordinates,
+                                   std::vector<gmx::RVec>                *forces,
+                                   std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Call low level routines
+        erep  += lowSlaterISA(b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[tt2bBdisp],
+                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -1416,8 +1489,10 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::TANG_TOENNIES,          computeTangToennies    },
     { Potential::TT2b,                   computeTT2b            },
+    { Potential::SLATER_ISA_TT,          computeSlater_ISA_TT   },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
     { Potential::BORN_MAYER,             computeBornMayer       },
+    { Potential::SLATER_ISA,             computeSlaterISA       },
     { Potential::MACDANIEL_SCHMIDT,      computeDoubleExponential },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },

@@ -47,6 +47,8 @@ namespace alexandria
 
     enum { ttA, ttB, ttC6, ttC8, ttC10, ttNR };
 
+    enum { SIttA, SIttBexch, SIttBdisp, SIttC6, SIttC8, SIttC10, SIttNR };
+
     enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bNR };
 
     enum { lj14_7SIGMA, lj14_7EPSILON, lj14_7GAMMA, lj14_7DELTA,
