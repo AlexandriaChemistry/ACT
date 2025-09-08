@@ -556,7 +556,7 @@ class AtomTypes:
                 if line.startswith("#"):
                     continue
                 words = line.strip().split("|")
-                if len(words) == 11:
+                if len(words) == 13:
                     try:
                         self.atype_props[words[0]] = {
                             "Element": words[1],
@@ -568,7 +568,9 @@ class AtomTypes:
                             "Charge": int(words[7]),
                             VSite: int(words[8]),
                             Shell: int(words[9]),
-                            comment: words[10] }
+                            "qmin": float(words[10]),
+                            "qmax": float(words[11]),
+                            comment: words[12] }
                     except ValueError:
                         sys.exit(f"Error in file {atype_gui} on line {lineno}")
 
@@ -1155,7 +1157,9 @@ class FFGenerator:
                         qmax = -1
                         setParam(atype_name, "", "q", -atomNR, qmax, Bounded, "e", False)
                 else:
-                    setParam(atype_name, "", "q", 0, 0, "ACM", "e", False)
+                    qmin = atype_props[atp]["qmin"]
+                    qmax = atype_props[atp]["qmax"]
+                    setParam(atype_name, "", "q", qmin, qmax, "ACM", "e", False)
 
                 if qdist == Point or (vdwtp == Atom and haveVS1):
                     setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
