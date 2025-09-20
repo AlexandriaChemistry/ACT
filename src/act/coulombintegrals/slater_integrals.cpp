@@ -34,11 +34,27 @@
 #include <iostream>
 
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "slater_integrals.h"
 #include "slater_low.h"
 
 #if HAVE_LIBCLN
+
+// Ugly utility function
+static const char *my_ftoa(double d)
+{
+    static std::string buf;
+
+    buf = gmx::formatString("%f", d);
+    if (buf.find('.') == std::string::npos)
+    {
+        buf += ".0";
+    }
+    buf += "_80";
+
+    return buf.c_str();
+}
 
 cl_R Nuclear_1S(cl_R r, cl_R xi)
 {
@@ -282,18 +298,6 @@ t_slater_NS_func (*DSlater_NS[SLATER_MAX_CLN]) = {
 };
 #endif
 
-static char *my_ftoa(double d)
-{
-    static char buf[256];
-    sprintf(buf, "%f", d);
-    if (strchr(buf, '.') == nullptr)
-    {
-        strcat(buf, ".0");
-    }
-    strcat(buf, "_80");
-    return buf;
-}
-
 #else
 /* NOT HAVE_LIBCLN */
 
@@ -418,16 +422,13 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
         j = SLATER_MAX;
     }   
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
+    cl_R  cr(my_ftoa(r)), cxi(my_ftoa(xi)), cxj(my_ftoa(xj)), cS;
 
-    cxi = my_ftoa(xi);
-    cxj = my_ftoa(xj);
-    cr  = my_ftoa(r);
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && xi > 0 && xj > 0)
     {
         cS = Slater_SS[i-1][j-1](cr, cxi, cxj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -438,7 +439,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
             cS = Slater_NS[j-1](cr, cxj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {
@@ -465,11 +466,11 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
 #else
     /* NOT HAVE_LIBCLN */    
     double S = 0;
-    if ((i > 0) && (j > 0))
+    if ((i > 0) && (j > 0) && (xi > 0) && (xj > 0))
     {
         S = Slater_SS[i-1][j-1](r, xi, xj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -480,7 +481,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
             S = Slater_NS[j-1](r, xj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {
@@ -509,8 +510,6 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
 double Nuclear_SS(double r, int i, double xi)
 {
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
-
     i = std::min(i, SLATER_MAX);
     if (xi == 0)
     {
@@ -533,8 +532,8 @@ double Nuclear_SS(double r, int i, double xi)
     }
     else
     {
-        cxi = my_ftoa(xi);
-        cr  = my_ftoa(r);
+        cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cS;
+
         cS  = Slater_NS[i-1](cr, cxi);
         return double_approx(cS);
     }
@@ -582,16 +581,13 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         j = SLATER_MAX;
     }   
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
+    cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cxj(my_ftoa(xj)), cS;
 
-    cxi = my_ftoa(xi);
-    cxj = my_ftoa(xj);
-    cr  = my_ftoa(r);
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && cxi > 0 && cxj > 0)
     {
         cS = DSlater_SS[i-1][j-1](cr, cxi, cxj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -602,7 +598,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
             cS = DSlater_NS[j-1](cr, cxj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {
@@ -627,11 +623,11 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     return -double_approx(cS);
 #else
     double S = 0;    
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && xi > 0 && xj > 0)
     {
         S = DSlater_SS[i-1][j-1](r, xi, xj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -642,7 +638,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
             S = DSlater_NS[j-1](r, xj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {
@@ -676,8 +672,6 @@ double DNuclear_SS(double r, int i, double xi)
         i = SLATER_MAX;
     }      
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
-
     if (r == 0)
     {
         return 0;
@@ -686,12 +680,12 @@ double DNuclear_SS(double r, int i, double xi)
     {
         if ((xi == 0) || (i <= 0))
         {
-            return 1/(r*r);
+            return -1/(r*r);
         }
         else
         {
-            cxi = my_ftoa(xi);
-            cr  = my_ftoa(r);
+            cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cS;
+
             cS  = DSlater_NS[i-1](cr, cxi);
             return -double_approx(cS);
         }

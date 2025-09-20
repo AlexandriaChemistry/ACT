@@ -73,10 +73,11 @@ protected:
     {
         gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
         checker_.setDefaultTolerance(tolerance);
+        std::vector<double> q = { 1, 1, -1, -2 };
         for (int i = 0; i < 4; i++)
         {
             // Note the row value must be <= 2 in order to work for Slaters
-            atoms_.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, 1, 2 });
+            atoms_.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, q[i], 2 });
         }
     }
 
@@ -274,6 +275,41 @@ TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN)
     testPot(Potential::COULOMB_GAUSSIAN, top, &x);
 }
 
+TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_GAUSSIAN, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN_ZERO)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.0 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_GAUSSIAN, top, &x);
+}
+
 TEST_F (ForceComputerImplementationTest, COULOMB_SLATER)
 {
     std::vector<gmx::RVec> x = {
@@ -283,6 +319,147 @@ TEST_F (ForceComputerImplementationTest, COULOMB_SLATER)
     // Generate topology info
     TopologyEntryVector top{};
     top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 0;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 0;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_CLOSE)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.2 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_CLOSE_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.2 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZERO)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZERO_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0    },
+        { 0, 0, 0.5  }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 10;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_NEG2)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0    },
+        { 0, 0, 0.5  }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-2);
     std::vector<double> params(2);
     params[coulZETA]  = 10;
     params[coulZETA2] = 6;

@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Int64 Name="irow">1</Int64>
-  <Int64 Name="jrow">3</Int64>
   <Real Name="izeta">0</Real>
   <Real Name="jzeta">0</Real>
-  <Sequence Name="Potential-Slater">
+  <Sequence Name="Potential-Gaussian">
     <Int Name="Length">51</Int>
     <Real>0</Real>
     <Real>500</Real>
@@ -59,61 +57,61 @@
     <Real>10.204081632653061</Real>
     <Real>10</Real>
   </Sequence>
-  <Sequence Name="Force-Slater">
+  <Sequence Name="Force-Gaussian">
     <Int Name="Length">51</Int>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>-62500</Real>
-    <Real>-27777.777777777777</Real>
-    <Real>-15625</Real>
-    <Real>-10000</Real>
-    <Real>-6944.4444444444443</Real>
-    <Real>-5102.0408163265301</Real>
-    <Real>-3906.25</Real>
-    <Real>-3086.419753086419</Real>
-    <Real>-2500</Real>
-    <Real>-2066.1157024793392</Real>
-    <Real>-1736.1111111111111</Real>
-    <Real>-1479.289940828402</Real>
-    <Real>-1275.5102040816325</Real>
-    <Real>-1111.1111111111111</Real>
-    <Real>-976.5625</Real>
-    <Real>-865.05190311418676</Real>
-    <Real>-771.60493827160474</Real>
-    <Real>-692.52077562326872</Real>
-    <Real>-625</Real>
-    <Real>-566.89342403628109</Real>
-    <Real>-516.52892561983481</Real>
-    <Real>-472.5897920604915</Real>
-    <Real>-434.02777777777777</Real>
-    <Real>-399.99999999999994</Real>
-    <Real>-369.8224852071005</Real>
-    <Real>-342.93552812071334</Real>
-    <Real>-318.87755102040813</Real>
-    <Real>-297.26516052318664</Real>
-    <Real>-277.77777777777777</Real>
-    <Real>-260.14568158168578</Real>
-    <Real>-244.140625</Real>
-    <Real>-229.56841138659317</Real>
-    <Real>-216.26297577854669</Real>
-    <Real>-204.08163265306121</Real>
-    <Real>-192.90123456790118</Real>
-    <Real>-182.61504747991236</Real>
-    <Real>-173.13019390581718</Real>
-    <Real>-164.3655489809336</Real>
-    <Real>-156.25</Real>
-    <Real>-148.72099940511598</Real>
-    <Real>-141.72335600907027</Real>
-    <Real>-135.20822065981608</Real>
-    <Real>-129.1322314049587</Real>
-    <Real>-123.4567901234568</Real>
-    <Real>-118.14744801512288</Real>
-    <Real>-113.17338162064283</Real>
-    <Real>-108.50694444444444</Real>
-    <Real>-104.12328196584755</Real>
-    <Real>-99.999999999999986</Real>
+    <Real>62500</Real>
+    <Real>27777.777777777777</Real>
+    <Real>15625</Real>
+    <Real>10000</Real>
+    <Real>6944.4444444444443</Real>
+    <Real>5102.0408163265301</Real>
+    <Real>3906.25</Real>
+    <Real>3086.419753086419</Real>
+    <Real>2500</Real>
+    <Real>2066.1157024793392</Real>
+    <Real>1736.1111111111111</Real>
+    <Real>1479.289940828402</Real>
+    <Real>1275.5102040816325</Real>
+    <Real>1111.1111111111111</Real>
+    <Real>976.5625</Real>
+    <Real>865.05190311418676</Real>
+    <Real>771.60493827160474</Real>
+    <Real>692.52077562326872</Real>
+    <Real>625</Real>
+    <Real>566.89342403628109</Real>
+    <Real>516.52892561983481</Real>
+    <Real>472.5897920604915</Real>
+    <Real>434.02777777777777</Real>
+    <Real>399.99999999999994</Real>
+    <Real>369.8224852071005</Real>
+    <Real>342.93552812071334</Real>
+    <Real>318.87755102040813</Real>
+    <Real>297.26516052318664</Real>
+    <Real>277.77777777777777</Real>
+    <Real>260.14568158168578</Real>
+    <Real>244.140625</Real>
+    <Real>229.56841138659317</Real>
+    <Real>216.26297577854669</Real>
+    <Real>204.08163265306121</Real>
+    <Real>192.90123456790118</Real>
+    <Real>182.61504747991236</Real>
+    <Real>173.13019390581718</Real>
+    <Real>164.3655489809336</Real>
+    <Real>156.25</Real>
+    <Real>148.72099940511598</Real>
+    <Real>141.72335600907027</Real>
+    <Real>135.20822065981608</Real>
+    <Real>129.1322314049587</Real>
+    <Real>123.4567901234568</Real>
+    <Real>118.14744801512288</Real>
+    <Real>113.17338162064283</Real>
+    <Real>108.50694444444444</Real>
+    <Real>104.12328196584755</Real>
+    <Real>99.999999999999986</Real>
   </Sequence>
-  <Sequence Name="NuclearPotential-Slater">
+  <Sequence Name="NuclearPotential-Gaussian">
     <Int Name="Length">51</Int>
     <Real>0</Real>
     <Real>500</Real>
@@ -167,7 +165,7 @@
     <Real>10.204081632653061</Real>
     <Real>10</Real>
   </Sequence>
-  <Sequence Name="NuclearForce-Slater">
+  <Sequence Name="NuclearForce-Gaussian">
     <Int Name="Length">51</Int>
     <Real>0</Real>
     <Real>0</Real>
