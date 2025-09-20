@@ -41,6 +41,21 @@
 
 #if HAVE_LIBCLN
 
+// Ugly utility function
+static const char *my_ftoa(double d)
+{
+    static std::string buf;
+
+    buf = gmx::formatString("%f", d);
+    if (buf.find('.') == std::string::npos)
+    {
+        buf += ".0";
+    }
+    buf += "_80";
+
+    return buf.c_str();
+}
+
 cl_R Nuclear_1S(cl_R r, cl_R xi)
 {
     cl_R S = ZERO;
@@ -392,20 +407,6 @@ t_slater_NS_func *DSlater_NS[SLATER_MAX] = {
 #endif
 /* HAVE_LIBCLN */
 
-static const char *my_ftoa(double d)
-{
-    static std::string buf;
-
-    buf = gmx::formatString("%f", d);
-    if (buf.find('.') == std::string::npos)
-    {
-        buf += ".0";
-    }
-    buf += "_80";
-
-    return buf.c_str();
-}
-
 double Coulomb_SS(double r, int i, int j, double xi, double xj)
 {
     if ((i > SLATER_MAX) || (j > SLATER_MAX))
@@ -509,8 +510,6 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
 double Nuclear_SS(double r, int i, double xi)
 {
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
-
     i = std::min(i, SLATER_MAX);
     if (xi == 0)
     {
@@ -533,8 +532,8 @@ double Nuclear_SS(double r, int i, double xi)
     }
     else
     {
-        cxi = my_ftoa(xi);
-        cr  = my_ftoa(r);
+        cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cS;
+
         cS  = Slater_NS[i-1](cr, cxi);
         return double_approx(cS);
     }
@@ -582,11 +581,8 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         j = SLATER_MAX;
     }   
 #if HAVE_LIBCLN
-    cl_R cr, cxi, cxj, cS;
+    cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cxj(my_ftoa(xj)), cS;
 
-    cxi = my_ftoa(xi);
-    cxj = my_ftoa(xj);
-    cr  = my_ftoa(r);
     if (i > 0 && j > 0 && cxi > 0 && cxj > 0)
     {
         cS = DSlater_SS[i-1][j-1](cr, cxi, cxj);
@@ -676,9 +672,6 @@ double DNuclear_SS(double r, int i, double xi)
         i = SLATER_MAX;
     }      
 #if HAVE_LIBCLN
-    std::string cr, cxi;
-    cl_R        cS;
-
     if (r == 0)
     {
         return 0;
@@ -691,9 +684,9 @@ double DNuclear_SS(double r, int i, double xi)
         }
         else
         {
-            cxi = my_ftoa(xi);
-            cr  = my_ftoa(r);
-            cS  = DSlater_NS[i-1](cr.c_str(), cxi.c_str());
+            cl_R cr(my_ftoa(r)), cxi(my_ftoa(xi)), cS;
+
+            cS  = DSlater_NS[i-1](cr, cxi);
             return -double_approx(cS);
         }
     }
