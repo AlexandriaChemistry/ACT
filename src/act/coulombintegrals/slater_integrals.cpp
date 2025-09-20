@@ -427,7 +427,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
     {
         cS = Slater_SS[i-1][j-1](cr, cxi, cxj);
     }
-    else if (j > 0)
+    else if (j > 0 && cxj > 0)
     {
         if (r == 0)
         {
@@ -438,7 +438,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
             cS = Slater_NS[j-1](cr, cxj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && cxi > 0)
     {
         if (r == 0)
         {
@@ -469,7 +469,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
     {
         S = Slater_SS[i-1][j-1](r, xi, xj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -480,7 +480,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
             S = Slater_NS[j-1](r, xj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {
@@ -591,7 +591,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     {
         cS = DSlater_SS[i-1][j-1](cr, cxi, cxj);
     }
-    else if (j > 0)
+    else if (j > 0 && cxj > 0)
     {
         if (r == 0)
         {
@@ -602,7 +602,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
             cS = DSlater_NS[j-1](cr, cxj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && cxi > 0)
     {
         if (r == 0)
         {
@@ -631,7 +631,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     {
         S = DSlater_SS[i-1][j-1](r, xi, xj);
     }
-    else if (j > 0)
+    else if (j > 0 && xj > 0)
     {
         if (r == 0)
         {
@@ -642,7 +642,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
             S = DSlater_NS[j-1](r, xj);
         }
     }
-    else if (i > 0)
+    else if (i > 0 && xi > 0)
     {
         if (r == 0)
         {

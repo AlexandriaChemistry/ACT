@@ -259,6 +259,18 @@ TEST (SlaterSS, rzero_xizero)
     }
 }
 
+TEST (SlaterSS, rnonzero_xixjzero)
+{
+    double toler = 1e-8;
+    for (int r = 1; r <= 10; r++)
+    {
+        double nn = Coulomb_SS(0.1*r, 1, 1, 0, 0);
+        double analytical = 10.0/r;
+        printf("nn %g analytical %g\n", nn, analytical);
+        EXPECT_TRUE(std::abs(nn - analytical) < toler);
+    }
+}
+
 TEST (SlaterNN, rnonzero)
 {
     double toler = 1e-5;
