@@ -99,12 +99,14 @@ void testCoulomb(alexandria::ChargeType           cd,
                  double                           jzeta,
                  gmx::test::TestReferenceChecker *checker)
 {
-    int np = 50;
+    int np = 51;
     std::vector<double> coulomb(np);
     std::vector<double> force(np);
     std::vector<double> ncoulomb(np);
     std::vector<double> nforce(np);
     double dx = 0.002;
+    if (false)
+    {
     if (izeta == 0)
     {
         irow = 0;
@@ -112,6 +114,7 @@ void testCoulomb(alexandria::ChargeType           cd,
     if (jzeta == 0)
     {
         jrow = 0;
+    }
     }
     for(int i = 0; i <= np-1; i++)
     {
