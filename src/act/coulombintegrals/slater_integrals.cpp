@@ -423,7 +423,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && cxi > 0 && cxj > 0)
     {
         cS = Slater_SS[i-1][j-1](cr, cxi, cxj);
     }
@@ -465,7 +465,7 @@ double Coulomb_SS(double r, int i, int j, double xi, double xj)
 #else
     /* NOT HAVE_LIBCLN */    
     double S = 0;
-    if ((i > 0) && (j > 0))
+    if ((i > 0) && (j > 0) && (xi > 0) && (xj > 0))
     {
         S = Slater_SS[i-1][j-1](r, xi, xj);
     }
@@ -587,7 +587,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     cxi = my_ftoa(xi);
     cxj = my_ftoa(xj);
     cr  = my_ftoa(r);
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && cxi > 0 && cxj > 0)
     {
         cS = DSlater_SS[i-1][j-1](cr, cxi, cxj);
     }
@@ -627,7 +627,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
     return -double_approx(cS);
 #else
     double S = 0;    
-    if ((i > 0) && (j > 0))
+    if (i > 0 && j > 0 && xi > 0 && xj > 0)
     {
         S = DSlater_SS[i-1][j-1](r, xi, xj);
     }
@@ -686,7 +686,7 @@ double DNuclear_SS(double r, int i, double xi)
     {
         if ((xi == 0) || (i <= 0))
         {
-            return 1/(r*r);
+            return -1/(r*r);
         }
         else
         {

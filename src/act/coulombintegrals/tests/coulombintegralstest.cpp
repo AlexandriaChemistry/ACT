@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -99,28 +99,61 @@ void testCoulomb(alexandria::ChargeType           cd,
                  double                           jzeta,
                  gmx::test::TestReferenceChecker *checker)
 {
-    std::vector<double> coulomb;
-    std::vector<double> force;
-    std::vector<double> ncoulomb;
-    std::vector<double> nforce;
+    int np = 50;
+    std::vector<double> coulomb(np);
+    std::vector<double> force(np);
+    std::vector<double> ncoulomb(np);
+    std::vector<double> nforce(np);
     double dx = 0.002;
-    for(int i = 0; i <= 50; i++)
+    if (izeta == 0)
+    {
+        irow = 0;
+    }
+    if (jzeta == 0)
+    {
+        jrow = 0;
+    }
+    for(int i = 0; i <= np-1; i++)
     {
         double r = dx*i;
         
         switch (cd)
         {
         case alexandria::ChargeType::Gaussian:
-            coulomb.push_back(Coulomb_GG(r,  izeta, jzeta));
-            force.push_back(-DCoulomb_GG(r,  izeta, jzeta));
-            ncoulomb.push_back(Nuclear_GG(r, izeta));
-            nforce.push_back(-DNuclear_GG(r, izeta));
+            if (izeta > 0 || jzeta > 0 || i > 0)
+            {
+                coulomb[i] = Coulomb_GG(r,  izeta, jzeta);
+            }
+            if (izeta > 0 || jzeta > 0 || i > 1)
+            {
+                force[i]   = -DCoulomb_GG(r,  izeta, jzeta);
+            }
+            if (izeta > 0 || i > 0)
+            {
+                ncoulomb[i] = Nuclear_GG(r, izeta);
+            }
+            if (izeta > 0 || i > 1)
+            {
+                nforce[i]   = -DNuclear_GG(r, izeta);
+            }
             break;
         case alexandria::ChargeType::Slater:
-            coulomb.push_back(Coulomb_SS(r,  irow, jrow, izeta, jzeta));
-            force.push_back(-DCoulomb_SS(r,  irow, jrow, izeta, jzeta));
-            ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
-            nforce.push_back(-DNuclear_SS(r, irow, izeta));
+            if (izeta > 0 || jzeta > 0 || i > 0)
+            {
+                coulomb[i] = Coulomb_SS(r,  irow, jrow, izeta, jzeta);
+            }
+            if (izeta > 0 || jzeta > 0 || i > 1)
+            {
+                force[i]   = -DCoulomb_SS(r,  irow, jrow, izeta, jzeta);
+            }
+            if (izeta > 0 || i > 0)
+            {
+                ncoulomb[i] = Nuclear_SS(r, irow, izeta);
+            }
+            if (izeta > 0 || i > 1)
+            {
+                nforce[i]   = -DNuclear_SS(r, irow, izeta);
+            }
             break;
         case alexandria::ChargeType::Point:
             break;
@@ -196,6 +229,62 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
 
 };
 
+TEST (SlaterNN, rzero)
+{
+    double toler = 1e-8;
+    std::vector<double> zeta = { 1, 2, 3, 4, 5 };
+    for (const auto z : zeta)
+    {
+        for (int i : { 1, 2, 3 } )
+        {
+            double nn = Nuclear_SS(0, i, z);
+            double analytical = z/i;
+            EXPECT_TRUE(std::abs(nn - analytical) < toler);
+        }
+    }
+}
+
+TEST (SlaterSS, rzero_xizero)
+{
+    double toler = 1e-8;
+    std::vector<double> zeta = { 1, 2, 3, 4, 5 };
+    for (const auto z : zeta)
+    {
+        for (int i : { 1, 2, 3 } )
+        {
+            double nn = Coulomb_SS(0, i, i, 0, z);
+            double analytical = z/i;
+            printf("nn %g analytical %g\n", nn, analytical);
+            EXPECT_TRUE(std::abs(nn - analytical) < toler);
+        }
+    }
+}
+
+TEST (SlaterNN, rnonzero)
+{
+    double toler = 1e-5;
+    typedef struct {
+        int    n;
+        double r, z, math;
+    } nrzmath;
+    // Analytical results from Mathematica
+    std::vector<nrzmath> nrzm = 
+        { { 1, 0.1, 5, 4.48181 },
+          { 1, 0.2, 5, 3.64665 },
+          { 1, 0.1, 3, 2.86545 },
+          { 1, 0.2, 3, 2.59045 },
+          { 2, 0.1, 5, 2.48913 },
+          { 2, 0.2, 5, 2.40607 },
+          { 2, 0.1, 3, 1.49891 },
+          { 2, 0.2, 3, 1.48808 }
+        };
+    for (const auto rz : nrzm)
+    {
+        double nn = Nuclear_SS(rz.r, rz.n, rz.z);
+        EXPECT_TRUE(std::abs(nn - rz.math) < toler);
+    }
+}
+
 TEST_P (GaussianTest, All)
 {
     runTest();
@@ -234,7 +323,9 @@ const std::vector<std::tuple<double, double> > make_xi()
         { 15.8,  16.0  },
         {  6.1,   6.6  },
         { 22.3,  22.4  },
-        { 34.6,  34.5  }
+        { 34.6,  34.5  },
+        {  0.0,   5.0  },
+        {  0.0,   0.0  }
     };
 };
 

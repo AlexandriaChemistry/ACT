@@ -327,6 +327,41 @@ TEST_F (ForceComputerImplementationTest, COULOMB_SLATER)
     testPot(Potential::COULOMB_SLATER, top, &x);
 }
 
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(2);
+    params[coulZETA]  = 0;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0_NEG)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    atoms_[1].setCharge(-1);
+    std::vector<double> params(2);
+    params[coulZETA]  = 0;
+    params[coulZETA2] = 6;
+    top[0]->setParams(params);
+
+    testPot(Potential::COULOMB_SLATER, top, &x);
+}
+
 TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_CLOSE)
 {
     std::vector<gmx::RVec> x = {

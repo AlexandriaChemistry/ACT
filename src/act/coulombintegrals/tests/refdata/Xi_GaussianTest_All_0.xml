@@ -4,7 +4,7 @@
   <Real Name="izeta">5.5999999999999996</Real>
   <Real Name="jzeta">5.7000000000000002</Real>
   <Sequence Name="Potential-Gaussian">
-    <Int Name="Length">51</Int>
+    <Int Name="Length">50</Int>
     <Real>4.5075182233285505</Real>
     <Real>4.5074223201999217</Real>
     <Real>4.507134632850172</Real>
@@ -55,10 +55,9 @@
     <Real>4.3043328244262211</Real>
     <Real>4.2959701792122607</Real>
     <Real>4.2874622847536026</Real>
-    <Real>4.278810926184442</Real>
   </Sequence>
   <Sequence Name="Force-Gaussian">
-    <Int Name="Length">51</Int>
+    <Int Name="Length">50</Int>
     <Real>-0</Real>
     <Real>0.095901292200349195</Real>
     <Real>0.19178054910124137</Real>
@@ -109,10 +108,9 @@
     <Real>4.1447157303182465</Real>
     <Real>4.2177826998306811</Real>
     <Real>4.289962991506405</Real>
-    <Real>4.3612448881994954</Real>
   </Sequence>
   <Sequence Name="NuclearPotential-Gaussian">
-    <Int Name="Length">51</Int>
+    <Int Name="Length">50</Int>
     <Real>6.31892333573487</Real>
     <Real>6.3186591304297766</Real>
     <Real>6.3178666338120575</Real>
@@ -163,10 +161,9 @@
     <Real>5.7807541899645516</Real>
     <Real>5.7595155172545054</Real>
     <Real>5.7379806340798831</Real>
-    <Real>5.716157638237684</Real>
   </Sequence>
   <Sequence Name="NuclearForce-Gaussian">
-    <Int Name="Length">51</Int>
+    <Int Name="Length">50</Int>
     <Real>-0</Real>
     <Real>0.26419536273990624</Real>
     <Real>0.52827143682330902</Real>
@@ -217,6 +214,5 @@
     <Real>10.543940030376685</Real>
     <Real>10.694061861864139</Real>
     <Real>10.840146447350753</Real>
-    <Real>10.982170971722995</Real>
   </Sequence>
 </ReferenceData>
