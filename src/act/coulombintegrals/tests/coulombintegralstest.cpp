@@ -254,7 +254,6 @@ TEST (SlaterSS, rzero_xizero)
         {
             double nn = Coulomb_SS(0, i, i, 0, z);
             double analytical = z/i;
-            printf("nn %g analytical %g\n", nn, analytical);
             EXPECT_TRUE(std::abs(nn - analytical) < toler);
         }
     }
