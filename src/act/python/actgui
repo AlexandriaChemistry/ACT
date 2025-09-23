@@ -1016,7 +1016,7 @@ class FFGenerator:
         if needVS1 or (self.opt_vsites and len(self.opt_vsites) > 0):
             # Yes!
             if self.saveIntermediates.get():
-                # Let user decide what file to save atomtypes in
+                # Let user decide what file to save vsites in
                 self.vsite_file = saveasfile("File to save vsite definitions", ".csv")
                 if self.vsite_file:
                     self.vs1f = open(self.vsite_file, "w")
@@ -1115,6 +1115,11 @@ class FFGenerator:
                     continue
                 atype_name = atp
                 element = atype_props[atp]['Element']
+                # If this is a real atom with bonds, we need to append _b to the name
+                # to make it a bondtype.
+                btype = atype_name
+                if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
+                    btype = atype_name + "_b"
 
                 if vdwtp == Shell:
                     atype_name = atp + "_s"
@@ -1122,11 +1127,12 @@ class FFGenerator:
                 elif vdwtp == VSite:
                     atype_name = "v1" + atp
                     element = "VS"
+                    # See above
+                    btype    = atype_name
                     vs1btype = atp
+                    if atype_props[atp]["Bonds"] > 0:
+                        vs1btype += "_b"
                     self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
-                btype = atype_name
-                if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
-                    btype = atype_name + "_b"
                 radius  = ""
                 row     = 0
                 ztype   = atype_name + "_z"
