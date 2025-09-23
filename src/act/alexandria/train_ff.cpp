@@ -92,7 +92,8 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
         pargs->push_back(pa[i]);
     }
     std::vector<t_filenm> filenames = {
-        { efXML, "-o",     "train_ff", ffWRITE },
+        { efXML, "-o",     "ff_train", ffWRITE },
+        { efXML, "-otest", "ff_test",  ffWRITE },
         { efCSV, "-gpin",  "genepool", ffOPTRD },
         { efCSV, "-gpout", "genepool", ffWRITE }
     };
@@ -128,8 +129,9 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     // Set output file for FF parameters
     if (commRec_.isMaster())
     {
-        baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
-        sii_->setOutputFile(baseOutputFileName_);
+        outputFileName_.insert({iMolSelect::Train, opt2fn("-o", filenames.size(), filenames.data())});
+        outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
+        sii_->setOutputFile(outputFileName_[iMolSelect::Train]);
     }
 }
 
@@ -560,17 +562,20 @@ bool OptACM::runMaster(bool        optimize,
             }
         }
         // Save force field of best individual(s)
-        for (const auto &pair : bestGenome)
         {
             std::set<int> changed;
-            sii_->updateForceField(changed, pair.second.bases());
-            auto myfilenm = gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_;
-            tw->writeStringFormatted("Will save best force field to %s\n", myfilenm.c_str());
-            sii_->saveState(true, myfilenm);
+            for (const auto &pair : bestGenome)
+            {
+                sii_->updateForceField(changed, pair.second.bases());
+                auto myfilenm = outputFileName_[pair.first];
+                tw->writeStringFormatted("Will save best %s force field to %s\n",
+                                         iMolSelectName(pair.first),
+                                         myfilenm.c_str());
+                sii_->saveState(true, myfilenm);
+            }
+            // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
+            sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
         }
-        // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
-        std::set<int> changed;
-        sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
     }
     else if (optimize)
     {

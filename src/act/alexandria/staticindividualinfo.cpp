@@ -174,15 +174,7 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
 {
-    pd_.updateTimeStamp();
-    if (updateCheckSum)
-    {
-        pd_.updateCheckSum();
-    }
-    if (!outputFile_.empty())
-    {
-        writeForceField(outputFile_, &pd_, false);
-    }
+    saveState(updateCheckSum, outputFile_);
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum, const std::string &fname)

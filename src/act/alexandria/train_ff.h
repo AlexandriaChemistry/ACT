@@ -90,8 +90,8 @@ private:
     GAConfigHandler       gach_;
     //! StaticIndividualInfo instance
     StaticIndividualInfo *sii_;
-    //! Base name for FF output
-    std::string           baseOutputFileName_;
+    //! Base names for FF output
+    std::map<iMolSelect, std::string> outputFileName_;
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
