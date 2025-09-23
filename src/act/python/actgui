@@ -1128,7 +1128,8 @@ class FFGenerator:
                     atype_name = "v1" + atp
                     element = "VS"
                     # See above
-                    vs1btype = btype
+                    btype    = atype_name
+                    vs1btype = atp
                     if atype_props[atp]["Bonds"] > 0:
                         vs1btype += "_b"
                     self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
