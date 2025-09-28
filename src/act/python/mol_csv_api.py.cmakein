@@ -205,7 +205,8 @@ class Molecule:
             sys.exit("Version %d not supported" % version)
 
         if (len(row) < 22):
-            sys.exit("row[0] %s invalid input" % ( row[0] ))
+            print("row[0] %s invalid input" % ( row[0] ))
+            return None
         if self.alexandria <= 0:
             self.alexandria = int(row[0])
         self.parentid        = int(row[1])
@@ -519,8 +520,8 @@ class Molecules:
         for row in rows:
             # Default mol_id = 0 means read from file.
             mol = Molecule(0)
-            mol.from_row(row, version)
-            self.add_molecule(mol)
+            if None == mol.from_row(row, version):
+                self.add_molecule(mol)
 
         self.make_name_dict()
         self.make_class_dict()
