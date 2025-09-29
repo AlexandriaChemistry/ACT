@@ -298,7 +298,8 @@ private:
     // Mapping from InteractionType to xml branch
     std::map<InteractionType, xmlNodePtr> xmlMap_;
     
-    void addXmlElemMass(xmlNodePtr parent,
+    void addXmlElemMass(xmlNodePtr          parent,
+                        const ForceField   *pd,
                         const ParticleType *aType);
     
     void addXmlResidueBonds(xmlNodePtr           residuePtr,
@@ -357,15 +358,18 @@ public:
      * \param[in] pd       The ACT force field
      * \param[in] actmols  The ACT molecules
      */
-    void writeXml(MsgHandler                      *msghandler,
+    void writeXml(MsgHandler                *msghandler,
                   const std::string         &fileName,
                   const ForceField          *pd,
                   const std::vector<ACTMol> &actmols);
 
 };
 
-void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
+void OpenMMWriter::addXmlElemMass(xmlNodePtr          parent,
+                                  const ForceField   *pd,
+                                  const ParticleType *aType)
 {
+    std::string poltype("poltype");
     switch (aType->apType())
     {
     case ActParticle::Atom:
@@ -373,15 +377,31 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr parent, const ParticleType *aType)
             add_xml_char(parent, exml_names(xmlEntryOpenMM::ELEMENT),
                          aType->element().c_str());
             double mAtom = aType->mass();
-            if (aType->hasOption("poltype"))
+            if (aType->hasOption(poltype))
             {
-                mAtom -= mDrude_;
+                // Will throw if the drude particle does not exist
+                auto drude = pd->findParticleType(aType->optionValue(poltype));
+                // If drude has a mass in the input, add it to the atom,
+                // then subtract mDrude from it, but only if it was specified
+                // on the command line.
+                if (mDrude_ > 0)
+                {
+                    mAtom = mAtom + drude->mass() - mDrude_;
+                }
             }
             add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mAtom);
         }
         break;
     case ActParticle::Shell:
-        add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
+        // All drudes get the same mass if specified on the command line
+        if (mDrude_ > 0)
+        {
+            add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), mDrude_);
+        }
+        else
+        {
+            add_xml_double(parent, exml_names(xmlEntryOpenMM::MASS), aType->mass());
+        }
         break;
     case ActParticle::Vsite:
         if (0 != aType->mass())
@@ -1254,7 +1274,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     auto newAtype = add_xml_child(xmlAtomTypePtr, exml_names(xmlEntryOpenMM::TYPE));
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::NAME), openMMtype.c_str());
                     add_xml_char(newAtype, exml_names(xmlEntryOpenMM::CLASS), openMMclass.c_str());
-                    addXmlElemMass(newAtype, aType);
+                    addXmlElemMass(newAtype, pd, aType);
                 }
                 int reali = tellme_RealAtom(i, myatoms);
 

@@ -128,7 +128,7 @@ int gentop(int argc, char *argv[])
         { "-box",    FALSE, etRVEC, {mybox},
           "If set will replace the simulation box in the output coordinate file." },
         { "-mDrude", FALSE, etREAL, {&mDrude},
-          "Mass to use for the drude particle if any. Default is 0.1 Da" },
+          "Mass to use for the drude/shell particles in OpenMM output, if there are any. If set to zero, the masses from the input force field will be retained." },
         { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
           "Make a topology even if there are no force field parameters for all interactions" },
         { "-nsymm", FALSE, etINT, {&nsymm},
