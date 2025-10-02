@@ -635,21 +635,11 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
         auto aa = atom->atom();
         // First find the bond type for this atom
         const auto ptype1 = pd->findParticleType(aa.ffType());
-        std::string btype("bondtype");
-        // Skip, if there is no bond type
-        if (!ptype1->hasOption(btype))
-        {
-            msghandler->msg(ACTStatus::Warning, gmx::formatString("Atom type %s lack a %s",
-                                                                  aa.ffType().c_str(),
-                                                                  btype.c_str()));
-            continue;
-        }
-        auto bondtype = ptype1->optionValue(btype);
         for(const auto &mm : fs.parametersConst())
         {
-            // Use the bond type of the atom to compare to the force field
-            auto faa   = mm.first.atoms();
-            if (bondtype == faa[0])
+            // Use the type of the atom to compare to the force field
+            auto faa = mm.first.atoms();
+            if (ptype1->id().id() == faa[0])
             {
                 // The vsite however, should have the same bond as atom type.
                 const auto ptype = pd->findParticleType(faa[1]);
@@ -1652,6 +1642,12 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
                     }
                     break;
                 }
+            case InteractionType::VSITE1:
+                // Special treatment for vsite1, see https://github.com/AlexandriaChemistry/ACT/issues/962
+                {
+                    btype.push_back(atype->id().id());
+                }
+                break;
             default: // does something
                 {
                     auto itype = InteractionType::BONDS;
