@@ -145,6 +145,13 @@ class DataSet:
         if 0 != args.ymax:
             yymax = args.ymax
         # Now effectuate the options
+        if xxmin == xxmax or yymin == yymax:
+            if viewDebug:
+                print("Warning: min and max for x or y are equal, expanding range.")
+            xxmin -= xxmin*0.5
+            xxmax += xxmax*0.5
+            yymin -= yymax*0.5
+            yymax += yymax*0.5
         if args.square:
             if xxmin == yymin and xxmax == yymax:
                 myax.set_aspect('equal', adjustable='box')
