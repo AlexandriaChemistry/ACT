@@ -182,31 +182,9 @@ class DataSet:
             thisax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=self.label)
 
     def do_lines(self, thisax, arglabel:list, argcolors, arglines, argmarkers, setcount):
-        colors  = argcolors
+        colors = argcolors
         markers = argmarkers if argmarkers else defmarkers
         lines   = arglines   if arglines   else deflines
-
-# Statements to take care of what number of colors inputed as well as markers ##########
-        # Add new colors for the other file
-        if setcount == 0 and len(self.dataset) > len(colors):
-            if viewDebug:
-                print("More datasets than color inputs. Adding colors.")
-            for c in defcolors:
-                if len(self.dataset) > len(colors) and c not in colors:
-                    colors.append(c)
-        if not args.panels and setcount > 0 and len(self.dataset)*len(args.filename) > len(colors):
-            if viewDebug:
-                print("Adding some more colors for the dataset(s) in the second input file.")
-            used_colors = colors
-            colors = []
-            for c in defcolors[len(self.dataset):]:
-                if len(self.dataset)+setcount > len(colors) and c not in used_colors:
-                    colors.append(c)
-        if argcolors and len(self.dataset)*len(args.filename) == len(argcolors):
-            if setcount == 0:
-                colors = argcolors[0:len(self.dataset)]
-            else:
-                colors = argcolors[len(self.dataset):]
 
         if len(self.dataset) > len(markers):
             if viewDebug:
@@ -263,6 +241,7 @@ def plot_once(axs, ncolumn:int, args):
     datasets = []
 
     # Create new dataset for each file BEFORE plotting
+    total_datasets = 0
     for filenumber in range(len(args.filename)):
         datasets.append(DataSet(viewDebug))
         mylabel = None
@@ -270,14 +249,26 @@ def plot_once(axs, ncolumn:int, args):
             mylabel = arglabel[filenumber]
         datasets[-1].read(args.filename[filenumber], args.residual,
                           args.filelabel, mylabel, filenumber)
+        total_datasets += len(datasets[-1].dataset)
+    if viewDebug:
+        print("Total datasets found: ", total_datasets)
 
+    # Build a color list long enough for all datasets (maximum is the length of defcolors)
+    colors = args.colors if args.colors else []
+    if len(colors) < total_datasets:
+        if viewDebug:
+            print("More datasets than color inputs. Adding colors.")
+        for c in defcolors:
+            if len(colors) == total_datasets:
+                break
+            if c not in colors:
+                colors.append(c)
+
+    color_idx = 0
     # Plot one dataset at a time
     for filenumber in range(len(args.filename)):
         # Shortcut for the current axis
         thisax = axs.flat[filenumber % numaxs]
-
-        # If there is more than one color/ls/mk or none
-        colors = args.colors if args.colors else []
 
         if args.linestyle:
             if len(args.linestyle) > 1:
@@ -298,22 +289,19 @@ def plot_once(axs, ncolumn:int, args):
         if args.bar:
             datasets[filenumber].do_bars(thisax)
         else:
-            if args.panels:                                     
-                datasets[filenumber].do_lines(
-                    thisax, arglabel[filenumber] if arglabel else '',
-                    colors,
-                    linestyle,
-                    marker,
-                    filenumber
-                )
-            else:
-                datasets[filenumber].do_lines(
-                    thisax, arglabel[filenumber] if arglabel else '',
-                    colors,
-                    linestyle,
-                    marker,
-                    filenumber 
-                )
+            # Assign colors depending on nr of datasets within each file
+            nrdatasets = len(datasets[filenumber].dataset)
+            these_colors = colors[color_idx:color_idx+nrdatasets]
+
+            datasets[filenumber].do_lines(
+                thisax, arglabel[filenumber] if arglabel else '',
+                these_colors,
+                linestyle,
+                marker,
+                filenumber
+            )
+            color_idx += nrdatasets
+
         if args.panels and numaxs > 1:
             sublabel = string.ascii_uppercase[filenumber]
             if viewDebug:
