@@ -635,21 +635,11 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
         auto aa = atom->atom();
         // First find the bond type for this atom
         const auto ptype1 = pd->findParticleType(aa.ffType());
-        std::string btype("bondtype");
-        // Skip, if there is no bond type
-        if (!ptype1->hasOption(btype))
-        {
-            msghandler->msg(ACTStatus::Warning, gmx::formatString("Atom type %s lack a %s",
-                                                                  aa.ffType().c_str(),
-                                                                  btype.c_str()));
-            continue;
-        }
-        auto bondtype = ptype1->optionValue(btype);
         for(const auto &mm : fs.parametersConst())
         {
-            // Use the bond type of the atom to compare to the force field
-            auto faa   = mm.first.atoms();
-            if (bondtype == faa[0])
+            // Use the type of the atom to compare to the force field
+            auto faa = mm.first.atoms();
+            if (ptype1->id().id() == faa[0])
             {
                 // The vsite however, should have the same bond as atom type.
                 const auto ptype = pd->findParticleType(faa[1]);
@@ -678,7 +668,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
     // If we did find any vsite1 instances, add the whole vector to the topology.
     // A very subtle programming issue arises here:
     // after the std::move operation, the vector is empty
-    // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
+    // and therefore vsite1.size() == 0. Hence we have to store the size in a variable.
     std::map<InteractionType, size_t> num_v1;
     if (!v1top.empty())
     {
@@ -1534,7 +1524,7 @@ static void fillParams(MsgHandler                      *msghandler,
     if (found != independent)
     {
         msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
-        msghandler->msg(ACTStatus::Info, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
     }
 }
 
@@ -1652,6 +1642,12 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
                     }
                     break;
                 }
+            case InteractionType::VSITE1:
+                // Special treatment for vsite1, see https://github.com/AlexandriaChemistry/ACT/issues/962
+                {
+                    btype.push_back(atype->id().id());
+                }
+                break;
             default: // does something
                 {
                     auto itype = InteractionType::BONDS;
