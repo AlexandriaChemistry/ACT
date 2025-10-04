@@ -668,7 +668,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
     // If we did find any vsite1 instances, add the whole vector to the topology.
     // A very subtle programming issue arises here:
     // after the std::move operation, the vector is empty
-    // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
+    // and therefore vsite1.size() == 0. Hence we have to store the size in a variable.
     std::map<InteractionType, size_t> num_v1;
     if (!v1top.empty())
     {
@@ -1524,7 +1524,7 @@ static void fillParams(MsgHandler                      *msghandler,
     if (found != independent)
     {
         msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
-        msghandler->msg(ACTStatus::Info, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
     }
 }
 
