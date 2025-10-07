@@ -58,6 +58,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
                  const std::vector<Bond>    &bonds,
                  int                         qtotal)
 {
+    auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    if (!pd->interactionPresent(entype))
+    {
+        return;
+    }
     auto qt     = pd->findForces(InteractionType::ELECTROSTATICS);
     ChargeType_ = potentialToChargeType(qt->potential());
     bHaveShell_ = pd->polarizable();
@@ -69,9 +74,8 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     {
         epsilonr_ = 1;
     }
-    auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-    auto bctype = InteractionType::BONDCORRECTIONS;
     auto eem = pd->findForces(entype);
+    auto bctype = InteractionType::BONDCORRECTIONS;
     bool haveBCC = pd->interactionPresent(bctype);
     std::vector<std::string> acmtypes;
     for (size_t i = 0; i < atoms.size(); i++)
