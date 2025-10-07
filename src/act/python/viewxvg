@@ -273,11 +273,11 @@ def plot_once(axs, ncolumn:int, args):
     if len(colors) < total_datasets:
         if viewDebug:
             print("More datasets than color inputs. Adding colors.")
-        for c in range(len(defcolors)):
-            if len(colors) == total_datasets:
-                break
-            if defcolors[c] not in colors:
-                colors.append(defcolors[c % len(defcolors)])
+        # Repeat appending from defcolors
+        c = 0
+        while len(colors) < total_datasets:
+            colors.append(defcolors[c % len(defcolors)])
+            c += 1
 
     color_idx = 0
     # Plot one dataset at a time
