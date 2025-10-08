@@ -12,7 +12,7 @@ from xvgutils import *
 viewDebug = False
 
 # Hardcoded formatting, Yay!
-defcolors  = ["grey", "pink", "#1f77b4", "#ff7f0e", "#2ca02c", "#7f0000", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#aec7e8","#ffbb78", "#98df8a", "#ff9896", "#c5b0d5", "#c49c94", "#f7b6d2", "#c7c7c7", "#dbdb8d", "#9edae5"]
+defcolors  = ["#1f77b4", "#ff7f0e", "#2ca02c", "#7f0000", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#aec7e8","#ffbb78", "#98df8a", "#ff9896", "#c5b0d5", "#c49c94", "#f7b6d2", "#c7c7c7", "#dbdb8d", "#9edae5"]
 defmarkers = ["o", "+", "<", ">", "v", "^", "x", "s", "p", "*", ".", "D", "d", "h", "H", "|", "_"]
 deflines   = [ 'solid', 'dashed', 'dashdot', 'dotted' ]
 
@@ -209,17 +209,6 @@ class DataSet:
             thisax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=self.label)
 
     def do_lines(self, thisax, arglabel:list, argcolors, arglines, argmarkers, setcount):
-        colors = argcolors
-        markers = argmarkers if argmarkers else defmarkers
-        lines   = arglines   if arglines   else deflines
-
-        if len(self.dataset) > len(markers):
-            if viewDebug:
-                print("Adding a different marker to second dataset.")
-            for m in defmarkers:
-                if m not in markers:
-                    markers.append(m)
-
         print_label = False
         if len(arglabel) > 0:
             print_label = True
@@ -233,13 +222,13 @@ class DataSet:
             if len(self.label) > n and self.label[n] not in args.ignore:
                 if print_label:
                     mylabel = self.label[n]
-            myline   = lines[setcount % len(lines)]
+            myline   = arglines[setcount % len(arglines)]
             mymarker = None
             if args.marker or (args.mark1st and setcount == 0):
-                mymarker = markers[n]
+                mymarker = argmarkers[n]
                 if args.mark1st and setcount == 0:
                     myline = None
-            mycolor = colors[n]
+            mycolor = argcolors[n]
             if viewDebug:
                 print(f"\t mylabel  {n+1} = {mylabel}")
                 print(f"\t mymarker {n+1} = {mymarker}")
@@ -269,6 +258,7 @@ def plot_once(axs, ncolumn:int, args):
 
     # Create new dataset for each file BEFORE plotting
     total_datasets = 0
+    datasetnr_list = []
     for filenumber in range(len(args.filename)):
         datasets.append(DataSet())
         mylabel = None
@@ -277,12 +267,13 @@ def plot_once(axs, ncolumn:int, args):
         datasets[-1].read(args.filename[filenumber], args.residual,
                           args.filelabel, mylabel, filenumber)
         total_datasets += len(datasets[-1].dataset)
+        datasetnr_list.append(len(datasets[-1].dataset))
 
     if viewDebug:
         print("Total datasets found: ", total_datasets)
 
-    # Build a color list long enough for all datasets (maximum is the length of defcolors)
     colors = args.colors if args.colors else []
+    # Build a color list long enough for all datasets (maximum is the length of defcolors)     
     if len(colors) < total_datasets:
         if viewDebug:
             print("More datasets than color inputs. Adding colors.")
@@ -292,11 +283,19 @@ def plot_once(axs, ncolumn:int, args):
             colors.append(defcolors[c % len(defcolors)])
             c += 1
 
-    color_idx = 0
+    idx = 0
     # Plot one dataset at a time
     for filenumber in range(len(args.filename)):
         # Shortcut for the current axis
         thisax = axs.flat[filenumber % numaxs]
+
+        #number of datasets within a file
+        nrdatasets = len(datasets[filenumber].dataset)
+        # Assign colors depending on nr of datasets within each file
+        if args.panels:
+            these_colors = colors[0:nrdatasets]
+        else:
+            these_colors = colors[idx:idx+nrdatasets]
 
         if args.linestyle:
             if len(args.linestyle) > 1:
@@ -306,9 +305,17 @@ def plot_once(axs, ncolumn:int, args):
         else: 
             linestyle = None
 
+        marker = args.marker
         if args.marker:
-            marker = args.marker
-        else: 
+            if len(args.marker) < nrdatasets: #markers will be applied for each dataset in each file
+                c = 0
+                while len(marker) < nrdatasets:
+                    if defmarkers[c % len(defmarkers)] not in marker:
+                        marker.append(defmarkers[c % len(defmarkers)])
+                    c += 1
+            elif len(args.marker) == total_datasets: #markers will be applied to each dataset in total
+                marker = args.marker[idx:idx+nrdatasets]
+        else:
             marker = None
 
         if args.logy:
@@ -317,18 +324,14 @@ def plot_once(axs, ncolumn:int, args):
         if args.bar:
             datasets[filenumber].do_bars(thisax)
         else:
-            # Assign colors depending on nr of datasets within each file
-            nrdatasets = len(datasets[filenumber].dataset)
-            these_colors = colors[color_idx:color_idx+nrdatasets]
-
             datasets[filenumber].do_lines(
-                thisax, arglabel[filenumber] if arglabel else '',
+                thisax, arglabel[filenumber] if arglabel else [],
                 these_colors,
                 linestyle,
                 marker,
                 filenumber
             )
-            color_idx += nrdatasets
+        idx += nrdatasets
 
         if args.panels and numaxs > 1:
             sublabel = string.ascii_uppercase[filenumber]
