@@ -496,7 +496,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
         {
             if ((tree->type > 0) && ((unsigned)tree->type < NXMLTYPES))
             {
-                msg_handler->msg(ACTStatus::Verbose,
+                msg_handler->msg(ACTStatus::Debug,
                                  gmx::formatString("Node type %s encountered with name %s\n",
                                                    xmltypes[tree->type], (char *)tree->name));
             }

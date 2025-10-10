@@ -245,12 +245,18 @@ void MsgHandler::fatal(ACTMessage  actm,
         {
             gmx_ffclose(fp_);
         }
+        else
+        {
+            tw_->close();
+        }
         delete tw_;
+        tw_ = nullptr;
     }
     if (twdebug_)
     {
         twdebug_->close();
         delete twdebug_;
+        twdebug_ = nullptr;
     }
     GMX_THROW(gmx::InvalidInputError("See message above"));
 }
