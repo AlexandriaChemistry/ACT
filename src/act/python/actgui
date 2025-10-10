@@ -1240,7 +1240,7 @@ class FFGenerator:
             qdist = self.qSel.qModel()
             if qdist == PG:
                 qdist = Gaussian
-            cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
+            cmd = f"alexandria gen_ff -f {self.csv_file} -nexclqq {nexcl} -nexclvdw {nexcl} -epsilonr {epsr} -vdwfn {self.vdwSel.potential()} -qdist {qdist} {qsymm} -bondfn {self.bondSel.potential()} -anglefn {self.angleSel.potential()} -dihfn {self.dihSel.potential()} -o {file_path}"
             if self.vsite_file:
                 cmd += f" -vs {self.vsite_file} "
             icpot = self.icSel.potential()
