@@ -234,8 +234,41 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
         }
         break;
     case ChargeGenerationAlgorithm::NONE:
-        // Just copy the charges from the force field, in case they are updated
-        
+        // Just copy the charges from the force field, in case they are updated.
+        // We need to change both the fragments and the total.
+        for(size_t ff = 0; ff < topologies_.size(); ++ff)
+        {
+            auto   ta   = topologies_[ff]->atomsPtr();
+            double qtot = 0;
+            for(size_t a = 0; a < ta->size(); a++)
+            {
+                if (!pd->hasParticleType((*ta)[a].ffType()))
+                {
+                    msg_handler->msg(ACTStatus::Error,
+                                     gmx::formatString("No such particletype %s in force field",
+                                                       (*ta)[a].ffType().c_str()));
+                }
+                auto ptype = pd->findParticleType((*ta)[a].ffType());
+                double qnew = ptype->charge();
+                if (msg_handler->debug())
+                {
+                    msg_handler->writeDebug(gmx::formatString("Will update charge for %s from %g to %g",
+                                                              (*ta)[a].ffType().c_str(), (*ta)[a].charge(), qnew));
+                }
+                (*ta)[a].setCharge(qnew);
+                (*atoms)[atomStart_[ff]+a].setCharge(qnew);
+                qtot += qnew;
+            }
+            // Make sure that the total charge is integer.
+            double dq = (qtotal_[ff]-qtot)/ta->size();
+            for(size_t a = 0; a < ta->size(); a++)
+            {
+                double qnew = (*ta)[a].charge() + dq;
+                (*ta)[a].setCharge(qnew);
+                (*atoms)[atomStart_[ff]+a].setCharge(qnew);
+            }
+        }
+        break;
     case ChargeGenerationAlgorithm::Read:
         break;
     default: // throws
