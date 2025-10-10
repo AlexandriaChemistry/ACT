@@ -124,12 +124,14 @@ public:
                  iMolSelect  trgtFit);
 
     /*! \brief Distributes the parameters from middlemen to helpers
+     * \param[in] msghandler Message Handler
      * \param[in] params   The force field parameters
      * \param[in] changed  Indication of which parameters have changed and for which
      *                     the forcefield should be updated. If empty, all parameters will
      *                     be updated.
      */
-    void distributeParameters(const std::vector<double> *params,
+    void distributeParameters(MsgHandler                *msghandler,
+                              const std::vector<double> *params,
                               const std::set<int>       &changed);
                      
     /*! \brief Distribute the work

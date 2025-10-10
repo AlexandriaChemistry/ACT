@@ -187,7 +187,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     }
 }
 
-eQgen FragmentHandler::generateCharges(MsgHandler                 *msg_handler,
+eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
                                        const ForceField             *pd,
@@ -225,6 +225,7 @@ eQgen FragmentHandler::generateCharges(MsgHandler                 *msg_handler,
                 fetchCharges(&qnew);
                 apply_symmetrized_charges(&qnew, symmetric_charges);
                 setCharges(qnew);
+                // Copy back charges for this fragment to combined topology atoms
                 for(size_t a = 0; a < topologies_[ff]->atoms().size(); a++)
                 {
                     (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff]->atoms()[a].charge());
@@ -232,6 +233,9 @@ eQgen FragmentHandler::generateCharges(MsgHandler                 *msg_handler,
             }
         }
         break;
+    case ChargeGenerationAlgorithm::NONE:
+        // Just copy the charges from the force field, in case they are updated
+        
     case ChargeGenerationAlgorithm::Read:
         break;
     default: // throws
