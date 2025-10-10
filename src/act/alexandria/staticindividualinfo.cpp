@@ -119,7 +119,8 @@ void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
     }
 }
 
-void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
+void StaticIndividualInfo::updateForceField(MsgHandler                *msghandler,
+                                            const std::set<int>       &changed,
                                             const std::vector<double> &bases)
 {
     if (bases.size() == 0)
@@ -128,9 +129,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     }
     if (bases.size() != optIndex().size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
-                                                       bases.size(),
-                                                       optIndex().size()).c_str()));
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
+                                          bases.size(),
+                                          optIndex().size()).c_str());
     }
     std::set<int> mychanged = changed;
     if (mychanged.empty())
@@ -151,10 +153,11 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
         if (p)
         {
             auto iType = optIndex_[n].iType();
-            if (debug)
+            if (msghandler->debug())
             {
-                fprintf(debug, "Updating %s parameter %d (set size %lu) to %g\n",
-                        interactionTypeToString(iType).c_str(), n, mychanged.size(), bases[n]);
+                msghandler->writeDebug(gmx::formatString("Updating %s parameter %d (set size %lu) to %g\n",
+                                                         interactionTypeToString(iType).c_str(), n,
+                                                         mychanged.size(), bases[n]));
             }
             p->setValue(bases[n]);
             p->setUpdated(true);

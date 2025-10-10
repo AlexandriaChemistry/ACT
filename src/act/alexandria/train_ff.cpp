@@ -566,7 +566,7 @@ bool OptACM::runMaster(bool        optimize,
             std::set<int> changed;
             for (const auto &pair : bestGenome)
             {
-                sii_->updateForceField(changed, pair.second.bases());
+                sii_->updateForceField(&msghandler_, changed, pair.second.bases());
                 auto myfilenm = outputFileName_[pair.first];
                 tw->writeStringFormatted("Will save best %s force field to %s\n",
                                          iMolSelectName(pair.first),
@@ -574,7 +574,7 @@ bool OptACM::runMaster(bool        optimize,
                 sii_->saveState(true, myfilenm);
             }
             // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
-            sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
+            sii_->updateForceField(&msghandler_, changed, bestGenome.find(iMolSelect::Train)->second.bases());
         }
     }
     else if (optimize)
@@ -599,7 +599,7 @@ bool OptACM::runMaster(bool        optimize,
         auto bbb = bestGenome.find(ims);
         if (bestGenome.end() != bbb)
         {
-            sii_->updateForceField(changed, bbb->second.bases());
+            sii_->updateForceField(&msghandler_, changed, bbb->second.bases());
             fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
         }
         // Now compute the test compounds, with the best Train parameters.

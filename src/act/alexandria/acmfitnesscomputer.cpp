@@ -58,7 +58,7 @@ void ACMFitnessComputer::compute(MsgHandler *msghandler,
     // First send around parameters. This code is run on master only.
     distributeTasks(CalcDev::Parameters);
     std::set<int> changed;
-    distributeParameters(genome->basesPtr(), changed);
+    distributeParameters(msghandler, genome->basesPtr(), changed);
     // Then do the computation
     auto cd = distributeTasks(CalcDev::Compute);
     double fitness = calcDeviation(msghandler, cd, trgtFit);
@@ -112,7 +112,8 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
     }
 }
 
-void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
+void ACMFitnessComputer::distributeParameters(MsgHandler                *msghandler,
+                                              const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
     if (debug)
@@ -137,7 +138,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
             cr->recv(src, &mc);
             mychanged.insert(mc);
         }
-        sii_->updateForceField(mychanged, myparams);
+        sii_->updateForceField(msghandler, mychanged, myparams);
     }
     else 
     {
@@ -151,7 +152,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                 cr->send(dest, iset);
             }
         }
-        sii_->updateForceField(changed, *params);
+        sii_->updateForceField(msghandler, changed, *params);
     }
     if (debug)
     {

@@ -95,7 +95,7 @@ void MCMCMutator::mutate(MsgHandler        *msghandler,
     std::set<int> changed;
     auto cd = CalcDev::Parameters;
     fitComp_->distributeTasks(cd);
-    fitComp_->distributeParameters(genome->basesPtr(), changed);
+    fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
 
     cd        = CalcDev::Compute;
     auto ims  = iMolSelect::Train;
@@ -210,7 +210,7 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     // the new value of parameter j
     auto cd = CalcDev::Parameters;
     (void) fitComp_->distributeTasks(cd);
-    fitComp_->distributeParameters(genome->basesPtr(), changed);
+    fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
 
     std::map<iMolSelect, double> currEval;
     // Evaluate the energy on training set
@@ -283,7 +283,7 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
         genome->setBase(paramIndex, storeParam);
         // forcefield on helpers needs to know if we undo the change
         fitComp_->distributeTasks(CalcDev::Parameters);
-        fitComp_->distributeParameters(genome->basesPtr(), changed);
+        fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
     }
 
     printParameterStep(genome, xiter);
@@ -460,7 +460,7 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
         return;
     }
     std::set<int> changed;
-    sii_->updateForceField(changed, genome->bases());
+    sii_->updateForceField(msghandler, changed, genome->bases());
     auto cdc    = CalcDev::Compute;
     fitComp_->distributeTasks(cdc);
     auto chi2_0 = fitComp_->calcDeviation(msghandler, cdc, ims);
@@ -481,19 +481,19 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
         std::set<int> changed;
         changed.insert(i);
         (*param)[i]     = pmin;
-        sii_->updateForceField(changed, *param);
+        sii_->updateForceField(msghandler, changed, *param);
         fitComp_->distributeTasks(cdc);
         s.add((*param)[i], fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = p_0;
-        sii_->updateForceField(changed, *param);
+        sii_->updateForceField(msghandler, changed, *param);
         fitComp_->distributeTasks(cdc);
         s.add((*param)[i], fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = pmax;
-        sii_->updateForceField(changed, *param);
+        sii_->updateForceField(msghandler, changed, *param);
         fitComp_->distributeTasks(cdc);
         s.add((*param)[i],  fitComp_->calcDeviation(msghandler, cdc, ims));
         (*param)[i]     = pstore;
-        sii_->updateForceField(changed, *param);
+        sii_->updateForceField(msghandler, changed, *param);
         s.computeForceConstants(tw);
         s.print(tw, paramNames[i]);
     }

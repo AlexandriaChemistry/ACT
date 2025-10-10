@@ -161,8 +161,8 @@ public:
     void fillForceField(gmx::TextWriter *tw,
                         const char      *pd_fn);
 
-    /*!
-     * \brief Copy the Force Field parameters to the ForceField structure
+    /*! \brief Copy the Force Field parameters to the ForceField structure
+     * \param[in] msghandler Write (debugging) info and handle errors
      * \param[in] changed List over the parameters that have changed. If empty,
      *                    all parameters will be updated. The numbers are indices
      *                    in the internal optIndex structure.
@@ -170,7 +170,8 @@ public:
      *                    the routine will do nothing and return.
      * \throws if length of bases > 0 and the length does not match the known number of parameters.
      */
-    void updateForceField(const std::set<int>       &changed,
+    void updateForceField(MsgHandler                *msghandler,
+                          const std::set<int>       &changed,
                           const std::vector<double> &bases);
     
     /*! \brief Save the current state of the Force Field to the output file

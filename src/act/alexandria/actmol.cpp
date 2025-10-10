@@ -910,6 +910,8 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                                    symmetric_charges_);
         if (eQgen::OK == eqgen)
         {
+            // The purpose of this force calculation is to minimize shell
+            // positions and to place virtual sites.
             forceComp->compute(msg_handler, pd, topology_,
                                coords, forces, &energies);
             std::vector<double> qnew;

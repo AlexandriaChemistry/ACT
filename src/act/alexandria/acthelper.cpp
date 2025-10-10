@@ -66,7 +66,7 @@ void ACTHelper::run(MsgHandler *msghandler)
                 std::vector<double> dummy;
                 std::set<int>       changed;
                 // Get the new parameters to evaluate
-                fitComp_->distributeParameters(&dummy, changed);
+                fitComp_->distributeParameters(msghandler, &dummy, changed);
             }
             break;
         case CalcDev::Compute:
