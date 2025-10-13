@@ -230,9 +230,14 @@ int geometry_ff(int argc, char *argv[])
     print_memory_usage(debug);
 
     /* Read ForceField file */
+    auto myff = opt2fn_null("-ff", fnm.size(), fnm.data());
+    if (!myff)
+    {
+        msghandler.fatal("Please pass me a force field file name");
+    }
     try
     {
-        readForceField(opt2fn_null("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(myff, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);
