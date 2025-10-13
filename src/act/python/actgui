@@ -284,7 +284,7 @@ class QSel:
 
 class BondSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.bonds = ["BONDS", "CUBIC", "HUA", "MORSE" ]
+        self.bonds = ["HARMONIC_BONDS", "CUBIC_BONDS", "HUA_BONDS", "MORSE_BONDS" ]
         self.bondPot = tk.StringVar(root, f"{self.bonds[2]}")
         labPot = tk.Label(root, text=f"Bond potential", anchor="w", font=labelFont())
         labPot.grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
@@ -304,7 +304,7 @@ class BondSel:
 
 class AngleSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.angles = ["ANGLES", "UREY_BRADLEY" ]
+        self.angles = ["HARMONIC_ANGLES", "UREY_BRADLEY_ANGLES" ]
         self.anglePot = tk.StringVar(root, f"{self.angles[0]}")
         labPot = tk.Label(root, text=f"Angle potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
@@ -322,7 +322,7 @@ class AngleSel:
 
 class DihSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.dihs = ["PDIHS", "FOURDIHS" ]
+        self.dihs = ["PROPER_DIHEDRALS", "FOURIER_DIHEDRALS" ]
         self.dihPot = tk.StringVar(root, f"{self.dihs[1]}")
         labPot = tk.Label(root, text=f"Dihedral potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1

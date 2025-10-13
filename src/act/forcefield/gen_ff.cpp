@@ -308,9 +308,28 @@ int gen_ff(int argc, char*argv[])
     double            epsilonr = 1;
     bool              qsymm    = true;
     std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
-    std::vector<const char *>bondfn  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
-    std::vector<const char *>anglefn = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
-    std::vector<const char *>dihfn   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
+    std::vector<const char *>bondfn  = { nullptr };
+    for (const auto &p : { Potential::HARMONIC_BONDS, Potential::MORSE_BONDS,
+                           Potential::CUBIC_BONDS, Potential::HUA_BONDS })
+    {
+        bondfn.push_back(potentialToString(p).c_str());
+    }
+    bondfn.push_back(nullptr);
+    
+    std::vector<const char *>anglefn = { nullptr };
+    for (const auto &p : { Potential::HARMONIC_ANGLES, Potential::UREY_BRADLEY_ANGLES })
+    {
+        anglefn.push_back(potentialToString(p).c_str());
+    }
+    anglefn.push_back(nullptr);
+
+    std::vector<const char *>dihfn   = { nullptr };
+    for (const auto &p : { Potential::FOURIER_DIHEDRALS, Potential::PROPER_DIHEDRALS } )
+    {
+        dihfn.push_back(potentialToString(p).c_str());
+    }
+    dihfn.push_back(nullptr);
+
     std::vector<Potential> nbpot     = {
         Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
