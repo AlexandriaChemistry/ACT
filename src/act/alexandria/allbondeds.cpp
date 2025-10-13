@@ -147,13 +147,26 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
 }
 
-void AllBondeds::addBonded(MsgHandler             *msghandler,
-                           InteractionType         iType,
-                           const ACTMol           &mmi,
-                           const Identifier       &bondId,
-                           const std::vector<int> &atomid)
+void AllBondeds::addBondeds(MsgHandler             *msghandler,
+                            InteractionType         iType,
+                            const ACTMol           &mmi,
+                            const Identifier       &bondId,
+                            const std::vector<int> &atomid)
 {
-    auto x = mmi.xOriginal();
+    // Loop over experiments
+    for (const auto &exper : mmi.experimentConst())
+    {
+        addBonded(msghandler, iType, mmi, bondId, atomid, exper.getCoordinates());
+    }
+}
+
+void AllBondeds::addBonded(MsgHandler                   *msghandler,
+                           InteractionType               iType,
+                           const ACTMol                 &mmi,
+                           const Identifier             &bondId,
+                           const std::vector<int>       &atomid,
+                           const std::vector<gmx::RVec> &x)
+{
     // We need to check for linear angles here before we
     // add this to the tables.
     double refValue = 0;
@@ -608,7 +621,7 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
             {
                 for (const auto &topentry : entry.second)
                 {
-                    addBonded(msghandler, entry.first, mmi, topentry->id(), topentry->atomIndices());
+                    addBondeds(msghandler, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
             actmols->push_back(mmi);

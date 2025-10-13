@@ -144,12 +144,27 @@ namespace alexandria
          * \param[in] mmi     Molecule structure
          * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
+         * \param[in] x       The coordinates
           */
-        void addBonded(MsgHandler             *msghandler,
-                       InteractionType         iType,
-                       const ACTMol           &mmi,
-                       const Identifier       &bondId,         
-                       const std::vector<int> &atomid);
+        void addBonded(MsgHandler                   *msghandler,
+                       InteractionType               iType,
+                       const ACTMol                 &mmi,
+                       const Identifier             &bondId,         
+                       const std::vector<int>       &atomid,
+                       const std::vector<gmx::RVec> &x);
+
+        /*! \brief Add bonds etc. for one molecule and list of atoms
+         * \param[in] msghandler Message handler
+         * \param[in] iType   InteractionType
+         * \param[in] mmi     Molecule structure
+         * \param[in] bondId  The bond identifier
+         * \param[in] atomid  List of atoms involved in the interaction
+          */
+        void addBondeds(MsgHandler             *msghandler,
+                        InteractionType         iType,
+                        const ACTMol           &mmi,
+                        const Identifier       &bondId,         
+                        const std::vector<int> &atomid);
 
     public:
         //! Constructor
