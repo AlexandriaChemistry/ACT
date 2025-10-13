@@ -304,7 +304,7 @@ class BondSel:
 
 class AngleSel:
     def __init__(self, root, myrow:int, mycol:int):
-        self.angles = ["ANGLES", "UREY_BRADLEY" ]
+        self.angles = ["ANGLES", "UREYBRADLEY" ]
         self.anglePot = tk.StringVar(root, f"{self.angles[0]}")
         labPot = tk.Label(root, text=f"Angle potential", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
